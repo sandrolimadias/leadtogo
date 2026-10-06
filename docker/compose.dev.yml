@@ -22,7 +22,8 @@ services:
       - ../packages/db/sql:/sql:ro
       - ../packages/db/scripts:/scripts:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d leadtogo']
+      # Por TCP (-h 127.0.0.1): o servidor temporário do init só escuta no socket e não pode contar como saudável
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres -d leadtogo']
       interval: 5s
       timeout: 3s
       retries: 20
