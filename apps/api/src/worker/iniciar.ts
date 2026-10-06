@@ -6,6 +6,9 @@ import type { Logger } from 'pino'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { FILAS } from './filas.js'
+import { manipuladoresPadrao } from './outbox/manipuladores.js'
+import { RelayDoOutbox } from './outbox/relay.js'
+import { processadorDeTeste } from './processadores.js'
 import { iniciarServidorDeSaude, type EstadoDoWorker } from './saude.js'
 import { WorkerFilas } from './worker-filas.service.js'
 
@@ -29,17 +32,40 @@ export async function iniciarWorker(deps: {
 }): Promise<WorkerEmExecucao> {
   const { config, banco, valkey, log } = deps
   const filas = new WorkerFilas(config, log)
-  const estado: EstadoDoWorker = { ultimoCicloEm: () => null, relayAtivo: false }
-
-  // Fila de teste: só fora de produção (encerramento gracioso e retenção são testados com ela)
-  if (config.NODE_ENV !== 'production') {
-    filas.consumir(FILAS.teste, async (job) => {
-      const { ms, chave } = job.data as { ms?: number; chave?: string }
-      await new Promise((r) => setTimeout(r, ms ?? 0))
-      if (chave) await valkey.set(chave, job.id ?? 'sem-id', 'EX', 300)
-      return 'ok'
-    })
+  // Marca compartilhada: o relay roda em UM worker por ciclo, então a idade do último ciclo vale para todos
+  const chaveDoCiclo = `${config.FILA_PREFIXO}:relay:ultimo-ciclo`
+  const estado: EstadoDoWorker = {
+    relayAtivo: true,
+    ultimoCicloEm: async () => {
+      const v = await valkey.get(chaveDoCiclo)
+      return v === null ? null : Number(v)
+    },
   }
+
+  // Fila de teste: só fora de produção (encerramento gracioso, retenção e idempotência são testados com ela)
+  if (config.NODE_ENV !== 'production') filas.consumir(FILAS.teste, processadorDeTeste(valkey))
+
+  // Relay do outbox: um agendador do BullMQ (`upsertJobScheduler`, idempotente) gera um ciclo a cada
+  // 2 s; só UM worker pega cada ciclo, então vários workers juntos não duplicam o trabalho
+  const relay = new RelayDoOutbox({ banco, filas, log, manipuladores: manipuladoresPadrao(config) })
+  filas.consumir(
+    FILAS.outbox,
+    async () => {
+      const r = await relay.rodarCiclo()
+      await valkey.set(chaveDoCiclo, String(Date.now()), 'EX', 300)
+      return r
+    },
+    { concorrencia: 1 },
+  )
+  await filas.fila(FILAS.outbox).upsertJobScheduler(
+    'relay',
+    { every: 2000 },
+    {
+      name: 'ciclo',
+      data: {},
+      opts: { removeOnComplete: { count: 5 }, removeOnFail: { count: 20 } },
+    },
+  )
 
   const servidorDeSaude = await iniciarServidorDeSaude(config.WORKER_SAUDE_PORTA, {
     filas,

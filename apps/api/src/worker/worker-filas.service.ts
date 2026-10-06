@@ -39,8 +39,16 @@ export class WorkerFilas {
   }
 
   /** Registra o consumidor de uma fila. */
-  consumir(nome: NomeDaFila, processador: Processador): Worker {
-    const worker = new Worker(nome, processador, opcoesDeWorker(this.config, this.conexao()))
+  consumir(
+    nome: NomeDaFila,
+    processador: Processador,
+    opcoes: { concorrencia?: number } = {},
+  ): Worker {
+    const base = opcoesDeWorker(this.config, this.conexao())
+    const worker = new Worker(nome, processador, {
+      ...base,
+      ...(opcoes.concorrencia ? { concurrency: opcoes.concorrencia } : {}),
+    })
     worker.on('error', (erro) =>
       this.log.error({ fila: nome, erro: erro.message }, 'erro no worker'),
     )

@@ -10,8 +10,8 @@ import type { WorkerFilas } from './worker-filas.service.js'
 export const IDADE_MAXIMA_DO_CICLO_MS = 30_000
 
 export interface EstadoDoWorker {
-  /** Quando o relay do outbox concluiu o último ciclo (ms desde a época); null = ainda não rodou */
-  ultimoCicloEm: () => number | null
+  /** Quando o relay do outbox concluiu o último ciclo, em QUALQUER worker (ms desde a época); null = nunca */
+  ultimoCicloEm: () => Promise<number | null>
   /** O relay está configurado neste processo? (sem ele não há o que vigiar) */
   relayAtivo: boolean
 }
@@ -53,7 +53,7 @@ export function iniciarServidorDeSaude(
         relay: true,
       }
       if (deps.estado.relayAtivo) {
-        const ultimo = deps.estado.ultimoCicloEm()
+        const ultimo = await deps.estado.ultimoCicloEm().catch(() => null)
         checks.relay = ultimo !== null && Date.now() - ultimo < IDADE_MAXIMA_DO_CICLO_MS
       }
       const ok = Object.values(checks).every(Boolean)

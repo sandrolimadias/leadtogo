@@ -5,6 +5,8 @@ import type { Configuracao } from '../configuracao/configuracao.js'
 
 /** Nomes das filas BullMQ. */
 export const FILAS = {
+  /** Ciclos do relay do outbox (agendados a cada 2 s) */
+  outbox: 'outbox',
   /** Só existe fora de produção: os testes do worker (encerramento, retenção) usam. */
   teste: 'teste',
 } as const

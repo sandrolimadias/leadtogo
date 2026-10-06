@@ -340,6 +340,8 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 - Responsável por: filas BullMQ, entrega de webhooks (n8n), processamento de mensagens WhatsApp, sync de e-mail/agenda, envio de e-mails, notificações, recorrência de tarefas e lembretes.
 - Separar do container da API evita que tarefas pesadas deixem a interface lenta, e cada um escala de forma independente.
 - RAM estimada: **~300–600 MB**.
+- **Outbox (E10):** a API grava o evento em `eventos_outbox` na mesma transação do dado; o relay do worker (agendador do BullMQ, a cada 2 s, só um worker por ciclo) reserva lotes com `app_reservar_eventos` (sem `BYPASSRLS`), entrega cada evento com o tenant dele ativo e usa `jobId = evento-<id>`. Falha: espera progressiva (5 s, 10 s... até 1 h) e, após 8 tentativas, `falhou_em`. Entrega **pelo menos uma vez**: os consumidores são idempotentes. Latência de até ~2 s.
+- Healthcheck, parada gradual (30 s; stop timeout do Coolify 45 s) e retenção dos jobs: `docs/esteira_deploy.md`, 7.1.1.
 
 ---
 
