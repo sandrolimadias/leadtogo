@@ -5,7 +5,6 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { criarApp } from '../app.js'
-import { VERSAO } from '../versao.js'
 
 describe('GET /health', () => {
   let app: INestApplication<Server>
@@ -21,6 +20,6 @@ describe('GET /health', () => {
 
   it('responde ok com a versão em execução, fora do prefixo /v1', async () => {
     const resposta = await request(app.getHttpServer()).get('/health').expect(200)
-    expect(resposta.body).toEqual({ status: 'ok', version: VERSAO })
+    expect(resposta.body).toEqual({ status: 'ok', version: process.env['APP_VERSION'] ?? 'dev' })
   })
 })

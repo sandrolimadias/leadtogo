@@ -16,3 +16,14 @@ for (const [destino, origem] of Object.entries(troca)) {
   if (valor) process.env[destino] = valor
 }
 process.env['NODE_ENV'] = 'test'
+
+// Valores padrão só para os testes (o CI não tem .env): endereços locais e chaves descartáveis
+const padroes: Record<string, string> = {
+  APP_URL: 'http://localhost:5173',
+  API_URL: 'http://localhost:3000',
+  S3_ENDPOINT: 'http://localhost:3900',
+  S3_BUCKET: 'leadtogo-arquivos',
+  S3_ACCESS_KEY: 'teste',
+  S3_SECRET_KEY: 'teste',
+}
+for (const [chave, valor] of Object.entries(padroes)) process.env[chave] ??= valor

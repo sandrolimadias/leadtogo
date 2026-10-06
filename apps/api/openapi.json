@@ -17,7 +17,7 @@
   "info": {
     "title": "Leadtogo API",
     "description": "API REST do Leadtogo",
-    "version": "dev",
+    "version": "0.0.0",
     "contact": {}
   },
   "tags": [],
