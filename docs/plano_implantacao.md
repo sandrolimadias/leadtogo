@@ -269,7 +269,7 @@ Checklist:
 - [ ] Criar conta/empresa, convidar membro, trocar empresa ativa.
 - [ ] Usuário da empresa A recebe 403/404 ao tentar acessar dados da B.
 - [x] **FK de `membros.usuario_id` e `conta_administradores.usuario_id` para `auth.user`**: adicionada na migração que cria o schema `auth` (ficou fora do E7 porque a tabela ainda não existe).
-- [ ] **Vínculos do usuário (direção definida no E7, implementar aqui):** antes de haver tenant ativo, o app precisa saber em quais empresas o usuário é membro. Sem papel com `BYPASSRLS` e sem afrouxar o RLS: uma função `SECURITY DEFINER` mínima, `app_vinculos_do_usuario(usuario_id)`, devolve **só o `tenant_id` e o papel**; pertence ao `leadtogo_owner`, tem `search_path` fixo, `EXECUTE` revogado de `PUBLIC` e concedido apenas ao `leadtogo_app`. O guard de tenant usa essa função e só então abre a transação com `SET LOCAL app.tenant_id`.
+- [x] **Vínculos do usuário (direção definida no E7):** antes de haver tenant ativo, o app precisa saber em quais empresas o usuário é membro. Sem papel com `BYPASSRLS` e sem afrouxar o RLS: uma função `SECURITY DEFINER` mínima, `app_vinculos_do_usuario(usuario_id)`, devolve **só o `tenant_id` e o papel**; pertence ao `leadtogo_owner`, tem `search_path` fixo, `EXECUTE` revogado de `PUBLIC` e concedido apenas ao `leadtogo_app`. O guard de tenant usa essa função e só então abre a transação com `SET LOCAL app.tenant_id`.
 
 **Decisões do E8 (aprovadas em 06/10/2026):**
 - **Sem plugin de organizações** do Better Auth: ele só faz identidade; empresas, membros, convites e empresa ativa (`auth.session.empresa_ativa_id`) são nossos, sob RLS (`configuracao_tecnologia.md`, seção 7).

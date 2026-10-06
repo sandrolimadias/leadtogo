@@ -1,9 +1,11 @@
 import { Controller, Get, Res } from '@nestjs/common'
+import { Publica } from '../acesso/acesso.decorators.js'
 import type { Response } from 'express'
 
 import { SemLimite } from '../rate-limit/limite.decorator.js'
 import { HealthService, type RelatorioSaude } from './health.service.js'
 
+@Publica()
 @SemLimite()
 @Controller('health')
 export class HealthController {

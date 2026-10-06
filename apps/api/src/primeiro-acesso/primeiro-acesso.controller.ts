@@ -3,6 +3,7 @@ import {
   type PrimeiroAcessoResultado,
   primeiroAcessoSchema,
 } from '@leadtogo/shared'
+import { Publica } from '../acesso/acesso.decorators.js'
 import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
@@ -13,6 +14,7 @@ import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { PrimeiroAcessoService } from './primeiro-acesso.service.js'
 
+@Publica()
 @Controller('primeiro-acesso')
 export class PrimeiroAcessoController {
   constructor(

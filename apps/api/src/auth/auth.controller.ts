@@ -1,4 +1,5 @@
 import { All, Controller, Inject, Req, Res } from '@nestjs/common'
+import { Publica } from '../acesso/acesso.decorators.js'
 import { toNodeHandler } from 'better-auth/node'
 import type { Request, Response } from 'express'
 
@@ -15,6 +16,7 @@ const METODOS_DE_LEITURA = new Set(['GET', 'HEAD', 'OPTIONS'])
  * de erros continuam valendo), mas o corpo NÃO é lido antes: o parser de corpo pula /v1/auth
  * (ROTAS_COM_CORPO_PROPRIO) e o Better Auth consome o stream sozinho.
  */
+@Publica()
 @Controller('auth')
 export class AuthController {
   private readonly manipulador: ReturnType<typeof toNodeHandler>

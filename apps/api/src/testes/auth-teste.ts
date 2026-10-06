@@ -15,6 +15,7 @@ export const ORIGEM_DO_FRONT = 'http://localhost:5173'
 export const SENHA_PADRAO = 'senha-forte-123'
 
 let contador = 0
+let contadorIp = 0
 export function emailUnico(prefixo = 'usuario'): string {
   contador += 1
   return `${prefixo}-${Date.now()}-${contador}@exemplo.com`
@@ -52,9 +53,13 @@ export async function entrar(
   senha: string = SENHA_PADRAO,
   origem: string = ORIGEM_DO_FRONT,
 ) {
+  // Cada login vem de um "cliente" diferente: o Better Auth limita o login por IP (3 por 10 s) e os
+  // testes fazem vários seguidos. Só vale com TRUST_PROXY>0; sem proxy confiável o cabeçalho é ignorado.
+  contadorIp += 1
   const resposta = await request(app.getHttpServer())
     .post('/v1/auth/sign-in/email')
     .set('Origin', origem)
+    .set('X-Forwarded-For', `10.${(contadorIp >> 8) & 255}.${contadorIp & 255}.7`)
     .send({ email, password: senha })
   const cookies = (resposta.headers['set-cookie'] as string[] | string | undefined) ?? []
   const lista = Array.isArray(cookies) ? cookies : [cookies]

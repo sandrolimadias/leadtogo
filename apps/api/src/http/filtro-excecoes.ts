@@ -28,8 +28,27 @@ interface ErroDeParser {
   expose?: boolean
 }
 
+/** Código SQLSTATE de um erro do Postgres, direto ou embrulhado pelo Drizzle (`cause`). */
+function sqlstateDe(erro: unknown): string | undefined {
+  const e = erro as { code?: unknown; cause?: unknown } | null
+  if (!e || typeof e !== 'object') return undefined
+  if (typeof e.code === 'string' && /^[0-9A-Z]{5}$/.test(e.code)) return e.code
+  return e.cause ? sqlstateDe(e.cause) : undefined
+}
+
+/**
+ * O banco recusou por permissão: escrita barrada pelo RLS ou privilégio (42501) ou transação
+ * somente leitura (25006). É o isolamento entre empresas funcionando: 403 com código estável,
+ * nunca um 500.
+ */
+const NEGADOS_PELO_BANCO: Record<string, [string, string]> = {
+  '42501': ['acesso_negado', 'Operação não permitida para esta empresa.'],
+  '25006': ['somente_leitura', 'Esta consulta é somente leitura.'],
+}
+
 function statusDe(erro: unknown): number | undefined {
   if (erro instanceof HttpException) return erro.getStatus()
+  if (sqlstateDe(erro) && NEGADOS_PELO_BANCO[sqlstateDe(erro) ?? '']) return 403
   const parser = erro as ErroDeParser
   const status = parser.status ?? parser.statusCode
   return typeof status === 'number' && status >= 400 && status < 500 ? status : undefined
@@ -57,6 +76,13 @@ export class FiltroDeExcecoes implements ExceptionFilter {
         mensagem: erro.message,
         ...(erro.detalhes ? { detalhes: erro.detalhes } : {}),
       }
+    } else if (NEGADOS_PELO_BANCO[sqlstateDe(erro) ?? ''] && !(erro instanceof HttpException)) {
+      const [codigo, mensagem] = NEGADOS_PELO_BANCO[sqlstateDe(erro) ?? ''] ?? [
+        'acesso_negado',
+        'Operação não permitida.',
+      ]
+      this.log.warn(`negado pelo banco (${sqlstateDe(erro)}): ${codigo}`)
+      corpo = { statusCode: 403, erro: codigo, mensagem }
     } else if (status >= 500) {
       // Falha inesperada: o detalhe vai só para o log (com o request_id), nunca para o cliente
       this.log.error(erro instanceof Error ? (erro.stack ?? erro.message) : String(erro))

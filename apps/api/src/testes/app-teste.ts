@@ -3,7 +3,7 @@ import type { Server } from 'node:http'
 import { type INestApplication, Module, type Type } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 
-import { AppModule } from '../app.module.js'
+import { AppModule, type OpcoesApp } from '../app.module.js'
 import { configurarApp } from '../app.js'
 import { carregarConfiguracao, type Configuracao } from '../configuracao/configuracao.js'
 
@@ -19,8 +19,9 @@ export function configuracaoDeTeste(troca: Record<string, string> = {}): Configu
 export async function criarAppComRotas(
   controllers: Type[],
   config: Configuracao = configuracaoDeTeste(),
+  opcoes: OpcoesApp = {},
 ): Promise<INestApplication<Server>> {
-  @Module({ imports: [AppModule.registrar(config)], controllers })
+  @Module({ imports: [AppModule.registrar(config, opcoes)], controllers })
   class AppDeTeste {}
 
   const app = await NestFactory.create<INestApplication<Server>>(AppDeTeste, {

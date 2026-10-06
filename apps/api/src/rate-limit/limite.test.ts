@@ -6,10 +6,12 @@ import request from 'supertest'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import type { RespostaDeErro } from '../http/filtro-excecoes.js'
+import { Publica } from '../acesso/acesso.decorators.js'
 import { configuracaoDeTeste, criarAppComRotas } from '../testes/app-teste.js'
 import { Limite } from './limite.decorator.js'
 import { PREFIXO_LIMITE } from './limite.guard.js'
 
+@Publica()
 @Controller('teste-limite')
 class RotasDeLimite {
   @Get()

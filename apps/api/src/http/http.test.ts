@@ -15,6 +15,7 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { Publica } from '../acesso/acesso.decorators.js'
 import { configuracaoDeTeste, criarAppComRotas } from '../testes/app-teste.js'
 import { ErroApi } from './erro-api.js'
 import type { RespostaDeErro } from './filtro-excecoes.js'
@@ -26,6 +27,7 @@ const esquemaCadastro = z.object({
   idade: z.coerce.number().int().min(18).optional(),
 })
 
+@Publica()
 @Controller('teste-http')
 class RotasDeTeste {
   @Post('validado')
@@ -60,6 +62,7 @@ class RotasDeTeste {
 }
 
 // Simula a rota do Better Auth: o corpo tem que chegar intacto, sem o parser do Nest ter lido
+@Publica()
 @Controller('auth')
 class RotaDeAuthDeTeste {
   @Post('corpo-cru')
