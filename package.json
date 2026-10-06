@@ -1,0 +1,42 @@
+{
+  "name": "leadtogo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "prepare": "lefthook install",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @leadtogo/db db:generate",
+    "db:migrate": "pnpm --filter @leadtogo/db db:migrate",
+    "db:seed": "pnpm --filter @leadtogo/db db:seed",
+    "db:studio": "pnpm --filter @leadtogo/db db:studio"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@eslint/js": "^10.0.1",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.7",
+    "@types/node": "^24.19.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "lefthook": "^2.1.17",
+    "prettier": "^3.9.9",
+    "secretlint": "^13.0.7",
+    "turbo": "^2.11.7",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

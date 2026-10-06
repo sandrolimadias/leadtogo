@@ -68,7 +68,9 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 ├── .env.example                 → variáveis necessárias (sem valores reais)
 ├── .gitignore                   → inclui .env, node_modules, dist
 ├── package.json · pnpm-workspace.yaml · turbo.json
-└── lefthook.yml                 → hooks locais (pre-commit / pre-push)
+├── tsconfig.base.json           → TypeScript estrito compartilhado
+├── eslint.config.js · .prettierrc.json · commitlint.config.js · .secretlintrc.json
+└── lefthook.yml                 → hooks locais (pre-commit / commit-msg / pre-push)
 ```
 
 > **Estrutura criada em 05/10/2026:** os documentos já estão em `docs/` e o design system em `docs/design-system/`. As pastas de código têm um README que descreve o conteúdo, e o Claude Code cria o código dentro delas.
@@ -324,9 +326,11 @@ cd leadtogo && cp .env.example .env    # preencher os valores de desenvolvimento
 
 | Momento | Roda | Tempo |
 |---|---|---|
-| `pre-commit` | Prettier e ESLint **só nos arquivos alterados** + verificação de segredos | segundos |
-| `commit-msg` | Valida o padrão Conventional Commits | instantâneo |
-| `pre-push` | `pnpm typecheck` + `pnpm test` (mesmos comandos do CI) | 1–3 min |
+| `pre-commit` | Prettier e ESLint **só nos arquivos alterados** + verificação de segredos (secretlint) | segundos |
+| `commit-msg` | Valida o padrão Conventional Commits (commitlint) | instantâneo |
+| `pre-push` | `pnpm lint` + `pnpm typecheck` + `pnpm test` (mesmos comandos do CI) | 1–3 min |
+
+> Os hooks são instalados pelo `pnpm install` (script `prepare`). O secretlint aceita apenas as strings de conexão de exemplo em `localhost` (senhas `senha`/`test`), configuradas em `.secretlintrc.json`.
 
 ---
 

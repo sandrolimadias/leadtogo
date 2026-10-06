@@ -67,8 +67,8 @@ O Supabase self-hosted é composto por cerca de 10 a 12 serviços (Kong, GoTrue,
 ```
 crm/
 ├── apps/
-│   ├── api/          → NestJS (REST + OpenAPI)
-│   ├── worker/       → processos em segundo plano (filas, sync de e-mail/agenda, webhooks)
+│   ├── api/          → NestJS (REST + OpenAPI) + entrypoint do worker (src/worker.ts → dist/worker.js):
+│   │                   processos em segundo plano (filas, sync de e-mail/agenda, webhooks)
 │   └── web/          → React + Vite (PWA) — também empacotado pelo Capacitor
 ├── packages/
 │   ├── shared/       → schemas Zod, tipos, enums, regras comuns
@@ -78,7 +78,9 @@ crm/
 └── .github/workflows → CI (lint, typecheck, testes, build)
 ```
 
-- O **cliente da API** é gerado automaticamente a partir do OpenAPI (ex.: `orval` ou `openapi-typescript`), garantindo tipagem ponta a ponta mesmo usando REST.
+- O **worker** não é um app separado: vive em `apps/api` (mesmo código e imagem), com entrypoint próprio (ver seção 11.3).
+- O **cliente da API** é gerado automaticamente a partir do OpenAPI (`openapi-typescript` + `openapi-fetch`), garantindo tipagem ponta a ponta mesmo usando REST.
+- Tudo em **ESM** e TypeScript estrito (`tsconfig.base.json` na raiz). Os pacotes internos exportam o `dist/` e, pela condição `@leadtogo/source`, o `src/` (typecheck, testes e Vite usam o código-fonte direto).
 
 ---
 

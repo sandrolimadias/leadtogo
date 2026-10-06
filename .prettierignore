@@ -1,0 +1,12 @@
+pnpm-lock.yaml
+dist/
+coverage/
+.turbo/
+apps/web/dev-dist/
+
+# documentação escrita à mão e cópias congeladas do protótipo
+docs/
+
+# gerados
+packages/api-client/src/gerado/
+packages/db/migrations/

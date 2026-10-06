@@ -1,0 +1,28 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_verificar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Health"]
+      }
+    }
+  },
+  "info": {
+    "title": "Leadtogo API",
+    "description": "API REST do Leadtogo",
+    "version": "dev",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {}
+  }
+}

@@ -1,0 +1,35 @@
+packages:
+  - apps/*
+  - packages/*
+minimumReleaseAgeExclude:
+  - '@typescript-eslint/eslint-plugin@8.71.1'
+  - '@typescript-eslint/parser@8.71.1'
+  - '@typescript-eslint/project-service@8.71.1'
+  - '@typescript-eslint/scope-manager@8.71.1'
+  - '@typescript-eslint/tsconfig-utils@8.71.1'
+  - '@typescript-eslint/type-utils@8.71.1'
+  - '@typescript-eslint/types@8.71.1'
+  - '@typescript-eslint/typescript-estree@8.71.1'
+  - '@typescript-eslint/utils@8.71.1'
+  - '@typescript-eslint/visitor-keys@8.71.1'
+  - '@vitejs/plugin-react@6.1.2'
+  - lefthook-darwin-arm64@2.1.17
+  - lefthook-darwin-x64@2.1.17
+  - lefthook-freebsd-arm64@2.1.17
+  - lefthook-freebsd-x64@2.1.17
+  - lefthook-linux-arm64@2.1.17
+  - lefthook-linux-x64@2.1.17
+  - lefthook-openbsd-arm64@2.1.17
+  - lefthook-openbsd-x64@2.1.17
+  - lefthook-windows-arm64@2.1.17
+  - lefthook-windows-x64@2.1.17
+  - lefthook@2.1.17
+  - typescript-eslint@8.71.1
+  - vite@8.3.3
+
+# Dependências autorizadas a rodar scripts de instalação (pnpm bloqueia por padrão)
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  lefthook: true
+  '@scarf/scarf': false # telemetria do swagger-ui

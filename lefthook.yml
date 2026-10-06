@@ -1,0 +1,27 @@
+# Hooks locais (docs/esteira_deploy.md, seção 10). Instalados pelo `pnpm install` (script prepare).
+pre-commit:
+  parallel: false
+  commands:
+    segredos:
+      run: pnpm exec secretlint --maskSecrets {staged_files}
+    prettier:
+      glob: '*.{js,mjs,cjs,ts,tsx,json,md,yml,yaml,css,html}'
+      exclude:
+        - 'docs/**'
+        - 'pnpm-lock.yaml'
+      run: pnpm exec prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
+    eslint:
+      glob: '*.{js,mjs,cjs,ts,tsx}'
+      run: pnpm exec eslint --fix --no-warn-ignored {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    conventional-commits:
+      run: pnpm exec commitlint --edit {1}
+
+pre-push:
+  commands:
+    verificacao:
+      run: pnpm lint && pnpm typecheck && pnpm test

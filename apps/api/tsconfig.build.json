@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": false,
+    "declarationMap": false,
+    // em runtime o Node resolve os pacotes internos pelo dist; o build usa os mesmos tipos
+    "customConditions": []
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}
