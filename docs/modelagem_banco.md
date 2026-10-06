@@ -113,6 +113,12 @@ USUÁRIO (login único) ── MEMBRO na Empresa A (admin)
 - **Copiar configurações** entre empresas da mesma conta: funis/fases, grupos de tags/tags, tipos de atividade, origens, motivos, soluções, produtos, faixas, verticais, campos personalizados e quadro modelo. É uma cópia (não um vínculo): depois cada empresa ajusta a sua.
 - **Notificações** de todas as empresas aparecem na central, identificadas pela empresa (clicar troca a empresa ativa).
 
+> **Descoberta de vínculos antes do tenant ativo (E8):** o guard da API precisa saber em quais empresas o usuário é membro *antes* de definir `app.tenant_id`, mas `membros` e `tenants` têm RLS forçado, que vale **também para o dono**. Sem papel `BYPASSRLS` e sem afrouxar o RLS do app, duas funções `SECURITY DEFINER` mínimas (do `leadtogo_owner`, `search_path` fixo, `EXECUTE` só para o `leadtogo_app`):
+> - `app_vinculos_do_usuario(usuario_id)` → `(tenant_id, papel)` dos membros **ativos e não excluídos** do usuário. Só isso: o resto do membro se lê depois, com o tenant ativo, sob RLS.
+> - `app_empresas_da_conta_do_usuario(usuario_id)` → `tenant_id` das empresas **em teste ou ativas** das contas em que o usuário é `dono` ou `administrador` (o `financeiro` não entra): é o `app.tenant_ids` do painel consolidado.
+>
+> Cada função define uma variável de transação (`app.vinculos_usuario` / `app.consolidado_usuario`) e a limpa ao terminar. Uma política `FOR SELECT TO leadtogo_owner` em `membros` e outra em `tenants` só casa com essa variável; como valem só para o papel `leadtogo_owner` (o app não é o owner, e o owner fora das funções não define a variável), nada muda para o app, para o owner direto nem para o isolamento entre empresas. Migração 0006.
+
 ### 3.0.1 `contas` 🌐 — Conta dona (cobrança e gestão)
 | Coluna | Tipo | Observação |
 |---|---|---|
