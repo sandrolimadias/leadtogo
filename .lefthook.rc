@@ -1,9 +1,6 @@
-# Carregado pelo lefthook antes de cada comando (rc em lefthook.yml). Não use o nome
-# .lefthookrc: o hook gerado o carrega sozinho com `. .lefthookrc`, que o dash não acha. Os hooks rodam em um
-# shell sem o PATH do terminal interativo (ex.: commit por IDE ou pelo Claude Code), então
-# carrega o nvm, se existir, para achar o Node do .nvmrc e o pnpm.
-export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-if [ -s "$NVM_DIR/nvm.sh" ]; then
-  . "$NVM_DIR/nvm.sh" --no-use
-  nvm use --silent >/dev/null 2>&1 || true
-fi
+# Carregado pelo lefthook antes de cada comando dos hooks (rc em lefthook.yml). Os hooks
+# rodam sem o PATH do terminal interativo (commit por IDE, Claude Code), então acrescenta
+# o bin do Node 24 mais recente do nvm, se existir, para achar node e pnpm.
+# Não renomeie para .lefthookrc: o hook gerado o carrega sozinho com `. .lefthookrc`, que o dash não acha.
+d=$(ls -d "$HOME"/.nvm/versions/node/v24*/bin 2>/dev/null | sort -V | tail -n 1)
+[ -n "$d" ] && PATH="$d:$PATH" && export PATH
