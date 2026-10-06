@@ -269,9 +269,9 @@ jobs:
 ### 9.1 Onde fica o repositório
 - O repositório de trabalho fica **dentro do Linux**: `~/projetos/leadtogo`.
 - **Nunca trabalhe em `/mnt/c/...`** (arquivos do Windows vistos pelo Linux): instalação de pacotes, testes e recarga ficam muito lentos.
-- **Pasta `C:\CRM ALESSANDRO`:** serve para o **primeiro push** ao GitHub. Depois disso, a cópia oficial é a do WSL. Para não haver duas versões divergentes:
-  - **Opção A (recomendada):** conectar ao Claude (Cowork) a pasta do WSL, `\\wsl.localhost\Ubuntu-24.04\home\<usuario>\projetos\leadtogo`, e arquivar `C:\CRM ALESSANDRO`.
-  - **Opção B:** manter `C:\CRM ALESSANDRO` apenas como espelho de leitura, atualizado com `git pull` (nunca editar nela).
+- **Pasta `C:\CRM ALESSANDRO` (decidido em 06/10/2026):** é uma **segunda cópia do repositório**, usada pelo Claude (Cowork) **só para a documentação (`docs/`)**, porque o app não acessa pastas do WSL. O código é editado **apenas** no WSL.
+  - Antes de o Claude mexer na documentação: `cd "/mnt/c/CRM ALESSANDRO" && git pull`.
+  - Depois: `cd "/mnt/c/CRM ALESSANDRO" && git add docs && git commit -m "docs: ..." && git push` e, no WSL, `cd ~/projetos/leadtogo && git pull`.
 
 ### 9.2 Instalação (uma vez)
 1. **WSL2 + Ubuntu** (PowerShell como administrador): `wsl --install -d Ubuntu-24.04`, reiniciar e criar o usuário Linux.

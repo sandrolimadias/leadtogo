@@ -83,20 +83,20 @@ Seguir `esteira_deploy.md`, seção 9.2. Resumo:
 
 ## E2. Repositório no GitHub — Ale + Claude Code
 
-1. [ ] Criar o repositório **privado** `leadtogo` no GitHub.
-2. [ ] Settings → Code security: ligar **Secret scanning** e **Push protection**.
-3. [ ] Primeiro push **a partir de `C:\CRM ALESSANDRO`** (pode ser no PowerShell ou no Ubuntu via `/mnt/c`, só desta vez):
+1. [x] Criar o repositório **privado** `leadtogo` no GitHub.
+2. [x] Settings → Advanced Security: ligar **Dependency graph**, **Dependabot alerts** e **Dependabot security updates**. *Secret scanning e Push protection não estão disponíveis para repositório privado no plano gratuito; a proteção contra segredos é feita pelo gitleaks no hook local e no CI (E5/E12).*
+3. [x] Primeiro push **a partir de `C:\CRM ALESSANDRO`** (pode ser no PowerShell ou no Ubuntu via `/mnt/c`, só desta vez):
    ```bash
    cd "/mnt/c/CRM ALESSANDRO"
    git init && git add . && git commit -m "docs: documentação inicial do Leadtogo"
    git remote add origin https://github.com/<usuario>/leadtogo.git
    git push -u origin main
    ```
-4. [ ] Clonar no WSL: `mkdir -p ~/projetos && cd ~/projetos && gh repo clone <usuario>/leadtogo`.
-5. [ ] Conectar no Claude (Cowork) a pasta `\\wsl.localhost\Ubuntu-24.04\home\<usuario>\projetos\leadtogo` e deixar `C:\CRM ALESSANDRO` como arquivo (somente leitura).
-6. [ ] Proteção da `main`: bloquear *force push* e exclusão (sem exigir PR).
+4. [x] Clonar no WSL: `mkdir -p ~/projetos && cd ~/projetos && gh repo clone <usuario>/leadtogo`.
+5. [x] ~~Conectar a pasta do WSL no Claude (Cowork)~~: o app não acessa caminhos `\\wsl.localhost`. **Combinado:** `C:\CRM ALESSANDRO` vira uma segunda cópia do repositório, usada pelo Claude (Cowork) **só para `docs/`**; sincronização por `git pull`/`git push` (ver `esteira_deploy.md`, 9.1).
+6. [ ] Proteção da `main` (Settings → Rulesets): bloquear *force push* e exclusão (sem exigir PR). *No plano gratuito com repositório privado, o GitHub pode criar a regra sem aplicá-la; nesse caso, fica como pendência opcional.*
 
-**Pronto quando:** o repositório no GitHub mostra `docs/`, `CLAUDE.md` e `README.md`, e o clone no WSL está atualizado.
+✅ **Repositório criado e primeiro push feito em 06/10/2026** (itens 5 e 6 pendentes de confirmação). **Pronto quando:** o repositório no GitHub mostra `docs/`, `CLAUDE.md` e `README.md`, e o clone no WSL está atualizado.
 
 ---
 
