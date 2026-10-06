@@ -1,0 +1,114 @@
+import type { Conexao } from '@leadtogo/db'
+import { sql } from '@leadtogo/db'
+import type {
+  EmpresaAtivaResposta,
+  EmpresaDoUsuario,
+  MeResposta,
+  SituacaoEmpresa,
+} from '@leadtogo/shared'
+import { Inject, Injectable } from '@nestjs/common'
+
+import type { DadosDeAcesso, Vinculo } from '../acesso/requisicao.js'
+import { ErroApi } from '../http/erro-api.js'
+import { BANCO } from '../infra/infra.module.js'
+
+type LinhaEmpresa = {
+  id: string
+  razao_social: string
+  nome_fantasia: string | null
+  situacao: SituacaoEmpresa
+}
+
+@Injectable()
+export class MeService {
+  constructor(@Inject(BANCO) private readonly banco: Conexao) {}
+
+  /**
+   * Dados das empresas do usuário (nome e situação). `tenants` tem RLS: lê-se numa transação
+   * SOMENTE LEITURA com `app.tenant_ids` = as empresas em que ele já é membro (decididas pela
+   * função de vínculos, não pelo cliente).
+   */
+  private async empresasDe(
+    vinculos: Vinculo[],
+    ativaId: string | null,
+  ): Promise<EmpresaDoUsuario[]> {
+    if (vinculos.length === 0) return []
+    const ids = vinculos.map((v) => v.tenantId)
+    const linhas = await this.banco.db.transaction(
+      async (tx) => {
+        await tx.execute(sql`SELECT set_config('app.tenant_ids', ${`{${ids.join(',')}}`}, true)`)
+        return tx.execute<LinhaEmpresa>(
+          sql`SELECT id, razao_social, nome_fantasia, situacao FROM tenants`,
+        )
+      },
+      { accessMode: 'read only' },
+    )
+    const porId = new Map<string, LinhaEmpresa>([...linhas].map((l) => [l.id, l]))
+    return vinculos
+      .map((v): EmpresaDoUsuario | null => {
+        const e = porId.get(v.tenantId)
+        if (!e) return null
+        return {
+          id: e.id,
+          razaoSocial: e.razao_social,
+          nomeFantasia: e.nome_fantasia,
+          papel: v.papel,
+          situacao: e.situacao,
+          ativa: e.id === ativaId,
+        }
+      })
+      .filter((e): e is EmpresaDoUsuario => e !== null)
+      .sort((a, b) => a.razaoSocial.localeCompare(b.razaoSocial, 'pt-BR'))
+  }
+
+  async me(acesso: DadosDeAcesso): Promise<MeResposta> {
+    const { sessao, vinculos, administradorDeConta } = acesso
+    const administrador = administradorDeConta || vinculos.some((v) => v.papel === 'admin')
+    const emailVerificado = (
+      await this.banco.cliente<{ email_verified: boolean }[]>`
+        SELECT email_verified FROM auth."user" WHERE id = ${sessao.usuarioId}`
+    )[0]?.email_verified
+    return {
+      usuario: {
+        id: sessao.usuarioId,
+        nome: sessao.nome,
+        email: sessao.email,
+        emailVerificado: emailVerificado === true,
+        twoFactorEnabled: sessao.twoFactorEnabled,
+      },
+      empresas: await this.empresasDe(vinculos, sessao.empresaAtivaId),
+      empresaAtivaId: sessao.empresaAtivaId,
+      administradorDeConta,
+      doisFatoresPendente: administrador && !sessao.twoFactorEnabled,
+    }
+  }
+
+  /**
+   * Troca a empresa ativa DESTA sessão (as outras sessões do usuário não mudam). Só empresas em que
+   * ele é membro ativo e que estão em teste ou ativas. O id de uma empresa de que ele não é membro
+   * e o de uma que não existe dão a mesma resposta (não revela cadastro).
+   */
+  async trocarEmpresaAtiva(
+    acesso: DadosDeAcesso,
+    empresaId: string,
+  ): Promise<EmpresaAtivaResposta> {
+    const { sessao, vinculos } = acesso
+    const vinculo = vinculos.find((v) => v.tenantId === empresaId)
+    if (!vinculo) {
+      throw new ErroApi('empresa_nao_permitida', 'Você não é membro desta empresa.', 403)
+    }
+    const [empresa] = await this.empresasDe([vinculo], null)
+    if (!empresa)
+      throw new ErroApi('empresa_nao_permitida', 'Você não é membro desta empresa.', 403)
+    if (empresa.situacao !== 'teste' && empresa.situacao !== 'ativo') {
+      throw new ErroApi('empresa_indisponivel', 'Esta empresa está suspensa ou cancelada.', 403)
+    }
+    // Sessões ficam só no Postgres (sem cache): gravar na linha é suficiente e vale na próxima requisição
+    const atualizadas = await this.banco.cliente`
+      UPDATE auth.session SET empresa_ativa_id = ${empresaId}, updated_at = now()
+      WHERE id = ${sessao.sessaoId} AND user_id = ${sessao.usuarioId}
+      RETURNING id`
+    if (atualizadas.length === 0) throw new ErroApi('nao_autenticado', 'Entre para continuar.', 401)
+    return { empresaAtivaId: empresaId, empresa: { ...empresa, ativa: true } }
+  }
+}

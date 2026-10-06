@@ -7,6 +7,7 @@ import { AcessoGuard } from './acesso/acesso.guard.js'
 import { AcessoModule } from './acesso/acesso.module.js'
 import { TenantInterceptor } from './acesso/tenant.interceptor.js'
 import { AuthModule } from './auth/auth.module.js'
+import { MeModule } from './me/me.module.js'
 import { PrimeiroAcessoModule } from './primeiro-acesso/primeiro-acesso.module.js'
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
 import { EmailModule } from './email/email.module.js'
@@ -40,6 +41,7 @@ export class AppModule {
         EmailModule,
         AuthModule,
         AcessoModule,
+        MeModule,
         PrimeiroAcessoModule,
         HealthModule,
       ],
