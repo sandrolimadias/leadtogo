@@ -268,7 +268,7 @@ Checklist:
 - [ ] Login, logout, 2FA, recuperação de senha (e-mail via SMTP de desenvolvimento, ex.: Mailpit no compose).
 - [ ] Criar conta/empresa, convidar membro, trocar empresa ativa.
 - [ ] Usuário da empresa A recebe 403/404 ao tentar acessar dados da B.
-- [ ] **FK de `membros.usuario_id` e `conta_administradores.usuario_id` para `auth.user`**: adicionada na migração que cria o schema `auth` (ficou fora do E7 porque a tabela ainda não existe).
+- [x] **FK de `membros.usuario_id` e `conta_administradores.usuario_id` para `auth.user`**: adicionada na migração que cria o schema `auth` (ficou fora do E7 porque a tabela ainda não existe).
 - [ ] **Vínculos do usuário (direção definida no E7, implementar aqui):** antes de haver tenant ativo, o app precisa saber em quais empresas o usuário é membro. Sem papel com `BYPASSRLS` e sem afrouxar o RLS: uma função `SECURITY DEFINER` mínima, `app_vinculos_do_usuario(usuario_id)`, devolve **só o `tenant_id` e o papel**; pertence ao `leadtogo_owner`, tem `search_path` fixo, `EXECUTE` revogado de `PUBLIC` e concedido apenas ao `leadtogo_app`. O guard de tenant usa essa função e só então abre a transação com `SET LOCAL app.tenant_id`.
 
 **Decisões do E8 (aprovadas em 06/10/2026):**

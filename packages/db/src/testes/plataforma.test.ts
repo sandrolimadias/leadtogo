@@ -12,6 +12,13 @@ afterAll(async () => {
   await owner.end()
 })
 
+/** Usuário de verdade (auth.user): usuario_id agora é FK. */
+async function novoUsuario(): Promise<string> {
+  const id = novoId()
+  await app`INSERT INTO auth."user" (id, name, email) VALUES (${id}, 'Usuário', ${`u-${id}@exemplo.com`})`
+  return id
+}
+
 async function novosTenants(n = 2): Promise<string[]> {
   const ids = Array.from({ length: n }, () => novoId())
   await prepararTenants(owner, ids)
@@ -152,7 +159,7 @@ describe('membros', () => {
 
   it('o mesmo usuário é membro de várias empresas, com papel próprio em cada uma, mas só uma vez por empresa', async () => {
     const [a, b] = await novosTenants(2)
-    const usuario = novoId()
+    const usuario = await novoUsuario()
     await inserir(a!, { usuario, papel: 'admin' })
     await inserir(b!, { usuario, papel: 'vendedor' })
     await expect(inserir(a!, { usuario, papel: 'gestor' })).rejects.toThrow(/duplicate key/)
@@ -203,10 +210,10 @@ describe('contas e conta_administradores (sem RLS por tenant)', () => {
   it('o app lê e grava; o papel do administrador é restrito', async () => {
     const conta = novoId()
     await app`INSERT INTO contas (id, nome) VALUES (${conta}, 'Grupo')`
-    const usuario = novoId()
+    const usuario = await novoUsuario()
     await app`INSERT INTO conta_administradores (conta_id, usuario_id, papel) VALUES (${conta}, ${usuario}, 'dono')`
     await expect(
-      app`INSERT INTO conta_administradores (conta_id, usuario_id, papel) VALUES (${conta}, ${novoId()}, 'chefe')`,
+      app`INSERT INTO conta_administradores (conta_id, usuario_id, papel) VALUES (${conta}, ${await novoUsuario()}, 'chefe')`,
     ).rejects.toThrow(/invalid input value for enum/)
     await expect(
       app`INSERT INTO conta_administradores (conta_id, usuario_id, papel) VALUES (${conta}, ${usuario}, 'financeiro')`,

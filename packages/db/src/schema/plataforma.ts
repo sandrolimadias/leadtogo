@@ -18,12 +18,12 @@ import {
 } from 'drizzle-orm/pg-core'
 
 import { municipios } from './referencias.js'
+import { user } from './auth.js'
 import { arquivos } from './sistema.js'
 import { carimbos, chaveUuid, citext } from './tipos.js'
 
 // Plataforma e tenant (docs/modelagem_banco.md, seção 3).
 // Políticas de RLS, FORCE e GRANTs ficam na migração (aplicar_rls_tenant).
-// Pendência de FK: usuario_id → auth.user (E8, quando o Better Auth criar o schema auth).
 
 export const situacaoConta = pgEnum('situacao_conta', ['teste', 'ativa', 'suspensa', 'cancelada'])
 export const papelConta = pgEnum('papel_conta', ['dono', 'administrador', 'financeiro'])
@@ -52,8 +52,10 @@ export const contaAdministradores = pgTable(
     contaId: uuid()
       .notNull()
       .references(() => contas.id),
-    /** → auth.user (FK entra no E8) */
-    usuarioId: uuid().notNull(),
+    /** Quem administra a conta; não se apaga um usuário que ainda administra uma conta */
+    usuarioId: uuid()
+      .notNull()
+      .references((): AnyPgColumn => user.id, { onDelete: 'restrict' }),
     papel: papelConta().notNull(),
     criadoEm: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
@@ -117,8 +119,8 @@ export const membros = pgTable(
     tenantId: uuid()
       .notNull()
       .references(() => tenants.id),
-    /** → auth.user (FK entra no E8); null = vendedor sem acesso ao sistema */
-    usuarioId: uuid(),
+    /** Login do membro (auth.user); null = vendedor sem acesso ao sistema */
+    usuarioId: uuid().references((): AnyPgColumn => user.id, { onDelete: 'set null' }),
     nome: text().notNull(),
     cargo: text(),
     telefone: varchar({ length: 20 }),

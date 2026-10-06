@@ -3,3 +3,4 @@
 export * from './referencias.js'
 export * from './plataforma.js'
 export * from './sistema.js'
+export * from './auth.js'

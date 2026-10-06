@@ -26,13 +26,13 @@ describe('extensões e schema', () => {
       expect(nomes).toContain(e)
   })
 
-  it('reserva o schema auth sem dar acesso ao app', async () => {
-    const [s] = await owner<
-      { ok: boolean }[]
-    >`SELECT has_schema_privilege('leadtogo_app', 'auth', 'USAGE') AS ok`
-    expect(s?.ok).toBe(false)
+  it('reserva o schema auth para a identidade: o app opera, mas não cria objetos', async () => {
     const existe = await owner`SELECT 1 FROM pg_namespace WHERE nspname = 'auth'`
     expect(existe).toHaveLength(1)
+    const [uso] = await owner<{ usa: boolean; cria: boolean }[]>`
+      SELECT has_schema_privilege('leadtogo_app', 'auth', 'USAGE') AS usa,
+             has_schema_privilege('leadtogo_app', 'auth', 'CREATE') AS cria`
+    expect(uso).toEqual({ usa: true, cria: false })
   })
 })
 

@@ -171,7 +171,8 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 ### 3.3 Autenticação (Better Auth)
 O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verification` e `two_factor`, num **schema separado `auth`**. O **plugin de organizações não é usado** (empresas, membros e convites são nossos, sob RLS). Ligações:
 - `user.id` ↔ `membros.usuario_id` e `conta_administradores.usuario_id` (FK)
-- `session.empresa_ativa_id` → `tenants.id`: a empresa ativa da sessão (campo nosso, adicionado à tabela do Better Auth)
+- `session.empresa_ativa_id` → `tenants.id` (`ON DELETE SET NULL`): a empresa ativa da sessão (campo nosso, adicionado à tabela do Better Auth)
+- Tabelas em `auth`: `user` (e-mail em `citext`, único), `session`, `account` (senha em hash scrypt), `verification` e `two_factor`, todas com id `uuid` v7. Sem RLS (nada é por tenant); o `leadtogo_app` tem DML, sem DDL.
 
 ### 3.5 `convites` 🏢 — Convite de membro
 | Coluna | Tipo | Observação |
@@ -210,7 +211,7 @@ O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verifi
 O **mesmo usuário** (`usuario_id`) pode ter um registro em `membros` em **cada empresa**, com papel, cargo e gestor próprios naquela empresa (ex.: admin na A, vendedor na B).
 
 > **Implementação (E7):**
-> - `usuario_id` (em `membros` e `conta_administradores`) ainda **não tem FK** para `auth.user`: ela entra no E8, quando o Better Auth criar o schema `auth`. As FKs de `tenants.logo_arquivo_id` e `membros.foto_arquivo_id` para `arquivos` entraram com as tabelas de sistema.
+> - `membros.usuario_id` e `conta_administradores.usuario_id` são FK para `auth.user` (migração 0005). Apagar um usuário deixa o membro sem login (`ON DELETE SET NULL`), mas é **recusado** se ele ainda administra uma conta (`RESTRICT`). As FKs de `tenants.logo_arquivo_id` e `membros.foto_arquivo_id` para `arquivos` entraram com as tabelas de sistema.
 > - `membros` leva também `criado_por` e `atualizado_por` (→ `membros`), pela convenção da seção 1. O único `(tenant_id, usuario_id)` é parcial (`excluido_em IS NULL`), como o de e-mail.
 > - `tenants` isola o RLS pela coluna `id` (`aplicar_rls_tenant('tenants', 'id')`). `contas` e `conta_administradores` não têm RLS (acesso controlado pela API); o app tem DML nelas.
 > - `tenants.pais_codigo` é `smallint` com padrão `105` (Brasil, código da Receita) e não tem FK para `paises`. `tenant_configuracoes.whatsapp_modo_importacao` é um enum com padrão `desligado`.
