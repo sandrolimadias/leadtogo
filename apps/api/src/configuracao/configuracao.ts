@@ -3,6 +3,10 @@ import { z } from 'zod'
 /** Texto "true"/"false" (e 1/0) vindo de variável de ambiente. */
 const booleano = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1')
 
+/** Variável opcional: vazia (`CHAVE=`) vale como não definida, como no .env.example. */
+const opcional = <T extends z.ZodType>(esquema: T) =>
+  z.preprocess((v) => (v === '' ? undefined : v), esquema.optional())
+
 const url = (protocolos: string[]) =>
   z.string().refine(
     (v) => {
@@ -28,7 +32,7 @@ const esquema = z
 
     // Banco: o usuário da aplicação (sem BYPASSRLS). O de migração só é exigido por quem migra.
     DATABASE_URL: url(['postgres:', 'postgresql:']),
-    DATABASE_MIGRATION_URL: url(['postgres:', 'postgresql:']).optional(),
+    DATABASE_MIGRATION_URL: opcional(url(['postgres:', 'postgresql:'])),
 
     // Cache, filas e rate limit
     REDIS_URL: url(['redis:', 'rediss:']),
@@ -39,7 +43,7 @@ const esquema = z
      * Quantos proxies (Traefik do Coolify) ficam na frente da API, para ler o IP real em
      * X-Forwarded-For. Padrão: 1 em produção, 0 fora dela (0 = nunca confiar no cabeçalho).
      */
-    TRUST_PROXY: z.coerce.number().int().min(0).max(5).optional(),
+    TRUST_PROXY: opcional(z.coerce.number().int().min(0).max(5)),
 
     // Autenticação (Better Auth). O segredo assina cookies e cifra o segredo do 2FA: troque-o e todas
     // as sessões e os 2FA cadastrados deixam de valer.
@@ -48,7 +52,16 @@ const esquema = z
      * Exige e-mail verificado para entrar. Padrão: sim em produção, não fora dela (desenvolvimento
      * e testes usam o Mailpit). Em produção só funciona com SMTP configurado (E13).
      */
-    VERIFICACAO_EMAIL: booleano.optional(),
+    VERIFICACAO_EMAIL: opcional(booleano),
+
+    // E-mail (SMTP): recuperação de senha, verificação de e-mail e convites. Sem SMTP_HOST nenhum e-mail
+    // sai (a API avisa no log). Obrigatório se a verificação de e-mail estiver ligada.
+    SMTP_HOST: opcional(z.string().min(1)),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+    SMTP_SECURE: booleano.default(false),
+    SMTP_USER: opcional(z.string().min(1)),
+    SMTP_PASSWORD: opcional(z.string().min(1)),
+    SMTP_FROM: z.string().min(3).default('Leadtogo <nao-responder@leadtogo.local>'),
 
     // Arquivos (Garage / S3)
     S3_ENDPOINT: url(['http:', 'https:']),
@@ -59,6 +72,22 @@ const esquema = z
     S3_SECRET_KEY: z.string().min(1),
   })
   .superRefine((env, ctx) => {
+    const verificacao = env.VERIFICACAO_EMAIL ?? env.NODE_ENV === 'production'
+    if (verificacao && !env.SMTP_HOST) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMTP_HOST'],
+        message:
+          'obrigatória com a verificação de e-mail ligada (em produção é o padrão): configure o SMTP ou defina VERIFICACAO_EMAIL=false',
+      })
+    }
+    if (Boolean(env.SMTP_USER) !== Boolean(env.SMTP_PASSWORD)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMTP_PASSWORD'],
+        message: 'SMTP_USER e SMTP_PASSWORD vão juntos',
+      })
+    }
     if (env.NODE_ENV !== 'production') return
     // Em produção o front e a API são servidos por HTTPS (cookie Secure, CORS só para o front)
     for (const chave of ['APP_URL', 'API_URL'] as const) {

@@ -51,6 +51,57 @@ describe('configuração validada por Zod', () => {
     ).toEqual(['RATE_LIMIT_MAX', 'TRUST_PROXY'])
   })
 
+  it('variável opcional vazia vale como não definida (como no .env.example)', () => {
+    const c = carregarConfiguracao({
+      ...valida,
+      SMTP_HOST: 'localhost',
+      SMTP_USER: '',
+      SMTP_PASSWORD: '',
+      DATABASE_MIGRATION_URL: '',
+      VERIFICACAO_EMAIL: '',
+      TRUST_PROXY: '',
+    })
+    expect(c.SMTP_USER).toBeUndefined()
+    expect(c.SMTP_PASSWORD).toBeUndefined()
+    expect(c.DATABASE_MIGRATION_URL).toBeUndefined()
+    expect(c.VERIFICACAO_EMAIL).toBeUndefined()
+    expect(c.TRUST_PROXY).toBeUndefined()
+  })
+
+  it('SMTP: verificação de e-mail exige o servidor; usuário e senha vão juntos', () => {
+    expect(
+      falha({ ...valida, VERIFICACAO_EMAIL: 'true' }).problemas.map((p) => p.variavel),
+    ).toEqual(['SMTP_HOST'])
+    expect(carregarConfiguracao({ ...valida, VERIFICACAO_EMAIL: 'false' }).VERIFICACAO_EMAIL).toBe(
+      false,
+    )
+    expect(
+      falha({ ...valida, SMTP_HOST: 'smtp.exemplo.com', SMTP_USER: 'u' }).problemas.map(
+        (p) => p.variavel,
+      ),
+    ).toEqual(['SMTP_PASSWORD'])
+    const ok = carregarConfiguracao({
+      ...valida,
+      SMTP_HOST: 'smtp.exemplo.com',
+      SMTP_USER: 'u',
+      SMTP_PASSWORD: 'p',
+    })
+    expect(ok).toMatchObject({ SMTP_PORT: 587, SMTP_SECURE: false })
+  })
+
+  it('em produção, sem SMTP e sem a flag, a API não sobe (decisão explícita antes do 1º deploy)', () => {
+    const producao = {
+      ...valida,
+      NODE_ENV: 'production',
+      APP_URL: 'https://crm.aledias.com.br',
+      API_URL: 'https://api.crm.aledias.com.br',
+    }
+    expect(falha(producao).problemas.map((p) => p.variavel)).toEqual(['SMTP_HOST'])
+    expect(carregarConfiguracao({ ...producao, VERIFICACAO_EMAIL: 'false' }).NODE_ENV).toBe(
+      'production',
+    )
+  })
+
   it('converte número e booleano de texto', () => {
     const c = carregarConfiguracao({ ...valida, PORT: '8080', S3_FORCE_PATH_STYLE: 'false' })
     expect(c.PORT).toBe(8080)
@@ -87,12 +138,13 @@ describe('configuração validada por Zod', () => {
   })
 
   it('em produção exige https no front e na API', () => {
-    const erro = falha({ ...valida, NODE_ENV: 'production' })
+    const erro = falha({ ...valida, NODE_ENV: 'production', VERIFICACAO_EMAIL: 'false' })
     expect(erro.problemas.map((p) => p.variavel).sort()).toEqual(['API_URL', 'APP_URL'])
     expect(
       carregarConfiguracao({
         ...valida,
         NODE_ENV: 'production',
+        VERIFICACAO_EMAIL: 'false',
         APP_URL: 'https://crm.aledias.com.br',
         API_URL: 'https://api.crm.aledias.com.br',
       }).NODE_ENV,
