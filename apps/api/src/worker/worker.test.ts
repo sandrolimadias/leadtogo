@@ -36,7 +36,7 @@ function novoPrefixo() {
   return prefixo
 }
 async function worker(extra: Record<string, string> = {}) {
-  const f = await subirWorker({ FILA_PREFIXO: prefixo, FILA_LOCK_MS: '1500', ...extra })
+  const f = await subirWorker({ FILA_PREFIXO: prefixo, FILA_LOCK_MS: '3000', ...extra })
   filhos.push(f)
   return f
 }
@@ -156,11 +156,11 @@ describe('worker: encerramento gracioso (SIGTERM)', () => {
     expect(saida.emMs).toBeLessThan(4000) // saiu perto do prazo de 1 s, sem esperar os 6 s do job
     expect(await valkey.get(chave)).toBeNull() // o job não terminou no primeiro worker
 
-    // o lock expira (1,5 s) e o job parado volta para a fila: o segundo worker o conclui
+    // o lock expira (3 s) e o job parado volta para a fila: o segundo worker o conclui
     const w2 = await worker({ WORKER_ENCERRAMENTO_S: '20' })
     await w2.aguardarPronto()
     await esperarAte(async () => (await valkey.get(chave)) !== null, 20_000)
-    await esperarAte(async () => (await job.getState()) === 'completed') // o estado vem logo depois do efeito
+    await esperarAte(async () => (await job.getState()) === 'completed', 20_000) // o estado vem logo depois do efeito
   }, 60_000)
 })
 

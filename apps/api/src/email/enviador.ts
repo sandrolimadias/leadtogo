@@ -24,8 +24,9 @@ export class EnviadorSmtp {
             config.SMTP_USER && config.SMTP_PASSWORD
               ? { user: config.SMTP_USER, pass: config.SMTP_PASSWORD }
               : undefined,
-          connectionTimeout: 5000,
-          socketTimeout: 10_000,
+          connectionTimeout: config.SMTP_TIMEOUT_MS,
+          greetingTimeout: config.SMTP_TIMEOUT_MS,
+          socketTimeout: config.SMTP_TIMEOUT_MS,
         })
       : null
   }
@@ -40,13 +41,27 @@ export class EnviadorSmtp {
       this.log.warn({ assunto: modelo.assunto }, 'SMTP não configurado: e-mail não enviado')
       return
     }
-    await this.transporte.sendMail({
-      from: this.config.SMTP_FROM,
-      to: para,
-      subject: modelo.assunto,
-      text: modelo.texto,
-      html: modelo.html,
+    // Prazo total (conexão + envio): o convite é enviado DENTRO de uma transação, e um SMTP que não
+    // responde não pode segurar a conexão do banco além disso.
+    const prazo = this.config.SMTP_TIMEOUT_MS
+    let timer: NodeJS.Timeout | undefined
+    const estourou = new Promise<never>((_, rejeitar) => {
+      timer = setTimeout(() => rejeitar(new Error(`SMTP não respondeu em ${prazo} ms`)), prazo)
     })
+    try {
+      await Promise.race([
+        this.transporte.sendMail({
+          from: this.config.SMTP_FROM,
+          to: para,
+          subject: modelo.assunto,
+          text: modelo.texto,
+          html: modelo.html,
+        }),
+        estourou,
+      ])
+    } finally {
+      clearTimeout(timer)
+    }
     this.log.info({ assunto: modelo.assunto }, 'e-mail enviado')
   }
 }

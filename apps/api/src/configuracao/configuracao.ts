@@ -94,6 +94,8 @@ const esquema = z
     // E-mail (SMTP): recuperação de senha, verificação de e-mail e convites. Sem SMTP_HOST nenhum e-mail
     // sai (a API avisa no log). Obrigatório se a verificação de e-mail estiver ligada.
     SMTP_HOST: opcional(z.string().min(1)),
+    /** Limite de conexão e de envio por e-mail: o convite é enviado dentro de uma transação do banco */
+    SMTP_TIMEOUT_MS: z.coerce.number().int().min(100).default(10_000),
     SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
     SMTP_SECURE: booleano.default(false),
     SMTP_USER: opcional(z.string().min(1)),
