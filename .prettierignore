@@ -10,5 +10,6 @@ docs/
 # gerados
 packages/api-client/src/gerado/
 packages/db/migrations/
+# dados locais do compose (dono: usuário do container); os scripts format também passam '!docker/.data'
 docker/.data/
 packages/db/seeds/dados/
