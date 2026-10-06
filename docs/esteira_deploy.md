@@ -78,7 +78,7 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 ### 3.2 Configuração no GitHub
 - Repositório **privado**.
 - **Secret scanning** e **push protection** ligados, para bloquear o push de senhas e tokens por engano.
-- **Dependabot** para npm, GitHub Actions e Docker (semanal, agrupado).
+- **Dependabot** para npm, GitHub Actions, Docker e Docker Compose (semanal, agrupado; sem major de PostGIS e Garage).
 - Proteção da `main`: **não usar** "exigir PR" (por causa do push direto); bloquear apenas *force push* e exclusão da branch.
 
 ---

@@ -1,5 +1,7 @@
 # Atualização semanal de dependências (ver docs/esteira_deploy.md, seção 3.2).
 # Um PR agrupado por ecossistema, para não gerar dezenas de PRs avulsos.
+# Os Dockerfiles (docker/) chegam na E11; até lá o ecossistema docker não encontra nada.
+# Major de PostGIS e Garage fica fora: exige migração de dados, feita à mão.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -34,3 +36,24 @@ updates:
     groups:
       docker:
         patterns: ['*']
+    ignore:
+      - dependency-name: imresamu/postgis
+        update-types: ['version-update:semver-major']
+      - dependency-name: dxflrs/garage
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: docker-compose
+    directory: /docker
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      docker-compose:
+        patterns: ['*']
+    ignore:
+      - dependency-name: imresamu/postgis
+        update-types: ['version-update:semver-major']
+      - dependency-name: dxflrs/garage
+        update-types: ['version-update:semver-major']
