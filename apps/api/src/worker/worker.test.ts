@@ -160,7 +160,7 @@ describe('worker: encerramento gracioso (SIGTERM)', () => {
     const w2 = await worker({ WORKER_ENCERRAMENTO_S: '20' })
     await w2.aguardarPronto()
     await esperarAte(async () => (await valkey.get(chave)) !== null, 20_000)
-    expect(await job.getState()).toBe('completed')
+    await esperarAte(async () => (await job.getState()) === 'completed') // o estado vem logo depois do efeito
   }, 60_000)
 })
 

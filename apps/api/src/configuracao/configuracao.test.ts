@@ -93,6 +93,7 @@ describe('configuração validada por Zod', () => {
     const producao = {
       ...valida,
       NODE_ENV: 'production',
+      TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
       APP_URL: 'https://crm.aledias.com.br',
       API_URL: 'https://api.crm.aledias.com.br',
     }
@@ -138,12 +139,18 @@ describe('configuração validada por Zod', () => {
   })
 
   it('em produção exige https no front e na API', () => {
-    const erro = falha({ ...valida, NODE_ENV: 'production', VERIFICACAO_EMAIL: 'false' })
+    const erro = falha({
+      ...valida,
+      NODE_ENV: 'production',
+      TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
+      VERIFICACAO_EMAIL: 'false',
+    })
     expect(erro.problemas.map((p) => p.variavel).sort()).toEqual(['API_URL', 'APP_URL'])
     expect(
       carregarConfiguracao({
         ...valida,
         NODE_ENV: 'production',
+        TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
         VERIFICACAO_EMAIL: 'false',
         APP_URL: 'https://crm.aledias.com.br',
         API_URL: 'https://api.crm.aledias.com.br',
