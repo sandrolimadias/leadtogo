@@ -594,13 +594,18 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 
 > **Implementação (E7) — `auditoria`:**
 > - O `leadtogo_app` só tem **INSERT e SELECT** (log só de acréscimo); `UPDATE` e `DELETE` são negados por privilégio. A manutenção das partições é do `leadtogo_owner`.
-> - Particionada por mês (`RANGE (em)`, UTC), PK `(id, em)`, `id` gerado pelo banco. Existem partições do mês anterior até 12 meses à frente e uma partição `auditoria_default` como rede de segurança. `criar_particao_auditoria(mes date)` (só o owner executa, idempotente) cria a do mês pedido; **um job do worker deve chamá-la todo mês com o owner** (pendência do E10).
+> - Particionada por mês (`RANGE (em)`, UTC), PK `(id, em)`, `id` gerado pelo banco. Existem partições do mês anterior até 12 meses à frente e uma partição `auditoria_default` como rede de segurança. `criar_particao_auditoria(mes date)` (só o owner executa, idempotente) cria a do mês pedido; o worker não usa o owner: o job mensal chama `app_manter_particoes_auditoria(meses)` (E10, ver abaixo).
 > - As políticas de RLS ficam na tabela-mãe. As partições têm RLS forçado **sem políticas** e o app não tem privilégio nelas: acesso direto a uma partição não lê nada.
 > - `eventos_outbox` e `notificacoes` têm RLS e DML normais; `arquivos.chave_arquivo` é única.
 
 > **Implementação (E10) — `eventos_outbox` e o relay do worker:**
 > - O evento é gravado **na mesma transação** do dado de negócio (desfeita a transação, não há evento). `processado_em` significa "entregue à fila do worker"; nesse momento o `payload` é apagado (o job do BullMQ o carrega). `falhou_em` marca o evento que **esgotou as tentativas** (nunca mais é reservado; o alerta da E14 olha esta coluna). Colunas de controle (migração 0008): `tentativas`, `proxima_tentativa_em` (espera progressiva), `reservado_ate` e `ultimo_erro`.
 > - **Sem `BYPASSRLS`:** o worker conecta como `leadtogo_app` e não vê eventos de tenant nenhum sem tenant ativo. `app_reservar_eventos(limite, reserva_s)` (`SECURITY DEFINER` do `leadtogo_owner`, `search_path` fixo, `EXECUTE` só para o `leadtogo_app`, mesmo padrão de 3.0 e 3.5) reserva um lote de eventos pendentes e vencidos com `FOR UPDATE SKIP LOCKED` (dois relays nunca pegam o mesmo), soma 1 à tentativa e devolve **só `(id, tenant_id)`**; lote de 1 a 200 e reserva de 5 a 600 s. Duas políticas `TO leadtogo_owner` (SELECT e UPDATE), travadas na variável `app.outbox_reserva`, que só a função define e limpa. Tipo e payload o worker lê depois, com o tenant ativo, sob RLS.
+
+> **Implementação (E10) — manutenção agendada (migração 0009), sem `BYPASSRLS`:** três funções `SECURITY DEFINER` do `leadtogo_owner` (`search_path` fixo, `EXECUTE` só para o `leadtogo_app`), com prazos fixos no corpo e lotes limitados (1 a 5000, padrão 500). Cada uma liga uma variável de transação que só ela define e limpa, e as políticas `TO leadtogo_owner` (SELECT/DELETE) dependem dela: o app, mesmo ligando a variável por conta própria, não lê nem apaga nada fora do tenant.
+> - `app_manter_particoes_auditoria(meses)`: garante a partição do mês corrente e as dos próximos `meses` (0 a 12) usando `criar_particao_auditoria`; devolve quantas criou; lock consultivo evita corrida.
+> - `app_limpar_convites(lote)`: apaga convites **cancelados ou vencidos há mais de 30 dias** (os aceitos ficam, como histórico).
+> - `app_limpar_outbox(lote)`: apaga eventos **entregues há mais de 14 dias**. Eventos com `falhou_em` nunca são apagados (o alerta da E14 depende deles).
 
 ### 11.1 Integrações 🔮 (estrutura prevista, criada nas fases 4–7)
 | Tabela | Uso |

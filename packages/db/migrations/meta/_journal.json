@@ -64,6 +64,13 @@
       "when": 1791307781251,
       "tag": "0008_outbox_worker",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791314553232,
+      "tag": "0009_manutencao_worker",
+      "breakpoints": true
     }
   ]
 }
