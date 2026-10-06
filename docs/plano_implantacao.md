@@ -84,7 +84,7 @@ Seguir `esteira_deploy.md`, seção 9.2. Resumo:
 ## E2. Repositório no GitHub — Ale + Claude Code
 
 1. [x] Criar o repositório **privado** `leadtogo` no GitHub.
-2. [x] Settings → Advanced Security: ligar **Dependency graph**, **Dependabot alerts** e **Dependabot security updates**. *Secret scanning e Push protection não estão disponíveis para repositório privado no plano gratuito; a proteção contra segredos é feita pelo gitleaks no hook local e no CI (E5/E12).*
+2. [x] Settings → Advanced Security: ligar **Dependency graph**, **Dependabot alerts** e **Dependabot security updates**. *Secret scanning e Push protection não estão disponíveis para repositório privado no plano gratuito; a proteção contra segredos é feita pelo secretlint no hook local (E5) e pelo gitleaks no CI (E12).*
 3. [x] Primeiro push **a partir de `C:\CRM ALESSANDRO`** (pode ser no PowerShell ou no Ubuntu via `/mnt/c`, só desta vez):
    ```bash
    cd "/mnt/c/CRM ALESSANDRO"
@@ -178,12 +178,13 @@ Passos no painel de DNS de `aledias.com.br` (Registro.br, Cloudflare ou onde est
 > Leia o `CLAUDE.md`, `docs/configuracao_tecnologia.md` (seções 2, 3 e 4) e `docs/esteira_deploy.md` (seções 3, 9, 10 e 11). Crie o esqueleto do monorepo pnpm + Turborepo com `apps/api` (NestJS), `apps/web` (React + Vite), `apps/api` também com o entrypoint do worker, `packages/shared`, `packages/db` e `packages/api-client`. Configure TypeScript estrito (tsconfig base compartilhado), ESLint (flat config), Prettier, Vitest, lefthook (pre-commit, commit-msg com Conventional Commits, pre-push) e os scripts raiz `dev`, `build`, `lint`, `format`, `format:check`, `typecheck`, `test`, `db:generate`, `db:migrate`, `db:seed`, `db:studio`. Não crie funcionalidades ainda. Mantenha os READMEs das pastas atualizados.
 
 Checklist:
-- [ ] `package.json` raiz, `pnpm-workspace.yaml`, `turbo.json`, `.nvmrc` (24).
-- [ ] `tsconfig.base.json` com `strict`, `noUncheckedIndexedAccess`, paths dos pacotes.
-- [ ] ESLint + Prettier + `lefthook.yml` + commitlint.
-- [ ] Vitest configurado em cada pacote.
-- [ ] Renovate ou `.github/dependabot.yml` (npm, actions, docker; semanal, agrupado).
+- [x] `package.json` raiz, `pnpm-workspace.yaml`, `turbo.json`, `.nvmrc` (24).
+- [x] `tsconfig.base.json` com `strict`, `noUncheckedIndexedAccess`; os pacotes internos são resolvidos pela condição `@leadtogo/source` (no lugar de `paths`).
+- [x] ESLint (flat, com checagem de tipos) + Prettier + `lefthook.yml` (secretlint, Prettier, ESLint · commitlint · lint/typecheck/test no pre-push) + commitlint.
+- [x] Vitest configurado em cada pacote (teste de exemplo em `GET /health` e no `App`).
+- [ ] Renovate ou `.github/dependabot.yml` (npm, actions, docker; semanal, agrupado). **Ficou de fora do commit do E5: feito junto com o E6.**
 
+✅ **Concluído em 06/10/2026** (commit `506674c`; Dependabot pendente). NestJS 12 em ESM, com a API (`dist/main.js`) e o worker (`dist/worker.js`) no mesmo app; `GET /health` fora do prefixo `/v1`, devolvendo `version`; Swagger em `/docs` só fora de produção; cliente da API com `openapi-typescript` + `openapi-fetch`. **Atenção na E11:** o `db:migrate` usa o `drizzle-kit` (dependência de desenvolvimento); a imagem que roda as migrações no pre-deploy precisa incluí-lo, ou usar o migrador do `drizzle-orm`.
 **Pronto quando:** `pnpm install && pnpm lint && pnpm typecheck && pnpm test` passam no WSL (com testes de exemplo).
 
 ---
@@ -191,10 +192,11 @@ Checklist:
 ## E6. Ambiente de desenvolvimento local — Claude Code
 
 **Pedido:**
-> Crie `docker/compose.dev.yml` com Postgres `imresamu/postgis:17-3.5`, Valkey 8 e **Garage** (S3) com script de init que cria o bucket e a chave, volumes em `docker/.data/`, healthchecks e um script de init que cria os papéis `leadtogo_owner` e `leadtogo_app` e o bucket `leadtogo-arquivos`. Atualize o `.env.example` e documente em `docs/esteira_deploy.md` (seção 9.4).
+> Crie `docker/compose.dev.yml` com Postgres `imresamu/postgis:17-3.5`, Valkey 8 e **Garage** (S3) com script de init que cria o bucket e a chave, volumes em `docker/.data/`, healthchecks e um script de init que cria os papéis `leadtogo_owner` e `leadtogo_app` e o bucket `leadtogo-arquivos`. Atualize o `.env.example` e documente em `docs/esteira_deploy.md` (seção 9.4). Em commit separado, crie o `.github/dependabot.yml` que ficou pendente do E5 (npm, github-actions e docker; semanal; atualizações agrupadas).
 
 - [ ] `docker compose -f docker/compose.dev.yml up -d` sobe os 3 serviços saudáveis.
 - [ ] `.env` local criado a partir do `.env.example`.
+- [ ] `.github/dependabot.yml` criado (pendência do E5).
 
 **Pronto quando:** `psql` conecta como `leadtogo_app`, `redis-cli ping` responde e o Garage responde em `localhost:3900` (bucket `leadtogo-arquivos` criado pelo script de init).
 
