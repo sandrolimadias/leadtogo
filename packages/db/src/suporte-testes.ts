@@ -30,16 +30,25 @@ BEGIN
 END $$;
 `
 
-/** Zera o banco de teste (só aceita bancos terminados em `_test`) e migra do zero. */
-export async function zerarEMigrar(urlOwner: string): Promise<void> {
+function exigirBancoDeTeste(urlOwner: string): void {
   if (!new URL(urlOwner).pathname.endsWith('_test')) {
-    throw new Error('zerarEMigrar só roda em banco *_test (os testes apagam o schema)')
+    throw new Error('Só roda em banco *_test (os testes apagam o schema)')
   }
+}
+
+/** Apaga tudo o que o owner criou no banco de teste (só aceita bancos terminados em `_test`). */
+export async function zerarSchema(urlOwner: string): Promise<void> {
+  exigirBancoDeTeste(urlOwner)
   const owner = postgres(urlOwner, { max: 1, onnotice: () => {} })
   try {
     await owner.unsafe(LIMPAR)
   } finally {
     await owner.end()
   }
+}
+
+/** Zera o banco de teste e migra do zero. */
+export async function zerarEMigrar(urlOwner: string): Promise<void> {
+  await zerarSchema(urlOwner)
   await aplicarMigracoes(urlOwner)
 }

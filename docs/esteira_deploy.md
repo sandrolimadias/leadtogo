@@ -259,6 +259,7 @@ jobs:
 
 ### 7.2 Migrações do banco
 - Rodam no **comando de pré-deploy** do recurso `leadtogo-api` (`node dist/migrate.js`), **antes** de a nova versão receber tráfego. Se a migração falhar, o deploy para e a versão antiga continua no ar.
+- `dist/migrate.js` usa o **migrador do `drizzle-orm`** (`aplicarMigracoes()` do `@leadtogo/db`) com `DATABASE_MIGRATION_URL` (usuário `leadtogo_owner`); o **`drizzle-kit` não vai para a imagem**. O build copia as migrações SQL para `packages/db/dist/migrations`, e a imagem precisa levar essa pasta junto com o `dist` (E11). Exige só `DATABASE_MIGRATION_URL`. Código de saída 1 (com mensagem curta, sem a URL) interrompe o deploy. Uma trava consultiva do Postgres faz dois deploys simultâneos esperarem um ao outro, e repetir é seguro.
 - O worker **não** roda migrações (evita duas execuções ao mesmo tempo).
 - **Regra "expandir e depois contrair"** (obrigatória, já que o push vai direto para produção):
   1. Primeiro deploy: **adiciona** (coluna nova opcional, tabela nova). O código antigo continua funcionando.
