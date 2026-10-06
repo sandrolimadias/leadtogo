@@ -4,6 +4,7 @@ import type { DestinationStream } from 'pino'
 import type { Configuracao } from './configuracao/configuracao.js'
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
 import { HealthModule } from './health/health.module.js'
+import { InfraModule } from './infra/infra.module.js'
 import { LogModule } from './log/log.module.js'
 
 export interface OpcoesApp {
@@ -19,6 +20,7 @@ export class AppModule {
       imports: [
         ConfiguracaoModule.com(config),
         LogModule.com(config, opcoes.destinoLog),
+        InfraModule,
         HealthModule,
       ],
     }

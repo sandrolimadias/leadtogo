@@ -167,6 +167,8 @@ jobs:
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: BANCOS="leadtogo_test leadtogo_api_test" bash packages/db/scripts/garantir-bancos.sh # papéis + banco de teste
+      # Os testes do /health (apps/api) usam Valkey e Garage reais: o Garage entra no CI na E12
+      # (container `dxflrs/garage` com o garage.toml e o init de docker/garage/init.sh).
       - run: pnpm test # o setup global dos testes aplica as migrações do zero
 
   build:

@@ -1,14 +1,17 @@
-import { Controller, Get, Inject } from '@nestjs/common'
+import { Controller, Get, Res } from '@nestjs/common'
+import type { Response } from 'express'
 
-import type { Configuracao } from '../configuracao/configuracao.js'
-import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+import { HealthService, type RelatorioSaude } from './health.service.js'
 
 @Controller('health')
 export class HealthController {
-  constructor(@Inject(CONFIGURACAO) private readonly config: Configuracao) {}
+  constructor(private readonly saude: HealthService) {}
 
+  /** 200 com tudo saudável; 503 se banco, Valkey ou Garage falhar (o smoke test do deploy depende disso). */
   @Get()
-  verificar() {
-    return { status: 'ok', version: this.config.APP_VERSION }
+  async verificar(@Res({ passthrough: true }) res: Response): Promise<RelatorioSaude> {
+    const relatorio = await this.saude.verificar()
+    if (relatorio.status !== 'ok') res.status(503)
+    return relatorio
   }
 }

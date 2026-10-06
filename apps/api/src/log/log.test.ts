@@ -155,7 +155,9 @@ describe('logs estruturados (Pino)', () => {
 describe('logs do app real', () => {
   it('não registra /health e devolve o request_id', async () => {
     const { linhas, destino } = capturar()
-    const app = await criarApp(config, { destinoLog: destino })
+    const app = await criarApp(carregarConfiguracao({ ...process.env, LOG_LEVEL: 'info' }), {
+      destinoLog: destino,
+    })
     await app.init()
     try {
       const resposta = await request(app.getHttpServer()).get('/health').expect(200)

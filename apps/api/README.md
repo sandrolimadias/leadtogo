@@ -6,14 +6,15 @@ Ver `docs/configuracao_tecnologia.md` (seções 4 e 11.3).
 
 ## Estrutura
 
-| Arquivo                                      | Papel                                                                                                     |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `src/main.ts`                                | Entrypoint HTTP (`dist/main.js`): rotas em `/v1`, Swagger em `/docs` (desligado em produção por enquanto) |
-| `src/worker.ts`                              | Entrypoint do worker (`dist/worker.js`): contexto Nest sem HTTP, para filas BullMQ e sincronizações       |
-| `src/app.ts`                                 | `criarApp()` e `criarDocumentoOpenApi()`, usados pelo main, pelos testes e pela geração do OpenAPI        |
-| `src/app.module.ts` · `src/worker.module.ts` | Módulos raiz da API e do worker                                                                           |
-| `src/health/`                                | `GET /health` → `{ status, version }` (fora do prefixo `/v1`; usado pelo smoke test do deploy)            |
-| `src/gerar-openapi.ts`                       | Gera `openapi.json`, de onde sai o `packages/api-client`                                                  |
+| Arquivo                                      | Papel                                                                                                                                                                                                                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/main.ts`                                | Entrypoint HTTP (`dist/main.js`): rotas em `/v1`, Swagger em `/docs` (desligado em produção por enquanto)                                                                                                                                                                       |
+| `src/worker.ts`                              | Entrypoint do worker (`dist/worker.js`): contexto Nest sem HTTP, para filas BullMQ e sincronizações                                                                                                                                                                             |
+| `src/app.ts`                                 | `criarApp()` e `criarDocumentoOpenApi()`, usados pelo main, pelos testes e pela geração do OpenAPI                                                                                                                                                                              |
+| `src/app.module.ts` · `src/worker.module.ts` | Módulos raiz da API e do worker                                                                                                                                                                                                                                                 |
+| `src/infra/`                                 | Conexões únicas, fechadas no encerramento: banco (`leadtogo_app`, Drizzle + postgres.js), Valkey (`ioredis`, sem fila offline) e Garage (S3 com `forcePathStyle`)                                                                                                               |
+| `src/health/`                                | `GET /health` (fora do prefixo `/v1`): verifica banco (`SELECT 1`), Valkey (`PING`) e Garage (`HeadBucket`), 2 s no máximo cada. 200 com `{ status, version, checks }`; 503 se algum falhar, sem detalhes do erro na resposta (vão para o log). Usado pelo smoke test do deploy |
+| `src/gerar-openapi.ts`                       | Gera `openapi.json`, de onde sai o `packages/api-client`                                                                                                                                                                                                                        |
 
 ## Scripts
 

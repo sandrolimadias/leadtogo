@@ -2,6 +2,7 @@ import {
   type DynamicModule,
   type MiddlewareConsumer,
   Module,
+  RequestMethod,
   type NestModule,
 } from '@nestjs/common'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -66,6 +67,8 @@ export class LogModule implements NestModule {
   }
 
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(ContextoLogMiddleware).forRoutes('*')
+    consumer
+      .apply(ContextoLogMiddleware)
+      .forRoutes({ path: '{*caminho}', method: RequestMethod.ALL })
   }
 }
