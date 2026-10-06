@@ -21,6 +21,7 @@
     "db:generate": "pnpm --filter @leadtogo/db db:generate",
     "db:migrate": "pnpm --filter @leadtogo/db db:migrate",
     "db:seed": "pnpm --filter @leadtogo/db db:seed",
+    "db:seed:referencias": "pnpm --filter @leadtogo/db db:seed:referencias",
     "db:studio": "pnpm --filter @leadtogo/db db:studio"
   },
   "devDependencies": {

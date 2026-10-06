@@ -344,7 +344,7 @@ pnpm dev:up      # serviços (--wait), bancos e papéis do Postgres e init do Ga
 
 **Dia a dia**
 - `pnpm dev:up`: Postgres+PostGIS, Valkey e Garage (S3)
-- `pnpm install` · `pnpm db:migrate` · `pnpm db:seed` (tenant de exemplo, tags e funil padrão, CNAEs, municípios)
+- `pnpm install` · `pnpm db:migrate` · `pnpm db:seed` (estados, países, portes, qualificações, CNAEs, municípios e o tenant de demonstração; os cadastros padrão entram quando essas tabelas existirem). Em produção: `pnpm db:seed:referencias` (sem a demonstração). Os dados vêm de `packages/db/seeds/dados/`; o seed não baixa nada.
 - `pnpm dev`: API, worker e web com recarga automática
 - `.env` nunca vai para o Git; novas variáveis entram no `.env.example`.
 

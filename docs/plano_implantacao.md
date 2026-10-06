@@ -221,12 +221,27 @@ Checklist:
 > Siga a regra "expandir e depois contrair" e gere as migrações com drizzle-kit.
 
 Checklist:
-- [ ] Migrações geradas e aplicadas do zero sem erro.
-- [ ] Testes de isolamento passando (RLS) para todas as tabelas com `tenant_id`.
-- [ ] Seeds idempotentes (rodar duas vezes não duplica).
-- [ ] Script SQL de criação dos papéis para produção em `packages/db/sql/papeis.sql`.
+- [x] Migrações geradas e aplicadas do zero sem erro (4: extensões e RLS, referências, plataforma, sistema).
+- [x] Testes de isolamento passando (RLS) para todas as tabelas com `tenant_id`, com `leadtogo_app` e `leadtogo_owner` (o `FORCE` vale para o dono).
+- [x] Seeds idempotentes (rodar duas vezes não duplica nem deixa dado alterado): estados, países, portes, qualificações, 1.332 CNAEs e 5.571 municípios com código IBGE e SIAFI/TOM, mais o tenant de demonstração.
+- [x] Script SQL de criação dos papéis para produção em `packages/db/sql/papeis.sql` (idempotente, sem senhas no arquivo).
 
 **Pronto quando:** `pnpm db:migrate && pnpm db:seed && pnpm test` passam do zero, e o Drizzle Studio mostra CNAEs e municípios carregados.
+
+✅ **Concluído em 06/10/2026.** Verificado do zero (`pnpm dev:reset --yes && pnpm dev:up && pnpm db:migrate && pnpm db:seed && pnpm test`): 86 testes do `packages/db`; `leadtogo_app` lê 1.332 CNAEs e 5.571 municípios e, sem tenant ativo, não vê nenhuma empresa.
+
+Como ficou:
+- **Banco de teste** `leadtogo_test`: criado por `pnpm dev:up` (repetível) e pelo passo `garantir-bancos.sh` do CI. As migrações rodam no setup global do Vitest. Os testes recusam rodar em banco que não termine em `_test`.
+- **Teste de isolamento** em duas camadas: catálogo (toda tabela com `tenant_id` tem RLS habilitado e forçado e políticas de SELECT, INSERT, UPDATE e DELETE) e comportamento, com uma fábrica por tabela em `packages/db/src/testes/fabricas.ts`. Falha se faltar política, fábrica ou se surgir tabela sem `tenant_id` fora da lista de exceções.
+- **Seeds de referência:** arquivos versionados em `packages/db/seeds/dados/` (fonte e data no README); o seed não baixa nada. Dos 5.571 municípios, 1 (Boa Esperança do Norte, MT) precisou de correção manual do código SIAFI/TOM; nenhum ficou sem. `pnpm db:seed:referencias` carrega só as referências (uso em produção); `pnpm db:seed` inclui a demonstração (nunca com `NODE_ENV=production`).
+- **Papéis em produção:** `LEADTOGO_OWNER_PASSWORD=... LEADTOGO_APP_PASSWORD=... psql -v ON_ERROR_STOP=1 -d leadtogo -f packages/db/sql/papeis.sql`, como superusuário.
+
+**Pendências registradas pelo E7 (não implementadas):**
+- **Cadastros padrão do tenant de demonstração:** grupos de tags **Status** e **Visitação**, **tipos de atividade** e **funil com fases** entram no seed quando essas tabelas forem criadas (e também no fluxo de primeiro acesso, E8).
+- `membros.usuario_id` e `conta_administradores.usuario_id` sem FK até o E8; o usuário de demonstração deve ser ligado ao membro admin (`DEMONSTRACAO.membroAdminId`) quando o login existir.
+- `app_vinculos_do_usuario` (E8) e a função do outbox sem `BYPASSRLS` (E10): direção descrita nos itens do E8 e do E10.
+- Job mensal das partições de `auditoria` (E10) e inclusão automática de CNAE novo por função `SECURITY DEFINER` (prospecção).
+- `municipios.localizacao` (centro de cada município) fica vazia até a carga das coordenadas.
 
 ---
 

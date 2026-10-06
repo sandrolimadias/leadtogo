@@ -24,10 +24,9 @@ export async function upsert<T extends PgTable>(
   const set: Record<string, SQL> = {}
   for (const coluna of atualizar) set[coluna] = sql`excluded.${sql.identifier(paraSnake(coluna))}`
   for (let i = 0; i < linhas.length; i += LOTE) {
-    await db
-      .insert(tabela)
-      .values(linhas.slice(i, i + LOTE))
-      .onConflictDoUpdate({ target: alvo, set })
+    const insercao = db.insert(tabela).values(linhas.slice(i, i + LOTE))
+    if (atualizar.length === 0) await insercao.onConflictDoNothing({ target: alvo })
+    else await insercao.onConflictDoUpdate({ target: alvo, set })
   }
   return linhas.length
 }
