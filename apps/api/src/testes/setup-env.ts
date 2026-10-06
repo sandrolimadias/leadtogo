@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -33,3 +34,7 @@ const padroes: Record<string, string> = {
   S3_SECRET_KEY: 'teste',
 }
 for (const [chave, valor] of Object.entries(padroes)) process.env[chave] ??= valor
+
+// O supertest registra um listener de 'error' no servidor a cada requisição; os testes que fazem
+// mais de 10 no mesmo app disparam o MaxListenersExceededWarning (todos os apps são fechados).
+EventEmitter.defaultMaxListeners = 100
