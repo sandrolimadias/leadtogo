@@ -70,6 +70,11 @@ export function criarAuth({ config, banco, valkey }: DependenciasAuth) {
       window: 10,
       max: 100,
       customStorage: armazenamentoDeLimite(valkey),
+      // Códigos de 6 dígitos são fáceis de adivinhar: poucas tentativas por minuto
+      customRules: {
+        '/two-factor/verify-totp': { window: 60, max: 5 },
+        '/two-factor/verify-backup-code': { window: 60, max: 5 },
+      },
     },
     advanced: {
       database: { generateId: () => novoId() },
