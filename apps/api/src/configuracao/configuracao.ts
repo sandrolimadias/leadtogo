@@ -45,6 +45,21 @@ const esquema = z
      */
     TRUST_PROXY: opcional(z.coerce.number().int().min(0).max(5)),
 
+    // Worker (filas BullMQ no Valkey). Ver docs/esteira_deploy.md (tempos de parada).
+    /** Prefixo das chaves das filas no Valkey */
+    FILA_PREFIXO: z.string().min(1).default('leadtogo:fila'),
+    /** Jobs processados em paralelo por fila */
+    WORKER_CONCORRENCIA: z.coerce.number().int().min(1).max(100).default(5),
+    /**
+     * Prazo, em segundos, para os jobs em andamento terminarem depois do SIGTERM. Passado o prazo o
+     * worker sai e o BullMQ devolve o job a outro worker. O stop timeout do Coolify deve ser MAIOR.
+     */
+    WORKER_ENCERRAMENTO_S: z.coerce.number().int().min(1).max(600).default(30),
+    /** Porta do healthcheck do worker (só no loopback do container, nunca publicada) */
+    WORKER_SAUDE_PORTA: z.coerce.number().int().min(1).max(65535).default(3001),
+    /** Tempo que o worker "segura" um job; sem renovar nesse prazo, o job é dado como parado e reprocessado */
+    FILA_LOCK_MS: z.coerce.number().int().min(500).default(30_000),
+
     // Autenticação (Better Auth). O segredo assina cookies e cifra o segredo do 2FA: troque-o e todas
     // as sessões e os 2FA cadastrados deixam de valer.
     BETTER_AUTH_SECRET: z.string().min(32, 'deve ter ao menos 32 caracteres'),

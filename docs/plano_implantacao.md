@@ -360,7 +360,7 @@ Checklist:
 | leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `crm.aledias.com.br` | 128 MB |
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
-4. [ ] Healthchecks: API `/health`, web `/`, worker (comando de saúde).
+4. [ ] Healthchecks: API `/health`, web `/`, worker (`node dist/saude-worker.js`). **Stop timeout do worker: 45 s** (esteira_deploy.md, 7.1.1).
 5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
 7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.
@@ -378,6 +378,7 @@ Checklist:
 - [ ] **Uptime Kuma** (no Coolify): monitores para `app.`, `api./health`, banco e painel do Coolify, com alerta por e-mail/Telegram.
 - [ ] **Notificação de deploy:** fluxo no n8n recebendo um webhook do GitHub Actions (sucesso/falha) e avisando no WhatsApp ou Telegram.
 - [ ] Logs da API acessíveis no Coolify, com `request_id` para rastrear.
+- [ ] **Alerta de eventos esgotados:** avisar (Uptime Kuma/n8n) quando houver linhas em `eventos_outbox` com `falhou_em` preenchido, ou seja, eventos que esgotaram as tentativas (e-mails e notificações que não saíram). Mesmo critério para jobs falhos acumulados nas filas do BullMQ.
 
 **Pronto quando:** um erro forçado aparece no Sentry com o commit, e desligar a API dispara o alerta do Uptime Kuma.
 

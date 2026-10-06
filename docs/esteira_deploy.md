@@ -257,6 +257,12 @@ jobs:
 - **Limites de memória** definidos por container (a VPS é compartilhada com n8n e Evolution).
 - **Healthchecks** em todos os recursos; o Coolify só troca a versão quando a nova responde saudável (sem tempo fora do ar).
 
+### 7.1.1 Worker: saúde, parada e retenção
+- **Healthcheck (sem porta publicada):** o worker não serve HTTP. Ele abre um servidor mínimo em `127.0.0.1:3001` (`WORKER_SAUDE_PORTA`), só no loopback do container: nem outros containers o alcançam. O comando de saúde do Coolify é **`node dist/saude-worker.js`** (sai com 0 saudável, 1 caso contrário). O servidor responde 200 só se os consumidores das filas estiverem rodando, o Valkey e o Postgres responderem e (com o relay do outbox ligado) o último ciclo tiver menos de 30 s.
+- **Parada gradual (SIGTERM):** o worker deixa de pegar jobs novos e espera os em andamento por **30 s** (`WORKER_ENCERRAMENTO_S`). Configure no Coolify o **stop timeout do `leadtogo-worker` em 45 s** (opção de container `--stop-timeout 45`; precisa ser MAIOR que os 30 s, senão o Docker mata o processo antes). Passado o prazo o worker sai e o job que sobrou perde o lock (`FILA_LOCK_MS`, 30 s) e volta para a fila: outro worker o conclui, então nenhum job se perde (até 3 recuperações; a entrega é "pelo menos uma vez").
+- **Retenção no Valkey:** jobs **concluídos** ficam 24 h e **falhos** 14 dias (`removeOnComplete: { age: 86400 }`, `removeOnFail: { age: 1209600 }`). O `jobId` só descarta repetição enquanto o job existe, por isso os consumidores também são idempotentes (a chave única é o id do evento).
+- Mais de um worker pode rodar ao mesmo tempo: os jobs agendados usam `upsertJobScheduler` (um só job por horário) e o outbox é reservado com `FOR UPDATE SKIP LOCKED`.
+
 ### 7.2 Migrações do banco
 - Rodam no **comando de pré-deploy** do recurso `leadtogo-api` (`node dist/migrate.js`), **antes** de a nova versão receber tráfego. Se a migração falhar, o deploy para e a versão antiga continua no ar.
 - `dist/migrate.js` usa o **migrador do `drizzle-orm`** (`aplicarMigracoes()` do `@leadtogo/db`) com `DATABASE_MIGRATION_URL` (usuário `leadtogo_owner`); o **`drizzle-kit` não vai para a imagem**. O build copia as migrações SQL para `packages/db/dist/migrations`, e a imagem precisa levar essa pasta junto com o `dist` (E11). Exige só `DATABASE_MIGRATION_URL`. Código de saída 1 (com mensagem curta, sem a URL) interrompe o deploy. Uma trava consultiva do Postgres faz dois deploys simultâneos esperarem um ao outro, e repetir é seguro.
