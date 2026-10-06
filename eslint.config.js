@@ -15,6 +15,8 @@ export default defineConfig(
     '**/dev-dist/',
     'docs/',
     'packages/api-client/src/gerado/',
+    'apps/web/src/routeTree.gen.ts',
+    'apps/web/src/styles/',
     'packages/db/migrations/',
   ]),
 

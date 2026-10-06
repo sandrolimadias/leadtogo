@@ -13,3 +13,6 @@ packages/db/migrations/
 # dados locais do compose (dono: usuário do container); os scripts format também passam '!docker/.data'
 docker/.data/
 packages/db/seeds/dados/
+apps/web/src/routeTree.gen.ts
+apps/web/src/styles/tokens.css
+apps/web/src/styles/tailwind-theme.css

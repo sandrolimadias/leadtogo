@@ -1,0 +1,59 @@
+/* Estilos globais do app. tokens.css e tailwind-theme.css são CÓPIAS de docs/design-system/ (script
+   sincronizar-design-system, fora do Git): a fonte única dos tokens fica lá. */
+@import 'tailwindcss';
+@import './tokens.css';
+@import './tailwind-theme.css';
+
+/* Densidade: define a altura dos controles (botões, campos, selects). O app põe data-density="touch"
+   no celular; "compact" é para barras de filtro e tabelas densas. */
+:root {
+  --ctl: var(--control-md);
+  --ctl-font: 14px;
+}
+[data-density='compact'] {
+  --ctl: var(--control-sm);
+  --ctl-font: 13px;
+}
+[data-density='touch'] {
+  --ctl: var(--control-lg);
+  --ctl-font: 16px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Foco visível em todo controle: 2px sólido, 2px afastado (docs/design-system/README.md) */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@keyframes lt-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes lt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { App } from './App'
 
 describe('App', () => {
-  it('renderiza a aplicação', () => {
+  it('monta o roteador e o Query e mostra a rota inicial', async () => {
     render(<App />)
-    expect(screen.getByRole('main').textContent).toBe('Leadtogo')
+    expect(await screen.findByText('Leadtogo')).toBeInTheDocument()
   })
 })

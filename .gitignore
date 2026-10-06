@@ -33,3 +33,8 @@ docker/.data/
 
 # artefatos de download do Windows
 *:Zone.Identifier
+
+# cópias do design system no web (fonte única: docs/design-system/; script sincronizar-design-system)
+apps/web/src/styles/tokens.css
+apps/web/src/styles/tailwind-theme.css
+apps/web/src/styles/fonts/

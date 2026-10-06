@@ -2,7 +2,7 @@
   "$schema": "https://turborepo.com/schema.json",
   "ui": "stream",
   "agentGuidance": false,
-  "globalDependencies": ["tsconfig.base.json", "eslint.config.js"],
+  "globalDependencies": ["tsconfig.base.json", "eslint.config.js", "docs/design-system/**"],
   "globalPassThroughEnv": ["NODE_ENV", "APP_VERSION"],
   "tasks": {
     "transit": {

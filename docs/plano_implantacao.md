@@ -369,7 +369,7 @@ Checklist:
 | leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `crm.aledias.com.br` | 128 MB |
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
-3a. [ ] **A decidir:** domínio único. Em produção, o Traefik roteia `crm.aledias.com.br/v1` e `crm.aledias.com.br/api/auth` para a API, e o front fala com a API no mesmo domínio: sem CORS e sem cookie entre subdomínios. O `api.crm.aledias.com.br` continua para as integrações (n8n, webhooks). Se adotado, o front usa caminho relativo (como o proxy do desenvolvimento) e `APP_URL`/`API_URL`/cookies são ajustados.
+3a. [ ] **A decidir:** domínio único. Em produção, o Traefik roteia `crm.aledias.com.br/v1` (que inclui o Better Auth em `/v1/auth/*`) para a API, e o front fala com a API no mesmo domínio: sem CORS e sem cookie entre subdomínios. O `api.crm.aledias.com.br` continua para as integrações (n8n, webhooks). Se adotado, o front usa caminho relativo (como o proxy do desenvolvimento) e `APP_URL`/`API_URL`/cookies são ajustados.
 4. [ ] Healthchecks: API `/health`, web `/`, worker (`node dist/saude-worker.js`). **Stop timeout do worker: 45 s** (esteira_deploy.md, 7.1.1).
 5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
