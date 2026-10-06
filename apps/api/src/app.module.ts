@@ -3,6 +3,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core'
 import type { DestinationStream } from 'pino'
 
 import type { Configuracao } from './configuracao/configuracao.js'
+import { AuthModule } from './auth/auth.module.js'
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
 import { FiltroDeExcecoes } from './http/filtro-excecoes.js'
 import { HealthModule } from './health/health.module.js'
@@ -28,6 +29,7 @@ export class AppModule {
         ConfiguracaoModule.com(config),
         LogModule.com(config, opcoes.destinoLog),
         InfraModule,
+        AuthModule,
         HealthModule,
       ],
     }

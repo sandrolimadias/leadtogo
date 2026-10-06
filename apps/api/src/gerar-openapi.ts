@@ -10,6 +10,7 @@ const config = carregarConfiguracao({
   APP_URL: 'http://localhost:5173',
   API_URL: 'http://localhost:3000',
   APP_VERSION: '0.0.0',
+  BETTER_AUTH_SECRET: 'documentacao-documentacao-documentacao',
   DATABASE_URL: 'postgres://leadtogo_app:senha@localhost:5432/leadtogo',
   REDIS_URL: 'redis://localhost:6379',
   S3_ENDPOINT: 'http://localhost:3900',

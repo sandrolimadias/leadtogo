@@ -22,6 +22,7 @@ process.env['LOG_LEVEL'] ??= 'silent'
 // Valores padrão só para os testes (o CI não tem .env): endereços locais e chaves descartáveis
 const padroes: Record<string, string> = {
   APP_URL: 'http://localhost:5173',
+  BETTER_AUTH_SECRET: 'segredo-de-teste-com-pelo-menos-32-caracteres',
   SMTP_HOST: 'localhost',
   SMTP_PORT: '1025',
   MAILPIT_URL: 'http://localhost:8025',

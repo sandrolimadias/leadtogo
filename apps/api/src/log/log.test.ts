@@ -18,6 +18,7 @@ const ambiente = {
   API_URL: 'http://localhost:3000',
   DATABASE_URL: 'postgres://leadtogo_app:senha@localhost:5432/leadtogo',
   REDIS_URL: 'redis://localhost:6379',
+  BETTER_AUTH_SECRET: 'um-segredo-de-teste-com-mais-de-32-caracteres',
   S3_ENDPOINT: 'http://localhost:3900',
   S3_BUCKET: 'b',
   S3_ACCESS_KEY: 'a',

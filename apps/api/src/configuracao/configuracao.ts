@@ -41,6 +41,15 @@ const esquema = z
      */
     TRUST_PROXY: z.coerce.number().int().min(0).max(5).optional(),
 
+    // Autenticação (Better Auth). O segredo assina cookies e cifra o segredo do 2FA: troque-o e todas
+    // as sessões e os 2FA cadastrados deixam de valer.
+    BETTER_AUTH_SECRET: z.string().min(32, 'deve ter ao menos 32 caracteres'),
+    /**
+     * Exige e-mail verificado para entrar. Padrão: sim em produção, não fora dela (desenvolvimento
+     * e testes usam o Mailpit). Em produção só funciona com SMTP configurado (E13).
+     */
+    VERIFICACAO_EMAIL: booleano.optional(),
+
     // Arquivos (Garage / S3)
     S3_ENDPOINT: url(['http:', 'https:']),
     S3_REGION: z.string().min(1).default('garage'),
@@ -60,6 +69,11 @@ const esquema = z
   })
 
 export type Configuracao = z.infer<typeof esquema>
+
+/** Se o login exige o e-mail verificado (flag, com padrão pelo ambiente). */
+export function verificacaoEmailObrigatoria(config: Configuracao): boolean {
+  return config.VERIFICACAO_EMAIL ?? config.NODE_ENV === 'production'
+}
 
 /** Erro de configuração: lista as variáveis com problema (nunca os valores, que podem ser segredos). */
 export class ErroConfiguracao extends Error {
