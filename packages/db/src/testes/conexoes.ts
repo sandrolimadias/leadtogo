@@ -16,6 +16,11 @@ function url(nome: 'TEST_DATABASE_URL' | 'TEST_DATABASE_MIGRATION_URL'): string 
 
 export type Sql = postgres.Sql
 
+/** URL do `leadtogo_owner` no banco de teste (usada pelo setup global). */
+export function urlOwnerDeTeste(): string {
+  return url('TEST_DATABASE_MIGRATION_URL')
+}
+
 /** Conexão como `leadtogo_app`: a mesma da API, sujeita ao RLS. É com ela que se prova o isolamento. */
 export function conectarApp(): Sql {
   return postgres(url('TEST_DATABASE_URL'), { max: 4, onnotice: () => {} })

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Garante, de forma idempotente, os bancos do Leadtogo e os papéis de cada um:
 # cria o banco se faltar e aplica packages/db/sql/papeis.sql. Roda como superusuário.
-#   BANCOS     bancos a garantir (padrão: "leadtogo leadtogo_test"; o CI usa só leadtogo_test)
+#   BANCOS     bancos a garantir (padrão: "leadtogo leadtogo_test leadtogo_api_test"; o CI usa só os de teste)
 #   SQL_DIR    pasta do papeis.sql (padrão: ../sql ao lado deste script)
 #   PGHOST/PGUSER/PGPASSWORD...  conexão do psql; LEADTOGO_OWNER_PASSWORD e LEADTOGO_APP_PASSWORD obrigatórias
 set -euo pipefail
 export PGOPTIONS="${PGOPTIONS:-} -c client_min_messages=warning"
 
-BANCOS=${BANCOS:-"leadtogo leadtogo_test"}
+BANCOS=${BANCOS:-"leadtogo leadtogo_test leadtogo_api_test"}
 SQL_DIR=${SQL_DIR:-"$(cd "$(dirname "$0")/../sql" && pwd)"}
 
 : "${LEADTOGO_OWNER_PASSWORD:?defina LEADTOGO_OWNER_PASSWORD}"

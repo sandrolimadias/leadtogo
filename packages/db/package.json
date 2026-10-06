@@ -8,10 +8,15 @@
       "@leadtogo/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testes": {
+      "@leadtogo/source": "./src/suporte-testes.ts",
+      "types": "./dist/suporte-testes.d.ts",
+      "default": "./dist/suporte-testes.js"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && rm -rf dist/migrations && cp -r migrations dist/migrations",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

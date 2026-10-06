@@ -14,3 +14,4 @@ export function criarConexao(url: string, opcoes: postgres.Options<Record<string
 export type Conexao = ReturnType<typeof criarConexao>
 
 export { novoId } from './id.js'
+export { aplicarMigracoes, pastaMigracoes } from './migrar.js'

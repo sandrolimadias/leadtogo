@@ -19,7 +19,8 @@
       "dependsOn": ["transit"]
     },
     "test": {
-      "dependsOn": ["transit"],
+      // ^build: o setup global dos testes da API importa @leadtogo/db pelo dist (como em produção)
+      "dependsOn": ["transit", "^build"],
       "cache": false,
       "passThroughEnv": [
         "DATABASE_URL",

@@ -6,5 +6,11 @@ export default defineConfig({
   plugins: [swc.vite({ module: { type: 'es6' } })],
   oxc: false,
   resolve: { conditions: ['@leadtogo/source'] },
-  test: { include: ['src/**/*.test.ts'] },
+  test: {
+    include: ['src/**/*.test.ts'],
+    globalSetup: ['./src/testes/global-setup.ts'],
+    setupFiles: ['./src/testes/setup-env.ts'],
+    // Os arquivos compartilham o banco e o Valkey de teste: em sequência, o resultado é determinístico
+    fileParallelism: false,
+  },
 })
