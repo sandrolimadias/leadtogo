@@ -4,7 +4,11 @@ import { betterAuth } from 'better-auth'
 import { twoFactor } from 'better-auth/plugins'
 import type { Redis } from 'ioredis'
 
-import { type Configuracao, verificacaoEmailObrigatoria } from '../configuracao/configuracao.js'
+import {
+  type Configuracao,
+  loginGoogleLigado,
+  verificacaoEmailObrigatoria,
+} from '../configuracao/configuracao.js'
 import type { EmailService } from '../email/email.service.js'
 import { emailRedefinirSenha, emailVerificarEmail } from '../email/modelos.js'
 import { armazenamentoDeLimite } from './rate-limit-valkey.js'
@@ -80,6 +84,18 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
         empresaAtivaId: { type: 'string', required: false, input: false },
       },
     },
+    // Google: só existe se a flag estiver ligada. Mesmo ligado, não cria conta (disableSignUp):
+    // entra quem já tem usuário com o mesmo e-mail.
+    socialProviders: loginGoogleLigado(config)
+      ? {
+          google: {
+            clientId: config.GOOGLE_CLIENT_ID ?? '',
+            clientSecret: config.GOOGLE_CLIENT_SECRET ?? '',
+            disableSignUp: true,
+            prompt: 'select_account',
+          },
+        }
+      : {},
     plugins: [twoFactor({ issuer: 'Leadtogo' })],
     rateLimit: {
       enabled: true,

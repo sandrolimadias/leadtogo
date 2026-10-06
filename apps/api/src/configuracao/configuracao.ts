@@ -54,6 +54,12 @@ const esquema = z
      */
     VERIFICACAO_EMAIL: opcional(booleano),
 
+    // Login com Google: preparado, mas DESLIGADO. Liga com LOGIN_GOOGLE=true (exige as credenciais do
+    // cliente OAuth) e vale só para quem já tem conta (o cadastro por Google continua desligado).
+    LOGIN_GOOGLE: opcional(booleano),
+    GOOGLE_CLIENT_ID: opcional(z.string().min(1)),
+    GOOGLE_CLIENT_SECRET: opcional(z.string().min(1)),
+
     // E-mail (SMTP): recuperação de senha, verificação de e-mail e convites. Sem SMTP_HOST nenhum e-mail
     // sai (a API avisa no log). Obrigatório se a verificação de e-mail estiver ligada.
     SMTP_HOST: opcional(z.string().min(1)),
@@ -81,6 +87,17 @@ const esquema = z
           'obrigatória com a verificação de e-mail ligada (em produção é o padrão): configure o SMTP ou defina VERIFICACAO_EMAIL=false',
       })
     }
+    if (env.LOGIN_GOOGLE) {
+      for (const chave of ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'] as const) {
+        if (!env[chave]) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [chave],
+            message: 'obrigatória com LOGIN_GOOGLE=true',
+          })
+        }
+      }
+    }
     if (Boolean(env.SMTP_USER) !== Boolean(env.SMTP_PASSWORD)) {
       ctx.addIssue({
         code: 'custom',
@@ -98,6 +115,13 @@ const esquema = z
   })
 
 export type Configuracao = z.infer<typeof esquema>
+
+/** Se o login com Google está ligado (flag + credenciais). */
+export function loginGoogleLigado(config: Configuracao): boolean {
+  return (
+    config.LOGIN_GOOGLE === true && Boolean(config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET)
+  )
+}
 
 /** Se o login exige o e-mail verificado (flag, com padrão pelo ambiente). */
 export function verificacaoEmailObrigatoria(config: Configuracao): boolean {
