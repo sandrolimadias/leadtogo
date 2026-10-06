@@ -233,6 +233,7 @@ Checklist:
 Como ficou:
 - **Banco de teste** `leadtogo_test`: criado por `pnpm dev:up` (repetível) e pelo passo `garantir-bancos.sh` do CI. As migrações rodam no setup global do Vitest. Os testes recusam rodar em banco que não termine em `_test`.
 - **Teste de isolamento** em duas camadas: catálogo (toda tabela com `tenant_id` tem RLS habilitado e forçado e políticas de SELECT, INSERT, UPDATE e DELETE) e comportamento, com uma fábrica por tabela em `packages/db/src/testes/fabricas.ts`. Falha se faltar política, fábrica ou se surgir tabela sem `tenant_id` fora da lista de exceções.
+- **Países (ajuste posterior):** `paises` usa a tabela da Receita Federal (255 códigos numéricos, Brasil = 105), não a lista ISO do IBGE, para cobrir territórios de sócios estrangeiros; migração `0004` (`BREAKING-DB`: reposta pelo seed). O ISO de 2 letras não é guardado por enquanto.
 - **Seeds de referência:** arquivos versionados em `packages/db/seeds/dados/` (fonte e data no README); o seed não baixa nada. Dos 5.571 municípios, 1 (Boa Esperança do Norte, MT) precisou de correção manual do código SIAFI/TOM; nenhum ficou sem. `pnpm db:seed:referencias` carrega só as referências (uso em produção); `pnpm db:seed` inclui a demonstração (nunca com `NODE_ENV=production`).
 - **Papéis em produção:** `LEADTOGO_OWNER_PASSWORD=... LEADTOGO_APP_PASSWORD=... psql -v ON_ERROR_STOP=1 -d leadtogo -f packages/db/sql/papeis.sql`, como superusuário.
 

@@ -147,7 +147,7 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 | email, telefone, website | text | Contato institucional |
 | cep, tipo_logradouro, logradouro, numero, complemento, bairro | text | |
 | municipio_codigo | int FK → `municipios` | Cidade + UF |
-| pais_codigo | char(2) default 'BR' | |
+| pais_codigo | smallint default 105 | Código do país na Receita (105 = Brasil) |
 | logo_arquivo_id | uuid FK → `arquivos` | |
 | conta_id | uuid FK → `contas` NOT NULL | Conta dona |
 | situacao | enum `situacao_tenant` | teste · ativo · suspenso · cancelado |
@@ -199,7 +199,7 @@ O **mesmo usuário** (`usuario_id`) pode ter um registro em `membros` em **cada 
 > - `usuario_id` (em `membros` e `conta_administradores`) ainda **não tem FK** para `auth.user`: ela entra no E8, quando o Better Auth criar o schema `auth`. As FKs de `tenants.logo_arquivo_id` e `membros.foto_arquivo_id` para `arquivos` entraram com as tabelas de sistema.
 > - `membros` leva também `criado_por` e `atualizado_por` (→ `membros`), pela convenção da seção 1. O único `(tenant_id, usuario_id)` é parcial (`excluido_em IS NULL`), como o de e-mail.
 > - `tenants` isola o RLS pela coluna `id` (`aplicar_rls_tenant('tenants', 'id')`). `contas` e `conta_administradores` não têm RLS (acesso controlado pela API); o app tem DML nelas.
-> - `tenants.pais_codigo` não tem FK para `paises` (o modelo só pede o padrão `'BR'`). `tenant_configuracoes.whatsapp_modo_importacao` é um enum com padrão `desligado`.
+> - `tenants.pais_codigo` é `smallint` com padrão `105` (Brasil, código da Receita) e não tem FK para `paises`. `tenant_configuracoes.whatsapp_modo_importacao` é um enum com padrão `desligado`.
 
 ---
 
@@ -210,7 +210,7 @@ O **mesmo usuário** (`usuario_id`) pode ter um registro em `membros` em **cada 
 | `cnaes` | **codigo int PK** (7 dígitos), descricao, secao, divisao, grupo, classe | Carga inicial com a lista oficial IBGE/CONCLA + inclusão automática se a API trouxer um código novo. **PK garante que não há duplicados** |
 | `municipios` | **codigo_ibge int PK**, codigo_siafi int UNIQUE, nome, uf, localizacao (centro) | Carga IBGE. A API traz os dois códigos (`codigo_municipio` = SIAFI, `codigo_municipio_ibge`) |
 | `estados` | uf char(2) PK, nome, regiao | |
-| `paises` | codigo char(2) PK, nome | |
+| `paises` | **codigo smallint PK**, nome | Tabela de países da **Receita Federal** (dados abertos do CNPJ), com o código numérico dela (Brasil = 105). 255 códigos, incluindo territórios e códigos especiais (ex.: 997/999 "Não declarados") |
 | `portes` | codigo smallint PK, descricao | 0 Não informado · 1 Micro Empresa · 3 Empresa de Pequeno Porte · 5 Demais |
 | `qualificacoes_socio` | codigo smallint PK, descricao | Ex.: 49 Sócio-Administrador (cresce com a API) |
 | `receita_consultas` | **cnpj PK**, dados jsonb, consultado_em, fonte | **Cache** do JSON completo de cada consulta (compartilhado: dado público). Evita consultas repetidas (validade 30 dias) e serve à rotina de verificação |
@@ -286,7 +286,7 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 | complemento | text | Galpão, sala, bloco, andar (da Receita ou manual) |
 | bairro | text | **Bairro** |
 | municipio_codigo | int FK → `municipios` | **Cidade** + **Estado** (vêm do município) |
-| pais_codigo | char(2) default 'BR' | **País** |
+| pais_codigo | smallint default 105 | **País** (código da Receita; 105 = Brasil) |
 | localizacao | geography(Point,4326) | **Geolocalização** (índice GiST) |
 | geo_precisao | enum(exata/rua/cep/cidade) | Qualidade da coordenada |
 | geo_origem | enum(google/nominatim/manual/checkin) | |
