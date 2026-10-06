@@ -20,7 +20,14 @@
     },
     "test": {
       "dependsOn": ["transit"],
-      "passThroughEnv": ["DATABASE_URL", "DATABASE_MIGRATION_URL", "REDIS_URL"]
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_MIGRATION_URL",
+        "TEST_DATABASE_URL",
+        "TEST_DATABASE_MIGRATION_URL",
+        "REDIS_URL"
+      ]
     },
     "dev": {
       "dependsOn": ["^build"],
