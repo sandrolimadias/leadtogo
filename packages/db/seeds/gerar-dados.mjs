@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Gera os arquivos de seeds/dados/*.json a partir das fontes oficiais. Uso MANUAL, só para
 // atualizar os dados (os arquivos gerados são versionados); o `pnpm db:seed` nunca baixa nada.
-//   node packages/db/seeds/gerar-dados.mjs [estados] [paises] [portes] [qualificacoes]
+//   node packages/db/seeds/gerar-dados.mjs [estados] [paises] [portes] [qualificacoes] [cnaes]
 // Sem argumentos, gera tudo. Fontes, URLs e datas: seeds/dados/README.md.
 import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -50,6 +50,24 @@ const geradores = {
       { codigo: 3, descricao: 'Empresa de Pequeno Porte' },
       { codigo: 5, descricao: 'Demais' },
     ])
+  },
+
+  // CNAE 2.x: subclasses (7 dígitos) com a hierarquia seção > divisão > grupo > classe (IBGE/CONCLA)
+  async cnaes() {
+    const lista = await buscar(`${IBGE}/v2/cnae/subclasses`)
+    await gravar(
+      'cnaes',
+      lista
+        .map((s) => ({
+          codigo: Number(s.id),
+          descricao: s.descricao,
+          secao: s.classe.grupo.divisao.secao.id,
+          divisao: s.classe.grupo.divisao.id,
+          grupo: s.classe.grupo.id,
+          classe: s.classe.id,
+        }))
+        .sort((a, b) => a.codigo - b.codigo),
+    )
   },
 
   // Tabela de qualificações do responsável/sócio da Receita, no CSV do projeto socios-brasil

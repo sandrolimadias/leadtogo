@@ -1,4 +1,4 @@
-import { estados, paises, portes, qualificacoesSocio } from '../schema/index.js'
+import { cnaes, estados, paises, portes, qualificacoesSocio } from '../schema/index.js'
 import { lerDados } from './dados.js'
 import { type Db, upsert } from './upsert.js'
 
@@ -36,6 +36,14 @@ export async function semearReferencias(db: Db): Promise<Record<string, number>>
     await lerDados<typeof qualificacoesSocio.$inferInsert>('qualificacoes_socio'),
     qualificacoesSocio.codigo,
     ['descricao'],
+  )
+
+  total['cnaes'] = await upsert(
+    db,
+    cnaes,
+    await lerDados<typeof cnaes.$inferInsert>('cnaes'),
+    cnaes.codigo,
+    ['descricao', 'secao', 'divisao', 'grupo', 'classe'],
   )
 
   return total
