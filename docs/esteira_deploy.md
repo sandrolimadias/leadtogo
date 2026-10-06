@@ -354,7 +354,7 @@ pnpm dev:up      # sobe os serviços (--wait) e roda docker/garage/init.sh
 | `pre-push` | `pnpm lint` + `pnpm typecheck` + `pnpm test` (mesmos comandos do CI) | 1–3 min |
 
 > Os hooks são instalados pelo `pnpm install` (script `prepare`). O secretlint aceita apenas as strings de conexão de exemplo em `localhost` (senhas `senha`/`test`), configuradas em `.secretlintrc.json`.
-> O `.lefthook.rc` (apontado por `rc: ./.lefthook.rc` no `lefthook.yml`) carrega o nvm, se existir, antes de cada comando dos hooks; assim o commit funciona de qualquer shell (IDE, Claude Code) sem ajustar o PATH. Não renomeie para `.lefthookrc`: o hook gerado pelo lefthook carrega esse nome sozinho com `. .lefthookrc`, que o `sh` (dash) do Ubuntu não encontra, e o commit aborta.
+> O `.lefthook.rc` (apontado por `rc: ./.lefthook.rc` no `lefthook.yml`) acrescenta ao PATH o bin do Node 24 mais recente do nvm (se existir) antes de cada comando dos hooks; assim o commit funciona de qualquer shell (IDE, Claude Code) sem ajustar o PATH. Não renomeie para `.lefthookrc`: o hook gerado pelo lefthook carrega esse nome sozinho com `. .lefthookrc`, que o `sh` (dash) do Ubuntu não encontra, e o commit aborta.
 
 ---
 
