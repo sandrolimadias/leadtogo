@@ -141,14 +141,21 @@ jobs:
     services:
       postgres:
         image: imresamu/postgis:17-3.5
-        env: { POSTGRES_PASSWORD: test, POSTGRES_DB: leadtogo_test }
+        env: { POSTGRES_PASSWORD: test }
         ports: ['5432:5432']
         options: --health-cmd pg_isready --health-interval 5s --health-retries 10
       valkey:
         image: valkey/valkey:8
         ports: ['6379:6379']
     env:
-      DATABASE_URL: postgres://postgres:test@localhost:5432/leadtogo_test
+      # Superusuário só para preparar o banco; os testes conectam como leadtogo_app/leadtogo_owner
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: test
+      LEADTOGO_OWNER_PASSWORD: test
+      LEADTOGO_APP_PASSWORD: test
+      TEST_DATABASE_URL: postgres://leadtogo_app:test@localhost:5432/leadtogo_test
+      TEST_DATABASE_MIGRATION_URL: postgres://leadtogo_owner:test@localhost:5432/leadtogo_test
       REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
@@ -156,7 +163,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm db:migrate && pnpm test
+      - run: BANCOS=leadtogo_test bash packages/db/scripts/garantir-bancos.sh # papéis + banco de teste
+      - run: pnpm test # o setup global dos testes aplica as migrações do zero
 
   build:
     needs: [quality, test]
@@ -315,7 +323,7 @@ cd leadtogo && cp .env.example .env    # preencher os valores de desenvolvimento
 
 | Serviço | Imagem | Porta (só `127.0.0.1`) | Observação |
 |---|---|---|---|
-| postgres | `imresamu/postgis:17-3.5` | 5432 | banco `leadtogo`; papéis criados pelo `docker/postgres/init.sh` |
+| postgres | `imresamu/postgis:17-3.5` | 5432 | bancos `leadtogo` e `leadtogo_test`; papéis de `packages/db/sql/papeis.sql` |
 | valkey | `valkey/valkey:8` | 6379 | persistência AOF |
 | garage | `dxflrs/garage:v2.1.0` | 3900 (S3) | um nó; config em `docker/garage/garage.toml` |
 
@@ -324,10 +332,12 @@ Todos têm *healthcheck*; `up -d --wait` só retorna quando estão saudáveis. O
 **Primeira vez**
 ```bash
 cp .env.example .env
-pnpm dev:up      # sobe os serviços (--wait) e roda docker/garage/init.sh
+pnpm dev:up      # serviços (--wait), bancos e papéis do Postgres e init do Garage
 ```
-- `pnpm dev:up` equivale a `docker compose --env-file .env -f docker/compose.dev.yml up -d --wait && bash docker/garage/init.sh`. O `--env-file` faz o compose ler as senhas e o segredo do `.env` da raiz; sem a variável, valem os padrões do `.env.example`.
-- `docker/postgres/init.sh` roda **só quando o volume é criado** e cria `leadtogo_owner` (dono do banco e das tabelas; roda as migrações) e `leadtogo_app` (usado pela API; sem `BYPASSRLS` e sem ser dono, para o RLS valer), a extensão `postgis` e os privilégios padrão do `leadtogo_app` sobre o que o owner criar. As senhas vêm de `LEADTOGO_OWNER_PASSWORD` e `LEADTOGO_APP_PASSWORD`; se mudar, mude também as URLs do `.env`. Mudar a senha com o volume já criado não tem efeito: use `pnpm dev:reset`.
+- `pnpm dev:up` (`docker/dev-up.sh`) sobe os serviços com `--env-file .env` (o compose lê as senhas e o segredo do `.env` da raiz; sem a variável valem os padrões do `.env.example`), garante os bancos e papéis e roda o init do Garage. **Pode ser repetido sem erro**, inclusive com volumes antigos.
+- **Bancos e papéis:** `packages/db/scripts/garantir-bancos.sh` cria `leadtogo` e `leadtogo_test` se faltarem e aplica `packages/db/sql/papeis.sql` em cada um. O mesmo script roda no primeiro start do volume (`docker/postgres/init.sh`) e no CI (com `BANCOS=leadtogo_test`).
+- **`papeis.sql`** (idempotente, **sem senhas no arquivo**; as senhas vêm de `LEADTOGO_OWNER_PASSWORD` e `LEADTOGO_APP_PASSWORD` na hora de executar): cria `leadtogo_owner` (dono do banco e das tabelas; roda as migrações) e `leadtogo_app` (usado pela API e pelo worker; sem `BYPASSRLS` e sem ser dono, para o RLS valer), instala o PostGIS e define o privilégio mínimo: nada é concedido automaticamente sobre tabelas e funções do owner, cada migração concede o que o app precisa. **Produção:** `LEADTOGO_OWNER_PASSWORD=... LEADTOGO_APP_PASSWORD=... psql -v ON_ERROR_STOP=1 -d leadtogo -f packages/db/sql/papeis.sql`, como superusuário, uma vez (repetir é seguro).
+- **Testes de banco:** rodam em `leadtogo_test`, conectados como `leadtogo_app` (`TEST_DATABASE_URL`) e `leadtogo_owner` (`TEST_DATABASE_MIGRATION_URL`). O setup global do Vitest em `packages/db` apaga o que o owner criou e aplica as migrações do zero; os testes se recusam a rodar em banco que não termine em `_test`.
 - `docker/garage/init.sh` é **idempotente**: só aplica o layout de um nó se ainda não houver, importa a chave `S3_ACCESS_KEY`/`S3_SECRET_KEY` do `.env` (formato do Garage: `GK` + 24 hex e 64 hex) se ela não existir e cria o bucket privado `leadtogo-arquivos` se não existir, liberando o acesso da chave. Pode ser repetido sem erro.
 - **Parar:** `pnpm dev:down` (mantém os dados).
 - **Zerar o ambiente:** `pnpm dev:reset` (pede confirmação; `--yes` pula a pergunta; para os containers e apaga `docker/.data/`). Depois, `pnpm dev:up` recria tudo; o init do Postgres só roda com o volume vazio.
