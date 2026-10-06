@@ -33,7 +33,7 @@ describe('seed das referências', () => {
       municipios: 5571,
       cnaes: 1332,
       estados: 27,
-      paises: 193,
+      paises: 255,
       portes: 4,
       qualificacoes_socio: 79,
     })
@@ -41,7 +41,7 @@ describe('seed das referências', () => {
       municipios: 5571,
       cnaes: 1332,
       estados: 27,
-      paises: 193,
+      paises: 255,
       portes: 4,
       qualificacoes_socio: 79,
     })
@@ -54,7 +54,7 @@ describe('seed das referências', () => {
       municipios: 5571,
       cnaes: 1332,
       estados: 27,
-      paises: 193,
+      paises: 255,
       portes: 4,
       qualificacoes_socio: 79,
     })
@@ -78,8 +78,8 @@ describe('seed das referências', () => {
       { codigo: 3, descricao: 'Empresa de Pequeno Porte' },
       { codigo: 5, descricao: 'Demais' },
     ])
-    const [br] = await owner`SELECT nome FROM paises WHERE codigo = 'BR'`
-    expect(br?.['nome']).toBe('Brasil')
+    const [br] = await owner`SELECT nome FROM paises WHERE codigo = 105`
+    expect(br?.['nome']).toBe('BRASIL')
     const regioes = await owner<
       { regiao: string }[]
     >`SELECT DISTINCT regiao FROM estados ORDER BY 1`
@@ -157,6 +157,35 @@ describe('seed das referências', () => {
     const achados = await owner<{ codigo: number }[]>`
       SELECT codigo FROM cnaes WHERE f_unaccent(descricao) ILIKE f_unaccent('%programas de computador%') ORDER BY codigo`
     expect(achados.map((a) => a.codigo)).toContain(6201501)
+  })
+
+  it('carrega os países da Receita, com o código numérico dela e sem duplicados', async () => {
+    const [r] = await owner<{ n: number; distintos: number; minimo: number; maximo: number }[]>`
+      SELECT count(*)::int AS n, count(DISTINCT codigo)::int AS distintos, min(codigo)::int AS minimo, max(codigo)::int AS maximo
+      FROM paises`
+    expect(r).toEqual({ n: 255, distintos: 255, minimo: 0, maximo: 999 })
+    // exemplos da tabela: o Brasil, um país e códigos especiais que aparecem em sócios estrangeiros
+    const casos =
+      await owner`SELECT codigo, nome FROM paises WHERE codigo IN (13, 105, 249, 997, 999) ORDER BY codigo`
+    expect(casos).toEqual([
+      { codigo: 13, nome: 'AFEGANISTAO' },
+      { codigo: 105, nome: 'BRASIL' },
+      { codigo: 249, nome: 'ESTADOS UNIDOS' },
+      { codigo: 997, nome: 'NAO DECLARADOS' },
+      { codigo: 999, nome: 'NAO DECLARADOS' },
+    ])
+  })
+
+  it('os países usam o código da Receita (smallint), não o ISO de 2 letras', async () => {
+    const [c] = await owner<{ tipo: string }[]>`
+      SELECT format_type(atttypid, atttypmod) AS tipo FROM pg_attribute
+      WHERE attrelid = 'paises'::regclass AND attname = 'codigo'`
+    expect(c?.tipo).toBe('smallint')
+    const [t] = await owner<{ tipo: string; padrao: string }[]>`
+      SELECT format_type(a.atttypid, a.atttypmod) AS tipo, pg_get_expr(d.adbin, d.adrelid) AS padrao
+      FROM pg_attribute a JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+      WHERE a.attrelid = 'tenants'::regclass AND a.attname = 'pais_codigo'`
+    expect(t).toEqual({ tipo: 'smallint', padrao: '105' })
   })
 
   it('o app lê os dados carregados', async () => {

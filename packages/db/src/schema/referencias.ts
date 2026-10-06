@@ -21,8 +21,9 @@ export const estados = pgTable('estados', {
   regiao: text().notNull(),
 })
 
+/** Países da Receita Federal (dados abertos do CNPJ): código numérico da Receita (Brasil = 105) e nome. */
 export const paises = pgTable('paises', {
-  codigo: char({ length: 2 }).primaryKey(),
+  codigo: smallint().primaryKey(),
   nome: text().notNull(),
 })
 

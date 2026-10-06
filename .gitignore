@@ -30,3 +30,6 @@ pnpm-debug.log*
 
 # dados locais do docker de desenvolvimento
 docker/.data/
+
+# artefatos de download do Windows
+*:Zone.Identifier

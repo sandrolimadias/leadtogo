@@ -29,6 +29,13 @@
       "when": 1791291522259,
       "tag": "0003_sistema",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791296979576,
+      "tag": "0004_paises_receita",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -78,7 +79,8 @@ export const tenants = pgTable(
     complemento: text(),
     bairro: text(),
     municipioCodigo: integer().references(() => municipios.codigoIbge),
-    paisCodigo: char({ length: 2 }).default('BR'),
+    /** Código do país na Receita (105 = Brasil) */
+    paisCodigo: smallint().default(105),
     logoArquivoId: uuid().references((): AnyPgColumn => arquivos.id),
     contaId: uuid()
       .notNull()

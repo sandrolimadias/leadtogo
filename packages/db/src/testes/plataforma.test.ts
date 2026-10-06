@@ -55,7 +55,7 @@ describe('tenants (isolado pela coluna id)', () => {
       fuso_horario: 'America/Sao_Paulo',
       moeda: 'BRL',
       situacao: 'teste',
-      pais_codigo: 'BR',
+      pais_codigo: 105, // Brasil, no código da Receita
     })
     await comTenant(owner, a!, (tx) => tx`UPDATE tenants SET cnpj = '12ABC34501DE35'`)
     await expect(

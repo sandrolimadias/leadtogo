@@ -48,14 +48,26 @@ const geradores = {
     )
   },
 
+  // Países da Receita Federal (dados abertos do CNPJ, arquivo Paises): código numérico da Receita
+  // (Brasil = 105) e nome. O CSV foi baixado à mão (ver seeds/dados/README.md) e fica em seeds/fontes/.
+  // Formato: separador `;`, Latin-1, código e nome entre aspas.
   async paises() {
-    const lista = await buscar(`${IBGE}/v1/localidades/paises`, 'json', 'paises.json')
-    await gravar(
-      'paises',
-      lista
-        .map((p) => ({ codigo: p.id['ISO-ALPHA-2'], nome: p.nome }))
-        .sort((a, b) => a.codigo.localeCompare(b.codigo)),
-    )
+    const csv = await readFile(`${DESTINO}../fontes/paises_receita_2026-09.csv`, 'latin1')
+    const paises = csv
+      .split(/\r?\n/)
+      .filter((linha) => linha.trim() !== '')
+      .map((linha) => {
+        const [codigo, nome] = linha.split(';').map((c) => c.replace(/^"|"$/g, '').trim())
+        if (!/^\d{3}$/.test(codigo ?? '') || !nome)
+          throw new Error(`Linha inválida em Paises: ${linha}`)
+        return { codigo: Number(codigo), nome }
+      })
+      .sort((a, b) => a.codigo - b.codigo)
+    if (new Set(paises.map((p) => p.codigo)).size !== paises.length)
+      throw new Error('Códigos de país repetidos')
+    if (paises.find((p) => p.codigo === 105)?.nome !== 'BRASIL')
+      throw new Error('Brasil (105) não encontrado')
+    await gravar('paises', paises)
   },
 
   // Layout dos dados abertos do CNPJ (Receita Federal): campo "porte da empresa"
