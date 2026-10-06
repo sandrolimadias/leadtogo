@@ -187,6 +187,22 @@ O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verifi
 | tenant_id | uuid FK | |
 | email | citext NOT NULL | Para quem foi enviado |
 | papel | enum `papel_membro` | Papel que o convidado terá |
+| token_hash | text NOT NULL UNIQUE | Hash (SHA-256) do token enviado por e-mail; o token em si **nunca** é gravado |
+| expira_em | timestamptz | Validade de 7 dias |
+| aceito_em | timestamptz null | Uso único |
+| revogado_em | timestamptz null | Cancelado por um administrador antes de ser aceito |
+| convidado_por | uuid FK → `membros` NOT NULL | |
+| criado_em, atualizado_em | timestamptz | |
+
+Único parcial `(tenant_id, email)` enquanto **pendente** (`aceito_em` e `revogado_em` nulos): reenviar um convite revoga o anterior e cria outro com token novo.
+
+> **Aceite sem sessão (migração 0007):** quem aceita só tem o token, sem tenant ativo, e `convites` tem RLS forçado. Mesmo padrão da descoberta de vínculos (3.0): `app_convite_por_token(hash)`, `SECURITY DEFINER` do `leadtogo_owner`, `search_path` fixo, `EXECUTE` só para o `leadtogo_app`, devolve **só os ids** (`id`, `tenant_id`) e vale por uma política `FOR SELECT TO leadtogo_owner` travada na variável `app.convite_hash`, que só a função define e limpa. O resto (e-mail, papel, validade, situação) a API lê depois, com o tenant ativo e sob RLS.
+
+---|---|---|
+| id | uuid PK | |
+| tenant_id | uuid FK | |
+| email | citext NOT NULL | Para quem foi enviado |
+| papel | enum `papel_membro` | Papel que o convidado terá |
 | token_hash | text NOT NULL UNIQUE | Hash (SHA-256) do token enviado por e-mail; o token em si nunca é gravado |
 | expira_em | timestamptz | Validade de 7 dias |
 | aceito_em | timestamptz null | Uso único |

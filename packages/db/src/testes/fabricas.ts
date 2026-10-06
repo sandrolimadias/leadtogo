@@ -42,6 +42,24 @@ export const fabricas: Record<string, FabricaRegistrada> = {
   }),
 }
 
+fabricas['convites'] = definirFabrica<string>({
+  colunaAlteravel: 'email',
+  // O pai: quem convida (um membro do tenant)
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const id = novoId()
+      await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${id}, ${tenantId}, 'Quem convida')`
+      return id
+    }),
+  criar: async (tx, tenantId, convidadoPor) => {
+    const id = novoId()
+    await tx`
+      INSERT INTO convites (id, tenant_id, email, papel, token_hash, expira_em, convidado_por)
+      VALUES (${id}, ${tenantId}, ${`c-${id}@exemplo.com`}, 'vendedor', ${`hash-${id}`}, now() + interval '7 days', ${convidadoPor})`
+    return id
+  },
+})
+
 fabricas['arquivos'] = definirFabrica({
   colunaAlteravel: 'nome',
   criar: async (tx, tenantId) => {

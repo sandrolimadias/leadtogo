@@ -50,6 +50,13 @@
       "when": 1791301300284,
       "tag": "0006_funcoes_vinculos",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791302468206,
+      "tag": "0007_convites",
+      "breakpoints": true
     }
   ]
 }

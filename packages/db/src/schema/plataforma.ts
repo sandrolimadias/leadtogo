@@ -149,3 +149,34 @@ export const membros = pgTable(
     index('membros_usuario_idx').on(t.usuarioId),
   ],
 )
+
+/**
+ * Convite de membro (docs/modelagem_banco.md, seção 3.5). Só o HASH do token é guardado: o token em
+ * si vai por e-mail e nunca é gravado. Uso único; no máximo um convite pendente por (empresa, e-mail).
+ */
+export const convites = pgTable(
+  'convites',
+  {
+    id: chaveUuid(),
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    email: citext().notNull(),
+    papel: papelMembro().notNull(),
+    tokenHash: text().notNull().unique('convites_token_hash_key'),
+    expiraEm: timestamp({ withTimezone: true }).notNull(),
+    aceitoEm: timestamp({ withTimezone: true }),
+    /** Cancelado por um administrador antes de ser aceito */
+    revogadoEm: timestamp({ withTimezone: true }),
+    convidadoPor: uuid()
+      .notNull()
+      .references((): AnyPgColumn => membros.id),
+    ...carimbos(),
+  },
+  (t) => [
+    uniqueIndex('convites_pendente_uq')
+      .on(t.tenantId, t.email)
+      .where(sql`${t.aceitoEm} IS NULL AND ${t.revogadoEm} IS NULL`),
+    index('convites_tenant_idx').on(t.tenantId, t.criadoEm),
+  ],
+)
