@@ -1,0 +1,10 @@
+[
+  {
+    "codigo_ibge": 5101837,
+    "codigo_siafi": 1182,
+    "nome": "Boa Esperança do Norte (MT)",
+    "motivo": "Município instalado em 01/01/2025; não consta na tabela do Tesouro, de 2021.",
+    "fonte": "Página oficial da prefeitura, 'Códigos de Identificação do Município': https://www.boaesperancadonorte.mt.gov.br/pages/codigos-de-identificacao-do-municipio (TOM Receita Federal 1182; IBGE 5101837). O código 1182 está livre na tabela do Tesouro.",
+    "conferido_em": "2026-10-06"
+  }
+]

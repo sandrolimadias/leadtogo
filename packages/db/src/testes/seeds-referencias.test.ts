@@ -6,7 +6,7 @@ import { conectarApp, conectarDrizzleOwner } from './conexoes.js'
 const { db, cliente: owner } = conectarDrizzleOwner()
 const app = conectarApp()
 
-const TABELAS = ['cnaes', 'qualificacoes_socio', 'portes', 'paises', 'estados']
+const TABELAS = ['municipios', 'cnaes', 'qualificacoes_socio', 'portes', 'paises', 'estados']
 async function limpar() {
   for (const t of TABELAS) await owner`DELETE FROM ${owner(t)}`
 }
@@ -26,10 +26,11 @@ afterAll(async () => {
   await app.end()
 })
 
-describe('seed das referências pequenas', () => {
-  it('carrega estados, países, portes e qualificações', async () => {
+describe('seed das referências', () => {
+  it('carrega estados, municípios, países, portes, qualificações e CNAEs', async () => {
     const lidos = await semearReferencias(db)
     expect(lidos).toEqual({
+      municipios: 5571,
       cnaes: 1332,
       estados: 27,
       paises: 193,
@@ -37,6 +38,7 @@ describe('seed das referências pequenas', () => {
       qualificacoes_socio: 79,
     })
     expect(await contar()).toEqual({
+      municipios: 5571,
       cnaes: 1332,
       estados: 27,
       paises: 193,
@@ -49,6 +51,7 @@ describe('seed das referências pequenas', () => {
     await semearReferencias(db)
     await semearReferencias(db)
     expect(await contar()).toEqual({
+      municipios: 5571,
       cnaes: 1332,
       estados: 27,
       paises: 193,
@@ -108,6 +111,46 @@ describe('seed das referências pequenas', () => {
       SELECT codigo FROM cnaes
       WHERE lpad(codigo::text, 7, '0') NOT LIKE classe || '%' OR classe NOT LIKE grupo || '%' OR grupo NOT LIKE divisao || '%'`
     expect(incoerentes).toHaveLength(0)
+  })
+
+  it('carrega os 5.571 municípios com o código IBGE e o SIAFI/TOM da Receita, sem nenhum faltando', async () => {
+    const [r] = await owner<
+      { n: number; sem_siafi: number; siafi_distintos: number; ufs: number }[]
+    >`
+      SELECT count(*)::int AS n, count(*) FILTER (WHERE codigo_siafi IS NULL)::int AS sem_siafi,
+             count(DISTINCT codigo_siafi)::int AS siafi_distintos, count(DISTINCT uf)::int AS ufs FROM municipios`
+    expect(r).toEqual({ n: 5571, sem_siafi: 0, siafi_distintos: 5571, ufs: 27 })
+    // exemplos: o do modelo (Serra, IBGE 3205002 e SIAFI 5699), capital e DF
+    const casos = await owner`
+      SELECT codigo_ibge, codigo_siafi, nome, uf FROM municipios
+      WHERE codigo_ibge IN (3205002, 3550308, 5300108) ORDER BY codigo_ibge`
+    expect(casos).toEqual([
+      { codigo_ibge: 3205002, codigo_siafi: 5699, nome: 'Serra', uf: 'ES' },
+      { codigo_ibge: 3550308, codigo_siafi: 7107, nome: 'São Paulo', uf: 'SP' },
+      { codigo_ibge: 5300108, codigo_siafi: 9701, nome: 'Brasília', uf: 'DF' },
+    ])
+  })
+
+  it('o município novo (correção manual) tem o código da Receita', async () => {
+    const [m] =
+      await owner`SELECT codigo_siafi, nome, uf FROM municipios WHERE codigo_ibge = 5101837`
+    expect(m).toEqual({ codigo_siafi: 1182, nome: 'Boa Esperança do Norte', uf: 'MT' })
+  })
+
+  it("a busca de município ignora acento, caixa e apóstrofo (D'Oeste = do Oeste)", async () => {
+    const achados = await owner<{ codigo_ibge: number }[]>`
+      SELECT codigo_ibge FROM municipios
+      WHERE replace(f_unaccent(nome), '''', ' ') ILIKE ${'%floresta d oeste%'} AND uf = 'RO'`
+    expect(achados.map((a) => a.codigo_ibge)).toEqual([1100015])
+  })
+
+  it('rodar de novo corrige um SIAFI alterado, sem duplicar', async () => {
+    await owner`UPDATE municipios SET codigo_siafi = 99999, nome = 'Errado' WHERE codigo_ibge = 3205002`
+    await semearReferencias(db)
+    const [m] = await owner`SELECT codigo_siafi, nome FROM municipios WHERE codigo_ibge = 3205002`
+    expect(m).toEqual({ codigo_siafi: 5699, nome: 'Serra' })
+    const [total] = await owner<{ n: number }[]>`SELECT count(*)::int AS n FROM municipios`
+    expect(total?.n).toBe(5571)
   })
 
   it('a busca por descrição sem acento encontra o CNAE (índice trigram)', async () => {
