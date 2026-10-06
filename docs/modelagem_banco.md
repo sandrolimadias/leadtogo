@@ -108,8 +108,8 @@ USUÁRIO (login único) ── MEMBRO na Empresa A (admin)
 ```
 
 - **Isolamento total** de dados entre empresas. O que muda é o **acesso**: um login pode ter vínculo (membro) em várias empresas, com papel próprio em cada uma.
-- **Seletor de empresa** no topo do app. A sessão guarda a **empresa ativa** (Better Auth `activeOrganizationId`), e toda requisição roda com `app.tenant_id` = empresa ativa.
-- **Painel consolidado** (somente leitura): para administradores da conta, a requisição define `app.tenant_ids` = lista das empresas em que o usuário é admin, e as políticas RLS de **leitura** aceitam `tenant_id = ANY(app.tenant_ids)`. Gravações continuam exigindo uma única empresa ativa.
+- **Seletor de empresa** no topo do app. A sessão guarda a **empresa ativa** (`auth.session.empresa_ativa_id`), e toda requisição roda com `app.tenant_id` = empresa ativa.
+- **Painel consolidado** (somente leitura): para **administradores da conta** (`conta_administradores`, papel dono ou administrador), a requisição define `app.tenant_ids` = todas as empresas da conta, e as políticas RLS de **leitura** aceitam `tenant_id = ANY(app.tenant_ids)`. Gravações continuam exigindo uma única empresa ativa.
 - **Copiar configurações** entre empresas da mesma conta: funis/fases, grupos de tags/tags, tipos de atividade, origens, motivos, soluções, produtos, faixas, verticais, campos personalizados e quadro modelo. É uma cópia (não um vínculo): depois cada empresa ajusta a sua.
 - **Notificações** de todas as empresas aparecem na central, identificadas pela empresa (clicar troca a empresa ativa).
 
@@ -169,9 +169,23 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 | preferencias | jsonb | Demais ajustes |
 
 ### 3.3 Autenticação (Better Auth)
-O Better Auth cria e gerencia as próprias tabelas: `user`, `session`, `account`, `verification`, `two_factor`, `organization`, `member`, `invitation`. Elas ficam num **schema separado `auth`** e não são editadas pelo CRM. Ligações:
-- `organization.id` ↔ `tenants.id`
-- `user.id` ↔ `membros.usuario_id`
+O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verification` e `two_factor`, num **schema separado `auth`**. O **plugin de organizações não é usado** (empresas, membros e convites são nossos, sob RLS). Ligações:
+- `user.id` ↔ `membros.usuario_id` e `conta_administradores.usuario_id` (FK)
+- `session.empresa_ativa_id` → `tenants.id`: a empresa ativa da sessão (campo nosso, adicionado à tabela do Better Auth)
+
+### 3.5 `convites` 🏢 — Convite de membro
+| Coluna | Tipo | Observação |
+|---|---|---|
+| id | uuid PK | |
+| tenant_id | uuid FK | |
+| email | citext NOT NULL | Para quem foi enviado |
+| papel | enum `papel_membro` | Papel que o convidado terá |
+| token_hash | text NOT NULL UNIQUE | Hash (SHA-256) do token enviado por e-mail; o token em si nunca é gravado |
+| expira_em | timestamptz | Validade de 7 dias |
+| aceito_em | timestamptz null | Uso único |
+| convidado_por | uuid FK → `membros` | |
+| criado_em, atualizado_em | timestamptz | |
+
 
 ### 3.4 `membros` 🏢 — Equipe / **Vendedores**
 | Coluna | Tipo | Observação |
@@ -605,7 +619,7 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 
 | Grupo | Tabelas | Qtd |
 |---|---|---|
-| Plataforma | contas, conta_administradores, tenants, tenant_configuracoes, membros (+ tabelas do Better Auth) | 5 |
+| Plataforma | contas, conta_administradores, tenants, tenant_configuracoes, membros, convites (+ tabelas do Better Auth) | 6 |
 | Referência 🌐 | cnaes, municipios, estados, paises, portes, qualificacoes_socio, receita_consultas | 7 |
 | Cadastros auxiliares | verticais, faixas_funcionarios, faixas_faturamento, tag_grupos, tags, tipos_atividade, funis, funil_fases, origens, motivos, solucoes, papeis_decisao, etiquetas, campos_personalizados, produtos | 15 |
 | Empresas | empresas, empresa_telefones, empresa_cnaes, empresa_socios, empresa_tags, empresa_tags_historico | 6 |
@@ -614,7 +628,7 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | Oportunidades | oportunidades, oportunidade_itens, oportunidade_contatos, oportunidade_historico | 4 |
 | Prospecção | prospeccoes, prospeccao_resultados | 2 |
 | Sistema | arquivos, comentarios, notificacoes, preferencias_notificacao, filtros_salvos, importacoes, auditoria, eventos_outbox | 8 |
-| **Fase 1** | | **60** |
+| **Fase 1** | | **61** |
 | Futuras 🔮 | api_chaves, webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, rotas, rota_paradas, metas | 12 |
 
 ---

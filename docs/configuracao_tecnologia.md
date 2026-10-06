@@ -132,8 +132,8 @@ crm/
 
 ### Multiempresa (conta com vários tenants)
 - Hierarquia: **Conta → Tenants (empresas) → Membros**. O usuário (login do Better Auth) é único e tem um vínculo de membro em cada empresa.
-- **Empresa ativa** guardada na sessão (Better Auth `activeOrganizationId`). O guard da API valida se o usuário é membro ativo dessa empresa antes de definir `app.tenant_id`.
-- **Leitura consolidada:** endpoints específicos (`/v1/consolidado/...`) definem `SET LOCAL app.tenant_ids = '{...}'` com as empresas em que o usuário é admin da conta. As políticas RLS **de SELECT** aceitam `tenant_id = current_setting('app.tenant_id')::uuid OR tenant_id = ANY(current_setting('app.tenant_ids', true)::uuid[])`. As políticas de INSERT/UPDATE/DELETE aceitam **só** `app.tenant_id`.
+- **Empresa ativa** guardada na sessão (campo `empresaAtivaId`, nosso). O guard da API descobre os vínculos do usuário pela função `app_vinculos_do_usuario` (`SECURITY DEFINER`, devolve só tenant e papel) e valida que ele é membro ativo da empresa ativa antes de definir `app.tenant_id`.
+- **Leitura consolidada:** endpoints específicos (`/v1/consolidado/...`) definem `SET LOCAL app.tenant_ids = '{...}'` com **todas as empresas da conta**, e só para quem está em `conta_administradores` com papel dono ou administrador (o financeiro não entra). Quem é admin apenas de uma empresa não tem consolidado; a transação é `READ ONLY`. As políticas RLS **de SELECT** aceitam `tenant_id = current_setting('app.tenant_id')::uuid OR tenant_id = ANY(current_setting('app.tenant_ids', true)::uuid[])`. As políticas de INSERT/UPDATE/DELETE aceitam **só** `app.tenant_id`.
 - Cache (Valkey) sempre com o `tenant_id` na chave, para evitar vazamento entre empresas.
 - Teste automatizado obrigatório: um usuário com acesso às empresas A e B, com a A ativa, não consegue gravar na B.
 
@@ -144,7 +144,11 @@ crm/
 ### Better Auth
 - Login com e-mail e senha (hash Argon2/scrypt), com opção de login Google.
 - **2FA (TOTP)** disponível, obrigatório para administradores.
-- Plugin de **organizações**: cada organização é um tenant, com membros, papéis e convites.
+- **Sem o plugin de organizações.** O Better Auth cuida só da **identidade** (usuário, sessão, 2FA, recuperação de senha). Empresas, membros, convites e a empresa ativa ficam nas nossas tabelas (`tenants`, `membros`, `convites`), sob RLS, para não haver duas fontes da verdade. A empresa ativa é um campo da sessão (`empresaAtivaId`).
+- **2FA obrigatório para administradores** (admin de qualquer empresa ou da conta): o Better Auth não impõe isso sozinho; o guard da API responde `403 2fa_obrigatorio` até o 2FA ser ativado, deixando passar só `GET /v1/me`, as rotas de ativação do 2FA e o logout.
+- Senhas com **scrypt** (padrão do Better Auth, sem dependência nativa na imagem ARM64). Verificação de e-mail obrigatória para entrar **em produção** (flag).
+- O handler do Better Auth é montado direto (`toNodeHandler`) em `/v1/auth/*`, antes do parser de corpo do Nest; a API tem guard próprio (sessão, tenant e 2FA).
+- **Domínios e cookies:** o front fica em `crm.aledias.com.br` e a API em `api.crm.aledias.com.br` (mesmo *site*). O cookie de sessão é emitido pela API (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`, só no host da API); o front chama a API com `credentials: 'include'`, e o CORS libera só `https://crm.aledias.com.br` com credenciais. Em desenvolvimento (`localhost:5173` e `localhost:3000`) o cookie vale sem `Secure`.
 - Sessões em cookie `HttpOnly`, `Secure`, `SameSite=Lax`; no app Capacitor, token seguro no armazenamento nativo.
 - Recuperação de senha e verificação de e-mail.
 
@@ -405,7 +409,8 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 | 17 | Verificação Google | Começar em modo de teste/interno + BCC; verificação completa (CASA) quando houver clientes externos com Gmail |
 | 18 | Worker | Container separado para filas e sincronizações |
 | 19 | Tempo real e push | SSE/Socket.io + Web Push (PWA) + FCM/APNs (Capacitor) |
-| 20 | Multiempresa | Conta → tenants → membros; empresa ativa na sessão; consolidado só leitura via `app.tenant_ids` |
+| 20 | Multiempresa | Conta → tenants → membros; empresa ativa na sessão; consolidado só leitura via `app.tenant_ids`, só para administradores da conta |
+| 21 | Organizações do Better Auth | **Não usadas**: o Better Auth só faz identidade; empresas, membros e convites são nossos, sob RLS |
 | 21 | Domínios | App em `crm.aledias.com.br`, API em `api.crm.aledias.com.br` (subdomínios via registro curinga `*.crm`) |
 
 ## 16. Próximos passos

@@ -255,8 +255,8 @@ Como ficou:
 > - configuração validada por Zod (falha ao iniciar se faltar variável);
 > - logs estruturados com Pino (`request_id`, `tenant_id`, `user_id`);
 > - `GET /health` (banco, Valkey e Garage) retornando `version` = `APP_VERSION`;
-> - **Better Auth** com e-mail/senha, plugin de organizações (organização = tenant), 2FA TOTP, recuperação de senha, cookies seguros, e login Google preparado mas desligado;
-> - fluxo de **primeiro acesso**: cria conta + primeira empresa (tenant) + membro admin + cadastros padrão;
+> - **Better Auth** só para identidade (**sem** plugin de organizações): e-mail/senha, 2FA TOTP, recuperação de senha, cookies seguros, e login Google preparado mas desligado;
+> - fluxo de **primeiro acesso** (`POST /v1/primeiro-acesso` e o comando `dist/criar-conta.js`): cria conta + primeira empresa (tenant) + configurações + membro admin (os cadastros padrão entram quando as tabelas existirem);
 > - **guard de tenant**: valida que o usuário é membro ativo da empresa ativa e abre a transação com `SET LOCAL app.tenant_id`; endpoints `/v1/consolidado/*` com `app.tenant_ids` (só leitura);
 > - endpoints iniciais: `GET /v1/me` (usuário, empresas, papel em cada uma), `POST /v1/sessao/empresa-ativa`, `GET/PATCH /v1/me/preferencias`;
 > - Helmet, CORS restrito a `APP_URL`, rate limit no Valkey (login e API), validação global e filtro de erros padronizado;
@@ -270,6 +270,16 @@ Checklist:
 - [ ] Usuário da empresa A recebe 403/404 ao tentar acessar dados da B.
 - [ ] **FK de `membros.usuario_id` e `conta_administradores.usuario_id` para `auth.user`**: adicionada na migração que cria o schema `auth` (ficou fora do E7 porque a tabela ainda não existe).
 - [ ] **Vínculos do usuário (direção definida no E7, implementar aqui):** antes de haver tenant ativo, o app precisa saber em quais empresas o usuário é membro. Sem papel com `BYPASSRLS` e sem afrouxar o RLS: uma função `SECURITY DEFINER` mínima, `app_vinculos_do_usuario(usuario_id)`, devolve **só o `tenant_id` e o papel**; pertence ao `leadtogo_owner`, tem `search_path` fixo, `EXECUTE` revogado de `PUBLIC` e concedido apenas ao `leadtogo_app`. O guard de tenant usa essa função e só então abre a transação com `SET LOCAL app.tenant_id`.
+
+**Decisões do E8 (aprovadas em 06/10/2026):**
+- **Sem plugin de organizações** do Better Auth: ele só faz identidade; empresas, membros, convites e empresa ativa (`auth.session.empresa_ativa_id`) são nossos, sob RLS (`configuracao_tecnologia.md`, seção 7).
+- **Primeiro acesso:** `PRIMEIRO_ACESSO=aberto|fechado` (padrão **fechado em produção**). O comando `node dist/criar-conta.js` faz o mesmo fluxo pelo terminal, para criar a primeira conta na VPS (documentado em `esteira_deploy.md`).
+- **Better Auth** montado por `toNodeHandler` em `/v1/auth/*`, com guard próprio; o parser de corpo do Nest não pode consumir o corpo dessa rota. Senha com scrypt. Verificação de e-mail obrigatória em produção (flag). Cliente Valkey: `ioredis` 5.x.
+- **2FA obrigatório para admin:** o guard deixa passar `GET /v1/me`, as rotas de ativação do 2FA e o logout; as demais respondem `403 2fa_obrigatorio`.
+- **Consolidado** (`/v1/consolidado/*`): só para quem está em `conta_administradores` (dono ou administrador); `app.tenant_ids` recebe **todas as empresas da conta**; transação somente leitura.
+- **Cookies e CORS** para `crm.aledias.com.br` (front) e `api.crm.aledias.com.br` (API): ver `configuracao_tecnologia.md`, seção 7.
+- `GET /v1/membros` (leitura) entra para provar o isolamento por HTTP e servir à tela de equipe.
+- Mudança de rumo (cache da sessão, UUID v7 do Better Auth): avisar o Ale **antes** de contornar.
 
 **Pronto quando:** testes de integração passam e o Swagger mostra os endpoints.
 
@@ -352,6 +362,9 @@ Checklist:
 5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
 7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.
+8. [ ] **Escolher o provedor de SMTP de produção** (recuperação de senha, verificação de e-mail e convites) e cadastrar as variáveis `SMTP_*` no Coolify. Até lá, `VERIFICACAO_EMAIL` fica desligada em produção (nenhum e-mail sai).
+9. [ ] **Teste de login real com os dois domínios** (`https://crm.aledias.com.br` → `https://api.crm.aledias.com.br`): cookie de sessão emitido pela API (`HttpOnly`, `Secure`, `SameSite=Lax`), CORS com credenciais só para o front, login, `GET /v1/me` e logout pelo navegador.
+10. [ ] **Criar a primeira conta** pelo terminal do Coolify (`PRIMEIRO_ACESSO` fica `fechado`): `node dist/criar-conta.js` (ver `esteira_deploy.md`).
 
 **Pronto quando:** o push passa por toda a esteira, `https://api.crm.aledias.com.br/health` mostra o commit atual e `https://crm.aledias.com.br` abre o login com certificado válido.
 
