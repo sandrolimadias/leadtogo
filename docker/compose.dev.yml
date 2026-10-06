@@ -1,0 +1,59 @@
+# Serviços de dados para desenvolvimento local (ver docs/esteira_deploy.md, seção 9.4).
+#   docker compose -f docker/compose.dev.yml up -d
+#   bash docker/garage/init.sh        # uma vez: cria bucket e chave no Garage
+# Dados em docker/.data/ (ignorado pelo Git). Para zerar: down e apagar docker/.data/.
+name: leadtogo-dev
+
+services:
+  postgres:
+    image: imresamu/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: leadtogo
+      # Senhas dos papéis criados por docker/postgres/init.sh (iguais às do .env.example)
+      LEADTOGO_OWNER_PASSWORD: ${LEADTOGO_OWNER_PASSWORD:-senha}
+      LEADTOGO_APP_PASSWORD: ${LEADTOGO_APP_PASSWORD:-senha}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - ./.data/postgres:/var/lib/postgresql/data
+      - ./postgres/init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d leadtogo']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  valkey:
+    image: valkey/valkey:8
+    restart: unless-stopped
+    command: ['valkey-server', '--appendonly', 'yes']
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - ./.data/valkey:/data
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  garage:
+    image: dxflrs/garage:v2.1.0
+    restart: unless-stopped
+    environment:
+      # Só para desenvolvimento; em produção o segredo fica no Coolify
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:-1799bccfd7411eddcf9ebd316bc1f5287ad12a68094e1c6ac968d39e4f8e5a5c}
+    ports:
+      - '127.0.0.1:3900:3900' # API S3 (as portas 3901 RPC e 3903 admin ficam só na rede interna)
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+      - ./.data/garage/meta:/var/lib/garage/meta
+      - ./.data/garage/data:/var/lib/garage/data
+    healthcheck:
+      test: ['CMD', '/garage', 'status']
+      interval: 5s
+      timeout: 5s
+      retries: 20

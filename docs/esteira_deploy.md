@@ -310,6 +310,28 @@ cd leadtogo && cp .env.example .env    # preencher os valores de desenvolvimento
 ```
 
 ### 9.4 Rotina diária
+
+**Serviços de dados (`docker/compose.dev.yml`)**
+
+| Serviço | Imagem | Porta (só `127.0.0.1`) | Observação |
+|---|---|---|---|
+| postgres | `imresamu/postgis:17-3.5` | 5432 | banco `leadtogo`; papéis criados pelo `docker/postgres/init.sh` |
+| valkey | `valkey/valkey:8` | 6379 | persistência AOF |
+| garage | `dxflrs/garage:v2.1.0` | 3900 (S3) | um nó; config em `docker/garage/garage.toml` |
+
+Todos têm *healthcheck*; `up -d --wait` só retorna quando estão saudáveis. Os dados ficam em `docker/.data/` (ignorado pelo Git).
+
+**Primeira vez**
+```bash
+cp .env.example .env
+docker compose -f docker/compose.dev.yml up -d --wait
+bash docker/garage/init.sh      # layout, chave e bucket do Garage (idempotente)
+```
+- `docker/postgres/init.sh` roda **só quando o volume é criado** e cria `leadtogo_owner` (dono do banco e das tabelas; roda as migrações) e `leadtogo_app` (usado pela API; sem `BYPASSRLS` e sem ser dono, para o RLS valer), a extensão `postgis` e os privilégios padrão do `leadtogo_app` sobre o que o owner criar. As senhas vêm de `LEADTOGO_OWNER_PASSWORD` e `LEADTOGO_APP_PASSWORD` (padrão `senha`, igual ao `.env.example`). O compose lê essas variáveis do **ambiente do shell**, não do `.env` da raiz; se mudar a senha, mude também as URLs do `.env`.
+- `docker/garage/init.sh` aplica o layout de um nó, importa a chave `S3_ACCESS_KEY`/`S3_SECRET_KEY` do `.env` (formato do Garage: `GK` + 24 hex e 64 hex) e cria o bucket privado `leadtogo-arquivos` com acesso dessa chave. Pode ser repetido sem efeito.
+- **Zerar o ambiente:** `docker compose -f docker/compose.dev.yml down && sudo rm -rf docker/.data`, e repetir a primeira vez (o init do Postgres só roda com o volume vazio).
+
+**Dia a dia**
 - `docker compose -f docker/compose.dev.yml up -d`: Postgres+PostGIS, Valkey e Garage (S3)
 - `pnpm install` · `pnpm db:migrate` · `pnpm db:seed` (tenant de exemplo, tags e funil padrão, CNAEs, municípios)
 - `pnpm dev`: API, worker e web com recarga automática

@@ -10,3 +10,4 @@ docs/
 # gerados
 packages/api-client/src/gerado/
 packages/db/migrations/
+docker/.data/
