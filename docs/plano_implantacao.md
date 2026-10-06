@@ -32,7 +32,7 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 | E4 | Preparar a VPS e o Coolify (dados) | Ale | E3 | 3–4 h |
 | E5 | Esqueleto do monorepo | Claude Code | E2 | 1 dia |
 | E6 | Ambiente de desenvolvimento (Docker local) | Claude Code | E5 | 2 h |
-| E7 | Banco: base, papéis, RLS e referências | Claude Code | E6 | 2 dias |
+| E7 | Banco: base, papéis, RLS e referências ✅ | Claude Code | E6 | 2 dias |
 | E8 | API base (NestJS + Better Auth + tenant) | Claude Code | E7 | 2–3 dias |
 | E9 | Web base (casca do app + login) | Claude Code | E8 | 3 dias |
 | E10 | Worker base (filas e eventos) | Claude Code | E8 | 1 dia |
@@ -228,12 +228,14 @@ Checklist:
 
 **Pronto quando:** `pnpm db:migrate && pnpm db:seed && pnpm test` passam do zero, e o Drizzle Studio mostra CNAEs e municípios carregados.
 
-✅ **Concluído em 06/10/2026.** Verificado do zero (`pnpm dev:reset --yes && pnpm dev:up && pnpm db:migrate && pnpm db:seed && pnpm test`): 86 testes do `packages/db`; `leadtogo_app` lê 1.332 CNAEs e 5.571 municípios e, sem tenant ativo, não vê nenhuma empresa.
+✅ **Concluído e aprovado em 06/10/2026.** Verificado do zero (`pnpm dev:reset && pnpm dev:up && pnpm db:migrate && pnpm db:seed && pnpm test --force`, sem cache): **5 migrações**; **1.332 CNAEs, 5.571 municípios, 27 estados e 255 países** (Receita Federal, código numérico; Brasil = 105); **88 testes** (86 no `packages/db`, 1 na `api`, 1 na `web`). `leadtogo_app` lê as referências e, sem tenant ativo, não vê nenhuma empresa.
+
+> **Regra daqui em diante:** migração destrutiva exige **aviso ao Ale antes** de ser escrita (commit marcado `BREAKING-DB:`). A `0004` (países da Receita) foi a única até aqui.
 
 Como ficou:
 - **Banco de teste** `leadtogo_test`: criado por `pnpm dev:up` (repetível) e pelo passo `garantir-bancos.sh` do CI. As migrações rodam no setup global do Vitest. Os testes recusam rodar em banco que não termine em `_test`.
 - **Teste de isolamento** em duas camadas: catálogo (toda tabela com `tenant_id` tem RLS habilitado e forçado e políticas de SELECT, INSERT, UPDATE e DELETE) e comportamento, com uma fábrica por tabela em `packages/db/src/testes/fabricas.ts`. Falha se faltar política, fábrica ou se surgir tabela sem `tenant_id` fora da lista de exceções.
-- **Países (ajuste posterior):** `paises` usa a tabela da Receita Federal (255 códigos numéricos, Brasil = 105), não a lista ISO do IBGE, para cobrir territórios de sócios estrangeiros; migração `0004` (`BREAKING-DB`: reposta pelo seed). O ISO de 2 letras não é guardado por enquanto.
+- **Países:** `paises` usa a tabela da Receita Federal (255 códigos numéricos, Brasil = 105), não a lista ISO do IBGE, para cobrir territórios de sócios estrangeiros; migração `0004` (`BREAKING-DB`, reposta pelo seed). O ISO de 2 letras não é guardado por enquanto.
 - **Seeds de referência:** arquivos versionados em `packages/db/seeds/dados/` (fonte e data no README); o seed não baixa nada. Dos 5.571 municípios, 1 (Boa Esperança do Norte, MT) precisou de correção manual do código SIAFI/TOM; nenhum ficou sem. `pnpm db:seed:referencias` carrega só as referências (uso em produção); `pnpm db:seed` inclui a demonstração (nunca com `NODE_ENV=production`).
 - **Papéis em produção:** `LEADTOGO_OWNER_PASSWORD=... LEADTOGO_APP_PASSWORD=... psql -v ON_ERROR_STOP=1 -d leadtogo -f packages/db/sql/papeis.sql`, como superusuário.
 
