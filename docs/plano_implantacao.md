@@ -283,7 +283,7 @@ Checklist:
 
 **Pronto quando:** testes de integração passam e o Swagger mostra os endpoints.
 
-✅ **Concluído em 06/10/2026** (aguardando aprovação). Verificado do zero (`dev:reset`, `dev:up`, `db:migrate`, `db:seed`, `test --force`, sem cache): **8 migrações**; **342 testes** (`shared` 19, `api-client` 4, `web` 1, `db` 117, `api` 201). Sessões ficam só no Postgres e o Valkey atende o rate limit do Better Auth (`customStorage`); o Better Auth só faz identidade. Achado de segurança tratado: ele desliga a validação de `redirectTo` em `NODE_ENV=test`, e agora ela fica ligada em qualquer ambiente. Pendências: SMTP de produção, teste de login real com os dois domínios e criação da primeira conta (E13); Garage no CI (E12).
+✅ **Concluído em 06/10/2026** (aprovado pelo Ale). Verificado do zero (`dev:reset`, `dev:up`, `db:migrate`, `db:seed`, `test --force`, sem cache): **8 migrações**; **342 testes** (`shared` 19, `api-client` 4, `web` 1, `db` 117, `api` 201). Sessões ficam só no Postgres e o Valkey atende o rate limit do Better Auth (`customStorage`); o Better Auth só faz identidade. Achado de segurança tratado: ele desliga a validação de `redirectTo` em `NODE_ENV=test`, e agora ela fica ligada em qualquer ambiente. Pendências: SMTP de produção, teste de login real com os dois domínios e criação da primeira conta (E13); Garage no CI (E12).
 
 ---
 
@@ -327,7 +327,7 @@ Checklist:
 
 **Pronto quando:** testes passam e o worker sobe e encerra sem perder jobs.
 
-✅ **Concluído em 06/10/2026** (aguardando aprovação). Verificado do zero (`dev:reset`, `dev:up`, `db:migrate`, `db:seed`, `test --force`, sem cache): **10 migrações**; **396 testes** (`shared` 19, `api-client` 4, `web` 1, `db` 134, `api` 238). Sem `BYPASSRLS`: três funções `SECURITY DEFINER` no E10 (reserva do outbox, partições e limpezas). Pendências para o Ale: cadastrar `TOKEN_ENCRYPTION_KEY` e o **stop timeout de 45 s** do worker no Coolify (E13); alerta de eventos com `falhou_em` (E14).
+✅ **Concluído em 06/10/2026** (aprovado pelo Ale). Verificado do zero (`dev:reset`, `dev:up`, `db:migrate`, `db:seed`, `test --force`, sem cache): **10 migrações**; **396 testes** (`shared` 19, `api-client` 4, `web` 1, `db` 134, `api` 238). Sem `BYPASSRLS`: três funções `SECURITY DEFINER` no E10 (reserva do outbox, partições e limpezas). Pendências para o Ale: cadastrar `TOKEN_ENCRYPTION_KEY` e o **stop timeout de 45 s** do worker no Coolify (E13); alerta de eventos com `falhou_em` (E14).
 
 ---
 
@@ -338,6 +338,7 @@ Checklist:
 
 - [ ] Imagens buildam localmente; `docker run` da API responde `/health`.
 - [ ] Tamanhos razoáveis (API < 250 MB, web < 60 MB).
+- [ ] **Dockerfile do web:** copiar `docs/design-system/` para dentro do contexto do build **antes** do `vite build`. As cópias de `tokens.css`, `tailwind-theme.css` e das fontes em `apps/web` não estão no Git (geradas por `scripts/sincronizar-design-system.mjs` no `prebuild`); sem a pasta no contexto o build da imagem falha. O `.dockerignore` não pode excluir `docs/design-system/`.
 
 **Pronto quando:** `docker compose` de teste com as imagens prontas sobe a aplicação inteira localmente.
 
@@ -350,6 +351,7 @@ Checklist:
 
 - [ ] Pipeline verde num push de teste (sem deploy).
 - [ ] Imagens aparecem em *Packages* do GitHub.
+- [ ] **Playwright no CI:** os testes E2E do web (login, troca de empresa, 2FA, teclado) também rodam no pipeline, com API, Postgres, Valkey e Mailpit como serviços e o Chromium instalado no job (`playwright install --with-deps chromium`).
 
 **Pronto quando:** um push na `main` gera as imagens no GHCR com o commit como tag.
 
@@ -367,6 +369,7 @@ Checklist:
 | leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `crm.aledias.com.br` | 128 MB |
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
+3a. [ ] **A decidir:** domínio único. Em produção, o Traefik roteia `crm.aledias.com.br/v1` e `crm.aledias.com.br/api/auth` para a API, e o front fala com a API no mesmo domínio: sem CORS e sem cookie entre subdomínios. O `api.crm.aledias.com.br` continua para as integrações (n8n, webhooks). Se adotado, o front usa caminho relativo (como o proxy do desenvolvimento) e `APP_URL`/`API_URL`/cookies são ajustados.
 4. [ ] Healthchecks: API `/health`, web `/`, worker (`node dist/saude-worker.js`). **Stop timeout do worker: 45 s** (esteira_deploy.md, 7.1.1).
 5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
