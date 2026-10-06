@@ -23,6 +23,7 @@ import { z, type ZodType } from 'zod'
 
 import { criarApp } from '../app.js'
 import { configuracaoDeTeste } from '../testes/app-teste.js'
+import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import {
   cnpjUnico,
   emailUnico,
@@ -42,7 +43,10 @@ const doc = JSON.parse(
 }
 
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
+// O e-mail só sai quando o worker age (relay do outbox e fila de e-mail): sobe um de verdade
+const workerDeTeste = await subirWorkerDeTeste()
 afterAll(async () => {
+  await workerDeTeste.parar()
   await valkey.quit()
   await dono.end()
 })

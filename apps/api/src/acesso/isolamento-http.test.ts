@@ -18,6 +18,7 @@ import { configuracaoDeTeste } from '../testes/app-teste.js'
 import { emailUnico, ORIGEM_DO_FRONT } from '../testes/auth-teste.js'
 import { limparLimitesAuth } from '../testes/auth-teste.js'
 import { limparCaixa } from '../testes/mailpit.js'
+import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import {
   ativar,
   dono,
@@ -33,7 +34,10 @@ import { listarRotas } from '../documentacao/rotas.js'
 // pelas rotas REAIS da API (não por rotas de teste). Duas contas, duas empresas, dois administradores.
 
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
+// O e-mail só sai quando o worker age (relay do outbox e fila de e-mail): sobe um de verdade
+const workerDeTeste = await subirWorkerDeTeste()
 afterAll(async () => {
+  await workerDeTeste.parar()
   await valkey.quit()
   await dono.end()
 })

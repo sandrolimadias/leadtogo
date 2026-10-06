@@ -65,7 +65,7 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
       // O link vale 1 h e é de uso único. O pedido responde igual exista ou não a conta (não revela cadastro)
       resetPasswordTokenExpiresIn: 60 * 60,
       sendResetPassword: async ({ user, url }) => {
-        await email.enviar(user.email, emailRedefinirSenha(user.name, url))
+        await email.enfileirar(user.email, emailRedefinirSenha(user.name, url))
       },
     },
     emailVerification: {
@@ -73,7 +73,7 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
       sendOnSignIn: true,
       expiresIn: 60 * 60,
       sendVerificationEmail: async ({ user, url }) => {
-        await email.enviar(user.email, emailVerificarEmail(user.name, url))
+        await email.enfileirar(user.email, emailVerificarEmail(user.name, url))
       },
     },
     session: {

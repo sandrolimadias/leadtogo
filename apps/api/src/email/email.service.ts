@@ -1,58 +1,57 @@
-import { Inject, Injectable, Logger } from '@nestjs/common'
-import { createTransport, type Transporter } from 'nodemailer'
+import { Inject, Injectable, type OnModuleDestroy } from '@nestjs/common'
+import { Queue } from 'bullmq'
+import type { Redis } from 'ioredis'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+import { ErroApi } from '../http/erro-api.js'
+import { VALKEY } from '../infra/infra.module.js'
+import { chavesDe, cifrar } from '../seguranca/cifra.js'
+import { FILAS, opcoesDeFila } from '../worker/filas.js'
 import type { ModeloDeEmail } from './modelos.js'
 
-/** Envio de e-mail por SMTP (Mailpit em desenvolvimento; o provedor de produção é escolhido na E13). */
+/** Dados do job da fila `email`: o conteúdo inteiro vai cifrado (`v1:...`), pois os links levam token. */
+export interface JobDeEmail {
+  p: string
+}
+
+/**
+ * E-mails de identidade (verificação e recuperação de senha): a API só ENFILEIRA; o worker envia, com
+ * reenvio e espera progressiva. Se não der para enfileirar (Valkey fora), lança erro: a requisição
+ * falha em vez de responder sucesso sem e-mail. O convite não passa por aqui (vai pelo outbox).
+ */
 @Injectable()
-export class EmailService {
-  private readonly log = new Logger(EmailService.name)
-  private readonly transporte: Transporter | null
+export class EmailService implements OnModuleDestroy {
+  private readonly fila: Queue
 
-  constructor(@Inject(CONFIGURACAO) private readonly config: Configuracao) {
-    this.transporte = config.SMTP_HOST
-      ? createTransport({
-          host: config.SMTP_HOST,
-          port: config.SMTP_PORT,
-          secure: config.SMTP_SECURE,
-          auth:
-            config.SMTP_USER && config.SMTP_PASSWORD
-              ? { user: config.SMTP_USER, pass: config.SMTP_PASSWORD }
-              : undefined,
-          connectionTimeout: 5000,
-          socketTimeout: 10_000,
-        })
-      : null
+  constructor(
+    @Inject(CONFIGURACAO) private readonly config: Configuracao,
+    @Inject(VALKEY) valkey: Redis,
+  ) {
+    this.fila = new Queue(FILAS.email, opcoesDeFila(config, valkey))
   }
 
+  async onModuleDestroy(): Promise<void> {
+    await this.fila.close()
+  }
+
+  /** O envio real depende do SMTP do worker; aqui só se sabe se a API foi configurada com um. */
   get configurado(): boolean {
-    return this.transporte !== null
+    return Boolean(this.config.SMTP_HOST)
   }
 
-  /**
-   * Envia o e-mail. Sem SMTP configurado, registra um aviso e segue (nenhum e-mail sai). O log
-   * nunca leva o destinatário nem o corpo (que tem links com token).
-   */
-  async enviar(para: string, modelo: ModeloDeEmail): Promise<void> {
-    if (!this.transporte) {
-      this.log.warn(`SMTP não configurado: e-mail "${modelo.assunto}" não foi enviado`)
-      return
-    }
+  async enfileirar(para: string, modelo: ModeloDeEmail): Promise<void> {
+    const p = cifrar(JSON.stringify({ para, ...modelo }), chavesDe(this.config))
     try {
-      await this.transporte.sendMail({
-        from: this.config.SMTP_FROM,
-        to: para,
-        subject: modelo.assunto,
-        text: modelo.texto,
-        html: modelo.html,
+      await this.fila.add('enviar', { p } satisfies JobDeEmail, {
+        attempts: this.config.EMAIL_TENTATIVAS,
+        backoff: { type: 'exponential', delay: this.config.EMAIL_ESPERA_MS },
       })
-      this.log.log(`e-mail enviado: "${modelo.assunto}"`)
-    } catch (erro) {
-      // Não propaga: quem pediu (ex.: "esqueci a senha") não pode descobrir se o e-mail existe pela falha
-      this.log.error(
-        `falha ao enviar "${modelo.assunto}": ${erro instanceof Error ? erro.message : String(erro)}`,
+    } catch {
+      throw new ErroApi(
+        'servico_indisponivel',
+        'Não foi possível agendar o envio do e-mail agora. Tente de novo em instantes.',
+        503,
       )
     }
   }

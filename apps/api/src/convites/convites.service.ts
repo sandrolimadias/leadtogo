@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { randomBytes } from 'node:crypto'
 
 import type { Conexao } from '@leadtogo/db'
 import { novoId, sql } from '@leadtogo/db'
@@ -16,19 +16,15 @@ import type { Request } from 'express'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuthService } from '../auth/auth.service.js'
-import type { Configuracao } from '../configuracao/configuracao.js'
-import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { EmailService } from '../email/email.service.js'
-import { emailConvite } from '../email/modelos.js'
 import { ErroApi } from '../http/erro-api.js'
 import { BANCO } from '../infra/infra.module.js'
 
 /** Validade do convite. */
 const DIAS_DE_VALIDADE = 7
 
-/** O que o banco guarda do token: o hash. O token em si só existe no e-mail. */
-export const hashDoToken = (token: string): string =>
-  createHash('sha256').update(token).digest('hex')
+import { hashDoToken } from './token.js'
+export { hashDoToken }
 
 type Transacao = Parameters<Parameters<Conexao['db']['transaction']>[0]>[0]
 type LinhaConvite = {
@@ -53,7 +49,6 @@ export class ConvitesService {
   private readonly log = new Logger(ConvitesService.name)
 
   constructor(
-    @Inject(CONFIGURACAO) private readonly config: Configuracao,
     @Inject(BANCO) private readonly banco: Conexao,
     private readonly ctx: ContextoTenantService,
     private readonly auth: AuthService,
@@ -91,34 +86,23 @@ export class ConvitesService {
       UPDATE convites SET revogado_em = now(), atualizado_em = now()
       WHERE email = ${dados.email} AND aceito_em IS NULL AND revogado_em IS NULL`)
 
-    const token = randomBytes(32).toString('base64url')
+    // O token só nasce quando o worker envia o e-mail (e só o hash é gravado, então); até lá o hash é
+    // de um valor aleatório que ninguém conhece, ou seja, o convite ainda não pode ser aceito.
     const id = novoId()
     const [linha] = await db.execute<LinhaConvite>(sql`
       INSERT INTO convites (id, tenant_id, email, papel, token_hash, expira_em, convidado_por)
-      VALUES (${id}, ${this.ctx.tenantId}, ${dados.email}, ${dados.papel}, ${hashDoToken(token)},
+      VALUES (${id}, ${this.ctx.tenantId}, ${dados.email}, ${dados.papel},
+              ${randomBytes(32).toString('hex')},
               now() + ${`${DIAS_DE_VALIDADE} days`}::interval, ${this.ctx.membro.id})
       RETURNING id, email, papel, expira_em, criado_em, aceito_em, revogado_em, convidado_por`)
     if (!linha) throw new Error('convite não foi gravado')
 
-    const [empresa] = await db.execute<{ razao_social: string; nome_fantasia: string | null }>(
-      sql`SELECT razao_social, nome_fantasia FROM tenants`,
-    )
-    const [quem] = await db.execute<{ nome: string }>(
-      sql`SELECT nome FROM membros WHERE id = ${this.ctx.membro.id}`,
-    )
-    const link = `${new URL(this.config.APP_URL).origin}/convite?token=${token}`
+    // Pedido de envio no outbox, na mesma transação do convite: ou os dois existem, ou nenhum.
+    // O payload leva só o id (o token não passa pelo outbox).
+    await db.execute(sql`
+      INSERT INTO eventos_outbox (id, tenant_id, tipo, entidade_id, payload)
+      VALUES (${novoId()}, ${this.ctx.tenantId}, 'convite.enviar', ${id}, ${JSON.stringify({ conviteId: id })}::jsonb)`)
     const emailEnviado = this.email.configurado
-    // O e-mail sai depois que a transação do pedido confirmar? Aqui ela ainda está aberta: se o envio
-    // falhar o EmailService só registra, e o administrador pode reenviar (o convite continua válido).
-    await this.email.enviar(
-      dados.email,
-      emailConvite({
-        empresa: empresa?.nome_fantasia ?? empresa?.razao_social ?? 'sua empresa',
-        convidadoPor: quem?.nome ?? 'Um administrador',
-        papel: dados.papel,
-        link,
-      }),
-    )
     return { ...resumoDe(linha), emailEnviado }
   }
 

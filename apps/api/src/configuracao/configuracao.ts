@@ -56,8 +56,19 @@ const esquema = z
      */
     WORKER_ENCERRAMENTO_S: z.coerce.number().int().min(1).max(600).default(30),
     /** Porta do healthcheck do worker (só no loopback do container, nunca publicada) */
-    WORKER_SAUDE_PORTA: z.coerce.number().int().min(1).max(65535).default(3001),
+    WORKER_SAUDE_PORTA: z.coerce.number().int().min(0).max(65535).default(3001),
     /** Tempo que o worker "segura" um job; sem renovar nesse prazo, o job é dado como parado e reprocessado */
+    /** Intervalo entre ciclos do relay do outbox (latência dos e-mails de convite) */
+    OUTBOX_INTERVALO_MS: z.coerce.number().int().min(50).default(2000),
+    /** E-mail pela fila: tentativas e base da espera exponencial (5 s, 10 s, 20 s...) */
+    EMAIL_TENTATIVAS: z.coerce.number().int().min(1).max(20).default(6),
+    EMAIL_ESPERA_MS: z.coerce.number().int().min(10).default(5000),
+    /**
+     * Chave AES-256 (32 bytes em base64: `openssl rand -base64 32`) que cifra o conteúdo dos e-mails de
+     * identidade enquanto esperam na fila (os links levam token). O texto cifrado leva o prefixo `v1:`
+     * da versão da chave, para poder trocá-la. Obrigatória em produção.
+     */
+    TOKEN_ENCRYPTION_KEY: opcional(z.string().min(1)),
     FILA_LOCK_MS: z.coerce.number().int().min(500).default(30_000),
 
     // Autenticação (Better Auth). O segredo assina cookies e cifra o segredo do 2FA: troque-o e todas
@@ -125,7 +136,21 @@ const esquema = z
         message: 'SMTP_USER e SMTP_PASSWORD vão juntos',
       })
     }
+    if (env.TOKEN_ENCRYPTION_KEY && Buffer.from(env.TOKEN_ENCRYPTION_KEY, 'base64').length !== 32) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TOKEN_ENCRYPTION_KEY'],
+        message: 'deve ter 32 bytes em base64 (gere com: openssl rand -base64 32)',
+      })
+    }
     if (env.NODE_ENV !== 'production') return
+    if (!env.TOKEN_ENCRYPTION_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TOKEN_ENCRYPTION_KEY'],
+        message: 'obrigatória em produção',
+      })
+    }
     // Em produção o front e a API são servidos por HTTPS (cookie Secure, CORS só para o front)
     for (const chave of ['APP_URL', 'API_URL'] as const) {
       if (new URL(env[chave]).protocol !== 'https:') {

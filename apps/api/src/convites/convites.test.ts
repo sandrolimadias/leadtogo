@@ -16,6 +16,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { RespostaDeErro } from '../http/filtro-excecoes.js'
 import { configuracaoDeTeste, criarAppComRotas } from '../testes/app-teste.js'
+import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import {
   emailUnico,
   entrar,
@@ -37,7 +38,10 @@ import {
 } from '../testes/mundo.js'
 
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
+// O e-mail só sai quando o worker age (relay do outbox e fila de e-mail): sobe um de verdade
+const workerDeTeste = await subirWorkerDeTeste()
 afterAll(async () => {
+  await workerDeTeste.parar()
   await valkey.quit()
   await dono.end()
 })

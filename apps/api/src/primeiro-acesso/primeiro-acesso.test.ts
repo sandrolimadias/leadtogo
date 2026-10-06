@@ -12,6 +12,7 @@ import { carregarConfiguracao, primeiroAcessoAberto } from '../configuracao/conf
 import type { RespostaDeErro } from '../http/filtro-excecoes.js'
 import { PREFIXO_LIMITE } from '../rate-limit/limite.guard.js'
 import { configuracaoDeTeste } from '../testes/app-teste.js'
+import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import {
   bancoDeTeste,
   cnpjUnico,
@@ -27,7 +28,10 @@ const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 const owner = bancoDeTeste()
 const { cliente: app_ } = criarConexao(process.env['TEST_API_DATABASE_URL'] ?? '', { max: 2 })
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
+// O e-mail só sai quando o worker age (relay do outbox e fila de e-mail): sobe um de verdade
+const workerDeTeste = await subirWorkerDeTeste()
 afterAll(async () => {
+  await workerDeTeste.parar()
   await owner.end()
   await app_.end()
   await valkey.quit()
@@ -231,6 +235,7 @@ describe('POST /v1/primeiro-acesso', () => {
       S3_ACCESS_KEY: 'a',
       S3_SECRET_KEY: 's',
       VERIFICACAO_EMAIL: 'false',
+      TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
     }
     const producao = {
       ...base,

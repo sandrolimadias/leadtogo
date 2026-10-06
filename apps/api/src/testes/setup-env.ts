@@ -28,12 +28,15 @@ const padroes: Record<string, string> = {
   SMTP_PORT: '1025',
   MAILPIT_URL: 'http://localhost:8025',
   API_URL: 'http://localhost:3000',
+  TOKEN_ENCRYPTION_KEY: 'dGVzdGUtdGVzdGUtdGVzdGUtdGVzdGUtdGVzdGUtMTI=',
+  OUTBOX_INTERVALO_MS: '100',
+  EMAIL_ESPERA_MS: '50',
   S3_ENDPOINT: 'http://localhost:3900',
   S3_BUCKET: 'leadtogo-arquivos',
   S3_ACCESS_KEY: 'teste',
   S3_SECRET_KEY: 'teste',
 }
-for (const [chave, valor] of Object.entries(padroes)) process.env[chave] ??= valor
+for (const [chave, valor] of Object.entries(padroes)) process.env[chave] ||= valor
 
 // O supertest registra um listener de 'error' no servidor a cada requisição; os testes que fazem
 // mais de 10 no mesmo app disparam o MaxListenersExceededWarning (todos os apps são fechados).

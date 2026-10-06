@@ -364,7 +364,7 @@ Checklist:
 5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
 7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.
-8. [ ] **Escolher o provedor de SMTP de produção** (recuperação de senha, verificação de e-mail e convites) e cadastrar as variáveis `SMTP_*` no Coolify. Até lá, `VERIFICACAO_EMAIL` fica desligada em produção (nenhum e-mail sai).
+8. [ ] **Cadastrar `TOKEN_ENCRYPTION_KEY` no Coolify** (API e worker; `openssl rand -base64 32`; sem ela a API não sobe em produção). **Escolher o provedor de SMTP de produção** (recuperação de senha, verificação de e-mail e convites) e cadastrar as variáveis `SMTP_*` no Coolify. Até lá, `VERIFICACAO_EMAIL` fica desligada em produção (nenhum e-mail sai).
 9. [ ] **Teste de login real com os dois domínios** (`https://crm.aledias.com.br` → `https://api.crm.aledias.com.br`): cookie de sessão emitido pela API (`HttpOnly`, `Secure`, `SameSite=Lax`), CORS com credenciais só para o front, login, `GET /v1/me` e logout pelo navegador.
 10. [ ] **Criar a primeira conta** pelo terminal do Coolify (`PRIMEIRO_ACESSO` fica `fechado`): `node dist/criar-conta.js` (ver `esteira_deploy.md`).
 

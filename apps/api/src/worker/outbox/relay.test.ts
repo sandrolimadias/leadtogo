@@ -3,6 +3,7 @@ import { pino } from 'pino'
 import { Redis } from 'ioredis'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { EnviadorSmtp } from '../../email/enviador.js'
 import { configuracaoDeTeste } from '../../testes/app-teste.js'
 import { dono, empresaDeOutraConta } from '../../testes/mundo.js'
 import { FILAS } from '../filas.js'
@@ -55,7 +56,7 @@ const relay = (extra: { maxTentativas?: number; lote?: number } = {}, b: Conexao
     banco: b,
     filas,
     log,
-    manipuladores: manipuladoresPadrao(config()),
+    manipuladores: manipuladoresPadrao(config(), new EnviadorSmtp(config(), log)),
     ...extra,
   })
 
