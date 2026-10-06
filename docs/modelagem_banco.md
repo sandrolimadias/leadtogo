@@ -209,7 +209,7 @@ O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verifi
 | cor | char(7) | Cor do vendedor em agenda/mapa |
 | foto_arquivo_id | uuid FK | |
 | ativo | boolean default true | Inativar mantém o histórico |
-| preferencias | jsonb | Preferências de interface: tema, menu recolhido, visão do Dashboard (minha/equipe), filtro salvo padrão (v1.1) |
+| preferencias | jsonb | Preferências de interface (v1.1), com **chaves fechadas**: `tema` (claro/escuro/sistema), `menuRecolhido`, `visaoDashboard` (minha/equipe) e `filtroPadrao` (id do filtro salvo por tela: empresas, contatos, oportunidades, tarefas). Só se guarda o que foge do padrão; `GET/PATCH /v1/me/preferencias` |
 | criado_em, atualizado_em, excluido_em | | |
 
 Únicos: `(tenant_id, email)` parcial; `(tenant_id, usuario_id)`.
