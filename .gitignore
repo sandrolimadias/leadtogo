@@ -1,0 +1,32 @@
+# dependências e builds
+node_modules/
+dist/
+build/
+.turbo/
+coverage/
+*.tsbuildinfo
+apps/web/dev-dist/
+
+# ambiente e segredos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# sistema e editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# dados locais do docker de desenvolvimento
+docker/.data/

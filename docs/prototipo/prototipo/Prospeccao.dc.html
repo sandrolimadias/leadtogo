@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script></helmet>
+<div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:16px">
+  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:flex-end;gap:12px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+        <h1 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.015em">Prospecção</h1>
+        <span style="font-size:13px;color:var(--ink-muted)">Encontre empresas na base da Receita (Minha Receita) e traga como Lead.</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <section style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Buscas salvas</span>
+    <div style="display:grid;grid-template-columns:{{ L.savedCols }};gap:10px">
+      <sc-for list="{{ salvas }}" as="b" hint-placeholder-count="3">
+        <div style="background:var(--surface);border:1px solid {{ b.border }};border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">{{ b.nome }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ b.resumo }}</span></div>
+            <sc-if value="{{ b.novas }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" tone="info" icon="zap" hint-size="80px,22px">{{ b.novas }}</x-import></sc-if>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:12px;color:var(--ink-muted)">{{ b.ultima }}</span>
+            <x-import component-from-global-scope="Leadtogo.Button" size="sm" icon="repeat" onClick="{{ b.repetir }}" hint-size="120px,28px">Repetir busca</x-import>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:{{ L.main }};gap:16px;align-items:start">
+    <section data-density="{{ L.density }}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+      <button type="button" onClick="{{ toggleFiltros }}" style="display:flex;align-items:center;gap:8px;padding:14px 16px;border:0;border-bottom:1px solid var(--border);background:transparent;font:inherit;color:var(--ink);cursor:pointer;text-align:left">
+        <x-import component-from-global-scope="Leadtogo.Icon" name="funnel" hint-size="16px,16px"></x-import>
+        <span style="flex:1;font-size:15px;font-weight:600">Filtros</span>
+        <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}"><span style="display:flex;transform:{{ filtRot }}"><x-import component-from-global-scope="Leadtogo.Icon" name="chevron-down" hint-size="16px,16px"></x-import></span></sc-if>
+      </button>
+      <sc-if value="{{ filtrosAbertos }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:8px;position:relative">
+            <x-import component-from-global-scope="Leadtogo.TextField" label="CNAE" icon="search" placeholder="Código ou descrição" value="{{ cq }}" onChange="{{ setCq }}" hint="Pode escolher mais de um." hint-size="100%,72px"></x-import>
+            <sc-if value="{{ showSug }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:0;right:0;top:62px;z-index:100;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);overflow:hidden">
+                <sc-for list="{{ sug }}" as="s" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ s.pick }}" style="width:100%;display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border:0;border-bottom:1px solid var(--border);background:var(--surface);font:inherit;color:var(--ink);text-align:left;cursor:pointer" style-hover="background:var(--surface-hover)">
+                    <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-muted);width:76px;flex-shrink:0;padding-top:1px">{{ s.cod }}</span><span style="font-size:13px">{{ s.desc }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ cnaesSel }}" as="c" hint-placeholder-count="2">
+                <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface-sunken)">
+                  <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-muted);padding-top:1px">{{ c.cod }}</span><span style="flex:1;font-size:13px">{{ c.desc }}</span>
+                  <x-import component-from-global-scope="Leadtogo.IconButton" icon="x" label="Remover CNAE" size="sm" onClick="{{ c.remove }}" hint-size="24px,24px"></x-import>
+                </div>
+              </sc-for>
+            </div>
+            <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Onde procurar o CNAE" options="{{ cnaeOndeOpts }}" value="{{ cnaeOnde }}" onChange="{{ setCnaeOnde }}" hint-size="100%,32px"></x-import>
+          </div>
+          <div style="display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px">
+            <x-import component-from-global-scope="Leadtogo.Select" label="UF" options="{{ ufs }}" defaultValue="ES" hint-size="90px,60px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Select" label="Município" options="{{ municipios }}" value="{{ mun }}" onChange="{{ setMun }}" hint-size="100%,60px"></x-import>
+          </div>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Natureza jurídica" options="{{ naturezas }}" defaultValue="" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Porte" options="{{ portes }}" defaultValue="" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Switch" label="Somente ativas" checked="{{ ativas }}" onChange="{{ togAtivas }}" hint-size="100%,24px"></x-import>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:4px">
+            <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="search" onClick="{{ buscar }}" loading="{{ rodando }}" block="{{ true }}" hint-size="100%,36px">{{ buscarLabel }}</x-import>
+            <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" icon="star" onClick="{{ salvar }}" block="{{ true }}" hint-size="100%,36px">Salvar esta busca</x-import>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <sc-if value="{{ rodando }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="flex:1;font-weight:600">Buscando na Receita…</span>
+            <span style="font-size:13px;color:var(--ink-muted);font-variant-numeric:tabular-nums">{{ progLabel }}</span>
+            <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" onClick="{{ cancelar }}" hint-size="80px,28px">Cancelar</x-import>
+          </div>
+          <div style="height:8px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden"><div style="height:100%;width:{{ progPct }};background:var(--accent);border-radius:9999px;transition:width 200ms"></div></div>
+          <span style="font-size:13px;color:var(--ink-muted)">Roda em segundo plano. Pode navegar; avisamos quando terminar.</span>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ vazio }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+          <x-import component-from-global-scope="Leadtogo.EmptyState" icon="target" title="Escolha os filtros e busque" description="Comece por um CNAE, como 2539-0/01 Usinagem, e um município." hint-size="100%,220px"></x-import>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ temRes }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="flex:1;min-width:200px;font-size:13px;color:var(--ink-muted)">{{ resLabel }}</span>
+          <x-import component-from-global-scope="Leadtogo.Switch" label="Só as novas desde a última busca" checked="{{ soNovas }}" onChange="{{ togNovas }}" hint-size="260px,24px"></x-import>
+        </div>
+        <sc-if value="{{ bulk }}" hint-placeholder-val="{{ false }}">
+          <div data-density="compact" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-selected)">
+            <span style="font-weight:600;margin-right:8px">{{ selLabel }}</span>
+            <span style="flex:1"></span>
+            <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" onClick="{{ limparSel }}" hint-size="110px,28px">Limpar seleção</x-import>
+            <x-import component-from-global-scope="Leadtogo.Button" variant="primary" size="sm" icon="plus" onClick="{{ abrirImport }}" hint-size="160px,28px">Importar como Lead</x-import>
+          </div>
+        </sc-if>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:40px minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,0.9fr) 90px 150px;gap:12px;align-items:center;height:36px;padding:0 12px;background:var(--surface-sunken);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--ink-muted)">
+              <x-import component-from-global-scope="Leadtogo.Checkbox" aria-label="Selecionar todas as disponíveis" checked="{{ allSel }}" onChange="{{ toggleAll }}" hint-size="18px,18px"></x-import>
+              <span>Empresa</span><span>CNAE principal</span><span>Cidade</span><span>Abertura</span><span>No CRM</span>
+            </div>
+          </sc-if>
+          <sc-for list="{{ res }}" as="r" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:{{ L.resCols }};gap:4px 12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);background:{{ r.bg }}">
+              <div style="grid-row:{{ L.chkRow }}">
+                <sc-if value="{{ r.selecionavel }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="Leadtogo.Checkbox" aria-label="Selecionar" checked="{{ r.sel }}" onChange="{{ r.toggle }}" hint-size="18px,18px"></x-import></sc-if>
+              </div>
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-weight:600">{{ r.nome }}</span><sc-if value="{{ r.nova }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" tone="info" hint-size="44px,22px">Nova</x-import></sc-if></span>
+                <span style="font-size:12px;color:var(--ink-muted)">{{ r.razao }}</span>
+                <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-muted)">{{ r.cnpj }}</span>
+              </div>
+              <span style="font-size:13px">{{ r.cnaeTxt }}</span>
+              <span style="font-size:13px">{{ r.cidade }}</span>
+              <span style="font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink-muted)">{{ r.abertura }}</span>
+              <div>
+                <sc-if value="{{ r.noCrm }}" hint-placeholder-val="{{ false }}"><a href="#" onClick="{{ r.abrir }}" style="display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600"><x-import component-from-global-scope="Leadtogo.Icon" name="circle-check" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ r.crmLabel }}</a></sc-if>
+                <sc-if value="{{ r.fora }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:var(--ink-muted)">Não</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ dlg }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ fecharDlg }}" style="position:fixed;inset:0;z-index:1300;background:var(--overlay);display:flex;align-items:{{ L.dlgAlign }};justify-content:center;padding:{{ L.dlgPad }}">
+      <div onClick="{{ stop }}" data-density="{{ L.density }}" style="width:{{ L.dlgW }};max-height:{{ L.dlgMaxH }};overflow:auto">
+        <x-import component-from-global-scope="Leadtogo.Dialog" title="Importar como Lead" description="{{ dlgDesc }}" onClose="{{ fecharDlg }}" footer="{{ dlgFooter }}" hint-size="100%,380px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <x-import component-from-global-scope="Leadtogo.Select" label="Vendedor" required="{{ true }}" options="{{ vendedores }}" defaultValue="Alessandro Dias" hint-size="100%,60px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Select" label="Vertical" options="{{ verticais }}" defaultValue="Metalmecânica" hint-size="100%,60px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.TextField" label="Tag da campanha" defaultValue="Prospecção usinagem Serra" hint="Cria a tag se não existir. Ajuda a medir a conversão da busca." hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Checkbox" label="Converter sócios em contatos" description="Nome e qualificação. Sem CPF." defaultChecked="{{ true }}" hint-size="100%,40px"></x-import>
+          </div>
+        </x-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  CNAES = [['2539-0/01', 'Serviços de usinagem, tornearia e solda'], ['2539-0/02', 'Serviços de tratamento e revestimento em metais'], ['3314-7/10', 'Manutenção e reparação de máquinas e equipamentos para uso geral'], ['2543-8/00', 'Fabricação de ferramentas'], ['2391-5/03', 'Aparelhamento de placas e trabalhos em mármore e granito'], ['1052-0/00', 'Fabricação de laticínios'], ['3321-0/00', 'Instalação de máquinas e equipamentos industriais'], ['2512-8/00', 'Fabricação de esquadrias de metal']];
+  RES = [
+    ['Usidantec', 'Usidantec Usinagem e Mecânica Ltda', '12.424.587/0001-45', '2539-0/01', 'Serra', '14/03/2011', 'usidantec'],
+    ['Jacaraípe Usinagem', 'Jacaraípe Usinagem de Precisão Ltda', '07.336.512/0001-84', '2539-0/01', 'Serra', '19/06/2015', null, true],
+    ['Torno Fino', 'Torno Fino Serviços Mecânicos Ltda', '45.118.302/0001-60', '2539-0/01', 'Serra', '02/08/2022', null, true],
+    ['Mecânica Aracruz Industrial', 'Aracruz Mecânica Industrial Ltda', '11.493.260/0001-49', '3314-7/10', 'Aracruz', '20/01/2010', 'aracruz'],
+    ['Civit Usinagem', 'Civit Usinagem e Caldeiraria Ltda', '23.904.117/0001-03', '2539-0/01', 'Serra', '11/11/2015'],
+    ['Precisão Laranjeiras', 'Precisão Laranjeiras Indústria Mecânica Ltda', '31.660.245/0001-77', '2539-0/01', 'Serra', '27/05/2018'],
+    ['Caldeiraria Anchieta', 'Caldeiraria e Montagens Anchieta Ltda', '24.719.903/0001-11', '2539-0/01', 'Anchieta', '09/09/2016', 'anchieta'],
+    ['Solda Forte Cariacica', 'Solda Forte Serviços Industriais Eireli', '18.552.041/0001-90', '2539-0/01', 'Cariacica', '15/04/2013'],
+    ['Usimec Vila Velha', 'Usimec Usinagem Mecânica Ltda', '09.231.877/0001-58', '3314-7/10', 'Vila Velha', '03/02/2008'],
+    ['TecPeças Serra', 'TecPeças Indústria e Comércio Ltda', '52.009.663/0001-21', '2543-8/00', 'Serra', '18/07/2023', null, true],
+    ['Retífica Carapina', 'Retífica e Usinagem Carapina Ltda', '14.775.320/0001-06', '2539-0/01', 'Serra', '30/10/2012'],
+    ['Metal Norte Linhares', 'Metal Norte Montagens Industriais Ltda', '26.481.190/0001-35', '3321-0/00', 'Linhares', '21/03/2017']
+  ];
+  state = { cq: '', cnaes: ['2539-0/01', '3314-7/10'], cnaeOnde: 'ambos', mun: '', ativas: true, status: 'idle', prog: 0, sel: {}, importados: {}, soNovas: false, dlg: false, filtros: false, salvaAtiva: null, extraSalvas: [] };
+  componentWillUnmount() { clearInterval(this._p); }
+  rodar(soNovas, salvaAtiva) {
+    clearInterval(this._p);
+    this.setState({ status: 'running', prog: 0, sel: {}, soNovas: !!soNovas, salvaAtiva: salvaAtiva || null, filtros: false });
+    this._p = setInterval(() => this.setState(s => { const p = s.prog + 7; if (p >= 100) { clearInterval(this._p); this.props.notify && this.props.notify('Busca concluída', '12 empresas encontradas, 3 novas desde a última vez.'); return { prog: 100, status: 'done' }; } return { prog: p }; }), 140);
+  }
+  renderVals() {
+    const D = window.LTD || { vendedores: [], cidades: [], empresa: () => ({}) };
+    const m = !!this.props.mobile, st = this.state, LT = window.Leadtogo;
+    const go = this.props.go || (() => {}), notify = this.props.notify || (() => {});
+    const norm = (t) => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const q = norm(st.cq.trim());
+    const sug = q ? this.CNAES.filter(c => !st.cnaes.includes(c[0]) && norm(c[0] + ' ' + c[1]).includes(q)).slice(0, 5).map(c => ({ cod: c[0], desc: c[1], pick: () => this.setState({ cnaes: st.cnaes.concat([c[0]]), cq: '' }) })) : [];
+    const desc = (cod) => (this.CNAES.find(c => c[0] === cod) || [cod, ''])[1];
+    const lista = this.RES.filter(r => (!st.mun || r[4] === st.mun) && (!st.soNovas || r[7])).map(r => {
+      const id = r[2]; const imp = st.importados[id]; const crm = r[6] || imp; const sel = !!st.sel[id];
+      return { nome: r[0], razao: r[1], cnpj: r[2], cnaeTxt: r[3] + ' · ' + desc(r[3]), cidade: r[4] + '/ES', abertura: r[5], nova: !!r[7],
+        noCrm: !!crm, fora: !crm, crmLabel: imp ? 'Importada agora' : 'Já está no CRM', selecionavel: !crm, sel,
+        bg: sel ? 'var(--surface-selected)' : crm ? 'var(--surface-sunken)' : 'transparent',
+        abrir: (e) => { e.preventDefault(); go('ficha', { empresaId: r[6] || 'usidantec' }); },
+        toggle: () => this.setState(s => ({ sel: { ...s.sel, [id]: !s.sel[id] } })) };
+    });
+    const disp = lista.filter(r => r.selecionavel);
+    const selIds = Object.keys(st.sel).filter(k => st.sel[k]);
+    const allSel = disp.length > 0 && disp.every(r => r.sel);
+    const salvasBase = [
+      { id: 's1', nome: 'Usinagem na Grande Vitória', resumo: '2539-0/01, 3314-7/10 · ES · Serra, Vitória, Cariacica · ativas', ultima: 'Última: 14/09/2026 · 9 resultados', novas: '3 novas' },
+      { id: 's2', nome: 'Laticínios do Caparaó', resumo: '1052-0/00 · ES · todos os municípios · ativas', ultima: 'Última: 02/08/2026 · 21 resultados', novas: false },
+      { id: 's3', nome: 'Marmorarias de Cachoeiro', resumo: '2391-5/03 · ES · Cachoeiro de Itapemirim · ativas', ultima: 'Última: 20/07/2026 · 64 resultados', novas: '5 novas' }
+    ].concat(st.extraSalvas);
+    const salvas = salvasBase.map(b => ({ ...b, border: st.salvaAtiva === b.id ? 'var(--accent)' : 'var(--border)', repetir: () => this.rodar(true, b.id) }));
+    const importar = () => {
+      const imp = { ...st.importados }; selIds.forEach(id => imp[id] = true);
+      this.setState({ importados: imp, sel: {}, dlg: false });
+      notify('Leads importados', selIds.length + (selIds.length === 1 ? ' empresa entrou' : ' empresas entraram') + ' na carteira com a tag da campanha.');
+    };
+    const filtrosAbertos = !m || st.filtros;
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { pad: '16px', savedCols: '1fr', main: '1fr', density: 'touch', resCols: '32px minmax(0,1fr)', chkRow: 'span 5', dlgAlign: 'flex-end', dlgPad: '0', dlgW: '100%', dlgMaxH: '764px' }
+           : { pad: '24px', savedCols: 'repeat(3, minmax(0,1fr))', main: '320px minmax(0,1fr)', density: 'default', resCols: '40px minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,0.9fr) 90px 150px', chkRow: 'auto', dlgAlign: 'center', dlgPad: '24px', dlgW: '480px', dlgMaxH: 'calc(100vh - 48px)' },
+      salvas, filtrosAbertos, toggleFiltros: () => this.setState({ filtros: !st.filtros }), filtRot: st.filtros ? 'rotate(180deg)' : 'none',
+      cq: st.cq, setCq: (e) => this.setState({ cq: e.target.value }), sug, showSug: sug.length > 0,
+      cnaesSel: st.cnaes.map(c => ({ cod: c, desc: desc(c), remove: () => this.setState({ cnaes: st.cnaes.filter(x => x !== c) }) })),
+      cnaeOndeOpts: [{ value: 'principal', label: 'Só principal' }, { value: 'ambos', label: 'Principal ou secundário' }], cnaeOnde: st.cnaeOnde, setCnaeOnde: (v) => this.setState({ cnaeOnde: v }),
+      ufs: ['ES', 'MG', 'RJ', 'BA', 'SP'], municipios: [{ value: '', label: 'Todos os municípios' }].concat(D.cidades.map(c => ({ value: c, label: c }))), mun: st.mun, setMun: (e) => this.setState({ mun: e.target.value }),
+      naturezas: [{ value: '', label: 'Todas' }, { value: '206-2', label: 'Sociedade empresária limitada' }, { value: '213-5', label: 'Empresário individual' }, { value: '205-4', label: 'Sociedade anônima fechada' }, { value: '230-5', label: 'Eireli' }],
+      portes: [{ value: '', label: 'Todos' }, { value: 'me', label: 'Microempresa' }, { value: 'epp', label: 'Empresa de pequeno porte' }, { value: 'demais', label: 'Demais' }],
+      ativas: st.ativas, togAtivas: () => this.setState({ ativas: !st.ativas }),
+      rodando: st.status === 'running', buscarLabel: st.status === 'running' ? 'Buscando…' : 'Buscar empresas', buscar: () => { if (!st.cnaes.length) { notify('Escolha ao menos um CNAE', 'A Receita exige um filtro de atividade.', 'warning'); return; } this.rodar(false, null); },
+      salvar: () => { const id = 'x' + Date.now(); this.setState({ extraSalvas: st.extraSalvas.concat([{ id, nome: 'Minha busca ' + (st.extraSalvas.length + 1), resumo: st.cnaes.join(', ') + ' · ES · ' + (st.mun || 'todos os municípios') + (st.ativas ? ' · ativas' : ''), ultima: 'Salva agora', novas: false }]) }); notify('Busca salva', 'Repita quando quiser para ver só as empresas novas.'); },
+      progLabel: Math.round(st.prog * 38) + ' de 3.800 estabelecimentos', progPct: st.prog + '%', cancelar: () => { clearInterval(this._p); this.setState({ status: 'idle' }); },
+      vazio: st.status === 'idle', temRes: st.status === 'done',
+      resLabel: lista.length + ' empresas · ' + lista.filter(r => r.noCrm).length + ' já estão no CRM' + (st.soNovas ? ' · mostrando só as novas' : ''),
+      soNovas: st.soNovas, togNovas: () => this.setState({ soNovas: !st.soNovas, sel: {} }),
+      res: lista, allSel, toggleAll: () => { const s = {}; if (!allSel) disp.forEach(r => s[r.cnpj] = true); this.setState({ sel: s }); },
+      bulk: selIds.length > 0, selLabel: selIds.length + (selIds.length === 1 ? ' selecionada' : ' selecionadas'), limparSel: () => this.setState({ sel: {} }),
+      dlg: st.dlg, abrirImport: () => this.setState({ dlg: true }), fecharDlg: () => this.setState({ dlg: false }), stop: (e) => e.stopPropagation(),
+      dlgDesc: selIds.length + (selIds.length === 1 ? ' empresa entra' : ' empresas entram') + ' com Status Lead e os dados da Receita.',
+      vendedores: D.vendedores, verticais: ['Metalmecânica', 'Alimentos', 'Rochas ornamentais', 'Logística', 'Saúde'],
+      dlgFooter: LT && st.dlg ? React.createElement(React.Fragment, null, React.createElement(LT.Button, { variant: 'ghost', onClick: () => this.setState({ dlg: false }) }, 'Cancelar'), React.createElement(LT.Button, { variant: 'primary', onClick: importar }, 'Importar ' + selIds.length + ' como Lead')) : null
+    };
+  }
+}
+</script>
+</body>
+</html>

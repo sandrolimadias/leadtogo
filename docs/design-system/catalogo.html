@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leadtogo — Catálogo de componentes</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components/bundle.css">
+<style>
+  body { padding: 0; }
+  .cat-bar { position: sticky; top: 0; z-index: var(--z-sticky); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-6); background: var(--surface); border-bottom: 1px solid var(--border); }
+  .cat-bar b { font-size: 16px; margin-right: auto; display: flex; gap: var(--space-2); align-items: center; }
+  .cat-bar img { width: 24px; height: 24px; }
+  .cat-main { max-width: 1320px; margin: 0 auto; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .cat-group { font-size: 11px; line-height: 16px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-subtle); margin: var(--space-6) 0 0; }
+  .cat-item h3 { font-size: 15px; line-height: 20px; margin: 0 0 var(--space-2); }
+  .cat-frame { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: auto; }
+  #c-TelaFunil > div { min-height: 560px; }
+</style>
+</head>
+<body>
+<header class="cat-bar">
+  <b><img src="assets/logos/leadtogo-mark.svg" alt="">Leadtogo · Catálogo</b>
+  <div class="lt-seg" role="group" aria-label="Tema"><button type="button" aria-pressed="true" data-theme-btn="light">Claro</button><button type="button" aria-pressed="false" data-theme-btn="dark">Escuro</button></div>
+  <div class="lt-seg" role="group" aria-label="Densidade"><button type="button" aria-pressed="false" data-dens="compact">Compacta</button><button type="button" aria-pressed="true" data-dens="default">Padrão</button><button type="button" aria-pressed="false" data-dens="touch">Toque</button></div>
+</header>
+<main class="cat-main" id="main">
+<h2 class="cat-group">Ações</h2>
+<section class="cat-item"><h3>Button</h3><div class="cat-frame"><div id="c-Button" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>IconButton</h3><div class="cat-frame"><div id="c-IconButton" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>SegmentedControl</h3><div class="cat-frame"><div id="c-SegmentedControl" class="lt-pad"></div></div></section>
+<h2 class="cat-group">Formulários</h2>
+<section class="cat-item"><h3>TextField</h3><div class="cat-frame"><div id="c-TextField" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Select</h3><div class="cat-frame"><div id="c-Select" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Checkbox</h3><div class="cat-frame"><div id="c-Checkbox" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Switch</h3><div class="cat-frame"><div id="c-Switch" class="lt-pad"></div></div></section>
+<h2 class="cat-group">Exibição</h2>
+<section class="cat-item"><h3>Badge</h3><div class="cat-frame"><div id="c-Badge" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Tag</h3><div class="cat-frame"><div id="c-Tag" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Avatar</h3><div class="cat-frame"><div id="c-Avatar" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>StatTile</h3><div class="cat-frame"><div id="c-StatTile" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>StatusPill</h3><div class="cat-frame"><div id="c-StatusPill" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Tooltip</h3><div class="cat-frame"><div id="c-Tooltip" class="lt-pad"></div></div></section>
+<h2 class="cat-group">Atividades</h2>
+<section class="cat-item"><h3>ActivityIcon</h3><div class="cat-frame"><div id="c-ActivityIcon" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>PriorityMarks</h3><div class="cat-frame"><div id="c-PriorityMarks" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>ActivityTimeline</h3><div class="cat-frame"><div id="c-ActivityTimeline" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>TaskCard</h3><div class="cat-frame"><div id="c-TaskCard" class="lt-pad"></div></div></section>
+<h2 class="cat-group">Funil</h2>
+<section class="cat-item"><h3>DealCard</h3><div class="cat-frame"><div id="c-DealCard" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>KanbanColumn</h3><div class="cat-frame"><div id="c-KanbanColumn" class="lt-pad"></div></div></section>
+<h2 class="cat-group">Dados</h2>
+<section class="cat-item"><h3>DataTable</h3><div class="cat-frame"><div id="c-DataTable" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Tabs</h3><div class="cat-frame"><div id="c-Tabs" class="lt-pad"></div></div></section>
+<h2 class="cat-group">Navegação</h2>
+<section class="cat-item"><h3>AppNav</h3><div class="cat-frame"><div id="c-AppNav" class=""></div></div></section>
+<section class="cat-item"><h3>TenantSwitcher</h3><div class="cat-frame"><div id="c-TenantSwitcher" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Menu</h3><div class="cat-frame"><div id="c-Menu" class="lt-pad"></div></div></section>
+<h2 class="cat-group">Feedback</h2>
+<section class="cat-item"><h3>Alert</h3><div class="cat-frame"><div id="c-Alert" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Toast</h3><div class="cat-frame"><div id="c-Toast" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>EmptyState</h3><div class="cat-frame"><div id="c-EmptyState" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Skeleton</h3><div class="cat-frame"><div id="c-Skeleton" class="lt-pad"></div></div></section>
+<section class="cat-item"><h3>Dialog</h3><div class="cat-frame"><div id="c-Dialog" class=""></div></div></section>
+<h2 class="cat-group">Base</h2>
+<section class="cat-item"><h3>Icon</h3><div class="cat-frame"><div id="c-Icon" class="lt-pad"></div></div></section>
+<h2 class="cat-group">Exemplos</h2>
+<section class="cat-item"><h3>TelaFunil</h3><div class="cat-frame"><div id="c-TelaFunil" class=""></div></div></section>
+</main>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="components/bundle.js"></script>
+<script>
+var L = window.Leadtogo, h = React.createElement;
+try { ReactDOM.createRoot(document.getElementById('c-Button')).render(h('div',{className:'lt-stack'},
+ h('div',{className:'lt-row'}, h(L.Button,{variant:'primary',icon:'plus'},'Nova oportunidade'), h(L.Button,null,'Importar planilha'), h(L.Button,{variant:'ghost',icon:'funnel'},'Filtros'), h(L.Button,{variant:'danger-ghost',icon:'trash-2'},'Excluir')),
+ h('div',{className:'lt-row'}, h(L.Button,{variant:'primary',size:'sm'},'Salvar'), h(L.Button,{size:'sm',iconRight:'chevron-down'},'Ações'), h(L.Button,{variant:'primary',loading:true},'Consultando Receita'), h(L.Button,{disabled:true},'Exportar'), h(L.Button,{variant:'danger'},'Excluir empresa')))); } catch (e) { console.error('Button', e); }
+try { ReactDOM.createRoot(document.getElementById('c-IconButton')).render(h('div',{className:'lt-row'}, h(L.IconButton,{icon:'ellipsis',label:'Mais ações'}), h(L.IconButton,{icon:'pencil',label:'Editar',variant:'secondary'}), h(L.IconButton,{icon:'plus',label:'Nova atividade',variant:'primary'}), h(L.IconButton,{icon:'bell',label:'Notificações',size:'sm'}), h(L.IconButton,{icon:'plus',label:'Registrar atividade',variant:'fab'}))); } catch (e) { console.error('IconButton', e); }
+try { ReactDOM.createRoot(document.getElementById('c-SegmentedControl')).render(h('div',{className:'lt-row'}, h(L.SegmentedControl,{label:'Visualização',options:[{value:'kanban',label:'Kanban',icon:'square-kanban'},{value:'lista',label:'Lista',icon:'list'}]}), h(L.SegmentedControl,{label:'Período',defaultValue:'mes',options:[{value:'hoje',label:'Hoje'},{value:'semana',label:'Semana'},{value:'mes',label:'Mês'},{value:'tri',label:'Trimestre'}]}))); } catch (e) { console.error('SegmentedControl', e); }
+try { ReactDOM.createRoot(document.getElementById('c-TextField')).render(h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:16}},
+ h(L.TextField,{label:'CNPJ',required:true,mono:true,placeholder:'00.000.000/0000-00',defaultValue:'12.424.587/0001-45',hint:'Aceita o CNPJ alfanumérico.',suffix:h(L.Button,{size:'sm',variant:'ghost',icon:'search'},'Consultar')}),
+ h(L.TextField,{label:'Buscar empresas',icon:'search',placeholder:'Nome, CNPJ ou cidade'}),
+ h(L.TextField,{label:'E-mail do contato',defaultValue:'carolina@usidantec',error:'Informe um e-mail válido, como nome@empresa.com.br.'}),
+ h(L.TextField,{label:'Observações',multiline:true,placeholder:'O que aconteceu na visita?'}))); } catch (e) { console.error('TextField', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Select')).render(h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:16}},
+ h(L.Select,{label:'Vertical',defaultValue:'Indústria',options:['Indústria','Saúde','Varejo','Serviços','Agronegócio']}),
+ h(L.Select,{label:'Motivo da perda',required:true,placeholder:'Selecione',options:['Preço','Concorrência','Sem orçamento','Sem retorno'],hint:'Obrigatório para status Perdido.'}),
+ h(L.Select,{label:'Vendedor',options:['Alessandro Dias','Carolina Surlo','Daniel Surlo']}))); } catch (e) { console.error('Select', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Checkbox')).render(h('div',{className:'lt-stack'}, h(L.Checkbox,{label:'Importante',defaultChecked:true}), h(L.Checkbox,{label:'Urgente'}), h(L.Checkbox,{label:'Aceita receber WhatsApp',description:'Consentimento registrado em 05/10/2026 pelo vendedor.',defaultChecked:true}))); } catch (e) { console.error('Checkbox', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Switch')).render(h('div',{className:'lt-stack'}, h(L.Switch,{label:'Vendedores veem todas as empresas'}), h(L.Switch,{label:'Ao conquistar, mudar o status da empresa para Cliente',defaultChecked:true}))); } catch (e) { console.error('Switch', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Badge')).render(h('div',{className:'lt-row'}, h(L.Badge,null,'Pendente'), h(L.Badge,{tone:'info'},'Em execução'), h(L.Badge,{tone:'success',icon:'check'},'Realizada'), h(L.Badge,{tone:'danger',icon:'triangle-alert'},'Atrasada'), h(L.Badge,{tone:'warning'},'Baixada na Receita'), h(L.Badge,{tone:'accent'},'Matriz'), h(L.Badge,{tone:'outline'},'Filial'))); } catch (e) { console.error('Badge', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Tag')).render(h('div',{className:'lt-stack'},
+ h('div',{className:'lt-row'}, h(L.Tag,{color:'teal'},'Lead'), h(L.Tag,{color:'amber'},'Prospect'), h(L.Tag,{color:'green'},'Cliente'), h(L.Tag,{color:'gray'},'Inativo'), h(L.Tag,{color:'orange'},'Visitada'), h(L.Tag,{color:'blue'},'Contactada')),
+ h('div',{className:'lt-row'}, ['gray','red','orange','amber','green','teal','blue','indigo','purple','pink'].map(function(c){ return h(L.Tag,{key:c,color:c,onRemove:function(){}},c); })))); } catch (e) { console.error('Tag', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Avatar')).render(h('div',{className:'lt-row'}, h(L.Avatar,{name:'Alessandro Dias',size:'lg'}), h(L.Avatar,{name:'Carolina Surlo'}), h(L.Avatar,{name:'Daniel Surlo',size:'sm'}), h('span',{className:'lt-avatar-group'}, h(L.Avatar,{name:'Ana Paula'}), h(L.Avatar,{name:'Bruno Lima'}), h(L.Avatar,{name:'Marcos Reis'})))); } catch (e) { console.error('Avatar', e); }
+try { ReactDOM.createRoot(document.getElementById('c-StatTile')).render(h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:12}},
+ h(L.StatTile,{label:'Pipeline ativo',value:184300,delta:'+12%',hint:'vs. mês anterior',spark:[120,132,128,141,150,162,171,184]}),
+ h(L.StatTile,{label:'Previsão do mês',value:42750,hint:'valor ponderado'}),
+ h(L.StatTile,{label:'MRR conquistado',value:6400,delta:'-4%',hint:'vs. mês anterior'}),
+ h(L.StatTile,{label:'Sem contato há 60 dias',value:'23',currency:false,hint:'empresas da carteira'}))); } catch (e) { console.error('StatTile', e); }
+try { ReactDOM.createRoot(document.getElementById('c-StatusPill')).render(h('div',{className:'lt-row'}, ['ativo','conquistado','perdido','cancelado','suspenso'].map(function(s){ return h(L.StatusPill,{key:s,status:s}); }))); } catch (e) { console.error('StatusPill', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Tooltip')).render(h('div',{className:'lt-row',style:{paddingTop:28}}, h(L.Tooltip,{label:'Última visita em 12/09/2026',open:true}, h(L.Tag,{color:'orange'},'Visitada')), h(L.Tooltip,{label:'Copiar CNPJ'}, h(L.IconButton,{icon:'paperclip',label:'Copiar CNPJ'})))); } catch (e) { console.error('Tooltip', e); }
+try { ReactDOM.createRoot(document.getElementById('c-ActivityIcon')).render(h('div',{className:'lt-row'}, ['ligacao','whatsapp','email','visita','reuniao','tarefa'].map(function(t){ return h(L.ActivityIcon,{key:t,type:t}); }))); } catch (e) { console.error('ActivityIcon', e); }
+try { ReactDOM.createRoot(document.getElementById('c-PriorityMarks')).render(h('div',{className:'lt-row'}, h(L.PriorityMarks,{importante:true}), h(L.PriorityMarks,{urgente:true}), h(L.PriorityMarks,{importante:true,urgente:true}))); } catch (e) { console.error('PriorityMarks', e); }
+try { ReactDOM.createRoot(document.getElementById('c-ActivityTimeline')).render(h(L.ActivityTimeline,{items:[
+ {type:'visita',title:'Visita técnica',status:'atrasada',when:'Ontem, 14:00',contact:'Carolina Surlo',owner:'Alessandro',importante:true},
+ {type:'ligacao',title:'Retornar sobre a proposta',status:'pendente',when:'Hoje, 16:30',contact:'Daniel Surlo',owner:'Alessandro',urgente:true},
+ {type:'whatsapp',title:'Conversa no WhatsApp',status:'realizada',when:'02/10, 10:12',contact:'Carolina Surlo',owner:'Alessandro',note:'Pediu a proposta com implantação separada da mensalidade.'},
+ {type:'tarefa',title:'Relatório de visitas',status:'pendente',when:'Sexta',owner:'Alessandro',repeat:'Toda sexta'},
+ {type:'email',title:'Envio do catálogo',status:'cancelada',when:'28/09',owner:'Alessandro'}]})); } catch (e) { console.error('ActivityTimeline', e); }
+try { ReactDOM.createRoot(document.getElementById('c-TaskCard')).render(h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,296px))',gap:12}},
+ h(L.TaskCard,{title:'Preparar proposta Usidantec',company:'Usidantec',importante:true,urgente:true,checklist:{done:2,total:5},due:'Hoje',dueState:'today',owner:'Alessandro Dias',labels:[{label:'Proposta',color:'purple'}]}),
+ h(L.TaskCard,{type:'ligacao',title:'Ligar para Daniel',company:'Usidantec',due:'03/10',dueState:'late'}),
+ h(L.TaskCard,{title:'Relatório de visitas',due:'Sexta',repeat:'Semanal',labels:[{label:'Interno',color:'gray'}]}))); } catch (e) { console.error('TaskCard', e); }
+try { ReactDOM.createRoot(document.getElementById('c-DealCard')).render(h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,296px))',gap:12}},
+ h(L.DealCard,{title:'Contrato anual 2027',company:'Usidantec Usinagem e Mecânica',value:8000,mrr:500,owner:'Alessandro Dias',due:'30/10',next:{type:'visita',label:'Visita amanhã'},tags:[{label:'Cliente',color:'green'}]}),
+ h(L.DealCard,{title:'Licenças + implantação',company:'Metalúrgica Serra Azul',value:24600,mrr:1300,owner:'Carolina Surlo',due:'15/10',dueState:'late',stale:'Parada há 12 dias nesta fase'}))); } catch (e) { console.error('DealCard', e); }
+try { ReactDOM.createRoot(document.getElementById('c-KanbanColumn')).render(h('div',{className:'lt-board'},
+ h(L.KanbanColumn,{title:'Qualificação',color:'teal',count:2,total:12500},
+   h(L.DealCard,{title:'Manutenção preventiva',company:'Caldeiraria Vitória',value:4500,owner:'Daniel Surlo',due:'20/10'}),
+   h(L.DealCard,{title:'Consultoria de processos',company:'Usinagem Linhares',value:8000,due:'28/10'})),
+ h(L.KanbanColumn,{title:'Proposta',color:'blue',count:1,total:24600},
+   h(L.DealCard,{title:'Licenças + implantação',company:'Metalúrgica Serra Azul',value:24600,mrr:1300,owner:'Carolina Surlo',due:'15/10',dueState:'late',stale:'Parada há 12 dias'})))); } catch (e) { console.error('KanbanColumn', e); }
+try { ReactDOM.createRoot(document.getElementById('c-DataTable')).render(h(L.DataTable,{selectable:true,defaultSelected:[2],caption:'Empresas',columns:[
+ {key:'nome',label:'Empresa',sorted:'asc',render:function(r){return h('span',null,h('span',{className:'lt-cell-primary'},r.nome),h('span',{className:'lt-cell-secondary lt-mono'},r.cnpj));}},
+ {key:'tags',label:'Status',render:function(r){return h(L.Tag,{color:r.cor},r.status);}},
+ {key:'cidade',label:'Cidade'},
+ {key:'visita',label:'Última visita',render:function(r){return h('span',{className:'lt-num'},r.visita);}},
+ {key:'vendedor',label:'Vendedor',render:function(r){return h('span',{className:'lt-row',style:{flexWrap:'nowrap'}},h(L.Avatar,{name:r.vendedor,size:'sm'}),r.vendedor);}},
+ {key:'pipeline',label:'Pipeline',align:'right',render:function(r){return L.formatBRL(r.pipeline);}}],
+ rows:[{id:1,nome:'Usidantec',cnpj:'12.424.587/0001-45',status:'Cliente',cor:'green',cidade:'Serra · ES',visita:'12/09/2026',vendedor:'Alessandro Dias',pipeline:8000},
+ {id:2,nome:'Metalúrgica Serra Azul',cnpj:'08.331.902/0001-10',status:'Prospect',cor:'amber',cidade:'Serra · ES',visita:'—',vendedor:'Carolina Surlo',pipeline:24600},
+ {id:3,nome:'Caldeiraria Vitória',cnpj:'19.004.115/0002-71',status:'Lead',cor:'teal',cidade:'Vitória · ES',visita:'03/08/2026',vendedor:'Daniel Surlo',pipeline:4500}]})); } catch (e) { console.error('DataTable', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Tabs')).render(h(L.Tabs,{label:'Seções da empresa',items:[{value:'resumo',label:'Resumo'},{value:'contatos',label:'Contatos',count:3},{value:'atividades',label:'Atividades',count:12},{value:'oportunidades',label:'Oportunidades',count:2},{value:'historico',label:'Histórico'}]})); } catch (e) { console.error('Tabs', e); }
+try { ReactDOM.createRoot(document.getElementById('c-AppNav')).render(h(L.AppNav,{tenant:{name:'Leadtogo Comercial',role:'Administrador',color:'teal'},user:{name:'Alessandro Dias',role:'Administrador'},groups:[
+ {items:[{icon:'layout-dashboard',label:'Dashboard',active:true},{icon:'building-2',label:'Empresas',count:342},{icon:'users',label:'Contatos'},{icon:'target',label:'Oportunidades',count:18},{icon:'square-kanban',label:'Tarefas',count:5}]},
+ {label:'Prospecção',items:[{icon:'search',label:'Buscar na Receita'},{icon:'route',label:'Roteiros'}]}]})); } catch (e) { console.error('AppNav', e); }
+try { ReactDOM.createRoot(document.getElementById('c-TenantSwitcher')).render(h('div',{className:'lt-stack',style:{maxWidth:248}}, h(L.TenantSwitcher,{current:{name:'Leadtogo Comercial',role:'Administrador',color:'teal'}}),
+ h(L.Menu,{label:'Empresas',items:[{heading:'Suas empresas'},{label:'Leadtogo Comercial',checked:true},{label:'Leadtogo Serviços'},{separator:true},{icon:'layout-dashboard',label:'Painel consolidado'},{icon:'plus',label:'Criar empresa'}]}))); } catch (e) { console.error('TenantSwitcher', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Menu')).render(h(L.Menu,{label:'Ações da empresa',items:[{icon:'pencil',label:'Editar',shortcut:'E'},{icon:'repeat',label:'Atualizar pela Receita'},{icon:'user',label:'Transferir carteira'},{icon:'download',label:'Exportar'},{separator:true},{icon:'trash-2',label:'Mover para a lixeira',danger:true}]})); } catch (e) { console.error('Menu', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Alert')).render(h('div',{className:'lt-stack'},
+ h(L.Alert,{tone:'warning',title:'Empresa baixada na Receita',actions:h(L.Button,{size:'sm'},'Ver dados')},'A verificação mensal encontrou a situação BAIXADA em 01/10/2026.'),
+ h(L.Alert,{tone:'info'},'Esta filial está ligada à matriz Usidantec (12.424.587/0001-45).'),
+ h(L.Alert,{tone:'danger',title:'Não foi possível consultar o CNPJ'},'A Receita não respondeu. Tente de novo em alguns minutos ou preencha à mão.'),
+ h(L.Alert,{tone:'success'},'42 empresas importadas como Lead.'))); } catch (e) { console.error('Alert', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Toast')).render(h('div',{className:'lt-stack'}, h(L.Toast,{title:'Atividade concluída',description:'Visita técnica · Usidantec',action:h(L.Button,{size:'sm',variant:'ghost'},'Agendar próxima')}), h(L.Toast,{tone:'danger',title:'Não foi possível salvar',description:'Verifique a conexão. A atividade ficou na fila e será enviada.'}))); } catch (e) { console.error('Toast', e); }
+try { ReactDOM.createRoot(document.getElementById('c-EmptyState')).render(h(L.EmptyState,{icon:'map-pin',title:'Nenhuma visita nesta semana',description:'Filtre as empresas sem visita há 90 dias para montar o roteiro da semana.',actions:[h(L.Button,{key:1,variant:'primary',icon:'route'},'Montar roteiro'),h(L.Button,{key:2},'Ver empresas')]})); } catch (e) { console.error('EmptyState', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Skeleton')).render(h('div',{style:{display:'grid',gridTemplateColumns:'40px 1fr',gap:12,alignItems:'center',maxWidth:420}}, h(L.Skeleton,{width:40,height:40,circle:true}), h(L.Skeleton,{lines:3}))); } catch (e) { console.error('Skeleton', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Dialog')).render(h(L.Dialog,{inline:true,title:'Marcar como perdida',description:'A oportunidade sai do Kanban e fica registrada na fase Proposta.',footer:[h(L.Button,{key:1},'Cancelar'),h(L.Button,{key:2,variant:'danger'},'Marcar como perdida')]},
+ h(L.Select,{label:'Motivo',required:true,placeholder:'Selecione',options:['Preço','Concorrência','Sem orçamento','Sem retorno']}),
+ h(L.TextField,{label:'Detalhe',multiline:true,placeholder:'Opcional'}))); } catch (e) { console.error('Dialog', e); }
+try { ReactDOM.createRoot(document.getElementById('c-Icon')).render(h('div', {className:'lt-row', style:{gap:14, color:'var(--ink-muted)'}}, ['layout-dashboard','building-2','users','target','square-kanban','calendar','phone','message-circle','mail','map-pin','route','navigation','bell','search','funnel','star','zap','repeat','paperclip','settings'].map(function(n){ return h(L.Icon,{key:n,name:n,size:20,label:n}); }))); } catch (e) { console.error('Icon', e); }
+try { ReactDOM.createRoot(document.getElementById('c-TelaFunil')).render(h('div',{style:{display:'flex',minHeight:640,background:'var(--bg)'}},
+ h(L.AppNav,{tenant:{name:'Leadtogo Comercial',role:'Administrador',color:'teal'},user:{name:'Alessandro Dias',role:'Administrador'},groups:[{items:[{icon:'layout-dashboard',label:'Dashboard'},{icon:'building-2',label:'Empresas',count:342},{icon:'users',label:'Contatos'},{icon:'target',label:'Oportunidades',active:true,count:18},{icon:'square-kanban',label:'Tarefas',count:5}]}]}),
+ h('main',{style:{flex:1,minWidth:0,padding:24,display:'flex',flexDirection:'column',gap:16}},
+  h('div',{className:'lt-row',style:{justifyContent:'space-between'}}, h('div',null,h('div',{className:'title-lg',style:{fontSize:22,fontWeight:600}},'Oportunidades'),h('div',{style:{color:'var(--ink-muted)',fontSize:13}},'Funil Vendas novas · 6 ativas · R$ 61.600')),
+   h('div',{className:'lt-row'}, h(L.SegmentedControl,{label:'Visualização',options:[{value:'k',label:'Kanban',icon:'square-kanban'},{value:'l',label:'Lista',icon:'list'}]}), h(L.Button,{icon:'funnel'},'Filtros'), h(L.Button,{variant:'primary',icon:'plus'},'Nova oportunidade'))),
+  h('div',{className:'lt-board'},
+   h(L.KanbanColumn,{title:'Qualificação',color:'teal',count:2,total:12500},
+     h(L.DealCard,{title:'Manutenção preventiva',company:'Caldeiraria Vitória',value:4500,owner:'Daniel Surlo',due:'20/10',next:{type:'ligacao',label:'Ligar hoje'}}),
+     h(L.DealCard,{title:'Consultoria de processos',company:'Usinagem Linhares',value:8000,owner:'Alessandro Dias',due:'28/10',next:false})),
+   h(L.KanbanColumn,{title:'Diagnóstico',color:'indigo',count:1,total:8000},
+     h(L.DealCard,{title:'Contrato anual 2027',company:'Usidantec Usinagem e Mecânica',value:8000,mrr:500,owner:'Alessandro Dias',due:'30/10',next:{type:'visita',label:'Visita amanhã'},tags:[{label:'Cliente',color:'green'}]})),
+   h(L.KanbanColumn,{title:'Proposta',color:'blue',count:2,total:36600},
+     h(L.DealCard,{title:'Licenças + implantação',company:'Metalúrgica Serra Azul',value:24600,mrr:1300,owner:'Carolina Surlo',due:'15/10',dueState:'late',stale:'Parada há 12 dias'}),
+     h(L.DealCard,{title:'Treinamento NR-12',company:'Fundição Cariacica',value:12000,owner:'Daniel Surlo',due:'22/10',next:{type:'reuniao',label:'Reunião 08/10'}})),
+   h(L.KanbanColumn,{title:'Negociação',color:'purple',count:1,total:4500},
+     h(L.DealCard,{title:'Ampliação de contrato',company:'Serra Tubos',value:4500,mrr:375,owner:'Carolina Surlo',due:'10/10',dueState:'today'})))))); } catch (e) { console.error('TelaFunil', e); }
+document.querySelectorAll('[data-theme-btn]').forEach(function (b) { b.onclick = function () {
+  document.documentElement.setAttribute('data-theme', b.dataset.themeBtn);
+  document.querySelectorAll('[data-theme-btn]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+  document.querySelector('.cat-bar img').src = 'assets/logos/' + (b.dataset.themeBtn === 'dark' ? 'leadtogo-mark-dark.svg' : 'leadtogo-mark.svg'); }; });
+document.querySelectorAll('[data-dens]').forEach(function (b) { b.onclick = function () {
+  document.getElementById('main').setAttribute('data-density', b.dataset.dens);
+  document.querySelectorAll('[data-dens]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }; });
+</script>
+</body>
+</html>

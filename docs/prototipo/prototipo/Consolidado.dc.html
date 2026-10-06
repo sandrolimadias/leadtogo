@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script></helmet>
+<div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:{{ L.gap }};max-width:1400px">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px">
+    <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <h1 style="margin:0;font-size:{{ L.h1 }};line-height:1.2;font-weight:600;letter-spacing:-0.015em">Painel consolidado</h1>
+        <x-import component-from-global-scope="Leadtogo.Badge" tone="outline" icon="info" hint-size="120px,22px">Somente leitura</x-import>
+      </div>
+      <span style="font-size:13px;color:var(--ink-muted)">{{ subtitulo }}</span>
+    </div>
+    <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Período" options="{{ periodOptions }}" value="{{ period }}" onChange="{{ setPeriod }}" hint-size="290px,32px"></x-import>
+  </div>
+
+  <div role="group" aria-label="Filtrar empresas" style="display:flex;gap:8px;flex-wrap:wrap">
+    <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+      <button type="button" onClick="{{ c.toggle }}" aria-pressed="{{ c.pressed }}" style="display:flex;align-items:center;gap:8px;height:{{ L.chipH }};padding:0 12px 0 6px;border-radius:9999px;border:1px solid {{ c.border }};background:{{ c.bg }};font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer">
+        <span style="width:22px;height:22px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:{{ c.logoBg }};color:{{ c.logoFg }}">{{ c.ini }}</span>{{ c.name }}
+        <sc-if value="{{ c.on }}" hint-placeholder-val="{{ true }}"><span style="display:flex;color:var(--accent)"><x-import component-from-global-scope="Leadtogo.Icon" name="check" size="{{ 14 }}" hint-size="14px,14px"></x-import></span></sc-if>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ L.stats }};gap:12px">
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="Pipeline ativo" value="{{ tot.pipe }}" hint="{{ tot.pipeHint }}" hint-size="100%,96px"></x-import>
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="Previsão do mês" value="{{ tot.prev }}" hint="valor ponderado" hint-size="100%,96px"></x-import>
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="MRR conquistado" value="{{ tot.mrr }}" delta="+11%" hint="vs. mês anterior" spark="{{ spark }}" hint-size="100%,96px"></x-import>
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="Conversão" value="{{ tot.conv }}" currency="{{ false }}" hint="{{ tot.convHint }}" hint-size="100%,96px"></x-import>
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="Atividades realizadas" value="{{ tot.atv }}" currency="{{ false }}" hint="{{ tot.atvHint }}" hint-size="100%,96px"></x-import>
+  </div>
+
+  <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--border)">
+      <h2 style="margin:0;flex:1;font-size:18px;line-height:24px;font-weight:600">Comparativo por empresa</h2>
+      <span style="font-size:13px;color:var(--ink-muted)">Clique para abrir a empresa</span>
+    </div>
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;line-height:20px">
+        <thead><tr style="background:var(--surface-sunken)">
+          <sc-for list="{{ heads }}" as="h" hint-placeholder-count="8"><th style="height:36px;padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border);text-align:{{ h.align }}">{{ h.label }}</th></sc-for>
+        </tr></thead>
+        <tbody>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+            <tr onClick="{{ r.open }}" style="cursor:pointer" style-hover="background:var(--surface-hover)">
+              <td style="padding:10px 12px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:{{ r.logoBg }};color:{{ r.logoFg }}">{{ r.ini }}</span><div style="display:flex;flex-direction:column"><span style="font-weight:600">{{ r.name }}</span><span style="font-size:12px;color:var(--ink-muted)">Seu papel: {{ r.role }}</span></div></div></td>
+              <td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums"><div style="display:flex;flex-direction:column"><span style="font-weight:600">{{ r.pipeF }}</span><span style="font-size:12px;color:var(--ink-muted)">{{ r.opsF }}</span></div></td>
+              <td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums">{{ r.prevF }}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums">{{ r.mrrF }}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums">{{ r.convF }}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid var(--border)"><div style="display:flex;flex-direction:column;gap:4px;min-width:150px"><div style="height:8px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden;display:flex"><div style="width:{{ r.atvPct }};background:var(--success)"></div><div style="width:{{ r.atrPct }};background:var(--danger)"></div></div><span style="font-size:12px;color:var(--ink-muted)">{{ r.atvF }}</span></div></td>
+              <td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:right"><x-import component-from-global-scope="Leadtogo.Badge" tone="{{ r.semTone }}" icon="clock" hint-size="60px,22px">{{ r.semF }}</x-import></td>
+              <td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--ink-muted)"><x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" hint-size="16px,16px"></x-import></td>
+            </tr>
+          </sc-for>
+          <tr style="background:var(--surface-sunken);font-weight:600">
+            <td style="padding:10px 12px">Total</td>
+            <td style="padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums">{{ tot.pipeF }}</td>
+            <td style="padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums">{{ tot.prevF }}</td>
+            <td style="padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums">{{ tot.mrrF }}</td>
+            <td style="padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums">{{ tot.conv }}</td>
+            <td style="padding:10px 12px;font-size:12px;font-weight:500;color:var(--ink-muted)">{{ tot.atvF }}</td>
+            <td style="padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums">{{ tot.sem }}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </sc-if>
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+        <button type="button" onClick="{{ r.open }}" style="width:100%;display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:0;border-bottom:1px solid var(--border);background:var(--surface);font:inherit;color:inherit;text-align:left;cursor:pointer">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:{{ r.logoBg }};color:{{ r.logoFg }}">{{ r.ini }}</span><span style="flex:1;font-weight:600">{{ r.name }}</span><x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" hint-size="16px,16px"></x-import></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:14px">
+            <span style="display:flex;flex-direction:column"><span style="font-size:12px;color:var(--ink-muted)">Pipeline</span><b style="font-variant-numeric:tabular-nums">{{ r.pipeF }}</b></span>
+            <span style="display:flex;flex-direction:column"><span style="font-size:12px;color:var(--ink-muted)">Previsão</span><b style="font-variant-numeric:tabular-nums">{{ r.prevF }}</b></span>
+            <span style="display:flex;flex-direction:column"><span style="font-size:12px;color:var(--ink-muted)">MRR</span><b style="font-variant-numeric:tabular-nums">{{ r.mrrF }}</b></span>
+            <span style="display:flex;flex-direction:column"><span style="font-size:12px;color:var(--ink-muted)">Conversão</span><b>{{ r.convF }}</b></span>
+          </div>
+          <span style="font-size:13px;color:var(--ink-muted)">{{ r.atvF }} · {{ r.semLong }}</span>
+        </button>
+      </sc-for>
+    </sc-if>
+  </section>
+
+  <div style="display:grid;grid-template-columns:{{ L.two }};gap:16px;align-items:start">
+    <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <h2 style="margin:0;font-size:18px;line-height:24px;font-weight:600">Funil somado</h2>
+      <sc-for list="{{ funil }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:baseline;gap:8px;font-size:13px"><span style="width:8px;height:8px;border-radius:9999px;background:{{ f.dot }};align-self:center"></span><span style="flex:1;font-weight:600">{{ f.title }}</span><span style="color:var(--ink-muted)">{{ f.n }}</span><span style="font-weight:600;font-variant-numeric:tabular-nums;min-width:90px;text-align:right">{{ f.total }}</span></div>
+          <div style="height:8px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden"><div style="height:100%;width:{{ f.pct }};background:{{ f.dot }};border-radius:9999px"></div></div>
+        </div>
+      </sc-for>
+      <span style="font-size:13px;color:var(--ink-muted)">Fases com o mesmo nome são somadas. Funis diferentes aparecem separados na empresa.</span>
+    </section>
+    <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <h2 style="margin:0;font-size:18px;line-height:24px;font-weight:600">Atividades da equipe</h2>
+      <sc-for list="{{ equipe }}" as="p" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 72px;gap:10px;align-items:center">
+          <span style="display:flex;align-items:center;gap:8px;min-width:0"><x-import component-from-global-scope="Leadtogo.Avatar" name="{{ p.nome }}" size="sm" hint-size="22px,22px"></x-import><span style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.nome }}</span><span style="font-size:12px;color:var(--ink-muted)">{{ p.emp }}</span></span></span>
+          <div style="height:8px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden"><div style="height:100%;width:{{ p.pct }};background:var(--success)"></div></div>
+          <span style="font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:{{ p.color }};font-weight:{{ p.weight }}">{{ p.label }}</span>
+        </div>
+      </sc-for>
+      <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)"><x-import component-from-global-scope="Leadtogo.Icon" name="triangle-alert" size="{{ 14 }}" hint-size="14px,14px"></x-import>Vermelho: mais de 3 atrasadas.</span>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  DATA = [
+    { pipe: 239000, ops: 10, prev: 68400, mrr: 3450, conq: 4, perd: 2, atv: 46, atr: 5, sem: 23 },
+    { pipe: 96500, ops: 7, prev: 31200, mrr: 5800, conq: 6, perd: 4, atv: 38, atr: 2, sem: 11 },
+    { pipe: 412000, ops: 14, prev: 118000, mrr: 1200, conq: 3, perd: 5, atv: 29, atr: 9, sem: 41 }
+  ];
+  FUNIL = [['Qualificação', 'teal', [37100, 22000, 98000], [2, 2, 4]], ['Diagnóstico', 'blue', [77800, 18500, 120000], [2, 1, 4]], ['Proposta', 'indigo', [52400, 34000, 104000], [3, 2, 3]], ['Negociação', 'amber', [81100, 22000, 90000], [3, 2, 3]]];
+  EQUIPE = [['Alessandro Dias', 0, 18, 2], ['Carolina Surlo', 0, 15, 2], ['Rafael Bertoldi', 0, 13, 1], ['Thiago Surlo', 1, 21, 1], ['Marcela Ronchi', 1, 17, 1], ['Edson Bremenkamp', 2, 16, 5], ['Priscila Nunes', 2, 13, 4]];
+  state = { sel: [true, true, true], period: 'mes' };
+  componentDidMount() { if (!window.LTD) this._w = setInterval(() => { if (window.LTD) { clearInterval(this._w); this.forceUpdate(); } }, 50); }
+  renderVals() {
+    const D = window.LTD || { tenants: [] };
+    const m = !!this.props.mobile, st = this.state;
+    const brl = (v) => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+    const ini = (n) => { const p = n.split(/\s+/); return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase(); };
+    const on = D.tenants.map((t, i) => st.sel[i]);
+    const idx = D.tenants.map((t, i) => i).filter(i => on[i]);
+    const sum = (k) => idx.reduce((s, i) => s + this.DATA[i][k], 0);
+    const conq = sum('conq'), perd = sum('perd');
+    const conv = conq + perd ? Math.round(100 * conq / (conq + perd)) + '%' : '—';
+    const maxAtv = Math.max(1, ...this.DATA.map(d => d.atv + d.atr));
+    const rows = idx.map(i => { const t = D.tenants[i], d = this.DATA[i]; return {
+      name: t.name, role: t.role, ini: ini(t.name), logoBg: 'var(--tag-' + t.color + '-bg)', logoFg: 'var(--tag-' + t.color + '-fg)',
+      pipeF: brl(d.pipe), opsF: d.ops + ' oportunidades', prevF: brl(d.prev), mrrF: brl(d.mrr) + '/mês', convF: Math.round(100 * d.conq / (d.conq + d.perd)) + '%',
+      atvPct: Math.round(100 * d.atv / maxAtv) + '%', atrPct: Math.round(100 * d.atr / maxAtv) + '%', atvF: d.atv + ' realizadas · ' + d.atr + ' atrasadas',
+      semF: String(d.sem), semLong: d.sem + ' sem contato há 60 dias', semTone: d.sem > 30 ? 'warning' : 'neutral',
+      open: () => this.props.onOpenTenant && this.props.onOpenTenant(i) }; });
+    const fun = this.FUNIL.map(f => ({ title: f[0], dot: 'var(--tag-' + f[1] + '-fg)', v: idx.reduce((s, i) => s + f[2][i], 0), n: idx.reduce((s, i) => s + f[3][i], 0) }));
+    const fmax = Math.max(1, ...fun.map(f => f.v));
+    const eq = this.EQUIPE.filter(e => on[e[1]]);
+    const emax = Math.max(1, ...eq.map(e => e[2]));
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { pad: '16px', gap: '16px', h1: '22px', chipH: '40px', stats: '1fr 1fr', two: '1fr' } : { pad: '24px', gap: '20px', h1: '30px', chipH: '34px', stats: 'repeat(5, minmax(0,1fr))', two: 'minmax(0,1fr) minmax(0,1fr)' },
+      subtitulo: idx.length === D.tenants.length ? 'Soma das ' + idx.length + ' empresas da sua conta' : idx.length + ' de ' + D.tenants.length + ' empresas selecionadas',
+      periodOptions: m ? [{ value: 'mes', label: 'Mês' }, { value: 'anterior', label: 'Anterior' }, { value: 'tri', label: 'Trimestre' }] : [{ value: 'mes', label: 'Mês atual' }, { value: 'anterior', label: 'Mês anterior' }, { value: 'tri', label: 'Trimestre' }],
+      period: st.period, setPeriod: (v) => this.setState({ period: v }),
+      chips: D.tenants.map((t, i) => ({ name: t.name, ini: ini(t.name), on: !!on[i], pressed: String(!!on[i]), border: on[i] ? 'var(--accent)' : 'var(--border)', bg: on[i] ? 'var(--surface-selected)' : 'var(--surface)', logoBg: 'var(--tag-' + t.color + '-bg)', logoFg: 'var(--tag-' + t.color + '-fg)',
+        toggle: () => { const s = st.sel.slice(); s[i] = !s[i]; if (s.some(Boolean)) this.setState({ sel: s }); } })),
+      tot: { pipe: sum('pipe'), pipeHint: sum('ops') + ' oportunidades ativas', prev: sum('prev'), mrr: sum('mrr'), conv, convHint: conq + ' conquistadas × ' + perd + ' perdidas', atv: String(sum('atv')), atvHint: sum('atr') + ' atrasadas',
+        pipeF: brl(sum('pipe')), prevF: brl(sum('prev')), mrrF: brl(sum('mrr')) + '/mês', atvF: sum('atv') + ' realizadas · ' + sum('atr') + ' atrasadas', sem: String(sum('sem')) },
+      spark: [6200, 6900, 7400, 7900, 8600, 9100, 10450],
+      heads: [['Empresa', 'left'], ['Pipeline', 'right'], ['Previsão', 'right'], ['MRR', 'right'], ['Conversão', 'right'], ['Atividades da equipe', 'left'], ['Sem contato', 'right'], ['', 'left']].map(h => ({ label: h[0], align: h[1] })),
+      rows,
+      funil: fun.map(f => ({ ...f, total: brl(f.v), n: f.n + ' oportunidades', pct: Math.round(100 * f.v / fmax) + '%' })),
+      equipe: eq.map(e => ({ nome: e[0], emp: (D.tenants[e[1]] || {}).name, pct: Math.round(100 * e[2] / emax) + '%', label: e[2] + ' · ' + e[3] + ' atr.', color: e[3] > 3 ? 'var(--danger)' : 'var(--ink-muted)', weight: e[3] > 3 ? 600 : 400 }))
+    };
+  }
+}
+</script>
+</body>
+</html>

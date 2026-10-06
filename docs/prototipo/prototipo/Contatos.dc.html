@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script></helmet>
+<div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:16px">
+  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+        <h1 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.015em">Contatos</h1>
+        <span style="font-size:13px;color:var(--ink-muted)">{{ countLabel }}</span>
+      </div>
+      <x-import component-from-global-scope="Leadtogo.Button" icon="upload" onClick="{{ goImportar }}" hint-size="150px,36px">Importar planilha</x-import>
+      <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" onClick="{{ novo }}" hint-size="140px,36px">Novo contato</x-import>
+    </div>
+  </sc-if>
+
+  <div data-density="{{ L.density }}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:{{ L.filterPad }};background:{{ L.filterBg }};border:{{ L.filterBorder }};border-radius:8px">
+    <div style="flex:{{ L.searchFlex }};min-width:0">
+      <x-import component-from-global-scope="Leadtogo.TextField" icon="search" placeholder="Nome, telefone ou e-mail" aria-label="Buscar contatos" value="{{ q }}" onChange="{{ setQ }}" hint-size="100%,36px"></x-import>
+    </div>
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.Button" icon="funnel" onClick="{{ toggleFilters }}" hint-size="100px,44px">{{ filterBtn }}</x-import>
+    </sc-if>
+    <sc-if value="{{ showFilters }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:{{ L.filterCols }};gap:8px;flex:{{ L.filtersFlex }};min-width:0">
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Empresa" options="{{ optEmp }}" value="{{ fEmp }}" onChange="{{ setEmp }}" hint-size="100%,36px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Cargo" options="{{ optCargo }}" value="{{ fCargo }}" onChange="{{ setCargo }}" hint-size="100%,36px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Papel na decisão" options="{{ optPapel }}" value="{{ fPapel }}" onChange="{{ setPapel }}" hint-size="100%,36px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Tag da empresa" options="{{ optTag }}" value="{{ fTag }}" onChange="{{ setTag }}" hint-size="100%,36px"></x-import>
+      </div>
+    </sc-if>
+    <sc-if value="{{ anyFilter }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" icon="x" onClick="{{ clear }}" hint-size="120px,36px">Limpar filtros</x-import>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+      <x-import component-from-global-scope="Leadtogo.EmptyState" icon="search" title="Nenhum contato encontrado" description="Revise a busca ou limpe os filtros." hint-size="100%,200px"></x-import>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;line-height:20px">
+        <thead><tr style="background:var(--surface-sunken);text-align:left">
+          <sc-for list="{{ heads }}" as="h" hint-placeholder-count="6"><th style="height:36px;padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border)">{{ h }}</th></sc-for>
+        </tr></thead>
+        <tbody>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+            <tr onClick="{{ r.open }}" style="cursor:pointer" style-hover="background:var(--surface-hover)">
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <x-import component-from-global-scope="Leadtogo.Avatar" name="{{ r.name }}" hint-size="32px,32px"></x-import>
+                  <div style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">{{ r.name }}</span><span style="font-size:12px;line-height:16px;color:var(--ink-muted)">{{ r.papel }}</span></div>
+                </div>
+              </td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <sc-for list="{{ r.emps }}" as="e" hint-placeholder-count="1">
+                    <span style="display:flex;align-items:center;gap:6px;color:{{ e.color }}"><span style="text-decoration:{{ e.deco }}">{{ e.fantasia }}</span><sc-if value="{{ e.principal }}" hint-placeholder-val="{{ false }}"><span style="display:flex;color:var(--warning)" title="Empresa principal"><x-import component-from-global-scope="Leadtogo.Icon" name="star" size="{{ 12 }}" hint-size="12px,12px"></x-import></span></sc-if><sc-if value="{{ e.inativo }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--ink-muted)">Inativo</span></sc-if></span>
+                  </sc-for>
+                </div>
+              </td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">{{ r.cargo }}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums">
+                <span style="display:flex;align-items:center;gap:6px;white-space:nowrap">{{ r.tel }}<sc-if value="{{ r.wpp }}" hint-placeholder-val="{{ true }}"><span title="Tem WhatsApp" style="display:flex;color:var(--tag-green-fg)"><x-import component-from-global-scope="Leadtogo.Icon" name="message-circle" size="{{ 14 }}" hint-size="14px,14px"></x-import></span></sc-if></span>
+              </td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border);overflow-wrap:anywhere;color:{{ r.emailColor }}">{{ r.email }}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">
+                <sc-if value="{{ r.ultima }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:6px"><x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ r.ultima.type }}" size="sm" hint-size="22px,22px"></x-import><span style="color:{{ r.ultColor }};font-weight:{{ r.ultWeight }}">{{ r.ultima.label }}</span></span></sc-if>
+                <sc-if value="{{ r.semUltima }}" hint-placeholder-val="{{ false }}"><span style="color:var(--ink-muted)">Nenhuma</span></sc-if>
+              </td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showCards }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:13px;color:var(--ink-muted)">{{ countLabel }}</span>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+        <article style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+          <button type="button" onClick="{{ r.open }}" style="display:flex;gap:12px;align-items:flex-start;padding:14px;border:0;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer">
+            <x-import component-from-global-scope="Leadtogo.Avatar" name="{{ r.name }}" size="lg" hint-size="40px,40px"></x-import>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:16px;line-height:22px;font-weight:600">{{ r.name }}</span>
+              <span style="font-size:14px;color:var(--ink-muted)">{{ r.cargoEmp }}</span>
+              <sc-if value="{{ r.maisEmp }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--ink-muted)">{{ r.maisEmp }}</span></sc-if>
+              <sc-if value="{{ r.ultima }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:6px;font-size:14px;color:{{ r.ultColor }};margin-top:4px"><x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ r.ultima.type }}" size="sm" hint-size="22px,22px"></x-import>{{ r.ultLong }}</span></sc-if>
+            </div>
+            <x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" size="{{ 18 }}" hint-size="18px,18px"></x-import>
+          </button>
+          <div data-density="touch" style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border)">
+            <button type="button" onClick="{{ r.call }}" style="height:48px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-right:1px solid var(--border);background:transparent;font:inherit;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer"><span style="color:var(--tag-blue-fg);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="phone" size="{{ 18 }}" hint-size="18px,18px"></x-import></span>Ligar</button>
+            <button type="button" onClick="{{ r.wppGo }}" style="height:48px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-right:1px solid var(--border);background:transparent;font:inherit;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer"><span style="color:var(--tag-green-fg);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="message-circle" size="{{ 18 }}" hint-size="18px,18px"></x-import></span>WhatsApp</button>
+            <button type="button" onClick="{{ r.mail }}" style="height:48px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:transparent;font:inherit;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer"><span style="color:var(--tag-indigo-fg);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="mail" size="{{ 18 }}" hint-size="18px,18px"></x-import></span>E-mail</button>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { q: '', fEmp: '', fCargo: '', fPapel: '', fTag: '', filtersOpen: false };
+  componentDidMount() { if (!window.LTD) this._w = setInterval(() => { if (window.LTD) { clearInterval(this._w); this.forceUpdate(); } }, 50); }
+  renderVals() {
+    const D = window.LTD || { contatos: [], empresas: [], empresa: () => ({}) };
+    const m = !!this.props.mobile, st = this.state;
+    const go = this.props.go || (() => {}), notify = this.props.notify || (() => {});
+    const norm = (t) => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const q = norm(st.q.trim()), qd = st.q.replace(/\D/g, '');
+    const list = D.contatos.filter(c => {
+      const emps = c.empresas.map(v => D.empresa(v.id));
+      if (q && !(norm(c.name + ' ' + c.emails.map(e => e.e).join(' ')).includes(q) || (qd.length >= 3 && c.tels.some(t => t.n.replace(/\D/g, '').includes(qd))))) return false;
+      if (st.fEmp && !c.empresas.some(v => v.id === st.fEmp)) return false;
+      if (st.fCargo && !c.empresas.some(v => v.cargo === st.fCargo)) return false;
+      if (st.fPapel && c.papel !== st.fPapel) return false;
+      if (st.fTag && !emps.some(e => e.tags.some(t => t.label === st.fTag))) return false;
+      return true;
+    });
+    const rows = list.map(c => {
+      const pv = c.empresas.find(v => v.principal) || c.empresas[0];
+      const pe = D.empresa(pv.id);
+      const tel = c.tels.find(t => t.principal) || c.tels[0] || { n: '—' };
+      const late = c.ultima && c.ultima.dias >= 60;
+      return { ...c, cargo: pv.cargo, cargoEmp: pv.cargo + ' · ' + pe.fantasia,
+        maisEmp: c.empresas.length > 1 ? 'Também em ' + c.empresas.filter(v => v !== pv).map(v => D.empresa(v.id).fantasia + (v.ativo ? '' : ' (inativo)')).join(', ') : false,
+        emps: c.empresas.map(v => ({ fantasia: D.empresa(v.id).fantasia, principal: v.principal, inativo: !v.ativo, color: v.ativo ? 'var(--ink)' : 'var(--ink-muted)', deco: 'none' })),
+        tel: tel.n, wpp: !!tel.wpp, email: c.emails[0] ? c.emails[0].e : 'Sem e-mail', emailColor: c.emails[0] ? 'var(--ink)' : 'var(--ink-muted)',
+        ultima: c.ultima || false, semUltima: !c.ultima,
+        ultColor: late ? 'var(--warning)' : 'var(--ink)', ultWeight: late ? 600 : 400,
+        ultLong: c.ultima ? 'Última interação: ' + c.ultima.label + (late ? ' · há ' + c.ultima.dias + ' dias' : '') : '',
+        open: () => go('contato', { contatoId: c.id }),
+        call: () => notify('Ligando para ' + c.name, tel.n, 'info'),
+        wppGo: () => tel.wpp ? notify('Abrindo o WhatsApp', c.name + ' · ' + tel.n, 'info') : notify('Sem WhatsApp cadastrado', 'Marque um telefone como WhatsApp na ficha.', 'warning'),
+        mail: () => c.emails[0] ? notify('Abrindo o e-mail', c.emails[0].e, 'info') : notify('Sem e-mail cadastrado', 'Adicione um e-mail na ficha.', 'warning') };
+    });
+    const opt = (ph, arr) => [{ value: '', label: ph }].concat(arr.map(a => typeof a === 'string' ? { value: a, label: a } : a));
+    const cargos = [...new Set(D.contatos.flatMap(c => c.empresas.map(v => v.cargo)))].sort();
+    const empIds = [...new Set(D.contatos.flatMap(c => c.empresas.map(v => v.id)))];
+    const anyFilter = !!(st.q || st.fEmp || st.fCargo || st.fPapel || st.fTag);
+    const nF = [st.fEmp, st.fCargo, st.fPapel, st.fTag].filter(Boolean).length;
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { pad: '16px', density: 'touch', filterPad: '0', filterBg: 'transparent', filterBorder: '0', searchFlex: '1', filterCols: '1fr 1fr', filtersFlex: '1 1 100%' }
+           : { pad: '24px', density: 'compact', filterPad: '10px', filterBg: 'var(--surface)', filterBorder: '1px solid var(--border)', searchFlex: '0 0 300px', filterCols: 'repeat(4, minmax(140px,1fr))', filtersFlex: '1' },
+      countLabel: list.length + (list.length === 1 ? ' contato' : ' contatos') + (anyFilter ? ' com estes filtros' : ''),
+      q: st.q, setQ: (e) => this.setState({ q: e.target.value }),
+      showFilters: !m || st.filtersOpen, toggleFilters: () => this.setState({ filtersOpen: !st.filtersOpen }), filterBtn: nF ? 'Filtros · ' + nF : 'Filtros',
+      optEmp: opt('Empresa: todas', empIds.map(id => ({ value: id, label: D.empresa(id).fantasia })).sort((a, b) => a.label.localeCompare(b.label))), fEmp: st.fEmp, setEmp: (e) => this.setState({ fEmp: e.target.value }),
+      optCargo: opt('Cargo: todos', cargos), fCargo: st.fCargo, setCargo: (e) => this.setState({ fCargo: e.target.value }),
+      optPapel: opt('Papel: todos', ['Decisor', 'Influenciador', 'Técnico', 'Financeiro', 'Usuário']), fPapel: st.fPapel, setPapel: (e) => this.setState({ fPapel: e.target.value }),
+      optTag: opt('Tag da empresa: todas', ['Lead', 'Prospect', 'Cliente', 'Inativo', 'Visitada', 'Contactada', 'Monitoramento', 'Retrofit']), fTag: st.fTag, setTag: (e) => this.setState({ fTag: e.target.value }),
+      anyFilter, clear: () => this.setState({ q: '', fEmp: '', fCargo: '', fPapel: '', fTag: '' }),
+      heads: ['Contato', 'Empresas', 'Cargo', 'Telefone', 'E-mail', 'Última interação'],
+      rows, empty: list.length === 0, showTable: !m && list.length > 0, showCards: m && list.length > 0,
+      goImportar: () => go('importar'), novo: () => notify('Novo contato', 'Formulário fora deste protótipo. Use "Converter em contato" na ficha da empresa.', 'info')
+    };
+  }
+}
+</script>
+</body>
+</html>

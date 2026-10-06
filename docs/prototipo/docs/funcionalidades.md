@@ -1,0 +1,667 @@
+# CRM Alessandro — Funcionalidades (Fase 1)
+
+> Documento de definições funcionais do projeto.
+> Status: **Aprovado (v1.1)** · Data: 05/10/2026
+> v1.1: incluídas as integrações WhatsApp (Evolution API) e n8n
+> v1.2: incluídos Tarefas (Kanban do vendedor), E-mail (registro, envio e rastreamento), Agendas Google/Microsoft e Central de notificações
+> v1.4: **multiempresa**: uma conta pode ter várias empresas; usuários com papel por empresa; painel consolidado
+> v1.3: revisões da modelagem do banco: atividades e tarefas unificadas, Status da oportunidade separado da Fase, Solução, recorrência de produtos, Vertical, Prospecção (Minha Receita), vendedor = membro da equipe. Campos detalhados em `modelagem_banco.md`
+> Complementa: `configuracao_tecnologia.md`
+
+---
+
+## 1. Visão geral
+
+CRM focado em **gestão de carteira**: a empresa é o centro de tudo. Contatos, atividades e oportunidades giram em torno dela. As atividades **não ficam presas à oportunidade**: o vendedor registra o relacionamento com o cliente mesmo quando não há negócio em andamento.
+
+```
+                    ┌──────────────┐
+          ┌────────►│   EMPRESA    │◄────────┐
+          │         │ (tags, resp.)│         │
+          │         └──────┬───────┘         │
+          │ N:N            │ 1:N             │ 1:N
+   ┌──────┴─────┐   ┌──────┴──────┐   ┌──────┴────────┐
+   │  CONTATOS  │   │ ATIVIDADES  │   │ OPORTUNIDADES │
+   └────────────┘   └──────┬──────┘   └──────┬────────┘
+                           │ opcional        │
+                           └────────►────────┘
+                     (atividade pode citar uma oportunidade)
+```
+
+### Telas principais
+1. **Dashboard**
+2. **Empresas**
+3. **Contatos**
+4. **Oportunidades** (Kanban + Lista)
+5. **Tarefas** (Kanban pessoal do vendedor, customizável)
+6. **Configurações** (cadastros auxiliares e integrações; acesso conforme o papel)
+7. **Minhas conexões** (cada usuário conecta Google/Microsoft e WhatsApp)
+
+---
+
+## 2. Tags e grupos de tags
+
+Todas as tags são **cadastráveis** e têm **cor customizável**.
+
+### Grupo de tags
+| Campo | Descrição |
+|---|---|
+| Nome | Ex.: Status, Visitação, Interesse |
+| Seleção | **Única** (a empresa só pode ter uma tag do grupo) ou **Múltipla** |
+| Obrigatório | Se toda empresa precisa ter uma tag desse grupo |
+| Ordem | Ordem de exibição |
+| Sistema | Grupos criados pelo sistema não podem ser excluídos, apenas editados (nomes e cores das tags) |
+
+### Tag
+| Campo | Descrição |
+|---|---|
+| Nome | Ex.: Lead, Cliente |
+| Grupo | Grupo ao qual pertence |
+| Cor | Seletor de cor (fundo e texto calculado para contraste) |
+| Ordem / Ativa | Organização e inativação sem perder o histórico |
+
+### Grupos padrão (criados para cada novo tenant)
+| Grupo | Seleção | Tags iniciais |
+|---|---|---|
+| **Status** | Única, obrigatório | Lead · Prospect · Cliente · Inativo |
+| **Visitação** | Múltipla, automático | Visitada · Contactada |
+
+> O antigo grupo "Segmento" foi substituído pelo campo **Vertical** da empresa (cadastrável, uma por empresa).
+
+### Regras
+- Trocar uma tag de grupo de seleção única **substitui** a anterior, e a mudança fica no histórico. Assim é possível medir quantos leads viraram clientes e quando.
+- Filtros por tag em todas as listas (combinação **E / OU**).
+- **Automação opcional (configurável):** ao ganhar uma oportunidade, mudar o Status da empresa para *Cliente*.
+
+---
+
+## 3. Empresas
+
+### Cadastro
+| Campo | Observação |
+|---|---|
+| Razão social / Nome fantasia | Nome fantasia é o nome de exibição |
+| CNPJ, CPF ou sem documento | CNPJ único por tenant, com validação (**inclui o CNPJ alfanumérico**) |
+| **Consulta CNPJ automática** | API **Minha Receita** (minhareceita.org), com alternativa em caso de falha. Preenche os dados abaixo |
+| Matriz ou Filial | Filial ligada automaticamente à matriz pela raiz do CNPJ |
+| MEI · Porte · Regime tributário | Da Receita (regime editável: MEI, Simples, Presumido, Real…) |
+| Data início atividades | Da Receita |
+| CNAE principal e secundários | Tabela única de CNAEs (sem duplicados) |
+| Sócios | Nome e qualificação; botão **"Converter em contato"** |
+| Endereço | CEP, tipo + logradouro, número, **complemento**, bairro, cidade, estado, país |
+| Geolocalização | Latitude e longitude, preenchidas na fase de geolocalização |
+| Telefones (vários) | Fixo, celular e WhatsApp |
+| Website | |
+| **Vendedor** | Membro da equipe dono da carteira |
+| **Vertical** | Cadastrável (uma por empresa) |
+| Nº de funcionários / Faixa de faturamento | Faixas cadastráveis (+ número exato opcional) |
+| Tags | Status, Visitação e demais grupos |
+| Data de registro | Data de cadastro no CRM (automática) |
+| Observações | Texto livre |
+| Campos personalizados | Ver seção 8 |
+
+**Atualizar pela Receita:** um botão mostra campo a campo o valor atual e o da Receita, e o usuário escolhe o que aplicar. Uma rotina mensal consulta novamente a situação cadastral e **avisa** se a empresa estiver baixada, inapta ou suspensa.
+
+### Campos calculados automaticamente
+| Campo | Origem |
+|---|---|
+| **Última visita em** | Última atividade concluída de tipo que conta como *Visita* |
+| **Último contato em** | Última atividade concluída de tipo que conta como *Contato* (ou visita) |
+| Próxima atividade | Próxima atividade agendada |
+| Oportunidades abertas | Quantidade e valor total |
+
+### Controle de visitadas e contactadas
+- Ao **concluir** uma atividade, o sistema atualiza a data e aplica a tag automaticamente:
+  - tipo marcado como *Visita* → tag **Visitada** + `última visita em`
+  - tipo marcado como *Contato* → tag **Contactada** + `último contato em`
+- **Validade configurável** (opcional): remover a tag depois de X dias sem nova visita ou contato (ex.: 180 dias). Isso mantém a tag como retrato atual da carteira.
+- Filtros prontos: *Nunca visitadas*, *Sem visita há X dias*, *Sem contato há X dias*. São a base da roteirização futura.
+
+### Tela Empresas (lista)
+- Tabela com busca (nome, CNPJ, cidade), filtros (tags, responsável, cidade/UF, última visita/contato, campos personalizados) e ordenação.
+- **Filtros salvos.**
+- Tags exibidas como "chips" coloridos.
+- Ações em massa: aplicar/remover tag, trocar responsável, exportar.
+- No celular: lista em cards, com botões de **ligar**, **WhatsApp** e **rota** (abre o Maps).
+
+### Tela Empresa (detalhe)
+- Cabeçalho: nome, tags, responsável, última visita/contato e ações rápidas (nova atividade, nova oportunidade, ligar, WhatsApp).
+- Abas:
+  1. **Resumo** — dados cadastrais e campos personalizados
+  2. **Contatos** — vinculados à empresa
+  3. **Atividades** — linha do tempo (agendadas no topo, histórico abaixo)
+  4. **Oportunidades** — abertas, ganhas e perdidas
+  5. **Histórico** — log de alterações (auditoria)
+
+### Recursos extras
+- **Importação por planilha** (Excel/CSV): mapeamento de colunas, prévia, validação e relatório de erros. Importa empresas e contatos.
+- **Detecção de duplicados:** alerta no cadastro e na importação por CNPJ igual, nome muito parecido ou telefone igual. Opção de **mesclar** duplicados.
+- **Exportação** da lista filtrada para Excel/CSV, respeitando as permissões do usuário.
+
+---
+
+## 3A. Prospecção (Minha Receita)
+
+Gerar listas de leads a partir da base pública de CNPJs.
+
+- **Busca por:** CNAE (principal ou secundário), UF, município e natureza jurídica. Por padrão, **só empresas ativas**.
+- **Lista de revisão:** razão social, cidade, CNAE e a marcação "**já está no CRM**" (com link para a ficha).
+- **Importar selecionadas:**
+  - escolher vendedor, vertical e tag de Status (padrão: Lead);
+  - os dados completos da Receita são preenchidos (CNAEs, sócios, telefones, endereço);
+  - a origem do cadastro fica como **Prospecção**.
+- As buscas ficam salvas e podem ser **repetidas** para encontrar empresas novas desde a última vez.
+- Integra com a geolocalização (fase 2): ver os leads importados no mapa e montar o roteiro de visitas.
+
+---
+
+## 4. Contatos
+
+Um contato pode estar ligado a **várias empresas** (N:N).
+
+### Cadastro do contato (dados da pessoa)
+| Campo | Observação |
+|---|---|
+| Nome | Obrigatório |
+| Telefones | Vários, com tipo (celular, fixo, WhatsApp). Também armazenados em formato E.164 para identificar conversas do WhatsApp |
+| E-mails | Vários |
+| Observações | Texto livre |
+| Papel na decisão | Decisor, Influenciador, Usuário, Financeiro, Técnico (cadastrável) |
+| Aniversário | Dia e mês |
+| LinkedIn | Link do perfil |
+| Consentimento (LGPD) | Aceita WhatsApp / aceita e-mail, com data e origem |
+| Campos personalizados | Ver seção 8 |
+
+### Vínculo contato ↔ empresa (dados que mudam por empresa)
+| Campo | Observação |
+|---|---|
+| **Cargo** | O cargo pertence ao vínculo (a pessoa pode ser sócia de uma empresa e contadora de outra) |
+| Telefone/e-mail corporativo | Opcional, específico daquela empresa |
+| Contato principal | Marca o contato principal da empresa |
+| Ativo | Desativa o vínculo (ex.: saiu da empresa) mantendo o histórico |
+
+### Tela Contatos
+- Lista com busca (nome, telefone, e-mail), filtro por empresa, cargo e tags da empresa.
+- Detalhe do contato: dados, **empresas vinculadas**, atividades e oportunidades em que participa.
+- Ações rápidas: ligar, WhatsApp, e-mail.
+- Detecção de duplicados por e-mail ou telefone.
+
+---
+
+## 5. Atividades
+
+### Princípio
+- **Atividades e tarefas são a mesma coisa no sistema** (tabela única). O tipo **Tarefa** cobre o to-do interno; os demais tipos são interações com o cliente.
+- A atividade é **sempre ligada a uma empresa** (gestão de carteira), **exceto** o tipo Tarefa, em que a empresa é opcional.
+- **Contato** e **oportunidade** são **opcionais** (e precisam pertencer à mesma empresa).
+- Funciona como **agenda + histórico**.
+
+### Cadastro
+| Campo | Observação |
+|---|---|
+| Tipo | Ligação, WhatsApp, E-mail, Visita, Reunião, Tarefa (cadastrável) |
+| Empresa | Obrigatório (opcional no tipo Tarefa) |
+| Contato(s) | Opcional, um ou mais contatos da empresa |
+| Oportunidade | Opcional |
+| Título / Descrição | O que será ou foi feito |
+| Data e hora | Início e duração (opcional) |
+| Responsável | Usuário que executa |
+| **Situação** | **Pendente · Em execução · Realizada · Cancelada** (*Atrasada* é calculada: pendente com data passada) |
+| **Importante / Urgente** | Chaves liga/desliga (juntas formam a matriz de prioridade) |
+| **Notificar em** | Um ou mais lembretes (data/hora e canal: app, push, e-mail) |
+| **Recorrência** | Diária, semanal, mensal, anual ou personalizada; editar "só esta / esta e próximas / todas" |
+| Checklist e etiquetas | Subitens e etiquetas coloridas (usados principalmente em tarefas) |
+| Resultado | Texto ao concluir (o que aconteceu) |
+| Localização | Fase futura: check-in com GPS na visita |
+| Origem | Manual · WhatsApp · Integração/API (preenchido pelo sistema) |
+| Anexos | Arquivos e fotos (MinIO); mídias do WhatsApp no futuro |
+
+### Fluxo
+1. **Agendar** → entra na agenda do responsável.
+2. **Concluir** → informa o resultado. Tem opção "**Concluir e agendar próxima**" (fluxo rápido de follow-up).
+3. Atividade agendada com data passada fica como **Atrasada** (destaque em vermelho).
+4. É possível registrar direto como concluída (algo que já aconteceu).
+
+### Tipos de atividade (cadastráveis)
+| Campo | Observação |
+|---|---|
+| Nome | Ex.: Telefone, E-mail, Visita, WhatsApp, Reunião online |
+| Ícone e cor | Exibição na linha do tempo e na agenda |
+| **Conta como** | *Visita*, *Contato* ou *Nenhum*. Alimenta o controle de visitadas/contactadas |
+| Ativo | Inativar sem perder o histórico |
+
+Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (contato) · **Visita** (visita) · **Reunião** (contato) · **Tarefa** (nenhum, empresa opcional).
+
+> **Atividade × Tarefa (v1.3):** estão unificadas. A tarefa é uma atividade do tipo *Tarefa*. Todas aparecem na agenda, na linha do tempo (quando têm empresa) e no Kanban de Tarefas (seção 9A).
+
+### Onde aparecem
+- Dashboard (minhas atividades)
+- Detalhe da empresa, do contato e da oportunidade (linha do tempo)
+
+---
+
+## 6. Funis de vendas
+
+### Funil
+| Campo | Observação |
+|---|---|
+| Nome | Ex.: Vendas novas, Renovação, Pós-venda |
+| Padrão | Funil aberto por padrão no Kanban |
+| Ativo | Inativar sem perder o histórico |
+| Ordem | Exibição |
+
+### Etapa
+| Campo | Observação |
+|---|---|
+| Nome | Ex.: Qualificação, Diagnóstico, Proposta, Negociação |
+| Ordem | Arrastar para reordenar |
+| Cor | Cabeçalho da coluna no Kanban |
+| Probabilidade padrão (%) | Sugerida ao entrar na etapa (ex.: Proposta = 50%) |
+| Dias para alerta de parada | Destaca a oportunidade sem atividade há X dias nessa etapa |
+
+### Regras (v1.3: fechamento pelo **Status**)
+- Funis e etapas (fases) **ilimitados**. As fases representam só o **andamento**.
+- O **Status** da oportunidade é independente da fase: **Ativo · Conquistado · Perdido · Cancelado · Suspenso**.
+- Ao mudar para **Conquistado**: grava a data de fechamento e aciona a automação opcional "empresa vira Cliente".
+- Ao mudar para **Perdido, Cancelado ou Suspenso**: exige o **Motivo** (lista cadastrável por status) e guarda a **fase em que parou** (análise de onde se perde).
+- **Suspenso** tem o campo "**Retomar em**", que cria uma atividade de retomada.
+- Reabrir (voltar para Ativo) é permitido, com registro no histórico.
+- Não é possível excluir uma etapa que tem oportunidades; antes é preciso movê-las.
+- **Histórico de etapas:** cada mudança de etapa é registrada (data, usuário, de → para). Isso permite calcular tempo médio por etapa e conversão.
+
+---
+
+## 7. Oportunidades
+
+### Cadastro
+| Campo | Observação |
+|---|---|
+| Nome | Ex.: "Contrato anual 2027" (sugestão automática: Empresa – Solução) |
+| Empresa | Obrigatório (busca) |
+| Contatos | Principal (busca **apenas entre os contatos da empresa escolhida**) + outros |
+| **Solução** | Linha de solução cadastrável |
+| Funil / Fase | Obrigatório |
+| **Status** | Ativo · Conquistado · Perdido · Cancelado · Suspenso |
+| **Valores** | **Valor único**, **Valor mensal (MRR)** e **Valor total do contrato**, calculados pelos itens ou digitados |
+| **Data prevista de fechamento** | Para a previsão de vendas |
+| **Probabilidade (%)** | Sugerida pela etapa e editável |
+| Valor ponderado | Valor × probabilidade (calculado) |
+| **Origem** | Lista cadastrável (Indicação, Site, Prospecção ativa, Evento…) |
+| Responsável | Usuário (por padrão, o responsável da empresa) |
+| **Motivo** | Lista cadastrável, obrigatório para Perdido, Cancelado e Suspenso |
+| Retomar em | Data de retomada (Suspenso) |
+| Data de fechamento | Automática ao sair de Ativo |
+| Observações | Texto livre |
+| Campos personalizados | Ver seção 8 |
+
+### Produtos/itens
+- **Catálogo de produtos e serviços** (cadastrável): código, nome, tipo (produto/serviço), solução, unidade, preço padrão, **cobrança padrão (única/mensal/anual)** e **meses padrão**.
+- Itens da oportunidade: produto, quantidade, preço unitário (editável), desconto (%), **cobrança** e **quantidade de meses**.
+- Cálculo: única = qtd × preço · mensal = qtd × preço × meses · anual = qtd × preço × (meses ÷ 12).
+- Exemplo: licença R$ 500/mês × 12 + implantação R$ 2.000 → **Único R$ 2.000 · Mensal R$ 500 · Total R$ 8.000**.
+
+### Tela Oportunidades
+- **Kanban** por funil (seletor de funil no topo):
+  - Colunas = fases, com **soma de valores e quantidade** no cabeçalho. Só oportunidades com status **Ativo**.
+  - Card: nome, empresa, valor, responsável, data prevista e próxima atividade.
+  - **Arrastar e soltar** entre etapas.
+  - **Alerta de oportunidade parada:** card destacado quando passa X dias sem atividade.
+  - Zona de soltura no rodapé: **Conquistado · Perdido · Cancelado · Suspenso** (arrastar o card para fechar). Filtro para ver as suspensas.
+  - No celular: rolagem horizontal por coluna e mover pelo menu do card (sem depender de arrastar).
+- **Visão em lista** (alternância Kanban ↔ Lista): tabela com ordenação, filtros e exportação.
+- **Filtros:** responsável, fase, status, solução, período de previsão, origem, valor, tags da empresa e campos personalizados.
+- **Filtros salvos** por usuário (ex.: "Minhas oportunidades acima de R$ 10 mil").
+
+### Detalhe da oportunidade
+- Dados, itens, contatos, **atividades vinculadas**, histórico de etapas e log de alterações.
+
+---
+
+## 8. Campos personalizados
+
+O admin cria campos extras para **Empresa**, **Contato** e **Oportunidade**.
+
+| Configuração | Opções |
+|---|---|
+| Tipo | Texto, Texto longo, Número, Moeda, Data, Sim/Não, Lista (única), Lista (múltipla), URL |
+| Obrigatório | Sim/Não |
+| Ordem / Seção | Organização no formulário |
+| Filtrável | Aparece nos filtros das listas |
+| Ativo | Inativar sem perder os dados |
+
+---
+
+## 9. Dashboard
+
+Cada usuário vê os dados da **sua carteira**; gestores e admin podem alternar entre **minha visão / equipe / usuário específico**.
+
+### Blocos da versão 1
+**Minhas tarefas e atividades**
+- Resumo do quadro de tarefas: atrasadas, para hoje e da semana (atalho para a tela Tarefas)
+
+**Minhas atividades**
+- Hoje · Atrasadas · Próximos 7 dias
+- Conclusão rápida direto do dashboard (com resultado)
+
+**Funil e previsão**
+- Valor e quantidade por etapa (funil selecionável)
+- Previsão do mês: soma do valor ponderado com data prevista no mês
+- Conquistados × Perdidos/Cancelados no período (valor e quantidade), taxa de conversão e **MRR conquistado**
+- Principais motivos de perda
+
+**Carteira**
+- Empresas por Status (Lead, Prospect, Cliente, Inativo) com as cores das tags
+- **Sem contato há X dias** e **sem visita há X dias** (lista clicável)
+- Novos leads no período
+
+Filtro de período no topo: mês atual, mês anterior, trimestre ou personalizado.
+
+---
+
+## 9A. Tarefas — Kanban do vendedor
+
+Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o próprio trabalho.
+
+> v1.3: os cards são **atividades** (inclusive as do tipo *Tarefa*). Cada quadro escolhe quais tipos exibe. Uma coluna pode ser vinculada a uma situação (ex.: "Feito" = Realizada).
+
+### O que aparece no quadro
+- **Tarefas internas** (ex.: "Preparar proposta", "Enviar catálogo", "Cobrar retorno do financeiro").
+- **Atividades agendadas com clientes** (opcional, configurável por quadro): aparecem como cards com o ícone do tipo (Telefone, Visita…). Ao mover uma atividade para a coluna de conclusão, abre a janela de **concluir atividade** (com resultado).
+
+### Quadros
+| Campo | Observação |
+|---|---|
+| Nome | Ex.: "Meu dia a dia", "Pós-venda" |
+| Dono | **Pessoal** (um usuário) ou **Equipe** (gestor + vendedores) |
+| Colunas | Nome, cor, ordem, **limite de cards** (opcional) e marcação de **coluna de conclusão** |
+| Exibir atividades | Liga/desliga, com filtro por tipos e período |
+| Modelo | Criado a partir do **modelo padrão** do admin ou do zero |
+
+- **Modelo padrão (admin):** ex.: *A fazer · Fazendo · Aguardando cliente · Feito*. Todo novo usuário recebe um quadro a partir dele.
+- **Personalização do vendedor:** renomear, criar ou remover colunas e cores, e criar **quadros adicionais**.
+- **Quadros de equipe (gestor):** o gestor atribui tarefas aos vendedores e acompanha o andamento.
+
+### Tarefa
+| Campo | Observação |
+|---|---|
+| Título / Descrição | Obrigatório / texto livre |
+| Checklist | Subitens marcáveis, com % concluído no card |
+| Prazo | Data (e hora opcional), com destaque para atrasada, hoje e próxima |
+| Prioridade | Baixa · Média · Alta · Urgente (cor no card) |
+| Responsável | Por padrão quem criou; o gestor pode atribuir a outro |
+| **Etiquetas** | Cadastráveis, com **cor customizável** (pessoais ou da equipe) |
+| Vínculos (opcionais) | Empresa, contato e/ou oportunidade |
+| Anexos e comentários | Arquivos (MinIO) e comentários (útil em quadros de equipe) |
+| Recorrência | Diária, semanal, mensal (ex.: "Relatório semanal toda sexta") |
+| Lembrete | Notificação antes do prazo |
+
+### Visões e usabilidade
+- **Kanban** (arrastar e soltar), **Lista** e agrupamento rápido **por prazo** (Atrasadas · Hoje · Esta semana · Depois).
+- Filtros: etiqueta, prioridade, prazo, vínculo (empresa/oportunidade) e responsável (gestor).
+- **Criação rápida:** digitar o título e Enter na coluna, ou o botão "+" flutuante no celular.
+- No celular: uma coluna por vez com deslize lateral; mover pelo menu do card.
+- A tarefa vinculada aparece também na ficha da empresa ou oportunidade (aba Atividades/Tarefas).
+- Ação "**Converter em atividade**" (ex.: a tarefa "Ligar para o João" vira uma atividade de Telefone).
+
+---
+
+## 10. Usuários, papéis e carteira
+
+### Papéis padrão
+| Papel | Acesso |
+|---|---|
+| **Admin** | Tudo, incluindo configurações, usuários e funis |
+| **Gestor** | Vê e edita todas as carteiras e relatórios da equipe; sem acesso às configurações do sistema |
+| **Vendedor** | Vê e edita **apenas a própria carteira** (empresas em que é responsável e o que estiver ligado a elas) |
+
+### Regras de carteira
+- Cada empresa tem **um responsável**.
+- Configuração do tenant: **"Vendedores podem ver todas as empresas"** (ligado/desligado). Quando ligado, o vendedor vê tudo, mas edita só a própria carteira.
+- **Transferência de carteira:** o gestor ou admin move empresas (individual ou em massa) para outro responsável, com opção de levar junto as oportunidades e atividades abertas.
+- Toda alteração relevante fica registrada no **log de auditoria**.
+
+### Multiempresa (v1.4)
+- Uma **Conta** (o administrador ou o grupo) pode ter **várias empresas** no CRM. Cada empresa é um tenant **isolado**: carteira, equipe, funis, tags e configurações próprios.
+- **Seletor de empresa** no topo, que troca a empresa ativa sem sair do sistema. No celular, fica no menu do perfil.
+- **Um login, vários papéis:** o mesmo usuário pode ser admin numa empresa e vendedor em outra. O papel é definido por empresa.
+- **Painel consolidado** (administradores da conta): soma das empresas para funil, previsão (inclusive MRR), conquistados × perdidos, atividades da equipe e carteira por status, com filtro por empresa. Só leitura; para agir, abre a empresa.
+- **Copiar configurações** de uma empresa para outra (funis, tags, tipos de atividade, origens, motivos, soluções, produtos, faixas, verticais, campos personalizados e quadro modelo). Útil ao criar uma nova empresa no grupo.
+- **Gestão da conta:** criar ou desativar empresas, administradores da conta (dono, administrador, financeiro) e, no futuro, plano e cobrança.
+- **Notificações** de todas as empresas na mesma central, com a identificação da empresa.
+- Uma mesma empresa cliente pode existir em duas empresas do grupo, como cadastros independentes. Não há compartilhamento de carteira.
+
+---
+
+## 11. Configurações (cadastros auxiliares)
+
+| Cadastro | Quem acessa |
+|---|---|
+| Grupos de tags e tags | Admin |
+| Tipos de atividade | Admin |
+| Funis e etapas | Admin |
+| Origens de oportunidade | Admin |
+| Motivos de perda | Admin |
+| Catálogo de produtos | Admin / Gestor |
+| Campos personalizados | Admin |
+| Usuários e papéis | Admin |
+| Integrações | Admin (chaves de API, webhooks, conexões WhatsApp, logs). Fase futura, com menu previsto |
+| Quadro de tarefas modelo e etiquetas da equipe | Admin / Gestor |
+| Modelos de e-mail | Admin / Gestor (modelos da empresa); cada usuário pode ter os seus |
+| Contas conectadas (visão geral) | Admin (vê quem conectou e pode revogar) |
+| Preferências do tenant | Admin (visão de carteira, validade das tags de visitação, automação de status, dias de "sem contato") |
+
+---
+
+## 12. Recursos transversais
+
+- **Busca global** (barra no topo): empresas, contatos, oportunidades e tarefas.
+- **Central de notificações** (sino no topo) + **notificações push** (PWA/app) + e-mail opcional. Eventos: tarefa atribuída, prazo próximo ou vencido, atividade atrasada, e-mail aberto ou clicado, mensagem de WhatsApp de número não identificado, oportunidade parada. Cada usuário escolhe o que recebe e por qual canal.
+- **Log de auditoria** em empresa, contato e oportunidade.
+- **Responsivo e PWA:** botões grandes no celular, ações rápidas (ligar, WhatsApp, rota) e um botão "+" flutuante para registrar atividade.
+- **Offline (leitura + fila):** consultar a carteira e registrar atividades sem internet.
+- **Exclusão segura:** soft delete com lixeira (restaurável por X dias, admin).
+
+---
+
+## 13. Integrações (fase futura, com base preparada na Fase 1)
+
+### 13.1 WhatsApp — Evolution API
+
+**Objetivo:** registrar no CRM as conversas de WhatsApp com os contatos, sem digitação manual.
+
+**Conexão**
+- Evolution API self-hosted (container no Coolify).
+- Cada **usuário (vendedor)** conecta o próprio número por QR Code. Opcionalmente também um **número da empresa** (compartilhado).
+- Tela de status da conexão (conectado, desconectado, reconectar).
+
+**Recebimento e identificação**
+- A Evolution envia as mensagens ao CRM por **webhook** (enviadas e recebidas).
+- O número é normalizado (formato internacional **E.164**) e comparado com os telefones dos **contatos** e das **empresas**.
+- Contato ligado a **várias empresas**: usa o contato principal ou a empresa da última interação, e o usuário pode reatribuir.
+- **Número desconhecido:** a conversa vai para a caixa **"Conversas não identificadas"**, onde é possível:
+  - criar um contato ou lead a partir dela;
+  - vinculá-la a um contato existente;
+  - ignorar o número (por exemplo, um número pessoal).
+
+**Registro no CRM**
+- As mensagens são agrupadas em uma **atividade do tipo WhatsApp por conversa/dia** (não uma atividade por mensagem).
+- A atividade mostra a conversa completa em **formato de chat** na linha do tempo da empresa, do contato e da oportunidade (se vinculada).
+- **Mídias** (imagens, áudios, documentos) são salvas no **MinIO**, ligadas à atividade.
+- Conta como **Contato**: atualiza *último contato em* e aplica a tag *Contactada*. Configurável: contar só quando o vendedor envia mensagem, ou também quando só recebe.
+- O usuário pode vincular a atividade a uma oportunidade depois.
+
+**Modos de importação (configurável por tenant ou usuário)**
+| Modo | Funcionamento |
+|---|---|
+| Automático | Toda conversa com número cadastrado é registrada |
+| Manual | O usuário clica em **"Importar conversa"** no contato e escolhe o período |
+| Desligado | Integração apenas para envio (futuro) |
+
+**Histórico anterior à conexão ("se possível")**
+- A partir da conexão o registro é garantido.
+- Mensagens **antigas** dependem do que o WhatsApp sincroniza com a instância (geralmente parte do histórico recente). O CRM tenta importar pelo "Importar conversa", **sem garantia de histórico completo**.
+
+**Envio pelo CRM (etapa posterior)**
+- Botão "Enviar WhatsApp" no contato/empresa, com **modelos de mensagem** e variáveis (nome, empresa…).
+- A mensagem enviada já é registrada na atividade.
+
+**Privacidade, segurança e riscos**
+- Só são registradas conversas de números **cadastrados** (ou aprovados na caixa de não identificados), evitando guardar conversas pessoais.
+- As conversas seguem as **regras de carteira**: o vendedor vê as da própria carteira, e gestor e admin veem todas.
+- Retenção configurável e exclusão a pedido do titular (**LGPD**).
+- ⚠️ A Evolution com conexão via WhatsApp Web (Baileys) **não é oficial** e há risco de bloqueio do número em uso abusivo (envio em massa). Para volume alto, avaliar a **API oficial (WhatsApp Cloud API)**, que a Evolution também suporta.
+
+### 13.2 n8n — Automações
+
+**O CRM avisa o n8n (webhooks de saída)**
+- O admin cadastra **webhooks** e escolhe os **eventos**:
+
+| Grupo | Eventos |
+|---|---|
+| Empresa | criada · atualizada · tag alterada · responsável alterado |
+| Contato | criado · atualizado |
+| Atividade | criada · concluída · atrasada |
+| Oportunidade | criada · fase alterada · status alterado (conquistada, perdida, cancelada, suspensa) · parada (alerta) |
+| WhatsApp | conversa registrada · número não identificado |
+
+- Payload JSON padronizado (evento, data, tenant, dados do registro e quem alterou).
+- **Assinatura HMAC** para o n8n validar a origem.
+- **Reenvio automático** com espera progressiva em caso de falha, além de um **log de entregas** com status e botão "reenviar".
+
+**O n8n atua no CRM (API REST)**
+- **Chaves de API por tenant**, com nome, permissões (leitura/escrita por módulo), validade e revogação.
+- O n8n usa a API REST documentada (OpenAPI/Swagger) pelo nó *HTTP Request*. Futuramente pode haver um **nó próprio do CRM** para o n8n.
+- As ações feitas via API ficam no log de auditoria como *"Integração: <nome da chave>"*.
+
+**Exemplos de automações**
+- Formulário do site / landing page → cria empresa (Lead) + oportunidade + atividade de retorno.
+- Oportunidade **ganha** → mensagem de boas-vindas no WhatsApp + tarefa de onboarding.
+- Oportunidade **parada** → aviso ao vendedor e ao gestor (WhatsApp, Telegram ou e-mail).
+- Resumo diário da agenda para cada vendedor.
+- Empresa sem contato há X dias → cria atividade de follow-up automaticamente.
+- Sincronização com ERP, faturamento ou planilhas.
+
+### 13.3 E-mail — registro, envio e rastreamento
+
+**Como funciona o registro (duas formas, ambas disponíveis)**
+
+| Forma | Como o vendedor usa | Prós / contras |
+|---|---|---|
+| **1. Conta conectada** (padrão) | Em *Minhas conexões*, clica em "Conectar Google" ou "Conectar Microsoft" e autoriza | Automático: registra também os e-mails enviados **fora do CRM** (pelo Gmail/Outlook normal). Requer autorização da conta |
+| **2. Cópia oculta (BCC)** | Coloca o endereço do CRM (ex.: `registro@seudominio`) em **Cco** ao enviar | Funciona com qualquer provedor e sem conectar a conta. Depende de o vendedor lembrar |
+
+**Regras do registro**
+- Só são registrados e-mails trocados com **endereços de contatos cadastrados**. Opcionalmente, também com o **domínio da empresa** (ex.: qualquer `@cliente.com.br`).
+- Cada **conversa (thread)** vira uma **atividade do tipo E-mail**, com as mensagens em sequência, ligada à empresa/contato (e à oportunidade, se o vendedor vincular).
+- Anexos: opção de salvar no CRM (MinIO) ou só listar o nome.
+- E-mail **enviado** pelo vendedor conta como **Contato** (atualiza *último contato em* e a tag *Contactada*).
+- **Privacidade:**
+  - lista de domínios e endereços **ignorados** (ex.: pessoais e internos);
+  - o vendedor pode marcar um e-mail como **privado**, e então só o título fica visível para outros;
+  - as regras de carteira continuam valendo.
+- E-mail de remetente desconhecido não é importado (evita lixo). No BCC, cai na caixa de **não identificados**.
+
+**Envio pelo CRM**
+- Botão "**Enviar e-mail**" na empresa, contato ou oportunidade.
+- Editor com formatação, **assinatura** do usuário, **anexos** (do computador ou dos arquivos do CRM) e **modelos** com variáveis (`{{contato.nome}}`, `{{empresa.nome}}`, `{{vendedor.nome}}`…).
+- O e-mail sai **pela conta conectada do vendedor** (fica na pasta Enviados dele e as respostas chegam na caixa dele). As respostas também são registradas no CRM pela sincronização.
+- Sem conta conectada: envio por SMTP configurado pelo tenant, com o e-mail do vendedor como *responder para*.
+- Agendar envio (enviar mais tarde).
+
+**Rastreamento de abertura e cliques (opcional por envio)**
+- O vendedor liga ou desliga em cada e-mail (padrão configurável pelo admin).
+- A abertura é detectada por uma imagem invisível e o clique por links redirecionados pelo domínio do CRM.
+- O histórico mostra: *aberto 3x (último em 10/10 14:32)*, *clicou em "proposta.pdf"*.
+- Notificação ao vendedor na **primeira abertura** e nos cliques.
+- ⚠️ **Limitações:**
+  - não é 100% preciso: Apple Mail e alguns provedores pré-carregam as imagens (gerando "aberturas" falsas), e outros bloqueiam imagens (sem registro);
+  - só funciona em e-mails **enviados pelo CRM**.
+- **LGPD:** citar o rastreamento na política de privacidade; sem rastreamento em e-mails sensíveis.
+
+**Resposta à dúvida "como implantar"**
+1. Cada vendedor autoriza o CRM a acessar o e-mail (login Google/Microsoft, padrão OAuth). O CRM **não guarda senha**, só um token que pode ser revogado.
+2. Um processo em segundo plano verifica a cada poucos minutos (ou recebe aviso do provedor) se houve e-mail novo com algum contato cadastrado.
+3. Encontrando, cria ou atualiza a atividade de e-mail na ficha da empresa.
+4. O BCC funciona como uma caixa de e-mail própria do CRM, que ele lê e distribui da mesma forma.
+
+### 13.4 Agendas — Google Agenda e Microsoft (Outlook/Teams)
+
+- Usa a **mesma conexão** do e-mail (um único "Conectar Google/Microsoft" autoriza e-mail e agenda, e o usuário pode escolher só um dos dois).
+- **CRM → Agenda:** toda atividade **agendada** no CRM (visita, reunião, ligação) pode ir automaticamente para a agenda do vendedor. É configurável por tipo de atividade.
+- **Marcar reunião com o cliente:** ao agendar, é possível:
+  - **convidar os contatos** (o convite sai pela agenda do vendedor);
+  - gerar o **link de Google Meet ou Microsoft Teams** automaticamente;
+  - ver a **disponibilidade** do vendedor (horários livres e ocupados) antes de escolher o horário.
+- **Agenda → CRM:**
+  - mudou o horário ou cancelou na agenda → atualiza a atividade no CRM;
+  - evento criado direto na agenda **com participantes que são contatos do CRM** → é importado como atividade (automático ou com confirmação, configurável).
+- Eventos pessoais (sem contatos do CRM) **não são importados**.
+- **Futuro:** link público de agendamento (estilo Calendly), em que o cliente escolhe um horário livre e a atividade é criada sozinha.
+
+### 13.5 Preparação já na Fase 1
+Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
+- Telefones armazenados também no formato **E.164** (padrão para comparar com o WhatsApp).
+- Atividades com campo **Origem** (Manual · WhatsApp · Integração/API) e **ID externo** (evita duplicidade na importação).
+- **Registro interno de eventos** (toda alteração relevante gera um evento), que depois alimenta os webhooks.
+- Tela **Configurações → Integrações** prevista no menu (chaves de API, webhooks, conexões WhatsApp, logs).
+- Anexos de atividades já suportados (MinIO), usados para as mídias do WhatsApp e anexos de e-mail.
+- E-mails de contatos normalizados (minúsculas) e **domínio** da empresa cadastrado, para identificar e-mails automaticamente.
+- Atividades com **participantes** (vários contatos) e **ID externo** também para e-mail (thread) e eventos de agenda.
+- Estrutura de **contas conectadas** por usuário (WhatsApp hoje; Google/Microsoft depois).
+- **Central de notificações** já na Fase 1 (usada por tarefas e atividades atrasadas).
+
+---
+
+## 14. Fora da Fase 1 (próximas fases)
+
+| Fase | Funcionalidade |
+|---|---|
+| 2 — Geolocalização | Geocodificação dos endereços, mapa da carteira (pins coloridos por tag), filtros por raio, check-in de visita com GPS |
+| 3 — Roteirização | Montar roteiro do dia com base em filtros (ex.: sem visita há 90 dias + cidade), otimização da ordem (VROOM) e navegação |
+| 4 — WhatsApp | Integração Evolution API: registro automático/manual de conversas, caixa de não identificados e, depois, envio pelo CRM (ver seção 13.1) |
+| 5 — n8n | Webhooks de saída, chaves de API e automações (ver seção 13.2) |
+| 6 — E-mail | Conexão Google/Microsoft + BCC, registro automático, envio pelo CRM com modelos, rastreamento de abertura/cliques (ver seção 13.3) |
+| 7 — Agendas | Sincronização com Google Agenda e Microsoft, convites, Meet/Teams, disponibilidade (ver seção 13.4) |
+| Futuro | Propostas/orçamentos em PDF, metas por vendedor, link público de agendamento, relatórios avançados |
+
+> O **Status da oportunidade** e o **histórico de fases e status** já deixam a base pronta para metas, relatórios de conversão e automações.
+
+---
+
+## 15. Decisões registradas
+
+| # | Decisão | Escolha |
+|---|---|---|
+| 1 | Organização de tags | Grupos de tags (seleção única ou múltipla), cores customizáveis |
+| 2 | Visitadas/contactadas | Automático pelas atividades + tag automática |
+| 3 | Etapa de fechamento | ~~Tipo da etapa: Aberta / Ganha / Perdida~~ → substituída pela decisão 21 |
+| 4 | Carteira | Configurável por papel (vendedor vê a própria; gestor/admin veem tudo) |
+| 5 | Atividades | Sempre na empresa; contato e oportunidade opcionais; agenda + histórico |
+| 6 | Tipos de atividade | Cadastráveis, com "conta como Visita/Contato" |
+| 7 | Oportunidade | Previsão + probabilidade, origem + motivo de perda, produtos/itens, campos personalizados |
+| 8 | Empresas (extras) | Consulta CNPJ, importação, detecção de duplicados, exportação |
+| 9 | Contatos | Vínculo N:N com empresas (cargo por vínculo) |
+| 10 | Dashboard v1 | Minhas atividades, Funil e previsão, Carteira |
+| 11 | Oportunidades (visões) | Kanban + Lista, filtros salvos, alerta de parada |
+| 12 | WhatsApp | Evolution API: conversas viram atividades (agrupadas por conversa/dia), número por vendedor, caixa de não identificados |
+| 13 | Automações | n8n via webhooks de saída (eventos, HMAC) + API REST com chaves por tenant |
+| 14 | Preparação | E.164, origem/ID externo nas atividades, registro de eventos e menu de Integrações já na Fase 1 |
+| 15 | Tarefas | Kanban com tarefas internas + atividades (opcional); modelo do admin + quadros pessoais e de equipe; etiquetas coloridas |
+| 16 | E-mail (registro) | Conta conectada Google/Microsoft **e** BCC como alternativa |
+| 17 | E-mail (envio) | Pelo CRM, via conta do vendedor, com modelos; rastreamento de abertura/cliques opcional por envio |
+| 18 | Agendas | Google e Microsoft, bidirecional, com convites e link de reunião |
+| 19 | Notificações | Central no app + push + e-mail, configurável por usuário (Fase 1) |
+| 20 | Atividades × tarefas (v1.3) | **Unificadas**; tipo *Tarefa* com empresa opcional; importante/urgente, lembretes e recorrência |
+| 21 | Fechamento (v1.3) | **Status separado da Fase** (Ativo, Conquistado, Perdido, Cancelado, Suspenso). Substitui a decisão 3 |
+| 22 | Oportunidade (v1.3) | Solução cadastrável; itens com cobrança única/mensal/anual + meses → valor único, MRR e total |
+| 23 | Empresa (v1.3) | Minha Receita; CNPJ, CPF ou sem documento; matriz/filial vinculadas; Vertical substitui tag Segmento; faixas cadastráveis |
+| 24 | Prospecção (v1.3) | Busca por CNAE + UF/município e importação como Lead |
+| 25 | Vendedor (v1.3) | Vendedor = membro da equipe (pode existir sem login) |
+| 26 | Multiempresa (v1.4) | Conta dona de várias empresas; dados isolados + painel consolidado + cópia de configurações |
+| 27 | Usuários (v1.4) | Mesmo login em várias empresas, papel por empresa |
+
+## 16. Próximos passos
+
+1. **Modelagem do banco** (tabelas, relacionamentos, índices e políticas RLS) a partir deste documento.
+2. Protótipo das telas (wireframes) para validar a usabilidade em desktop e celular.
+3. Esqueleto do monorepo e do ambiente dev local.

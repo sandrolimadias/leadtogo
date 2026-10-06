@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script></helmet>
+<div style="display:flex;flex-direction:column;min-height:100%">
+  <div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:16px;max-width:980px;width:100%;flex:1">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <nav style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)"><a href="#" onClick="{{ goLista }}" style="color:var(--ink-muted)">Empresas</a><x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" size="{{ 13 }}" hint-size="13px,13px"></x-import><span style="color:var(--ink)">Nova empresa</span></nav>
+        <h1 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.015em">Nova empresa</h1>
+      </div>
+    </sc-if>
+
+    <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:24px;height:24px;border-radius:9999px;background:{{ step1Bg }};color:{{ step1Fg }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">1</span>
+        <h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600;flex:1">Documento</h2>
+        <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Tipo de documento" options="{{ docOptions }}" defaultValue="cnpj" hint-size="230px,32px"></x-import>
+      </div>
+      <div style="max-width:520px">
+        <x-import component-from-global-scope="Leadtogo.TextField" label="CNPJ" required="{{ true }}" mono="{{ true }}" placeholder="00.000.000/0000-00" value="{{ cnpj }}" onChange="{{ setCnpj }}" onKeyDown="{{ onKey }}" error="{{ cnpjError }}" hint="Aceita o CNPJ alfanumérico. Os dados vêm da Minha Receita." suffix="{{ consultarBtn }}" hint-size="100%,72px"></x-import>
+      </div>
+      <sc-if value="{{ dup }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="Leadtogo.Alert" tone="warning" title="Esta empresa já está no CRM" actions="{{ dupAction }}" hint-size="100%,72px">Usidantec · vendedor Alessandro Dias. Abra a ficha em vez de cadastrar de novo.</x-import>
+      </sc-if>
+      <sc-if value="{{ falha }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="Leadtogo.Alert" tone="danger" title="A Receita não respondeu" hint-size="100%,60px">Tente de novo em alguns minutos ou preencha à mão.</x-import>
+      </sc-if>
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:{{ L.cols }};gap:16px">
+          <x-import component-from-global-scope="Leadtogo.Skeleton" lines="{{ 3 }}" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Skeleton" lines="{{ 3 }}" hint-size="100%,60px"></x-import>
+        </div>
+      </sc-if>
+    </section>
+
+    <sc-if value="{{ filled }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.Alert" tone="success" title="Dados preenchidos pela Receita" hint-size="100%,60px">Situação cadastral: Ativa desde 19/06/2015. Confira e complete antes de salvar.</x-import>
+
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:24px;height:24px;border-radius:9999px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">2</span>
+          <h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600;flex:1">Conferir dados da Receita</h2>
+          <x-import component-from-global-scope="Leadtogo.Badge" tone="success" icon="circle-check" hint-size="60px,22px">Ativa</x-import>
+          <x-import component-from-global-scope="Leadtogo.Badge" tone="outline" hint-size="60px,22px">Matriz</x-import>
+        </div>
+        <div style="display:grid;grid-template-columns:{{ L.cols }};gap:14px 16px">
+          <div style="grid-column:1 / -1"><x-import component-from-global-scope="Leadtogo.TextField" label="Razão social" required="{{ true }}" defaultValue="Jacaraípe Usinagem de Precisão Ltda" hint="Da Receita" hint-size="100%,72px"></x-import></div>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Nome fantasia" defaultValue="Jacaraípe Usinagem" hint="Nome de exibição no CRM" hint-size="100%,72px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Regime tributário" options="{{ regimes }}" defaultValue="Simples Nacional" hint="Da Receita, editável" hint-size="100%,72px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Início das atividades" defaultValue="19/06/2015" hint="Da Receita" hint-size="100%,72px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Porte" defaultValue="Micro Empresa · não é MEI" readOnly="{{ true }}" hint="Da Receita" hint-size="100%,72px"></x-import>
+        </div>
+        <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle);padding-top:6px">Endereço</span>
+        <div style="display:grid;grid-template-columns:{{ L.addr }};gap:14px 16px">
+          <x-import component-from-global-scope="Leadtogo.TextField" label="CEP" mono="{{ true }}" defaultValue="29175-588" hint-size="100%,60px"></x-import>
+          <div style="grid-column:{{ L.span2 }}"><x-import component-from-global-scope="Leadtogo.TextField" label="Logradouro" defaultValue="Rua Ponta dos Fachos" hint-size="100%,60px"></x-import></div>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Número" defaultValue="240" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Complemento" defaultValue="Galpão B" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Bairro" defaultValue="Jacaraípe" hint-size="100%,60px"></x-import>
+          <div style="grid-column:{{ L.span2 }}"><x-import component-from-global-scope="Leadtogo.TextField" label="Cidade" defaultValue="Serra/ES" readOnly="{{ true }}" hint-size="100%,60px"></x-import></div>
+        </div>
+        <div style="display:grid;grid-template-columns:{{ L.cols }};gap:16px;padding-top:6px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Telefones</span>
+            <x-import component-from-global-scope="Leadtogo.Checkbox" label="(27) 3243-1907" description="Fixo · da Receita" defaultChecked="{{ true }}" hint-size="100%,40px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Checkbox" label="(27) 99847-2210" description="Celular · marcar também como WhatsApp" defaultChecked="{{ true }}" hint-size="100%,40px"></x-import>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Sócios</span>
+            <x-import component-from-global-scope="Leadtogo.Checkbox" label="Rogério Bindaco" description="Sócio-Administrador · converter em contato ao salvar" defaultChecked="{{ true }}" hint-size="100%,40px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Checkbox" label="Tatiane Bindaco Lube" description="Sócia · converter em contato ao salvar" hint-size="100%,40px"></x-import>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0;padding-top:6px">
+          <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle);padding-bottom:8px">CNAEs</span>
+          <sc-for list="{{ cnaes }}" as="c" hint-placeholder-count="3">
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border)">
+              <span style="font-family:var(--font-mono);font-size:13px;color:var(--ink-muted);width:88px;flex-shrink:0">{{ c.codigo }}</span>
+              <span style="flex:1">{{ c.descricao }}</span>
+              <sc-if value="{{ c.principal }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" tone="outline" hint-size="70px,22px">Principal</x-import></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:24px;height:24px;border-radius:9999px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">3</span>
+          <h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600">Carteira</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:{{ L.cols3 }};gap:14px 16px">
+          <x-import component-from-global-scope="Leadtogo.Select" label="Vendedor" required="{{ true }}" options="{{ vendedores }}" defaultValue="Alessandro Dias" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Vertical" options="{{ verticais }}" defaultValue="Metalmecânica" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Status" required="{{ true }}" options="{{ statusOpts }}" defaultValue="Lead" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Funcionários" options="{{ faixasF }}" defaultValue="10 a 49" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Faixa de faturamento" options="{{ faixasR }}" defaultValue="Até R$ 4,8 mi" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Website" placeholder="empresa.com.br" hint-size="100%,60px"></x-import>
+          <div style="grid-column:1 / -1"><x-import component-from-global-scope="Leadtogo.TextField" label="Observações" multiline="{{ true }}" placeholder="Como chegou até nós, quem indicou, horários de visita" hint-size="100%,96px"></x-import></div>
+        </div>
+      </section>
+    </sc-if>
+  </div>
+  <sc-if value="{{ filled }}" hint-placeholder-val="{{ false }}">
+    <div style="position:sticky;bottom:0;display:flex;gap:8px;justify-content:flex-end;padding:12px {{ L.footPad }};background:var(--surface);border-top:1px solid var(--border)">
+      <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" onClick="{{ goLista }}" hint-size="90px,36px">Cancelar</x-import>
+      <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="check" onClick="{{ salvar }}" block="{{ mobile }}" hint-size="150px,36px">Salvar empresa</x-import>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { cnpj: '07.336.512/0001-84', phase: 'idle', error: null };
+  mask(v) {
+    const s = v.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 14);
+    let o = s.slice(0, 2); if (s.length > 2) o += '.' + s.slice(2, 5); if (s.length > 5) o += '.' + s.slice(5, 8); if (s.length > 8) o += '/' + s.slice(8, 12); if (s.length > 12) o += '-' + s.slice(12);
+    return o;
+  }
+  consultar = () => {
+    const raw = this.state.cnpj.replace(/[^0-9A-Z]/gi, '');
+    if (raw.length !== 14) { this.setState({ error: 'Informe os 14 caracteres do CNPJ, como 12.424.587/0001-45.', phase: 'idle' }); return; }
+    if (raw === '12424587000145') { this.setState({ phase: 'dup', error: null }); return; }
+    this.setState({ phase: 'loading', error: null });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ phase: raw.startsWith('00') ? 'falha' : 'filled' }), 1200);
+  };
+  renderVals() {
+    const D = window.LTD || { vendedores: [] };
+    const m = !!this.props.mobile, st = this.state, L = window.Leadtogo;
+    const go = this.props.go || (() => {}), notify = this.props.notify || (() => {});
+    const loading = st.phase === 'loading';
+    const consultarBtn = L ? React.createElement(L.Button, { size: 'sm', variant: 'primary', icon: loading ? undefined : 'search', loading, onClick: this.consultar }, loading ? 'Consultando…' : 'Consultar') : null;
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { pad: '16px', cols: '1fr', cols3: '1fr', addr: '1fr 1fr', span2: '1 / -1', footPad: '16px' } : { pad: '24px', cols: '1fr 1fr', cols3: 'repeat(3, minmax(0,1fr))', addr: '140px minmax(0,1fr) minmax(0,1fr) 110px', span2: 'span 2', footPad: '24px' },
+      docOptions: [{ value: 'cnpj', label: 'CNPJ' }, { value: 'cpf', label: 'CPF' }, { value: 'nenhum', label: 'Sem documento' }],
+      cnpj: st.cnpj, setCnpj: (e) => this.setState({ cnpj: this.mask(e.target.value), error: null }),
+      onKey: (e) => { if (e.key === 'Enter') this.consultar(); },
+      cnpjError: st.error || undefined, consultarBtn,
+      step1Bg: 'var(--accent)', step1Fg: 'var(--on-accent)',
+      loading, filled: st.phase === 'filled', dup: st.phase === 'dup', falha: st.phase === 'falha',
+      dupAction: L ? React.createElement(L.Button, { size: 'sm', onClick: () => go('ficha', { empresaId: 'usidantec' }) }, 'Abrir ficha') : null,
+      cnaes: [{ codigo: '2539-0/01', descricao: 'Serviços de usinagem, tornearia e solda', principal: true }, { codigo: '2543-8/00', descricao: 'Fabricação de ferramentas', principal: false }, { codigo: '3314-7/10', descricao: 'Manutenção e reparação de máquinas e equipamentos para uso geral', principal: false }],
+      regimes: ['MEI', 'Simples Nacional', 'Lucro Presumido', 'Lucro Real', 'Imune/Isenta', 'Não informado'],
+      vendedores: D.vendedores, verticais: ['Metalmecânica', 'Alimentos', 'Rochas ornamentais', 'Logística', 'Saúde', 'Construção civil', 'Agronegócio'],
+      statusOpts: ['Lead', 'Prospect', 'Cliente', 'Inativo'], faixasF: ['1 a 9', '10 a 49', '50 a 99', '100 a 499', '500 ou mais'], faixasR: ['Até R$ 360 mil', 'Até R$ 4,8 mi', 'Até R$ 30 mi', 'Acima de R$ 30 mi'],
+      goLista: (e) => { if (e && e.preventDefault) e.preventDefault(); go('empresas'); },
+      salvar: () => { notify('Empresa cadastrada', 'Jacaraípe Usinagem entrou na carteira como Lead.'); go('empresas'); }
+    };
+  }
+}
+</script>
+</body>
+</html>

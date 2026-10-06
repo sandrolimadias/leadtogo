@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script><style>.lt-tabs { overflow-y: hidden; }</style></helmet>
+<div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:{{ L.gap }};max-width:1400px">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px">
+    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:13px;color:var(--ink-muted)">Segunda, 5 de outubro de 2026</span>
+      <h1 style="margin:0;font-size:{{ L.h1 }};line-height:1.2;font-weight:600;letter-spacing:-0.015em">Bom dia, Alessandro</h1>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Visão" options="{{ viewOptions }}" defaultValue="minha" hint-size="190px,32px"></x-import>
+      </sc-if>
+      <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Período" options="{{ periodOptions }}" value="{{ period }}" onChange="{{ setPeriod }}" hint-size="290px,32px"></x-import>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ L.stats }};gap:12px">
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="Previsão do mês" value="{{ previsao }}" hint="valor ponderado, 7 oportunidades" hint-size="100%,96px"></x-import>
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="MRR conquistado" value="{{ 3450 }}" delta="+18%" hint="vs. mês anterior" spark="{{ mrrSpark }}" hint-size="100%,96px"></x-import>
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="Taxa de conversão" value="67%" currency="{{ false }}" hint="4 conquistadas × 2 perdidas" hint-size="100%,96px"></x-import>
+    <x-import component-from-global-scope="Leadtogo.StatTile" label="Sem contato há 60 dias" value="23" currency="{{ false }}" hint="empresas da carteira" hint-size="100%,96px"></x-import>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ L.main }};gap:16px;align-items:start">
+    <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px;padding:16px 16px 0">
+        <h2 style="margin:0;font-size:18px;line-height:24px;font-weight:600;flex:1">Minhas atividades</h2>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" iconRight="chevron-right" onClick="{{ goTarefas }}" hint-size="110px,28px">Ver agenda</x-import>
+      </div>
+      <div style="padding:8px 16px 0;overflow-x:auto;overflow-y:hidden">
+        <x-import component-from-global-scope="Leadtogo.Tabs" label="Período das atividades" items="{{ tabItems }}" value="{{ tab }}" onChange="{{ setTab }}" hint-size="100%,40px"></x-import>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{ acts }}" as="a" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;gap:10px;padding:12px 16px;border-top:1px solid var(--border);background:{{ a.bg }}">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ a.type }}" hint-size="28px,28px"></x-import>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+                  <span style="font-weight:600;text-decoration:{{ a.strike }}">{{ a.title }}</span>
+                  <x-import component-from-global-scope="Leadtogo.PriorityMarks" importante="{{ a.importante }}" urgente="{{ a.urgente }}" hint-size="0px,18px"></x-import>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;line-height:18px;color:var(--ink-muted)">
+                  <span style="font-variant-numeric:tabular-nums;color:{{ a.whenColor }};font-weight:{{ a.whenWeight }}">{{ a.when }}</span>
+                  <sc-if value="{{ a.company }}" hint-placeholder-val="{{ true }}"><a href="#" onClick="{{ a.openCompany }}" style="color:var(--ink-muted);text-decoration:underline;text-decoration-color:var(--border-strong)">{{ a.company }}</a></sc-if>
+                  <sc-if value="{{ a.contact }}" hint-placeholder-val="{{ false }}"><span>{{ a.contact }}</span></sc-if>
+                </div>
+                <sc-if value="{{ a.note }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--ink-muted);margin-top:4px;padding-left:10px;border-left:2px solid var(--border)">{{ a.note }}</span></sc-if>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                <x-import component-from-global-scope="Leadtogo.Badge" tone="{{ a.tone }}" icon="{{ a.badgeIcon }}" hint-size="70px,22px">{{ a.statusLabel }}</x-import>
+                <sc-if value="{{ a.canDone }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="Leadtogo.IconButton" icon="check" label="Concluir atividade" variant="secondary" size="sm" onClick="{{ a.startDone }}" hint-size="28px,28px"></x-import>
+                </sc-if>
+              </div>
+            </div>
+            <sc-if value="{{ a.expanded }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:10px;padding-left:40px">
+                <x-import component-from-global-scope="Leadtogo.TextField" label="Resultado" multiline="{{ true }}" placeholder="O que aconteceu?" onChange="{{ setResult }}" hint-size="100%,80px"></x-import>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end">
+                  <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" onClick="{{ cancelDone }}" hint-size="80px,28px">Cancelar</x-import>
+                  <x-import component-from-global-scope="Leadtogo.Button" size="sm" onClick="{{ a.doneNext }}" hint-size="190px,28px">Concluir e agendar próxima</x-import>
+                  <x-import component-from-global-scope="Leadtogo.Button" variant="primary" size="sm" onClick="{{ a.done }}" hint-size="140px,28px">Concluir atividade</x-import>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <button type="button" onClick="{{ goTarefas }}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border:0;border-top:1px solid var(--border);background:var(--surface-sunken);font:inherit;font-size:13px;color:var(--ink-muted);cursor:pointer;text-align:left;border-radius:0 0 8px 8px">
+        <x-import component-from-global-scope="Leadtogo.Icon" name="square-kanban" hint-size="16px,16px"></x-import>
+        <span style="flex:1">Quadro de tarefas: <b style="color:var(--danger)">2 atrasadas</b> · 3 para hoje · 7 nesta semana</span>
+        <x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" hint-size="16px,16px"></x-import>
+      </button>
+    </section>
+
+    <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <h2 style="margin:0;font-size:18px;line-height:24px;font-weight:600;flex:1">Funil e previsão</h2>
+        <div style="width:160px"><x-import component-from-global-scope="Leadtogo.Select" aria-label="Funil" options="{{ funis }}" defaultValue="Vendas novas" hint-size="160px,36px"></x-import></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ funnel }}" as="f" hint-placeholder-count="4">
+          <button type="button" onClick="{{ goFunil }}" style="display:flex;flex-direction:column;gap:6px;border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer">
+            <div style="display:flex;align-items:baseline;gap:8px;font-size:13px">
+              <span style="width:8px;height:8px;border-radius:9999px;background:{{ f.dot }};flex-shrink:0;align-self:center"></span>
+              <span style="font-weight:600;flex:1">{{ f.title }}</span>
+              <span style="color:var(--ink-muted);font-variant-numeric:tabular-nums">{{ f.count }}</span>
+              <span style="font-weight:600;font-variant-numeric:tabular-nums;min-width:84px;text-align:right">{{ f.total }}</span>
+            </div>
+            <div style="height:8px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden">
+              <div style="height:100%;width:{{ f.pct }};background:{{ f.dot }};border-radius:9999px"></div>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--success)"><x-import component-from-global-scope="Leadtogo.Icon" name="circle-check" size="{{ 14 }}" hint-size="14px,14px"></x-import>Conquistadas</span>
+          <span style="font-size:20px;font-weight:600;font-variant-numeric:tabular-nums">R$ 61.200</span>
+          <span style="font-size:13px;color:var(--ink-muted)">4 oportunidades · R$ 3.450/mês</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--danger)"><x-import component-from-global-scope="Leadtogo.Icon" name="circle-x" size="{{ 14 }}" hint-size="14px,14px"></x-import>Perdidas e canceladas</span>
+          <span style="font-size:20px;font-weight:600;font-variant-numeric:tabular-nums">R$ 22.400</span>
+          <span style="font-size:13px;color:var(--ink-muted)">2 oportunidades</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+        <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Principais motivos de perda</span>
+        <sc-for list="{{ motivos }}" as="m" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+            <span style="flex:1">{{ m.label }}</span>
+            <div style="width:90px;height:6px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden"><div style="height:100%;width:{{ m.pct }};background:var(--tag-red-fg)"></div></div>
+            <span style="width:16px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-muted)">{{ m.n }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+
+  <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:grid;grid-template-columns:{{ L.carteira }};min-width:0">
+    <div style="padding:16px;display:flex;flex-direction:column;gap:14px;border-right:{{ L.divR }};border-bottom:{{ L.divB }}">
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <h2 style="margin:0;font-size:18px;line-height:24px;font-weight:600;flex:1">Carteira</h2>
+        <span style="font-size:13px;color:var(--ink-muted)">148 empresas</span>
+      </div>
+      <div style="display:flex;height:12px;border-radius:9999px;overflow:hidden;gap:2px">
+        <sc-for list="{{ carteira }}" as="c" hint-placeholder-count="4"><div style="flex:{{ c.n }};background:{{ c.bar }}"></div></sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <sc-for list="{{ carteira }}" as="c" hint-placeholder-count="4">
+          <button type="button" onClick="{{ goEmpresas }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font:inherit;color:inherit;cursor:pointer" style-hover="background:var(--surface-hover)">
+            <x-import component-from-global-scope="Leadtogo.Tag" color="{{ c.color }}" hint-size="60px,20px">{{ c.label }}</x-import>
+            <span style="font-weight:600;font-variant-numeric:tabular-nums">{{ c.n }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-muted)">
+        <x-import component-from-global-scope="Leadtogo.Icon" name="trending-up" size="{{ 14 }}" hint-size="14px,14px"></x-import>
+        <span><b style="color:var(--ink)">9 novos leads</b> no mês, 6 vindos da prospecção</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px;padding:16px 16px 12px">
+        <h3 style="margin:0;font-size:15px;line-height:20px;font-weight:600;flex:1">Sem contato há 60 dias</h3>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" iconRight="chevron-right" onClick="{{ goEmpresas }}" hint-size="110px,28px">Ver as 23</x-import>
+      </div>
+      <sc-for list="{{ semContato }}" as="e" hint-placeholder-count="6">
+        <button type="button" onClick="{{ e.open }}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border:0;border-top:1px solid var(--border);background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer" style-hover="background:var(--surface-hover)">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.fantasia }}</span>
+            <span style="font-size:13px;color:var(--ink-muted)">{{ e.line }}</span>
+          </div>
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="Leadtogo.Tag" color="{{ e.statusColor }}" hint-size="60px,20px">{{ e.status }}</x-import></sc-if>
+          <x-import component-from-global-scope="Leadtogo.Badge" tone="{{ e.tone }}" icon="clock" hint-size="90px,22px">{{ e.dias }}</x-import>
+        </button>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'hoje', period: 'mes', done: {}, expanded: null, result: '' };
+  componentDidMount() { if (!window.LTD) this._w = setInterval(() => { if (window.LTD) { clearInterval(this._w); this.forceUpdate(); } }, 50); }
+  ACTS = {
+    hoje: [
+      { id: 'h1', type: 'whatsapp', title: 'Confirmar visita de amanhã', when: 'Hoje, 09:30', company: 'Usidantec', eid: 'usidantec', contact: 'Daniel Prates', st: 'realizada', note: 'Confirmou às 9h. Pediu para incluir o gerente de manutenção.' },
+      { id: 'h2', type: 'email', title: 'Enviar material técnico', when: 'Hoje, 11:00', company: 'Vitória Saúde Ocupacional', eid: 'vitoriasaude', contact: 'Helena Coutinho', st: 'pendente' },
+      { id: 'h3', type: 'reuniao', title: 'Apresentar diagnóstico de compressores', when: 'Hoje, 14:00', company: 'Embalagens Vila Velha', eid: 'vilavelha', contact: 'Simone Rangel', st: 'pendente', importante: true },
+      { id: 'h4', type: 'ligacao', title: 'Retornar sobre a proposta', when: 'Hoje, 16:30', company: 'Metalúrgica Serra Azul', eid: 'serraazul', contact: 'Ricardo Bassini', st: 'pendente', urgente: true },
+      { id: 'h5', type: 'tarefa', title: 'Atualizar previsão do mês', when: 'Hoje, 18:00', st: 'pendente' }
+    ],
+    atrasadas: [
+      { id: 'a1', type: 'visita', title: 'Visita técnica na prensa', when: 'Ontem, 14:00', company: 'Caldeiraria Anchieta', eid: 'anchieta', contact: 'Jorge Scaramussa', st: 'atrasada', importante: true },
+      { id: 'a2', type: 'ligacao', title: 'Cobrar retorno do orçamento', when: '02/10, 10:00', company: 'Distribuidora Linhares', eid: 'linhares', contact: 'Paulo Bremenkamp', st: 'atrasada' },
+      { id: 'a3', type: 'email', title: 'Enviar proposta revisada', when: '01/10, 17:00', company: 'Metalúrgica Serra Azul', eid: 'serraazul', contact: 'Ricardo Bassini', st: 'atrasada', urgente: true }
+    ],
+    semana: [
+      { id: 's1', type: 'visita', title: 'Visita de acompanhamento', when: 'Amanhã, 09:00', company: 'Usidantec', eid: 'usidantec', contact: 'Daniel Prates', st: 'pendente', importante: true },
+      { id: 's2', type: 'ligacao', title: 'Negociar prazo de implantação', when: 'Amanhã, 15:00', company: 'Mecânica Aracruz Industrial', eid: 'aracruz', contact: 'Vanessa Loureiro', st: 'pendente' },
+      { id: 's3', type: 'whatsapp', title: 'Primeiro contato', when: 'Qua, 10:00', company: 'Café Montanhas Capixabas', eid: 'montanhas', contact: 'Otávio Falqueto', st: 'pendente' },
+      { id: 's4', type: 'reuniao', title: 'Reunião de diagnóstico', when: 'Qui, 14:00', company: 'Granitos Itaguaçu', eid: 'itaguacu', contact: 'Luciana Moschen', st: 'pendente' },
+      { id: 's5', type: 'visita', title: 'Levantamento dos tornos', when: 'Sex, 08:30', company: 'Moveleira Colatina', eid: 'colatina', contact: 'Hélio Pandolfi', st: 'pendente' },
+      { id: 's6', type: 'tarefa', title: 'Relatório semanal de visitas', when: 'Sex, 17:00', st: 'pendente' }
+    ]
+  };
+  renderVals() {
+    const D = window.LTD || { empresas: [], fases: [], oportunidades: [], funis: [] };
+    const m = !!this.props.mobile;
+    const go = this.props.go || (() => {}), notify = this.props.notify || (() => {});
+    const st = this.state;
+    const brl = (v) => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+    const SIT = { pendente: ['neutral', 'Pendente', undefined], atrasada: ['danger', 'Atrasada', 'triangle-alert'], realizada: ['success', 'Realizada', 'circle-check'] };
+    const finish = (a, next) => (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      this.setState(s => ({ done: { ...s.done, [a.id]: s.result || 'Concluída pelo dashboard.' }, expanded: null, result: '' }));
+      notify('Atividade concluída', next ? 'Agende a próxima atividade.' : a.title + (a.company ? ' · ' + a.company : ''));
+      if (next && this.props.registrar) this.props.registrar(a.eid);
+    };
+    const acts = (this.ACTS[st.tab] || []).map(a => {
+      const doneNote = st.done[a.id];
+      const s = doneNote ? 'realizada' : a.st;
+      const sit = SIT[s];
+      return { ...a, company: a.company || false, contact: a.contact || false, importante: !!a.importante, urgente: !!a.urgente,
+        note: doneNote || a.note || false, tone: sit[0], statusLabel: sit[1], badgeIcon: sit[2],
+        canDone: s !== 'realizada' && st.expanded !== a.id, expanded: st.expanded === a.id,
+        bg: st.expanded === a.id ? 'var(--surface-sunken)' : 'transparent', strike: s === 'realizada' ? 'none' : 'none',
+        whenColor: s === 'atrasada' ? 'var(--danger)' : 'var(--ink-muted)', whenWeight: s === 'atrasada' ? 600 : 400,
+        openCompany: (e) => { e.preventDefault(); go('ficha', { empresaId: a.eid }); },
+        startDone: () => this.setState({ expanded: a.id, result: '' }), done: finish(a, false), doneNext: finish(a, true) };
+    });
+    const cnt = (k) => this.ACTS[k].filter(a => !st.done[a.id] && a.st !== 'realizada').length;
+    const fases = D.fases.map(f => { const ops = D.oportunidades.filter(o => o.fase === f.id); return { ...f, n: ops.length, total: ops.reduce((s, o) => s + o.value, 0) }; });
+    const max = Math.max(1, ...fases.map(f => f.total));
+    const funnel = fases.map(f => ({ title: f.title, count: f.n + (f.n === 1 ? ' oportunidade' : ' oportunidades'), total: brl(f.total), pct: Math.round(100 * f.total / max) + '%', dot: 'var(--tag-' + f.color + '-fg)' }));
+    const previsao = D.oportunidades.filter(o => /\/10$/.test(o.due)).reduce((s, o) => s + o.value * o.prob / 100, 0);
+    const semContato = D.empresas.filter(e => e.diasContato == null || e.diasContato >= 60).sort((a, b) => (b.diasContato == null ? 9999 : b.diasContato) - (a.diasContato == null ? 9999 : a.diasContato)).slice(0, 6)
+      .map(e => ({ ...e, statusColor: D.statusColor[e.status], line: e.cidade + ' · ' + e.vendedor, dias: e.diasContato == null ? 'Nunca' : e.diasContato + ' dias', tone: e.diasContato == null ? 'neutral' : 'warning', open: () => go('ficha', { empresaId: e.id }) }));
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { pad: '16px', gap: '16px', h1: '22px', stats: '1fr 1fr', main: '1fr', carteira: '1fr', divR: '0', divB: '1px solid var(--border)' }
+           : { pad: '24px', gap: '20px', h1: '30px', stats: 'repeat(4, minmax(0,1fr))', main: 'minmax(0,1.5fr) minmax(0,1fr)', carteira: 'minmax(0,1fr) minmax(0,1.4fr)', divR: '1px solid var(--border)', divB: '0' },
+      viewOptions: [{ value: 'minha', label: 'Minha visão' }, { value: 'equipe', label: 'Equipe' }],
+      periodOptions: m ? [{ value: 'mes', label: 'Mês' }, { value: 'anterior', label: 'Anterior' }, { value: 'tri', label: 'Trimestre' }] : [{ value: 'mes', label: 'Mês atual' }, { value: 'anterior', label: 'Mês anterior' }, { value: 'tri', label: 'Trimestre' }],
+      period: st.period, setPeriod: (v) => this.setState({ period: v }),
+      tabItems: [{ value: 'hoje', label: 'Hoje', count: cnt('hoje') }, { value: 'atrasadas', label: 'Atrasadas', count: cnt('atrasadas') }, { value: 'semana', label: m ? '7 dias' : 'Próximos 7 dias', count: cnt('semana') }],
+      tab: st.tab, setTab: (v) => this.setState({ tab: v, expanded: null }),
+      acts, setResult: (e) => this.setState({ result: e.target.value }), cancelDone: () => this.setState({ expanded: null }),
+      previsao: Math.round(previsao), mrrSpark: [1800, 2100, 1950, 2400, 2600, 2920, 3450],
+      funis: D.funis, funnel,
+      motivos: [{ label: 'Preço', n: 3, pct: '100%' }, { label: 'Concorrência', n: 2, pct: '66%' }, { label: 'Sem retorno do cliente', n: 1, pct: '33%' }],
+      carteira: [{ label: 'Lead', color: 'teal', n: 52 }, { label: 'Prospect', color: 'amber', n: 31 }, { label: 'Cliente', color: 'green', n: 58 }, { label: 'Inativo', color: 'gray', n: 7 }].map(c => ({ ...c, bar: 'var(--tag-' + c.color + '-fg)' })),
+      semContato,
+      goTarefas: () => go('tarefas'), goFunil: () => go('oportunidades'), goEmpresas: () => go('empresas')
+    };
+  }
+}
+</script>
+</body>
+</html>

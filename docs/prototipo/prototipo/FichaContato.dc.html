@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script><style>.lt-tabs { overflow-y: hidden; }</style></helmet>
+<div style="display:flex;flex-direction:column">
+  <header style="background:var(--surface);border-bottom:1px solid var(--border);padding:{{ L.headPad }};display:flex;flex-direction:column;gap:12px">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <nav style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)">
+        <a href="#" onClick="{{ goLista }}" style="color:var(--ink-muted)">Contatos</a>
+        <x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" size="{{ 13 }}" hint-size="13px,13px"></x-import>
+        <span style="color:var(--ink)">{{ c.name }}</span>
+      </nav>
+    </sc-if>
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+      <x-import component-from-global-scope="Leadtogo.Avatar" name="{{ c.name }}" size="lg" hint-size="40px,40px"></x-import>
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <h1 style="margin:0;font-size:22px;line-height:28px;font-weight:600;letter-spacing:-0.01em">{{ c.name }}</h1>
+          <x-import component-from-global-scope="Leadtogo.Badge" tone="outline" hint-size="70px,22px">{{ c.papel }}</x-import>
+          <sc-if value="{{ optout }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" tone="warning" icon="ban" hint-size="150px,22px">Não quer contato</x-import></sc-if>
+        </div>
+        <span style="font-size:14px;color:var(--ink-muted)">{{ principalLine }}</span>
+      </div>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <x-import component-from-global-scope="Leadtogo.IconButton" icon="phone" label="Ligar" variant="secondary" onClick="{{ call }}" hint-size="36px,36px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.IconButton" icon="message-circle" label="WhatsApp" variant="secondary" onClick="{{ wpp }}" hint-size="36px,36px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.IconButton" icon="mail" label="E-mail" variant="secondary" onClick="{{ mail }}" hint-size="36px,36px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Button" icon="building-2" onClick="{{ openVinc }}" hint-size="200px,36px">Vincular a outra empresa</x-import>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" onClick="{{ novaAtv }}" hint-size="140px,36px">Nova atividade</x-import>
+        </div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+      <div data-density="touch" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <sc-for list="{{ quick }}" as="q" hint-placeholder-count="4">
+          <button type="button" onClick="{{ q.onClick }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:64px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer">
+            <span style="color:{{ q.color }};display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ q.icon }}" size="{{ 20 }}" hint-size="20px,20px"></x-import></span>{{ q.label }}
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div style="margin:0 {{ L.tabBleed }};overflow-x:auto;overflow-y:hidden;padding:0 {{ L.tabPad }}">
+      <x-import component-from-global-scope="Leadtogo.Tabs" label="Seções do contato" items="{{ tabs }}" value="{{ tab }}" onChange="{{ setTab }}" hint-size="100%,40px"></x-import>
+    </div>
+  </header>
+
+  <div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:16px">
+    <sc-if value="{{ t.resumo }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:{{ L.cols }};gap:16px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)">
+              <h2 style="margin:0;flex:1;font-size:15px;line-height:20px;font-weight:600">Empresas vinculadas</h2>
+              <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="plus" onClick="{{ openVinc }}" hint-size="90px,28px">Vincular</x-import>
+            </div>
+            <sc-for list="{{ vinculos }}" as="v" hint-placeholder-count="2">
+              <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:{{ v.bg }}">
+                <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:2px">
+                  <a href="#" onClick="{{ v.open }}" style="font-weight:600;color:{{ v.nameColor }}">{{ v.fantasia }}</a>
+                  <span style="font-size:13px;color:var(--ink-muted)">{{ v.sub }}</span>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                  <sc-if value="{{ v.principal }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" icon="star" hint-size="80px,22px">Principal</x-import></sc-if>
+                  <x-import component-from-global-scope="Leadtogo.Badge" tone="{{ v.tone }}" icon="{{ v.icon }}" hint-size="70px,22px">{{ v.status }}</x-import>
+                  <div style="position:relative">
+                    <x-import component-from-global-scope="Leadtogo.IconButton" icon="ellipsis" label="Ações do vínculo" size="sm" onClick="{{ v.toggleMenu }}" hint-size="28px,28px"></x-import>
+                    <sc-if value="{{ v.menuOpen }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;right:0;top:32px;z-index:1000;width:220px;box-shadow:var(--shadow-md);border-radius:8px"><x-import component-from-global-scope="Leadtogo.Menu" items="{{ v.menu }}" label="Ações do vínculo" hint-size="220px,120px"></x-import></div></sc-if>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+            <p style="margin:0;padding:10px 16px;font-size:13px;color:var(--ink-muted)">O cargo é de cada vínculo. Ao sair de uma empresa, o vínculo fica inativo e o histórico continua.</p>
+          </section>
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600">Dados da pessoa</h2></div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:12px;font-weight:500;color:var(--ink-muted)">Telefones</span>
+                <sc-for list="{{ tels }}" as="p" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span style="font-variant-numeric:tabular-nums;font-weight:600">{{ p.n }}</span>
+                    <span style="font-size:13px;color:var(--ink-muted)">{{ p.tipo }}</span>
+                    <sc-if value="{{ p.wpp }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" tone="success" icon="message-circle" hint-size="90px,22px">WhatsApp</x-import></sc-if>
+                    <sc-if value="{{ p.principal }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" tone="outline" hint-size="70px,22px">Principal</x-import></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:12px;font-weight:500;color:var(--ink-muted)">E-mails</span>
+                <sc-for list="{{ emails }}" as="e" hint-placeholder-count="1">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="overflow-wrap:anywhere">{{ e.e }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ e.tipo }}</span></div>
+                </sc-for>
+                <sc-if value="{{ noEmail }}" hint-placeholder-val="{{ false }}"><span style="color:var(--ink-muted)">Sem e-mail</span></sc-if>
+              </div>
+              <dl style="margin:0;display:grid;grid-template-columns:{{ L.dl }};gap:14px 24px">
+                <sc-for list="{{ campos }}" as="f" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><dt style="font-size:12px;font-weight:500;color:var(--ink-muted)">{{ f.label }}</dt><dd style="margin:0;overflow-wrap:anywhere">{{ f.value }}</dd></div>
+                </sc-for>
+              </dl>
+            </div>
+          </section>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--border)">
+              <h2 style="margin:0;flex:1;font-size:15px;line-height:20px;font-weight:600">Consentimento (LGPD)</h2>
+              <x-import component-from-global-scope="Leadtogo.Badge" tone="{{ lgpd.tone }}" icon="{{ lgpd.icon }}" hint-size="110px,22px">{{ lgpd.status }}</x-import>
+            </div>
+            <dl style="margin:0;display:flex;flex-direction:column;gap:12px;padding:16px">
+              <div style="display:flex;justify-content:space-between;gap:12px"><dt style="font-size:13px;color:var(--ink-muted)">Base legal</dt><dd style="margin:0;font-weight:600;text-align:right">{{ lgpd.base }}</dd></div>
+              <div style="display:flex;justify-content:space-between;gap:12px"><dt style="font-size:13px;color:var(--ink-muted)">Origem</dt><dd style="margin:0;font-weight:600;text-align:right">{{ lgpd.origem }}</dd></div>
+              <div style="display:flex;justify-content:space-between;gap:12px"><dt style="font-size:13px;color:var(--ink-muted)">Registrado em</dt><dd style="margin:0;font-weight:600;font-variant-numeric:tabular-nums">{{ lgpd.data }}</dd></div>
+            </dl>
+            <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:10px">
+              <x-import component-from-global-scope="Leadtogo.Switch" label="Pediu para não receber contato" checked="{{ optout }}" onChange="{{ toggleOptout }}" hint-size="100%,24px"></x-import>
+              <span style="font-size:13px;color:var(--ink-muted)">Com isso ligado, o contato some das campanhas e o WhatsApp mostra um aviso antes de abrir.</span>
+            </div>
+          </section>
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600">Última interação</h2></div>
+            <div style="padding:16px">
+              <sc-if value="{{ c.ultima }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:8px"><x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ c.ultima.type }}" hint-size="28px,28px"></x-import>{{ ultimaText }}</span></sc-if>
+              <sc-if value="{{ semUltima }}" hint-placeholder-val="{{ false }}"><span style="color:var(--ink-muted)">Nenhuma atividade registrada.</span></sc-if>
+            </div>
+          </section>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ t.atividades }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="flex:1;font-size:13px;color:var(--ink-muted)">Atividades em que {{ firstName }} participa, em todas as empresas.</span>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" onClick="{{ novaAtv }}" hint-size="140px,36px">Nova atividade</x-import>
+      </div>
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;max-width:880px">
+        <x-import component-from-global-scope="Leadtogo.ActivityTimeline" items="{{ atividades }}" hint-size="100%,320px"></x-import>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ t.oportunidades }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <sc-for list="{{ ops }}" as="o" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:{{ L.opCols }};gap:8px 16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:600">{{ o.title }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ o.sub }}</span></div>
+            <div><x-import component-from-global-scope="Leadtogo.StatusPill" status="{{ o.status }}" hint-size="100px,22px"></x-import></div>
+            <span style="font-weight:600;font-variant-numeric:tabular-nums;text-align:{{ L.opAlign }}">{{ o.valor }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noOps }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.EmptyState" icon="handshake" title="Sem oportunidades" description="Este contato ainda não participa de nenhuma oportunidade." hint-size="100%,180px"></x-import></sc-if>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ vinc }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeVinc }}" style="position:fixed;inset:0;z-index:1300;background:var(--overlay);display:flex;align-items:{{ L.dlgAlign }};justify-content:center;padding:{{ L.dlgPad }}">
+      <div onClick="{{ stop }}" data-density="{{ L.density }}" style="width:{{ L.dlgW }};max-height:{{ L.dlgMaxH }};overflow:auto">
+        <x-import component-from-global-scope="Leadtogo.Dialog" title="Vincular a outra empresa" description="{{ vincDesc }}" onClose="{{ closeVinc }}" footer="{{ vincFooter }}" hint-size="100%,360px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <x-import component-from-global-scope="Leadtogo.Select" label="Empresa" required="{{ true }}" placeholder="Selecione a empresa" options="{{ empOpts }}" value="{{ vEmp }}" onChange="{{ setVEmp }}" error="{{ vErr }}" hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.TextField" label="Cargo nesta empresa" placeholder="Ex.: Consultor técnico" value="{{ vCargo }}" onChange="{{ setVCargo }}" hint-size="100%,60px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Switch" label="Tornar esta a empresa principal" checked="{{ vPrincipal }}" onChange="{{ togVPrincipal }}" hint-size="100%,24px"></x-import>
+          </div>
+        </x-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'resumo', vincs: null, menu: null, vinc: false, vEmp: '', vCargo: '', vPrincipal: false, vTried: false, optout: null, cid: null };
+  componentDidMount() { if (!window.LTD) this._w = setInterval(() => { if (window.LTD) { clearInterval(this._w); this.forceUpdate(); } }, 50); }
+  componentDidUpdate(pp) { if (pp.contatoId !== this.props.contatoId) this.setState({ tab: 'resumo', vincs: null, optout: null, menu: null }); }
+  renderVals() {
+    const D = window.LTD || { contato: () => ({ name: '', empresas: [], tels: [], emails: [], lgpd: {} }), empresa: () => ({}), empresas: [] };
+    const m = !!this.props.mobile, st = this.state, LT = window.Leadtogo;
+    const go = this.props.go || (() => {}), notify = this.props.notify || (() => {});
+    const c = D.contato(this.props.contatoId || 'daniel');
+    const vincs = st.vincs || c.empresas;
+    const optout = st.optout === null ? !!(c.lgpd && c.lgpd.optout) : st.optout;
+    const pv = vincs.find(v => v.principal && v.ativo) || vincs[0] || {};
+    const pe = D.empresa(pv.id);
+    const tel = c.tels.find(t => t.principal) || c.tels[0] || { n: '' };
+    const setV = (fn) => this.setState({ vincs: fn(vincs.slice()), menu: null });
+    const vinculos = vincs.map((v, i) => {
+      const e = D.empresa(v.id);
+      const menu = [];
+      if (!v.principal && v.ativo) menu.push({ icon: 'star', label: 'Tornar principal', onSelect: () => { setV(a => a.map((x, j) => ({ ...x, principal: j === i }))); notify('Empresa principal alterada', e.fantasia); } });
+      menu.push(v.ativo ? { icon: 'ban', label: 'Marcar vínculo como inativo', onSelect: () => { setV(a => a.map((x, j) => j === i ? { ...x, ativo: false, principal: false } : x)); notify('Vínculo inativado', c.name + ' saiu de ' + e.fantasia + '. O histórico continua.'); } }
+                        : { icon: 'repeat', label: 'Reativar vínculo', onSelect: () => setV(a => a.map((x, j) => j === i ? { ...x, ativo: true } : x)) });
+      menu.push({ icon: 'building-2', label: 'Abrir empresa', onSelect: () => go('ficha', { empresaId: v.id }) });
+      return { fantasia: e.fantasia, sub: v.cargo + ' · ' + e.cidade + '/ES', principal: v.principal, status: v.ativo ? 'Ativo' : 'Inativo', tone: v.ativo ? 'success' : 'neutral', icon: v.ativo ? 'circle-check' : 'circle-pause',
+        nameColor: v.ativo ? 'var(--ink)' : 'var(--ink-muted)', bg: v.ativo ? 'transparent' : 'var(--surface-sunken)',
+        open: (ev) => { ev.preventDefault(); go('ficha', { empresaId: v.id }); },
+        menuOpen: st.menu === i, toggleMenu: () => this.setState({ menu: st.menu === i ? null : i }), menu };
+    });
+    const ops = D.oportunidades ? D.oportunidades.filter(o => vincs.some(v => v.id === o.empresaId)).slice(0, 4).map(o => ({ title: o.title, sub: o.company + ' · ' + ((D.fases.find(f => f.id === o.fase) || {}).title || ''), status: 'ativo', valor: 'R$ ' + o.value.toLocaleString('pt-BR') })) : [];
+    const first = c.name.split(' ')[0];
+    const atividades = c.ultima ? [
+      { type: c.ultima.type, title: c.id === 'daniel' ? 'Confirmar visita de amanhã' : 'Último contato', status: 'realizada', when: c.ultima.label, owner: 'Alessandro', note: c.id === 'daniel' ? 'Confirmou às 9h. Pediu para incluir o gerente de manutenção.' : undefined },
+      { type: 'visita', title: 'Visita de acompanhamento', status: 'pendente', when: 'Amanhã, 09:00', owner: 'Alessandro', importante: true },
+      { type: 'reuniao', title: 'Renovação do contrato 2026', status: 'realizada', when: '20/08', owner: 'Alessandro', note: 'Renovado por 12 meses com reajuste de 4,5%.' }
+    ] : [];
+    const ult = c.ultima;
+    const usados = vincs.map(v => v.id);
+    const addVinc = () => {
+      if (!st.vEmp) { this.setState({ vTried: true }); return; }
+      const e = D.empresa(st.vEmp);
+      const nv = { id: st.vEmp, cargo: st.vCargo.trim() || 'Sem cargo', principal: st.vPrincipal, ativo: true };
+      this.setState({ vincs: (st.vPrincipal ? vincs.map(x => ({ ...x, principal: false })) : vincs).concat([nv]), vinc: false });
+      notify('Contato vinculado', c.name + ' agora também está em ' + e.fantasia + '.');
+    };
+    const T = st.tab;
+    return {
+      mobile: m, desktop: !m, c, firstName: first, optout,
+      L: m ? { headPad: '16px 16px 0', pad: '16px', cols: '1fr', dl: '1fr', opCols: '1fr auto', opAlign: 'left', tabBleed: '-16px', tabPad: '8px', density: 'touch', dlgAlign: 'flex-end', dlgPad: '0', dlgW: '100%', dlgMaxH: '764px' }
+           : { headPad: '16px 24px 0', pad: '24px', cols: 'minmax(0,1.5fr) minmax(0,1fr)', dl: 'repeat(3, minmax(0,1fr))', opCols: 'minmax(0,1fr) 130px 140px', opAlign: 'right', tabBleed: '0', tabPad: '0', density: 'default', dlgAlign: 'center', dlgPad: '24px', dlgW: '480px', dlgMaxH: 'calc(100vh - 48px)' },
+      principalLine: pv.cargo ? pv.cargo + ' na ' + pe.fantasia + (vincs.length > 1 ? ' · ' + vincs.length + ' empresas' : '') : '',
+      tabs: [{ value: 'resumo', label: 'Resumo' }, { value: 'atividades', label: 'Atividades', count: atividades.length }, { value: 'oportunidades', label: 'Oportunidades', count: ops.length }],
+      tab: T, setTab: (v) => this.setState({ tab: v }), t: { resumo: T === 'resumo', atividades: T === 'atividades', oportunidades: T === 'oportunidades' },
+      vinculos, tels: c.tels, emails: c.emails, noEmail: c.emails.length === 0,
+      campos: [{ label: 'Papel na decisão', value: c.papel }, { label: 'Aniversário', value: c.aniversario || 'Não informado' }, { label: 'LinkedIn', value: c.linkedin || 'Não informado' }],
+      lgpd: { ...c.lgpd, status: optout ? 'Opt-out' : 'Pode contatar', tone: optout ? 'warning' : 'success', icon: optout ? 'ban' : 'circle-check' },
+      toggleOptout: () => { this.setState({ optout: !optout }); notify(optout ? 'Contato liberado' : 'Opt-out registrado', 'Data e usuário ficam no histórico.', 'info'); },
+      ultimaText: ult ? ult.label + (ult.dias ? ' · há ' + ult.dias + (ult.dias === 1 ? ' dia' : ' dias') : '') : '', semUltima: !ult,
+      atividades, ops, noOps: ops.length === 0,
+      quick: [{ label: 'Ligar', icon: 'phone', color: 'var(--tag-blue-fg)', onClick: () => notify('Ligando para ' + c.name, tel.n, 'info') }, { label: 'WhatsApp', icon: 'message-circle', color: 'var(--tag-green-fg)', onClick: () => notify('Abrindo o WhatsApp', tel.n, 'info') }, { label: 'E-mail', icon: 'mail', color: 'var(--tag-indigo-fg)', onClick: () => notify('Abrindo o e-mail', c.emails[0] ? c.emails[0].e : 'Sem e-mail', 'info') }, { label: 'Vincular', icon: 'building-2', color: 'var(--ink-muted)', onClick: () => this.setState({ vinc: true, vEmp: '', vCargo: '', vPrincipal: false, vTried: false }) }],
+      call: () => notify('Ligando para ' + c.name, tel.n, 'info'),
+      wpp: () => optout ? notify('Contato pediu para não ser contatado', 'Confirme antes de enviar mensagem.', 'warning') : notify('Abrindo o WhatsApp', c.name + ' · ' + tel.n, 'info'),
+      mail: () => notify('Abrindo o e-mail', c.emails[0] ? c.emails[0].e : 'Sem e-mail', 'info'),
+      novaAtv: () => this.props.registrar && this.props.registrar(pv.id),
+      goLista: (e) => { e.preventDefault(); go('contatos'); },
+      vinc: st.vinc, openVinc: () => this.setState({ vinc: true, vEmp: '', vCargo: '', vPrincipal: false, vTried: false }), closeVinc: () => this.setState({ vinc: false }), stop: (e) => e.stopPropagation(),
+      vincDesc: c.name + ' · o cargo vale só para esta empresa',
+      empOpts: D.empresas.filter(e => !usados.includes(e.id)).map(e => ({ value: e.id, label: e.fantasia + ' · ' + e.cidade })),
+      vEmp: st.vEmp, setVEmp: (e) => this.setState({ vEmp: e.target.value }), vErr: st.vTried && !st.vEmp ? 'Escolha a empresa.' : undefined,
+      vCargo: st.vCargo, setVCargo: (e) => this.setState({ vCargo: e.target.value }), vPrincipal: st.vPrincipal, togVPrincipal: () => this.setState({ vPrincipal: !st.vPrincipal }),
+      vincFooter: LT && st.vinc ? React.createElement(React.Fragment, null, React.createElement(LT.Button, { variant: 'ghost', onClick: () => this.setState({ vinc: false }) }, 'Cancelar'), React.createElement(LT.Button, { variant: 'primary', onClick: addVinc }, 'Vincular contato')) : null
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script></helmet>
+<div style="display:flex;flex-direction:column;min-height:100%">
+  <div data-density="{{ L.density }}" style="padding:{{ L.headPad }};display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><h1 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.015em">Oportunidades</h1></sc-if>
+      <div style="width:{{ L.funilW }}"><x-import component-from-global-scope="Leadtogo.Select" aria-label="Funil" options="{{ funis }}" defaultValue="Vendas novas" hint-size="100%,36px"></x-import></div>
+      <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Visualização" options="{{ viewOptions }}" value="{{ view }}" onChange="{{ setView }}" hint-size="180px,32px"></x-import>
+      <span style="flex:1"></span>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="width:180px"><x-import component-from-global-scope="Leadtogo.Select" aria-label="Responsável" options="{{ respOpts }}" value="{{ resp }}" onChange="{{ setResp }}" hint-size="180px,36px"></x-import></div>
+      </sc-if>
+      <x-import component-from-global-scope="Leadtogo.Button" icon="clock" onClick="{{ toggleSusp }}" hint-size="130px,36px">{{ suspLabel }}</x-import>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" hint-size="170px,36px">Nova oportunidade</x-import>
+      </sc-if>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-muted);font-variant-numeric:tabular-nums">
+      <span><b style="color:var(--ink)">{{ sum.n }}</b> ativas</span><span>Total <b style="color:var(--ink)">{{ sum.total }}</b></span><span>Mensal <b style="color:var(--ink)">{{ sum.mrr }}</b></span><span>Ponderado <b style="color:var(--ink)">{{ sum.pond }}</b></span>
+    </div>
+    <sc-if value="{{ showSusp }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;display:flex;align-items:center;gap:8px"><x-import component-from-global-scope="Leadtogo.StatusPill" status="suspenso" hint-size="90px,22px"></x-import><span style="flex:1"></span><span style="font-size:13px;font-weight:400;color:var(--ink-muted)">Fora do quadro até a retomada</span></div>
+        <sc-for list="{{ suspensas }}" as="o" hint-placeholder-count="2">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div style="flex:1;min-width:180px;display:flex;flex-direction:column"><span style="font-weight:600">{{ o.title }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ o.line }}</span></div>
+            <span style="font-size:13px;color:var(--ink-muted)">Retomar em {{ o.retomar }}</span>
+            <x-import component-from-global-scope="Leadtogo.Button" size="sm" onClick="{{ o.reabrir }}" hint-size="80px,28px">Reabrir</x-import>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ kanbanDesk }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;display:flex;gap:12px;padding:0 24px 16px;overflow-x:auto;align-items:flex-start">
+      <sc-for list="{{ cols }}" as="c" hint-placeholder-count="4">
+        <div onDragOver="{{ c.over }}" onDrop="{{ c.drop }}" onDragLeave="{{ c.leave }}" style="flex-shrink:0;border-radius:12px;outline:2px dashed {{ c.outline }};outline-offset:-2px">
+          <x-import component-from-global-scope="Leadtogo.KanbanColumn" title="{{ c.title }}" color="{{ c.color }}" count="{{ c.count }}" total="{{ c.total }}" onAdd="{{ c.add }}" addLabel="Nova oportunidade" hint-size="296px,520px">
+            <sc-for list="{{ c.cards }}" as="d" hint-placeholder-count="2">
+              <div draggable="true" onDragStart="{{ d.dragStart }}" onDragEnd="{{ dragEnd }}" onClick="{{ d.click }}" style="position:relative;cursor:grab;opacity:{{ d.opacity }}">
+                <x-import component-from-global-scope="Leadtogo.DealCard" title="{{ d.title }}" company="{{ d.company }}" value="{{ d.value }}" mrr="{{ d.mrr }}" owner="{{ d.owner }}" due="{{ d.due }}" dueState="{{ d.dueState }}" next="{{ d.next }}" stale="{{ d.stale }}" hint-size="100%,150px"></x-import>
+                <sc-if value="{{ d.menuOpen }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ stop }}" style="position:absolute;top:100%;left:8px;right:8px;z-index:1000;margin-top:4px;box-shadow:var(--shadow-md);border-radius:8px;cursor:default"><x-import component-from-global-scope="Leadtogo.Menu" items="{{ d.menu }}" label="Ações da oportunidade" hint-size="100%,300px"></x-import></div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </x-import>
+        </div>
+      </sc-for>
+    </div>
+    <div style="position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 24px;background:var(--surface);border-top:1px solid var(--border)">
+      <sc-for list="{{ zones }}" as="z" hint-placeholder-count="4">
+        <div onDragOver="{{ z.over }}" onDragLeave="{{ z.leave }}" onDrop="{{ z.drop }}" style="height:52px;display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed {{ z.border }};border-radius:8px;background:{{ z.bg }};color:{{ z.color }};font-weight:600">
+          <x-import component-from-global-scope="Leadtogo.Icon" name="{{ z.icon }}" hint-size="16px,16px"></x-import>{{ z.label }}
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ kanbanMobile }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:0 16px 96px">
+      <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px">
+        <sc-for list="{{ cols }}" as="c" hint-placeholder-count="4">
+          <button type="button" onClick="{{ c.pick }}" style="flex-shrink:0;display:flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:9999px;border:1px solid {{ c.pBorder }};background:{{ c.pBg }};color:{{ c.pColor }};font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer">
+            <span style="width:8px;height:8px;border-radius:9999px;background:{{ c.dot }}"></span>{{ c.title }}<span style="font-weight:500;color:var(--ink-muted)">{{ c.count }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--ink-muted);font-variant-numeric:tabular-nums"><span>{{ mCol.label }}</span><b style="color:var(--ink)">{{ mCol.totalFmt }}</b></div>
+      <sc-for list="{{ mCol.cards }}" as="d" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div onClick="{{ d.click }}" style="cursor:pointer">
+            <x-import component-from-global-scope="Leadtogo.DealCard" title="{{ d.title }}" company="{{ d.company }}" value="{{ d.value }}" mrr="{{ d.mrr }}" owner="{{ d.owner }}" due="{{ d.due }}" dueState="{{ d.dueState }}" next="{{ d.next }}" stale="{{ d.stale }}" hint-size="100%,150px"></x-import>
+          </div>
+          <sc-if value="{{ d.menuOpen }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="Leadtogo.Menu" items="{{ d.menu }}" label="Ações da oportunidade" hint-size="100%,300px"></x-import>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ lista }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:0 {{ L.listPad }} 24px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;line-height:20px">
+          <thead><tr style="background:var(--surface-sunken);text-align:left">
+            <sc-for list="{{ heads }}" as="h" hint-placeholder-count="9"><th style="height:36px;padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border);text-align:{{ h.align }}">{{ h.label }}</th></sc-for>
+          </tr></thead>
+          <tbody>
+            <sc-for list="{{ listRows }}" as="r" hint-placeholder-count="8">
+              <tr style-hover="background:var(--surface-hover)">
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border);min-width:160px"><div style="display:flex;flex-direction:column"><span style="font-weight:600">{{ r.title }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ r.company }}</span></div></td>
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border)"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:9999px;background:{{ r.dot }}"></span>{{ r.faseNome }}</span></td>
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border)"><x-import component-from-global-scope="Leadtogo.StatusPill" status="{{ r.status }}" hint-size="90px,22px"></x-import></td>
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">{{ r.valorFmt }}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap">{{ r.mrrFmt }}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums">{{ r.probFmt }}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;color:{{ r.dueColor }};font-weight:{{ r.dueWeight }}">{{ r.due }}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border)"><span style="display:inline-flex;align-items:center;gap:6px"><x-import component-from-global-scope="Leadtogo.Avatar" name="{{ r.owner }}" size="sm" hint-size="22px,22px"></x-import>{{ r.ownerShort }}</span></td>
+                <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;color:{{ r.nextColor }};font-weight:{{ r.nextWeight }}">{{ r.nextLabel }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ dlg }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDlg }}" style="position:fixed;inset:0;z-index:1300;background:var(--overlay);display:flex;align-items:{{ L.dlgAlign }};justify-content:center;padding:{{ L.dlgPad }}">
+      <div onClick="{{ stop }}" data-density="{{ L.dlgDensity }}" style="width:{{ L.dlgW }};max-height:{{ L.dlgMaxH }};overflow:auto;border-radius:{{ L.dlgRadius }}">
+        <x-import component-from-global-scope="Leadtogo.Dialog" title="Fechar oportunidade" description="{{ dlg.desc }}" onClose="{{ closeDlg }}" footer="{{ dlgFooter }}" hint-size="100%,520px">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div role="radiogroup" aria-label="Novo status" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <sc-for list="{{ statusOpts }}" as="s" hint-placeholder-count="4">
+                <button type="button" role="radio" aria-checked="{{ s.checked }}" onClick="{{ s.pick }}" style="display:flex;align-items:center;gap:10px;min-height:{{ L.optH }};padding:8px 12px;border:{{ s.borderW }} solid {{ s.border }};border-radius:8px;background:{{ s.bg }};font:inherit;color:var(--ink);cursor:pointer;text-align:left">
+                  <span style="color:{{ s.color }};display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ s.icon }}" size="{{ 18 }}" hint-size="18px,18px"></x-import></span>
+                  <span style="display:flex;flex-direction:column"><span style="font-weight:600">{{ s.label }}</span><span style="font-size:12px;line-height:16px;color:var(--ink-muted)">{{ s.sub }}</span></span>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ needMotivo }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="Leadtogo.Select" label="Motivo" required="{{ true }}" placeholder="Selecione o motivo" options="{{ motivoOpts }}" value="{{ motivo }}" onChange="{{ setMotivo }}" error="{{ motivoError }}" hint="{{ motivoHint }}" hint-size="100%,72px"></x-import>
+            </sc-if>
+            <sc-if value="{{ isSusp }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="Leadtogo.TextField" label="Retomar em" type="date" defaultValue="2026-11-09" hint="Cria uma atividade de retomada nesta data." hint-size="100%,72px"></x-import>
+            </sc-if>
+            <sc-if value="{{ isWin }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px;padding:12px;border-radius:8px;background:var(--success-soft)">
+                <div style="display:flex;justify-content:space-between;font-variant-numeric:tabular-nums"><span style="color:var(--ink-muted)">Valor total</span><b>{{ dlg.valorFmt }}</b></div>
+                <div style="display:flex;justify-content:space-between;font-variant-numeric:tabular-nums"><span style="color:var(--ink-muted)">MRR</span><b>{{ dlg.mrrFmt }}</b></div>
+                <x-import component-from-global-scope="Leadtogo.Switch" label="Mudar o Status da empresa para Cliente" defaultChecked="{{ true }}" hint-size="100%,24px"></x-import>
+              </div>
+            </sc-if>
+            <x-import component-from-global-scope="Leadtogo.TextField" label="Detalhe" multiline="{{ true }}" placeholder="O que pesou na decisão?" hint-size="100%,96px"></x-import>
+            <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)"><x-import component-from-global-scope="Leadtogo.Icon" name="flag" size="{{ 14 }}" hint-size="14px,14px"></x-import>Fica registrado que parou na fase {{ dlg.faseNome }}.</span>
+          </div>
+        </x-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { view: 'kanban', ops: null, menu: null, drag: null, over: null, dlg: null, status: 'conquistado', motivo: '', tried: false, mFase: 'proposta', resp: '', showSusp: false };
+  componentDidMount() { if (!window.LTD) this._w = setInterval(() => { if (window.LTD) { clearInterval(this._w); this.forceUpdate(); } }, 50); }
+  getOps() { return this.state.ops || ((window.LTD && window.LTD.oportunidades) || []).map(o => ({ ...o, status: 'ativo' })).concat([{ id: 's1', fase: 'proposta', title: 'Monitoramento de britadores', company: 'Granitos Itaguaçu', value: 22000, mrr: 900, owner: 'Rafael Bertoldi', due: '30/11', status: 'suspenso', motivo: 'Parada da fábrica', retomar: '09/11/2026', prob: 50, next: false }]); }
+  move(id, fase) { const ops = this.getOps().map(o => o.id === id ? { ...o, fase, stale: undefined } : o); this.setState({ ops, menu: null }); const D = window.LTD; const f = D.fases.find(x => x.id === fase); this.props.notify && this.props.notify('Oportunidade movida', 'Agora em ' + f.title + '. Probabilidade sugerida: ' + f.prob + '%.'); }
+  openClose(id, status) { this.setState({ dlg: id, status: status || 'conquistado', motivo: '', tried: false, menu: null, drag: null, over: null }); }
+  confirm = () => {
+    const st = this.state;
+    if (st.status !== 'conquistado' && !st.motivo) { this.setState({ tried: true }); return; }
+    const o = this.getOps().find(x => x.id === st.dlg);
+    const ops = this.getOps().map(x => x.id === st.dlg ? { ...x, status: st.status, motivo: st.motivo, retomar: '09/11/2026' } : x);
+    this.setState({ ops, dlg: null });
+    const T = { conquistado: ['Oportunidade conquistada', o.company + ' agora tem Status Cliente.'], perdido: ['Marcada como perdida', 'Motivo: ' + st.motivo + '.'], cancelado: ['Marcada como cancelada', 'Motivo: ' + st.motivo + '.'], suspenso: ['Oportunidade suspensa', 'Retomada agendada para 09/11/2026.'] };
+    this.props.notify && this.props.notify(T[st.status][0], T[st.status][1], st.status === 'conquistado' ? 'success' : 'info');
+  };
+  renderVals() {
+    const D = window.LTD || { fases: [], funis: [], motivos: {}, vendedores: [] };
+    const m = !!this.props.mobile, st = this.state, LT = window.Leadtogo;
+    const brl = (v) => 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR');
+    const all = this.getOps();
+    const ativos = all.filter(o => o.status === 'ativo' && (!st.resp || o.owner === st.resp));
+    const faseNome = (id) => (D.fases.find(f => f.id === id) || {}).title || '';
+    const stop = (e) => e.stopPropagation();
+    const card = (o) => ({
+      ...o, mrr: o.mrr || undefined, dueState: o.dueState || undefined, stale: o.stale || undefined, next: o.next === false ? false : o.next,
+      opacity: st.drag === o.id ? 0.4 : 1, menuOpen: st.menu === o.id,
+      dragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', o.id); } catch (x) {} this.setState({ drag: o.id, menu: null }); },
+      click: () => this.setState({ menu: st.menu === o.id ? null : o.id }),
+      menu: [{ heading: 'Mover para' }].concat(D.fases.filter(f => f.id !== o.fase).map(f => ({ icon: 'arrow-right', label: f.title, onSelect: () => this.move(o.id, f.id) })), [{ separator: true }, { heading: 'Fechar' },
+        { icon: 'circle-check', label: 'Marcar como conquistada', onSelect: () => this.openClose(o.id, 'conquistado') },
+        { icon: 'circle-x', label: 'Marcar como perdida', onSelect: () => this.openClose(o.id, 'perdido') },
+        { icon: 'ban', label: 'Marcar como cancelada', onSelect: () => this.openClose(o.id, 'cancelado') },
+        { icon: 'clock', label: 'Suspender', onSelect: () => this.openClose(o.id, 'suspenso') },
+        { separator: true }, { icon: 'building-2', label: 'Abrir empresa', onSelect: () => this.props.go && this.props.go('ficha', { empresaId: o.empresaId || 'usidantec' }) }])
+    });
+    const cols = D.fases.map(f => {
+      const ops = ativos.filter(o => o.fase === f.id); const total = ops.reduce((s, o) => s + o.value, 0); const on = m && st.mFase === f.id;
+      return { title: f.title, color: f.color, count: ops.length, total, totalFmt: brl(total), label: f.title + ' · ' + ops.length, dot: 'var(--tag-' + f.color + '-fg)', cards: ops.map(card),
+        outline: st.over === f.id ? 'var(--accent)' : 'transparent',
+        over: (e) => { e.preventDefault(); if (st.over !== f.id) this.setState({ over: f.id }); }, leave: () => {},
+        drop: (e) => { e.preventDefault(); const id = st.drag; this.setState({ drag: null, over: null }); if (id) { const o = all.find(x => x.id === id); if (o && o.fase !== f.id) this.move(id, f.id); } },
+        add: () => {}, pick: () => this.setState({ mFase: f.id, menu: null }),
+        pBorder: on ? 'var(--accent)' : 'var(--border)', pBg: on ? 'var(--surface-selected)' : 'var(--surface)', pColor: on ? 'var(--accent)' : 'var(--ink)' };
+    });
+    const ZI = { conquistado: ['Conquistado', 'circle-check', 'var(--success)', 'var(--success-soft)'], perdido: ['Perdido', 'circle-x', 'var(--danger)', 'var(--danger-soft)'], cancelado: ['Cancelado', 'ban', 'var(--ink-muted)', 'var(--surface-sunken)'], suspenso: ['Suspenso', 'clock', 'var(--warning)', 'var(--warning-soft)'] };
+    const zones = Object.keys(ZI).map(k => { const z = ZI[k], hot = st.over === 'z-' + k; return { label: z[0], icon: z[1], color: z[2], bg: hot ? z[3] : 'transparent', border: hot ? z[2] : 'var(--border-strong)',
+      over: (e) => { e.preventDefault(); if (st.over !== 'z-' + k) this.setState({ over: 'z-' + k }); }, leave: () => this.setState({ over: null }),
+      drop: (e) => { e.preventDefault(); if (st.drag) this.openClose(st.drag, k); } }; });
+    const dOp = all.find(o => o.id === st.dlg);
+    const SO = { conquistado: ['Conquistado', 'circle-check', 'var(--success)', 'Ganhou o negócio'], perdido: ['Perdido', 'circle-x', 'var(--danger)', 'Cliente não fechou'], cancelado: ['Cancelado', 'ban', 'var(--ink-muted)', 'Não deveria seguir'], suspenso: ['Suspenso', 'clock', 'var(--warning)', 'Pausa com data de volta'] };
+    const statusOpts = Object.keys(SO).map(k => { const on = st.status === k; return { label: SO[k][0], icon: SO[k][1], color: SO[k][2], sub: SO[k][3], checked: String(on), border: on ? 'var(--accent)' : 'var(--border)', borderW: on ? '2px' : '1px', bg: on ? 'var(--surface-selected)' : 'var(--surface)', pick: () => this.setState({ status: k, motivo: '', tried: false }) }; });
+    const VERB = { conquistado: 'Marcar como conquistada', perdido: 'Marcar como perdida', cancelado: 'Marcar como cancelada', suspenso: 'Suspender oportunidade' };
+    const dlgFooter = LT && st.dlg ? React.createElement(React.Fragment, null,
+      React.createElement(LT.Button, { variant: 'ghost', onClick: () => this.setState({ dlg: null }) }, 'Cancelar'),
+      React.createElement(LT.Button, { variant: st.status === 'perdido' || st.status === 'cancelado' ? 'danger' : 'primary', onClick: this.confirm }, VERB[st.status])) : null;
+    const mc = cols.find(c => D.fases.find(f => f.title === c.title && f.id === st.mFase)) || cols[0] || { cards: [] };
+    const susp = all.filter(o => o.status === 'suspenso');
+    const listRows = all.filter(o => o.status !== 'ativo' || !st.resp || o.owner === st.resp).map(o => ({ ...o, faseNome: faseNome(o.fase), dot: 'var(--tag-' + ((D.fases.find(f => f.id === o.fase) || {}).color || 'gray') + '-fg)', valorFmt: brl(o.value), mrrFmt: o.mrr ? brl(o.mrr) + '/mês' : '—', probFmt: o.prob + '%',
+      dueColor: o.dueState === 'late' ? 'var(--danger)' : 'var(--ink)', dueWeight: o.dueState === 'late' ? 600 : 400, ownerShort: o.owner.split(' ')[0],
+      nextLabel: o.next ? o.next.label : 'Sem próxima atividade', nextColor: o.next ? 'var(--ink)' : 'var(--warning)', nextWeight: o.next ? 400 : 600 }));
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { density: 'touch', headPad: '16px', funilW: '100%', listPad: '16px', dlgAlign: 'flex-end', dlgPad: '0', dlgW: '100%', dlgMaxH: '764px', dlgRadius: '16px 16px 0 0', dlgDensity: 'touch', optH: '56px' }
+           : { density: 'default', headPad: '20px 24px 16px', funilW: '180px', listPad: '24px', dlgAlign: 'center', dlgPad: '24px', dlgW: '520px', dlgMaxH: 'calc(100vh - 48px)', dlgRadius: '12px', dlgDensity: 'default', optH: '52px' },
+      funis: D.funis, viewOptions: [{ value: 'kanban', label: 'Kanban', icon: 'square-kanban' }, { value: 'lista', label: 'Lista', icon: 'list' }],
+      view: st.view, setView: (v) => this.setState({ view: v, menu: null }),
+      respOpts: [{ value: '', label: 'Todos os responsáveis' }].concat(D.vendedores.map(v => ({ value: v, label: v }))), resp: st.resp, setResp: (e) => this.setState({ resp: e.target.value }),
+      suspLabel: 'Suspensas · ' + susp.length, toggleSusp: () => this.setState({ showSusp: !st.showSusp }), showSusp: st.showSusp && susp.length > 0,
+      suspensas: susp.map(o => ({ ...o, faseNome: faseNome(o.fase), motivo: o.motivo || 'Sem motivo', line: o.company + ' · parou em ' + faseNome(o.fase) + ' · ' + (o.motivo || 'Sem motivo'), retomar: o.retomar || '—', reabrir: () => { this.setState({ ops: all.map(x => x.id === o.id ? { ...x, status: 'ativo' } : x) }); this.props.notify && this.props.notify('Oportunidade reaberta', o.title + ' voltou para ' + faseNome(o.fase) + '.'); } })),
+      sum: { n: ativos.length, total: brl(ativos.reduce((s, o) => s + o.value, 0)), mrr: brl(ativos.reduce((s, o) => s + (o.mrr || 0), 0)) + '/mês', pond: brl(ativos.reduce((s, o) => s + o.value * o.prob / 100, 0)) },
+      kanbanDesk: !m && st.view === 'kanban', kanbanMobile: m && st.view === 'kanban', lista: st.view === 'lista',
+      cols, zones, mCol: mc, dragEnd: () => this.setState({ drag: null, over: null }), stop,
+      heads: [['Oportunidade', 'left'], ['Fase', 'left'], ['Status', 'left'], ['Total', 'right'], ['Mensal', 'right'], ['Prob.', 'right'], ['Previsão', 'left'], ['Responsável', 'left'], ['Próxima atividade', 'left']].map(h => ({ label: h[0], align: h[1] })),
+      listRows,
+      dlg: dOp ? { desc: dOp.title + ' · ' + dOp.company, faseNome: faseNome(dOp.fase), valorFmt: brl(dOp.value), mrrFmt: dOp.mrr ? brl(dOp.mrr) + '/mês' : '—' } : false,
+      closeDlg: () => this.setState({ dlg: null }), dlgFooter, statusOpts,
+      needMotivo: st.status !== 'conquistado', isSusp: st.status === 'suspenso', isWin: st.status === 'conquistado',
+      motivoOpts: D.motivos[st.status] || [], motivo: st.motivo, setMotivo: (e) => this.setState({ motivo: e.target.value }),
+      motivoError: st.tried && !st.motivo ? 'Escolha um motivo para ' + (st.status === 'suspenso' ? 'suspender.' : 'fechar.') : undefined,
+      motivoHint: 'Obrigatório para ' + (SO[st.status] || SO.perdido)[0] + '.'
+    };
+  }
+}
+</script>
+</body>
+</html>

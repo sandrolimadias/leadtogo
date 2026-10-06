@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script></helmet>
+<div style="min-height:100%;height:100%;display:flex;background:var(--bg);color:var(--ink)">
+  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+    <aside style="flex:0 0 44%;display:flex;flex-direction:column;justify-content:space-between;padding:48px;background:var(--surface-sunken);border-right:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><img src="ds/logos/leadtogo-mark-dark.svg" alt="" style="width:32px;height:32px"></sc-if><sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}"><img src="ds/logos/leadtogo-mark.svg" alt="" style="width:32px;height:32px"></sc-if>
+        <span style="font-size:22px;font-weight:700">Leadtogo</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:440px">
+        <h1 style="margin:0;font-size:36px;line-height:42px;font-weight:600;letter-spacing:-0.02em;text-wrap:pretty">A carteira inteira, com a próxima visita sempre marcada.</h1>
+        <p style="margin:0;font-size:16px;line-height:24px;color:var(--ink-muted);text-wrap:pretty">Empresas, contatos, atividades e oportunidades num só lugar, em várias empresas com o mesmo login.</p>
+      </div>
+      <span style="font-size:13px;color:var(--ink-muted)">Dados protegidos conforme a LGPD.</span>
+    </aside>
+  </sc-if>
+
+  <main style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:{{ L.justify }};padding:{{ L.pad }};overflow:auto">
+    <div data-density="{{ L.density }}" style="width:100%;max-width:{{ L.maxW }};display:flex;flex-direction:column;gap:20px">
+      <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><img src="ds/logos/leadtogo-mark-dark.svg" alt="" style="width:28px;height:28px"></sc-if><sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}"><img src="ds/logos/leadtogo-mark.svg" alt="" style="width:28px;height:28px"></sc-if>
+          <span style="font-size:19px;font-weight:700">Leadtogo</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ v.login }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Entrar</h2><span style="color:var(--ink-muted)">Use o e-mail do trabalho.</span></div>
+        <x-import component-from-global-scope="Leadtogo.Button" icon="globe" block="{{ true }}" onClick="{{ google }}" size="{{ L.btn }}" hint-size="100%,40px">Entrar com Google</x-import>
+        <div style="display:flex;align-items:center;gap:12px;color:var(--ink-muted);font-size:13px"><span style="flex:1;height:1px;background:var(--border)"></span>ou<span style="flex:1;height:1px;background:var(--border)"></span></div>
+        <x-import component-from-global-scope="Leadtogo.TextField" label="E-mail" type="email" autoComplete="email" value="{{ email }}" onChange="{{ setEmail }}" error="{{ emailErr }}" hint-size="100%,60px"></x-import>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Senha" type="{{ senhaType }}" autoComplete="current-password" value="{{ senha }}" onChange="{{ setSenha }}" onKeyDown="{{ enterLogin }}" error="{{ senhaErr }}" suffix="{{ olhoBtn }}" hint-size="100%,60px"></x-import>
+          <a href="#" onClick="{{ irRecuperar }}" style="align-self:flex-end;font-size:13px;font-weight:600">Esqueci a senha</a>
+        </div>
+        <sc-if value="{{ falhou }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Alert" tone="danger" title="E-mail ou senha não conferem" hint-size="100%,60px">Confira e tente de novo. Depois de 5 tentativas, o acesso trava por 15 minutos.</x-import></sc-if>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" loading="{{ carregando }}" onClick="{{ entrar }}" hint-size="100%,40px">Entrar</x-import>
+        <span style="font-size:14px;color:var(--ink-muted);text-align:center">Ainda não usa o Leadtogo? <a href="#" onClick="{{ irCadastro }}" style="font-weight:600">Criar conta</a></span>
+      </sc-if>
+
+      <sc-if value="{{ v.doisfa }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Verificação em duas etapas</h2><span style="color:var(--ink-muted)">Digite o código de 6 números do seu app autenticador.</span></div>
+        <div role="group" aria-label="Código de verificação" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+          <sc-for list="{{ digitos }}" as="d" hint-placeholder-count="6">
+            <input inputmode="numeric" maxlength="1" aria-label="{{ d.aria }}" value="{{ d.v }}" onChange="{{ d.set }}" onKeyDown="{{ d.key }}" id="{{ d.id }}" style="height:{{ L.codeH }};width:100%;text-align:center;font-family:var(--font-mono);font-size:22px;font-weight:600;border:1px solid {{ d.border }};border-radius:6px;background:var(--surface);color:var(--ink);outline-color:var(--focus-ring)">
+          </sc-for>
+        </div>
+        <sc-if value="{{ codigoErr }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--danger)"><x-import component-from-global-scope="Leadtogo.Icon" name="circle-alert" size="{{ 14 }}" hint-size="14px,14px"></x-import>Código incorreto ou vencido.</span></sc-if>
+        <x-import component-from-global-scope="Leadtogo.Checkbox" label="Confiar neste aparelho por 30 dias" defaultChecked="{{ true }}" hint-size="100%,22px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" loading="{{ carregando }}" onClick="{{ verificar }}" hint-size="100%,40px">Verificar</x-import>
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px">
+          <a href="#" onClick="{{ usarBackup }}" style="font-weight:600">Usar código de recuperação</a>
+          <a href="#" onClick="{{ irLogin }}" style="color:var(--ink-muted)">Voltar ao login</a>
+        </div>
+        <span style="font-size:13px;color:var(--ink-muted)">Para o protótipo, use 123456.</span>
+      </sc-if>
+
+      <sc-if value="{{ v.recuperar }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Recuperar senha</h2><span style="color:var(--ink-muted)">Enviamos um link para criar uma senha nova.</span></div>
+        <x-import component-from-global-scope="Leadtogo.TextField" label="E-mail" type="email" value="{{ email }}" onChange="{{ setEmail }}" error="{{ emailErr }}" hint-size="100%,60px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" loading="{{ carregando }}" onClick="{{ enviarLink }}" hint-size="100%,40px">Enviar link</x-import>
+        <a href="#" onClick="{{ irLogin }}" style="font-size:14px;color:var(--ink-muted);text-align:center">Voltar ao login</a>
+      </sc-if>
+
+      <sc-if value="{{ v.enviado }}" hint-placeholder-val="{{ false }}">
+        <span style="width:48px;height:48px;border-radius:9999px;background:var(--success-soft);color:var(--success);display:flex;align-items:center;justify-content:center"><x-import component-from-global-scope="Leadtogo.Icon" name="mail" size="{{ 22 }}" hint-size="22px,22px"></x-import></span>
+        <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Confira seu e-mail</h2><span style="color:var(--ink-muted)">Se {{ email }} tiver conta, o link chega em instantes. Ele vale por 1 hora.</span></div>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" onClick="{{ irNovaSenha }}" hint-size="100%,40px">Abrir o link (simulação)</x-import>
+        <a href="#" onClick="{{ enviarLink }}" style="font-size:14px;font-weight:600;text-align:center">Reenviar</a>
+      </sc-if>
+
+      <sc-if value="{{ v.novasenha }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Criar senha nova</h2><span style="color:var(--ink-muted)">{{ email }}</span></div>
+        <x-import component-from-global-scope="Leadtogo.TextField" label="Senha nova" type="password" value="{{ senha }}" onChange="{{ setSenha }}" hint-size="100%,60px"></x-import>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <sc-for list="{{ regras }}" as="r" hint-placeholder-count="3"><span style="display:flex;align-items:center;gap:6px;font-size:13px;color:{{ r.color }}"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ r.icon }}" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ r.label }}</span></sc-for>
+        </div>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" disabled="{{ senhaFraca }}" onClick="{{ salvarSenha }}" hint-size="100%,40px">Salvar e entrar</x-import>
+      </sc-if>
+
+      <sc-if value="{{ v.convite }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+          <span style="width:40px;height:40px;border-radius:8px;background:var(--tag-teal-bg);color:var(--tag-teal-fg);display:flex;align-items:center;justify-content:center;font-weight:700">DA</span>
+          <div style="flex:1;display:flex;flex-direction:column"><span style="font-weight:600">Dias Automação Industrial</span><span style="font-size:13px;color:var(--ink-muted)">Alessandro Dias convidou você como Vendedor</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Aceitar convite</h2><span style="color:var(--ink-muted)">mariana@diasautomacao.com.br</span></div>
+        <x-import component-from-global-scope="Leadtogo.TextField" label="Seu nome" required="{{ true }}" defaultValue="Mariana Gobbi" hint-size="100%,60px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.TextField" label="Crie uma senha" type="password" value="{{ senha }}" onChange="{{ setSenha }}" hint="Mínimo de 10 caracteres, com letra e número." hint-size="100%,72px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Checkbox" label="Li e aceito os termos de uso e a política de privacidade" checked="{{ termos }}" onChange="{{ togTermos }}" hint-size="100%,22px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" disabled="{{ conviteBloq }}" onClick="{{ aceitar }}" hint-size="100%,40px">Aceitar e entrar</x-import>
+        <x-import component-from-global-scope="Leadtogo.Button" icon="globe" block="{{ true }}" size="{{ L.btn }}" onClick="{{ aceitar }}" hint-size="100%,40px">Aceitar com Google</x-import>
+        <span style="font-size:13px;color:var(--ink-muted);text-align:center">Já tem conta no Leadtogo? Entre com ela e a empresa aparece no seu seletor.</span>
+      </sc-if>
+
+      <sc-if value="{{ v.cadastro }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:13px;color:var(--ink-muted)">{{ cadPasso }}</span>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"><sc-for list="{{ cadBars }}" as="b" hint-placeholder-count="3"><div style="height:4px;border-radius:9999px;background:{{ b }}"></div></sc-for></div>
+        </div>
+        <sc-if value="{{ c.conta }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Criar sua conta</h2><span style="color:var(--ink-muted)">Você será o administrador.</span></div>
+          <x-import component-from-global-scope="Leadtogo.Button" icon="globe" block="{{ true }}" size="{{ L.btn }}" onClick="{{ cadProx }}" hint-size="100%,40px">Continuar com Google</x-import>
+          <div style="display:flex;align-items:center;gap:12px;color:var(--ink-muted);font-size:13px"><span style="flex:1;height:1px;background:var(--border)"></span>ou<span style="flex:1;height:1px;background:var(--border)"></span></div>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Seu nome" defaultValue="Alessandro Dias" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="E-mail do trabalho" type="email" defaultValue="alessandro@diasautomacao.com.br" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Senha" type="password" defaultValue="segredo2026x" hint="Mínimo de 10 caracteres, com letra e número." hint-size="100%,72px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Checkbox" label="Li e aceito os termos de uso e a política de privacidade" defaultChecked="{{ true }}" hint-size="100%,22px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" onClick="{{ cadProx }}" hint-size="100%,40px">Continuar</x-import>
+        </sc-if>
+        <sc-if value="{{ c.empresa }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Sua primeira empresa</h2><span style="color:var(--ink-muted)">A empresa que vende. Dá para criar outras depois.</span></div>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="CNPJ" mono="{{ true }}" value="{{ cnpj }}" onChange="{{ setCnpj }}" suffix="{{ consultarBtn }}" hint="Preenche os dados pela Receita." hint-size="100%,72px"></x-import>
+          <sc-if value="{{ empOk }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="Leadtogo.Alert" tone="success" title="Dados preenchidos pela Receita" hint-size="100%,60px">Situação Ativa · Serra/ES. Confira o nome de exibição.</x-import>
+            <x-import component-from-global-scope="Leadtogo.TextField" label="Razão social" defaultValue="Dias Automação Industrial Ltda" readOnly="{{ true }}" hint-size="100%,60px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.TextField" label="Nome de exibição" defaultValue="Dias Automação Industrial" hint-size="100%,60px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Select" label="Segmento principal" options="{{ segmentos }}" defaultValue="Automação industrial" hint-size="100%,60px"></x-import>
+          </sc-if>
+          <div style="display:flex;gap:8px">
+            <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="{{ L.btn }}" onClick="{{ cadVoltar }}" hint-size="90px,40px">Voltar</x-import>
+            <div style="flex:1"><x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" disabled="{{ empBloq }}" onClick="{{ cadProx }}" hint-size="100%,40px">Criar empresa</x-import></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ c.pronto }}" hint-placeholder-val="{{ false }}">
+          <span style="width:48px;height:48px;border-radius:9999px;background:var(--success-soft);color:var(--success);display:flex;align-items:center;justify-content:center"><x-import component-from-global-scope="Leadtogo.Icon" name="circle-check" size="{{ 22 }}" hint-size="22px,22px"></x-import></span>
+          <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:24px;line-height:30px;font-weight:600">Tudo pronto</h2><span style="color:var(--ink-muted)">Já criamos os cadastros padrão. Ajuste em Configurações quando quiser.</span></div>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ padroes }}" as="p" hint-placeholder-count="6">
+              <li style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--success);display:flex;padding-top:2px"><x-import component-from-global-scope="Leadtogo.Icon" name="check" size="{{ 14 }}" hint-size="14px,14px"></x-import></span><span><b>{{ p.t }}</b> <span style="color:var(--ink-muted)">{{ p.d }}</span></span></li>
+            </sc-for>
+          </ul>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="primary" block="{{ true }}" size="{{ L.btn }}" onClick="{{ entrarApp }}" hint-size="100%,40px">Ir para o Dashboard</x-import>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" block="{{ true }}" size="{{ L.btn }}" icon="mail" onClick="{{ entrarApp }}" hint-size="100%,40px">Convidar a equipe depois</x-import>
+        </sc-if>
+      </sc-if>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-top:16px;margin-top:8px;border-top:1px dashed var(--border);font-size:12px;color:var(--ink-subtle)">
+        <span>Protótipo:</span>
+        <sc-for list="{{ protoLinks }}" as="p" hint-placeholder-count="5"><a href="#" onClick="{{ p.go }}" style="color:var(--ink-muted);text-decoration:underline">{{ p.label }}</a></sc-for>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { view: 'login', email: 'alessandro@diasautomacao.com.br', senha: '', ver: false, tried: false, falhou: false, carregando: false, cod: ['', '', '', '', '', ''], codErr: false, termos: false, cad: 0, cnpj: '30.448.019/0001-62', emp: 'idle' };
+  componentDidMount() { if (this.props.inicio) this.setState({ view: this.props.inicio }); }
+  wait(fn, ms) { this.setState({ carregando: true }); setTimeout(() => { this.setState({ carregando: false }); fn(); }, ms || 700); }
+  renderVals() {
+    const m = !!this.props.mobile, st = this.state, LT = window.Leadtogo;
+    const enter = () => this.props.onEnter && this.props.onEnter();
+    const notify = this.props.notify || (() => {});
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const to = (v) => (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ view: v, tried: false, falhou: false, codErr: false, cod: ['', '', '', '', '', ''] }); };
+    const okEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(st.email);
+    const entrar = () => { this.setState({ tried: true }); if (!okEmail || !st.senha) return; this.wait(() => { if (st.senha.length < 6) this.setState({ falhou: true }); else to('doisfa')(); }); };
+    const digitos = st.cod.map((v, i) => ({ v, id: 'cod' + i, aria: 'Dígito ' + (i + 1), border: st.codErr ? 'var(--danger)' : 'var(--border-strong)',
+      set: (e) => { const d = e.target.value.replace(/\D/g, '').slice(-1); const c = st.cod.slice(); c[i] = d; this.setState({ cod: c, codErr: false }); if (d && i < 5) { const n = document.getElementById('cod' + (i + 1)); n && n.focus(); } },
+      key: (e) => { if (e.key === 'Backspace' && !st.cod[i] && i > 0) { const n = document.getElementById('cod' + (i - 1)); n && n.focus(); } if (e.key === 'Enter') verificar(); } }));
+    const verificar = () => this.wait(() => { if (st.cod.join('') === '123456') enter(); else this.setState({ codErr: true }); }, 500);
+    const s = st.senha;
+    const regras = [['Pelo menos 10 caracteres', s.length >= 10], ['Uma letra', /[a-zA-Z]/.test(s)], ['Um número', /\d/.test(s)]].map(r => ({ label: r[0], icon: r[1] ? 'circle-check' : 'circle-x', color: r[1] ? 'var(--success)' : 'var(--ink-muted)' }));
+    const fraca = !(s.length >= 10 && /[a-zA-Z]/.test(s) && /\d/.test(s));
+    const consultando = st.emp === 'loading';
+    const V = st.view;
+    return {
+      mobile: m, desktop: !m, isDark: dark, isLight: !dark,
+      L: m ? { justify: 'flex-start', pad: '24px 20px', density: 'touch', maxW: '100%', btn: 'lg', codeH: '52px' } : { justify: 'center', pad: '48px', density: 'default', maxW: '400px', btn: 'lg', codeH: '52px' },
+      v: { login: V === 'login', doisfa: V === 'doisfa', recuperar: V === 'recuperar', enviado: V === 'enviado', novasenha: V === 'novasenha', convite: V === 'convite', cadastro: V === 'cadastro' },
+      email: st.email, setEmail: (e) => this.setState({ email: e.target.value }), emailErr: st.tried && !okEmail ? 'Informe um e-mail válido.' : undefined,
+      senha: st.senha, setSenha: (e) => this.setState({ senha: e.target.value, falhou: false }), senhaErr: st.tried && !st.senha && V === 'login' ? 'Digite a senha.' : undefined,
+      senhaType: st.ver ? 'text' : 'password',
+      olhoBtn: LT ? React.createElement(LT.Button, { size: 'sm', variant: 'ghost', onClick: () => this.setState({ ver: !st.ver }) }, st.ver ? 'Ocultar' : 'Mostrar') : null,
+      enterLogin: (e) => { if (e.key === 'Enter') entrar(); },
+      falhou: st.falhou, carregando: st.carregando, entrar, google: () => this.wait(() => to('doisfa')(), 600),
+      irRecuperar: to('recuperar'), irCadastro: (e) => { e.preventDefault(); this.setState({ view: 'cadastro', cad: 0, emp: 'idle' }); }, irLogin: to('login'), irNovaSenha: () => this.setState({ view: 'novasenha', senha: '' }),
+      digitos, codigoErr: st.codErr, verificar, usarBackup: (e) => { e.preventDefault(); notify('Código de recuperação', 'Use um dos 10 códigos salvos ao ativar a verificação.', 'info'); },
+      enviarLink: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ tried: true }); if (!okEmail) return; this.wait(() => this.setState({ view: 'enviado' })); },
+      regras, senhaFraca: fraca, salvarSenha: () => { notify('Senha alterada', 'As outras sessões foram encerradas.'); enter(); },
+      termos: st.termos, togTermos: () => this.setState({ termos: !st.termos }), conviteBloq: !st.termos || fraca, aceitar: () => { notify('Bem-vinda à Dias Automação Industrial', 'Seu quadro de tarefas já foi criado do modelo da equipe.'); enter(); },
+      cadPasso: 'Passo ' + (st.cad + 1) + ' de 3 · ' + ['Conta', 'Empresa', 'Pronto'][st.cad], cadBars: [0, 1, 2].map(i => i <= st.cad ? 'var(--accent)' : 'var(--surface-sunken)'),
+      c: { conta: st.cad === 0, empresa: st.cad === 1, pronto: st.cad === 2 },
+      cadProx: () => this.setState({ cad: Math.min(2, st.cad + 1) }), cadVoltar: () => this.setState({ cad: Math.max(0, st.cad - 1) }),
+      cnpj: st.cnpj, setCnpj: (e) => this.setState({ cnpj: e.target.value, emp: 'idle' }), empOk: st.emp === 'ok', empBloq: st.emp !== 'ok',
+      consultarBtn: LT ? React.createElement(LT.Button, { size: 'sm', variant: 'primary', icon: consultando ? undefined : 'search', loading: consultando, onClick: () => { this.setState({ emp: 'loading' }); setTimeout(() => this.setState({ emp: 'ok' }), 1000); } }, consultando ? 'Consultando…' : 'Consultar') : null,
+      segmentos: ['Automação industrial', 'Software', 'Serviços contábeis', 'Equipamentos', 'Outro'],
+      padroes: [{ t: 'Tags', d: 'Status (Lead, Prospect, Cliente, Inativo) e Visitação' }, { t: 'Funil', d: 'Vendas novas com 4 fases e probabilidades' }, { t: 'Tipos de atividade', d: 'Ligação, WhatsApp, E-mail, Visita, Reunião e Tarefa' }, { t: 'Motivos', d: 'de perda, cancelamento e suspensão' }, { t: 'Listas', d: 'origens, papéis na decisão e faixas' }, { t: 'Quadro de tarefas', d: 'A fazer, Fazendo, Aguardando cliente, Feito' }],
+      entrarApp: enter,
+      protoLinks: [['Login', 'login'], ['2FA', 'doisfa'], ['Recuperar senha', 'recuperar'], ['Convite', 'convite'], ['Primeiro acesso', 'cadastro']].map(p => ({ label: p[0], go: (e) => { e.preventDefault(); this.setState({ view: p[1], cad: 0, emp: 'idle', tried: false, falhou: false, senha: '', codErr: false, cod: ['', '', '', '', '', ''] }); } }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script></helmet>
+<div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:16px">
+  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+        <h1 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.015em">Empresas</h1>
+        <span style="font-size:13px;color:var(--ink-muted)">{{ countLabel }}</span>
+      </div>
+      <x-import component-from-global-scope="Leadtogo.Button" icon="upload" onClick="{{ goImportar }}" hint-size="150px,36px">Importar planilha</x-import>
+      <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" onClick="{{ goNova }}" hint-size="140px,36px">Nova empresa</x-import>
+    </div>
+  </sc-if>
+
+  <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 {{ L.bleed }};padding:0 {{ L.bleedPad }}">
+    <sc-for list="{{ saved }}" as="f" hint-placeholder-count="4">
+      <button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.pressed }}" style="flex-shrink:0;display:flex;align-items:center;gap:6px;height:{{ L.chipH }};padding:0 12px;border-radius:9999px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">
+        <sc-if value="{{ f.on }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Icon" name="check" size="{{ 14 }}" hint-size="14px,14px"></x-import></sc-if>
+        {{ f.label }}<span style="font-weight:500;color:var(--ink-muted);font-variant-numeric:tabular-nums">{{ f.n }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div data-density="{{ L.density }}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:{{ L.filterPad }};background:{{ L.filterBg }};border:{{ L.filterBorder }};border-radius:8px">
+    <div style="flex:{{ L.searchFlex }};min-width:{{ L.searchMin }}">
+      <x-import component-from-global-scope="Leadtogo.TextField" icon="search" placeholder="Nome, CNPJ ou cidade" aria-label="Buscar empresas" value="{{ q }}" onChange="{{ setQ }}" hint-size="100%,36px"></x-import>
+    </div>
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.Button" icon="funnel" onClick="{{ toggleFilters }}" hint-size="100px,44px">{{ filterBtn }}</x-import>
+      <x-import component-from-global-scope="Leadtogo.IconButton" icon="plus" label="Nova empresa" variant="secondary" size="lg" onClick="{{ goNova }}" hint-size="44px,44px"></x-import>
+    </sc-if>
+    <sc-if value="{{ showFilters }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:{{ L.filterCols }};gap:8px;flex:{{ L.filtersFlex }};min-width:0;width:{{ L.filtersW }}">
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Status" options="{{ optStatus }}" value="{{ fStatus }}" onChange="{{ setStatus }}" hint-size="100%,36px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Visitação" options="{{ optVisit }}" value="{{ fVisit }}" onChange="{{ setVisit }}" hint-size="100%,36px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Vendedor" options="{{ optVend }}" value="{{ fVend }}" onChange="{{ setVend }}" hint-size="100%,36px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Cidade" options="{{ optCidade }}" value="{{ fCidade }}" onChange="{{ setCidade }}" hint-size="100%,36px"></x-import>
+        <x-import component-from-global-scope="Leadtogo.Select" aria-label="Última visita" options="{{ optVisita }}" value="{{ fVisita }}" onChange="{{ setVisita }}" hint-size="100%,36px"></x-import>
+      </div>
+    </sc-if>
+    <sc-if value="{{ anyFilter }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" icon="x" onClick="{{ clearFilters }}" hint-size="120px,36px">Limpar filtros</x-import>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ bulk }}" hint-placeholder-val="{{ false }}">
+    <div data-density="compact" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-selected);position:relative">
+      <span style="font-weight:600;color:var(--ink);margin-right:8px">{{ selLabel }}</span>
+      <div style="position:relative">
+        <x-import component-from-global-scope="Leadtogo.Button" size="sm" iconRight="chevron-down" onClick="{{ menuTag }}" hint-size="110px,28px">Aplicar tag</x-import>
+        <sc-if value="{{ menuTagOpen }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:34px;left:0;z-index:1000;width:220px;box-shadow:var(--shadow-md);border-radius:8px"><x-import component-from-global-scope="Leadtogo.Menu" items="{{ tagItems }}" label="Aplicar tag" hint-size="220px,240px"></x-import></div></sc-if>
+      </div>
+      <div style="position:relative">
+        <x-import component-from-global-scope="Leadtogo.Button" size="sm" iconRight="chevron-down" onClick="{{ menuVend }}" hint-size="130px,28px">Trocar vendedor</x-import>
+        <sc-if value="{{ menuVendOpen }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:34px;left:0;z-index:1000;width:240px;box-shadow:var(--shadow-md);border-radius:8px"><x-import component-from-global-scope="Leadtogo.Menu" items="{{ vendItems }}" label="Trocar vendedor" hint-size="240px,200px"></x-import></div></sc-if>
+      </div>
+      <x-import component-from-global-scope="Leadtogo.Button" size="sm" icon="download" onClick="{{ exportSel }}" hint-size="90px,28px">Exportar</x-import>
+      <span style="flex:1"></span>
+      <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" onClick="{{ clearSel }}" hint-size="120px,28px">Limpar seleção</x-import>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+      <x-import component-from-global-scope="Leadtogo.EmptyState" icon="search" title="Nenhuma empresa com esses filtros" description="Revise a busca ou limpe os filtros para ver a carteira inteira." actions="{{ emptyActions }}" hint-size="100%,220px"></x-import>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;line-height:20px">
+        <thead>
+          <tr style="background:var(--surface-sunken);text-align:left">
+            <th style="width:40px;padding:0 0 0 12px;height:36px;border-bottom:1px solid var(--border)"><x-import component-from-global-scope="Leadtogo.Checkbox" aria-label="Selecionar todas" checked="{{ allSel }}" onChange="{{ toggleAll }}" hint-size="18px,18px"></x-import></th>
+            <th style="padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border)"><span style="display:inline-flex;align-items:center;gap:4px">Empresa<x-import component-from-global-scope="Leadtogo.Icon" name="chevron-down" size="{{ 13 }}" hint-size="13px,13px"></x-import></span></th>
+            <th style="padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border)">Tags</th>
+            <th style="padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border)">Cidade</th>
+            <th style="padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border)">Vendedor</th>
+            <th style="padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border)">Última visita</th>
+            <th style="padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border)">Último contato</th>
+            <th style="padding:0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border)">Próxima atividade</th>
+            <th style="padding:0 16px 0 12px;font-size:12px;font-weight:600;color:var(--ink-muted);border-bottom:1px solid var(--border);text-align:right">Em aberto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+            <tr style="background:{{ r.bg }};cursor:pointer" style-hover="background:var(--surface-hover)" onClick="{{ r.open }}">
+              <td style="padding:0 0 0 12px;border-bottom:1px solid var(--border)" onClick="{{ r.stop }}"><x-import component-from-global-scope="Leadtogo.Checkbox" aria-label="Selecionar" checked="{{ r.sel }}" onChange="{{ r.toggle }}" hint-size="18px,18px"></x-import></td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border);min-width:160px">
+                <div style="display:flex;flex-direction:column"><span style="font-weight:600">{{ r.fantasia }}</span><span style="font-family:var(--font-mono);font-size:12px;line-height:16px;color:var(--ink-muted)">{{ r.cnpj }}</span></div>
+              </td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">
+                <div style="display:flex;gap:4px;flex-wrap:wrap;max-width:200px">
+                  <sc-for list="{{ r.tagsShown }}" as="t" hint-placeholder-count="2"><x-import component-from-global-scope="Leadtogo.Tag" color="{{ t.color }}" hint-size="60px,20px">{{ t.label }}</x-import></sc-for>
+                  <sc-if value="{{ r.more }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;font-weight:600;color:var(--ink-muted);align-self:center">{{ r.more }}</span></sc-if>
+                </div>
+              </td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">{{ r.cidade }}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)"><span style="display:inline-flex;align-items:center;gap:8px"><x-import component-from-global-scope="Leadtogo.Avatar" name="{{ r.vendedor }}" size="sm" hint-size="22px,22px"></x-import>{{ r.vendedorCurto }}</span></td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)"><div style="display:flex;flex-direction:column;font-variant-numeric:tabular-nums"><span>{{ r.ultimaVisita }}</span><span style="font-size:12px;line-height:16px;color:{{ r.visitaColor }};font-weight:{{ r.visitaWeight }}">{{ r.visitaRel }}</span></div></td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)"><div style="display:flex;flex-direction:column;font-variant-numeric:tabular-nums"><span>{{ r.ultimoContato }}</span><span style="font-size:12px;line-height:16px;color:{{ r.contatoColor }};font-weight:{{ r.contatoWeight }}">{{ r.contatoRel }}</span></div></td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">
+                <sc-if value="{{ r.proxima }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:6px;font-size:13px"><x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ r.proxima.type }}" size="sm" hint-size="22px,22px"></x-import>{{ r.proxima.label }}</span></sc-if>
+                <sc-if value="{{ r.semProxima }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--warning)"><x-import component-from-global-scope="Leadtogo.Icon" name="calendar" size="{{ 13 }}" hint-size="13px,13px"></x-import>Sem próxima atividade</span></sc-if>
+              </td>
+              <td style="padding:8px 16px 8px 12px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums"><div style="display:flex;flex-direction:column"><span style="font-weight:600">{{ r.valor }}</span><span style="font-size:12px;line-height:16px;color:var(--ink-muted)">{{ r.ops }}</span></div></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showCards }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:13px;color:var(--ink-muted)">{{ countLabel }}</span>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+        <article style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+          <button type="button" onClick="{{ r.open }}" style="display:flex;flex-direction:column;gap:8px;padding:14px 14px 12px;border:0;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <span style="flex:1;font-size:16px;line-height:22px;font-weight:600">{{ r.fantasia }}</span>
+              <x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" size="{{ 18 }}" hint-size="18px,18px"></x-import>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <sc-for list="{{ r.tagsShown }}" as="t" hint-placeholder-count="2"><x-import component-from-global-scope="Leadtogo.Tag" color="{{ t.color }}" hint-size="60px,20px">{{ t.label }}</x-import></sc-for>
+              <sc-if value="{{ r.more }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;font-weight:600;color:var(--ink-muted);align-self:center">{{ r.more }}</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:20px;color:var(--ink-muted)">
+              <span style="display:flex;align-items:center;gap:6px"><x-import component-from-global-scope="Leadtogo.Icon" name="map-pin" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ r.cityLine }}</span>
+              <span style="display:flex;align-items:center;gap:6px;color:{{ r.visitaColor }}"><x-import component-from-global-scope="Leadtogo.Icon" name="clock" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ r.visitaMobile }}</span>
+              <sc-if value="{{ r.proxima }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:6px;color:var(--ink)"><x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ r.proxima.type }}" size="sm" hint-size="22px,22px"></x-import>{{ r.proxima.label }}</span></sc-if>
+              <sc-if value="{{ r.semProxima }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-weight:600;color:var(--warning)"><x-import component-from-global-scope="Leadtogo.Icon" name="calendar" size="{{ 14 }}" hint-size="14px,14px"></x-import>Sem próxima atividade</span></sc-if>
+            </div>
+          </button>
+          <div data-density="touch" style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border)">
+            <button type="button" onClick="{{ r.call }}" style="height:48px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-right:1px solid var(--border);background:transparent;font:inherit;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer"><span style="color:var(--tag-blue-fg);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="phone" size="{{ 18 }}" hint-size="18px,18px"></x-import></span>Ligar</button>
+            <button type="button" onClick="{{ r.wpp }}" style="height:48px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-right:1px solid var(--border);background:transparent;font:inherit;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer"><span style="color:var(--tag-green-fg);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="message-circle" size="{{ 18 }}" hint-size="18px,18px"></x-import></span>WhatsApp</button>
+            <button type="button" onClick="{{ r.rota }}" style="height:48px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:transparent;font:inherit;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer"><span style="color:var(--tag-orange-fg);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="navigation" size="{{ 18 }}" hint-size="18px,18px"></x-import></span>Rota</button>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { q: '', fStatus: '', fVisit: '', fVend: '', fCidade: '', fVisita: '', saved: 'todas', sel: {}, menu: null, filtersOpen: false, over: {} };
+  componentDidMount() { if (!window.LTD) this._w = setInterval(() => { if (window.LTD) { clearInterval(this._w); this.forceUpdate(); } }, 50); }
+  renderVals() {
+    const D = window.LTD || { empresas: [], vendedores: [], cidades: [], statusColor: {} };
+    const m = !!this.props.mobile, st = this.state;
+    const go = this.props.go || (() => {}), notify = this.props.notify || (() => {});
+    const brl = (v) => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+    const emp = D.empresas.map(e => { const o = st.over[e.id] || {}; return { ...e, vendedor: o.vendedor || e.vendedor, tags: o.tags || e.tags }; });
+    const savedDefs = [
+      { id: 'todas', label: 'Todas', f: () => true },
+      { id: 'minha', label: 'Minha carteira', f: e => e.vendedor === 'Alessandro Dias' },
+      { id: 'sem90', label: 'Sem visita há 90 dias', f: e => e.diasVisita != null && e.diasVisita >= 90 },
+      { id: 'nunca', label: 'Nunca visitadas', f: e => e.diasVisita == null },
+      { id: 'semprox', label: 'Sem próxima atividade', f: e => !e.proxima }
+    ];
+    const saved = savedDefs.map(s => { const on = st.saved === s.id; return { label: s.label, n: emp.filter(s.f).length, on, pressed: String(on), bg: on ? 'var(--surface-selected)' : 'var(--surface)', border: on ? 'var(--accent)' : 'var(--border)', color: on ? 'var(--accent)' : 'var(--ink)', onClick: () => this.setState({ saved: s.id }) }; });
+    const sf = savedDefs.find(s => s.id === st.saved).f;
+    const norm = (t) => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const q = norm(st.q.trim());
+    const vis = (e) => {
+      const v = st.fVisita; if (!v) return true;
+      if (v === 'nunca') return e.diasVisita == null;
+      if (v === '30') return e.diasVisita != null && e.diasVisita <= 30;
+      if (v === '60') return e.diasVisita == null || e.diasVisita >= 60;
+      if (v === '90') return e.diasVisita == null || e.diasVisita >= 90;
+      return true;
+    };
+    const list = emp.filter(e => sf(e)
+      && (!q || norm(e.fantasia + ' ' + e.razao + ' ' + e.cnpj + ' ' + e.cidade).includes(q) || e.cnpj.replace(/\D/g, '').includes(q.replace(/\D/g, '') || '#'))
+      && (!st.fStatus || e.status === st.fStatus)
+      && (!st.fVisit || e.tags.some(t => t.label === st.fVisit))
+      && (!st.fVend || e.vendedor === st.fVend)
+      && (!st.fCidade || e.cidade === st.fCidade) && vis(e));
+    const selIds = Object.keys(st.sel).filter(k => st.sel[k]);
+    const rel = (d) => d == null ? 'Nunca' : (d === 0 ? 'Hoje' : 'há ' + d + (d === 1 ? ' dia' : ' dias'));
+    const rows = list.map(e => {
+      const sel = !!st.sel[e.id];
+      const lateV = e.diasVisita == null || e.diasVisita >= 90, lateC = e.diasContato == null || e.diasContato >= 60;
+      return { ...e, sel, bg: sel ? 'var(--surface-selected)' : 'transparent',
+        tagsShown: e.tags.slice(0, 3), more: e.tags.length > 3 ? '+' + (e.tags.length - 3) : false,
+        vendedorCurto: e.vendedor.split(' ')[0] + ' ' + e.vendedor.split(' ').slice(-1)[0][0] + '.',
+        visitaRel: rel(e.diasVisita), contatoRel: rel(e.diasContato),
+        visitaColor: lateV ? 'var(--warning)' : 'var(--ink-muted)', visitaWeight: lateV ? 600 : 400,
+        contatoColor: lateC ? 'var(--warning)' : 'var(--ink-muted)', contatoWeight: lateC ? 600 : 400,
+        cityLine: e.cidade + '/ES · ' + e.vendedor, visitaMobile: e.diasVisita == null ? 'Nunca visitada' : 'Última visita ' + rel(e.diasVisita) + ' (' + e.ultimaVisita.slice(0, 5) + ')',
+        proxima: e.proxima || false, semProxima: !e.proxima,
+        valor: e.valorAberto ? brl(e.valorAberto) : '—', ops: e.opAbertas ? e.opAbertas + (e.opAbertas === 1 ? ' oportunidade' : ' oportunidades') : 'Nenhuma',
+        open: () => go('ficha', { empresaId: e.id }), stop: (ev) => ev.stopPropagation(),
+        toggle: () => this.setState(s => ({ sel: { ...s.sel, [e.id]: !s.sel[e.id] } })),
+        call: () => notify('Ligando para ' + e.fantasia, e.telefone, 'info'),
+        wpp: () => notify('Abrindo o WhatsApp', e.whatsapp || 'Empresa sem WhatsApp cadastrado.', 'info'),
+        rota: () => notify('Abrindo rota no Maps', e.bairro + ', ' + e.cidade + '/ES', 'info') };
+    });
+    const allSel = list.length > 0 && list.every(e => st.sel[e.id]);
+    const applyTag = (label, color) => () => {
+      const over = { ...st.over };
+      emp.filter(e => st.sel[e.id]).forEach(e => {
+        let tags = e.tags.slice();
+        if (['Lead', 'Prospect', 'Cliente', 'Inativo'].includes(label)) tags = tags.filter(t => !['Lead', 'Prospect', 'Cliente', 'Inativo'].includes(t.label)), tags.unshift({ label, color });
+        else if (!tags.some(t => t.label === label)) tags.push({ label, color });
+        over[e.id] = { ...(over[e.id] || {}), tags };
+      });
+      this.setState({ over, menu: null });
+      notify('Tag aplicada', label + ' em ' + selIds.length + (selIds.length === 1 ? ' empresa' : ' empresas') + '. A troca de Status fica no histórico.');
+    };
+    const setVendor = (v) => () => {
+      const over = { ...st.over };
+      selIds.forEach(id => { over[id] = { ...(over[id] || {}), vendedor: v }; });
+      this.setState({ over, menu: null });
+      notify('Carteira transferida', selIds.length + (selIds.length === 1 ? ' empresa passou' : ' empresas passaram') + ' para ' + v + '.');
+    };
+    const anyFilter = !!(st.q || st.fStatus || st.fVisit || st.fVend || st.fCidade || st.fVisita);
+    const nF = [st.fStatus, st.fVisit, st.fVend, st.fCidade, st.fVisita].filter(Boolean).length;
+    const opt = (ph, arr) => [{ value: '', label: ph }].concat(arr.map(a => typeof a === 'string' ? { value: a, label: a } : a));
+    const clear = () => this.setState({ q: '', fStatus: '', fVisit: '', fVend: '', fCidade: '', fVisita: '', saved: 'todas' });
+    const showFilters = !m || st.filtersOpen;
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { pad: '16px', bleed: '-16px', bleedPad: '16px', chipH: '36px', density: 'touch', filterPad: '0', filterBg: 'transparent', filterBorder: '0', searchFlex: '1', searchMin: '0', filterCols: '1fr 1fr', filtersFlex: '1 1 100%', filtersW: '100%' }
+           : { pad: '24px', bleed: '0', bleedPad: '0', chipH: '30px', density: 'compact', filterPad: '10px', filterBg: 'var(--surface)', filterBorder: '1px solid var(--border)', searchFlex: '0 0 280px', searchMin: '220px', filterCols: 'repeat(5, minmax(130px,1fr))', filtersFlex: '1', filtersW: 'auto' },
+      countLabel: list.length + (list.length === 1 ? ' empresa' : ' empresas') + (anyFilter || st.saved !== 'todas' ? ' com estes filtros' : ' na carteira'),
+      saved, q: st.q, setQ: (e) => this.setState({ q: e.target.value }),
+      showFilters, toggleFilters: () => this.setState({ filtersOpen: !st.filtersOpen }), filterBtn: nF ? 'Filtros · ' + nF : 'Filtros',
+      optStatus: opt('Status: todos', ['Lead', 'Prospect', 'Cliente', 'Inativo']), fStatus: st.fStatus, setStatus: (e) => this.setState({ fStatus: e.target.value }),
+      optVisit: opt('Visitação: todas', ['Visitada', 'Contactada']), fVisit: st.fVisit, setVisit: (e) => this.setState({ fVisit: e.target.value }),
+      optVend: opt('Vendedor: todos', D.vendedores), fVend: st.fVend, setVend: (e) => this.setState({ fVend: e.target.value }),
+      optCidade: opt('Cidade: todas', D.cidades), fCidade: st.fCidade, setCidade: (e) => this.setState({ fCidade: e.target.value }),
+      optVisita: opt('Última visita: qualquer', [{ value: '30', label: 'Nos últimos 30 dias' }, { value: '60', label: 'Sem visita há 60 dias' }, { value: '90', label: 'Sem visita há 90 dias' }, { value: 'nunca', label: 'Nunca visitadas' }]), fVisita: st.fVisita, setVisita: (e) => this.setState({ fVisita: e.target.value }),
+      anyFilter, clearFilters: clear,
+      bulk: !m && selIds.length > 0, selLabel: selIds.length + (selIds.length === 1 ? ' selecionada' : ' selecionadas'),
+      menuTagOpen: st.menu === 'tag', menuVendOpen: st.menu === 'vend',
+      menuTag: () => this.setState({ menu: st.menu === 'tag' ? null : 'tag' }), menuVend: () => this.setState({ menu: st.menu === 'vend' ? null : 'vend' }),
+      tagItems: [{ heading: 'Status (substitui a atual)' }, { label: 'Lead', onSelect: applyTag('Lead', 'teal') }, { label: 'Prospect', onSelect: applyTag('Prospect', 'amber') }, { label: 'Cliente', onSelect: applyTag('Cliente', 'green') }, { label: 'Inativo', onSelect: applyTag('Inativo', 'gray') }, { separator: true }, { heading: 'Interesse' }, { label: 'Monitoramento', onSelect: applyTag('Monitoramento', 'purple') }, { label: 'Retrofit', onSelect: applyTag('Retrofit', 'pink') }],
+      vendItems: [{ heading: 'Novo vendedor' }].concat(D.vendedores.map(v => ({ icon: 'user', label: v, onSelect: setVendor(v) }))),
+      exportSel: () => notify('Exportação iniciada', selIds.length + ' empresas em Excel. O arquivo chega nas notificações.', 'info'),
+      clearSel: () => this.setState({ sel: {}, menu: null }),
+      allSel, toggleAll: () => { const sel = {}; if (!allSel) list.forEach(e => sel[e.id] = true); this.setState({ sel }); },
+      rows, empty: list.length === 0, showTable: !m && list.length > 0, showCards: m && list.length > 0,
+      emptyActions: React.createElement(window.Leadtogo ? window.Leadtogo.Button : 'button', { onClick: clear }, 'Limpar filtros'),
+      goNova: () => go('nova'), goImportar: () => go('importar')
+    };
+  }
+}
+</script>
+</body>
+</html>

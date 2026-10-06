@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script><style>.lt-tabs { overflow-y: hidden; }</style></helmet>
+<div style="display:flex;min-height:100%;align-items:stretch">
+  <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+    <nav aria-label="Seções de configuração" style="width:{{ L.navW }};flex-shrink:0;display:flex;flex-direction:column;gap:2px;padding:{{ L.navPad }};background:{{ L.navBg }};border-right:{{ L.navBorder }}">
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><h1 style="margin:0 0 12px 8px;font-size:22px;line-height:28px;font-weight:600">Configurações</h1></sc-if>
+      <sc-for list="{{ secoes }}" as="s" hint-placeholder-count="10">
+        <button type="button" onClick="{{ s.pick }}" style="display:flex;align-items:center;gap:10px;min-height:{{ L.itemH }};padding:6px 10px;border:{{ L.itemBorder }};border-radius:6px;background:{{ s.bg }};color:{{ s.color }};font:inherit;font-weight:{{ s.weight }};text-align:left;cursor:pointer" style-hover="background:var(--surface-hover)">
+          <x-import component-from-global-scope="Leadtogo.Icon" name="{{ s.icon }}" size="{{ 16 }}" hint-size="16px,16px"></x-import>
+          <span style="flex:1;display:flex;flex-direction:column"><span>{{ s.label }}</span><span style="font-size:12px;line-height:16px;font-weight:400;color:var(--ink-muted)">{{ s.quem }}</span></span>
+          <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></x-import></sc-if>
+        </button>
+      </sc-for>
+    </nav>
+  </sc-if>
+
+  <sc-if value="{{ showContent }}" hint-placeholder-val="{{ true }}">
+  <div data-density="{{ L.density }}" style="flex:1;min-width:0;padding:{{ L.pad }};display:flex;flex-direction:column;gap:16px;max-width:1040px">
+    <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="chevron-left" onClick="{{ voltarLista }}" hint-size="120px,36px">Configurações</x-import></sc-if>
+      <div style="flex:1 1 100%;display:flex;flex-direction:column;gap:2px">
+        <h2 style="margin:0;font-size:22px;line-height:28px;font-weight:600">{{ atual.label }}</h2>
+        <span style="font-size:13px;color:var(--ink-muted)">{{ atual.desc }}</span>
+      </div>
+    </div>
+    <sc-if value="{{ leitura }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.Alert" tone="info" title="Somente leitura" hint-size="100%,60px">Seu papel nesta empresa é {{ papel }}. Peça a um administrador para alterar.</x-import>
+    </sc-if>
+
+    <sc-if value="{{ v.empresa }}" hint-placeholder-val="{{ true }}">
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <div style="width:72px;height:72px;border-radius:12px;background:var(--tag-teal-bg);color:var(--tag-teal-fg);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700">DA</div>
+          <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:4px">
+            <span style="font-weight:600">Logo da empresa</span>
+            <span style="font-size:13px;color:var(--ink-muted)">PNG ou SVG quadrado, até 1 MB. Aparece no seletor de empresa.</span>
+          </div>
+          <x-import component-from-global-scope="Leadtogo.Button" icon="upload" onClick="{{ enviarLogo }}" hint-size="130px,36px">Enviar logo</x-import>
+        </div>
+        <div style="max-width:520px;padding-top:12px;border-top:1px solid var(--border)">
+          <x-import component-from-global-scope="Leadtogo.TextField" label="CNPJ" mono="{{ true }}" defaultValue="30.448.019/0001-62" hint="{{ cnpjHint }}" suffix="{{ consultarBtn }}" hint-size="100%,72px"></x-import>
+        </div>
+        <div style="display:grid;grid-template-columns:{{ L.cols2 }};gap:14px 16px">
+          <div style="grid-column:1 / -1"><x-import component-from-global-scope="Leadtogo.TextField" label="Razão social" defaultValue="Dias Automação Industrial Ltda" hint-size="100%,60px"></x-import></div>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Nome de exibição" defaultValue="Dias Automação Industrial" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="E-mail de contato" defaultValue="comercial@diasautomacao.com.br" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Telefone" defaultValue="(27) 3341-2290" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Cidade" defaultValue="Serra/ES" readOnly="{{ true }}" hint-size="100%,60px"></x-import>
+          <div style="grid-column:1 / -1"><x-import component-from-global-scope="Leadtogo.TextField" label="Endereço" defaultValue="Avenida Talma Rodrigues Ribeiro, 1145 – Portal de Jacaraípe" hint-size="100%,60px"></x-import></div>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.usuarios }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="flex:1;font-size:13px;color:var(--ink-muted)">{{ membrosLabel }}</span>
+        <x-import component-from-global-scope="Leadtogo.Button" icon="repeat" onClick="{{ abrirTransf }}" hint-size="180px,36px">Transferir carteira</x-import>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="mail" onClick="{{ abrirConvite }}" hint-size="150px,36px">Convidar pessoa</x-import>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <sc-for list="{{ membros }}" as="u" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:{{ L.userCols }};gap:8px 16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);background:{{ u.bg }}">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <x-import component-from-global-scope="Leadtogo.Avatar" name="{{ u.nome }}" hint-size="32px,32px"></x-import>
+              <div style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:600;color:{{ u.nameColor }}">{{ u.nome }}</span><span style="font-size:12px;color:var(--ink-muted);overflow-wrap:anywhere">{{ u.email }}</span></div>
+            </div>
+            <x-import component-from-global-scope="Leadtogo.Select" aria-label="Papel" options="{{ papelOpts }}" value="{{ u.papel }}" onChange="{{ u.setPapel }}" disabled="{{ leitura }}" hint-size="100%,36px"></x-import>
+            <span style="font-size:13px;color:var(--ink-muted)">{{ u.gestor }}</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <x-import component-from-global-scope="Leadtogo.Badge" tone="{{ u.statusTone }}" icon="{{ u.statusIcon }}" hint-size="80px,22px">{{ u.status }}</x-import>
+              <x-import component-from-global-scope="Leadtogo.Badge" tone="outline" icon="{{ u.acessoIcon }}" hint-size="100px,22px">{{ u.acesso }}</x-import>
+            </div>
+            <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" onClick="{{ u.toggle }}" hint-size="90px,28px">{{ u.acao }}</x-import>
+          </div>
+        </sc-for>
+      </div>
+      <span style="font-size:13px;color:var(--ink-muted)">"Sem acesso" é o vendedor cadastrado só para receber carteira, sem login. Desativar não apaga o histórico.</span>
+    </sc-if>
+
+    <sc-if value="{{ v.tags }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;justify-content:flex-end"><x-import component-from-global-scope="Leadtogo.Button" icon="plus" onClick="{{ novoGrupo }}" hint-size="130px,36px">Novo grupo</x-import></div>
+      <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="3">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <h3 style="margin:0;flex:1;min-width:120px;font-size:15px;line-height:20px;font-weight:600">{{ g.nome }}</h3>
+            <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Tipo de seleção" options="{{ selOpts }}" value="{{ g.tipo }}" onChange="{{ g.setTipo }}" hint-size="230px,28px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Switch" label="Obrigatório" checked="{{ g.obrig }}" onChange="{{ g.togObrig }}" hint-size="120px,24px"></x-import>
+          </div>
+          <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <sc-for list="{{ g.tags }}" as="t" hint-placeholder-count="3">
+              <button type="button" onClick="{{ t.pick }}" aria-pressed="{{ t.pressed }}" style="border:2px solid {{ t.ring }};border-radius:9999px;background:transparent;padding:1px;cursor:pointer;display:flex"><x-import component-from-global-scope="Leadtogo.Tag" color="{{ t.color }}" hint-size="70px,20px">{{ t.label }}</x-import></button>
+            </sc-for>
+            <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="plus" onClick="{{ g.addTag }}" hint-size="80px,28px">Tag</x-import>
+          </div>
+          <sc-if value="{{ g.editando }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface-sunken);display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+              <div style="width:220px"><x-import component-from-global-scope="Leadtogo.TextField" label="Nome da tag" value="{{ g.edit.label }}" onChange="{{ g.edit.rename }}" hint-size="220px,60px"></x-import></div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;font-weight:600">Cor</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ g.edit.swatches }}" as="s" hint-placeholder-count="10">
+                    <button type="button" onClick="{{ s.pick }}" aria-label="{{ s.name }}" aria-pressed="{{ s.on }}" title="{{ s.name }}" style="width:26px;height:26px;border-radius:9999px;border:2px solid {{ s.ring }};background:{{ s.bg }};color:{{ s.fg }};cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">{{ s.mark }}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <x-import component-from-global-scope="Leadtogo.Button" variant="danger-ghost" size="sm" icon="trash-2" onClick="{{ g.edit.remove }}" hint-size="90px,28px">Excluir</x-import>
+            </div>
+          </sc-if>
+          <sc-if value="{{ g.auto }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:0 16px 12px;font-size:13px;color:var(--ink-muted)">{{ g.auto }}</p></sc-if>
+        </section>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ v.funis }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0;overflow-x:auto;overflow-y:hidden"><x-import component-from-global-scope="Leadtogo.Tabs" label="Funis" items="{{ funilTabs }}" value="{{ funil }}" onChange="{{ setFunil }}" hint-size="100%,40px"></x-import></div>
+        <x-import component-from-global-scope="Leadtogo.Button" icon="plus" hint-size="120px,36px">Novo funil</x-import>
+      </div>
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:28px minmax(0,1fr) 230px 110px 130px 36px;gap:12px;align-items:center;height:36px;padding:0 16px;background:var(--surface-sunken);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--ink-muted)">
+            <span></span><span>Fase</span><span>Cor</span><span>Probabilidade</span><span>Alerta de parada</span><span></span>
+          </div>
+        </sc-if>
+        <sc-for list="{{ fases }}" as="f" hint-placeholder-count="4">
+          <div draggable="true" onDragStart="{{ f.dragStart }}" onDragOver="{{ f.over }}" onDrop="{{ f.drop }}" onDragEnd="{{ dragEnd }}" style="display:grid;grid-template-columns:{{ L.faseCols }};gap:8px 12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);border-top:2px solid {{ f.dropLine }};opacity:{{ f.opacity }};background:var(--surface)">
+            <span style="color:var(--ink-subtle);cursor:grab;display:flex" title="Arraste para reordenar"><x-import component-from-global-scope="Leadtogo.Icon" name="grip-vertical" hint-size="16px,16px"></x-import></span>
+            <x-import component-from-global-scope="Leadtogo.TextField" aria-label="Nome da fase" value="{{ f.title }}" onChange="{{ f.rename }}" hint-size="100%,36px"></x-import>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <sc-for list="{{ f.swatches }}" as="s" hint-placeholder-count="10"><button type="button" onClick="{{ s.pick }}" aria-label="{{ s.name }}" aria-pressed="{{ s.on }}" title="{{ s.name }}" style="width:18px;height:18px;border-radius:9999px;border:2px solid {{ s.ring }};background:{{ s.fgc }};cursor:pointer;padding:0;box-shadow:inset 0 0 0 2px var(--surface)"></button></sc-for>
+            </div>
+            <x-import component-from-global-scope="Leadtogo.TextField" aria-label="Probabilidade padrão" type="number" value="{{ f.prob }}" onChange="{{ f.setProb }}" suffix="%" hint-size="100%,36px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.TextField" aria-label="Dias para alerta de parada" type="number" value="{{ f.dias }}" onChange="{{ f.setDias }}" suffix="dias" hint-size="100%,36px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.IconButton" icon="trash-2" label="Remover fase" onClick="{{ f.remove }}" hint-size="36px,36px"></x-import>
+          </div>
+        </sc-for>
+        <div style="padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="plus" onClick="{{ addFase }}" hint-size="120px,28px">Adicionar fase</x-import>
+          <span style="font-size:13px;color:var(--ink-muted)">Conquistado, Perdido, Cancelado e Suspenso são status, não fases.</span>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.tipos }}" hint-placeholder-val="{{ false }}">
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <sc-for list="{{ tipos }}" as="t" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:{{ L.tipoCols }};gap:8px 16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:10px"><x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ t.id }}" hint-size="28px,28px"></x-import><span style="font-weight:600">{{ t.nome }}</span></div>
+            <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Conta como" options="{{ contaOpts }}" value="{{ t.conta }}" onChange="{{ t.setConta }}" hint-size="100%,28px"></x-import>
+            <span style="font-size:13px;color:var(--ink-muted)">{{ t.efeito }}</span>
+            <x-import component-from-global-scope="Leadtogo.Switch" label="Ativo" checked="{{ t.ativo }}" onChange="{{ t.togAtivo }}" hint-size="80px,24px"></x-import>
+          </div>
+        </sc-for>
+        <div style="padding:10px 16px"><x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="plus" hint-size="120px,28px">Novo tipo</x-import></div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.listas }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:{{ L.listCols }};gap:16px;align-items:start">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <sc-for list="{{ listas }}" as="l" hint-placeholder-count="9">
+            <button type="button" onClick="{{ l.pick }}" style="width:100%;display:flex;align-items:center;gap:8px;min-height:{{ L.itemH }};padding:8px 14px;border:0;border-bottom:1px solid var(--border);background:{{ l.bg }};color:{{ l.color }};font:inherit;font-weight:{{ l.weight }};text-align:left;cursor:pointer">
+              <span style="flex:1">{{ l.nome }}</span><span style="font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums">{{ l.n }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px"><h3 style="margin:0;font-size:15px;line-height:20px;font-weight:600">{{ listaAtual.nome }}</h3><span style="font-size:13px;color:var(--ink-muted)">{{ listaAtual.uso }}</span></div>
+          <sc-for list="{{ itens }}" as="i" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;border-bottom:1px solid var(--border)">
+              <span style="color:var(--ink-subtle);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="grip-vertical" size="{{ 14 }}" hint-size="14px,14px"></x-import></span>
+              <span style="flex:1">{{ i.nome }}</span>
+              <x-import component-from-global-scope="Leadtogo.IconButton" icon="trash-2" label="Remover item" size="sm" onClick="{{ i.remove }}" hint-size="28px,28px"></x-import>
+            </div>
+          </sc-for>
+          <div style="padding:10px 16px"><x-import component-from-global-scope="Leadtogo.TextField" aria-label="Novo item" placeholder="Novo item e Enter" onKeyDown="{{ addItem }}" hint-size="100%,36px"></x-import></div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ v.produtos }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;justify-content:flex-end"><x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" hint-size="150px,36px">Novo produto</x-import></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 230px 80px 120px 70px;gap:12px;align-items:center;height:36px;padding:0 16px;background:var(--surface-sunken);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--ink-muted)"><span>Produto ou serviço</span><span>Solução</span><span>Cobrança padrão</span><span>Meses</span><span style="text-align:right">Preço</span><span>Ativo</span></div>
+        </sc-if>
+        <sc-for list="{{ produtos }}" as="p" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:{{ L.prodCols }};gap:6px 12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)">
+            <span style="font-weight:600">{{ p.nome }}</span>
+            <span style="font-size:13px;color:var(--ink-muted)">{{ p.solucao }}</span>
+            <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Cobrança" options="{{ cobrOpts }}" value="{{ p.cobr }}" onChange="{{ p.setCobr }}" hint-size="100%,28px"></x-import>
+            <span style="font-size:13px;font-variant-numeric:tabular-nums">{{ p.meses }}</span>
+            <span style="font-weight:600;font-variant-numeric:tabular-nums;text-align:{{ L.prodAlign }}">{{ p.preco }}</span>
+            <x-import component-from-global-scope="Leadtogo.Switch" aria-label="Ativo" checked="{{ p.ativo }}" onChange="{{ p.togAtivo }}" hint-size="40px,24px"></x-import>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ v.campos }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Entidade" options="{{ entOpts }}" value="{{ ent }}" onChange="{{ setEnt }}" hint-size="320px,32px"></x-import>
+        <span style="flex:1"></span>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" onClick="{{ addCampo }}" hint-size="140px,36px">Novo campo</x-import>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <sc-for list="{{ campos }}" as="c" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:{{ L.campoCols }};gap:8px 16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;flex-direction:column"><span style="font-weight:600">{{ c.nome }}</span><span style="font-size:12px;color:var(--ink-muted)">{{ c.opcoes }}</span></div>
+            <x-import component-from-global-scope="Leadtogo.Select" aria-label="Tipo do campo" options="{{ tipoCampoOpts }}" value="{{ c.tipo }}" onChange="{{ c.setTipo }}" hint-size="100%,36px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Checkbox" label="Obrigatório" checked="{{ c.obrig }}" onChange="{{ c.togObrig }}" hint-size="110px,22px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Checkbox" label="Filtrável" checked="{{ c.filtro }}" onChange="{{ c.togFiltro }}" hint-size="100px,22px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.IconButton" icon="trash-2" label="Remover campo" onClick="{{ c.remove }}" hint-size="36px,36px"></x-import>
+          </div>
+        </sc-for>
+        <sc-if value="{{ semCampos }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.EmptyState" icon="list" title="Nenhum campo personalizado" description="Crie campos para guardar o que é só do seu negócio." hint-size="100%,180px"></x-import></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ v.quadro }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.Alert" tone="info" title="Modelo da equipe" hint-size="100%,60px">Cada pessoa nova recebe uma cópia deste quadro e pode personalizar a sua sem mudar o modelo.</x-import>
+      <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
+        <sc-for list="{{ quadroCols }}" as="q" hint-placeholder-count="4">
+          <div style="flex:0 0 220px;background:var(--surface-sunken);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:9999px;background:{{ q.dot }}"></span><span style="flex:1;font-weight:600">{{ q.title }}</span><sc-if value="{{ q.limit }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--ink-muted)">{{ q.limit }}</span></sc-if></div>
+            <sc-if value="{{ q.done }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-muted)"><x-import component-from-global-scope="Leadtogo.Icon" name="circle-check" size="{{ 13 }}" hint-size="13px,13px"></x-import>Conclui a atividade</span></sc-if>
+            <div style="height:52px;border:1.5px dashed var(--border-strong);border-radius:8px"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <x-import component-from-global-scope="Leadtogo.Button" icon="settings" onClick="{{ editarQuadro }}" hint-size="150px,36px">Editar colunas</x-import>
+        <x-import component-from-global-scope="Leadtogo.Switch" label="Exibir atividades com clientes por padrão" defaultChecked="{{ true }}" hint-size="320px,24px"></x-import>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ v.preferencias }}" hint-placeholder-val="{{ false }}">
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <sc-for list="{{ prefs }}" as="p" hint-placeholder-count="4">
+          <div style="display:flex;gap:16px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">{{ p.titulo }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ p.desc }}</span></div>
+            <sc-if value="{{ p.isSwitch }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="Leadtogo.Switch" aria-label="{{ p.titulo }}" checked="{{ p.on }}" onChange="{{ p.toggle }}" hint-size="40px,24px"></x-import></sc-if>
+            <sc-if value="{{ p.isNum }}" hint-placeholder-val="{{ false }}"><div style="width:130px"><x-import component-from-global-scope="Leadtogo.TextField" aria-label="{{ p.titulo }}" type="number" value="{{ p.val }}" onChange="{{ p.setVal }}" suffix="dias" hint-size="130px,36px"></x-import></div></sc-if>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ salvavel }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="check" onClick="{{ salvar }}" disabled="{{ leitura }}" hint-size="160px,36px">Salvar alterações</x-import>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ convite }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ fecharDlg }}" style="position:fixed;inset:0;z-index:1300;background:var(--overlay);display:flex;align-items:{{ L.dlgAlign }};justify-content:center;padding:{{ L.dlgPad }}">
+      <div onClick="{{ stop }}" data-density="{{ L.density }}" style="width:{{ L.dlgW }};max-height:{{ L.dlgMaxH }};overflow:auto">
+        <x-import component-from-global-scope="Leadtogo.Dialog" title="Convidar pessoa" description="O convite vale por 7 dias." onClose="{{ fecharDlg }}" footer="{{ conviteFooter }}" hint-size="100%,340px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <x-import component-from-global-scope="Leadtogo.TextField" label="E-mail" required="{{ true }}" type="email" placeholder="nome@empresa.com.br" value="{{ cEmail }}" onChange="{{ setCEmail }}" error="{{ cErr }}" hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Select" label="Papel" options="{{ papelOpts }}" defaultValue="Vendedor" hint="Admin configura tudo. Gestor vê a equipe. Vendedor vê a própria carteira." hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="Leadtogo.Select" label="Gestor" options="{{ gestorOpts }}" defaultValue="Juliana Pimentel" hint-size="100%,60px"></x-import>
+          </div>
+        </x-import>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ transf }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ fecharDlg }}" style="position:fixed;inset:0;z-index:1300;background:var(--overlay);display:flex;align-items:{{ L.dlgAlign }};justify-content:center;padding:{{ L.dlgPad }}">
+      <div onClick="{{ stop }}" data-density="{{ L.density }}" style="width:{{ L.dlgW }};max-height:{{ L.dlgMaxH }};overflow:auto">
+        <x-import component-from-global-scope="Leadtogo.Dialog" title="Transferir carteira" description="Útil quando alguém sai ou muda de região." onClose="{{ fecharDlg }}" footer="{{ transfFooter }}" hint-size="100%,420px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end">
+              <x-import component-from-global-scope="Leadtogo.Select" label="De" options="{{ vendedores }}" value="{{ tDe }}" onChange="{{ setTDe }}" hint-size="100%,60px"></x-import>
+              <span style="padding-bottom:8px;color:var(--ink-muted);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="arrow-right" hint-size="16px,16px"></x-import></span>
+              <x-import component-from-global-scope="Leadtogo.Select" label="Para" options="{{ vendedores }}" value="{{ tPara }}" onChange="{{ setTPara }}" error="{{ tErr }}" hint-size="100%,60px"></x-import>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:13px;font-weight:600">O que transferir</span>
+              <x-import component-from-global-scope="Leadtogo.Checkbox" label="{{ tEmpLabel }}" defaultChecked="{{ true }}" hint-size="100%,22px"></x-import>
+              <x-import component-from-global-scope="Leadtogo.Checkbox" label="Oportunidades abertas" description="As fechadas continuam com quem fechou." defaultChecked="{{ true }}" hint-size="100%,40px"></x-import>
+              <x-import component-from-global-scope="Leadtogo.Checkbox" label="Atividades pendentes" defaultChecked="{{ true }}" hint-size="100%,22px"></x-import>
+            </div>
+            <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)"><x-import component-from-global-scope="Leadtogo.Icon" name="flag" size="{{ 14 }}" hint-size="14px,14px"></x-import>Cada empresa registra a troca no histórico.</span>
+          </div>
+        </x-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  COLORS = ['gray', 'red', 'orange', 'amber', 'green', 'teal', 'blue', 'indigo', 'purple', 'pink'];
+  NAMES = { gray: 'Cinza', red: 'Vermelho', orange: 'Laranja', amber: 'Âmbar', green: 'Verde', teal: 'Petróleo', blue: 'Azul', indigo: 'Índigo', purple: 'Roxo', pink: 'Rosa' };
+  SECOES = [
+    ['empresa', 'Empresa', 'building-2', 'Admin', 'Dados da empresa usuária e logo.'],
+    ['usuarios', 'Usuários e equipe', 'users', 'Admin', 'Quem usa o Leadtogo nesta empresa, papéis e carteiras.'],
+    ['tags', 'Tags', 'flag', 'Admin e gestor', 'Grupos de tags e suas cores. Status e Visitação são de seleção única.'],
+    ['funis', 'Funis e fases', 'handshake', 'Admin e gestor', 'Arraste as fases para mudar a ordem.'],
+    ['tipos', 'Tipos de atividade', 'calendar', 'Admin', 'O que cada tipo atualiza na carteira.'],
+    ['listas', 'Listas', 'list', 'Admin e gestor', 'Opções que aparecem nos campos de escolha.'],
+    ['produtos', 'Produtos e serviços', 'briefcase', 'Admin', 'Catálogo usado nos itens das oportunidades.'],
+    ['campos', 'Campos personalizados', 'pencil', 'Admin', 'Campos extras por entidade.'],
+    ['quadro', 'Quadro de tarefas modelo', 'square-kanban', 'Admin e gestor', 'Colunas que cada pessoa recebe ao entrar.'],
+    ['preferencias', 'Preferências', 'settings', 'Admin', 'Regras gerais da carteira.']
+  ];
+  state = {
+    secao: 'empresa', mobileList: true, membros: null, convite: false, transf: false, cEmail: '', cTried: false, tDe: 'Carolina Surlo', tPara: 'Rafael Bertoldi', consult: 'idle',
+    grupos: [
+      { nome: 'Status', tipo: 'unica', obrig: true, auto: 'Ao conquistar uma oportunidade, a empresa vira Cliente.', tags: [['Lead', 'teal'], ['Prospect', 'amber'], ['Cliente', 'green'], ['Inativo', 'gray']] },
+      { nome: 'Visitação', tipo: 'multipla', obrig: false, auto: 'Aplicadas sozinhas ao concluir Visita ou contato. Vencem conforme Preferências.', tags: [['Visitada', 'orange'], ['Contactada', 'blue']] },
+      { nome: 'Interesse', tipo: 'multipla', obrig: false, auto: '', tags: [['Monitoramento', 'purple'], ['Retrofit', 'pink'], ['Manutenção preditiva', 'indigo']] }
+    ], editTag: null,
+    funil: 'vendas', fases: null, drag: null, over: null,
+    tipos: [['ligacao', 'Ligação', 'contato'], ['whatsapp', 'WhatsApp', 'contato'], ['email', 'E-mail', 'contato'], ['visita', 'Visita', 'visita'], ['reuniao', 'Reunião', 'contato'], ['tarefa', 'Tarefa', 'nenhum']].map(t => ({ id: t[0], nome: t[1], conta: t[2], ativo: true })),
+    lista: 'origens',
+    listas: {
+      origens: ['Prospecção ativa', 'Indicação', 'Site', 'Evento', 'Importação de planilha'], perdido: ['Preço', 'Concorrência', 'Sem orçamento', 'Sem retorno do cliente', 'Escolheu solução interna'],
+      cancelado: ['Cliente desistiu do projeto', 'Duplicada', 'Cadastro errado'], suspenso: ['Aguardando orçamento do cliente', 'Mudança de prioridade', 'Parada da fábrica', 'Troca de gestor'],
+      solucoes: ['Monitoramento de máquinas', 'Manutenção preditiva', 'Retrofit de CLP'], verticais: ['Metalmecânica', 'Alimentos', 'Rochas ornamentais', 'Logística', 'Saúde', 'Construção civil', 'Agronegócio'],
+      papeis: ['Decisor', 'Influenciador', 'Técnico', 'Financeiro', 'Usuário'], funcionarios: ['1 a 9', '10 a 49', '50 a 99', '100 a 499', '500 ou mais'], faturamento: ['Até R$ 360 mil', 'Até R$ 4,8 mi', 'Até R$ 30 mi', 'Acima de R$ 30 mi']
+    },
+    produtos: [
+      ['Licença de monitoramento (por máquina)', 'Monitoramento de máquinas', 'mensal', 12, 125], ['Sensor de vibração sem fio', 'Monitoramento de máquinas', 'unica', 0, 1890], ['Implantação e treinamento', 'Monitoramento de máquinas', 'unica', 0, 4500],
+      ['Análise preditiva mensal', 'Manutenção preditiva', 'mensal', 12, 650], ['Retrofit de painel CLP', 'Retrofit de CLP', 'unica', 0, 18000], ['Suporte remoto 24h', 'Monitoramento de máquinas', 'anual', 12, 6000]
+    ].map(p => ({ nome: p[0], solucao: p[1], cobr: p[2], meses: p[3], preco: p[4], ativo: true })),
+    ent: 'empresa',
+    campos: { empresa: [['Máquinas CNC', 'numero', false, true, ''], ['ERP utilizado', 'lista', false, true, 'TOTVS Protheus, SAP Business One, Sankhya, Outro'], ['Turnos', 'numero', false, false, '']], contato: [['Time do coração', 'texto', false, false, '']], oportunidade: [['Concorrente na disputa', 'lista', false, true, 'Nenhum, Concorrente A, Concorrente B']] },
+    prefs: { verTodas: false, semContato: 60, validade: 90, conquistarCliente: true, motivoObrig: true }
+  };
+  notify(a, b, c) { this.props.notify && this.props.notify(a, b, c); }
+  renderVals() {
+    const D = window.LTD || { vendedores: [], fases: [] };
+    const m = !!this.props.mobile, st = this.state, LT = window.Leadtogo;
+    const papel = this.props.papel || 'Admin';
+    const leitura = papel === 'Vendedor';
+    const sec = this.SECOES.find(s => s[0] === st.secao);
+    const pal = (cur, pick, small) => this.COLORS.map(k => ({ name: this.NAMES[k], on: String(cur === k), ring: cur === k ? 'var(--ink)' : 'transparent', bg: 'var(--tag-' + k + '-bg)', fg: 'var(--tag-' + k + '-fg)', fgc: 'var(--tag-' + k + '-fg)', mark: cur === k ? '✓' : '', pick: () => pick(k) }));
+    const secoes = this.SECOES.map(s => { const on = !m && s[0] === st.secao; return { label: s[1], icon: s[2], quem: s[3], bg: on ? 'var(--surface-selected)' : (m ? 'var(--surface)' : 'transparent'), color: on ? 'var(--accent)' : 'var(--ink)', weight: on ? 600 : 500, pick: () => this.setState({ secao: s[0], mobileList: false, editTag: null }) }; });
+    const membrosBase = st.membros || [
+      { nome: 'Alessandro Dias', email: 'alessandro@diasautomacao.com.br', papel: 'Admin', gestor: '—', ativo: true, acesso: true },
+      { nome: 'Juliana Pimentel', email: 'juliana@diasautomacao.com.br', papel: 'Gestor', gestor: 'Alessandro Dias', ativo: true, acesso: true },
+      { nome: 'Carolina Surlo', email: 'carolina@diasautomacao.com.br', papel: 'Vendedor', gestor: 'Juliana Pimentel', ativo: true, acesso: true },
+      { nome: 'Rafael Bertoldi', email: 'rafael@diasautomacao.com.br', papel: 'Vendedor', gestor: 'Juliana Pimentel', ativo: true, acesso: true },
+      { nome: 'Wagner Cypriano', email: 'Sem login', papel: 'Vendedor', gestor: 'Juliana Pimentel', ativo: true, acesso: false },
+      { nome: 'Bruno Sossai', email: 'bruno@diasautomacao.com.br', papel: 'Vendedor', gestor: 'Juliana Pimentel', ativo: false, acesso: true },
+      { nome: 'mariana@diasautomacao.com.br', email: 'Convite enviado em 01/10 · expira em 08/10', papel: 'Vendedor', gestor: 'Juliana Pimentel', ativo: true, acesso: false, convite: true }
+    ];
+    const setM = (i, patch) => this.setState({ membros: membrosBase.map((x, j) => j === i ? { ...x, ...patch } : x) });
+    const membros = membrosBase.map((u, i) => ({ ...u, bg: u.ativo ? 'transparent' : 'var(--surface-sunken)', nameColor: u.ativo ? 'var(--ink)' : 'var(--ink-muted)',
+      status: u.convite ? 'Convidado' : u.ativo ? 'Ativo' : 'Inativo', statusTone: u.convite ? 'info' : u.ativo ? 'success' : 'neutral', statusIcon: u.convite ? 'mail' : u.ativo ? 'circle-check' : 'circle-pause',
+      acesso: u.acesso ? 'Com acesso' : 'Sem acesso', acessoIcon: u.acesso ? 'user' : 'ban',
+      acao: u.convite ? 'Reenviar' : u.ativo ? 'Desativar' : 'Reativar',
+      toggle: () => { if (u.convite) return this.notify('Convite reenviado', u.nome); setM(i, { ativo: !u.ativo }); this.notify(u.ativo ? 'Pessoa desativada' : 'Pessoa reativada', u.nome + (u.ativo ? '. Transfira a carteira se precisar.' : '')); },
+      setPapel: (e) => setM(i, { papel: e.target.value }) }));
+    const grupos = st.grupos.map((g, gi) => {
+      const ed = st.editTag && st.editTag[0] === gi ? g.tags[st.editTag[1]] : null;
+      const setG = (fn) => this.setState({ grupos: st.grupos.map((x, j) => j === gi ? fn(x) : x) });
+      return { nome: g.nome, tipo: g.tipo, obrig: g.obrig, auto: g.auto || false,
+        setTipo: (v) => setG(x => ({ ...x, tipo: v })), togObrig: () => setG(x => ({ ...x, obrig: !x.obrig })),
+        tags: g.tags.map((t, ti) => { const on = st.editTag && st.editTag[0] === gi && st.editTag[1] === ti; return { label: t[0], color: t[1], pressed: String(!!on), ring: on ? 'var(--accent)' : 'transparent', pick: () => this.setState({ editTag: on ? null : [gi, ti] }) }; }),
+        addTag: () => { setG(x => ({ ...x, tags: x.tags.concat([['Nova tag', 'gray']]) })); this.setState({ editTag: [gi, g.tags.length] }); },
+        editando: !!ed,
+        edit: ed ? { label: ed[0], rename: (e) => { const v = e.target.value; setG(x => ({ ...x, tags: x.tags.map((t, j) => j === st.editTag[1] ? [v, t[1]] : t) })); },
+          swatches: pal(ed[1], (k) => setG(x => ({ ...x, tags: x.tags.map((t, j) => j === st.editTag[1] ? [t[0], k] : t) }))),
+          remove: () => { setG(x => ({ ...x, tags: x.tags.filter((t, j) => j !== st.editTag[1]) })); this.setState({ editTag: null }); } } : { swatches: [] } };
+    });
+    const fasesBase = st.fases || D.fases.map((f, i) => ({ id: f.id, title: f.title, color: f.color, prob: f.prob, dias: [7, 10, 10, 14][i] || 10 }));
+    const setF = (i, patch) => this.setState({ fases: fasesBase.map((x, j) => j === i ? { ...x, ...patch } : x) });
+    const fases = fasesBase.map((f, i) => ({ ...f, prob: String(f.prob), dias: String(f.dias), opacity: st.drag === i ? 0.4 : 1, dropLine: st.over === i && st.drag !== null && st.drag !== i ? 'var(--accent)' : 'transparent',
+      swatches: pal(f.color, (k) => setF(i, { color: k })), rename: (e) => setF(i, { title: e.target.value }), setProb: (e) => setF(i, { prob: e.target.value }), setDias: (e) => setF(i, { dias: e.target.value }),
+      remove: () => this.setState({ fases: fasesBase.filter((x, j) => j !== i) }),
+      dragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(i)); } catch (x) {} this.setState({ drag: i }); },
+      over: (e) => { e.preventDefault(); if (st.over !== i) this.setState({ over: i }); },
+      drop: (e) => { e.preventDefault(); const from = st.drag; if (from === null || from === i) return this.setState({ drag: null, over: null }); const a = fasesBase.slice(); const [x] = a.splice(from, 1); a.splice(i, 0, x); this.setState({ fases: a, drag: null, over: null }); this.notify('Ordem das fases alterada', a.map(f => f.title).join(' → '), 'info'); } }));
+    const EF = { visita: 'Aplica Visitada e atualiza última visita', contato: 'Aplica Contactada e atualiza último contato', nenhum: 'Não altera a carteira' };
+    const tipos = st.tipos.map((t, i) => ({ ...t, efeito: EF[t.conta], setConta: (v) => this.setState({ tipos: st.tipos.map((x, j) => j === i ? { ...x, conta: v } : x) }), togAtivo: () => this.setState({ tipos: st.tipos.map((x, j) => j === i ? { ...x, ativo: !x.ativo } : x) }) }));
+    const LN = [['origens', 'Origens', 'Campo Origem da empresa e da oportunidade'], ['perdido', 'Motivos de perda', 'Obrigatório ao marcar Perdido'], ['cancelado', 'Motivos de cancelamento', 'Obrigatório ao marcar Cancelado'], ['suspenso', 'Motivos de suspensão', 'Obrigatório ao Suspender'], ['solucoes', 'Soluções', 'Agrupa produtos e oportunidades'], ['verticais', 'Verticais', 'Segmento da empresa'], ['papeis', 'Papéis na decisão', 'Ficha do contato'], ['funcionarios', 'Faixas de funcionários', 'Ficha da empresa'], ['faturamento', 'Faixas de faturamento', 'Ficha da empresa']];
+    const la = LN.find(l => l[0] === st.lista);
+    const listas = LN.map(l => { const on = l[0] === st.lista; return { nome: l[1], n: st.listas[l[0]].length, bg: on ? 'var(--surface-selected)' : 'var(--surface)', color: on ? 'var(--accent)' : 'var(--ink)', weight: on ? 600 : 500, pick: () => this.setState({ lista: l[0] }) }; });
+    const setL = (arr) => this.setState({ listas: { ...st.listas, [st.lista]: arr } });
+    const brl = (v) => 'R$ ' + v.toLocaleString('pt-BR');
+    const produtos = st.produtos.map((p, i) => ({ ...p, meses: p.cobr === 'unica' ? '—' : String(p.meses), preco: brl(p.preco) + (p.cobr === 'mensal' ? '/mês' : p.cobr === 'anual' ? '/ano' : ''),
+      setCobr: (v) => this.setState({ produtos: st.produtos.map((x, j) => j === i ? { ...x, cobr: v, meses: v === 'unica' ? 0 : (x.meses || 12) } : x) }), togAtivo: () => this.setState({ produtos: st.produtos.map((x, j) => j === i ? { ...x, ativo: !x.ativo } : x) }) }));
+    const cl = st.campos[st.ent];
+    const setC = (arr) => this.setState({ campos: { ...st.campos, [st.ent]: arr } });
+    const TC = { texto: 'Texto', numero: 'Número', data: 'Data', lista: 'Lista de opções', sim_nao: 'Sim ou não', moeda: 'Valor (R$)' };
+    const campos = cl.map((c, i) => ({ nome: c[0], tipo: c[1], obrig: c[2], filtro: c[3], opcoes: c[1] === 'lista' ? 'Opções: ' + c[4] : TC[c[1]],
+      setTipo: (e) => setC(cl.map((x, j) => j === i ? [x[0], e.target.value, x[2], x[3], x[4]] : x)), togObrig: () => setC(cl.map((x, j) => j === i ? [x[0], x[1], !x[2], x[3], x[4]] : x)), togFiltro: () => setC(cl.map((x, j) => j === i ? [x[0], x[1], x[2], !x[3], x[4]] : x)), remove: () => setC(cl.filter((x, j) => j !== i)) }));
+    const pf = st.prefs, setP = (patch) => this.setState({ prefs: { ...pf, ...patch } });
+    const prefs = [
+      { titulo: 'Vendedores veem todas as empresas', desc: 'Desligado: cada vendedor vê só a própria carteira. Gestores e admins veem tudo.', isSwitch: true, isNum: false, on: pf.verTodas, toggle: () => setP({ verTodas: !pf.verTodas }) },
+      { titulo: 'Dias para "sem contato"', desc: 'Empresas sem contato há mais tempo entram no alerta do Dashboard.', isSwitch: false, isNum: true, val: String(pf.semContato), setVal: (e) => setP({ semContato: e.target.value }) },
+      { titulo: 'Validade das tags de visitação', desc: 'Visitada e Contactada saem sozinhas depois desse prazo sem nova visita ou contato.', isSwitch: false, isNum: true, val: String(pf.validade), setVal: (e) => setP({ validade: e.target.value }) },
+      { titulo: 'Ao conquistar, a empresa vira Cliente', desc: 'Troca a tag de Status automaticamente e registra no histórico.', isSwitch: true, isNum: false, on: pf.conquistarCliente, toggle: () => setP({ conquistarCliente: !pf.conquistarCliente }) },
+      { titulo: 'Resultado obrigatório ao concluir atividade', desc: 'Pede o que aconteceu antes de marcar como Realizada.', isSwitch: true, isNum: false, on: pf.motivoObrig, toggle: () => setP({ motivoObrig: !pf.motivoObrig }) }
+    ];
+    const consultando = st.consult === 'loading';
+    const fechar = () => this.setState({ convite: false, transf: false });
+    const enviarConvite = () => { if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(st.cEmail)) return this.setState({ cTried: true }); this.setState({ convite: false, membros: membrosBase.concat([{ nome: st.cEmail, email: 'Convite enviado agora · expira em 7 dias', papel: 'Vendedor', gestor: 'Juliana Pimentel', ativo: true, acesso: false, convite: true }]) }); this.notify('Convite enviado', st.cEmail); };
+    const transferir = () => { if (st.tDe === st.tPara) return; this.setState({ transf: false }); this.notify('Carteira transferida', '14 empresas, 3 oportunidades e 9 atividades de ' + st.tDe + ' para ' + st.tPara + '.'); };
+    const V = st.secao;
+    return {
+      mobile: m, desktop: !m, papel, leitura,
+      showNav: !m || st.mobileList, showContent: !m || !st.mobileList, voltarLista: () => this.setState({ mobileList: true }),
+      L: m ? { navW: '100%', navPad: '16px', navBg: 'transparent', navBorder: '0', itemH: '56px', itemBorder: '1px solid var(--border)', pad: '16px', density: 'touch', cols2: '1fr', userCols: '1fr 1fr', faseCols: '24px minmax(0,1fr) 44px', tipoCols: '1fr', listCols: '1fr', prodCols: '1fr 1fr', prodAlign: 'left', campoCols: '1fr 1fr', dlgAlign: 'flex-end', dlgPad: '0', dlgW: '100%', dlgMaxH: '764px' }
+           : { navW: '260px', navPad: '24px 12px', navBg: 'var(--surface)', navBorder: '1px solid var(--border)', itemH: '44px', itemBorder: '0', pad: '24px', density: 'default', cols2: '1fr 1fr', userCols: 'minmax(0,1.6fr) 140px minmax(0,1fr) 200px 100px', faseCols: '28px minmax(0,1fr) 230px 110px 130px 36px', tipoCols: '180px 300px minmax(0,1fr) 90px', listCols: '260px minmax(0,1fr)', prodCols: 'minmax(0,1.6fr) minmax(0,1fr) 230px 80px 120px 70px', prodAlign: 'right', campoCols: 'minmax(0,1.4fr) 180px 120px 110px 36px', dlgAlign: 'center', dlgPad: '24px', dlgW: '480px', dlgMaxH: 'calc(100vh - 48px)' },
+      secoes, atual: { label: sec[1], desc: sec[4] },
+      v: { empresa: V === 'empresa', usuarios: V === 'usuarios', tags: V === 'tags', funis: V === 'funis', tipos: V === 'tipos', listas: V === 'listas', produtos: V === 'produtos', campos: V === 'campos', quadro: V === 'quadro', preferencias: V === 'preferencias' },
+      salvavel: V !== 'usuarios',
+      salvar: () => this.notify('Alterações salvas', sec[1] + ' · vale para toda a empresa.'),
+      enviarLogo: () => this.notify('Logo enviado', 'Aparece no seletor de empresa.'),
+      cnpjHint: st.consult === 'done' ? 'Dados conferidos com a Receita agora.' : 'Consultar atualiza razão social e endereço.',
+      consultarBtn: LT ? React.createElement(LT.Button, { size: 'sm', variant: 'secondary', icon: consultando ? undefined : 'search', loading: consultando, onClick: () => { this.setState({ consult: 'loading' }); setTimeout(() => { this.setState({ consult: 'done' }); this.notify('Dados conferidos', 'Nada mudou na Receita.', 'info'); }, 1000); } }, consultando ? 'Consultando…' : 'Consultar') : null,
+      membros, membrosLabel: membros.filter(u => u.ativo && !u.convite).length + ' ativos · ' + membros.filter(u => u.convite).length + ' convite pendente', papelOpts: ['Admin', 'Gestor', 'Vendedor'],
+      convite: st.convite, abrirConvite: () => this.setState({ convite: true, cEmail: '', cTried: false }), cEmail: st.cEmail, setCEmail: (e) => this.setState({ cEmail: e.target.value }), cErr: st.cTried ? 'Informe um e-mail válido.' : undefined,
+      gestorOpts: ['Alessandro Dias', 'Juliana Pimentel'],
+      conviteFooter: LT && st.convite ? React.createElement(React.Fragment, null, React.createElement(LT.Button, { variant: 'ghost', onClick: fechar }, 'Cancelar'), React.createElement(LT.Button, { variant: 'primary', icon: 'mail', onClick: enviarConvite }, 'Enviar convite')) : null,
+      transf: st.transf, abrirTransf: () => this.setState({ transf: true }), vendedores: D.vendedores.concat(['Wagner Cypriano']),
+      tDe: st.tDe, tPara: st.tPara, setTDe: (e) => this.setState({ tDe: e.target.value }), setTPara: (e) => this.setState({ tPara: e.target.value }), tErr: st.tDe === st.tPara ? 'Escolha outra pessoa.' : undefined,
+      tEmpLabel: 'Empresas da carteira (14)',
+      transfFooter: LT && st.transf ? React.createElement(React.Fragment, null, React.createElement(LT.Button, { variant: 'ghost', onClick: fechar }, 'Cancelar'), React.createElement(LT.Button, { variant: 'primary', onClick: transferir }, 'Transferir carteira')) : null,
+      fecharDlg: fechar, stop: (e) => e.stopPropagation(),
+      grupos, selOpts: [{ value: 'unica', label: 'Seleção única' }, { value: 'multipla', label: 'Múltipla' }],
+      novoGrupo: () => this.setState({ grupos: st.grupos.concat([{ nome: 'Novo grupo', tipo: 'multipla', obrig: false, auto: '', tags: [] }]) }),
+      funilTabs: [{ value: 'vendas', label: 'Vendas novas' }, { value: 'renovacao', label: 'Renovação' }, { value: 'pos', label: 'Pós-venda' }], funil: st.funil, setFunil: (v) => this.setState({ funil: v }),
+      fases, dragEnd: () => this.setState({ drag: null, over: null }), addFase: () => this.setState({ fases: fasesBase.concat([{ id: 'n' + Date.now(), title: 'Nova fase', color: 'gray', prob: 50, dias: 10 }]) }),
+      tipos, contaOpts: [{ value: 'visita', label: 'Visita' }, { value: 'contato', label: 'Contato' }, { value: 'nenhum', label: 'Nenhum' }],
+      listas, listaAtual: { nome: la[1], uso: la[2] }, itens: st.listas[st.lista].map((n, i) => ({ nome: n, remove: () => setL(st.listas[st.lista].filter((x, j) => j !== i)) })),
+      addItem: (e) => { if (e.key === 'Enter' && e.target.value.trim()) { const v = e.target.value.trim(); e.target.value = ''; setL(st.listas[st.lista].concat([v])); } },
+      produtos, cobrOpts: [{ value: 'unica', label: 'Única' }, { value: 'mensal', label: 'Mensal' }, { value: 'anual', label: 'Anual' }],
+      entOpts: [{ value: 'empresa', label: 'Empresa' }, { value: 'contato', label: 'Contato' }, { value: 'oportunidade', label: 'Oportunidade' }], ent: st.ent, setEnt: (v) => this.setState({ ent: v }),
+      campos, semCampos: campos.length === 0, tipoCampoOpts: Object.keys(TC).map(k => ({ value: k, label: TC[k] })), addCampo: () => setC(cl.concat([['Novo campo', 'texto', false, false, '']])),
+      quadroCols: [{ title: 'A fazer', c: 'gray' }, { title: 'Fazendo', c: 'blue', limit: 'Limite 3' }, { title: 'Aguardando cliente', c: 'amber' }, { title: 'Feito', c: 'green', done: true }].map(q => ({ ...q, limit: q.limit || false, done: !!q.done, dot: 'var(--tag-' + q.c + '-fg)' })),
+      editarQuadro: () => this.notify('Editar colunas', 'Mesmo editor de "Personalizar quadro" em Tarefas.', 'info'),
+      prefs
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Finais de linha sempre LF (evita problemas entre Windows, WSL e os containers Linux)
+* text=auto eol=lf
+*.woff2 binary
+*.png binary
+*.jpg binary
+*.svg text eol=lf

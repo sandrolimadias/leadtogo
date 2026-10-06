@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script><style>.lt-tabs { overflow-y: hidden; }</style></helmet>
+<div style="display:flex;flex-direction:column;min-height:100%">
+  <div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:16px;max-width:1080px;width:100%;flex:1">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <nav style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)"><a href="#" onClick="{{ goVoltar }}" style="color:var(--ink-muted)">{{ origemLabel }}</a><x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" size="{{ 13 }}" hint-size="13px,13px"></x-import><span style="color:var(--ink)">Importar planilha</span></nav>
+        <h1 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.015em">Importar planilha</h1>
+      </div>
+      <ol style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="6">
+          <li style="display:flex;flex-direction:column;gap:6px">
+            <div style="height:4px;border-radius:9999px;background:{{ s.bar }}"></div>
+            <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:{{ s.weight }};color:{{ s.color }}">
+              <sc-if value="{{ s.done }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Icon" name="circle-check" size="{{ 14 }}" hint-size="14px,14px"></x-import></sc-if>{{ s.label }}
+            </span>
+          </li>
+        </sc-for>
+      </ol>
+    </sc-if>
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:13px;color:var(--ink-muted)">{{ stepLabel }}</span>
+        <div style="height:4px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden"><div style="height:100%;width:{{ stepPct }};background:var(--accent)"></div></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ p.envio }}" hint-placeholder-val="{{ true }}">
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <h2 style="margin:0;flex:1;font-size:15px;line-height:20px;font-weight:600">O que você vai importar?</h2>
+          <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Tipo de importação" options="{{ tipoOpts }}" value="{{ tipo }}" onChange="{{ setTipo }}" hint-size="220px,32px"></x-import>
+        </div>
+        <sc-if value="{{ semArquivo }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ escolher }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:{{ L.dropH }};padding:24px;border:1.5px dashed var(--border-strong);border-radius:8px;background:var(--surface-sunken);font:inherit;color:var(--ink);cursor:pointer" style-hover="border-color:var(--accent)">
+            <span style="color:var(--ink-muted);display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="upload" size="{{ 28 }}" hint-size="28px,28px"></x-import></span>
+            <span style="font-size:16px;font-weight:600">{{ dropTitle }}</span>
+            <span style="font-size:13px;color:var(--ink-muted)">Excel (.xlsx) ou CSV, até 5.000 linhas e 10 MB</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ arquivo }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;flex-wrap:wrap">
+            <span style="width:36px;height:36px;border-radius:6px;background:var(--success-soft);color:var(--success);display:flex;align-items:center;justify-content:center"><x-import component-from-global-scope="Leadtogo.Icon" name="paperclip" hint-size="16px,16px"></x-import></span>
+            <div style="flex:1;min-width:160px;display:flex;flex-direction:column"><span style="font-weight:600">{{ arquivoNome }}</span><span style="font-size:13px;color:var(--ink-muted)">48 linhas · 9 colunas · aba "Clientes"</span></div>
+            <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="x" onClick="{{ removerArquivo }}" hint-size="90px,28px">Trocar</x-import>
+          </div>
+        </sc-if>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-muted);flex-wrap:wrap">
+          <x-import component-from-global-scope="Leadtogo.Icon" name="info" size="{{ 14 }}" hint-size="14px,14px"></x-import>
+          <span style="flex:1;min-width:200px">A primeira linha precisa ter os nomes das colunas.</span>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="download" onClick="{{ baixarModelo }}" hint-size="130px,28px">Baixar modelo</x-import>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ p.mapa }}" hint-placeholder-val="{{ false }}">
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px">
+          <h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600">Mapear colunas</h2>
+          <span style="font-size:13px;color:var(--ink-muted)">{{ mapaResumo }}</span>
+        </div>
+        <sc-for list="{{ colunas }}" as="c" hint-placeholder-count="9">
+          <div style="display:grid;grid-template-columns:{{ L.mapCols }};gap:8px 16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:600">{{ c.col }}</span><span style="font-size:13px;color:var(--ink-muted);overflow-wrap:anywhere">{{ c.ex }}</span></div>
+            <x-import component-from-global-scope="Leadtogo.Select" aria-label="{{ c.aria }}" options="{{ campoOpts }}" value="{{ c.campo }}" onChange="{{ c.set }}" hint-size="100%,36px"></x-import>
+            <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:{{ c.color }}"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ c.icon }}" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ c.status }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ mapaErro }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:12px 16px"><x-import component-from-global-scope="Leadtogo.Alert" tone="danger" title="Falta um campo obrigatório" hint-size="100%,60px">Mapeie o CNPJ ou a Razão social para identificar cada empresa.</x-import></div>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ p.previa }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:{{ L.sumCols }};gap:12px">
+        <sc-for list="{{ resumo }}" as="r" hint-placeholder-count="3">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px">
+            <span style="color:{{ r.color }};display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ r.icon }}" size="{{ 18 }}" hint-size="18px,18px"></x-import></span>
+            <div style="display:flex;flex-direction:column"><span style="font-size:20px;line-height:24px;font-weight:600;font-variant-numeric:tabular-nums">{{ r.n }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ r.label }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 16px 0;flex-wrap:wrap;border-bottom:1px solid var(--border)">
+          <div style="flex:1;min-width:0;overflow-x:auto;overflow-y:hidden"><x-import component-from-global-scope="Leadtogo.Tabs" label="Filtrar prévia" items="{{ prevTabs }}" value="{{ prevTab }}" onChange="{{ setPrevTab }}" hint-size="100%,40px"></x-import></div>
+          <div data-density="compact" style="display:flex;align-items:center;gap:8px;padding-bottom:8px">
+            <span style="font-size:13px;color:var(--ink-muted)">Todos os duplicados:</span>
+            <div style="width:130px"><x-import component-from-global-scope="Leadtogo.Select" aria-label="Ação para todos os duplicados" options="{{ acaoOpts }}" value="{{ acaoTodos }}" onChange="{{ setAcaoTodos }}" hint-size="130px,28px"></x-import></div>
+          </div>
+        </div>
+        <sc-for list="{{ linhas }}" as="l" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:{{ L.rowCols }};gap:8px 16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);background:{{ l.bg }}">
+            <span style="font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums">{{ l.linhaLabel }}</span>
+            <div style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:600">{{ l.nome }}</span><span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-muted)">{{ l.doc }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+              <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:{{ l.color }}"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ l.icon }}" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ l.status }}</span>
+              <sc-if value="{{ l.detalhe }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--ink-muted)">{{ l.detalhe }}</span></sc-if>
+            </div>
+            <div data-density="compact">
+              <sc-if value="{{ l.temAcao }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Select" aria-label="Ação" options="{{ l.opts }}" value="{{ l.acao }}" onChange="{{ l.setAcao }}" hint-size="100%,28px"></x-import></sc-if>
+              <sc-if value="{{ l.semAcao }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:var(--ink-muted)">{{ l.acaoTexto }}</span></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ p.carteira }}" hint-placeholder-val="{{ false }}">
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600">Carteira das empresas novas</h2>
+          <span style="font-size:13px;color:var(--ink-muted)">Vale para as {{ nCriar }} que serão criadas. Se a planilha tiver a coluna, ela vence.</span>
+        </div>
+        <div style="display:grid;grid-template-columns:{{ L.cols3 }};gap:14px 16px">
+          <x-import component-from-global-scope="Leadtogo.Select" label="Vendedor" required="{{ true }}" options="{{ vendedores }}" defaultValue="Alessandro Dias" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Vertical" options="{{ verticais }}" defaultValue="Metalmecânica" hint-size="100%,60px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Select" label="Status" required="{{ true }}" options="{{ statusOpts }}" defaultValue="Lead" hint-size="100%,60px"></x-import>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:13px;font-weight:600">Tags extras</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <sc-for list="{{ tagsExtra }}" as="t" hint-placeholder-count="3">
+              <button type="button" onClick="{{ t.toggle }}" aria-pressed="{{ t.pressed }}" style="display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:9999px;border:1px solid {{ t.border }};background:{{ t.bg }};font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer">
+                <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Icon" name="check" size="{{ 13 }}" hint-size="13px,13px"></x-import></sc-if>{{ t.label }}
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding-top:12px;border-top:1px solid var(--border)">
+          <x-import component-from-global-scope="Leadtogo.Switch" label="Completar com os dados da Receita" defaultChecked="{{ true }}" hint-size="100%,24px"></x-import>
+          <span style="font-size:13px;color:var(--ink-muted)">Consulta cada CNPJ e preenche o que estiver vazio. Deixa a importação mais lenta.</span>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ p.importando }}" hint-placeholder-val="{{ false }}">
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:8px"><h2 style="margin:0;flex:1;font-size:18px;line-height:24px;font-weight:600">Importando…</h2><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ progLabel }}</span></div>
+        <div style="height:8px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden"><div style="height:100%;width:{{ progPct }};background:var(--accent);border-radius:9999px;transition:width 200ms"></div></div>
+        <span style="font-size:13px;color:var(--ink-muted)">{{ progEtapa }}</span>
+        <x-import component-from-global-scope="Leadtogo.Alert" tone="info" title="Pode sair desta tela" hint-size="100%,60px">A importação continua em segundo plano. Avisamos nas notificações quando terminar.</x-import>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ p.relatorio }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.Alert" tone="success" title="Importação concluída" hint-size="100%,60px">{{ relResumo }}</x-import>
+      <div style="display:grid;grid-template-columns:{{ L.relCols }};gap:12px">
+        <sc-for list="{{ relatorio }}" as="r" hint-placeholder-count="4">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:4px">
+            <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:{{ r.color }}"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ r.icon }}" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ r.label }}</span>
+            <span style="font-size:28px;line-height:32px;font-weight:600;font-variant-numeric:tabular-nums">{{ r.n }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:13px;color:var(--ink-muted)">Arquivo {{ arquivoNome }} · por Alessandro Dias · hoje, 10:42</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <x-import component-from-global-scope="Leadtogo.Button" icon="download" onClick="{{ baixarRel }}" hint-size="190px,36px">Baixar relatório (Excel)</x-import>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="danger-ghost" icon="repeat" onClick="{{ desfazer }}" hint-size="170px,36px">Desfazer importação</x-import>
+        </div>
+        <span style="font-size:13px;color:var(--ink-muted)">Desfazer fica disponível por 24 horas e remove só o que foi criado.</span>
+      </section>
+    </sc-if>
+  </div>
+
+  <div style="position:sticky;bottom:0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px {{ L.footPad }};background:var(--surface);border-top:1px solid var(--border)">
+    <sc-if value="{{ podeVoltar }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Button" variant="ghost" icon="chevron-left" onClick="{{ voltar }}" hint-size="90px,36px">Voltar</x-import></sc-if>
+    <span style="flex:1"></span>
+    <sc-if value="{{ podeAvancar }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="Leadtogo.Button" variant="primary" iconRight="{{ avancarIcon }}" onClick="{{ avancar }}" disabled="{{ avancarDisabled }}" hint-size="160px,36px">{{ avancarLabel }}</x-import></sc-if>
+    <sc-if value="{{ fimLista }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Button" variant="primary" iconRight="arrow-right" onClick="{{ verImportadas }}" hint-size="190px,36px">{{ verLabel }}</x-import></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  PASSOS = ['envio', 'mapa', 'previa', 'carteira', 'importando', 'relatorio'];
+  NOMES = ['Enviar arquivo', 'Mapear colunas', 'Prévia', 'Carteira', 'Importar', 'Relatório'];
+  COLS = [['CNPJ', '33.120.457/0001-91', 'cnpj'], ['Empresa', 'Café Montanhas Capixabas', 'fantasia'], ['Razão', 'Montanhas Capixabas Torrefação…', 'razao'], ['Cidade', 'Venda Nova do Imigrante', 'cidade'], ['Fone', '(28) 3546-2207', 'telefone'], ['Celular/Zap', '(28) 99883-1145', 'whatsapp'], ['E-mail', 'contato@montanhas.com.br', 'email'], ['Responsável', 'Otávio Falqueto', 'contato'], ['Obs', 'Visitar na safra', '']];
+  CAMPOS = [['', 'Ignorar coluna'], ['cnpj', 'CNPJ'], ['razao', 'Razão social'], ['fantasia', 'Nome fantasia'], ['cidade', 'Cidade'], ['uf', 'UF'], ['telefone', 'Telefone'], ['whatsapp', 'WhatsApp'], ['email', 'E-mail'], ['contato', 'Contato (nome)'], ['cargo', 'Contato (cargo)'], ['vendedor', 'Vendedor'], ['status', 'Status'], ['observacoes', 'Observações']];
+  LINHAS = [
+    { l: 2, nome: 'Café Montanhas Capixabas', doc: '33.120.457/0001-91', k: 'dup', det: 'CNPJ já existe: Café Montanhas Capixabas', acao: 'atualizar' },
+    { l: 3, nome: 'Usidantec Usinagem', doc: '12.424.587/0001-45', k: 'dup', det: 'CNPJ já existe: Usidantec', acao: 'pular' },
+    { l: 4, nome: 'Metalurgica Serra Azul', doc: 'Sem CNPJ', k: 'dup', det: 'Nome parecido: Metalúrgica Serra Azul', acao: 'pular' },
+    { l: 5, nome: 'Torrefação Pedra Azul', doc: '41.882.310/0001-07', k: 'ok' },
+    { l: 6, nome: 'Marmoraria Castelo Forte', doc: '28.560.991/0001-44', k: 'dup', det: 'Telefone igual: Laticínios Vale do Castelo', acao: 'criar' },
+    { l: 7, nome: 'Usinagem Domingos Martins', doc: '19.774.006/0001-63', k: 'ok' },
+    { l: 8, nome: 'Frigorífico Itapemirim', doc: '07.112.98/0001', k: 'erro', det: 'CNPJ inválido: faltam 2 dígitos' },
+    { l: 9, nome: 'Cerâmica Iconha', doc: '35.009.214/0001-80', k: 'ok' },
+    { l: 10, nome: 'Plásticos Viana', doc: '22.416.730/0001-15', k: 'dup', det: 'CNPJ já existe: Embalagens Vila Velha (filial)', acao: 'atualizar' },
+    { l: 11, nome: '', doc: 'Sem CNPJ', k: 'erro', det: 'Linha sem CNPJ e sem nome' },
+    { l: 12, nome: 'Laticínios Alto Caparaó', doc: '16.300.582/0001-29', k: 'ok' }
+  ];
+  state = { passo: 0, tipo: 'empresas', arquivo: false, map: null, acoes: {}, prevTab: 'todas', acaoTodos: '', tags: { Visitada: false, Monitoramento: true, 'Feira Vitória Stone': true }, prog: 0 };
+  componentWillUnmount() { clearInterval(this._p); }
+  iniciar() {
+    this.setState({ passo: 4, prog: 0 });
+    clearInterval(this._p);
+    this._p = setInterval(() => this.setState(s => { const p = Math.min(48, s.prog + 3); if (p >= 48) { clearInterval(this._p); this.props.notify && this.props.notify('Importação concluída', 'O relatório está pronto.'); return { prog: 48, passo: 5 }; } return { prog: p }; }), 120);
+  }
+  renderVals() {
+    const D = window.LTD || { vendedores: [] };
+    const m = !!this.props.mobile, st = this.state;
+    const go = this.props.go || (() => {}), notify = this.props.notify || (() => {});
+    const P = this.PASSOS[st.passo];
+    const map = st.map || this.COLS.map(c => c[2]);
+    const mapped = map.filter(Boolean);
+    const mapaErro = !mapped.includes('cnpj') && !mapped.includes('razao');
+    const colunas = this.COLS.map((c, i) => { const v = map[i]; const dupe = v && map.indexOf(v) !== i; return { col: c[0], ex: 'Ex.: ' + c[1], campo: v, aria: 'Campo para a coluna ' + c[0],
+      status: !v ? 'Ignorada' : dupe ? 'Repetida' : 'Mapeada', icon: !v ? 'ban' : dupe ? 'triangle-alert' : 'circle-check', color: !v ? 'var(--ink-muted)' : dupe ? 'var(--warning)' : 'var(--success)',
+      set: (e) => { const nm = map.slice(); nm[i] = e.target.value; this.setState({ map: nm }); } }; });
+    const acaoDe = (r) => st.acoes[r.l] || r.acao;
+    const ACO = { pular: 'Pular', atualizar: 'Atualizar', criar: 'Criar nova' };
+    const all = this.LINHAS.concat(Array.from({ length: 37 }, (_, i) => ({ l: 13 + i, k: 'ok', hidden: true })));
+    const nDup = all.filter(r => r.k === 'dup').length, nErr = all.filter(r => r.k === 'erro').length, nOk = all.filter(r => r.k === 'ok').length;
+    const nCriar = nOk + all.filter(r => r.k === 'dup' && acaoDe(r) === 'criar').length;
+    const nAtual = all.filter(r => r.k === 'dup' && acaoDe(r) === 'atualizar').length;
+    const nPular = all.filter(r => r.k === 'dup' && acaoDe(r) === 'pular').length + nErr;
+    const vis = this.LINHAS.filter(r => st.prevTab === 'todas' || (st.prevTab === 'dup' && r.k === 'dup') || (st.prevTab === 'erro' && r.k === 'erro'));
+    const linhas = vis.map(r => { const K = { ok: ['Nova', 'circle-check', 'var(--success)'], dup: ['Possível duplicado', 'triangle-alert', 'var(--warning)'], erro: ['Erro', 'circle-x', 'var(--danger)'] }[r.k];
+      return { linhaLabel: 'Linha ' + r.l, nome: r.nome || 'Sem nome', doc: r.doc, status: K[0], icon: K[1], color: K[2], detalhe: r.det || false,
+        bg: r.k === 'erro' ? 'var(--danger-soft)' : 'transparent', temAcao: r.k === 'dup', semAcao: r.k !== 'dup', acaoTexto: r.k === 'erro' ? 'Será pulada' : 'Será criada',
+        acao: acaoDe(r), opts: Object.keys(ACO).map(k => ({ value: k, label: ACO[k] })), setAcao: (e) => this.setState({ acoes: { ...st.acoes, [r.l]: e.target.value } }) }; });
+    const steps = this.NOMES.map((n, i) => ({ label: n, done: i < st.passo, bar: i <= st.passo ? 'var(--accent)' : 'var(--surface-sunken)', color: i === st.passo ? 'var(--ink)' : i < st.passo ? 'var(--ink-muted)' : 'var(--ink-subtle)', weight: i === st.passo ? 600 : 500 }));
+    const arquivoNome = st.tipo === 'empresas' ? 'clientes_regiao_serrana_2026.xlsx' : 'contatos_feira_vitoria_stone.csv';
+    const AV = { envio: 'Mapear colunas', mapa: 'Ver prévia', previa: 'Definir carteira', carteira: 'Importar ' + (nCriar + nAtual) + ' empresas' };
+    const avancar = () => {
+      if (P === 'carteira') return this.iniciar();
+      this.setState({ passo: st.passo + 1 });
+    };
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { pad: '16px', dropH: '180px', mapCols: '1fr', sumCols: '1fr 1fr 1fr', rowCols: '1fr', cols3: '1fr', relCols: '1fr 1fr', footPad: '16px' }
+           : { pad: '24px', dropH: '220px', mapCols: 'minmax(0,1fr) minmax(0,1fr) 120px', sumCols: 'repeat(3, minmax(0,1fr))', rowCols: '70px minmax(0,1.2fr) minmax(0,1.4fr) 150px', cols3: 'repeat(3, minmax(0,1fr))', relCols: 'repeat(4, minmax(0,1fr))', footPad: '24px' },
+      origemLabel: st.tipo === 'empresas' ? 'Empresas' : 'Contatos', goVoltar: (e) => { e.preventDefault(); go(st.tipo === 'empresas' ? 'empresas' : 'contatos'); },
+      steps, stepLabel: 'Passo ' + (st.passo + 1) + ' de 6 · ' + this.NOMES[st.passo], stepPct: Math.round(100 * (st.passo + 1) / 6) + '%',
+      p: { envio: P === 'envio', mapa: P === 'mapa', previa: P === 'previa', carteira: P === 'carteira', importando: P === 'importando', relatorio: P === 'relatorio' },
+      tipoOpts: [{ value: 'empresas', label: 'Empresas' }, { value: 'contatos', label: 'Contatos' }], tipo: st.tipo, setTipo: (v) => this.setState({ tipo: v, arquivo: false }),
+      semArquivo: !st.arquivo, arquivo: st.arquivo, arquivoNome, dropTitle: m ? 'Escolher arquivo' : 'Arraste o arquivo aqui ou clique para escolher',
+      escolher: () => this.setState({ arquivo: true }), removerArquivo: () => this.setState({ arquivo: false }),
+      baixarModelo: () => notify('Baixando modelo', 'modelo_importacao_' + st.tipo + '.xlsx', 'info'),
+      mapaResumo: mapped.length + ' de ' + this.COLS.length + ' colunas mapeadas automaticamente. Revise antes de seguir.',
+      colunas, campoOpts: this.CAMPOS.map(c => ({ value: c[0], label: c[1] })), mapaErro,
+      resumo: [{ n: nOk, label: 'Novas', icon: 'circle-check', color: 'var(--success)' }, { n: nDup, label: 'Duplicados', icon: 'triangle-alert', color: 'var(--warning)' }, { n: nErr, label: 'Com erro', icon: 'circle-x', color: 'var(--danger)' }],
+      prevTabs: [{ value: 'todas', label: 'Todas', count: all.length }, { value: 'dup', label: 'Duplicados', count: nDup }, { value: 'erro', label: 'Erros', count: nErr }], prevTab: st.prevTab, setPrevTab: (v) => this.setState({ prevTab: v }),
+      acaoOpts: [{ value: '', label: 'Escolher…' }].concat(Object.keys(ACO).map(k => ({ value: k, label: ACO[k] }))), acaoTodos: st.acaoTodos,
+      setAcaoTodos: (e) => { const v = e.target.value; if (!v) return; const ac = {}; this.LINHAS.filter(r => r.k === 'dup').forEach(r => ac[r.l] = v); this.setState({ acoes: ac, acaoTodos: v }); },
+      linhas, nCriar,
+      vendedores: D.vendedores, verticais: ['Metalmecânica', 'Alimentos', 'Rochas ornamentais', 'Logística', 'Saúde', 'Construção civil', 'Agronegócio'], statusOpts: ['Lead', 'Prospect', 'Cliente', 'Inativo'],
+      tagsExtra: Object.keys(st.tags).map(k => ({ label: k, on: st.tags[k], pressed: String(st.tags[k]), border: st.tags[k] ? 'var(--accent)' : 'var(--border)', bg: st.tags[k] ? 'var(--surface-selected)' : 'var(--surface)', toggle: () => this.setState({ tags: { ...st.tags, [k]: !st.tags[k] } }) })),
+      progLabel: st.prog + ' de 48 linhas', progPct: Math.round(100 * st.prog / 48) + '%', progEtapa: st.prog < 20 ? 'Validando CNPJs e procurando duplicados…' : st.prog < 40 ? 'Consultando a Receita para completar os dados…' : 'Gravando empresas e contatos…',
+      relResumo: nCriar + ' empresas criadas e ' + nAtual + ' atualizadas. ' + nPular + ' linhas puladas.',
+      relatorio: [{ label: 'Criadas', n: nCriar, icon: 'circle-check', color: 'var(--success)' }, { label: 'Atualizadas', n: nAtual, icon: 'repeat', color: 'var(--info)' }, { label: 'Puladas', n: nPular - nErr, icon: 'ban', color: 'var(--ink-muted)' }, { label: 'Com erro', n: nErr, icon: 'circle-x', color: 'var(--danger)' }],
+      baixarRel: () => notify('Baixando relatório', 'Inclui o motivo de cada linha pulada.', 'info'),
+      desfazer: () => { this.setState({ passo: 0, arquivo: false }); notify('Importação desfeita', nCriar + ' empresas removidas. Atualizações voltaram ao valor anterior.', 'info'); },
+      podeVoltar: st.passo > 0 && st.passo < 4, voltar: () => this.setState({ passo: st.passo - 1 }),
+      podeAvancar: st.passo < 4, avancarLabel: AV[P] || '', avancarIcon: P === 'carteira' ? 'upload' : 'arrow-right', avancar,
+      avancarDisabled: (P === 'envio' && !st.arquivo) || (P === 'mapa' && mapaErro),
+      fimLista: P === 'relatorio', verLabel: st.tipo === 'empresas' ? 'Ver empresas importadas' : 'Ver contatos importados', verImportadas: () => go(st.tipo === 'empresas' ? 'empresas' : 'contatos')
+    };
+  }
+}
+</script>
+</body>
+</html>

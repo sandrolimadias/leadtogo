@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script><style>.lt-tabs { overflow-y: hidden; }</style></helmet>
+<div style="display:flex;flex-direction:column">
+  <header style="background:var(--surface);border-bottom:1px solid var(--border);padding:{{ L.headPad }};display:flex;flex-direction:column;gap:12px">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <nav style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)">
+        <a href="#" onClick="{{ goLista }}" style="color:var(--ink-muted)">Empresas</a>
+        <x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" size="{{ 13 }}" hint-size="13px,13px"></x-import>
+        <span style="color:var(--ink)">{{ e.fantasia }}</span>
+      </nav>
+    </sc-if>
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <h1 style="margin:0;font-size:22px;line-height:28px;font-weight:600;letter-spacing:-0.01em">{{ e.fantasia }}</h1>
+          <x-import component-from-global-scope="Leadtogo.Badge" tone="outline" hint-size="56px,22px">Matriz</x-import>
+          <x-import component-from-global-scope="Leadtogo.Badge" tone="success" icon="circle-check" hint-size="120px,22px">Ativa na Receita</x-import>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--ink-muted)">
+          <span>{{ e.razao }}</span>
+          <span style="font-family:var(--font-mono);font-size:12px">{{ e.cnpj }}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">
+          <sc-for list="{{ e.tags }}" as="t" hint-placeholder-count="3"><x-import component-from-global-scope="Leadtogo.Tag" color="{{ t.color }}" hint-size="70px,20px">{{ t.label }}</x-import></sc-for>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="pencil" hint-size="100px,28px">Editar tags</x-import>
+        </div>
+      </div>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:8px;align-items:center">
+          <x-import component-from-global-scope="Leadtogo.IconButton" icon="phone" label="Ligar" variant="secondary" onClick="{{ call }}" hint-size="36px,36px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.IconButton" icon="message-circle" label="WhatsApp" variant="secondary" onClick="{{ wpp }}" hint-size="36px,36px"></x-import>
+          <x-import component-from-global-scope="Leadtogo.Button" icon="handshake" onClick="{{ novaOp }}" hint-size="160px,36px">Nova oportunidade</x-import>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" onClick="{{ novaAtv }}" hint-size="140px,36px">Nova atividade</x-import>
+          <x-import component-from-global-scope="Leadtogo.IconButton" icon="ellipsis" label="Mais ações" hint-size="36px,36px"></x-import>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:grid;grid-template-columns:{{ L.metaCols }};gap:12px 24px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500;color:var(--ink-muted)">Vendedor</span><span style="display:flex;align-items:center;gap:6px;font-weight:600"><x-import component-from-global-scope="Leadtogo.Avatar" name="{{ e.vendedor }}" size="sm" hint-size="22px,22px"></x-import>{{ e.vendedor }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500;color:var(--ink-muted)">Vertical</span><span style="font-weight:600">{{ e.vertical }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500;color:var(--ink-muted)">Última visita</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ e.ultimaVisita }} <span style="font-weight:400;color:var(--ink-muted)">{{ visitaRel }}</span></span></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500;color:var(--ink-muted)">Último contato</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ e.ultimoContato }} <span style="font-weight:400;color:var(--ink-muted)">{{ contatoRel }}</span></span></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500;color:var(--ink-muted)">Próxima atividade</span>
+        <sc-if value="{{ e.proxima }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:6px;font-weight:600"><x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ e.proxima.type }}" size="sm" hint-size="22px,22px"></x-import>{{ e.proxima.label }}</span></sc-if>
+        <sc-if value="{{ semProxima }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-weight:600;color:var(--warning)"><x-import component-from-global-scope="Leadtogo.Icon" name="calendar" size="{{ 14 }}" hint-size="14px,14px"></x-import>Sem próxima atividade</span></sc-if>
+      </div>
+    </div>
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+      <div data-density="touch" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <sc-for list="{{ quick }}" as="q" hint-placeholder-count="4">
+          <button type="button" onClick="{{ q.onClick }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:64px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer">
+            <span style="color:{{ q.color }};display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ q.icon }}" size="{{ 20 }}" hint-size="20px,20px"></x-import></span>{{ q.label }}
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div style="margin:0 {{ L.tabBleed }};overflow-x:auto;overflow-y:hidden;padding:0 {{ L.tabPad }}">
+      <x-import component-from-global-scope="Leadtogo.Tabs" label="Seções da empresa" items="{{ tabs }}" value="{{ tab }}" onChange="{{ setTab }}" hint-size="100%,40px"></x-import>
+    </div>
+  </header>
+
+  <div style="padding:{{ L.pad }};display:flex;flex-direction:column;gap:16px">
+    <sc-if value="{{ t.resumo }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:{{ L.resumoCols }};gap:16px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+              <h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600;flex:1">Dados cadastrais</h2>
+              <span style="font-size:12px;color:var(--ink-muted)">Receita em 12/09/2026</span>
+              <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="repeat" loading="{{ receitaLoading }}" onClick="{{ atualizarReceita }}" hint-size="170px,28px">{{ receitaBtn }}</x-import>
+            </div>
+            <sc-if value="{{ comparar }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:12px;background:var(--surface-sunken)">
+                <x-import component-from-global-scope="Leadtogo.Alert" tone="info" title="A Receita tem 2 valores diferentes" hint-size="100%,60px">Escolha o que aplicar. Telefones são somados, não substituídos.</x-import>
+                <div style="display:grid;grid-template-columns:{{ L.cmpCols }};gap:8px 16px;font-size:13px;align-items:center">
+                  <span style="font-size:12px;font-weight:600;color:var(--ink-muted)">Campo</span><span style="font-size:12px;font-weight:600;color:var(--ink-muted)">No CRM</span><span style="font-size:12px;font-weight:600;color:var(--ink-muted)">Na Receita</span>
+                  <sc-for list="{{ diffs }}" as="d" hint-placeholder-count="2">
+                    <x-import component-from-global-scope="Leadtogo.Checkbox" label="{{ d.campo }}" checked="{{ d.on }}" onChange="{{ d.toggle }}" hint-size="120px,20px"></x-import>
+                    <span style="color:var(--ink-muted)">{{ d.atual }}</span>
+                    <span style="font-weight:600">{{ d.receita }}</span>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" onClick="{{ fecharComparar }}" hint-size="80px,28px">Manter como está</x-import>
+                  <x-import component-from-global-scope="Leadtogo.Button" variant="primary" size="sm" onClick="{{ aplicarReceita }}" hint-size="150px,28px">Aplicar selecionados</x-import>
+                </div>
+              </div>
+            </sc-if>
+            <dl style="margin:0;display:grid;grid-template-columns:{{ L.fieldCols }};gap:14px 24px;padding:16px">
+              <sc-for list="{{ campos }}" as="c" hint-placeholder-count="12">
+                <div style="display:flex;flex-direction:column;gap:2px;grid-column:{{ c.span }};min-width:0">
+                  <dt style="font-size:12px;font-weight:500;color:var(--ink-muted)">{{ c.label }}</dt>
+                  <dd style="margin:0;font-family:{{ c.font }};font-size:{{ c.size }};overflow-wrap:anywhere">{{ c.value }}</dd>
+                </div>
+              </sc-for>
+            </dl>
+          </section>
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600;flex:1">CNAEs</h2><span style="font-size:12px;color:var(--ink-muted)">{{ cnaeCount }}</span></div>
+            <sc-for list="{{ cnaes }}" as="c" hint-placeholder-count="4">
+              <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid var(--border)">
+                <span style="font-family:var(--font-mono);font-size:13px;color:var(--ink-muted);width:88px;flex-shrink:0">{{ c.codigo }}</span>
+                <span style="flex:1">{{ c.descricao }}</span>
+                <sc-if value="{{ c.principal }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" tone="outline" hint-size="70px,22px">Principal</x-import></sc-if>
+              </div>
+            </sc-for>
+          </section>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600">Sócios</h2></div>
+            <sc-for list="{{ socios }}" as="s" hint-placeholder-count="2">
+              <div style="display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)">
+                <x-import component-from-global-scope="Leadtogo.Avatar" name="{{ s.nome }}" hint-size="32px,32px"></x-import>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-weight:600">{{ s.nome }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ s.qualificacao }}</span></div>
+                <sc-if value="{{ s.converted }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" tone="success" icon="check" hint-size="70px,22px">Contato</x-import></sc-if>
+                <sc-if value="{{ s.canConvert }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="Leadtogo.Button" size="sm" onClick="{{ s.convert }}" hint-size="150px,28px">Converter em contato</x-import></sc-if>
+              </div>
+            </sc-for>
+          </section>
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600">Campos personalizados</h2></div>
+            <dl style="margin:0;display:flex;flex-direction:column;gap:12px;padding:16px">
+              <sc-for list="{{ extras }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;justify-content:space-between;gap:12px"><dt style="font-size:13px;color:var(--ink-muted)">{{ c.label }}</dt><dd style="margin:0;font-weight:600;text-align:right">{{ c.value }}</dd></div>
+              </sc-for>
+            </dl>
+          </section>
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font-size:15px;line-height:20px;font-weight:600">Observações</h2></div>
+            <p style="margin:0;padding:16px;color:var(--ink);text-wrap:pretty">{{ obs }}</p>
+          </section>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ t.contatos }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="flex:1;font-size:13px;color:var(--ink-muted)">{{ contatosLabel }}</span>
+        <x-import component-from-global-scope="Leadtogo.Button" icon="plus" hint-size="140px,36px">Vincular contato</x-import>
+      </div>
+      <div style="display:grid;grid-template-columns:{{ L.cardCols }};gap:12px">
+        <sc-for list="{{ contatos }}" as="c" hint-placeholder-count="4">
+          <article style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;align-items:center">
+              <x-import component-from-global-scope="Leadtogo.Avatar" name="{{ c.name }}" hint-size="32px,32px"></x-import>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-weight:600">{{ c.name }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ c.cargo }}</span></div>
+              <sc-if value="{{ c.principal }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Badge" icon="star" hint-size="80px,22px">Principal</x-import></sc-if>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><x-import component-from-global-scope="Leadtogo.Badge" tone="outline" hint-size="80px,22px">{{ c.papel }}</x-import></div>
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--ink-muted)">
+              <span style="font-variant-numeric:tabular-nums">{{ c.tel }}</span><span>{{ c.email }}</span>
+            </div>
+            <div style="display:flex;gap:6px;padding-top:8px;border-top:1px solid var(--border)">
+              <x-import component-from-global-scope="Leadtogo.Button" size="sm" icon="phone" onClick="{{ c.call }}" hint-size="70px,28px">Ligar</x-import>
+              <x-import component-from-global-scope="Leadtogo.Button" size="sm" icon="message-circle" onClick="{{ c.wpp }}" hint-size="90px,28px">WhatsApp</x-import>
+              <x-import component-from-global-scope="Leadtogo.IconButton" size="sm" icon="mail" label="Enviar e-mail" hint-size="28px,28px"></x-import>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ t.atividades }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="flex:1;font-size:13px;color:var(--ink-muted)">Atividades com a empresa, inclusive sem oportunidade.</span>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" onClick="{{ novaAtv }}" hint-size="140px,36px">Nova atividade</x-import>
+      </div>
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;max-width:880px">
+        <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Agendadas</span>
+        <x-import component-from-global-scope="Leadtogo.ActivityTimeline" items="{{ agendadas }}" hint-size="100%,160px"></x-import>
+        <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle);padding-top:12px;border-top:1px solid var(--border)">Histórico</span>
+        <x-import component-from-global-scope="Leadtogo.ActivityTimeline" items="{{ historico }}" hint-size="100%,360px"></x-import>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ t.oportunidades }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="flex:1;font-size:13px;color:var(--ink-muted)">2 abertas · R$ 32.600 · R$ 1.800/mês</span>
+        <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="plus" onClick="{{ novaOp }}" hint-size="160px,36px">Nova oportunidade</x-import>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <sc-for list="{{ ops }}" as="o" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:{{ L.opCols }};gap:8px 16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:600">{{ o.title }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ o.sub }}</span></div>
+            <div><x-import component-from-global-scope="Leadtogo.StatusPill" status="{{ o.status }}" hint-size="100px,22px"></x-import></div>
+            <div style="display:flex;flex-direction:column;font-variant-numeric:tabular-nums;text-align:{{ L.opAlign }}"><span style="font-weight:600">{{ o.valor }}</span><span style="font-size:13px;color:var(--ink-muted)">{{ o.mrr }}</span></div>
+            <div style="font-size:13px;color:var(--ink-muted);text-align:{{ L.opAlign }}">{{ o.data }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ t.historico }}" hint-placeholder-val="{{ false }}">
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;max-width:880px">
+        <sc-for list="{{ log }}" as="l" hint-placeholder-count="6">
+          <div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">
+            <span style="width:28px;height:28px;flex-shrink:0;border-radius:9999px;background:var(--surface-sunken);color:var(--ink-muted);display:flex;align-items:center;justify-content:center"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ l.icon }}" size="{{ 14 }}" hint-size="14px,14px"></x-import></span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+              <span>{{ l.text }}</span>
+              <span style="font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums">{{ l.meta }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'resumo', receita: 'idle', diffs: { tel: true, comp: true }, aplicado: false, convertidos: {} };
+  componentDidMount() { if (!window.LTD) this._w = setInterval(() => { if (window.LTD) { clearInterval(this._w); this.forceUpdate(); } }, 50); }
+  componentDidUpdate(pp) { if (pp.empresaId !== this.props.empresaId) this.setState({ tab: 'resumo', receita: 'idle', aplicado: false, convertidos: {} }); }
+  renderVals() {
+    const D = window.LTD;
+    const m = !!this.props.mobile, st = this.state;
+    const go = this.props.go || (() => {}), notify = this.props.notify || (() => {});
+    const e = D ? D.empresa(this.props.empresaId || 'usidantec') : { fantasia: '', tags: [], razao: '', cnpj: '', vendedor: 'A', proxima: null };
+    const isU = e.id === 'usidantec';
+    const rel = (d) => d == null ? '' : '(há ' + d + (d === 1 ? ' dia)' : ' dias)');
+    const CN = {
+      'Metalmecânica': [['2539-0/01', 'Serviços de usinagem, tornearia e solda', true], ['2539-0/02', 'Serviços de tratamento e revestimento em metais'], ['3314-7/10', 'Manutenção e reparação de máquinas e equipamentos para uso geral'], ['2599-3/99', 'Fabricação de outros produtos de metal não especificados anteriormente']],
+      'Alimentos': [['1052-0/00', 'Fabricação de laticínios', true], ['4637-1/99', 'Comércio atacadista especializado em outros produtos alimentícios']],
+      'Rochas ornamentais': [['2391-5/03', 'Aparelhamento de placas e execução de trabalhos em mármore, granito, ardósia e outras pedras', true], ['0810-0/02', 'Extração de granito e beneficiamento associado']],
+      'Logística': [['4930-2/02', 'Transporte rodoviário de carga, exceto produtos perigosos, intermunicipal', true], ['5211-7/99', 'Depósitos de mercadorias para terceiros']],
+      'Saúde': [['8630-5/03', 'Atividade médica ambulatorial restrita a consultas', true], ['8640-2/99', 'Atividades de serviços de complementação diagnóstica e terapêutica']]
+    };
+    const cn = (CN[e.vertical] || [['4789-0/99', 'Comércio varejista de outros produtos não especificados anteriormente', true]]).map(c => ({ codigo: c[0], descricao: c[1], principal: !!c[2] }));
+    const tel = st.aplicado && st.diffs.tel ? e.telefone + ', (27) 3064-3029' : e.telefone;
+    const endereco = isU ? 'Rua Nelcy Lopes Vieira, 567' + (st.aplicado && st.diffs.comp ? ' – Galpão 2' : '') : 'Avenida Central, 1200';
+    const campos = [
+      ['Razão social', e.razao, 'full'], ['Nome fantasia', e.fantasia], ['CNPJ', e.cnpj, '', true], ['Matriz ou filial', 'Matriz'],
+      ['Início das atividades', isU ? '14/03/2011' : '08/05/2014'], ['Porte', isU ? 'Empresa de Pequeno Porte' : 'Micro Empresa'], ['Regime tributário', isU ? 'Lucro Presumido' : 'Simples Nacional'], ['MEI', 'Não'],
+      ['Endereço', endereco + ', ' + e.bairro, 'full'], ['Cidade', e.cidade + '/ES'], ['CEP', isU ? '29164-018' : '29100-010', '', true],
+      ['Telefones', tel + (e.whatsapp ? ' · WhatsApp ' + e.whatsapp : ''), 'full'], ['Website', isU ? 'usidantec.com.br' : '—'],
+      ['Funcionários', isU ? '50 a 99 (62)' : '10 a 49'], ['Faixa de faturamento', isU ? 'Até R$ 30 mi' : 'Até R$ 4,8 mi'],
+      ['Data de registro', isU ? '02/02/2024' : '15/08/2025'], ['Origem do cadastro', isU ? 'Consulta à Receita' : 'Prospecção']
+    ].map(c => ({ label: c[0], value: c[1], span: c[2] === 'full' ? '1 / -1' : 'auto', font: c[3] ? 'var(--font-mono)' : 'var(--font-sans)', size: c[3] ? '13px' : '14px' }));
+    const sociosBase = isU ? [['Daniel Prates', 'Sócio-Administrador', true], ['Sérgio Dantas Prates', 'Sócio']] : [['Marcelo Venturim', 'Sócio-Administrador'], ['Ana Lúcia Venturim', 'Sócio']];
+    const socios = sociosBase.map((s, i) => { const conv = s[2] || st.convertidos[i]; return { nome: s[0], qualificacao: s[1], converted: !!conv, canConvert: !conv, convert: () => { this.setState({ convertidos: { ...st.convertidos, [i]: true } }); notify('Contato criado', s[0] + ' · cargo ' + s[1] + ', vinculado à empresa.'); } }; });
+    const contatosBase = isU ? D.contatosUsidantec : [{ name: 'Marcelo Venturim', cargo: 'Sócio-administrador', papel: 'Decisor', tel: e.whatsapp, email: 'marcelo@' + e.id + '.com.br', principal: true }, { name: 'Roberta Calmon', cargo: 'Compras', papel: 'Influenciador', tel: e.telefone, email: 'compras@' + e.id + '.com.br', principal: false }];
+    const contatos = (contatosBase || []).map(c => ({ ...c, call: () => notify('Ligando para ' + c.name, c.tel, 'info'), wpp: () => notify('Abrindo o WhatsApp', c.name + ' · ' + c.tel, 'info') }));
+    const agendadas = [
+      { type: 'visita', title: 'Visita de acompanhamento', status: 'pendente', when: 'Amanhã, 09:00', contact: 'Daniel Prates', owner: 'Alessandro', importante: true },
+      { type: 'ligacao', title: 'Confirmar escopo do segundo turno', status: 'pendente', when: 'Qui, 10:30', contact: 'Marcos Tononi', owner: 'Alessandro' },
+      { type: 'tarefa', title: 'Enviar relatório mensal de paradas', status: 'pendente', when: '30/10', owner: 'Alessandro', repeat: 'Todo dia 30' }
+    ];
+    const historico = [
+      { type: 'whatsapp', title: 'Confirmar visita de amanhã', status: 'realizada', when: 'Hoje, 09:30', contact: 'Daniel Prates', owner: 'Alessandro', note: 'Confirmou às 9h. Pediu para incluir o gerente de manutenção.' },
+      { type: 'email', title: 'Proposta do segundo turno', status: 'realizada', when: '01/10', contact: 'Fernanda Lírio', owner: 'Alessandro', note: 'Proposta enviada com 3 opções de pagamento. Aberto 2x.' },
+      { type: 'ligacao', title: 'Retorno sobre o orçamento', status: 'cancelada', when: '25/09', contact: 'Fernanda Lírio', owner: 'Alessandro' },
+      { type: 'visita', title: 'Visita técnica nos tornos CNC', status: 'realizada', when: '12/09', contact: 'Marcos Tononi', owner: 'Alessandro', note: 'Levantamento de 14 máquinas. 6 sem sensor de vibração.' },
+      { type: 'reuniao', title: 'Renovação do contrato 2026', status: 'realizada', when: '20/08', contact: 'Daniel Prates', owner: 'Alessandro', note: 'Renovado por 12 meses com reajuste de 4,5%.' }
+    ];
+    const ops = [
+      { title: 'Usinagem: segundo turno', solucao: 'Manutenção preditiva', fase: 'Negociação', status: 'ativo', valor: 'R$ 24.600', mrr: 'R$ 1.300/mês', data: 'Previsão 22/10/2026' },
+      { title: 'Contrato anual 2027', solucao: 'Monitoramento de máquinas', fase: 'Proposta', status: 'ativo', valor: 'R$ 8.000', mrr: 'R$ 500/mês', data: 'Previsão 30/10/2026' },
+      { title: 'Monitoramento de 8 tornos', solucao: 'Monitoramento de máquinas', fase: 'Negociação', status: 'conquistado', valor: 'R$ 14.400', mrr: 'R$ 1.000/mês', data: 'Fechada em 20/08/2025' },
+      { title: 'Retrofit da fresadora', solucao: 'Retrofit de CLP', fase: 'Proposta', status: 'perdido', valor: 'R$ 21.000', mrr: 'Motivo: Preço', data: 'Fechada em 11/03/2025' }
+    ];
+    const log = [
+      { icon: 'tag', text: 'Tag Contactada mantida automaticamente (WhatsApp realizado)', when: '05/10/2026 09:31', who: 'Sistema' },
+      { icon: 'handshake', text: 'Oportunidade "Usinagem: segundo turno" mudou de Proposta para Negociação', when: '02/10/2026 16:12', who: 'Alessandro Dias' },
+      { icon: 'map-pin', text: 'Tag Visitada aplicada automaticamente (Visita realizada)', when: '12/09/2026 11:48', who: 'Sistema' },
+      { icon: 'pencil', text: 'Telefone (27) 99812-4410 adicionado como WhatsApp', when: '12/09/2026 11:50', who: 'Alessandro Dias' },
+      { icon: 'user', text: 'Vendedor alterado de Carolina Surlo para Alessandro Dias', when: '01/03/2025 08:20', who: 'Juliana Pimentel (gestora)' },
+      { icon: 'flag', text: 'Status alterado de Prospect para Cliente (oportunidade conquistada)', when: '20/08/2025 17:03', who: 'Sistema' },
+      { icon: 'building-2', text: 'Empresa cadastrada pela consulta à Receita', when: '02/02/2024 10:15', who: 'Carolina Surlo' }
+    ].map(l => ({ ...l, meta: l.when + ' · ' + l.who, icon: l.icon === 'tag' ? 'check' : l.icon }));
+    const T = st.tab;
+    return {
+      mobile: m, desktop: !m, e, semProxima: !e.proxima,
+      L: m ? { headPad: '16px 16px 0', pad: '16px', metaCols: '1fr 1fr', resumoCols: '1fr', fieldCols: '1fr', cardCols: '1fr', opCols: '1fr auto', opAlign: 'left', tabBleed: '-16px', tabPad: '8px', cmpCols: '1fr 1fr 1fr' }
+           : { headPad: '16px 24px 0', pad: '24px', metaCols: 'repeat(5, minmax(0,auto))', resumoCols: 'minmax(0,1.7fr) minmax(0,1fr)', fieldCols: 'repeat(3, minmax(0,1fr))', cardCols: 'repeat(auto-fill, minmax(280px,1fr))', opCols: 'minmax(0,1fr) 130px 140px 170px', opAlign: 'right', tabBleed: '0', tabPad: '0', cmpCols: '160px 1fr 1fr' },
+      visitaRel: rel(e.diasVisita), contatoRel: rel(e.diasContato),
+      tabs: [{ value: 'resumo', label: 'Resumo' }, { value: 'contatos', label: 'Contatos', count: contatos.length }, { value: 'atividades', label: 'Atividades', count: 8 }, { value: 'oportunidades', label: 'Oportunidades', count: ops.length }, { value: 'historico', label: 'Histórico' }],
+      tab: T, setTab: (v) => this.setState({ tab: v }),
+      t: { resumo: T === 'resumo', contatos: T === 'contatos', atividades: T === 'atividades', oportunidades: T === 'oportunidades', historico: T === 'historico' },
+      quick: [{ label: 'Ligar', icon: 'phone', color: 'var(--tag-blue-fg)', onClick: () => notify('Ligando para ' + e.fantasia, e.telefone, 'info') }, { label: 'WhatsApp', icon: 'message-circle', color: 'var(--tag-green-fg)', onClick: () => notify('Abrindo o WhatsApp', e.whatsapp, 'info') }, { label: 'Rota', icon: 'navigation', color: 'var(--tag-orange-fg)', onClick: () => notify('Abrindo rota no Maps', e.bairro + ', ' + e.cidade + '/ES', 'info') }, { label: 'Atividade', icon: 'plus', color: 'var(--accent)', onClick: () => this.props.registrar && this.props.registrar(e.id) }],
+      call: () => notify('Ligando para ' + e.fantasia, e.telefone, 'info'), wpp: () => notify('Abrindo o WhatsApp', e.whatsapp, 'info'),
+      novaAtv: () => this.props.registrar && this.props.registrar(e.id),
+      novaOp: () => go('oportunidades'), goLista: (ev) => { ev.preventDefault(); go('empresas'); },
+      campos, cnaes: cn, cnaeCount: '1 principal · ' + (cn.length - 1) + ' secundários', socios,
+      extras: [{ label: 'Máquinas CNC', value: isU ? '14' : '—' }, { label: 'ERP utilizado', value: isU ? 'TOTVS Protheus' : 'Não informado' }, { label: 'Turnos', value: isU ? '2' : '1' }],
+      obs: isU ? 'Cliente desde 2025. Decisão final sempre com o Daniel; compras cuida da cotação. Preferem visitas na terça ou quinta pela manhã. Portaria exige EPI.' : 'Sem observações.',
+      receitaLoading: st.receita === 'loading', receitaBtn: st.receita === 'loading' ? 'Consultando Receita…' : 'Atualizar pela Receita', comparar: st.receita === 'diff',
+      atualizarReceita: () => { this.setState({ receita: 'loading' }); setTimeout(() => this.setState({ receita: 'diff' }), 1100); },
+      diffs: [{ k: 'tel', campo: 'Telefone', atual: e.telefone, receita: '(27) 3064-3029 (novo)' }, { k: 'comp', campo: 'Complemento', atual: 'Vazio', receita: 'Galpão 2' }].map(d => ({ ...d, on: st.diffs[d.k], toggle: () => this.setState({ diffs: { ...st.diffs, [d.k]: !st.diffs[d.k] } }) })),
+      fecharComparar: () => this.setState({ receita: 'idle' }),
+      aplicarReceita: () => { this.setState({ receita: 'idle', aplicado: true }); notify('Dados atualizados pela Receita', 'Alteração registrada no histórico.'); },
+      contatos, contatosLabel: contatos.length + ' contatos vinculados', agendadas, historico, ops: ops.map(o => ({ ...o, sub: o.solucao + ' · ' + o.fase })), log
+    };
+  }
+}
+</script>
+</body>
+</html>

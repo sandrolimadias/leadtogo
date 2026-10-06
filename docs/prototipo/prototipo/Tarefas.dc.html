@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script></helmet>
+<div style="display:flex;flex-direction:column;min-height:100%">
+  <div data-density="{{ L.density }}" style="padding:{{ L.headPad }};display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><h1 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.015em">Tarefas</h1></sc-if>
+    <div style="width:{{ L.boardW }}"><x-import component-from-global-scope="Leadtogo.Select" aria-label="Quadro" options="{{ quadros }}" defaultValue="Meu dia a dia" hint-size="100%,36px"></x-import></div>
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <div style="width:170px"><x-import component-from-global-scope="Leadtogo.Select" aria-label="Prioridade" options="{{ prioOpts }}" value="{{ prio }}" onChange="{{ setPrio }}" hint-size="170px,36px"></x-import></div>
+      <x-import component-from-global-scope="Leadtogo.Switch" label="Exibir atividades com clientes" checked="{{ showActs }}" onChange="{{ toggleActs }}" hint-size="240px,24px"></x-import>
+    </sc-if>
+    <span style="flex:1"></span>
+    <x-import component-from-global-scope="Leadtogo.Button" icon="settings" onClick="{{ openCustom }}" hint-size="170px,36px">{{ customLabel }}</x-import>
+  </div>
+
+  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;display:flex;gap:12px;padding:0 24px 24px;overflow-x:auto;align-items:flex-start">
+      <sc-for list="{{ cols }}" as="c" hint-placeholder-count="4">
+        <div onDragOver="{{ c.over }}" onDrop="{{ c.drop }}" style="flex-shrink:0;border-radius:12px;outline:2px dashed {{ c.outline }};outline-offset:-2px">
+          <x-import component-from-global-scope="Leadtogo.KanbanColumn" title="{{ c.title }}" color="{{ c.color }}" count="{{ c.count }}" limit="{{ c.limit }}" onAdd="{{ c.add }}" addLabel="Adicionar tarefa" hint-size="296px,480px">
+            <sc-if value="{{ c.isDone }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-muted);padding:0 2px"><x-import component-from-global-scope="Leadtogo.Icon" name="circle-check" size="{{ 13 }}" hint-size="13px,13px"></x-import>Coluna de conclusão: marca como Realizada</span></sc-if>
+            <sc-if value="{{ c.adding }}" hint-placeholder-val="{{ false }}">
+              <div style="background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:8px">
+                <x-import component-from-global-scope="Leadtogo.TextField" aria-label="Título da tarefa" placeholder="Título e Enter" autoFocus="{{ true }}" onChange="{{ setNewTitle }}" onKeyDown="{{ c.addKey }}" onBlur="{{ cancelAdd }}" hint-size="100%,36px"></x-import>
+              </div>
+            </sc-if>
+            <sc-for list="{{ c.cards }}" as="t" hint-placeholder-count="2">
+              <div draggable="true" onDragStart="{{ t.dragStart }}" onDragEnd="{{ dragEnd }}" onClick="{{ t.open }}" style="cursor:grab;opacity:{{ t.opacity }}">
+                <x-import component-from-global-scope="Leadtogo.TaskCard" title="{{ t.title }}" type="{{ t.type }}" company="{{ t.company }}" importante="{{ t.importante }}" urgente="{{ t.urgente }}" labels="{{ t.labels }}" checklist="{{ t.cl }}" due="{{ t.due }}" dueState="{{ t.dueState }}" repeat="{{ t.repeat }}" hint-size="100%,110px"></x-import>
+              </div>
+            </sc-for>
+          </x-import>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:0 16px 96px">
+      <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px">
+        <sc-for list="{{ cols }}" as="c" hint-placeholder-count="4">
+          <button type="button" onClick="{{ c.pick }}" style="flex-shrink:0;display:flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:9999px;border:1px solid {{ c.pBorder }};background:{{ c.pBg }};color:{{ c.pColor }};font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer">
+            <span style="width:8px;height:8px;border-radius:9999px;background:{{ c.dot }}"></span>{{ c.title }}<span style="font-weight:500;color:var(--ink-muted)">{{ c.countLabel }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <sc-for list="{{ mCards }}" as="t" hint-placeholder-count="3">
+        <div onClick="{{ t.open }}" style="cursor:pointer">
+          <x-import component-from-global-scope="Leadtogo.TaskCard" title="{{ t.title }}" type="{{ t.type }}" company="{{ t.company }}" importante="{{ t.importante }}" urgente="{{ t.urgente }}" labels="{{ t.labels }}" checklist="{{ t.cl }}" due="{{ t.due }}" dueState="{{ t.dueState }}" repeat="{{ t.repeat }}" hint-size="100%,110px"></x-import>
+        </div>
+      </sc-for>
+      <sc-if value="{{ mEmpty }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="Leadtogo.EmptyState" icon="square-check" title="Nada nesta coluna" description="Toque em + para registrar uma tarefa ou atividade." hint-size="100%,180px"></x-import>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ det }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDet }}" style="position:fixed;inset:0;z-index:1300;background:var(--overlay);display:flex;justify-content:flex-end;align-items:{{ L.detAlign }}">
+      <aside onClick="{{ stop }}" data-density="{{ L.density }}" style="width:{{ L.detW }};max-height:{{ L.detMaxH }};height:{{ L.detH }};overflow:auto;background:var(--surface);border-radius:{{ L.detRadius }};box-shadow:var(--shadow-lg);display:flex;flex-direction:column">
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:16px 16px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1">
+          <x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ det.type }}" hint-size="28px,28px"></x-import>
+          <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+            <span style="font-size:12px;font-weight:500;color:var(--ink-muted)">{{ det.kicker }}</span>
+            <h2 style="margin:0;font-size:18px;line-height:24px;font-weight:600">{{ det.title }}</h2>
+          </div>
+          <x-import component-from-global-scope="Leadtogo.IconButton" icon="x" label="Fechar" onClick="{{ closeDet }}" hint-size="36px,36px"></x-import>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:18px">
+          <dl style="margin:0;display:grid;grid-template-columns:110px 1fr;gap:10px 12px;font-size:14px">
+            <dt style="color:var(--ink-muted)">Prazo</dt><dd style="margin:0;font-weight:600;color:{{ det.dueColor }}">{{ det.dueText }}</dd>
+            <dt style="color:var(--ink-muted)">Empresa</dt><dd style="margin:0">{{ det.companyText }}</dd>
+            <dt style="color:var(--ink-muted)">Responsável</dt><dd style="margin:0">Alessandro Dias</dd>
+            <dt style="color:var(--ink-muted)">Recorrência</dt><dd style="margin:0">{{ det.repeatText }}</dd>
+          </dl>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Prioridade</span>
+            <div style="display:flex;gap:20px;flex-wrap:wrap">
+              <x-import component-from-global-scope="Leadtogo.Switch" label="Importante" checked="{{ det.importante }}" onChange="{{ det.togI }}" hint-size="120px,24px"></x-import>
+              <x-import component-from-global-scope="Leadtogo.Switch" label="Urgente" checked="{{ det.urgente }}" onChange="{{ det.togU }}" hint-size="110px,24px"></x-import>
+            </div>
+            <span style="font-size:13px;color:var(--ink-muted)">{{ det.quadrante }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Checklist</span><span style="font-size:13px;color:var(--ink-muted);font-variant-numeric:tabular-nums">{{ det.clText }}</span></div>
+            <div style="height:6px;border-radius:9999px;background:var(--surface-sunken);overflow:hidden"><div style="height:100%;width:{{ det.clPct }};background:var(--success);border-radius:9999px"></div></div>
+            <sc-for list="{{ det.items }}" as="i" hint-placeholder-count="4">
+              <div style="padding:4px 0"><x-import component-from-global-scope="Leadtogo.Checkbox" label="{{ i.texto }}" checked="{{ i.feito }}" onChange="{{ i.toggle }}" hint-size="100%,22px"></x-import></div>
+            </sc-for>
+            <x-import component-from-global-scope="Leadtogo.TextField" aria-label="Novo item do checklist" placeholder="Adicionar item e Enter" onKeyDown="{{ det.addItem }}" hint-size="100%,36px"></x-import>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Etiquetas</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <sc-for list="{{ det.labels }}" as="l" hint-placeholder-count="1"><x-import component-from-global-scope="Leadtogo.Tag" color="{{ l.color }}" dot="{{ false }}" hint-size="70px,20px">{{ l.label }}</x-import></sc-for>
+              <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="plus" hint-size="90px,28px">Etiqueta</x-import>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-subtle)">Mover para</span>
+            <x-import component-from-global-scope="Leadtogo.Select" aria-label="Coluna" options="{{ colOpts }}" value="{{ det.col }}" onChange="{{ det.moveSel }}" hint-size="100%,36px"></x-import>
+          </div>
+        </div>
+        <div style="margin-top:auto;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--surface)">
+          <sc-if value="{{ det.isTarefa }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Button" icon="repeat" onClick="{{ det.convert }}" hint-size="170px,36px">Converter em atividade</x-import></sc-if>
+          <sc-if value="{{ det.open }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="check" onClick="{{ det.concluir }}" hint-size="120px,36px">Concluir</x-import></sc-if>
+        </div>
+      </aside>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ concl }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:1400;background:var(--overlay);display:flex;align-items:{{ L.dlgAlign }};justify-content:center;padding:{{ L.dlgPad }}">
+      <div data-density="{{ L.density }}" style="width:{{ L.dlgW }};max-height:{{ L.dlgMaxH }};overflow:auto">
+        <x-import component-from-global-scope="Leadtogo.Dialog" title="Concluir atividade" description="{{ concl.desc }}" onClose="{{ cancelConcl }}" footer="{{ conclFooter }}" hint-size="100%,300px">
+          <x-import component-from-global-scope="Leadtogo.TextField" label="Resultado" multiline="{{ true }}" placeholder="O que aconteceu?" onChange="{{ setResult }}" hint="Fica na linha do tempo da empresa e atualiza o último contato." hint-size="100%,120px"></x-import>
+        </x-import>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ custom }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:1400;background:var(--overlay);display:flex;align-items:{{ L.dlgAlign }};justify-content:center;padding:{{ L.dlgPad }}">
+      <div data-density="{{ L.density }}" style="width:{{ L.customW }};max-height:{{ L.dlgMaxH }};overflow:auto">
+        <x-import component-from-global-scope="Leadtogo.Dialog" title="Personalizar quadro" description="Meu dia a dia · quadro pessoal criado do modelo da equipe" onClose="{{ closeCustom }}" footer="{{ customFooter }}" hint-size="100%,480px">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ draftCols }}" as="d" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px">
+                <div style="display:flex;gap:8px;align-items:flex-end">
+                  <span style="color:var(--ink-subtle);padding-bottom:8px;display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="grip-vertical" hint-size="16px,16px"></x-import></span>
+                  <div style="flex:1"><x-import component-from-global-scope="Leadtogo.TextField" label="Nome da coluna" value="{{ d.title }}" onChange="{{ d.rename }}" hint-size="100%,60px"></x-import></div>
+                  <div style="width:84px"><x-import component-from-global-scope="Leadtogo.TextField" label="Limite" type="number" value="{{ d.limitVal }}" onChange="{{ d.setLimit }}" placeholder="—" hint-size="84px,60px"></x-import></div>
+                  <x-import component-from-global-scope="Leadtogo.IconButton" icon="trash-2" label="Remover coluna" onClick="{{ d.remove }}" hint-size="36px,36px"></x-import>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ d.swatches }}" as="s" hint-placeholder-count="10">
+                    <button type="button" onClick="{{ s.pick }}" aria-label="{{ s.name }}" aria-pressed="{{ s.on }}" style="width:22px;height:22px;border-radius:9999px;border:2px solid {{ s.ring }};background:{{ s.fg }};cursor:pointer;padding:0;box-shadow:inset 0 0 0 2px var(--surface)"></button>
+                  </sc-for>
+                  <span style="flex:1"></span>
+                  <x-import component-from-global-scope="Leadtogo.Checkbox" label="Coluna de conclusão" checked="{{ d.isDone }}" onChange="{{ d.setDone }}" hint-size="170px,22px"></x-import>
+                </div>
+              </div>
+            </sc-for>
+            <x-import component-from-global-scope="Leadtogo.Button" icon="plus" onClick="{{ addDraftCol }}" hint-size="140px,36px">Adicionar coluna</x-import>
+            <div style="padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px">
+              <x-import component-from-global-scope="Leadtogo.Switch" label="Exibir atividades agendadas com clientes" checked="{{ showActs }}" onChange="{{ toggleActs }}" hint-size="100%,24px"></x-import>
+              <span style="font-size:13px;color:var(--ink-muted)">Ligação, WhatsApp, E-mail, Visita e Reunião aparecem como cards com o ícone do tipo.</span>
+            </div>
+          </div>
+        </x-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  COLORS = ['gray', 'red', 'orange', 'amber', 'green', 'teal', 'blue', 'indigo', 'purple', 'pink'];
+  NAMES = { gray: 'Cinza', red: 'Vermelho', orange: 'Laranja', amber: 'Âmbar', green: 'Verde', teal: 'Petróleo', blue: 'Azul', indigo: 'Índigo', purple: 'Roxo', pink: 'Rosa' };
+  state = {
+    cols: [{ id: 'fazer', title: 'A fazer', color: 'gray' }, { id: 'fazendo', title: 'Fazendo', color: 'blue', limit: 3 }, { id: 'aguardando', title: 'Aguardando cliente', color: 'amber' }, { id: 'feito', title: 'Feito', color: 'green', done: true }],
+    cards: [
+      { id: 't1', col: 'fazer', type: 'tarefa', title: 'Preparar proposta do segundo turno', company: 'Usidantec', importante: true, urgente: true, due: 'Hoje', dueState: 'today', labels: [{ label: 'Proposta', color: 'purple' }], items: [['Levantar horas do segundo turno', 1], ['Validar preço com Juliana', 1], ['Montar planilha de itens', 0], ['Revisar condições de pagamento', 0], ['Enviar para Daniel', 0]] },
+      { id: 't4', col: 'fazer', type: 'visita', title: 'Visita técnica na prensa', company: 'Caldeiraria Anchieta', importante: true, due: 'Ontem', dueState: 'late' },
+      { id: 't2', col: 'fazer', type: 'ligacao', title: 'Ligar para Paulo sobre o orçamento', company: 'Distribuidora Linhares', due: '02/10', dueState: 'late' },
+      { id: 't3', col: 'fazer', type: 'tarefa', title: 'Enviar catálogo de sensores', company: 'Café Montanhas Capixabas', due: 'Qua', labels: [{ label: 'Material', color: 'blue' }] },
+      { id: 't5', col: 'fazendo', type: 'tarefa', title: 'Montar cronograma de implantação', company: 'Mecânica Aracruz Industrial', importante: true, due: 'Amanhã', labels: [{ label: 'Proposta', color: 'purple' }], items: [['Listar máquinas da filial', 1], ['Confirmar equipe de campo', 1], ['Reservar sensores no estoque', 1], ['Definir datas com Vanessa', 0], ['Treinamento dos operadores', 0], ['Aceite final', 0]] },
+      { id: 't6', col: 'fazendo', type: 'email', title: 'Responder dúvidas técnicas', company: 'Vitória Saúde Ocupacional', due: 'Hoje', dueState: 'today' },
+      { id: 't7', col: 'aguardando', type: 'tarefa', title: 'Cobrar retorno do financeiro', company: 'Metalúrgica Serra Azul', urgente: true, due: '08/10', labels: [{ label: 'Financeiro', color: 'amber' }] },
+      { id: 't8', col: 'aguardando', type: 'reuniao', title: 'Reunião de diagnóstico', company: 'Granitos Itaguaçu', due: 'Qui' },
+      { id: 't9', col: 'feito', type: 'whatsapp', title: 'Confirmar visita de amanhã', company: 'Usidantec', due: 'Hoje' },
+      { id: 't10', col: 'feito', type: 'tarefa', title: 'Relatório semanal de visitas', due: '02/10', repeat: 'Toda sexta', labels: [{ label: 'Interno', color: 'gray' }], items: [['Exportar visitas da semana', 1], ['Comentar resultados', 1], ['Enviar para Juliana', 1]] }
+    ],
+    drag: null, over: null, det: null, concl: null, result: '', adding: null, newTitle: '', showActs: true, prio: '', mCol: 'fazer', custom: false, draft: null
+  };
+  TL = { ligacao: 'Ligação', whatsapp: 'WhatsApp', email: 'E-mail', visita: 'Visita', reuniao: 'Reunião', tarefa: 'Tarefa' };
+  notify(a, b, c) { this.props.notify && this.props.notify(a, b, c); }
+  upd(id, fn) { this.setState(s => ({ cards: s.cards.map(c => c.id === id ? fn(c) : c) })); }
+  moveTo(id, col) {
+    const st = this.state, card = st.cards.find(c => c.id === id), target = st.cols.find(c => c.id === col);
+    if (!card || card.col === col) return;
+    if (target.done && card.type !== 'tarefa') { this.setState({ concl: { id, col }, result: '', drag: null, over: null }); return; }
+    this.upd(id, c => ({ ...c, col }));
+    this.setState({ drag: null, over: null });
+    if (target.done) this.notify('Tarefa concluída', card.title);
+  }
+  renderVals() {
+    const m = !!this.props.mobile, st = this.state, LT = window.Leadtogo;
+    const stop = (e) => e.stopPropagation();
+    const visible = st.cards.filter(c => (st.showActs || c.type === 'tarefa') && (!st.prio || (st.prio === 'importante' && c.importante) || (st.prio === 'urgente' && c.urgente)));
+    const view = (c) => {
+      const items = c.items || [];
+      return { ...c, company: c.company || undefined, importante: !!c.importante, urgente: !!c.urgente, labels: c.labels || [], dueState: c.dueState || undefined, repeat: c.repeat || undefined,
+        cl: items.length ? { done: items.filter(i => i[1]).length, total: items.length } : undefined, opacity: st.drag === c.id ? 0.4 : 1,
+        dragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', c.id); } catch (x) {} this.setState({ drag: c.id }); },
+        open: () => this.setState({ det: c.id }) };
+    };
+    const cols = st.cols.map(col => {
+      const cards = visible.filter(c => c.col === col.id).map(view); const on = st.mCol === col.id;
+      return { ...col, limit: col.limit || undefined, isDone: !!col.done, count: cards.length, countLabel: col.limit ? cards.length + '/' + col.limit : String(cards.length), cards, dot: 'var(--tag-' + col.color + '-fg)',
+        outline: st.over === col.id ? 'var(--accent)' : 'transparent', adding: st.adding === col.id,
+        over: (e) => { e.preventDefault(); if (st.over !== col.id) this.setState({ over: col.id }); },
+        drop: (e) => { e.preventDefault(); if (st.drag) this.moveTo(st.drag, col.id); },
+        add: () => this.setState({ adding: col.id, newTitle: '' }),
+        addKey: (e) => { if (e.key === 'Escape') this.setState({ adding: null }); if (e.key === 'Enter' && e.target.value.trim()) { const t = e.target.value.trim(); this.setState(s => ({ cards: [{ id: 'n' + Date.now(), col: col.id, type: 'tarefa', title: t, due: 'Hoje', dueState: 'today' }].concat(s.cards), adding: null })); this.notify('Tarefa criada', t + ' · ' + col.title); } },
+        pick: () => this.setState({ mCol: col.id }), pBorder: on ? 'var(--accent)' : 'var(--border)', pBg: on ? 'var(--surface-selected)' : 'var(--surface)', pColor: on ? 'var(--accent)' : 'var(--ink)' };
+    });
+    const mc = cols.find(c => c.id === st.mCol) || cols[0];
+    const d = st.cards.find(c => c.id === st.det);
+    let det = false;
+    if (d) {
+      const items = d.items || []; const done = items.filter(i => i[1]).length; const col = st.cols.find(c => c.id === d.col) || {};
+      const Q = d.importante && d.urgente ? 'Importante e urgente: faça agora.' : d.importante ? 'Importante, não urgente: planeje um horário.' : d.urgente ? 'Urgente, não importante: resolva rápido ou delegue.' : 'Nem importante nem urgente.';
+      det = { ...d, typeLabel: this.TL[d.type], colName: col.title, kicker: this.TL[d.type] + ' · ' + col.title, importante: !!d.importante, urgente: !!d.urgente, labels: d.labels || [], quadrante: Q,
+        dueText: d.due + (d.dueState === 'late' ? ' · atrasada' : d.dueState === 'today' ? ' · vence hoje' : ''), dueColor: d.dueState === 'late' ? 'var(--danger)' : d.dueState === 'today' ? 'var(--warning)' : 'var(--ink)',
+        companyText: d.company || 'Sem empresa (tarefa interna)', repeatText: d.repeat || 'Não se repete',
+        clText: items.length ? done + ' de ' + items.length : 'Sem itens', clPct: items.length ? Math.round(100 * done / items.length) + '%' : '0%',
+        items: items.map((it, i) => ({ texto: it[0], feito: !!it[1], toggle: () => this.upd(d.id, c => ({ ...c, items: c.items.map((x, j) => j === i ? [x[0], x[1] ? 0 : 1] : x) })) })),
+        addItem: (e) => { if (e.key === 'Enter' && e.target.value.trim()) { const v = e.target.value.trim(); e.target.value = ''; this.upd(d.id, c => ({ ...c, items: (c.items || []).concat([[v, 0]]) })); } },
+        togI: () => this.upd(d.id, c => ({ ...c, importante: !c.importante })), togU: () => this.upd(d.id, c => ({ ...c, urgente: !c.urgente })),
+        moveSel: (e) => { const v = e.target.value; this.setState({ det: null }); this.moveTo(d.id, v); },
+        isTarefa: d.type === 'tarefa', open: !col.done,
+        convert: () => { this.upd(d.id, c => ({ ...c, type: 'ligacao' })); this.notify('Convertida em atividade', d.title + ' agora é uma Ligação e conta como contato.'); },
+        concluir: () => { const doneCol = st.cols.find(c => c.done); this.setState({ det: null }); if (doneCol) this.moveTo(d.id, doneCol.id); }
+      };
+    }
+    const cc = st.concl && st.cards.find(c => c.id === st.concl.id);
+    const finishConcl = (next) => () => { const x = st.concl; this.upd(x.id, c => ({ ...c, col: x.col })); this.setState({ concl: null }); this.notify('Atividade concluída', next ? 'Registre a próxima pelo botão +.' : cc.title + (cc.company ? ' · ' + cc.company : '')); };
+    const conclFooter = LT && cc ? React.createElement(React.Fragment, null, React.createElement(LT.Button, { variant: 'ghost', onClick: () => this.setState({ concl: null }) }, 'Cancelar'), React.createElement(LT.Button, { onClick: finishConcl(true) }, 'Concluir e agendar próxima'), React.createElement(LT.Button, { variant: 'primary', onClick: finishConcl(false) }, 'Concluir atividade')) : null;
+    const draft = st.draft || [];
+    const setDraft = (fn) => this.setState(s => ({ draft: fn(s.draft) }));
+    const draftCols = draft.map((c, i) => ({ ...c, isDone: !!c.done, limitVal: c.limit ? String(c.limit) : '',
+      rename: (e) => { const v = e.target.value; setDraft(dr => dr.map((x, j) => j === i ? { ...x, title: v } : x)); },
+      setLimit: (e) => { const v = parseInt(e.target.value, 10); setDraft(dr => dr.map((x, j) => j === i ? { ...x, limit: v > 0 ? v : undefined } : x)); },
+      setDone: () => setDraft(dr => dr.map((x, j) => ({ ...x, done: j === i ? !x.done : false }))),
+      remove: () => setDraft(dr => dr.filter((x, j) => j !== i)),
+      swatches: this.COLORS.map(k => ({ name: this.NAMES[k], on: String(c.color === k), fg: 'var(--tag-' + k + '-fg)', ring: c.color === k ? 'var(--ink)' : 'transparent', pick: () => setDraft(dr => dr.map((x, j) => j === i ? { ...x, color: k } : x)) })) }));
+    const saveCustom = () => {
+      const valid = draft.filter(c => c.title.trim()); const ids = valid.map(c => c.id);
+      const first = valid[0] ? valid[0].id : 'fazer';
+      this.setState(s => ({ cols: valid, custom: false, cards: s.cards.map(c => ids.includes(c.col) ? c : { ...c, col: first }), mCol: ids.includes(s.mCol) ? s.mCol : first }));
+      this.notify('Quadro atualizado', valid.length + ' colunas em Meu dia a dia.');
+    };
+    const customFooter = LT && st.custom ? React.createElement(React.Fragment, null, React.createElement(LT.Button, { variant: 'ghost', onClick: () => this.setState({ custom: false }) }, 'Cancelar'), React.createElement(LT.Button, { variant: 'primary', onClick: saveCustom }, 'Salvar quadro')) : null;
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { density: 'touch', headPad: '16px', boardW: 'calc(100% - 60px)', detAlign: 'flex-end', detW: '100%', detMaxH: '764px', detH: 'auto', detRadius: '16px 16px 0 0', dlgAlign: 'flex-end', dlgPad: '0', dlgW: '100%', dlgMaxH: '764px', customW: '100%' }
+           : { density: 'default', headPad: '20px 24px 16px', boardW: '200px', detAlign: 'stretch', detW: '440px', detMaxH: '100%', detH: '100%', detRadius: '0', dlgAlign: 'center', dlgPad: '24px', dlgW: '520px', dlgMaxH: 'calc(100vh - 48px)', customW: '600px' },
+      customLabel: m ? 'Quadro' : 'Personalizar quadro',
+      quadros: ['Meu dia a dia', 'Pós-venda', 'Equipe comercial (gestor)'],
+      prioOpts: [{ value: '', label: 'Toda prioridade' }, { value: 'importante', label: 'Importantes' }, { value: 'urgente', label: 'Urgentes' }], prio: st.prio, setPrio: (e) => this.setState({ prio: e.target.value }),
+      showActs: st.showActs, toggleActs: () => this.setState({ showActs: !st.showActs }),
+      cols, mCards: mc ? mc.cards : [], mEmpty: !!mc && mc.cards.length === 0,
+      dragEnd: () => this.setState({ drag: null, over: null }), stop,
+      setNewTitle: () => {}, cancelAdd: () => setTimeout(() => this.setState({ adding: null }), 150),
+      det, closeDet: () => this.setState({ det: null }), colOpts: st.cols.map(c => ({ value: c.id, label: c.title })),
+      concl: cc ? { desc: this.TL[cc.type] + ' · ' + cc.title + (cc.company ? ' · ' + cc.company : '') } : false, cancelConcl: () => this.setState({ concl: null }), conclFooter, setResult: (e) => this.setState({ result: e.target.value }),
+      custom: st.custom, openCustom: () => this.setState({ custom: true, draft: st.cols.map(c => ({ ...c })) }), closeCustom: () => this.setState({ custom: false }), customFooter,
+      draftCols, addDraftCol: () => setDraft(dr => dr.concat([{ id: 'c' + Date.now(), title: 'Nova coluna', color: 'teal' }]))
+    };
+  }
+}
+</script>
+</body>
+</html>

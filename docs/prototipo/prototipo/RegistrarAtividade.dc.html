@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="ds/tokens.css"><link rel="stylesheet" href="ds/components/bundle.css"><script src="ds/components/bundle.js"></script><script src="dados.js"></script></helmet>
+<div data-density="{{ L.density }}" role="dialog" aria-modal="true" aria-label="Registrar atividade" style="width:{{ L.w }};max-height:{{ L.maxH }};display:flex;flex-direction:column;background:var(--surface);border-radius:{{ L.radius }};box-shadow:var(--shadow-lg);overflow:hidden;font-size:{{ L.fs }}">
+  <div style="flex-shrink:0;padding:{{ L.headPad }};border-bottom:1px solid var(--border);display:flex;flex-direction:column">
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}"><div style="width:40px;height:4px;border-radius:9999px;background:var(--border-strong);margin:0 auto 10px"></div></sc-if>
+    <div style="display:flex;align-items:center;gap:8px">
+      <h2 style="margin:0;flex:1;font-size:18px;line-height:24px;font-weight:600">Registrar atividade</h2>
+      <x-import component-from-global-scope="Leadtogo.IconButton" icon="x" label="Fechar" onClick="{{ close }}" hint-size="36px,36px"></x-import>
+    </div>
+  </div>
+  <div style="flex:1;min-height:0;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:13px;font-weight:600">Tipo</span>
+      <div role="radiogroup" aria-label="Tipo" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <sc-for list="{{ tipos }}" as="t" hint-placeholder-count="6">
+          <button type="button" role="radio" aria-checked="{{ t.checked }}" onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:8px;min-height:{{ L.optH }};padding:6px 10px;border:{{ t.bw }} solid {{ t.border }};border-radius:8px;background:{{ t.bg }};font:inherit;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left">
+            <x-import component-from-global-scope="Leadtogo.ActivityIcon" type="{{ t.value }}" hint-size="28px,28px"></x-import>{{ t.label }}
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <sc-if value="{{ hasEmpresa }}" hint-placeholder-val="{{ true }}">
+        <span style="font-size:13px;font-weight:600">Empresa<span style="color:var(--danger)">{{ reqMark }}</span></span>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border:1px solid var(--border-strong);border-radius:6px;min-height:{{ L.ctrlH }}">
+          <x-import component-from-global-scope="Leadtogo.Icon" name="building-2" hint-size="16px,16px"></x-import>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-weight:600">{{ emp.fantasia }}</span><span style="font-size:12px;line-height:16px;color:var(--ink-muted)">{{ empLine }}</span></div>
+          <x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" onClick="{{ trocar }}" hint-size="70px,28px">Trocar</x-import>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noEmpresa }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="Leadtogo.TextField" label="{{ empLabel }}" required="{{ empReq }}" icon="search" placeholder="Buscar por nome, CNPJ ou cidade" value="{{ q }}" onChange="{{ setQ }}" error="{{ empError }}" hint="{{ empHint }}" hint-size="100%,72px"></x-import>
+        <sc-if value="{{ showSug }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <sc-for list="{{ sug }}" as="s" hint-placeholder-count="4">
+              <button type="button" onClick="{{ s.pick }}" style="width:100%;display:flex;align-items:center;gap:10px;min-height:{{ L.ctrlH }};padding:6px 12px;border:0;border-bottom:1px solid var(--border);background:var(--surface);font:inherit;color:var(--ink);text-align:left;cursor:pointer" style-hover="background:var(--surface-hover)">
+                <span style="flex:1;display:flex;flex-direction:column"><span style="font-weight:600">{{ s.fantasia }}</span><span style="font-size:12px;line-height:16px;color:var(--ink-muted)">{{ s.line }}</span></span>
+                <x-import component-from-global-scope="Leadtogo.Tag" color="{{ s.color }}" hint-size="60px,20px">{{ s.status }}</x-import>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ hasEmpresa }}" hint-placeholder-val="{{ true }}">
+      <x-import component-from-global-scope="Leadtogo.Select" label="Contato" placeholder="Sem contato" options="{{ contatos }}" value="{{ contato }}" onChange="{{ setContato }}" hint="Só contatos desta empresa." hint-size="100%,72px"></x-import>
+    </sc-if>
+
+    <x-import component-from-global-scope="Leadtogo.TextField" label="Título" placeholder="{{ tituloPh }}" value="{{ titulo }}" onChange="{{ setTitulo }}" hint-size="100%,60px"></x-import>
+
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:12px">
+      <x-import component-from-global-scope="Leadtogo.TextField" label="Data" type="date" defaultValue="2026-10-05" hint-size="100%,60px"></x-import>
+      <x-import component-from-global-scope="Leadtogo.TextField" label="Hora" type="time" defaultValue="{{ hora }}" hint-size="100%,60px"></x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:13px;font-weight:600">Situação</span>
+      <div role="radiogroup" aria-label="Situação" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <sc-for list="{{ situacoes }}" as="s" hint-placeholder-count="4">
+          <button type="button" role="radio" aria-checked="{{ s.checked }}" onClick="{{ s.pick }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:{{ L.sitH }};padding:4px;border:{{ s.bw }} solid {{ s.border }};border-radius:8px;background:{{ s.bg }};font:inherit;font-size:13px;line-height:16px;font-weight:600;color:var(--ink);cursor:pointer;text-align:center">
+            <span style="color:{{ s.color }};display:flex"><x-import component-from-global-scope="Leadtogo.Icon" name="{{ s.icon }}" size="{{ 16 }}" hint-size="16px,16px"></x-import></span>{{ s.label }}
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ realizada }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="Leadtogo.TextField" label="Resultado" required="{{ true }}" multiline="{{ true }}" placeholder="O que aconteceu? Próximos passos combinados." value="{{ resultado }}" onChange="{{ setResultado }}" error="{{ resError }}" hint="{{ contaComo }}" hint-size="100%,110px"></x-import>
+    </sc-if>
+
+    <div style="display:flex;gap:24px;flex-wrap:wrap">
+      <x-import component-from-global-scope="Leadtogo.Switch" label="Importante" checked="{{ imp }}" onChange="{{ togImp }}" hint-size="120px,24px"></x-import>
+      <x-import component-from-global-scope="Leadtogo.Switch" label="Urgente" checked="{{ urg }}" onChange="{{ togUrg }}" hint-size="110px,24px"></x-import>
+    </div>
+
+    <div style="border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column">
+      <button type="button" onClick="{{ toggleMais }}" aria-expanded="{{ maisAria }}" style="display:flex;align-items:center;gap:10px;min-height:{{ L.ctrlH }};padding:10px 12px;border:0;background:transparent;font:inherit;color:var(--ink);cursor:pointer;text-align:left">
+        <span style="display:flex;transform:{{ maisRot }};transition:transform 120ms"><x-import component-from-global-scope="Leadtogo.Icon" name="chevron-right" hint-size="16px,16px"></x-import></span>
+        <span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">Mais opções</span><span style="font-size:13px;line-height:18px;color:var(--ink-muted)">{{ maisResumo }}</span></span>
+      </button>
+      <sc-if value="{{ mais }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:18px;padding:4px 12px 14px;border-top:1px solid var(--border)">
+          <div style="padding-top:10px">
+            <x-import component-from-global-scope="Leadtogo.Select" label="Oportunidade" options="{{ opOpts }}" value="{{ op }}" onChange="{{ setOp }}" disabled="{{ opDisabled }}" hint="{{ opHint }}" hint-size="100%,72px"></x-import>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:600">Lembretes</span>
+            <sc-for list="{{ lembretes }}" as="l" hint-placeholder-count="1">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:center">
+                  <x-import component-from-global-scope="Leadtogo.Select" aria-label="Quando" options="{{ quandoOpts }}" value="{{ l.quando }}" onChange="{{ l.setQuando }}" hint-size="100%,36px"></x-import>
+                  <x-import component-from-global-scope="Leadtogo.Select" aria-label="Canal" options="{{ canalOpts }}" value="{{ l.canal }}" onChange="{{ l.setCanal }}" hint-size="100%,36px"></x-import>
+                  <x-import component-from-global-scope="Leadtogo.IconButton" icon="trash-2" label="Remover lembrete" onClick="{{ l.remove }}" hint-size="36px,36px"></x-import>
+                </div>
+                <sc-if value="{{ l.custom }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;align-items:center">
+                    <x-import component-from-global-scope="Leadtogo.TextField" aria-label="Quantidade" type="number" min="1" value="{{ l.n }}" onChange="{{ l.setN }}" hint-size="90px,36px"></x-import>
+                    <x-import component-from-global-scope="Leadtogo.Select" aria-label="Unidade" options="{{ unidOpts }}" value="{{ l.unid }}" onChange="{{ l.setUnid }}" hint-size="100%,36px"></x-import>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ semLembrete }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--ink-muted)">Sem lembrete.</span></sc-if>
+            <div><x-import component-from-global-scope="Leadtogo.Button" variant="ghost" size="sm" icon="bell" onClick="{{ addLembrete }}" hint-size="160px,28px">Adicionar lembrete</x-import></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <x-import component-from-global-scope="Leadtogo.Select" label="Repetir" options="{{ repOpts }}" value="{{ rep }}" onChange="{{ setRep }}" hint-size="100%,60px"></x-import>
+            <sc-if value="{{ repSemanal }}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-label="Dias da semana" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+                <sc-for list="{{ dias }}" as="d" hint-placeholder-count="7">
+                  <button type="button" onClick="{{ d.toggle }}" aria-pressed="{{ d.pressed }}" aria-label="{{ d.nome }}" style="height:{{ L.ctrlH }};border-radius:6px;border:1px solid {{ d.border }};background:{{ d.bg }};color:{{ d.color }};font:inherit;font-size:13px;font-weight:600;cursor:pointer">{{ d.sigla }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ repMensal }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="Leadtogo.Select" aria-label="Regra mensal" options="{{ mensalOpts }}" value="{{ mensal }}" onChange="{{ setMensal }}" hint-size="100%,36px"></x-import>
+            </sc-if>
+            <sc-if value="{{ repCustom }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:auto 90px minmax(0,1fr);gap:8px;align-items:center">
+                <span style="font-size:14px">A cada</span>
+                <x-import component-from-global-scope="Leadtogo.TextField" aria-label="Intervalo" type="number" min="1" value="{{ intervalo }}" onChange="{{ setIntervalo }}" hint-size="90px,36px"></x-import>
+                <x-import component-from-global-scope="Leadtogo.Select" aria-label="Unidade do intervalo" options="{{ intUnidOpts }}" value="{{ intUnid }}" onChange="{{ setIntUnid }}" hint-size="100%,36px"></x-import>
+              </div>
+            </sc-if>
+            <sc-if value="{{ repete }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:13px;font-weight:600">Termina</span>
+                <x-import component-from-global-scope="Leadtogo.SegmentedControl" label="Termina" options="{{ fimOpts }}" value="{{ fim }}" onChange="{{ setFim }}" hint-size="100%,32px"></x-import>
+                <sc-if value="{{ fimData }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.TextField" aria-label="Até a data" type="date" value="{{ ate }}" onChange="{{ setAte }}" hint-size="100%,36px"></x-import></sc-if>
+                <sc-if value="{{ fimVezes }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:8px"><div style="width:90px"><x-import component-from-global-scope="Leadtogo.TextField" aria-label="Número de vezes" type="number" min="1" value="{{ vezes }}" onChange="{{ setVezes }}" hint-size="90px,36px"></x-import></div><span>vezes</span></div>
+                </sc-if>
+                <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)"><x-import component-from-global-scope="Leadtogo.Icon" name="repeat" size="{{ 14 }}" hint-size="14px,14px"></x-import>{{ repResumo }}</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  <div style="flex-shrink:0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 16px {{ L.footPadB }};border-top:1px solid var(--border);background:var(--surface)">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="Leadtogo.Button" variant="ghost" onClick="{{ close }}" hint-size="90px,36px">Cancelar</x-import></sc-if>
+    <sc-if value="{{ realizada }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Leadtogo.Button" onClick="{{ saveNext }}" block="{{ mobile }}" hint-size="200px,36px">Registrar e agendar próxima</x-import></sc-if>
+    <x-import component-from-global-scope="Leadtogo.Button" variant="primary" icon="check" onClick="{{ save }}" block="{{ mobile }}" hint-size="170px,36px">Registrar atividade</x-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tipo: 'visita', empresaId: undefined, q: '', contato: '', titulo: '', sit: 'realizada', resultado: '', imp: false, urg: false, tried: false, mais: false, op: '', lemb: [{ q: '60m', canal: 'push', n: 2, unid: 'h' }], rep: 'nao', dias: [1], mensal: 'dia', intervalo: 2, intUnid: 'semana', fim: 'nunca', ate: '2026-12-30', vezes: 10 };
+  componentDidMount() { if (!window.LTD) this._w = setInterval(() => { if (window.LTD) { clearInterval(this._w); this.forceUpdate(); } }, 50); }
+  TIPOS = [['ligacao', 'Ligação', 'contato'], ['whatsapp', 'WhatsApp', 'contato'], ['email', 'E-mail', 'contato'], ['visita', 'Visita', 'visita'], ['reuniao', 'Reunião', 'contato'], ['tarefa', 'Tarefa', 'nenhum']];
+  renderVals() {
+    const D = window.LTD || { empresas: [], statusColor: {}, empresa: () => null, contatosUsidantec: [] };
+    const m = !!this.props.mobile, st = this.state;
+    const eid = st.empresaId !== undefined ? st.empresaId : (this.props.empresaId || null);
+    const emp = eid ? D.empresa(eid) : null;
+    const tipo = this.TIPOS.find(t => t[0] === st.tipo);
+    const pick = (b) => b ? { bw: '2px', border: 'var(--accent)', bg: 'var(--surface-selected)' } : { bw: '1px', border: 'var(--border)', bg: 'var(--surface)' };
+    const tipos = this.TIPOS.map(t => ({ value: t[0], label: t[1], checked: String(st.tipo === t[0]), ...pick(st.tipo === t[0]), pick: () => this.setState({ tipo: t[0] }) }));
+    const SIT = [['pendente', 'Pendente', 'clock', 'var(--ink-muted)'], ['em_execucao', 'Em execução', 'circle-pause', 'var(--info)'], ['realizada', 'Realizada', 'circle-check', 'var(--success)'], ['cancelada', 'Cancelada', 'ban', 'var(--ink-muted)']];
+    const situacoes = SIT.map(s => ({ label: s[1], icon: s[2], color: s[3], checked: String(st.sit === s[0]), ...pick(st.sit === s[0]), pick: () => this.setState({ sit: s[0] }) }));
+    const norm = (t) => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const q = norm(st.q.trim());
+    const sug = (q ? D.empresas.filter(e => norm(e.fantasia + ' ' + e.cidade + ' ' + e.cnpj).includes(q)) : D.empresas.filter(e => e.vendedor === 'Alessandro Dias')).slice(0, 4)
+      .map(e => ({ ...e, color: D.statusColor[e.status], line: e.cidade + '/ES · ' + e.vendedor, pick: () => this.setState({ empresaId: e.id, q: '', contato: '' }) }));
+    const contatos = emp ? (emp.id === 'usidantec' ? D.contatosUsidantec.map(c => c.name + ' · ' + c.cargo) : ['Marcelo Venturim · Sócio-administrador', 'Roberta Calmon · Compras']) : [];
+    const empReq = st.tipo !== 'tarefa';
+    const PH = { ligacao: 'Ex.: Retornar sobre a proposta', whatsapp: 'Ex.: Confirmar visita', email: 'Ex.: Enviar material técnico', visita: 'Ex.: Visita de acompanhamento', reuniao: 'Ex.: Apresentar diagnóstico', tarefa: 'Ex.: Preparar proposta' };
+    const realizada = st.sit === 'realizada';
+    const save = (next) => () => {
+      if ((empReq && !emp) || (realizada && !st.resultado.trim())) { this.setState({ tried: true }); return; }
+      const titulo = st.titulo.trim() || tipo[1] + (emp ? ' · ' + emp.fantasia : '');
+      let desc = titulo;
+      if (realizada && tipo[2] === 'visita') desc = 'Tag Visitada aplicada e última visita atualizada.';
+      else if (realizada && tipo[2] === 'contato') desc = 'Tag Contactada aplicada e último contato atualizado.';
+      if (next) desc = 'Agora agende a próxima atividade.';
+      if (this.props.onSave) this.props.onSave(realizada ? 'Atividade registrada' : 'Atividade agendada', desc);
+    };
+    const now = new Date();
+    return {
+      mobile: m, desktop: !m,
+      L: m ? { density: 'touch', w: '100%', maxH: '764px', radius: '16px 16px 0 0', fs: '16px', headPad: '8px 12px 10px 16px', optH: '52px', ctrlH: '44px', sitH: '56px', footPadB: '24px' }
+           : { density: 'default', w: '560px', maxH: 'calc(100vh - 48px)', radius: '12px', fs: '14px', headPad: '14px 12px 14px 20px', optH: '44px', ctrlH: '36px', sitH: '52px', footPadB: '12px' },
+      tipos, situacoes, realizada,
+      hasEmpresa: !!emp, empLine: emp ? emp.cidade + '/ES · ' + emp.status : '', noEmpresa: !emp, emp: emp || {}, reqMark: empReq ? ' *' : '',
+      trocar: () => this.setState({ empresaId: null }),
+      q: st.q, setQ: (e) => this.setState({ q: e.target.value }), sug, showSug: sug.length > 0,
+      empLabel: 'Empresa', empReq, empHint: empReq ? (q ? undefined : 'Sugestões da sua carteira') : 'Opcional para Tarefa',
+      empError: st.tried && empReq && !emp ? 'Escolha a empresa. Só a Tarefa pode ficar sem empresa.' : undefined,
+      contatos, contato: st.contato, setContato: (e) => this.setState({ contato: e.target.value }),
+      titulo: st.titulo, setTitulo: (e) => this.setState({ titulo: e.target.value }), tituloPh: PH[st.tipo],
+      hora: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+      resultado: st.resultado, setResultado: (e) => this.setState({ resultado: e.target.value }),
+      resError: st.tried && realizada && !st.resultado.trim() ? 'Conte o que aconteceu para concluir a atividade.' : undefined,
+      contaComo: tipo[2] === 'visita' ? 'Conta como visita: aplica a tag Visitada.' : tipo[2] === 'contato' ? 'Conta como contato: aplica a tag Contactada.' : 'Tarefa interna: não altera a carteira.',
+      imp: st.imp, urg: st.urg, togImp: () => this.setState({ imp: !st.imp }), togUrg: () => this.setState({ urg: !st.urg }),
+      close: () => this.props.onClose && this.props.onClose(), save: save(false), saveNext: save(true),
+      ...this.maisVals(emp, D, L => L)
+    };
+  }
+  maisVals(emp, D) {
+    const st = this.state;
+    const ops = emp ? (D.oportunidades || []).filter(o => o.empresaId === emp.id) : [];
+    const QU = { '0': 'Na hora', '15m': '15 minutos antes', '60m': '1 hora antes', '1d': '1 dia antes', custom: 'Personalizado' };
+    const CA = { app: 'No app', push: 'Push', email: 'E-mail' };
+    const UN = { m: 'minutos antes', h: 'horas antes', d: 'dias antes', s: 'semanas antes' };
+    const upd = (i, patch) => this.setState(s => ({ lemb: s.lemb.map((x, j) => j === i ? { ...x, ...patch } : x) }));
+    const lembretes = st.lemb.map((l, i) => ({ quando: l.q, canal: l.canal, n: String(l.n), unid: l.unid, custom: l.q === 'custom',
+      setQuando: (e) => upd(i, { q: e.target.value }), setCanal: (e) => upd(i, { canal: e.target.value }), setN: (e) => upd(i, { n: e.target.value }), setUnid: (e) => upd(i, { unid: e.target.value }),
+      remove: () => this.setState(s => ({ lemb: s.lemb.filter((x, j) => j !== i) })) }));
+    const SIG = [['D', 'Domingo'], ['S', 'Segunda'], ['T', 'Terça'], ['Q', 'Quarta'], ['Q', 'Quinta'], ['S', 'Sexta'], ['S', 'Sábado']];
+    const AB = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    const dias = SIG.map((d, i) => { const on = st.dias.includes(i); return { sigla: d[0], nome: d[1], pressed: String(on), border: on ? 'var(--accent)' : 'var(--border)', bg: on ? 'var(--surface-selected)' : 'var(--surface)', color: on ? 'var(--accent)' : 'var(--ink)',
+      toggle: () => this.setState(s => ({ dias: on ? (s.dias.length > 1 ? s.dias.filter(x => x !== i) : s.dias) : s.dias.concat([i]).sort() })) }; });
+    const fmt = (iso) => { const p = String(iso).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; };
+    const base = { diaria: 'Todo dia', semanal: 'Toda semana: ' + st.dias.map(i => AB[i]).join(', '), mensal: st.mensal === 'dia' ? 'Todo mês no dia 5' : 'Todo mês na 1ª segunda-feira', custom: 'A cada ' + st.intervalo + ' ' + ({ dia: 'dias', semana: 'semanas', mes: 'meses' })[st.intUnid] }[st.rep] || '';
+    const fimTxt = st.fim === 'data' ? ', até ' + fmt(st.ate) : st.fim === 'vezes' ? ', ' + st.vezes + ' vezes' : ', sem data para terminar';
+    const opSel = ops.find(o => o.id === st.op);
+    const resumo = [opSel ? opSel.title : null, st.lemb.length ? st.lemb.length + (st.lemb.length === 1 ? ' lembrete' : ' lembretes') : null, st.rep !== 'nao' ? base : null].filter(Boolean);
+    return {
+      mais: st.mais, toggleMais: () => this.setState({ mais: !st.mais }), maisAria: String(st.mais), maisRot: st.mais ? 'rotate(90deg)' : 'none',
+      maisResumo: resumo.length ? resumo.join(' · ') : 'Oportunidade, lembrete e repetição',
+      opOpts: [{ value: '', label: 'Sem oportunidade' }].concat(ops.map(o => ({ value: o.id, label: o.title + ' · R$ ' + o.value.toLocaleString('pt-BR') }))),
+      op: st.op, setOp: (e) => this.setState({ op: e.target.value }), opDisabled: !emp || ops.length === 0,
+      opHint: !emp ? 'Escolha a empresa primeiro.' : ops.length ? 'Só as oportunidades ativas desta empresa.' : 'Nenhuma oportunidade ativa nesta empresa.',
+      lembretes, semLembrete: st.lemb.length === 0, addLembrete: () => this.setState(s => ({ lemb: s.lemb.concat([{ q: '1d', canal: 'app', n: 2, unid: 'h' }]) })),
+      quandoOpts: Object.keys(QU).map(k => ({ value: k, label: QU[k] })), canalOpts: Object.keys(CA).map(k => ({ value: k, label: CA[k] })), unidOpts: Object.keys(UN).map(k => ({ value: k, label: UN[k] })),
+      repOpts: [{ value: 'nao', label: 'Não repete' }, { value: 'diaria', label: 'Diária' }, { value: 'semanal', label: 'Semanal' }, { value: 'mensal', label: 'Mensal' }, { value: 'custom', label: 'Personalizada' }],
+      rep: st.rep, setRep: (e) => this.setState({ rep: e.target.value }), repete: st.rep !== 'nao',
+      repSemanal: st.rep === 'semanal', repMensal: st.rep === 'mensal', repCustom: st.rep === 'custom', dias,
+      mensalOpts: [{ value: 'dia', label: 'No dia 5 de cada mês' }, { value: 'semana', label: 'Na 1ª segunda-feira de cada mês' }], mensal: st.mensal, setMensal: (e) => this.setState({ mensal: e.target.value }),
+      intervalo: String(st.intervalo), setIntervalo: (e) => this.setState({ intervalo: e.target.value }), intUnidOpts: [{ value: 'dia', label: 'dias' }, { value: 'semana', label: 'semanas' }, { value: 'mes', label: 'meses' }], intUnid: st.intUnid, setIntUnid: (e) => this.setState({ intUnid: e.target.value }),
+      fimOpts: [{ value: 'nunca', label: 'Nunca' }, { value: 'data', label: 'Até data' }, { value: 'vezes', label: 'Nº de vezes' }], fim: st.fim, setFim: (v) => this.setState({ fim: v }),
+      fimData: st.fim === 'data', fimVezes: st.fim === 'vezes', ate: st.ate, setAte: (e) => this.setState({ ate: e.target.value }), vezes: String(st.vezes), setVezes: (e) => this.setState({ vezes: e.target.value }),
+      repResumo: base + fimTxt + '.'
+    };
+  }
+}
+</script>
+</body>
+</html>

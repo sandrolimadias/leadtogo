@@ -1,0 +1,100 @@
+/* Leadtogo — tema para Tailwind CSS v4, compatível com shadcn/ui.
+   Uso (globals.css):  @import "tailwindcss";  @import "./tokens.css";  @import "./tailwind-theme.css";
+   As variáveis CSS continuam as do tokens.css (--bg, --ink, --accent…); aqui só se criam os nomes de classe.
+   A cor da marca vira 'brand' nas classes (bg-brand, text-brand, bg-brand-soft, text-on-brand), porque no shadcn/ui
+   'accent' é o fundo de hover. Ex.: bg-surface, text-ink-muted, border-border-strong, bg-tag-teal-bg, rounded-md, shadow-md. */
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-selected: var(--surface-selected);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-brand: var(--accent);
+  --color-brand-hover: var(--accent-hover);
+  --color-brand-soft: var(--accent-soft);
+  --color-on-brand: var(--on-accent);
+  --color-focus-ring: var(--focus-ring);
+  --color-link: var(--link);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-on-danger: var(--on-danger);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-overlay: var(--overlay);
+  --color-tag-gray-bg: var(--tag-gray-bg);
+  --color-tag-gray-fg: var(--tag-gray-fg);
+  --color-tag-red-bg: var(--tag-red-bg);
+  --color-tag-red-fg: var(--tag-red-fg);
+  --color-tag-orange-bg: var(--tag-orange-bg);
+  --color-tag-orange-fg: var(--tag-orange-fg);
+  --color-tag-amber-bg: var(--tag-amber-bg);
+  --color-tag-amber-fg: var(--tag-amber-fg);
+  --color-tag-green-bg: var(--tag-green-bg);
+  --color-tag-green-fg: var(--tag-green-fg);
+  --color-tag-teal-bg: var(--tag-teal-bg);
+  --color-tag-teal-fg: var(--tag-teal-fg);
+  --color-tag-blue-bg: var(--tag-blue-bg);
+  --color-tag-blue-fg: var(--tag-blue-fg);
+  --color-tag-indigo-bg: var(--tag-indigo-bg);
+  --color-tag-indigo-fg: var(--tag-indigo-fg);
+  --color-tag-purple-bg: var(--tag-purple-bg);
+  --color-tag-purple-fg: var(--tag-purple-fg);
+  --color-tag-pink-bg: var(--tag-pink-bg);
+  --color-tag-pink-fg: var(--tag-pink-fg);
+
+  /* nomes usados pelos componentes do shadcn/ui */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--on-accent);
+  --color-secondary: var(--surface-sunken);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-sunken);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--surface-hover);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-input: var(--border-strong);
+  --color-ring: var(--focus-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --spacing: 4px;
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --text-display: 30px; --text-display--line-height: 36px; --text-display--font-weight: 600;
+  --text-title-lg: 22px; --text-title-lg--line-height: 28px; --text-title-lg--font-weight: 600;
+  --text-title-md: 18px; --text-title-md--line-height: 24px; --text-title-md--font-weight: 600;
+  --text-title-sm: 15px; --text-title-sm--line-height: 20px; --text-title-sm--font-weight: 600;
+  --text-body-lg: 16px; --text-body-lg--line-height: 24px; --text-body-lg--font-weight: 400;
+  --text-body: 14px; --text-body--line-height: 20px; --text-body--font-weight: 400;
+  --text-body-strong: 14px; --text-body-strong--line-height: 20px; --text-body-strong--font-weight: 600;
+  --text-body-sm: 13px; --text-body-sm--line-height: 18px; --text-body-sm--font-weight: 400;
+  --text-caption: 12px; --text-caption--line-height: 16px; --text-caption--font-weight: 500;
+  --text-overline: 11px; --text-overline--line-height: 16px; --text-overline--font-weight: 600;
+  --text-kpi: 28px; --text-kpi--line-height: 32px; --text-kpi--font-weight: 600;
+}
