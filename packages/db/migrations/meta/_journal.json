@@ -71,6 +71,13 @@
       "when": 1791314553232,
       "tag": "0009_manutencao_worker",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791316676620,
+      "tag": "0010_particoes_auditoria_utc",
+      "breakpoints": true
     }
   ]
 }

@@ -212,3 +212,83 @@ describe('as três funções de manutenção: sem BYPASSRLS, sem brecha', () => 
     })
   })
 })
+
+describe('partições da auditoria: limites em UTC, sem depender da sessão', () => {
+  // Fusos nos extremos e um DateStyle diferente: nada disso pode mudar os limites nem o nome
+  const sessoes = [
+    "SET TimeZone = 'Pacific/Kiritimati'", // UTC+14
+    "SET TimeZone = 'Etc/GMT+12'", // UTC-12
+    "SET TimeZone = 'America/Sao_Paulo'; SET DateStyle = 'SQL, DMY'",
+  ]
+  it.each(sessoes)(
+    'criar_particao_auditoria com [%s] gera limites exatos de 00:00:00+00',
+    async (config) => {
+      const conexao = conectarOwner()
+      const SENTINELA = new Error('desfaz a transação')
+      let lido: { nomes: string[]; limites: { nome: string; limite: string }[] } | undefined
+      try {
+        // Tudo numa transação desfeita no fim (DDL é transacional): não deixa partição distante para os
+        // outros testes, que esperam -1 a +12 meses. Meses distantes, com virada de ano e último dia do mês.
+        await conexao
+          .begin(async (tx) => {
+            for (const c of config.split(';')) await tx.unsafe(c)
+            const nomes: string[] = []
+            for (const d of ['2041-12-31', '2042-01-01', '2042-03-31'])
+              nomes.push(
+                String(
+                  (await tx.unsafe(`SELECT criar_particao_auditoria('${d}'::date) AS n`))[0]?.['n'],
+                ),
+              )
+            // O texto do limite sai no fuso e no estilo de data da sessão que lê: lê-se em UTC/ISO
+            await tx`SET LOCAL TimeZone = 'UTC'`
+            await tx`SET LOCAL DateStyle = 'ISO, MDY'`
+            const limites = await tx<{ nome: string; limite: string }[]>`
+            SELECT c.relname AS nome, pg_get_expr(c.relpartbound, c.oid) AS limite
+            FROM pg_class c WHERE c.relname IN ('auditoria_2041_12', 'auditoria_2042_01', 'auditoria_2042_03') ORDER BY 1`
+            lido = { nomes, limites: [...limites] }
+            throw SENTINELA
+          })
+          .catch((e: unknown) => {
+            if (e !== SENTINELA) throw e
+          })
+        expect(lido?.nomes).toEqual(['auditoria_2041_12', 'auditoria_2042_01', 'auditoria_2042_03'])
+        expect(lido?.limites).toEqual([
+          {
+            nome: 'auditoria_2041_12',
+            limite: "FOR VALUES FROM ('2041-12-01 00:00:00+00') TO ('2042-01-01 00:00:00+00')",
+          },
+          {
+            nome: 'auditoria_2042_01',
+            limite: "FOR VALUES FROM ('2042-01-01 00:00:00+00') TO ('2042-02-01 00:00:00+00')",
+          },
+          {
+            nome: 'auditoria_2042_03',
+            limite: "FOR VALUES FROM ('2042-03-01 00:00:00+00') TO ('2042-04-01 00:00:00+00')",
+          },
+        ])
+      } finally {
+        await conexao.end()
+      }
+    },
+  )
+
+  it('app_manter_particoes_auditoria calcula "agora" em UTC: nenhum uso de now() no fuso da sessão', async () => {
+    const [f] = await owner<
+      { def: string }[]
+    >`SELECT pg_get_functiondef('app_manter_particoes_auditoria(integer)'::regprocedure) AS def`
+    expect(f?.def).toMatch(/now\(\) AT TIME ZONE 'UTC'/)
+    expect(f?.def.replace(/now\(\) AT TIME ZONE 'UTC'/g, '')).not.toMatch(/now\(\)/)
+    // e rodando sob um fuso extremo ela segue idempotente
+    const conexao = conectarOwner()
+    try {
+      await conexao.begin(async (tx) => {
+        await tx`SET LOCAL TimeZone = 'Pacific/Kiritimati'`
+        await tx`SELECT app_manter_particoes_auditoria(12)`
+        const [r] = await tx<{ n: number }[]>`SELECT app_manter_particoes_auditoria(12) AS n`
+        expect(r?.n).toBe(0)
+      })
+    } finally {
+      await conexao.end()
+    }
+  })
+})
