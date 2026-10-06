@@ -1,7 +1,8 @@
 import { SwaggerModule } from '@nestjs/swagger'
 
-import { criarApp, criarDocumentoOpenApi } from './app.js'
+import { criarApp } from './app.js'
 import { carregarConfiguracao, ErroConfiguracao } from './configuracao/configuracao.js'
+import { montarDocumento } from './documentacao/openapi.js'
 
 // Falha ao iniciar, com a lista do que falta, se a configuração estiver inválida.
 let config
@@ -19,7 +20,7 @@ const app = await criarApp(config)
 
 // Swagger em /docs. Em produção fica desligado até existir a proteção (docs/configuracao_tecnologia.md, seção 4).
 if (config.NODE_ENV !== 'production') {
-  SwaggerModule.setup('docs', app, criarDocumentoOpenApi(app, config.APP_VERSION))
+  SwaggerModule.setup('docs', app, montarDocumento(app, config.APP_VERSION))
 }
 
 await app.listen(config.PORT, '0.0.0.0')

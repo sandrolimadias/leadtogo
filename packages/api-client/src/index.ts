@@ -1,10 +1,24 @@
 import createClient from 'openapi-fetch'
 
-import type { paths } from './gerado/schema.js'
+import type { components, paths } from './gerado/schema.js'
 
 export type { paths, components } from './gerado/schema.js'
 
-/** Cliente tipado da API, gerado do OpenAPI (`pnpm --filter @leadtogo/api-client generate`). */
+/** Tipos das respostas e entradas da API, pelos nomes do OpenAPI (`components.schemas`). */
+type Esquemas = components['schemas']
+export type Me = Esquemas['MeResposta']
+export type EmpresaDoUsuario = Esquemas['EmpresaDoUsuario']
+export type Preferencias = Esquemas['Preferencias']
+export type PreferenciasPatch = Esquemas['PreferenciasPatch']
+export type MembroDaEquipe = Esquemas['MembroDaEquipe']
+export type ConviteResumo = Esquemas['ConviteResumo']
+export type ErroDaApi = Esquemas['Erro']
+
+/**
+ * Cliente tipado da API, gerado do OpenAPI (`pnpm --filter @leadtogo/api-client generate`).
+ * Envia o cookie de sessão (`credentials: 'include'`). As rotas de login, 2FA e recuperação de senha
+ * (`/v1/auth/*`) são do Better Auth: use o cliente dele para essas.
+ */
 export function criarApiClient(baseUrl: string, opcoes: { fetch?: typeof fetch } = {}) {
   return createClient<paths>({ baseUrl, credentials: 'include', ...opcoes })
 }

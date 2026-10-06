@@ -31,16 +31,20 @@ export const primeiroAcessoSchema = z
     contaNome: z.string().trim().min(2).max(200).optional(),
   })
   .strict()
+  .meta({ id: 'PrimeiroAcessoEntrada' })
 
 export type PrimeiroAcessoEntrada = z.input<typeof primeiroAcessoSchema>
 export type PrimeiroAcesso = z.output<typeof primeiroAcessoSchema>
 
 /** Resposta do primeiro acesso. */
-export interface PrimeiroAcessoResultado {
-  usuarioId: string
-  contaId: string
-  tenantId: string
-  membroId: string
-  /** O e-mail precisa ser confirmado antes de entrar (VERIFICACAO_EMAIL ligada) */
-  verificacaoEmailPendente: boolean
-}
+export const primeiroAcessoResultadoSchema = z
+  .object({
+    usuarioId: z.uuid(),
+    contaId: z.uuid(),
+    tenantId: z.uuid(),
+    membroId: z.uuid(),
+    /** O e-mail precisa ser confirmado antes de entrar (VERIFICACAO_EMAIL ligada) */
+    verificacaoEmailPendente: z.boolean(),
+  })
+  .meta({ id: 'PrimeiroAcessoResultado' })
+export type PrimeiroAcessoResultado = z.infer<typeof primeiroAcessoResultadoSchema>

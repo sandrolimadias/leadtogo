@@ -16,7 +16,7 @@
     "generate": "openapi-typescript ../../apps/api/openapi.json -o src/gerado/schema.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "openapi-fetch": "^0.17.0"

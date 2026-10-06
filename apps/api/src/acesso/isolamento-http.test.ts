@@ -7,8 +7,7 @@ import type {
   MembroDaEquipe,
   Preferencias,
 } from '@leadtogo/shared'
-import { type INestApplication, RequestMethod } from '@nestjs/common'
-import { ModulesContainer } from '@nestjs/core'
+import type { INestApplication } from '@nestjs/common'
 import { Redis } from 'ioredis'
 import request from 'supertest'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -28,7 +27,7 @@ import {
   usuarioSimples,
   vincular,
 } from '../testes/mundo.js'
-import { CHAVE_PUBLICA } from './acesso.decorators.js'
+import { listarRotas } from '../documentacao/rotas.js'
 
 // O teste que fecha o E8: um usuário da empresa A recebe 403/404 ao tentar chegar nos dados da B,
 // pelas rotas REAIS da API (não por rotas de teste). Duas contas, duas empresas, dois administradores.
@@ -286,13 +285,6 @@ describe('papel por empresa: o mesmo usuário é admin numa e vendedor na outra'
 })
 
 describe('rede de segurança: toda rota é protegida, a não ser as públicas listadas aqui', () => {
-  const METODOS: Record<number, 'get' | 'post' | 'put' | 'delete' | 'patch'> = {
-    [RequestMethod.GET]: 'get',
-    [RequestMethod.POST]: 'post',
-    [RequestMethod.PUT]: 'put',
-    [RequestMethod.DELETE]: 'delete',
-    [RequestMethod.PATCH]: 'patch',
-  }
   /** As ÚNICAS rotas que podem ficar sem login. Adicionar uma aqui é uma decisão consciente. */
   const PUBLICAS = [
     'GET /health',
@@ -302,43 +294,7 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
     'POST /v1/convites/aceitar',
   ]
 
-  function rotas() {
-    const achadas: {
-      rota: string
-      publica: boolean
-      metodo: 'get' | 'post' | 'put' | 'delete' | 'patch'
-      url: string
-    }[] = []
-    for (const modulo of app.get(ModulesContainer).values()) {
-      for (const wrapper of modulo.controllers.values()) {
-        const classe = wrapper.metatype as (new (...args: never[]) => unknown) | null
-        if (!classe) continue
-        const prefixo = Reflect.getMetadata('path', classe) as string | undefined
-        if (prefixo === undefined) continue
-        const classePublica = Reflect.getMetadata(CHAVE_PUBLICA, classe) === true
-        for (const nome of Object.getOwnPropertyNames(classe.prototype)) {
-          const fn = (classe.prototype as Record<string, unknown>)[nome]
-          if (typeof fn !== 'function') continue
-          const metodo = Reflect.getMetadata('method', fn) as number | undefined
-          const caminho = Reflect.getMetadata('path', fn) as string | undefined
-          if (metodo === undefined || caminho === undefined) continue
-          const publica = classePublica || Reflect.getMetadata(CHAVE_PUBLICA, fn) === true
-          const sufixo = caminho === '/' ? '' : `/${caminho}`
-          const base = prefixo === 'health' ? '' : '/v1'
-          const rota = `${base}/${prefixo}${sufixo}`.replace(/\/+/g, '/')
-          achadas.push({
-            rota: `${Number(metodo) === Number(RequestMethod.ALL) ? 'ALL' : (METODOS[metodo] ?? String(metodo)).toUpperCase()} ${rota}`,
-            publica,
-            metodo: METODOS[metodo] ?? 'get',
-            url: rota
-              .replace(/:[a-zA-Z]+/g, '01a11111-1111-7111-8111-111111111111')
-              .replace('{*caminho}', 'x'),
-          })
-        }
-      }
-    }
-    return achadas
-  }
+  const rotas = () => listarRotas(app)
 
   it('o conjunto de rotas públicas é exatamente o esperado', () => {
     const publicas = rotas()
@@ -352,7 +308,7 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
     expect(rotas().filter((r) => !r.publica).length).toBeGreaterThanOrEqual(8)
   })
 
-  const chamar = (metodo: 'get' | 'post' | 'put' | 'delete' | 'patch', url: string) => {
+  const chamar = (metodo: 'get' | 'post' | 'put' | 'delete' | 'patch' | 'all', url: string) => {
     const agente = request(app.getHttpServer())
     const pedido =
       metodo === 'get'
@@ -363,7 +319,9 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
             ? agente.put(url)
             : metodo === 'patch'
               ? agente.patch(url)
-              : agente.delete(url)
+              : metodo === 'all'
+                ? agente.get(url)
+                : agente.delete(url)
     return pedido.set('Origin', ORIGEM_DO_FRONT).send({})
   }
 

@@ -4,7 +4,6 @@ import type { Server } from 'node:http'
 
 import { RequestMethod, type INestApplication } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
-import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from '@nestjs/swagger'
 import { Logger } from 'nestjs-pino'
 
 import { AppModule, type OpcoesApp } from './app.module.js'
@@ -34,13 +33,4 @@ export async function criarApp(
   )
   configurarApp(app, config)
   return app
-}
-
-export function criarDocumentoOpenApi(app: INestApplication, versao: string): OpenAPIObject {
-  const config = new DocumentBuilder()
-    .setTitle('Leadtogo API')
-    .setDescription('API REST do Leadtogo')
-    .setVersion(versao)
-    .build()
-  return SwaggerModule.createDocument(app, config)
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { papelMembroSchema, type PapelMembro } from './me.js'
+import { papelMembroSchema } from './me.js'
 import { SENHA_MAX, SENHA_MIN } from './primeiro-acesso.js'
 
 /** Token do convite: aleatório (32 bytes em base64url = 43 caracteres), enviado só por e-mail. */
@@ -13,10 +13,14 @@ export const criarConviteSchema = z
     papel: papelMembroSchema,
   })
   .strict()
+  .meta({ id: 'CriarConviteEntrada' })
 export type CriarConviteEntrada = z.infer<typeof criarConviteSchema>
 
 /** POST /v1/convites/consultar (público): o token vai no corpo, nunca na URL (a URL vai para logs). */
-export const consultarConviteSchema = z.object({ token: tokenSchema }).strict()
+export const consultarConviteSchema = z
+  .object({ token: tokenSchema })
+  .strict()
+  .meta({ id: 'ConsultarConviteEntrada' })
 export type ConsultarConviteEntrada = z.infer<typeof consultarConviteSchema>
 
 /**
@@ -34,53 +38,69 @@ export const aceitarConviteSchema = z
       .optional(),
   })
   .strict()
+  .meta({ id: 'AceitarConviteEntrada' })
 export type AceitarConviteEntrada = z.infer<typeof aceitarConviteSchema>
 
 /** Convite pendente, como o administrador o vê (nunca inclui o token). */
-export interface ConviteResumo {
-  id: string
-  email: string
-  papel: PapelMembro
-  expiraEm: string
-  criadoEm: string
-  /** `expirado` ainda aparece na lista para o administrador reenviar ou cancelar */
-  situacao: 'pendente' | 'expirado'
-}
+export const conviteResumoSchema = z
+  .object({
+    id: z.uuid(),
+    email: z.string(),
+    papel: papelMembroSchema,
+    expiraEm: z.iso.datetime(),
+    criadoEm: z.iso.datetime(),
+    /** `expirado` ainda aparece na lista para o administrador reenviar ou cancelar */
+    situacao: z.enum(['pendente', 'expirado']),
+  })
+  .meta({ id: 'ConviteResumo' })
+export type ConviteResumo = z.infer<typeof conviteResumoSchema>
 
 /** Resposta de POST /v1/convites. */
-export interface ConviteCriado extends ConviteResumo {
-  /** O e-mail saiu? (false quando o SMTP não está configurado: o token não é devolvido em hipótese alguma) */
-  emailEnviado: boolean
-}
+export const conviteCriadoSchema = conviteResumoSchema
+  .extend({
+    /** O e-mail saiu? (false quando o SMTP não está configurado: o token não é devolvido em hipótese alguma) */
+    emailEnviado: z.boolean(),
+  })
+  .meta({ id: 'ConviteCriado' })
+export type ConviteCriado = z.infer<typeof conviteCriadoSchema>
 
 /** Resposta de POST /v1/convites/consultar: o que o convidado vê antes de aceitar. */
-export interface ConviteConsulta {
-  empresa: { razaoSocial: string; nomeFantasia: string | null }
-  email: string
-  papel: PapelMembro
-  expiraEm: string
-  /** Já existe conta com este e-mail: o convidado entra e aceita; senão, informa nome e senha */
-  contaExistente: boolean
-}
+export const conviteConsultaSchema = z
+  .object({
+    empresa: z.object({ razaoSocial: z.string(), nomeFantasia: z.string().nullable() }),
+    email: z.string(),
+    papel: papelMembroSchema,
+    expiraEm: z.iso.datetime(),
+    /** Já existe conta com este e-mail: o convidado entra e aceita; senão, informa nome e senha */
+    contaExistente: z.boolean(),
+  })
+  .meta({ id: 'ConviteConsulta' })
+export type ConviteConsulta = z.infer<typeof conviteConsultaSchema>
 
 /** Resposta de POST /v1/convites/aceitar. */
-export interface ConviteAceito {
-  tenantId: string
-  membroId: string
-  usuarioId: string
-  /** A conta foi criada agora (o e-mail já vale como confirmado: o convite chegou nele) */
-  contaCriada: boolean
-}
+export const conviteAceitoSchema = z
+  .object({
+    tenantId: z.uuid(),
+    membroId: z.uuid(),
+    usuarioId: z.uuid(),
+    /** A conta foi criada agora (o e-mail já vale como confirmado: o convite chegou nele) */
+    contaCriada: z.boolean(),
+  })
+  .meta({ id: 'ConviteAceito' })
+export type ConviteAceito = z.infer<typeof conviteAceitoSchema>
 
 /** Item de GET /v1/membros. O e-mail só aparece para administradores e gestores. */
-export interface MembroDaEquipe {
-  id: string
-  nome: string
-  cargo: string | null
-  email?: string | null
-  papel: PapelMembro
-  ativo: boolean
-  /** Tem acesso ao sistema (false = vendedor externo, sem login) */
-  temLogin: boolean
-  cor: string | null
-}
+export const membroDaEquipeSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    cargo: z.string().nullable(),
+    email: z.string().nullable().optional(),
+    papel: papelMembroSchema,
+    ativo: z.boolean(),
+    /** Tem acesso ao sistema (false = vendedor externo, sem login) */
+    temLogin: z.boolean(),
+    cor: z.string().nullable(),
+  })
+  .meta({ id: 'MembroDaEquipe' })
+export type MembroDaEquipe = z.infer<typeof membroDaEquipeSchema>

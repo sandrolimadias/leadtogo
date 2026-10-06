@@ -18,6 +18,7 @@ export const preferenciasSchema = z
     filtroPadrao: z.partialRecord(z.enum(TELAS_COM_FILTRO), z.uuid()),
   })
   .strict()
+  .meta({ id: 'Preferencias' })
 
 /** O que a API devolve: sempre completo, com os padrões onde o membro ainda não escolheu. */
 export type Preferencias = z.infer<typeof preferenciasSchema>
@@ -42,6 +43,7 @@ export const preferenciasPatchSchema = z
   })
   .partial()
   .strict()
+  .meta({ id: 'PreferenciasPatch' })
 export type PreferenciasPatch = z.infer<typeof preferenciasPatchSchema>
 
 /** Aplica um patch sobre o que está guardado e devolve só o que foge do padrão (o que vai para o banco). */

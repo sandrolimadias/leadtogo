@@ -3,26 +3,1361 @@
   "paths": {
     "/health": {
       "get": {
+        "description": "Verifica banco, Valkey e Garage (2 s no máximo cada). 200 com tudo saudável; 503 se algum falhar, sem detalhes do erro.",
         "operationId": "HealthController_verificar",
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Saude"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
           }
         },
-        "tags": ["Health"]
+        "summary": "Saúde do serviço",
+        "tags": ["Saúde"],
+        "security": []
+      }
+    },
+    "/v1/convites": {
+      "post": {
+        "description": "Só administradores da empresa ativa. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.",
+        "operationId": "ConvitesController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarConviteEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConviteCriado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Convidar um membro",
+        "tags": ["Equipe e convites"]
+      },
+      "get": {
+        "description": "Só administradores da empresa ativa. Lista os convites ainda não aceitos nem cancelados (os vencidos aparecem como `expirado`). Nunca inclui o token.",
+        "operationId": "ConvitesController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConviteResumo"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Convites pendentes",
+        "tags": ["Equipe e convites"]
+      }
+    },
+    "/v1/convites/{id}": {
+      "delete": {
+        "description": "Só administradores da empresa ativa. O convite de outra empresa (ou inexistente) dá 404.",
+        "operationId": "ConvitesController_revogar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cancelar um convite",
+        "tags": ["Equipe e convites"]
+      }
+    },
+    "/v1/convites/aceitar": {
+      "post": {
+        "description": "Sem conta com o e-mail: informe `nome` e `senha` (a conta nasce com o e-mail confirmado). Com conta: só vale com a sessão dessa conta (`login_necessario`, `convite_de_outro_email`). Uso único.",
+        "operationId": "ConvitesPublicosController_aceitar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AceitarConviteEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConviteAceito"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Aceitar um convite (convidado)",
+        "tags": ["Equipe e convites"],
+        "security": []
+      }
+    },
+    "/v1/convites/consultar": {
+      "post": {
+        "description": "Sem login. Mostra a empresa, o e-mail, o papel e se já existe conta com o e-mail. Token inexistente, expirado, cancelado ou já usado dão o MESMO 404 (`convite_invalido`). O token vai no corpo, nunca na URL.",
+        "operationId": "ConvitesPublicosController_consultar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultarConviteEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConviteConsulta"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Consultar um convite (convidado)",
+        "tags": ["Equipe e convites"],
+        "security": []
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "description": "Usuário, empresas em que é membro (com o papel em cada uma), empresa ativa e se falta ativar o 2FA. Não exige empresa ativa e fica aberto ao administrador que ainda não ativou o 2FA.",
+        "operationId": "MeController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Quem sou eu",
+        "tags": ["Usuário"]
+      }
+    },
+    "/v1/me/preferencias": {
+      "get": {
+        "description": "Preferências de interface do membro na empresa ativa; sempre completas, com os padrões onde ainda não escolheu.",
+        "operationId": "PreferenciasController_obter",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferencias"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Minhas preferências",
+        "tags": ["Usuário"]
+      },
+      "patch": {
+        "description": "Só o que mudou. `null` volta uma chave ao padrão; em `filtroPadrao`, `null` remove o filtro da tela. Chaves desconhecidas dão 400.",
+        "operationId": "PreferenciasController_alterar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferenciasPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferencias"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar minhas preferências",
+        "tags": ["Usuário"]
+      }
+    },
+    "/v1/membros": {
+      "get": {
+        "description": "Membros não excluídos da empresa ativa. O e-mail só aparece para administradores e gestores.",
+        "operationId": "MembrosController_listar",
+        "parameters": [
+          {
+            "name": "incluirInativos",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MembroDaEquipe"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Equipe da empresa ativa",
+        "tags": ["Equipe e convites"]
+      }
+    },
+    "/v1/primeiro-acesso": {
+      "post": {
+        "description": "Cria o usuário, a conta dona, a primeira empresa, as configurações e o membro administrador. Fechado por padrão em produção (`PRIMEIRO_ACESSO`): lá a primeira conta nasce pelo comando `node dist/criar-conta.js`. Limite de 5 por hora por IP.",
+        "operationId": "PrimeiroAcessoController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrimeiroAcessoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrimeiroAcessoResultado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar a primeira conta",
+        "tags": ["Primeiro acesso"],
+        "security": []
+      }
+    },
+    "/v1/sessao/empresa-ativa": {
+      "post": {
+        "description": "Define a empresa ativa DESTA sessão. Só vale para empresa em que o usuário é membro ativo e que está em teste ou ativa; uma empresa alheia e uma inexistente dão o mesmo 403 (`empresa_nao_permitida`). Administrador sem 2FA recebe `2fa_obrigatorio`.",
+        "operationId": "MeController_trocarEmpresaAtiva",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmpresaAtivaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaAtivaResposta"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Trocar a empresa ativa",
+        "tags": ["Usuário"]
       }
     }
   },
   "info": {
     "title": "Leadtogo API",
-    "description": "API REST do Leadtogo",
+    "description": "API REST do Leadtogo (CRM multiempresa de gestão de carteira).\n\n**Autenticação.** Cookie de sessão `HttpOnly` emitido pela própria API (`leadtogo.session_token`, com o prefixo `__Secure-` em produção); chame sempre com `credentials: \"include\"`.\nLogin, logout, sessão, 2FA, recuperação de senha e verificação de e-mail são servidos pelo **Better Auth** em `/v1/auth/*`: use o cliente dele (`better-auth/client`) para essas rotas; elas não aparecem abaixo.\n\n**Empresa ativa.** Quase toda rota exige uma empresa ativa na sessão (`POST /v1/sessao/empresa-ativa`); a empresa nunca vem do cliente por cabeçalho, query ou corpo.\n\n**Erros.** Todos usam o schema `Erro`; trate pelo código estável em `erro`, não pela mensagem.",
     "version": "0.0.0",
     "contact": {}
   },
-  "tags": [],
+  "tags": [
+    {
+      "name": "Saúde",
+      "description": "Verificação de saúde do deploy"
+    },
+    {
+      "name": "Primeiro acesso",
+      "description": "Criação da primeira conta (pode estar fechada em produção)"
+    },
+    {
+      "name": "Usuário",
+      "description": "Quem sou eu, empresa ativa e preferências"
+    },
+    {
+      "name": "Equipe e convites",
+      "description": "Membros da empresa ativa e convites"
+    }
+  ],
   "servers": [],
   "components": {
-    "schemas": {}
-  }
+    "securitySchemes": {
+      "sessao": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "leadtogo.session_token"
+      }
+    },
+    "schemas": {
+      "AceitarConviteEntrada": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 200
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "senha": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 128
+          }
+        },
+        "required": ["token"],
+        "additionalProperties": false
+      },
+      "ConsultarConviteEntrada": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 200
+          }
+        },
+        "required": ["token"],
+        "additionalProperties": false
+      },
+      "ConviteAceito": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "membroId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "usuarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contaCriada": {
+            "type": "boolean"
+          }
+        },
+        "required": ["tenantId", "membroId", "usuarioId", "contaCriada"],
+        "additionalProperties": false
+      },
+      "ConviteConsulta": {
+        "type": "object",
+        "properties": {
+          "empresa": {
+            "type": "object",
+            "properties": {
+              "razaoSocial": {
+                "type": "string"
+              },
+              "nomeFantasia": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["razaoSocial", "nomeFantasia"],
+            "additionalProperties": false
+          },
+          "email": {
+            "type": "string"
+          },
+          "papel": {
+            "type": "string",
+            "enum": ["admin", "gestor", "vendedor"]
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "contaExistente": {
+            "type": "boolean"
+          }
+        },
+        "required": ["empresa", "email", "papel", "expiraEm", "contaExistente"],
+        "additionalProperties": false
+      },
+      "ConviteCriado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "papel": {
+            "type": "string",
+            "enum": ["admin", "gestor", "vendedor"]
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["pendente", "expirado"]
+          },
+          "emailEnviado": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "email", "papel", "expiraEm", "criadoEm", "situacao", "emailEnviado"],
+        "additionalProperties": false
+      },
+      "ConviteResumo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "papel": {
+            "type": "string",
+            "enum": ["admin", "gestor", "vendedor"]
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["pendente", "expirado"]
+          }
+        },
+        "required": ["id", "email", "papel", "expiraEm", "criadoEm", "situacao"],
+        "additionalProperties": false
+      },
+      "CriarConviteEntrada": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "papel": {
+            "type": "string",
+            "enum": ["admin", "gestor", "vendedor"]
+          }
+        },
+        "required": ["email", "papel"],
+        "additionalProperties": false
+      },
+      "EmpresaAtivaEntrada": {
+        "type": "object",
+        "properties": {
+          "empresaId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["empresaId"],
+        "additionalProperties": false
+      },
+      "EmpresaAtivaResposta": {
+        "type": "object",
+        "properties": {
+          "empresaAtivaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresa": {
+            "$ref": "#/components/schemas/EmpresaDoUsuario"
+          }
+        },
+        "required": ["empresaAtivaId", "empresa"],
+        "additionalProperties": false
+      },
+      "EmpresaDoUsuario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "razaoSocial": {
+            "type": "string"
+          },
+          "nomeFantasia": {
+            "nullable": true,
+            "type": "string"
+          },
+          "papel": {
+            "type": "string",
+            "enum": ["admin", "gestor", "vendedor"]
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["teste", "ativo", "suspenso", "cancelado"]
+          },
+          "ativa": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "razaoSocial", "nomeFantasia", "papel", "situacao", "ativa"],
+        "additionalProperties": false
+      },
+      "Erro": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "erro": {
+            "type": "string"
+          },
+          "mensagem": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "detalhes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "campo": {
+                  "type": "string"
+                },
+                "mensagem": {
+                  "type": "string"
+                }
+              },
+              "required": ["campo", "mensagem"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["statusCode", "erro", "mensagem"],
+        "additionalProperties": false
+      },
+      "MembroDaEquipe": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "email": {
+            "nullable": true,
+            "type": "string"
+          },
+          "papel": {
+            "type": "string",
+            "enum": ["admin", "gestor", "vendedor"]
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "temLogin": {
+            "type": "boolean"
+          },
+          "cor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["id", "nome", "cargo", "papel", "ativo", "temLogin", "cor"],
+        "additionalProperties": false
+      },
+      "MeResposta": {
+        "type": "object",
+        "properties": {
+          "usuario": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "emailVerificado": {
+                "type": "boolean"
+              },
+              "twoFactorEnabled": {
+                "type": "boolean"
+              }
+            },
+            "required": ["id", "nome", "email", "emailVerificado", "twoFactorEnabled"],
+            "additionalProperties": false
+          },
+          "empresas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmpresaDoUsuario"
+            }
+          },
+          "empresaAtivaId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "administradorDeConta": {
+            "type": "boolean"
+          },
+          "doisFatoresPendente": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "usuario",
+          "empresas",
+          "empresaAtivaId",
+          "administradorDeConta",
+          "doisFatoresPendente"
+        ],
+        "additionalProperties": false
+      },
+      "Preferencias": {
+        "type": "object",
+        "properties": {
+          "tema": {
+            "type": "string",
+            "enum": ["claro", "escuro", "sistema"]
+          },
+          "menuRecolhido": {
+            "type": "boolean"
+          },
+          "visaoDashboard": {
+            "type": "string",
+            "enum": ["minha", "equipe"]
+          },
+          "filtroPadrao": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": ["tema", "menuRecolhido", "visaoDashboard", "filtroPadrao"],
+        "additionalProperties": false
+      },
+      "PreferenciasPatch": {
+        "type": "object",
+        "properties": {
+          "tema": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["claro", "escuro", "sistema"]
+          },
+          "menuRecolhido": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "visaoDashboard": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["minha", "equipe"]
+          },
+          "filtroPadrao": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrimeiroAcessoEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "senha": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 128
+          },
+          "empresa": {
+            "type": "object",
+            "properties": {
+              "razaoSocial": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 200
+              },
+              "nomeFantasia": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "cnpj": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["razaoSocial"]
+          },
+          "contaNome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          }
+        },
+        "required": ["nome", "email", "senha", "empresa"],
+        "additionalProperties": false
+      },
+      "PrimeiroAcessoResultado": {
+        "type": "object",
+        "properties": {
+          "usuarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "membroId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "verificacaoEmailPendente": {
+            "type": "boolean"
+          }
+        },
+        "required": ["usuarioId", "contaId", "tenantId", "membroId", "verificacaoEmailPendente"],
+        "additionalProperties": false
+      },
+      "Saude": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok", "erro"]
+          },
+          "version": {
+            "type": "string"
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "database": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["ok", "erro"]
+                  },
+                  "ms": {
+                    "type": "number"
+                  }
+                },
+                "required": ["status", "ms"],
+                "additionalProperties": false
+              },
+              "valkey": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["ok", "erro"]
+                  },
+                  "ms": {
+                    "type": "number"
+                  }
+                },
+                "required": ["status", "ms"],
+                "additionalProperties": false
+              },
+              "garage": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["ok", "erro"]
+                  },
+                  "ms": {
+                    "type": "number"
+                  }
+                },
+                "required": ["status", "ms"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["database", "valkey", "garage"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["status", "version", "checks"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "security": [
+    {
+      "sessao": []
+    }
+  ]
 }
