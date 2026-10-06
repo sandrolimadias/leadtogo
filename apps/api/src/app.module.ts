@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module.js'
 import { MeModule } from './me/me.module.js'
 import { PrimeiroAcessoModule } from './primeiro-acesso/primeiro-acesso.module.js'
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
+import { ConvitesModule } from './convites/convites.module.js'
 import { EmailModule } from './email/email.module.js'
 import { FiltroDeExcecoes } from './http/filtro-excecoes.js'
 import { HealthModule } from './health/health.module.js'
@@ -42,6 +43,7 @@ export class AppModule {
         AuthModule,
         AcessoModule,
         MeModule,
+        ConvitesModule,
         PrimeiroAcessoModule,
         HealthModule,
       ],

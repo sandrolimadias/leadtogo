@@ -125,3 +125,13 @@ export async function usuarioSimples(app: INestApplication<Server>) {
   const { cookie } = await entrar(app, u.email)
   return { ...u, cookie }
 }
+
+/** Membro (sem login) com e-mail, para testar convite de quem já faz parte da equipe. */
+export async function membroComEmail(tenantId: string, email: string, nome = 'Membro com e-mail') {
+  const id = novoId()
+  await dono.begin(async (tx) => {
+    await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+    await tx`INSERT INTO membros (id, tenant_id, nome, email) VALUES (${id}, ${tenantId}, ${nome}, ${email})`
+  })
+  return id
+}

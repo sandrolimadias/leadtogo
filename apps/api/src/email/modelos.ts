@@ -58,3 +58,27 @@ export function emailVerificarEmail(nome: string, link: string): ModeloDeEmail {
     'Se você não criou uma conta no Leadtogo, ignore este e-mail.',
   )
 }
+
+const ROTULO_PAPEL: Record<string, string> = {
+  admin: 'administrador',
+  gestor: 'gestor',
+  vendedor: 'vendedor',
+}
+
+export function emailConvite(dados: {
+  empresa: string
+  convidadoPor: string
+  papel: string
+  link: string
+}): ModeloDeEmail {
+  return montar(
+    `Convite para a ${dados.empresa} no Leadtogo`,
+    'Olá!',
+    [
+      `${dados.convidadoPor} convidou você para a equipe da empresa ${dados.empresa} no Leadtogo, como ${ROTULO_PAPEL[dados.papel] ?? dados.papel}.`,
+      'O convite vale por 7 dias e só pode ser usado uma vez.',
+    ],
+    { texto: 'Aceitar convite', link: dados.link },
+    'Se você não esperava este convite, ignore este e-mail: nada será criado sem o seu aceite.',
+  )
+}

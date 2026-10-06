@@ -5,6 +5,7 @@ import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 
 import { ErroApi } from '../http/erro-api.js'
+import { ehViolacaoDeUnicidade } from '../http/sqlstate.js'
 import type { Auth } from './auth.factory.js'
 import { AUTH } from './auth.tokens.js'
 
@@ -41,10 +42,19 @@ export class AuthService {
     if (await contexto.internalAdapter.findUserByEmail(email, { includeAccounts: false })) {
       throw new ErroApi('email_ja_cadastrado', 'Já existe uma conta com este e-mail.', 409)
     }
-    const usuario = await contexto.internalAdapter.createUser(
-      { name: dados.nome.trim(), email, emailVerified: dados.emailVerificado ?? false },
-      { method: 'email-password' },
-    )
+    const jaExiste = () =>
+      new ErroApi('email_ja_cadastrado', 'Já existe uma conta com este e-mail.', 409)
+    let usuario
+    try {
+      usuario = await contexto.internalAdapter.createUser(
+        { name: dados.nome.trim(), email, emailVerified: dados.emailVerificado ?? false },
+        { method: 'email-password' },
+      )
+    } catch (erro) {
+      // Dois cadastros simultâneos do mesmo e-mail: o segundo toma a violação de unicidade do banco
+      if (ehViolacaoDeUnicidade(erro)) throw jaExiste()
+      throw erro
+    }
     await contexto.internalAdapter.linkAccount({
       userId: usuario.id,
       providerId: 'credential',

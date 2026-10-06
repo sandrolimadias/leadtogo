@@ -8,6 +8,7 @@ import {
 import type { Request, Response } from 'express'
 
 import { contextoDaRequisicao } from '../log/contexto-log.js'
+import { sqlstateDe } from './sqlstate.js'
 import { CODIGO_POR_STATUS, type DetalheErro, ErroApi } from './erro-api.js'
 
 /** Formato único de erro da API. Nada de stack trace, SQL ou mensagem interna na resposta. */
@@ -26,14 +27,6 @@ interface ErroDeParser {
   statusCode?: number
   type?: string
   expose?: boolean
-}
-
-/** Código SQLSTATE de um erro do Postgres, direto ou embrulhado pelo Drizzle (`cause`). */
-function sqlstateDe(erro: unknown): string | undefined {
-  const e = erro as { code?: unknown; cause?: unknown } | null
-  if (!e || typeof e !== 'object') return undefined
-  if (typeof e.code === 'string' && /^[0-9A-Z]{5}$/.test(e.code)) return e.code
-  return e.cause ? sqlstateDe(e.cause) : undefined
 }
 
 /**
