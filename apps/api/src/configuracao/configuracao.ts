@@ -54,6 +54,11 @@ const esquema = z
      */
     VERIFICACAO_EMAIL: opcional(booleano),
 
+    // Primeiro acesso (POST /v1/primeiro-acesso: cria conta, empresa e administrador). Padrão: aberto
+    // fora de produção e FECHADO em produção; lá a primeira conta nasce pelo comando
+    // `node dist/criar-conta.js`, que não depende desta flag.
+    PRIMEIRO_ACESSO: opcional(z.enum(['aberto', 'fechado'])),
+
     // Login com Google: preparado, mas DESLIGADO. Liga com LOGIN_GOOGLE=true (exige as credenciais do
     // cliente OAuth) e vale só para quem já tem conta (o cadastro por Google continua desligado).
     LOGIN_GOOGLE: opcional(booleano),
@@ -115,6 +120,14 @@ const esquema = z
   })
 
 export type Configuracao = z.infer<typeof esquema>
+
+/** Se o endpoint de primeiro acesso aceita pedidos (aberto em desenvolvimento, fechado em produção). */
+export function primeiroAcessoAberto(config: Configuracao): boolean {
+  return (
+    (config.PRIMEIRO_ACESSO ?? (config.NODE_ENV === 'production' ? 'fechado' : 'aberto')) ===
+    'aberto'
+  )
+}
 
 /** Se o login com Google está ligado (flag + credenciais). */
 export function loginGoogleLigado(config: Configuracao): boolean {

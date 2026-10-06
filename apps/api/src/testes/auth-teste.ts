@@ -5,6 +5,7 @@ import { Redis } from 'ioredis'
 import postgres from 'postgres'
 import request from 'supertest'
 
+import { completarCnpj } from '@leadtogo/shared'
 import { AuthService } from '../auth/auth.service.js'
 import { PREFIXO_LIMITE_AUTH } from '../auth/rate-limit-valkey.js'
 
@@ -17,6 +18,15 @@ let contador = 0
 export function emailUnico(prefixo = 'usuario'): string {
   contador += 1
   return `${prefixo}-${Date.now()}-${contador}@exemplo.com`
+}
+
+/** CNPJ alfanumérico válido e diferente a cada chamada (o banco de teste é compartilhado entre os testes). */
+export function cnpjUnico(): string {
+  const base = Array.from(
+    { length: 12 },
+    () => 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 34)],
+  ).join('')
+  return completarCnpj(base)
 }
 
 /** Cria um usuário com senha pelo servidor (o cadastro público está desligado). */

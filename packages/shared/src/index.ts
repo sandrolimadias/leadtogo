@@ -1,3 +1,4 @@
 // Schemas Zod, tipos e regras compartilhadas entre a API e o web.
 // Cada domínio ganha seu arquivo (ex.: `empresas.ts`) e é reexportado aqui.
-export {}
+export * from './cnpj.js'
+export * from './primeiro-acesso.js'

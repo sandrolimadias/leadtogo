@@ -15,3 +15,7 @@ export type Conexao = ReturnType<typeof criarConexao>
 
 export { novoId } from './id.js'
 export { aplicarMigracoes, pastaMigracoes } from './migrar.js'
+
+// A mesma instância do drizzle-orm que o `db` usa: quem monta consultas com `sql` fora deste
+// pacote (a API) importa daqui, para os tipos casarem (o pnpm pode ter mais de uma cópia).
+export { sql } from 'drizzle-orm'

@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { Request } from 'express'
 
+import type { Configuracao } from '../configuracao/configuracao.js'
+import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+
 import { ErroApi } from '../http/erro-api.js'
 import type { Auth } from './auth.factory.js'
 import { AUTH } from './auth.tokens.js'
@@ -16,7 +19,17 @@ export interface NovoUsuario {
 /** Operações de identidade feitas pelo servidor (o cadastro público do Better Auth está desligado). */
 @Injectable()
 export class AuthService {
-  constructor(@Inject(AUTH) private readonly auth: Auth) {}
+  constructor(
+    @Inject(AUTH) private readonly auth: Auth,
+    @Inject(CONFIGURACAO) private readonly config: Configuracao,
+  ) {}
+
+  /** Envia (ou reenvia) o e-mail de confirmação; o link leva de volta ao front. */
+  async enviarVerificacaoDeEmail(email: string): Promise<void> {
+    await this.auth.api.sendVerificationEmail({
+      body: { email, callbackURL: new URL(this.config.APP_URL).origin },
+    })
+  }
 
   /** Cria usuário com senha (hash scrypt do Better Auth). Falha com 409 se o e-mail já existe. */
   async criarUsuarioComSenha(dados: NovoUsuario): Promise<{ id: string }> {

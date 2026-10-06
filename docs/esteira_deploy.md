@@ -269,6 +269,22 @@ jobs:
 - **Migração destrutiva** (apagar coluna ou tabela, alterar tipo com perda): fazer **backup manual** no Coolify antes do push e registrar no commit (`BREAKING-DB:`).
 - Mudanças em **políticas RLS** sempre acompanhadas de teste de isolamento.
 
+### 7.3 Criar a primeira conta (produção)
+Em produção o endpoint público de cadastro (`POST /v1/primeiro-acesso`) fica **fechado** (`PRIMEIRO_ACESSO=fechado`, o padrão em produção): ninguém cria conta e empresa no servidor sem convite. A primeira conta nasce pelo terminal do recurso `leadtogo-api` no Coolify (aba *Terminal*), com o mesmo fluxo do endpoint (usuário, conta dona, empresa, configurações e membro admin):
+
+```bash
+node dist/criar-conta.js \
+  --nome "Nome do Administrador" \
+  --email admin@empresa.com.br \
+  --empresa "Razão Social Ltda" \
+  [--cnpj 12.ABC.345/01DE-35] [--nome-fantasia "Fantasia"] [--conta "Nome da conta"]
+```
+- A **senha não vai em argumento** (ficaria no histórico do shell): o comando a pede num **prompt oculto**. Alternativas: `CRIAR_CONTA_SENHA=... node dist/criar-conta.js ...` ou `echo "$SENHA" | node dist/criar-conta.js ...`. A senha precisa ter de 10 a 128 caracteres e nunca é impressa.
+- O e-mail do administrador **já nasce confirmado** (não depende de SMTP). Ele entra com o e-mail e a senha e, por ser administrador, **precisa ativar o 2FA** no primeiro acesso (até lá a API responde `403 2fa_obrigatorio`).
+- Códigos de saída: `0` criada · `1` falha (e-mail ou CNPJ já cadastrado, configuração inválida) · `2` dados inválidos. `node dist/criar-conta.js --ajuda` mostra o uso.
+- Enquanto o provedor de SMTP não for escolhido (E13), defina `VERIFICACAO_EMAIL=false` no Coolify: com a verificação ligada (o padrão em produção) a API exige `SMTP_HOST` e não sobe sem ele.
+- Para abrir o cadastro público (não recomendado em produção): `PRIMEIRO_ACESSO=aberto`.
+
 ---
 
 ## 8. Rollback (voltar versão)

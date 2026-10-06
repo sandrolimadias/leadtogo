@@ -4,6 +4,7 @@ import type { DestinationStream } from 'pino'
 
 import type { Configuracao } from './configuracao/configuracao.js'
 import { AuthModule } from './auth/auth.module.js'
+import { PrimeiroAcessoModule } from './primeiro-acesso/primeiro-acesso.module.js'
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
 import { EmailModule } from './email/email.module.js'
 import { FiltroDeExcecoes } from './http/filtro-excecoes.js'
@@ -32,6 +33,7 @@ export class AppModule {
         InfraModule,
         EmailModule,
         AuthModule,
+        PrimeiroAcessoModule,
         HealthModule,
       ],
     }
