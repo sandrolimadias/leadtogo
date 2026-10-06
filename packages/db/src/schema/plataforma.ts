@@ -17,12 +17,12 @@ import {
 } from 'drizzle-orm/pg-core'
 
 import { municipios } from './referencias.js'
+import { arquivos } from './sistema.js'
 import { carimbos, chaveUuid, citext } from './tipos.js'
 
 // Plataforma e tenant (docs/modelagem_banco.md, seção 3).
 // Políticas de RLS, FORCE e GRANTs ficam na migração (aplicar_rls_tenant).
-// Pendências de FK: usuario_id → auth.user (E8, quando o Better Auth criar o schema auth)
-// e logo_arquivo_id / foto_arquivo_id → arquivos (commit das tabelas de sistema).
+// Pendência de FK: usuario_id → auth.user (E8, quando o Better Auth criar o schema auth).
 
 export const situacaoConta = pgEnum('situacao_conta', ['teste', 'ativa', 'suspensa', 'cancelada'])
 export const papelConta = pgEnum('papel_conta', ['dono', 'administrador', 'financeiro'])
@@ -79,8 +79,7 @@ export const tenants = pgTable(
     bairro: text(),
     municipioCodigo: integer().references(() => municipios.codigoIbge),
     paisCodigo: char({ length: 2 }).default('BR'),
-    /** → arquivos (FK entra com as tabelas de sistema) */
-    logoArquivoId: uuid(),
+    logoArquivoId: uuid().references((): AnyPgColumn => arquivos.id),
     contaId: uuid()
       .notNull()
       .references(() => contas.id),
@@ -126,8 +125,7 @@ export const membros = pgTable(
     papel: papelMembro().notNull().default('vendedor'),
     gestorId: uuid().references((): AnyPgColumn => membros.id),
     cor: char({ length: 7 }),
-    /** → arquivos (FK entra com as tabelas de sistema) */
-    fotoArquivoId: uuid(),
+    fotoArquivoId: uuid().references((): AnyPgColumn => arquivos.id),
     ativo: boolean().notNull().default(true),
     /** Tema, menu recolhido, visão do Dashboard, filtro salvo padrão */
     preferencias: jsonb().notNull().default({}),

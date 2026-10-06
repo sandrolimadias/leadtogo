@@ -196,7 +196,7 @@ O Better Auth cria e gerencia as próprias tabelas: `user`, `session`, `account`
 O **mesmo usuário** (`usuario_id`) pode ter um registro em `membros` em **cada empresa**, com papel, cargo e gestor próprios naquela empresa (ex.: admin na A, vendedor na B).
 
 > **Implementação (E7):**
-> - `usuario_id` (em `membros` e `conta_administradores`) ainda **não tem FK** para `auth.user`: ela entra no E8, quando o Better Auth criar o schema `auth`. A FK de `tenants.logo_arquivo_id` e `membros.foto_arquivo_id` para `arquivos` entra junto com as tabelas de sistema.
+> - `usuario_id` (em `membros` e `conta_administradores`) ainda **não tem FK** para `auth.user`: ela entra no E8, quando o Better Auth criar o schema `auth`. As FKs de `tenants.logo_arquivo_id` e `membros.foto_arquivo_id` para `arquivos` entraram com as tabelas de sistema.
 > - `membros` leva também `criado_por` e `atualizado_por` (→ `membros`), pela convenção da seção 1. O único `(tenant_id, usuario_id)` é parcial (`excluido_em IS NULL`), como o de e-mail.
 > - `tenants` isola o RLS pela coluna `id` (`aplicar_rls_tenant('tenants', 'id')`). `contas` e `conta_administradores` não têm RLS (acesso controlado pela API); o app tem DML nelas.
 > - `tenants.pais_codigo` não tem FK para `paises` (o modelo só pede o padrão `'BR'`). `tenant_configuracoes.whatsapp_modo_importacao` é um enum com padrão `desligado`.
@@ -554,6 +554,12 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | `importacoes` | id, tenant_id, tipo, arquivo_id, mapeamento jsonb, situacao, totais jsonb, erros jsonb | Importação de planilhas |
 | `auditoria` | id bigint, tenant_id, entidade, entidade_id, acao, alteracoes jsonb (antes/depois), membro_id, origem (app/api/integracao/sistema), ip, em | Log de alterações (**particionado por mês**) |
 | `eventos_outbox` | id, tenant_id, tipo, entidade_id, payload jsonb, criado_em, processado_em | Fila de eventos (webhooks n8n, notificações) |
+
+> **Implementação (E7) — `auditoria`:**
+> - O `leadtogo_app` só tem **INSERT e SELECT** (log só de acréscimo); `UPDATE` e `DELETE` são negados por privilégio. A manutenção das partições é do `leadtogo_owner`.
+> - Particionada por mês (`RANGE (em)`, UTC), PK `(id, em)`, `id` gerado pelo banco. Existem partições do mês anterior até 12 meses à frente e uma partição `auditoria_default` como rede de segurança. `criar_particao_auditoria(mes date)` (só o owner executa, idempotente) cria a do mês pedido; **um job do worker deve chamá-la todo mês com o owner** (pendência do E10).
+> - As políticas de RLS ficam na tabela-mãe. As partições têm RLS forçado **sem políticas** e o app não tem privilégio nelas: acesso direto a uma partição não lê nada.
+> - `eventos_outbox` e `notificacoes` têm RLS e DML normais; `arquivos.chave_arquivo` é única.
 
 ### 11.1 Integrações 🔮 (estrutura prevista, criada nas fases 4–7)
 | Tabela | Uso |

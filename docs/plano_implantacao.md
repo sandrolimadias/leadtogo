@@ -287,6 +287,8 @@ Checklist:
 
 - [ ] Evento gravado numa transação é processado pelo worker uma única vez.
 - [ ] Reprocessamento com espera progressiva em caso de falha.
+- [ ] **Outbox sem `BYPASSRLS` (direção definida no E7, implementar aqui):** o worker não usa papel que ignora o RLS. Uma função `SECURITY DEFINER` mínima reserva um lote de eventos pendentes (`FOR UPDATE SKIP LOCKED`) e devolve o `tenant_id` de cada um; o worker processa cada evento numa transação com `SET LOCAL app.tenant_id`. Pertence ao `leadtogo_owner`, com `search_path` fixo e `EXECUTE` só para o `leadtogo_app`. Precisará de colunas de tentativas e próxima tentativa em `eventos_outbox` (migração de expandir).
+- [ ] **Partições de `auditoria`:** job mensal que executa `criar_particao_auditoria` com o `leadtogo_owner` para os próximos meses.
 
 **Pronto quando:** testes passam e o worker sobe e encerra sem perder jobs.
 

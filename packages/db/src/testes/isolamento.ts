@@ -20,6 +20,8 @@ export interface Fabrica<Pais = unknown> {
   chave?: string
   /** Coluna qualquer que o UPDATE reescreve com o próprio valor (prova o UPDATE sem depender de tipo) */
   colunaAlteravel: string
+  /** O app só tem INSERT e SELECT na tabela (ex.: auditoria): UPDATE e DELETE dele devem ser negados */
+  appSemAlterar?: boolean
   /** Cria o que a linha exige (pais das FKs) para o tenant; roda como owner, uma vez por tenant */
   preparar?: (owner: Sql, tenantId: string) => Promise<Pais>
   /** Insere UMA linha válida do tenant e devolve o valor da chave. Não deve inserir mais nada */
@@ -173,6 +175,7 @@ export async function testarComportamento(
     ['leadtogo_owner', owner],
   ] as const) {
     const rotulo = `${tabela} (${papel})`
+    const podeAlterar = !(f.appSemAlterar && papel === 'leadtogo_app')
 
     // Tenant A ativo: vê só o que é de A
     await comTenant(sql, A, async (tx) => {
@@ -182,10 +185,25 @@ export async function testarComportamento(
         await contar(tx, tabela, colTenant, B),
         `${rotulo}: A não pode contar linhas de B`,
       ).toBe(0)
-      expect((await atualizar(tx, idB)).count, `${rotulo}: A não pode alterar B`).toBe(0)
-      expect((await apagar(tx, idB)).count, `${rotulo}: A não pode apagar B`).toBe(0)
-      expect((await atualizar(tx, idA)).count, `${rotulo}: A deve alterar a própria linha`).toBe(1)
+      if (podeAlterar) {
+        expect((await atualizar(tx, idB)).count, `${rotulo}: A não pode alterar B`).toBe(0)
+        expect((await apagar(tx, idB)).count, `${rotulo}: A não pode apagar B`).toBe(0)
+        expect((await atualizar(tx, idA)).count, `${rotulo}: A deve alterar a própria linha`).toBe(
+          1,
+        )
+      }
     })
+    if (!podeAlterar) {
+      // Sem privilégio, o app não altera nem apaga nem as próprias linhas
+      await expect(
+        comTenant(sql, A, (tx) => atualizar(tx, idA)),
+        `${rotulo}: UPDATE negado`,
+      ).rejects.toThrow(/permission denied/)
+      await expect(
+        comTenant(sql, A, (tx) => apagar(tx, idA)),
+        `${rotulo}: DELETE negado`,
+      ).rejects.toThrow(/permission denied/)
+    }
 
     // Gravar em B com A ativo é rejeitado pela política (WITH CHECK)
     await expect(
@@ -194,21 +212,24 @@ export async function testarComportamento(
     ).rejects.toThrow(rejeitado)
 
     // Mover a própria linha para B também é rejeitado
-    await expect(
-      comTenant(
-        sql,
-        A,
-        (tx) =>
-          tx`UPDATE ${ident(tx, tabela)} SET ${ident(tx, colTenant)} = ${B} WHERE ${porChave(tx, idA)}`,
-      ),
-      `${rotulo}: A não pode passar a linha para B`,
-    ).rejects.toThrow(rejeitado)
+    if (podeAlterar)
+      await expect(
+        comTenant(
+          sql,
+          A,
+          (tx) =>
+            tx`UPDATE ${ident(tx, tabela)} SET ${ident(tx, colTenant)} = ${B} WHERE ${porChave(tx, idA)}`,
+        ),
+        `${rotulo}: A não pode passar a linha para B`,
+      ).rejects.toThrow(rejeitado)
 
     // Sem tenant ativo: nada é lido nem gravado
     await comTenant(sql, null, async (tx) => {
       expect(await ler(tx, idA), `${rotulo}: sem tenant não lê`).toHaveLength(0)
-      expect((await atualizar(tx, idA)).count).toBe(0)
-      expect((await apagar(tx, idA)).count).toBe(0)
+      if (podeAlterar) {
+        expect((await atualizar(tx, idA)).count).toBe(0)
+        expect((await apagar(tx, idA)).count).toBe(0)
+      }
     })
     await expect(
       comTenant(sql, null, (tx) => f.criar(tx, A, pais[A])),
@@ -222,8 +243,10 @@ export async function testarComportamento(
       async (tx) => {
         expect(await ler(tx, idA)).toHaveLength(1)
         expect(await ler(tx, idB), `${rotulo}: consolidado deve ler B`).toHaveLength(1)
-        expect((await atualizar(tx, idB)).count, `${rotulo}: consolidado não altera B`).toBe(0)
-        expect((await apagar(tx, idB)).count, `${rotulo}: consolidado não apaga B`).toBe(0)
+        if (podeAlterar) {
+          expect((await atualizar(tx, idB)).count, `${rotulo}: consolidado não altera B`).toBe(0)
+          expect((await apagar(tx, idB)).count, `${rotulo}: consolidado não apaga B`).toBe(0)
+        }
       },
       [A, B],
     )
@@ -238,7 +261,7 @@ export async function testarComportamento(
       null,
       async (tx) => {
         expect(await ler(tx, idA)).toHaveLength(1)
-        expect((await atualizar(tx, idA)).count).toBe(0)
+        if (podeAlterar) expect((await atualizar(tx, idA)).count).toBe(0)
       },
       [A, B],
     )

@@ -42,6 +42,54 @@ export const fabricas: Record<string, FabricaRegistrada> = {
   }),
 }
 
+fabricas['arquivos'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`
+      INSERT INTO arquivos (id, tenant_id, chave_arquivo, nome, mime, tamanho)
+      VALUES (${id}, ${tenantId}, ${`${tenantId}/teste/${id}`}, 'foto.jpg', 'image/jpeg', 1024)`
+    return id
+  },
+})
+
+fabricas['notificacoes'] = definirFabrica<string>({
+  colunaAlteravel: 'titulo',
+  // O pai: um membro do tenant
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const id = novoId()
+      await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${id}, ${tenantId}, 'Destinatário')`
+      return id
+    }),
+  criar: async (tx, tenantId, membroId) => {
+    const id = novoId()
+    await tx`
+      INSERT INTO notificacoes (id, tenant_id, membro_id, tipo, titulo)
+      VALUES (${id}, ${tenantId}, ${membroId}, 'teste', 'Olá')`
+    return id
+  },
+})
+
+fabricas['eventos_outbox'] = definirFabrica({
+  colunaAlteravel: 'tipo',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO eventos_outbox (id, tenant_id, tipo) VALUES (${id}, ${tenantId}, 'empresa.criada')`
+    return id
+  },
+})
+
+fabricas['auditoria'] = definirFabrica({
+  colunaAlteravel: 'acao',
+  appSemAlterar: true,
+  criar: async (tx, tenantId) => {
+    const [linha] = await tx<{ id: string }[]>`
+      INSERT INTO auditoria (tenant_id, entidade, acao) VALUES (${tenantId}, 'empresas', 'criar') RETURNING id`
+    return String(linha?.id)
+  },
+})
+
 /** Cria o que as fábricas pressupõem para os tenants de teste: uma conta e a linha de cada tenant. */
 export async function prepararTenants(owner: Sql, ids: string[]): Promise<void> {
   const contaId = novoId()
