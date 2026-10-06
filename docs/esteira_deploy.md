@@ -330,7 +330,7 @@ pnpm dev:up      # sobe os serviços (--wait) e roda docker/garage/init.sh
 - `docker/postgres/init.sh` roda **só quando o volume é criado** e cria `leadtogo_owner` (dono do banco e das tabelas; roda as migrações) e `leadtogo_app` (usado pela API; sem `BYPASSRLS` e sem ser dono, para o RLS valer), a extensão `postgis` e os privilégios padrão do `leadtogo_app` sobre o que o owner criar. As senhas vêm de `LEADTOGO_OWNER_PASSWORD` e `LEADTOGO_APP_PASSWORD`; se mudar, mude também as URLs do `.env`. Mudar a senha com o volume já criado não tem efeito: use `pnpm dev:reset`.
 - `docker/garage/init.sh` é **idempotente**: só aplica o layout de um nó se ainda não houver, importa a chave `S3_ACCESS_KEY`/`S3_SECRET_KEY` do `.env` (formato do Garage: `GK` + 24 hex e 64 hex) se ela não existir e cria o bucket privado `leadtogo-arquivos` se não existir, liberando o acesso da chave. Pode ser repetido sem erro.
 - **Parar:** `pnpm dev:down` (mantém os dados).
-- **Zerar o ambiente:** `pnpm dev:reset` (pede confirmação, para os containers e apaga `docker/.data/`). Depois, `pnpm dev:up` recria tudo; o init do Postgres só roda com o volume vazio.
+- **Zerar o ambiente:** `pnpm dev:reset` (pede confirmação; `--yes` pula a pergunta; para os containers e apaga `docker/.data/`). Depois, `pnpm dev:up` recria tudo; o init do Postgres só roda com o volume vazio.
 
 **Dia a dia**
 - `pnpm dev:up`: Postgres+PostGIS, Valkey e Garage (S3)

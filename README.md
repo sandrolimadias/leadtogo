@@ -28,11 +28,14 @@ Instruções para o Claude Code: [CLAUDE.md](CLAUDE.md).
 ## Desenvolvimento local
 
 ```bash
-docker compose -f docker/compose.dev.yml up -d   # Postgres+PostGIS, Valkey, Garage
+cp .env.example .env
 pnpm install
+pnpm dev:up                                      # Postgres+PostGIS, Valkey, Garage (bucket e chave)
 pnpm db:migrate && pnpm db:seed
 pnpm dev
 ```
+
+`pnpm dev:down` para os containers; `pnpm dev:reset` para e apaga os dados locais (pede confirmação).
 
 Pré-requisitos: Node 24 (`.nvmrc`, via nvm) e pnpm (`corepack enable`). Ver `docs/esteira_deploy.md`, seção 9.
 
@@ -41,6 +44,7 @@ Pré-requisitos: Node 24 (`.nvmrc`, via nvm) e pnpm (`corepack enable`). Ver `do
 | Script                                                      | O que faz                                                           |
 | ----------------------------------------------------------- | ------------------------------------------------------------------- |
 | `pnpm dev`                                                  | API + worker (porta 3000) e web (porta 5173) com recarga automática |
+| `pnpm dev:up` · `dev:down` · `dev:reset`                    | Sobe (com init do Garage), para e zera os serviços de dados locais  |
 | `pnpm build`                                                | Build de todos os pacotes (Turborepo, com cache)                    |
 | `pnpm lint`                                                 | ESLint (flat config em `eslint.config.js`, com checagem de tipos)   |
 | `pnpm format` · `pnpm format:check`                         | Prettier (grava / só confere)                                       |

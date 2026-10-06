@@ -1,7 +1,6 @@
 # Serviços de dados para desenvolvimento local (ver docs/esteira_deploy.md, seção 9.4).
-#   docker compose -f docker/compose.dev.yml up -d
-#   bash docker/garage/init.sh        # uma vez: cria bucket e chave no Garage
-# Dados em docker/.data/ (ignorado pelo Git). Para zerar: down e apagar docker/.data/.
+#   pnpm dev:up   (= docker compose --env-file .env -f docker/compose.dev.yml up -d --wait + init do Garage)
+# Dados em docker/.data/ (ignorado pelo Git). Para zerar: pnpm dev:reset.
 name: leadtogo-dev
 
 services:

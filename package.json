@@ -9,6 +9,9 @@
   "scripts": {
     "prepare": "lefthook install",
     "dev": "turbo run dev",
+    "dev:up": "docker compose --env-file .env -f docker/compose.dev.yml up -d --wait && bash docker/garage/init.sh",
+    "dev:down": "docker compose -f docker/compose.dev.yml down",
+    "dev:reset": "bash docker/dev-reset.sh",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write .",
