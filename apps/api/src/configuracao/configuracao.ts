@@ -32,6 +32,14 @@ const esquema = z
 
     // Cache, filas e rate limit
     REDIS_URL: url(['redis:', 'rediss:']),
+    /** Requisições por IP por janela, no total da API (regras por rota são mais duras) */
+    RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
+    RATE_LIMIT_JANELA_S: z.coerce.number().int().min(1).default(60),
+    /**
+     * Quantos proxies (Traefik do Coolify) ficam na frente da API, para ler o IP real em
+     * X-Forwarded-For. Padrão: 1 em produção, 0 fora dela (0 = nunca confiar no cabeçalho).
+     */
+    TRUST_PROXY: z.coerce.number().int().min(0).max(5).optional(),
 
     // Arquivos (Garage / S3)
     S3_ENDPOINT: url(['http:', 'https:']),

@@ -33,6 +33,10 @@ function traduzirErroDeParser(erro: unknown): unknown {
 export function aplicarSegurancaHttp(app: INestApplication, config: Configuracao): void {
   const origemDoFront = new URL(config.APP_URL).origin
 
+  // IP real do cliente atrás do Traefik: só confia em X-Forwarded-For pelo número de proxies configurado
+  const proxies = config.TRUST_PROXY ?? (config.NODE_ENV === 'production' ? 1 : 0)
+  ;(app.getHttpAdapter().getInstance() as express.Express).set('trust proxy', proxies)
+
   app.use(
     helmet({
       // A API só serve JSON ao front de outro host (mesmo site): nada de embutir recursos dela

@@ -1,8 +1,10 @@
 import { Controller, Get, Res } from '@nestjs/common'
 import type { Response } from 'express'
 
+import { SemLimite } from '../rate-limit/limite.decorator.js'
 import { HealthService, type RelatorioSaude } from './health.service.js'
 
+@SemLimite()
 @Controller('health')
 export class HealthController {
   constructor(private readonly saude: HealthService) {}

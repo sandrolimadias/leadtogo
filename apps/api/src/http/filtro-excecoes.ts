@@ -48,17 +48,19 @@ export class FiltroDeExcecoes implements ExceptionFilter {
     const status = statusDe(erro) ?? 500
     let corpo: RespostaDeErro
 
-    if (status >= 500) {
-      // Falha nossa: o detalhe vai só para o log (com o request_id), nunca para o cliente
-      this.log.error(erro instanceof Error ? (erro.stack ?? erro.message) : String(erro))
-      corpo = { statusCode: 500, erro: 'erro_interno', mensagem: 'Erro interno. Tente novamente.' }
-    } else if (erro instanceof ErroApi) {
+    if (erro instanceof ErroApi) {
+      // Erro nosso, com mensagem feita para o cliente (inclusive 5xx intencionais, como o 503)
+      if (status >= 500) this.log.warn(`${erro.codigo}: ${erro.message}`)
       corpo = {
         statusCode: status,
         erro: erro.codigo,
         mensagem: erro.message,
         ...(erro.detalhes ? { detalhes: erro.detalhes } : {}),
       }
+    } else if (status >= 500) {
+      // Falha inesperada: o detalhe vai só para o log (com o request_id), nunca para o cliente
+      this.log.error(erro instanceof Error ? (erro.stack ?? erro.message) : String(erro))
+      corpo = { statusCode: 500, erro: 'erro_interno', mensagem: 'Erro interno. Tente novamente.' }
     } else if (erro instanceof HttpException) {
       corpo = {
         statusCode: status,

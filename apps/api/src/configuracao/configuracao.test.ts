@@ -37,6 +37,19 @@ describe('configuração validada por Zod', () => {
     expect(c.DATABASE_MIGRATION_URL).toBeUndefined()
   })
 
+  it('rate limit e proxy: padrões e conversão', () => {
+    const padrao = carregarConfiguracao(valida)
+    expect(padrao).toMatchObject({ RATE_LIMIT_MAX: 300, RATE_LIMIT_JANELA_S: 60 })
+    expect(padrao.TRUST_PROXY).toBeUndefined() // decidido pelo NODE_ENV na aplicação
+    const c = carregarConfiguracao({ ...valida, RATE_LIMIT_MAX: '50', TRUST_PROXY: '1' })
+    expect(c).toMatchObject({ RATE_LIMIT_MAX: 50, TRUST_PROXY: 1 })
+    expect(
+      falha({ ...valida, RATE_LIMIT_MAX: '0', TRUST_PROXY: '99' })
+        .problemas.map((p) => p.variavel)
+        .sort(),
+    ).toEqual(['RATE_LIMIT_MAX', 'TRUST_PROXY'])
+  })
+
   it('converte número e booleano de texto', () => {
     const c = carregarConfiguracao({ ...valida, PORT: '8080', S3_FORCE_PATH_STYLE: 'false' })
     expect(c.PORT).toBe(8080)
