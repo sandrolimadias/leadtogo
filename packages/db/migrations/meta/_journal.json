@@ -57,6 +57,13 @@
       "when": 1791302468206,
       "tag": "0007_convites",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791307781251,
+      "tag": "0008_outbox_worker",
+      "breakpoints": true
     }
   ]
 }

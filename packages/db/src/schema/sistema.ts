@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   bigint,
+  integer,
   index,
   inet,
   jsonb,
@@ -79,7 +80,17 @@ export const eventosOutbox = pgTable(
     entidadeId: uuid(),
     payload: jsonb().notNull().default({}),
     criadoEm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** Entregue à fila do worker (o payload é apagado nesse momento) */
     processadoEm: timestamp({ withTimezone: true }),
+    /** Quantas vezes o relay do outbox tentou entregar (a reserva soma 1) */
+    tentativas: integer().notNull().default(0),
+    /** Não tentar antes disso (espera progressiva após falha) */
+    proximaTentativaEm: timestamp({ withTimezone: true }),
+    /** Reservado por um relay até este instante (outros relays o pulam); expira se o relay cair */
+    reservadoAte: timestamp({ withTimezone: true }),
+    ultimoErro: text(),
+    /** Esgotou as tentativas: nunca mais é reservado (o alerta da E14 olha esta coluna) */
+    falhouEm: timestamp({ withTimezone: true }),
   },
   (t) => [
     index('eventos_outbox_pendentes_idx')

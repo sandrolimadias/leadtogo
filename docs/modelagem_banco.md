@@ -598,6 +598,10 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 > - As políticas de RLS ficam na tabela-mãe. As partições têm RLS forçado **sem políticas** e o app não tem privilégio nelas: acesso direto a uma partição não lê nada.
 > - `eventos_outbox` e `notificacoes` têm RLS e DML normais; `arquivos.chave_arquivo` é única.
 
+> **Implementação (E10) — `eventos_outbox` e o relay do worker:**
+> - O evento é gravado **na mesma transação** do dado de negócio (desfeita a transação, não há evento). `processado_em` significa "entregue à fila do worker"; nesse momento o `payload` é apagado (o job do BullMQ o carrega). `falhou_em` marca o evento que **esgotou as tentativas** (nunca mais é reservado; o alerta da E14 olha esta coluna). Colunas de controle (migração 0008): `tentativas`, `proxima_tentativa_em` (espera progressiva), `reservado_ate` e `ultimo_erro`.
+> - **Sem `BYPASSRLS`:** o worker conecta como `leadtogo_app` e não vê eventos de tenant nenhum sem tenant ativo. `app_reservar_eventos(limite, reserva_s)` (`SECURITY DEFINER` do `leadtogo_owner`, `search_path` fixo, `EXECUTE` só para o `leadtogo_app`, mesmo padrão de 3.0 e 3.5) reserva um lote de eventos pendentes e vencidos com `FOR UPDATE SKIP LOCKED` (dois relays nunca pegam o mesmo), soma 1 à tentativa e devolve **só `(id, tenant_id)`**; lote de 1 a 200 e reserva de 5 a 600 s. Duas políticas `TO leadtogo_owner` (SELECT e UPDATE), travadas na variável `app.outbox_reserva`, que só a função define e limpa. Tipo e payload o worker lê depois, com o tenant ativo, sob RLS.
+
 ### 11.1 Integrações 🔮 (estrutura prevista, criada nas fases 4–7)
 | Tabela | Uso |
 |---|---|
