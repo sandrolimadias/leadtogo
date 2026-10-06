@@ -324,15 +324,16 @@ Todos têm *healthcheck*; `up -d --wait` só retorna quando estão saudáveis. O
 **Primeira vez**
 ```bash
 cp .env.example .env
-docker compose -f docker/compose.dev.yml up -d --wait
-bash docker/garage/init.sh      # layout, chave e bucket do Garage (idempotente)
+pnpm dev:up      # sobe os serviços (--wait) e roda docker/garage/init.sh
 ```
-- `docker/postgres/init.sh` roda **só quando o volume é criado** e cria `leadtogo_owner` (dono do banco e das tabelas; roda as migrações) e `leadtogo_app` (usado pela API; sem `BYPASSRLS` e sem ser dono, para o RLS valer), a extensão `postgis` e os privilégios padrão do `leadtogo_app` sobre o que o owner criar. As senhas vêm de `LEADTOGO_OWNER_PASSWORD` e `LEADTOGO_APP_PASSWORD` (padrão `senha`, igual ao `.env.example`). O compose lê essas variáveis do **ambiente do shell**, não do `.env` da raiz; se mudar a senha, mude também as URLs do `.env`.
-- `docker/garage/init.sh` aplica o layout de um nó, importa a chave `S3_ACCESS_KEY`/`S3_SECRET_KEY` do `.env` (formato do Garage: `GK` + 24 hex e 64 hex) e cria o bucket privado `leadtogo-arquivos` com acesso dessa chave. Pode ser repetido sem efeito.
-- **Zerar o ambiente:** `docker compose -f docker/compose.dev.yml down && sudo rm -rf docker/.data`, e repetir a primeira vez (o init do Postgres só roda com o volume vazio).
+- `pnpm dev:up` equivale a `docker compose --env-file .env -f docker/compose.dev.yml up -d --wait && bash docker/garage/init.sh`. O `--env-file` faz o compose ler as senhas e o segredo do `.env` da raiz; sem a variável, valem os padrões do `.env.example`.
+- `docker/postgres/init.sh` roda **só quando o volume é criado** e cria `leadtogo_owner` (dono do banco e das tabelas; roda as migrações) e `leadtogo_app` (usado pela API; sem `BYPASSRLS` e sem ser dono, para o RLS valer), a extensão `postgis` e os privilégios padrão do `leadtogo_app` sobre o que o owner criar. As senhas vêm de `LEADTOGO_OWNER_PASSWORD` e `LEADTOGO_APP_PASSWORD`; se mudar, mude também as URLs do `.env`. Mudar a senha com o volume já criado não tem efeito: use `pnpm dev:reset`.
+- `docker/garage/init.sh` é **idempotente**: só aplica o layout de um nó se ainda não houver, importa a chave `S3_ACCESS_KEY`/`S3_SECRET_KEY` do `.env` (formato do Garage: `GK` + 24 hex e 64 hex) se ela não existir e cria o bucket privado `leadtogo-arquivos` se não existir, liberando o acesso da chave. Pode ser repetido sem erro.
+- **Parar:** `pnpm dev:down` (mantém os dados).
+- **Zerar o ambiente:** `pnpm dev:reset` (pede confirmação, para os containers e apaga `docker/.data/`). Depois, `pnpm dev:up` recria tudo; o init do Postgres só roda com o volume vazio.
 
 **Dia a dia**
-- `docker compose -f docker/compose.dev.yml up -d`: Postgres+PostGIS, Valkey e Garage (S3)
+- `pnpm dev:up`: Postgres+PostGIS, Valkey e Garage (S3)
 - `pnpm install` · `pnpm db:migrate` · `pnpm db:seed` (tenant de exemplo, tags e funil padrão, CNAEs, municípios)
 - `pnpm dev`: API, worker e web com recarga automática
 - `.env` nunca vai para o Git; novas variáveis entram no `.env.example`.
@@ -353,6 +354,7 @@ bash docker/garage/init.sh      # layout, chave e bucket do Garage (idempotente)
 | `pre-push` | `pnpm lint` + `pnpm typecheck` + `pnpm test` (mesmos comandos do CI) | 1–3 min |
 
 > Os hooks são instalados pelo `pnpm install` (script `prepare`). O secretlint aceita apenas as strings de conexão de exemplo em `localhost` (senhas `senha`/`test`), configuradas em `.secretlintrc.json`.
+> O `.lefthook.rc` (apontado por `rc: ./.lefthook.rc` no `lefthook.yml`) carrega o nvm, se existir, antes de cada comando dos hooks; assim o commit funciona de qualquer shell (IDE, Claude Code) sem ajustar o PATH. Não renomeie para `.lefthookrc`: o hook gerado pelo lefthook carrega esse nome sozinho com `. .lefthookrc`, que o `sh` (dash) do Ubuntu não encontra, e o commit aborta.
 
 ---
 

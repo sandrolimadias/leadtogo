@@ -1,4 +1,6 @@
 # Hooks locais (docs/esteira_deploy.md, seção 10). Instalados pelo `pnpm install` (script prepare).
+rc: ./.lefthook.rc
+
 pre-commit:
   parallel: false
   commands:
