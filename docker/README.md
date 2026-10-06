@@ -2,7 +2,7 @@
 
 - `api.Dockerfile`: imagem da API e do worker
 - `web.Dockerfile`: build Vite servido por Caddy
-- `compose.dev.yml`: Postgres+PostGIS, Valkey e Garage para desenvolvimento
+- `compose.dev.yml`: Postgres+PostGIS, Valkey, Garage e Mailpit (SMTP de desenvolvimento) para desenvolvimento
 - `dev-reset.sh`: usado por `pnpm dev:reset` (para e apaga `docker/.data/`)
 - `postgres/init.sh`: no primeiro start chama `packages/db/scripts/garantir-bancos.sh` (bancos `leadtogo` e `leadtogo_test` e papéis)
 - `dev-up.sh`: usado por `pnpm dev:up` (serviços, bancos/papéis e init do Garage)

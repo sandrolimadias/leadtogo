@@ -22,6 +22,9 @@ process.env['LOG_LEVEL'] ??= 'silent'
 // Valores padrão só para os testes (o CI não tem .env): endereços locais e chaves descartáveis
 const padroes: Record<string, string> = {
   APP_URL: 'http://localhost:5173',
+  SMTP_HOST: 'localhost',
+  SMTP_PORT: '1025',
+  MAILPIT_URL: 'http://localhost:8025',
   API_URL: 'http://localhost:3000',
   S3_ENDPOINT: 'http://localhost:3900',
   S3_BUCKET: 'leadtogo-arquivos',

@@ -332,6 +332,7 @@ cd leadtogo && cp .env.example .env    # preencher os valores de desenvolvimento
 | postgres | `imresamu/postgis:17-3.5` | 5432 | bancos `leadtogo` e `leadtogo_test`; papéis de `packages/db/sql/papeis.sql` |
 | valkey | `valkey/valkey:8` | 6379 | persistência AOF |
 | garage | `dxflrs/garage:v2.1.0` | 3900 (S3) | um nó; config em `docker/garage/garage.toml` |
+| mailpit | `axllent/mailpit:v1.31` | 1025 (SMTP) · 8025 (interface e API) | captura os e-mails de desenvolvimento (recuperação de senha, verificação, convites); não guarda em disco |
 
 Todos têm *healthcheck*; `up -d --wait` só retorna quando estão saudáveis. Os dados ficam em `docker/.data/` (ignorado pelo Git).
 
