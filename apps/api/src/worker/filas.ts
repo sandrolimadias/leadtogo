@@ -5,6 +5,8 @@ import type { Configuracao } from '../configuracao/configuracao.js'
 
 /** Nomes das filas BullMQ. */
 export const FILAS = {
+  /** Tarefas agendadas (partições da auditoria, limpezas) */
+  manutencao: 'manutencao',
   /** Grava notificações na central do membro (consumidor idempotente: o id da notificação é o id do evento) */
   notificacoes: 'notificacoes',
   /** E-mails de identidade (conteúdo cifrado) com reenvio e espera progressiva */

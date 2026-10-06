@@ -6,6 +6,11 @@ import type { Logger } from 'pino'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { FILAS } from './filas.js'
+import {
+  garantirParticoesNaPartida,
+  processadorDeManutencao,
+  registrarAgendadores,
+} from './manutencao.js'
 import { manipuladoresPadrao } from './outbox/manipuladores.js'
 import { RelayDoOutbox } from './outbox/relay.js'
 import { EnviadorSmtp } from '../email/enviador.js'
@@ -62,6 +67,11 @@ export async function iniciarWorker(deps: {
   }
 
   filas.consumir(FILAS.notificacoes, processadorDeNotificacao(banco))
+
+  // Manutenção agendada (partições da auditoria e limpezas), via funções SECURITY DEFINER do banco
+  filas.consumir(FILAS.manutencao, processadorDeManutencao(banco, log), { concorrencia: 1 })
+  await registrarAgendadores(filas)
+  await garantirParticoesNaPartida(filas)
 
   // Relay do outbox: um agendador do BullMQ (`upsertJobScheduler`, idempotente) gera um ciclo a cada
   // 2 s; só UM worker pega cada ciclo, então vários workers juntos não duplicam o trabalho

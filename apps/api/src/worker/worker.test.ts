@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
-import type { Queue } from 'bullmq'
+import { Queue } from 'bullmq'
 import { Redis } from 'ioredis'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
@@ -188,4 +188,27 @@ describe('fila: retenção e descarte de duplicados', () => {
     await new Promise((r) => setTimeout(r, 800))
     expect(await valkey.get(chave)).toBeNull()
   }, 30_000)
+})
+
+describe('manutenção agendada com dois workers de verdade', () => {
+  it('dois processos juntos deixam um só agendador de cada tarefa e um só job de partições na partida', async () => {
+    novoPrefixo()
+    const [w1, w2] = [await worker(), await worker()]
+    await Promise.all([w1.aguardarPronto(), w2.aguardarPronto()])
+    const q = new Queue('manutencao', { connection: valkey, prefix: prefixo })
+    try {
+      const agendadores = await q.getJobSchedulers()
+      expect(agendadores.map((a) => a.key).sort()).toEqual([
+        'auditoria-particoes',
+        'limpeza-convites',
+        'limpeza-outbox',
+      ])
+      await esperarAte(async () => (await q.getJobCounts('completed'))['completed'] === 1)
+      const concluidos = await q.getJobs(['completed'])
+      expect(concluidos.map((j) => j.name)).toEqual(['particoes']) // só UMA execução, mesmo com dois workers
+    } finally {
+      await q.obliterate({ force: true }).catch(() => undefined)
+      await q.close()
+    }
+  }, 40_000)
 })

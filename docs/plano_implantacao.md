@@ -315,12 +315,19 @@ Checklist:
 **Pedido:**
 > Crie o entrypoint `worker` em `apps/api` (mesmo código, processo separado) com BullMQ no Valkey: fila de **eventos** (lê `eventos_outbox` e marca processado), fila de **notificações** (grava em `notificacoes`), fila de **e-mail** (SMTP), agendador de tarefas repetidas (cron) e encerramento gracioso. Healthcheck próprio. Testes das filas com Valkey real.
 
-- [ ] Evento gravado numa transação é processado pelo worker uma única vez.
-- [ ] Reprocessamento com espera progressiva em caso de falha.
-- [ ] **Outbox sem `BYPASSRLS` (direção definida no E7, implementar aqui):** o worker não usa papel que ignora o RLS. Uma função `SECURITY DEFINER` mínima reserva um lote de eventos pendentes (`FOR UPDATE SKIP LOCKED`) e devolve o `tenant_id` de cada um; o worker processa cada evento numa transação com `SET LOCAL app.tenant_id`. Pertence ao `leadtogo_owner`, com `search_path` fixo e `EXECUTE` só para o `leadtogo_app`. Precisará de colunas de tentativas e próxima tentativa em `eventos_outbox` (migração de expandir).
-- [ ] **Partições de `auditoria`:** job mensal que executa `criar_particao_auditoria` com o `leadtogo_owner` para os próximos meses.
+- [x] Evento gravado numa transação é processado pelo worker uma única vez (relay do outbox; três relays concorrentes sobre 120 eventos: um efeito por evento; consumidores idempotentes).
+- [x] Reprocessamento com espera progressiva em caso de falha (5 s, 10 s, 20 s… até 1 h; esgotadas as tentativas, `falhou_em` e payload apagado).
+- [x] **Outbox sem `BYPASSRLS`:** `app_reservar_eventos` (`SECURITY DEFINER`, `FOR UPDATE SKIP LOCKED`) devolve só `(id, tenant_id)`; cada evento roda numa transação com o tenant ativo (migração 0008).
+- [x] **E-mails pela fila:** identidade cifrada (AES-256-GCM, `v1:`) na fila `email` com reenvio; convite pelo outbox com token gerado pelo worker (só o hash no banco); falha ao enfileirar derruba a requisição (503); SMTP com limite de 10 s.
+- [x] **Partições de `auditoria`:** job mensal (e na partida) via `app_manter_particoes_auditoria`, sem usar o owner.
+- [x] **Limpezas:** convites cancelados/vencidos há mais de 30 dias e outbox entregue há mais de 14 dias, por funções `SECURITY DEFINER` com prazos fixos e lotes limitados (migração 0009).
+- [x] **Jobs agendados** com `upsertJobScheduler`; dois workers (em processo e como processos reais) não duplicam.
+- [x] **Healthcheck** (`node dist/saude-worker.js`, só loopback) e **encerramento gracioso** (30 s; Coolify 45 s), provado com o `dist/worker.js` real: nenhum job se perde.
+- [ ] *(E14)* Alerta para eventos do outbox com `falhou_em` preenchido.
 
 **Pronto quando:** testes passam e o worker sobe e encerra sem perder jobs.
+
+✅ **Concluído em 06/10/2026** (aguardando aprovação). Verificado do zero (`dev:reset`, `dev:up`, `db:migrate`, `db:seed`, `test --force`, sem cache): **10 migrações**; **396 testes** (`shared` 19, `api-client` 4, `web` 1, `db` 134, `api` 238). Sem `BYPASSRLS`: três funções `SECURITY DEFINER` no E10 (reserva do outbox, partições e limpezas). Pendências para o Ale: cadastrar `TOKEN_ENCRYPTION_KEY` e o **stop timeout de 45 s** do worker no Coolify (E13); alerta de eventos com `falhou_em` (E14).
 
 ---
 
