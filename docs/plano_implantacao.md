@@ -182,9 +182,9 @@ Checklist:
 - [x] `tsconfig.base.json` com `strict`, `noUncheckedIndexedAccess`; os pacotes internos são resolvidos pela condição `@leadtogo/source` (no lugar de `paths`).
 - [x] ESLint (flat, com checagem de tipos) + Prettier + `lefthook.yml` (secretlint, Prettier, ESLint · commitlint · lint/typecheck/test no pre-push) + commitlint.
 - [x] Vitest configurado em cada pacote (teste de exemplo em `GET /health` e no `App`).
-- [ ] Renovate ou `.github/dependabot.yml` (npm, actions, docker; semanal, agrupado). **Ficou de fora do commit do E5: feito junto com o E6.**
+- [x] `.github/dependabot.yml` (npm, github-actions, docker e docker-compose; semanal, agrupado). **Ficou de fora do commit do E5: feito junto com o E6.**
 
-✅ **Concluído em 06/10/2026** (commit `506674c`; Dependabot pendente). NestJS 12 em ESM, com a API (`dist/main.js`) e o worker (`dist/worker.js`) no mesmo app; `GET /health` fora do prefixo `/v1`, devolvendo `version`; Swagger em `/docs` só fora de produção; cliente da API com `openapi-typescript` + `openapi-fetch`. **Atenção na E11:** o `db:migrate` usa o `drizzle-kit` (dependência de desenvolvimento); a imagem que roda as migrações no pre-deploy precisa incluí-lo, ou usar o migrador do `drizzle-orm`.
+✅ **Concluído em 06/10/2026** (commit `506674c`; Dependabot entregue no E6). NestJS 12 em ESM, com a API (`dist/main.js`) e o worker (`dist/worker.js`) no mesmo app; `GET /health` fora do prefixo `/v1`, devolvendo `version`; Swagger em `/docs` só fora de produção; cliente da API com `openapi-typescript` + `openapi-fetch`. **Atenção na E11:** o `db:migrate` usa o `drizzle-kit` (dependência de desenvolvimento); a imagem que roda as migrações no pre-deploy precisa incluí-lo, ou usar o migrador do `drizzle-orm`.
 **Pronto quando:** `pnpm install && pnpm lint && pnpm typecheck && pnpm test` passam no WSL (com testes de exemplo).
 
 ---
@@ -194,11 +194,14 @@ Checklist:
 **Pedido:**
 > Crie `docker/compose.dev.yml` com Postgres `imresamu/postgis:17-3.5`, Valkey 8 e **Garage** (S3) com script de init que cria o bucket e a chave, volumes em `docker/.data/`, healthchecks e um script de init que cria os papéis `leadtogo_owner` e `leadtogo_app` e o bucket `leadtogo-arquivos`. Atualize o `.env.example` e documente em `docs/esteira_deploy.md` (seção 9.4). Em commit separado, crie o `.github/dependabot.yml` que ficou pendente do E5 (npm, github-actions e docker; semanal; atualizações agrupadas).
 
-- [ ] `docker compose -f docker/compose.dev.yml up -d` sobe os 3 serviços saudáveis.
-- [ ] `.env` local criado a partir do `.env.example`.
-- [ ] `.github/dependabot.yml` criado (pendência do E5).
+- [x] `pnpm dev:up` sobe os 3 serviços saudáveis e roda o init do Garage (pode ser repetido sem erro). `pnpm dev:down` para; `pnpm dev:reset` apaga `docker/.data/` com confirmação.
+- [x] `.env` local criado a partir do `.env.example` (chave S3 fixa **só de desenvolvimento**; em produção vale a chave `leadtogo-app` do Garage da VPS).
+- [x] `.github/dependabot.yml` criado (pendência do E5): inclui `docker-compose` em `/docker` e ignora *major* de `imresamu/postgis` e `dxflrs/garage`.
+- [x] Hooks do lefthook encontram o Node pelo `.lefthook.rc` (acrescenta o Node 24 do nvm ao PATH; o nome `.lefthookrc` não funciona no `dash`).
 
 **Pronto quando:** `psql` conecta como `leadtogo_app`, `redis-cli ping` responde e o Garage responde em `localhost:3900` (bucket `leadtogo-arquivos` criado pelo script de init).
+
+✅ **Concluído em 06/10/2026** (commits `fb081a0`..`a55d53e`). Verificado: `leadtogo_app` + PostGIS 3.5, `PONG`, Garage `403`. O init do Garage é um script (`docker/garage/init.sh`, chamado pelo `pnpm dev:up`) porque a imagem do Garage não tem shell. Senhas locais dos papéis: `LEADTOGO_OWNER_PASSWORD`/`LEADTOGO_APP_PASSWORD` (padrão `senha`), só no desenvolvimento. Para o `psql` no Ubuntu: `sudo apt install postgresql-client`.
 
 ---
 
@@ -212,7 +215,9 @@ Checklist:
 > 4. tabelas de **sistema**: `auditoria` (particionada por mês), `eventos_outbox`, `notificacoes`, `arquivos`;
 > 5. a infraestrutura de **RLS**: funções `app_tenant_id()` e `app_tenant_ids()` lendo `current_setting`, políticas de leitura/escrita conforme `configuracao_tecnologia.md` (Multiempresa), `FORCE ROW LEVEL SECURITY`, permissões do papel `leadtogo_app`;
 > 6. um **helper de teste** que cria dois tenants e verifica que um não lê nem grava os dados do outro; aplique-o a todas as tabelas com `tenant_id`;
-> 7. seeds: estados, países, portes, qualificações, **CNAEs** (lista oficial IBGE/CONCLA) e **municípios** (IBGE, com código SIAFI), mais um tenant de demonstração com os cadastros padrão (grupos de tags Status e Visitação, tipos de atividade, funil padrão com fases).
+> 7. seeds: estados, países, portes, qualificações, **CNAEs** (lista oficial IBGE/CONCLA) e **municípios** (IBGE, com código SIAFI/TOM), a partir de arquivos versionados em `packages/db/seeds/dados/` (fonte e data no README; nada baixado na hora do seed), mais um tenant de demonstração com conta, tenant, configurações e um membro admin. *Os cadastros padrão (grupos de tags Status e Visitação, tipos de atividade, funil com fases) entram quando essas tabelas forem criadas.*
+>
+> Testes num banco separado `leadtogo_test` (criado pelo init do compose), conectados como `leadtogo_app`; o helper de isolamento descobre as tabelas com `tenant_id` pelo catálogo do Postgres, para que uma tabela nova sem política faça o teste falhar. Antes do código, apresente o plano de commits (extensões e RLS → plataforma → referências → sistema → seeds) e espere a aprovação.
 > Siga a regra "expandir e depois contrair" e gere as migrações com drizzle-kit.
 
 Checklist:
