@@ -1,0 +1,149 @@
+import { sql } from 'drizzle-orm'
+import {
+  type AnyPgColumn,
+  boolean,
+  char,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core'
+
+import { municipios } from './referencias.js'
+import { carimbos, chaveUuid, citext } from './tipos.js'
+
+// Plataforma e tenant (docs/modelagem_banco.md, seção 3).
+// Políticas de RLS, FORCE e GRANTs ficam na migração (aplicar_rls_tenant).
+// Pendências de FK: usuario_id → auth.user (E8, quando o Better Auth criar o schema auth)
+// e logo_arquivo_id / foto_arquivo_id → arquivos (commit das tabelas de sistema).
+
+export const situacaoConta = pgEnum('situacao_conta', ['teste', 'ativa', 'suspensa', 'cancelada'])
+export const papelConta = pgEnum('papel_conta', ['dono', 'administrador', 'financeiro'])
+export const situacaoTenant = pgEnum('situacao_tenant', ['teste', 'ativo', 'suspenso', 'cancelado'])
+export const papelMembro = pgEnum('papel_membro', ['admin', 'gestor', 'vendedor'])
+export const modoImportacaoWhatsapp = pgEnum('modo_importacao_whatsapp', [
+  'automatico',
+  'manual',
+  'desligado',
+])
+
+/** Conta dona de várias empresas (cobrança e gestão). Sem RLS por tenant: o acesso é da API. */
+export const contas = pgTable('contas', {
+  id: chaveUuid(),
+  nome: text().notNull(),
+  documento: varchar({ length: 14 }),
+  emailCobranca: citext(),
+  plano: text(),
+  situacao: situacaoConta().notNull().default('teste'),
+  ...carimbos(),
+})
+
+export const contaAdministradores = pgTable(
+  'conta_administradores',
+  {
+    contaId: uuid()
+      .notNull()
+      .references(() => contas.id),
+    /** → auth.user (FK entra no E8) */
+    usuarioId: uuid().notNull(),
+    papel: papelConta().notNull(),
+    criadoEm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.contaId, t.usuarioId] })],
+)
+
+/** A empresa que usa o sistema. RLS pela coluna `id` (o tenant é a própria linha). */
+export const tenants = pgTable(
+  'tenants',
+  {
+    id: chaveUuid(),
+    razaoSocial: text().notNull(),
+    nomeFantasia: text(),
+    /** Alfanumérico (docs/modelagem_banco.md, seção 12) */
+    cnpj: varchar({ length: 14 }).unique('tenants_cnpj_key'),
+    email: text(),
+    telefone: text(),
+    website: text(),
+    cep: text(),
+    tipoLogradouro: text(),
+    logradouro: text(),
+    numero: text(),
+    complemento: text(),
+    bairro: text(),
+    municipioCodigo: integer().references(() => municipios.codigoIbge),
+    paisCodigo: char({ length: 2 }).default('BR'),
+    /** → arquivos (FK entra com as tabelas de sistema) */
+    logoArquivoId: uuid(),
+    contaId: uuid()
+      .notNull()
+      .references(() => contas.id),
+    situacao: situacaoTenant().notNull().default('teste'),
+    plano: text(),
+    fusoHorario: text().notNull().default('America/Sao_Paulo'),
+    moeda: char({ length: 3 }).notNull().default('BRL'),
+    ...carimbos(),
+  },
+  (t) => [index('tenants_conta_idx').on(t.contaId)],
+)
+
+export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
+  tenantId: uuid()
+    .primaryKey()
+    .references(() => tenants.id),
+  vendedorVeTodasEmpresas: boolean().notNull().default(false),
+  diasSemContatoAlerta: integer().notNull().default(60),
+  /** null = a tag de visita não expira */
+  diasValidadeTagVisita: integer(),
+  statusClienteAoConquistar: boolean().notNull().default(true),
+  rastreioEmailPadrao: boolean().notNull().default(false),
+  whatsappModoImportacao: modoImportacaoWhatsapp().notNull().default('desligado'),
+  preferencias: jsonb().notNull().default({}),
+  ...carimbos(),
+})
+
+/** Equipe / vendedores. O mesmo usuário pode ser membro em várias empresas, com papel próprio em cada. */
+export const membros = pgTable(
+  'membros',
+  {
+    id: chaveUuid(),
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    /** → auth.user (FK entra no E8); null = vendedor sem acesso ao sistema */
+    usuarioId: uuid(),
+    nome: text().notNull(),
+    cargo: text(),
+    telefone: varchar({ length: 20 }),
+    telefoneE164: varchar('telefone_e164', { length: 20 }),
+    email: citext(),
+    papel: papelMembro().notNull().default('vendedor'),
+    gestorId: uuid().references((): AnyPgColumn => membros.id),
+    cor: char({ length: 7 }),
+    /** → arquivos (FK entra com as tabelas de sistema) */
+    fotoArquivoId: uuid(),
+    ativo: boolean().notNull().default(true),
+    /** Tema, menu recolhido, visão do Dashboard, filtro salvo padrão */
+    preferencias: jsonb().notNull().default({}),
+    ...carimbos(),
+    criadoPor: uuid().references((): AnyPgColumn => membros.id),
+    atualizadoPor: uuid().references((): AnyPgColumn => membros.id),
+    excluidoEm: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('membros_tenant_email_uq')
+      .on(t.tenantId, t.email)
+      .where(sql`${t.excluidoEm} IS NULL AND ${t.email} IS NOT NULL`),
+    uniqueIndex('membros_tenant_usuario_uq')
+      .on(t.tenantId, t.usuarioId)
+      .where(sql`${t.excluidoEm} IS NULL AND ${t.usuarioId} IS NOT NULL`),
+    index('membros_tenant_gestor_idx').on(t.tenantId, t.gestorId),
+    index('membros_usuario_idx').on(t.usuarioId),
+  ],
+)

@@ -195,6 +195,12 @@ O Better Auth cria e gerencia as próprias tabelas: `user`, `session`, `account`
 
 O **mesmo usuário** (`usuario_id`) pode ter um registro em `membros` em **cada empresa**, com papel, cargo e gestor próprios naquela empresa (ex.: admin na A, vendedor na B).
 
+> **Implementação (E7):**
+> - `usuario_id` (em `membros` e `conta_administradores`) ainda **não tem FK** para `auth.user`: ela entra no E8, quando o Better Auth criar o schema `auth`. A FK de `tenants.logo_arquivo_id` e `membros.foto_arquivo_id` para `arquivos` entra junto com as tabelas de sistema.
+> - `membros` leva também `criado_por` e `atualizado_por` (→ `membros`), pela convenção da seção 1. O único `(tenant_id, usuario_id)` é parcial (`excluido_em IS NULL`), como o de e-mail.
+> - `tenants` isola o RLS pela coluna `id` (`aplicar_rls_tenant('tenants', 'id')`). `contas` e `conta_administradores` não têm RLS (acesso controlado pela API); o app tem DML nelas.
+> - `tenants.pais_codigo` não tem FK para `paises` (o modelo só pede o padrão `'BR'`). `tenant_configuracoes.whatsapp_modo_importacao` é um enum com padrão `desligado`.
+
 ---
 
 ## 4. Tabelas de referência 🌐 (globais)
