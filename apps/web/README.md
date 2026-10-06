@@ -4,14 +4,24 @@ Front-end React + Vite (PWA), TanStack Router/Query, Tailwind v4 + shadcn/ui com
 Offline: leitura + fila (Dexie). Empacotável com Capacitor para iOS/Android.
 Ver `docs/configuracao_tecnologia.md` (seção 8) e `docs/design_system.md`.
 
-## Estado atual
+## Estado atual (E9a, fundação)
 
-Só o esqueleto: Vite + React 19 com `src/main.tsx` e `src/App.tsx`. Router, Query, Tailwind/shadcn, PWA e Capacitor entram nas próximas etapas.
+Vite + React 19, TanStack Router (rotas por arquivo em `src/routes`, `routeTree.gen.ts` gerado) e Query, cliente da API (`src/api`), Tailwind v4 com os tokens, e os componentes base em `src/components/ui`. As telas de acesso (E9b), a casca (E9c), o PWA e os testes E2E (E9d) entram nas próximas partes.
+
+## Design system: fonte única
+
+`docs/design-system/` é a única fonte. O script `scripts/sincronizar-design-system.mjs` copia `tokens.css`, `tailwind-theme.css` e as fontes `.woff2` para `src/styles/` (cópias **fora do Git**) antes do `dev`, do `build` e dos `test`. Nunca edite as cópias. As fontes são servidas pelo próprio app (sem CDN). O Dockerfile do web precisa copiar `docs/design-system/` antes do build (E11).
+
+Regras: nada de cor, fonte ou espaçamento fora dos tokens; a altura dos controles vem de `data-density` (`compact` 28 px, padrão 36 px, `touch` 44 px); foco visível em tudo; todo botão só com ícone leva `label`.
+
+## Catálogo de componentes (só em desenvolvimento)
+
+`pnpm dev` e abra `http://localhost:5173/dev/catalogo`: todos os componentes, com troca de tema e de densidade. Fica fora do build de produção (alias para um módulo vazio; um teste garante).
 
 ## Scripts
 
-- `pnpm dev`: Vite em `http://localhost:5173` (escuta em `0.0.0.0` para o navegador do Windows alcançar o WSL)
-- `pnpm build` (typecheck + build) · `pnpm preview`
-- `pnpm test`: Vitest com jsdom e Testing Library
+- `pnpm dev`: Vite em `http://localhost:5173` (escuta em `0.0.0.0` para o navegador do Windows alcançar o WSL). Chamadas a `/v1/*` e `/health` vão por **proxy** para a API em `http://localhost:3000` (`VITE_API_PROXY` muda o destino): o navegador só fala com a origem do front, sem CORS e sem cookie entre origens. Suba a API com `pnpm --filter @leadtogo/api dev`.
+- `pnpm build` (sincroniza, typecheck e build) · `pnpm preview`
+- `pnpm test`: Vitest com jsdom e Testing Library (inclui testes de teclado e rótulos acessíveis)
 
 Os pacotes internos (`@leadtogo/shared`, `@leadtogo/api-client`) são lidos direto do código-fonte pela condição `@leadtogo/source`, sem precisar de build.

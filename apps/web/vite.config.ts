@@ -9,7 +9,7 @@ import { defineConfig } from 'vitest/config'
 // e o Vite repassa à API: o navegador só fala com a origem do front, sem CORS nem cookie entre origens.
 const API_DEV = process.env['VITE_API_PROXY'] ?? 'http://localhost:3000'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     // o roteador gera src/routeTree.gen.ts a partir de src/routes
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
@@ -19,7 +19,18 @@ export default defineConfig({
   resolve: {
     // pacotes internos do monorepo são lidos direto do código-fonte (sem build) no dev e nos testes
     conditions: ['@leadtogo/source'],
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: [
+      // o catálogo de componentes só existe em desenvolvimento: no build vira um módulo vazio
+      ...(command === 'build'
+        ? [
+            {
+              find: '@/dev/catalogo',
+              replacement: fileURLToPath(new URL('./src/dev/catalogo.stub.tsx', import.meta.url)),
+            },
+          ]
+        : []),
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+    ],
   },
   // 0.0.0.0 para o navegador do Windows acessar o Vite rodando no WSL (docs/esteira_deploy.md, seção 9.5)
   server: {
@@ -38,4 +49,4 @@ export default defineConfig({
     setupFiles: ['./src/testes/setup.ts'],
     css: false,
   },
-})
+}))

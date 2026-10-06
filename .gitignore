@@ -38,3 +38,4 @@ docker/.data/
 apps/web/src/styles/tokens.css
 apps/web/src/styles/tailwind-theme.css
 apps/web/src/styles/fonts/
+apps/web/dist-teste-catalogo/
