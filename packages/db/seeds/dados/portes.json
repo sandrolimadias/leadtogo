@@ -1,0 +1,18 @@
+[
+  {
+    "codigo": 0,
+    "descricao": "Não informado"
+  },
+  {
+    "codigo": 1,
+    "descricao": "Micro Empresa"
+  },
+  {
+    "codigo": 3,
+    "descricao": "Empresa de Pequeno Porte"
+  },
+  {
+    "codigo": 5,
+    "descricao": "Demais"
+  }
+]

@@ -1,0 +1,318 @@
+[
+  {
+    "codigo": 1,
+    "descricao": "Acionista"
+  },
+  {
+    "codigo": 2,
+    "descricao": "Acionista Controlador"
+  },
+  {
+    "codigo": 3,
+    "descricao": "Acionista Diretor"
+  },
+  {
+    "codigo": 4,
+    "descricao": "Acionista Presidente"
+  },
+  {
+    "codigo": 5,
+    "descricao": "Administrador"
+  },
+  {
+    "codigo": 6,
+    "descricao": "Administradora de consórcio de Empresas ou Grupo de Empresas"
+  },
+  {
+    "codigo": 7,
+    "descricao": "Comissário"
+  },
+  {
+    "codigo": 8,
+    "descricao": "Conselheiro de Administração"
+  },
+  {
+    "codigo": 9,
+    "descricao": "Curador"
+  },
+  {
+    "codigo": 10,
+    "descricao": "Diretor"
+  },
+  {
+    "codigo": 11,
+    "descricao": "Interventor"
+  },
+  {
+    "codigo": 12,
+    "descricao": "Inventariante"
+  },
+  {
+    "codigo": 13,
+    "descricao": "Liquidante"
+  },
+  {
+    "codigo": 14,
+    "descricao": "Mãe"
+  },
+  {
+    "codigo": 15,
+    "descricao": "Pai"
+  },
+  {
+    "codigo": 16,
+    "descricao": "Presidente"
+  },
+  {
+    "codigo": 17,
+    "descricao": "Procurador"
+  },
+  {
+    "codigo": 18,
+    "descricao": "Secretário"
+  },
+  {
+    "codigo": 19,
+    "descricao": "Síndico (Condomínio)"
+  },
+  {
+    "codigo": 20,
+    "descricao": "Sociedade Consorciada"
+  },
+  {
+    "codigo": 21,
+    "descricao": "Sociedade Filiada"
+  },
+  {
+    "codigo": 22,
+    "descricao": "Sócio"
+  },
+  {
+    "codigo": 23,
+    "descricao": "Sócio Capitalista"
+  },
+  {
+    "codigo": 24,
+    "descricao": "Sócio Comanditado"
+  },
+  {
+    "codigo": 25,
+    "descricao": "Sócio Comanditário"
+  },
+  {
+    "codigo": 26,
+    "descricao": "Sócio de Indústria"
+  },
+  {
+    "codigo": 27,
+    "descricao": "Sócio Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 28,
+    "descricao": "Sócio-Gerente"
+  },
+  {
+    "codigo": 29,
+    "descricao": "Sócio ou Acionista Incapaz ou Relativamente Incapaz (exceto menor)"
+  },
+  {
+    "codigo": 30,
+    "descricao": "Sócio ou Acionista Menor (Assistido/Representado)"
+  },
+  {
+    "codigo": 31,
+    "descricao": "Sócio Ostensivo"
+  },
+  {
+    "codigo": 32,
+    "descricao": "Tabelião"
+  },
+  {
+    "codigo": 33,
+    "descricao": "Tesoureiro"
+  },
+  {
+    "codigo": 34,
+    "descricao": "Titular de Empresa Individual Imobiliária"
+  },
+  {
+    "codigo": 35,
+    "descricao": "Tutor"
+  },
+  {
+    "codigo": 36,
+    "descricao": "Gerente-Delegado"
+  },
+  {
+    "codigo": 37,
+    "descricao": "Sócio Pessoa Jurídica Domiciliado no Exterior"
+  },
+  {
+    "codigo": 38,
+    "descricao": "Sócio Pessoa Física Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 39,
+    "descricao": "Diplomata"
+  },
+  {
+    "codigo": 40,
+    "descricao": "Cônsul"
+  },
+  {
+    "codigo": 41,
+    "descricao": "Representante de Organização Internacional"
+  },
+  {
+    "codigo": 42,
+    "descricao": "Oficial de Registro"
+  },
+  {
+    "codigo": 43,
+    "descricao": "Responsável"
+  },
+  {
+    "codigo": 44,
+    "descricao": "Sócio Participante"
+  },
+  {
+    "codigo": 45,
+    "descricao": "Sócio Investidor"
+  },
+  {
+    "codigo": 46,
+    "descricao": "Ministro de Estado das Relações Exteriores"
+  },
+  {
+    "codigo": 47,
+    "descricao": "Sócio Pessoa Física Residente no Brasil"
+  },
+  {
+    "codigo": 48,
+    "descricao": "Sócio Pessoa Jurídica Domiciliado no Brasil"
+  },
+  {
+    "codigo": 49,
+    "descricao": "Sócio-Administrador"
+  },
+  {
+    "codigo": 50,
+    "descricao": "Empresário"
+  },
+  {
+    "codigo": 51,
+    "descricao": "Candidato a Cargo Político Eletivo"
+  },
+  {
+    "codigo": 52,
+    "descricao": "Sócio com Capital"
+  },
+  {
+    "codigo": 53,
+    "descricao": "Sócio sem Capital"
+  },
+  {
+    "codigo": 54,
+    "descricao": "Fundador"
+  },
+  {
+    "codigo": 55,
+    "descricao": "Sócio Comanditado Residente no Exterior"
+  },
+  {
+    "codigo": 56,
+    "descricao": "Sócio Comanditário Pessoa Física Residente no Exterior"
+  },
+  {
+    "codigo": 57,
+    "descricao": "Sócio Comanditário Pessoa Jurídica Domiciliado no Exterior"
+  },
+  {
+    "codigo": 58,
+    "descricao": "Sócio Comanditário Incapaz"
+  },
+  {
+    "codigo": 59,
+    "descricao": "Produtor Rural"
+  },
+  {
+    "codigo": 60,
+    "descricao": "Cônsul Honorário"
+  },
+  {
+    "codigo": 61,
+    "descricao": "Responsável Indigena"
+  },
+  {
+    "codigo": 62,
+    "descricao": "Representante das Instituições Extraterritoriais"
+  },
+  {
+    "codigo": 63,
+    "descricao": "Cotas em Tesouraria"
+  },
+  {
+    "codigo": 64,
+    "descricao": "Administrador Judicial"
+  },
+  {
+    "codigo": 65,
+    "descricao": "Titular Pessoa Física Residente ou Domiciliado no Brasil"
+  },
+  {
+    "codigo": 66,
+    "descricao": "Titular Pessoa Física Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 67,
+    "descricao": "Titular Pessoa Física Incapaz ou Relativamente Incapaz (exceto menor)"
+  },
+  {
+    "codigo": 68,
+    "descricao": "Titular Pessoa Física Menor (Assistido/Representado)"
+  },
+  {
+    "codigo": 69,
+    "descricao": "Beneficiário Final"
+  },
+  {
+    "codigo": 70,
+    "descricao": "Administrador Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 71,
+    "descricao": "Conselheiro de Administração Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 72,
+    "descricao": "Diretor Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 73,
+    "descricao": "Presidente Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 74,
+    "descricao": "Sócio-Administrador Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 75,
+    "descricao": "Fundador Residente ou Domiciliado no Exterior"
+  },
+  {
+    "codigo": 76,
+    "descricao": "Protetor"
+  },
+  {
+    "codigo": 77,
+    "descricao": "Vice-Presidente"
+  },
+  {
+    "codigo": 78,
+    "descricao": "Titular Pessoa Jurídica Domiciliada no Brasil"
+  },
+  {
+    "codigo": 79,
+    "descricao": "Titular Pessoa Jurídica Domiciliada no Exterior"
+  }
+]

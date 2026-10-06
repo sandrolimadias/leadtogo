@@ -1,6 +1,7 @@
 import postgres from 'postgres'
 
 import { carregarEnv } from '../env.js'
+import { criarConexao } from '../index.js'
 
 carregarEnv()
 
@@ -39,4 +40,9 @@ export async function comTenant<T>(
     }
     return fn(tx)
   })) as T
+}
+
+/** Drizzle como `leadtogo_owner` (é com ele que os seeds rodam). */
+export function conectarDrizzleOwner() {
+  return criarConexao(url('TEST_DATABASE_MIGRATION_URL'), { max: 2, onnotice: () => {} })
 }
