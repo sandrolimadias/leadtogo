@@ -589,7 +589,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 | Forma | Como o vendedor usa | Prós / contras |
 |---|---|---|
 | **1. Conta conectada** (padrão) | Em *Minhas conexões*, clica em "Conectar Google" ou "Conectar Microsoft" e autoriza | Automático: registra também os e-mails enviados **fora do CRM** (pelo Gmail/Outlook normal). Requer autorização da conta |
-| **2. Cópia oculta (BCC)** | Coloca o endereço do CRM (ex.: `registro@seudominio`) em **Cco** ao enviar | Funciona com qualquer provedor e sem conectar a conta. Depende de o vendedor lembrar |
+| **2. Cópia oculta (BCC)** | Coloca o endereço do CRM (ex.: `registro@aledias.com.br`) em **Cco** ao enviar | Funciona com qualquer provedor e sem conectar a conta. Depende de o vendedor lembrar |
 
 **Regras do registro**
 - Só são registrados e-mails trocados com **endereços de contatos cadastrados**. Opcionalmente, também com o **domínio da empresa** (ex.: qualquer `@cliente.com.br`).

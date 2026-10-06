@@ -16,7 +16,7 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 - **casca do app** (menu, barra superior, navegação do celular, temas) igual ao protótipo;
 - monitoramento, alertas e procedimento de recuperação documentados.
 
-**Resultado esperado:** acessar `https://app.SEUDOMINIO`, criar a conta e a primeira empresa, entrar, trocar de empresa e ver a casca do Leadtogo vazia. Tudo isso entregue por um `git push` que passou pela esteira.
+**Resultado esperado:** acessar `https://crm.aledias.com.br`, criar a conta e a primeira empresa, entrar, trocar de empresa e ver a casca do Leadtogo vazia. Tudo isso entregue por um `git push` que passou pela esteira.
 
 > Fora desta fase: telas de negócio (empresas, contatos, atividades, oportunidades). Elas entram no escopo do MVP, a ser definido em seguida.
 
@@ -102,20 +102,26 @@ Seguir `esteira_deploy.md`, seção 9.2. Resumo:
 
 ## E3. Domínio e DNS — Ale
 
-- [ ] Definir o domínio (ex.: `leadtogo.com.br`). Verificar a disponibilidade no Registro.br e a marca no INPI.
-- [ ] Criar registros **A** apontando para o IP da VPS:
+**Decisão (06/10/2026):** o Leadtogo roda em subdomínios de **`crm.aledias.com.br`**. Um domínio próprio da marca (ex.: `leadtogo.com.br`) pode ser adotado depois sem mudar o código, só as variáveis de ambiente e o DNS.
 
-| Registro | Uso |
+| Endereço | Uso |
 |---|---|
-| `app` | Aplicação web (PWA) |
-| `api` | API |
-| `files` | MinIO (só se for preciso acesso externo direto) |
-| `t` | Rastreamento de e-mail (fase futura; pode criar já) |
-| `status` | Página do Uptime Kuma (opcional) |
+| `crm.aledias.com.br` | Aplicação web (PWA): é o endereço que os usuários acessam |
+| `api.crm.aledias.com.br` | API |
+| `files.crm.aledias.com.br` | MinIO (só se for preciso acesso externo direto) |
+| `t.crm.aledias.com.br` | Rastreamento de e-mail (fase futura) |
+| `status.crm.aledias.com.br` | Página do Uptime Kuma (opcional) |
 
-- [ ] Se usar Cloudflare: proxy **desligado** (nuvem cinza) até os certificados do Coolify serem emitidos; depois pode ligar com SSL "Full (strict)".
+Passos no painel de DNS de `aledias.com.br` (Registro.br, Cloudflare ou onde estiver):
+- [ ] Registro **A** `crm` → IP da VPS.
+- [ ] Registro **A** `*.crm` (curinga) → IP da VPS. Cobre `api.crm`, `files.crm`, `t.crm` e `status.crm` de uma vez. Se o painel não aceitar curinga, crie um registro A para cada um.
+- [ ] TTL de 300 segundos (5 min) durante a implantação.
+- [ ] Se o DNS estiver na Cloudflare: proxy **desligado** (nuvem cinza) até os certificados do Coolify serem emitidos; depois pode ligar com SSL "Full (strict)".
+- [ ] Se existir um registro **CAA** no domínio, ele precisa permitir `letsencrypt.org`.
 
-**Pronto quando:** `nslookup app.SEUDOMINIO` responde com o IP da VPS.
+> **Cookies de login:** o app e a API ficam no mesmo site (`aledias.com.br`), então o login por cookie funciona sem truques. A API configura o cookie para o domínio `crm.aledias.com.br` e o CORS libera só `https://crm.aledias.com.br`.
+
+**Pronto quando:** `nslookup crm.aledias.com.br` e `nslookup api.crm.aledias.com.br` respondem com o IP da VPS.
 
 ---
 
@@ -300,9 +306,9 @@ Checklist:
 
 | Recurso | Imagem | Comando | Domínio | Limite de memória |
 |---|---|---|---|---|
-| leadtogo-api | `ghcr.io/<usuario>/leadtogo-api:latest` | padrão (`node dist/main.js`) · **pré-deploy:** `node dist/migrate.js` | `api.SEUDOMINIO` | 768 MB |
+| leadtogo-api | `ghcr.io/<usuario>/leadtogo-api:latest` | padrão (`node dist/main.js`) · **pré-deploy:** `node dist/migrate.js` | `api.crm.aledias.com.br` | 768 MB |
 | leadtogo-worker | `ghcr.io/<usuario>/leadtogo-api:latest` | `node dist/worker.js` | — | 512 MB |
-| leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `app.SEUDOMINIO` | 128 MB |
+| leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `crm.aledias.com.br` | 128 MB |
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
 4. [ ] Healthchecks: API `/health`, web `/`, worker (comando de saúde).
@@ -310,7 +316,7 @@ Checklist:
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
 7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.
 
-**Pronto quando:** o push passa por toda a esteira, `https://api.SEUDOMINIO/health` mostra o commit atual e `https://app.SEUDOMINIO` abre o login com certificado válido.
+**Pronto quando:** o push passa por toda a esteira, `https://api.crm.aledias.com.br/health` mostra o commit atual e `https://crm.aledias.com.br` abre o login com certificado válido.
 
 ---
 

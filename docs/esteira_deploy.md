@@ -190,7 +190,7 @@ jobs:
       - name: Smoke test
         run: |
           for i in $(seq 1 30); do
-            curl -fsS https://api.SEUDOMINIO/health | grep -q '"version":"${{ github.sha }}"' && exit 0
+            curl -fsS https://api.crm.aledias.com.br/health | grep -q '"version":"${{ github.sha }}"' && exit 0
             sleep 10
           done
           echo "Nova versão não respondeu em 5 minutos" && exit 1
@@ -226,12 +226,12 @@ jobs:
 ### 7.1 Recursos
 | Recurso | Tipo no Coolify | Imagem / origem | Domínio |
 |---|---|---|---|
-| leadtogo-api | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` | `api.seudominio` |
+| leadtogo-api | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` | `api.crm.aledias.com.br` |
 | leadtogo-worker | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` (comando: worker) | — (sem domínio) |
-| leadtogo-web | Docker Image | `ghcr.io/<usuario>/leadtogo-web:latest` | `app.seudominio` |
+| leadtogo-web | Docker Image | `ghcr.io/<usuario>/leadtogo-web:latest` | `crm.aledias.com.br` |
 | leadtogo-db | Database (PostgreSQL) | `postgis/postgis` | — (só rede interna) |
 | leadtogo-cache | Database (Redis/Valkey) | `valkey/valkey` | — |
-| leadtogo-files | Service (MinIO) | `minio/minio` | `files.seudominio` (se necessário) |
+| leadtogo-files | Service (MinIO) | `minio/minio` | `files.crm.aledias.com.br` (se necessário) |
 
 - **Credencial do GHCR no Coolify:** registrar `ghcr.io` com um token do GitHub com permissão **somente `read:packages`**, para baixar as imagens privadas.
 - **Variáveis de ambiente** de produção (banco, Valkey, MinIO, chaves do Better Auth, Evolution, n8n, Sentry) ficam **só no Coolify**. O repositório tem apenas o `.env.example`.

@@ -4,6 +4,8 @@
 > Status: **Aprovado (v1.1)** · Data: 05/10/2026
 > v1.1: n8n e Evolution API (já em produção na VPS) incorporados à arquitetura
 > v1.2: e-mail (Gmail/Microsoft Graph, BCC, rastreamento), agendas, tarefas Kanban, notificações e container de *worker*
+> v1.3: multiempresa (conta dona de vários tenants, empresa ativa na sessão, leitura consolidada via RLS)
+> v1.4: domínios definidos: `crm.aledias.com.br` (app) e `api.crm.aledias.com.br` (API)
 
 ---
 
@@ -124,6 +126,13 @@ crm/
 - **Testes automatizados de isolamento:** o tenant A nunca pode ler nem gravar dados do tenant B.
 - Evolução futura possível: banco dedicado para cliente grande (modelo híbrido), sem mudar o código de domínio.
 
+### Multiempresa (conta com vários tenants)
+- Hierarquia: **Conta → Tenants (empresas) → Membros**. O usuário (login do Better Auth) é único e tem um vínculo de membro em cada empresa.
+- **Empresa ativa** guardada na sessão (Better Auth `activeOrganizationId`). O guard da API valida se o usuário é membro ativo dessa empresa antes de definir `app.tenant_id`.
+- **Leitura consolidada:** endpoints específicos (`/v1/consolidado/...`) definem `SET LOCAL app.tenant_ids = '{...}'` com as empresas em que o usuário é admin da conta. As políticas RLS **de SELECT** aceitam `tenant_id = current_setting('app.tenant_id')::uuid OR tenant_id = ANY(current_setting('app.tenant_ids', true)::uuid[])`. As políticas de INSERT/UPDATE/DELETE aceitam **só** `app.tenant_id`.
+- Cache (Valkey) sempre com o `tenant_id` na chave, para evitar vazamento entre empresas.
+- Teste automatizado obrigatório: um usuário com acesso às empresas A e B, com a A ativa, não consegue gravar na B.
+
 ---
 
 ## 7. Autenticação e segurança
@@ -227,7 +236,7 @@ Total estimado: **~6,5–10,5 GB** dos 12 GB. A folga ficou menor com o n8n, a E
 - Definir **limites de memória** por container no Coolify, para que um serviço não derrube os outros.
 - O **OSRM** (fase de roteirização) provavelmente exigirá **upgrade da VPS ou um servidor separado**.
 
-- **Domínios:** `app.seudominio` (front), `api.seudominio` (API), `files.seudominio` (MinIO, se necessário), `t.seudominio` (rastreamento de e-mail).
+- **Domínios:** `crm.aledias.com.br` (front), `api.crm.aledias.com.br` (API), `files.crm.aledias.com.br` (MinIO, se necessário), `t.crm.aledias.com.br` (rastreamento de e-mail).
 - Containers de banco, Valkey e MinIO **sem porta pública**.
 - Healthchecks configurados em todos os serviços.
 - Ajuste do Postgres conforme a RAM (`shared_buffers` ≈ 25% da RAM alocada etc.).
@@ -294,7 +303,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 - Filtro no worker: só grava e-mails/eventos com contatos ou domínios cadastrados.
 
 **BCC**
-- Caixa dedicada (ex.: `registro@seudominio`) em qualquer provedor, lida por **IMAP** pelo worker (IDLE ou polling).
+- Caixa dedicada (ex.: `registro@aledias.com.br`) em qualquer provedor, lida por **IMAP** pelo worker (IDLE ou polling).
 - Identificação: o **remetente** é o usuário do CRM e os **destinatários** são os contatos, gerando a atividade.
 
 **Envio**
@@ -303,7 +312,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 - Envio agendado e lote via fila BullMQ, com limite de taxa por conta (respeitando os limites de Google e Microsoft).
 
 **Rastreamento de abertura e cliques**
-- Endpoints públicos na API, num subdomínio próprio (ex.: `t.seudominio`):
+- Endpoints públicos na API, num subdomínio próprio (ex.: `t.crm.aledias.com.br`):
   - `GET /t/o/:token.gif` → pixel 1×1 (abertura)
   - `GET /t/c/:token` → registra o clique e redireciona (com validação do destino, sem *open redirect*)
 - Token opaco e assinado (não expõe IDs) e rate limit.
@@ -386,6 +395,8 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 | 17 | Verificação Google | Começar em modo de teste/interno + BCC; verificação completa (CASA) quando houver clientes externos com Gmail |
 | 18 | Worker | Container separado para filas e sincronizações |
 | 19 | Tempo real e push | SSE/Socket.io + Web Push (PWA) + FCM/APNs (Capacitor) |
+| 20 | Multiempresa | Conta → tenants → membros; empresa ativa na sessão; consolidado só leitura via `app.tenant_ids` |
+| 21 | Domínios | App em `crm.aledias.com.br`, API em `api.crm.aledias.com.br` (subdomínios via registro curinga `*.crm`) |
 
 ## 16. Próximos passos
 
