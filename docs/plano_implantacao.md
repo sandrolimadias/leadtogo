@@ -33,7 +33,7 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 | E5 | Esqueleto do monorepo | Claude Code | E2 | 1 dia |
 | E6 | Ambiente de desenvolvimento (Docker local) | Claude Code | E5 | 2 h |
 | E7 | Banco: base, papéis, RLS e referências ✅ | Claude Code | E6 | 2 dias |
-| E8 | API base (NestJS + Better Auth + tenant) | Claude Code | E7 | 2–3 dias |
+| E8 | API base (NestJS + Better Auth + tenant) ✅ | Claude Code | E7 | 2–3 dias |
 | E9 | Web base (casca do app + login) | Claude Code | E8 | 3 dias |
 | E10 | Worker base (filas e eventos) | Claude Code | E8 | 1 dia |
 | E11 | Imagens Docker | Claude Code | E8–E10 | 0,5 dia |
@@ -282,6 +282,8 @@ Checklist:
 - Mudança de rumo (cache da sessão, UUID v7 do Better Auth): avisar o Ale **antes** de contornar.
 
 **Pronto quando:** testes de integração passam e o Swagger mostra os endpoints.
+
+✅ **Concluído em 06/10/2026** (aguardando aprovação). Verificado do zero (`dev:reset`, `dev:up`, `db:migrate`, `db:seed`, `test --force`, sem cache): **8 migrações**; **342 testes** (`shared` 19, `api-client` 4, `web` 1, `db` 117, `api` 201). Sessões ficam só no Postgres e o Valkey atende o rate limit do Better Auth (`customStorage`); o Better Auth só faz identidade. Achado de segurança tratado: ele desliga a validação de `redirectTo` em `NODE_ENV=test`, e agora ela fica ligada em qualquer ambiente. Pendências: SMTP de produção, teste de login real com os dois domínios e criação da primeira conta (E13); Garage no CI (E12).
 
 ---
 
