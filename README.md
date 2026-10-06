@@ -28,7 +28,7 @@ Instruções para o Claude Code: [CLAUDE.md](CLAUDE.md).
 ## Desenvolvimento local
 
 ```bash
-docker compose -f docker/compose.dev.yml up -d   # Postgres+PostGIS, Valkey, MinIO
+docker compose -f docker/compose.dev.yml up -d   # Postgres+PostGIS, Valkey, Garage
 pnpm install
 pnpm db:migrate && pnpm db:seed
 pnpm dev

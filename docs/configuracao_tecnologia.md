@@ -5,6 +5,8 @@
 > v1.1: n8n e Evolution API (já em produção na VPS) incorporados à arquitetura
 > v1.2: e-mail (Gmail/Microsoft Graph, BCC, rastreamento), agendas, tarefas Kanban, notificações e container de *worker*
 > v1.3: multiempresa (conta dona de vários tenants, empresa ativa na sessão, leitura consolidada via RLS)
+> v1.6: arquivos no **Garage** (S3) no lugar do MinIO, descontinuado
+> v1.5: servidor real levantado: Oracle Cloud **ARM64 (aarch64)**, 4 vCPU, 24 GB; imagens multi-arquitetura; PostGIS em imagem com suporte ARM
 > v1.4: domínios definidos: `crm.aledias.com.br` (app) e `api.crm.aledias.com.br` (API)
 
 ---
@@ -15,7 +17,7 @@
 - **Multitenant** (várias empresas no mesmo sistema, dados isolados).
 - Prioridades: **performance, segurança e usabilidade**.
 - Futuro: **geolocalização e roteirização** de visitas.
-- Infraestrutura própria: **VPS com Coolify** (12 GB de RAM).
+- Infraestrutura própria: **VPS Oracle Cloud com Coolify** — ARM64 (Ampere), 4 vCPU, 24 GB de RAM, ~190 GB de disco.
 
 ### Por que não Supabase self-hosted
 O Supabase self-hosted é composto por cerca de 10 a 12 serviços (Kong, GoTrue, PostgREST, Realtime, Storage, Studio, Logflare etc.), o que é frágil para manter no Coolify e mais do que o projeto precisa. Ficamos com o melhor dele, o **PostgreSQL**, e implementamos auth, API e storage com ferramentas mais simples e controláveis.
@@ -41,7 +43,7 @@ O Supabase self-hosted é composto por cerca de 10 a 12 serviços (Kong, GoTrue,
 | UI | Tailwind CSS + shadcn/ui |
 | PWA / offline | vite-plugin-pwa (Workbox) + Dexie (IndexedDB) |
 | App nativo | **Capacitor** (código preparado desde já) |
-| Arquivos | **MinIO** na VPS (compatível com S3) |
+| Arquivos | **Garage** na VPS (compatível com S3; substitui o MinIO, descontinuado) |
 | Mapas (futuro) | MapLibre GL + OpenStreetMap |
 | Geocodificação (futuro) | **Híbrido:** Google Maps API + cache + Nominatim |
 | Rotas (futuro) | OSRM + VROOM (otimização de roteiro) |
@@ -97,7 +99,7 @@ crm/
 
 ## 5. Banco de dados — PostgreSQL + PostGIS
 
-- Imagem: `postgis/postgis` (versão estável mais recente compatível).
+- Imagem: **`imresamu/postgis:17-3.5`** (multi-arquitetura, com ARM64). A imagem oficial `postgis/postgis` só é publicada para amd64 e **não roda na VPS ARM**. Alternativa, se necessário: imagem própria `FROM postgres:17` + pacote `postgresql-17-postgis-3`, construída no CI para arm64. Usar **a mesma imagem** no desenvolvimento local.
 - **Não exposto à internet:** acesso apenas pela rede interna do Coolify.
 - Extensões: `postgis`, `pgcrypto`, `citext`, `pg_trgm` (busca por similaridade de nomes) e `unaccent` (busca sem acento).
 - Chaves primárias **UUID v7** (ordenáveis, boas para índices e sincronização offline).
@@ -180,16 +182,20 @@ crm/
 
 ---
 
-## 9. Arquivos — MinIO
+## 9. Arquivos — Garage (S3 na VPS)
 
-- MinIO em container próprio no Coolify, com API S3.
+> **v1.6 (06/10/2026):** o MinIO deixou de ser distribuído como projeto aberto (imagens descontinuadas e repositório arquivado) e saiu do catálogo do Coolify. Foi substituído pelo **Garage** (código aberto, leve, compatível com S3, roda em ARM64). O código não muda: o acesso é pelo **padrão S3** (`@aws-sdk/client-s3`), configurado só por variáveis de ambiente.
+
+- Garage em container próprio no Coolify (imagem `dxflrs/garage:v2.1.0`), **um nó**, `replication_factor = 1`, metadados em LMDB.
+- API S3 na porta interna 3900, publicada em `https://files.crm.aledias.com.br` (necessário para os links pré-assinados). A porta RPC (3901) e a API de administração (3903) **não** são publicadas.
+- Requisições em **estilo de caminho** (`forcePathStyle: true`) e região `garage`.
 - **Buckets privados**; acesso por **URLs pré-assinadas** com expiração curta.
 - Organização por prefixo de tenant: `tenant_id/entidade/arquivo`.
-- Upload direto do navegador para o MinIO via URL pré-assinada (não passa pela API).
+- Upload direto do navegador para o Garage via URL pré-assinada (não passa pela API). Requer **CORS** no bucket liberando só `https://crm.aledias.com.br` (configurado por script na E15).
 - Limite de tamanho e validação de tipo de arquivo.
 - Fotos tiradas no celular são comprimidas no cliente antes do envio.
-- **Backup do MinIO** replicado para um S3 externo (o mesmo destino dos backups do banco).
-- Atenção: monitorar o uso de disco da VPS.
+- **Backup:** sincronização diária do bucket para o Cloudflare R2 com `rclone` (pendência da E4/E15).
+- Desenvolvimento local: o mesmo Garage no `docker/compose.dev.yml`.
 
 ---
 
@@ -206,12 +212,14 @@ crm/
 | Rastreamento em campo | Capacitor + plugin de background geolocation |
 
 - Endereço normalizado + coordenada ficam gravados no cliente, então a mesma geocodificação nunca é paga duas vezes.
-- **Atenção à RAM (VPS 12 GB):** o pré-processamento do mapa do Brasil no OSRM pode exigir muita memória. A recomendação é processar fora da VPS (máquina local ou servidor temporário) e subir só os arquivos prontos; em execução, o OSRM (perfil carro, algoritmo MLD) cabe na VPS. Reavaliar quando a fase começar.
+- **Atenção à RAM (VPS 24 GB, compartilhada):** o pré-processamento do mapa do Brasil no OSRM pode exigir muita memória. A recomendação é processar fora da VPS (máquina local ou servidor temporário) e subir só os arquivos prontos; em execução, o OSRM (perfil carro, algoritmo MLD) cabe na VPS. Reavaliar quando a fase começar.
 - Nominatim self-hosted para o Brasil consome bastante RAM e disco, por isso fica fora da VPS no início.
 
 ---
 
-## 11. Infraestrutura — Coolify (VPS 12 GB)
+## 11. Infraestrutura — Coolify (VPS Oracle Cloud ARM64, 4 vCPU, 24 GB)
+
+> **Arquitetura ARM64:** toda imagem usada na VPS precisa ter versão `linux/arm64`. Node (alpine), Caddy, Valkey, Garage e Uptime Kuma têm. O PostGIS oficial não tem; usar `imresamu/postgis:17-3.5`. As imagens do Leadtogo são construídas para `linux/arm64` no CI (ver `esteira_deploy.md`).
 
 ### Containers em produção
 
@@ -219,9 +227,9 @@ crm/
 |---|---|---|
 | API | Node LTS (NestJS) | ~300–600 MB |
 | Web (PWA) | Arquivos estáticos via Caddy/Nginx | ~50 MB |
-| PostgreSQL + PostGIS | `postgis/postgis` | 2–4 GB (configurável) |
+| PostgreSQL + PostGIS | `imresamu/postgis:17-3.5` | 2–4 GB (configurável) |
 | Valkey | `valkey/valkey` | ~100–300 MB |
-| MinIO | `minio/minio` | ~300–500 MB |
+| Garage | `dxflrs/garage:v2.1.0` | ~100–300 MB |
 | Uptime Kuma | `louislam/uptime-kuma` | ~150 MB |
 | GlitchTip (opcional) | self-hosted, ou Sentry em nuvem (plano gratuito) | ~500 MB–1 GB |
 | Coolify + Traefik | — | ~1 GB |
@@ -229,15 +237,15 @@ crm/
 | **Evolution API** *(já existente)* | com seu próprio banco/cache | ~300 MB–1 GB (cresce com o nº de instâncias) |
 | **Worker do CRM** | mesma imagem da API | ~300–600 MB |
 
-Total estimado: **~6,5–10,5 GB** dos 12 GB. A folga ficou menor com o n8n, a Evolution e o worker.
+Total estimado do Leadtogo: **~3–5 GB**. Medição de 06/10/2026: a VPS usa ~5 GB de 23 GB (n8n, Evolution, 2 WordPress com MySQL, Coolify), então há folga confortável.
 
 - **Conferir o consumo real** dos serviços existentes antes de subir o CRM (`docker stats` na VPS ou métricas do Coolify).
 - Para poupar RAM, preferir o **Sentry em nuvem (plano gratuito)** ao GlitchTip self-hosted.
 - Definir **limites de memória** por container no Coolify, para que um serviço não derrube os outros.
 - O **OSRM** (fase de roteirização) provavelmente exigirá **upgrade da VPS ou um servidor separado**.
 
-- **Domínios:** `crm.aledias.com.br` (front), `api.crm.aledias.com.br` (API), `files.crm.aledias.com.br` (MinIO, se necessário), `t.crm.aledias.com.br` (rastreamento de e-mail).
-- Containers de banco, Valkey e MinIO **sem porta pública**.
+- **Domínios:** `crm.aledias.com.br` (front), `api.crm.aledias.com.br` (API), `files.crm.aledias.com.br` (Garage, se necessário), `t.crm.aledias.com.br` (rastreamento de e-mail).
+- Containers de banco, Valkey e Garage **sem porta pública**.
 - Healthchecks configurados em todos os serviços.
 - Ajuste do Postgres conforme a RAM (`shared_buffers` ≈ 25% da RAM alocada etc.).
 
@@ -264,7 +272,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 - Configurar o webhook da instância com os eventos de mensagens (`MESSAGES_UPSERT` e afins) e de conexão (`CONNECTION_UPDATE`).
 - Cada conexão de vendedor no CRM corresponde a **uma instância** da Evolution. O CRM cria a instância e obtém o QR Code pela API da Evolution, e o vendedor não precisa acessar a Evolution.
 - A **API key global da Evolution** fica só no back-end do CRM (variável de ambiente), nunca no front.
-- Mídias: o CRM baixa o arquivo (base64 ou URL) e grava no **MinIO** do CRM.
+- Mídias: o CRM baixa o arquivo (base64 ou URL) e grava no **Garage** do CRM.
 - Conferir a versão da Evolution em uso (v2.x) e travar a versão da imagem no Coolify para evitar quebras em atualizações automáticas.
 
 **CRM ↔ n8n**
@@ -332,7 +340,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 ## 12. Fluxo de desenvolvimento e deploy
 
 ### Ambientes
-- **Dev local:** `docker compose` com Postgres/PostGIS, Valkey e MinIO; API e Web rodando com hot reload.
+- **Dev local:** `docker compose` com Postgres/PostGIS, Valkey e Garage; API e Web rodando com hot reload.
 - **Produção:** Coolify na VPS.
 - *(Sem staging por ora. Mitigação: CI rigoroso, migrações revisadas e backup antes de cada deploy com migração.)*
 
@@ -379,17 +387,17 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 | 1 | Back-end | NestJS |
 | 2 | Comunicação | REST + OpenAPI |
 | 3 | Offline | Leitura offline + fila de ações |
-| 4 | Arquivos | MinIO na VPS (+ backup externo) |
+| 4 | Arquivos | Garage na VPS (+ backup externo no R2); MinIO descartado por descontinuidade |
 | 5 | Autenticação | Better Auth na API |
 | 6 | Multitenant | Banco único + RLS |
 | 7 | App nativo | Capacitor, preparado desde já |
 | 8 | Geocodificação | Híbrido (Google + cache + Nominatim) |
-| 9 | VPS | 12 GB RAM |
+| 9 | VPS | Oracle Cloud ARM64, 4 vCPU, 24 GB RAM (antes estimado em 12 GB) |
 | 10 | Repositório / deploy | GitHub + Coolify |
 | 11 | Ambientes | Dev local + Produção |
 | 12 | Observabilidade | Essencial (GlitchTip/Sentry + Uptime Kuma + logs) |
 | 13 | n8n | Instância já existente; integração por webhooks (HMAC) + API com chaves por tenant |
-| 14 | Evolution API | Instância já existente; 1 instância por vendedor, webhook para o CRM, mídias no MinIO do CRM |
+| 14 | Evolution API | Instância já existente; 1 instância por vendedor, webhook para o CRM, mídias no Garage do CRM |
 | 15 | Isolamento | Postgres e Valkey próprios do CRM; comunicação entre serviços só por API, via rede Docker interna |
 | 16 | E-mail/agenda | Gmail/Calendar API + Microsoft Graph via OAuth; BCC por IMAP; SMTP de reserva |
 | 17 | Verificação Google | Começar em modo de teste/interno + BCC; verificação completa (CASA) quando houver clientes externos com Gmail |

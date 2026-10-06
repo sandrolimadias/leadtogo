@@ -538,7 +538,7 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 
 | Tabela | Colunas principais | Uso |
 |---|---|---|
-| `arquivos` | id, tenant_id, chave_minio, nome, mime, tamanho, entidade_tipo, entidade_id, enviado_por | Anexos de qualquer entidade |
+| `arquivos` | id, tenant_id, chave_arquivo, nome, mime, tamanho, entidade_tipo, entidade_id, enviado_por | Anexos de qualquer entidade |
 | `comentarios` | id, tenant_id, entidade_tipo, entidade_id, autor_id, texto, criado_em | Comentários em atividades e oportunidades |
 | `notificacoes` | id, tenant_id, membro_id, tipo, titulo, mensagem, link, lida_em, criado_em | Central de notificações |
 | `preferencias_notificacao` | membro_id, tipo_evento, canais text[] | Usuário escolhe o que recebe |

@@ -10,7 +10,7 @@
 Deixar **toda a fundação técnica pronta e em produção** antes de programar as funcionalidades do CRM:
 
 - computador preparado (WSL2), repositório no GitHub e esteira de CI/CD funcionando;
-- VPS com banco (PostgreSQL + PostGIS), cache (Valkey), arquivos (MinIO) e backups externos;
+- VPS com banco (PostgreSQL + PostGIS), cache (Valkey), arquivos (Garage) e backups externos;
 - monorepo com API, worker e web rodando localmente e em produção;
 - **login multiempresa** funcionando, com isolamento entre empresas (RLS) testado;
 - **casca do app** (menu, barra superior, navegação do celular, temas) igual ao protótipo;
@@ -108,7 +108,7 @@ Seguir `esteira_deploy.md`, seção 9.2. Resumo:
 |---|---|
 | `crm.aledias.com.br` | Aplicação web (PWA): é o endereço que os usuários acessam |
 | `api.crm.aledias.com.br` | API |
-| `files.crm.aledias.com.br` | MinIO (só se for preciso acesso externo direto) |
+| `files.crm.aledias.com.br` | Garage (só se for preciso acesso externo direto) |
 | `t.crm.aledias.com.br` | Rastreamento de e-mail (fase futura) |
 | `status.crm.aledias.com.br` | Página do Uptime Kuma (opcional) |
 
@@ -128,22 +128,30 @@ Passos no painel de DNS de `aledias.com.br` (Registro.br, Cloudflare ou onde est
 ## E4. Preparar a VPS e o Coolify (serviços de dados) — Ale
 
 ### 4.1 Levantamento e limpeza
-- [ ] Medir o consumo atual: `docker stats --no-stream` (n8n, Evolution, Coolify).
-- [ ] **Desligar e remover o Supabase** (decisão de 06/10/2026), liberando memória.
-- [ ] Conferir disco livre (`df -h`); reservar pelo menos 40 GB para banco, MinIO e imagens.
+- [x] Medir o consumo atual. **06/10/2026:** Oracle Cloud **ARM64**, 4 vCPU, 23 GB (5 GB em uso), 167 GB livres; n8n, Evolution, 2 WordPress/MySQL e Coolify 4.x.
+- [x] Supabase: já não está rodando.
+- [x] Disco livre suficiente (167 GB).
 - [ ] Atualizar o sistema e o Coolify para a versão estável mais recente.
+
+> **Pendências registradas em 06/10/2026 (fazer antes da E13):**
+> - **Firewall da Oracle (Security List):** conferir as regras de entrada e fechar **8000, 6001, 6002, 8080 e 111**, mantendo 22, 80 e 443 (o painel é acessado por `painel.aledias.com.br`). As portas publicadas pelo Docker não passam pelo `iptables INPUT`, então quem protege é a Security List.
+> - **Backup externo (Cloudflare R2):** ainda não existe para nenhum serviço da VPS (n8n, Evolution, WordPress). Configurar o quanto antes, e obrigatoriamente antes de dados reais no CRM.
 
 ### 4.2 Rede e segurança da VPS
 - [ ] Firewall: liberar só **22 (SSH), 80, 443** e a porta do painel do Coolify (ou acesso ao painel apenas por domínio com HTTPS).
-- [ ] SSH somente por chave (desativar login por senha) e `fail2ban`.
+- [x] SSH somente por chave (já configurado: `PasswordAuthentication no`). `fail2ban` opcional.
 - [ ] Criar no Coolify uma **rede Docker compartilhada** (ex.: `leadtogo-net`) e conectar n8n e Evolution a ela (`configuracao_tecnologia.md`, 11.1).
 
 ### 4.3 Serviços de dados (no Coolify, projeto "Leadtogo", ambiente "production")
 | Serviço | Configuração |
 |---|---|
-| **leadtogo-db** | PostgreSQL com imagem `postgis/postgis:17-3.5` · senha forte · **sem porta pública** · limite de memória 3 GB · rede `leadtogo-net` |
+| **leadtogo-db** | PostgreSQL com imagem **`imresamu/postgis:17-3.5`** (a oficial não tem ARM64) · senha forte · **sem porta pública** · limite de memória 3 GB · rede `leadtogo-net` |
 | **leadtogo-cache** | Valkey 8 · senha · sem porta pública · limite 512 MB · `maxmemory-policy noeviction` (filas não podem perder dados) |
-| **leadtogo-files** | MinIO · usuário/senha fortes · bucket `leadtogo` **privado** · limite 512 MB · domínio `files.` só se necessário |
+| **leadtogo-files** | **Garage** (`dxflrs/garage:v2.1.0`) via Docker Compose · bucket `leadtogo-arquivos` **privado** · chave de acesso própria · limite 512 MB · domínio `files.crm.aledias.com.br` (porta 3900) |
+
+> **Status 06/10/2026:** ✅ `leadtogo-db` (imagem `imresamu/postgis:17-3.5`, banco `leadtogo` criado, PostGIS ativo, sem porta pública) · ✅ `leadtogo-cache` (Valkey) · ✅ `leadtogo-files` (Garage `dxflrs/garage:v2.1.0`): bucket `leadtogo-arquivos` e chave `leadtogo-app` criados; `https://files.crm.aledias.com.br` com certificado Let's Encrypt e respondendo `AccessDenied` sem credencial.
+>
+> **Lição aprendida:** em recurso *Docker Compose Empty*, o Coolify 4.x mostrou o domínio na tela mas **não gerou as regras do Traefik** (resultado: 503 e certificado provisório). Solução: declarar as regras como `labels` no próprio compose (`traefik.enable`, `routers.*.rule=Host(...)`, `entrypoints=https`, `tls.certresolver=letsencrypt`, `loadbalancer.server.port`) e deixar o campo Domains vazio. Usar o mesmo padrão em outros recursos de compose, se o problema se repetir.
 
 - [ ] No banco, criar os papéis (o Claude Code fornece o script na E7):
   - `leadtogo_owner`: dono das tabelas, usado só pelas migrações;
@@ -152,7 +160,7 @@ Passos no painel de DNS de `aledias.com.br` (Registro.br, Cloudflare ou onde est
 ### 4.4 Backups externos (antes de qualquer dado real)
 - [ ] Criar um bucket num S3 externo (Cloudflare R2 ou Backblaze B2) e cadastrá-lo no Coolify como destino S3.
 - [ ] Backup do `leadtogo-db`: **diário**, retenção 7 diários / 4 semanais / 3 mensais.
-- [ ] Replicação do bucket MinIO para o S3 externo (job `mc mirror` diário; o Claude Code prepara o script na E15).
+- [ ] Sincronização diária do bucket do Garage para o R2 com `rclone` (o Claude Code prepara o script na E15).
 - [ ] Incluir no backup externo os bancos do **n8n** e da **Evolution**, se ainda não estiverem.
 - [ ] **Teste de restauração:** restaurar o backup num banco temporário e conferir.
 
@@ -160,7 +168,7 @@ Passos no painel de DNS de `aledias.com.br` (Registro.br, Cloudflare ou onde est
 - [ ] No GitHub: criar um token *classic* com **somente `read:packages`**.
 - [ ] No Coolify: cadastrar o registro `ghcr.io` com esse token.
 
-**Pronto quando:** banco, cache e MinIO estão "healthy" no Coolify, sem portas públicas; um backup foi gerado no S3 externo e restaurado com sucesso.
+✅ **Serviços concluídos em 06/10/2026** (backups e firewall pendentes, ver acima). **Pronto quando:** banco, cache e Garage estão "healthy" no Coolify, sem portas públicas; um backup foi gerado no S3 externo e restaurado com sucesso.
 
 ---
 
@@ -183,12 +191,12 @@ Checklist:
 ## E6. Ambiente de desenvolvimento local — Claude Code
 
 **Pedido:**
-> Crie `docker/compose.dev.yml` com Postgres `postgis/postgis:17-3.5`, Valkey 8 e MinIO (com o console), volumes em `docker/.data/`, healthchecks e um script de init que cria os papéis `leadtogo_owner` e `leadtogo_app` e o bucket `leadtogo`. Atualize o `.env.example` e documente em `docs/esteira_deploy.md` (seção 9.4).
+> Crie `docker/compose.dev.yml` com Postgres `imresamu/postgis:17-3.5`, Valkey 8 e **Garage** (S3) com script de init que cria o bucket e a chave, volumes em `docker/.data/`, healthchecks e um script de init que cria os papéis `leadtogo_owner` e `leadtogo_app` e o bucket `leadtogo-arquivos`. Atualize o `.env.example` e documente em `docs/esteira_deploy.md` (seção 9.4).
 
 - [ ] `docker compose -f docker/compose.dev.yml up -d` sobe os 3 serviços saudáveis.
 - [ ] `.env` local criado a partir do `.env.example`.
 
-**Pronto quando:** `psql` conecta como `leadtogo_app`, `redis-cli ping` responde e o console do MinIO abre em `localhost:9001`.
+**Pronto quando:** `psql` conecta como `leadtogo_app`, `redis-cli ping` responde e o Garage responde em `localhost:3900` (bucket `leadtogo-arquivos` criado pelo script de init).
 
 ---
 
@@ -221,7 +229,7 @@ Checklist:
 > Leia `docs/configuracao_tecnologia.md` (seções 4, 7 e Multiempresa) e monte a base da API NestJS:
 > - configuração validada por Zod (falha ao iniciar se faltar variável);
 > - logs estruturados com Pino (`request_id`, `tenant_id`, `user_id`);
-> - `GET /health` (banco, Valkey e MinIO) retornando `version` = `APP_VERSION`;
+> - `GET /health` (banco, Valkey e Garage) retornando `version` = `APP_VERSION`;
 > - **Better Auth** com e-mail/senha, plugin de organizações (organização = tenant), 2FA TOTP, recuperação de senha, cookies seguros, e login Google preparado mas desligado;
 > - fluxo de **primeiro acesso**: cria conta + primeira empresa (tenant) + membro admin + cadastros padrão;
 > - **guard de tenant**: valida que o usuário é membro ativo da empresa ativa e abre a transação com `SET LOCAL app.tenant_id`; endpoints `/v1/consolidado/*` com `app.tenant_ids` (só leitura);
@@ -312,7 +320,7 @@ Checklist:
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
 4. [ ] Healthchecks: API `/health`, web `/`, worker (comando de saúde).
-5. [ ] Conectar os recursos às redes do banco/cache/MinIO e à `leadtogo-net`.
+5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
 7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.
 
@@ -336,9 +344,9 @@ Checklist:
 - [ ] Cabeçalhos de segurança (CSP, HSTS, X-Frame-Options) conferidos em `securityheaders.com`.
 - [ ] `/docs` (Swagger) protegido em produção.
 - [ ] Rate limit testado no login (bloqueia após várias tentativas).
-- [ ] Banco, Valkey e MinIO **sem porta pública** (verificar com `nmap` de fora).
+- [ ] Banco, Valkey e Garage **sem porta pública** (verificar com `nmap` de fora).
 - [ ] 2FA obrigatório para administradores.
-- [ ] Script de **espelhamento do MinIO** para o S3 externo agendado.
+- [ ] Script de **espelhamento do Garage** para o S3 externo agendado.
 - [ ] Revisão de dependências: `pnpm audit` limpo de alto/crítico.
 - [ ] Política de privacidade/LGPD: rascunho em `docs/lgpd.md` (dados tratados, base legal, retenção, exclusão).
 
@@ -372,7 +380,8 @@ Checklist:
 | Risco | Mitigação |
 |---|---|
 | Push direto na `main` levar bug à produção | Hooks locais + CI completo; rollback de 1 minuto pela tag `sha-` |
-| Falta de memória na VPS (12 GB compartilhados) | Remover o Supabase; limites por container; build fora da VPS (GHCR); medir na E4 |
+| Falta de memória na VPS (24 GB compartilhados) | Limites por container; build fora da VPS (GHCR); medido na E4 (~5 GB em uso) |
+| VPS ARM64 e imagens só amd64 | Conferir `docker manifest inspect` antes de usar qualquer imagem; build do Leadtogo para `linux/arm64` |
 | Erro de isolamento entre empresas | RLS forçado, papel sem bypass e teste de isolamento obrigatório no CI |
 | Perda de dados | Backup diário externo + teste de restauração na E4 e na E16 |
 | Migração quebrar a produção | Regra "expandir e depois contrair"; pré-deploy aborta se falhar; backup antes de mudança destrutiva |

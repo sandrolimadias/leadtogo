@@ -60,7 +60,7 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 ├── docker/
 │   ├── api.Dockerfile
 │   ├── web.Dockerfile
-│   └── compose.dev.yml          → Postgres+PostGIS, Valkey e MinIO para desenvolvimento
+│   └── compose.dev.yml          → Postgres+PostGIS, Valkey e Garage para desenvolvimento
 ├── .github/
 │   ├── workflows/ci-cd.yml      → esteira principal
 │   └── dependabot.yml           → atualização semanal de dependências
@@ -138,7 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgis/postgis:17-3.5
+        image: imresamu/postgis:17-3.5
         env: { POSTGRES_PASSWORD: test, POSTGRES_DB: leadtogo_test }
         ports: ['5432:5432']
         options: --health-cmd pg_isready --health-interval 5s --health-retries 10
@@ -162,12 +162,14 @@ jobs:
     strategy: { matrix: { app: [api, web] } }
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3   # emula ARM64 no runner amd64
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
       - uses: docker/build-push-action@v6
         with:
           file: docker/${{ matrix.app }}.Dockerfile
+          platforms: linux/arm64            # a VPS é ARM64 (Oracle Ampere)
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/leadtogo-${{ matrix.app }}:sha-${{ github.sha }}
@@ -209,6 +211,8 @@ jobs:
 
 ## 6. Imagens Docker
 
+> **A VPS é ARM64.** As imagens do Leadtogo são publicadas para `linux/arm64`. No GitHub Actions, o build usa QEMU (emulação), que é mais lento; se o tempo incomodar, trocar o job de build para um runner ARM (`ubuntu-24.04-arm`), se o plano do GitHub permitir. Localmente (WSL, amd64), o Docker builda para a arquitetura da máquina.
+
 | Imagem | Base | Conteúdo | Usada por |
 |---|---|---|---|
 | `leadtogo-api` | `node:<LTS>-alpine` (multi-stage) | API NestJS compilada + migrações | **API** (`node dist/main.js`) e **worker** (`node dist/worker.js`) |
@@ -229,12 +233,12 @@ jobs:
 | leadtogo-api | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` | `api.crm.aledias.com.br` |
 | leadtogo-worker | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` (comando: worker) | — (sem domínio) |
 | leadtogo-web | Docker Image | `ghcr.io/<usuario>/leadtogo-web:latest` | `crm.aledias.com.br` |
-| leadtogo-db | Database (PostgreSQL) | `postgis/postgis` | — (só rede interna) |
+| leadtogo-db | Database (PostgreSQL) | `imresamu/postgis:17-3.5` (ARM64) | — (só rede interna) |
 | leadtogo-cache | Database (Redis/Valkey) | `valkey/valkey` | — |
-| leadtogo-files | Service (MinIO) | `minio/minio` | `files.crm.aledias.com.br` (se necessário) |
+| leadtogo-files | Docker Compose (Garage) | `dxflrs/garage:v2.1.0` | `files.crm.aledias.com.br` (API S3, porta 3900) |
 
 - **Credencial do GHCR no Coolify:** registrar `ghcr.io` com um token do GitHub com permissão **somente `read:packages`**, para baixar as imagens privadas.
-- **Variáveis de ambiente** de produção (banco, Valkey, MinIO, chaves do Better Auth, Evolution, n8n, Sentry) ficam **só no Coolify**. O repositório tem apenas o `.env.example`.
+- **Variáveis de ambiente** de produção (banco, Valkey, Garage, chaves do Better Auth, Evolution, n8n, Sentry) ficam **só no Coolify**. O repositório tem apenas o `.env.example`.
 - **Limites de memória** definidos por container (a VPS é compartilhada com n8n e Evolution).
 - **Healthchecks** em todos os recursos; o Coolify só troca a versão quando a nova responde saudável (sem tempo fora do ar).
 
@@ -258,7 +262,7 @@ jobs:
 | Bug no código, banco intacto | **Opção rápida:** no Coolify, trocar a tag da imagem de `latest` para `sha-<commit anterior>` e fazer redeploy (cerca de 1 minuto). **Opção definitiva:** `git revert` do commit + push, e a esteira refaz tudo |
 | Deploy não ficou saudável | Automático: o Coolify mantém a versão anterior no ar |
 | Migração com problema | Corrigir com **uma nova migração** (nunca editar migração já aplicada); em último caso, restaurar o backup |
-| Desastre na VPS | Restaurar o backup externo do banco + MinIO numa VPS nova e apontar o DNS (procedimento em `docs/runbook.md`, a criar) |
+| Desastre na VPS | Restaurar o backup externo do banco + Garage numa VPS nova e apontar o DNS (procedimento em `docs/runbook.md`, a criar) |
 
 ---
 
@@ -304,7 +308,7 @@ cd leadtogo && cp .env.example .env    # preencher os valores de desenvolvimento
 ```
 
 ### 9.4 Rotina diária
-- `docker compose -f docker/compose.dev.yml up -d`: Postgres+PostGIS, Valkey e MinIO (com o painel do MinIO)
+- `docker compose -f docker/compose.dev.yml up -d`: Postgres+PostGIS, Valkey e Garage (S3)
 - `pnpm install` · `pnpm db:migrate` · `pnpm db:seed` (tenant de exemplo, tags e funil padrão, CNAEs, municípios)
 - `pnpm dev`: API, worker e web com recarga automática
 - `.env` nunca vai para o Git; novas variáveis entram no `.env.example`.
@@ -362,7 +366,7 @@ O `CLAUDE.md` na raiz do repositório orienta o Claude Code em toda sessão. Res
 2.1 [ ] Inicializar o Git e fazer o primeiro push (a partir de `C:\CRM ALESSANDRO`).
 2.2 [ ] Preparar o WSL2 (seção 9.2) e clonar o repositório em `~/projetos/leadtogo` (seção 9.3).
 3. [ ] Criar o esqueleto do monorepo, os Dockerfiles, o `compose.dev.yml` e o `ci-cd.yml`.
-4. [ ] No Coolify: criar banco (PostGIS), Valkey e MinIO; registrar o GHCR com token `read:packages`.
+4. [ ] No Coolify: criar banco (PostGIS), Valkey e Garage; registrar o GHCR com token `read:packages`.
 5. [ ] No Coolify: criar os recursos `api`, `worker` e `web` (Docker Image), com variáveis, domínios, healthchecks, limites de memória e comando de pré-deploy (migrações).
 6. [ ] Gerar o token da API do Coolify (só deploy) e cadastrar os secrets no GitHub.
 7. [ ] Configurar o backup automático do banco para o S3 externo e testar uma restauração.

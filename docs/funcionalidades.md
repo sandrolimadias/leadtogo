@@ -233,7 +233,7 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 | Resultado | Texto ao concluir (o que aconteceu) |
 | Localização | Fase futura: check-in com GPS na visita |
 | Origem | Manual · WhatsApp · Integração/API (preenchido pelo sistema) |
-| Anexos | Arquivos e fotos (MinIO); mídias do WhatsApp no futuro |
+| Anexos | Arquivos e fotos (Garage); mídias do WhatsApp no futuro |
 
 ### Fluxo
 1. **Agendar** → entra na agenda do responsável.
@@ -432,7 +432,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 | Responsável | Por padrão quem criou; o gestor pode atribuir a outro |
 | **Etiquetas** | Cadastráveis, com **cor customizável** (pessoais ou da equipe) |
 | Vínculos (opcionais) | Empresa, contato e/ou oportunidade |
-| Anexos e comentários | Arquivos (MinIO) e comentários (útil em quadros de equipe) |
+| Anexos e comentários | Arquivos (Garage) e comentários (útil em quadros de equipe) |
 | Recorrência | Diária, semanal, mensal (ex.: "Relatório semanal toda sexta") |
 | Lembrete | Notificação antes do prazo |
 
@@ -527,7 +527,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 **Registro no CRM**
 - As mensagens são agrupadas em uma **atividade do tipo WhatsApp por conversa/dia** (não uma atividade por mensagem).
 - A atividade mostra a conversa completa em **formato de chat** na linha do tempo da empresa, do contato e da oportunidade (se vinculada).
-- **Mídias** (imagens, áudios, documentos) são salvas no **MinIO**, ligadas à atividade.
+- **Mídias** (imagens, áudios, documentos) são salvas no **Garage**, ligadas à atividade.
 - Conta como **Contato**: atualiza *último contato em* e aplica a tag *Contactada*. Configurável: contar só quando o vendedor envia mensagem, ou também quando só recebe.
 - O usuário pode vincular a atividade a uma oportunidade depois.
 
@@ -594,7 +594,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 **Regras do registro**
 - Só são registrados e-mails trocados com **endereços de contatos cadastrados**. Opcionalmente, também com o **domínio da empresa** (ex.: qualquer `@cliente.com.br`).
 - Cada **conversa (thread)** vira uma **atividade do tipo E-mail**, com as mensagens em sequência, ligada à empresa/contato (e à oportunidade, se o vendedor vincular).
-- Anexos: opção de salvar no CRM (MinIO) ou só listar o nome.
+- Anexos: opção de salvar no CRM (Garage) ou só listar o nome.
 - E-mail **enviado** pelo vendedor conta como **Contato** (atualiza *último contato em* e a tag *Contactada*).
 - **Privacidade:**
   - lista de domínios e endereços **ignorados** (ex.: pessoais e internos);
@@ -645,7 +645,7 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 - Atividades com campo **Origem** (Manual · WhatsApp · Integração/API) e **ID externo** (evita duplicidade na importação).
 - **Registro interno de eventos** (toda alteração relevante gera um evento), que depois alimenta os webhooks.
 - Tela **Configurações → Integrações** prevista no menu (chaves de API, webhooks, conexões WhatsApp, logs).
-- Anexos de atividades já suportados (MinIO), usados para as mídias do WhatsApp e anexos de e-mail.
+- Anexos de atividades já suportados (Garage), usados para as mídias do WhatsApp e anexos de e-mail.
 - E-mails de contatos normalizados (minúsculas) e **domínio** da empresa cadastrado, para identificar e-mails automaticamente.
 - Atividades com **participantes** (vários contatos) e **ID externo** também para e-mail (thread) e eventos de agenda.
 - Estrutura de **contas conectadas** por usuário (WhatsApp hoje; Google/Microsoft depois).

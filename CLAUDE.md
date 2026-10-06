@@ -20,7 +20,7 @@ Se o código precisar divergir de um documento, **atualize o documento no mesmo 
 
 ## Stack
 - Monorepo pnpm + Turborepo: `apps/api` (NestJS), `apps/web` (React + Vite PWA), `packages/shared` (Zod), `packages/db` (Drizzle), `packages/api-client` (gerado do OpenAPI).
-- PostgreSQL + PostGIS, Valkey (BullMQ), MinIO. Autenticação com Better Auth.
+- PostgreSQL + PostGIS, Valkey (BullMQ), Garage (S3; acesso via `@aws-sdk/client-s3` com `forcePathStyle`). Autenticação com Better Auth.
 - UI: Tailwind v4 + shadcn/ui com os tokens de `docs/design-system/tokens.css` e `tailwind-theme.css`. Não invente cores, fontes ou espaçamentos fora dos tokens.
 - TypeScript estrito em tudo. Validação com Zod compartilhado entre front e back.
 
@@ -50,5 +50,5 @@ Os commits vão direto para a `main`, que faz deploy em produção. **Não faça
 - Scripts do `package.json` devem funcionar em Linux (CI e servidor) sem depender do Windows.
 
 ## Comandos
-- `docker compose -f docker/compose.dev.yml up -d`: banco, cache e MinIO locais
+- `docker compose -f docker/compose.dev.yml up -d`: banco, cache e Garage locais
 - `pnpm dev` · `pnpm test` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm db:generate`
