@@ -16,6 +16,8 @@ for (const [destino, origem] of Object.entries(troca)) {
   if (valor) process.env[destino] = valor
 }
 process.env['NODE_ENV'] = 'test'
+// Testes não poluem a saída; os que verificam logs passam a configuração explícita
+process.env['LOG_LEVEL'] ??= 'silent'
 
 // Valores padrão só para os testes (o CI não tem .env): endereços locais e chaves descartáveis
 const padroes: Record<string, string> = {
