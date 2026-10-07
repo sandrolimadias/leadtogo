@@ -129,3 +129,13 @@ export async function administradorComSessao(rotulo: string): Promise<{
   await api.post('/v1/sessao/empresa-ativa', { data: { empresaId } })
   return { conta, api, chave }
 }
+
+/**
+ * Código TOTP para usar AGORA: se a janela de 30 s está para virar, espera a próxima (senão o código
+ * pode vencer entre digitar e o servidor conferir, e o teste fica intermitente).
+ */
+export async function codigoValido(chave: string): Promise<string> {
+  const resto = Date.now() % 30_000
+  if (resto > 24_000) await new Promise((r) => setTimeout(r, 30_000 - resto + 500))
+  return codigoTotp(chave)
+}

@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test'
 
 import {
   administradorComSessao,
-  codigoTotp,
+  codigoValido,
   criarAdministrador,
   emailUnico,
   limparLimites,
@@ -52,7 +52,7 @@ test.describe('Login e 2FA', () => {
     await digitar(page, '000000')
     await page.getByRole('button', { name: 'Ativar verificação' }).click()
     await expect(page.getByText('Código incorreto ou vencido.')).toBeVisible()
-    await digitar(page, codigoTotp(chave))
+    await digitar(page, await codigoValido(chave))
     await page.getByRole('button', { name: 'Ativar verificação' }).click()
 
     await expect(
@@ -73,7 +73,7 @@ test.describe('Login e 2FA', () => {
     await page.context().clearCookies({ name: /two_factor|trust/ })
     await entrar(page, conta.email, conta.senha)
     await expect(page).toHaveURL(/\/verificacao/)
-    await digitar(page, codigoTotp(chave, Date.now() + 30_000))
+    await digitar(page, await codigoValido(chave))
     await page.getByLabel('Confiar neste aparelho por 30 dias').uncheck()
     await page.getByRole('button', { name: 'Verificar' }).click()
     await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
@@ -248,7 +248,7 @@ test.describe('2FA para todos: política da empresa e Meu perfil → Segurança'
     await page.getByLabel('Senha', { exact: true }).fill(SENHA)
     await page.getByRole('button', { name: 'Continuar' }).click()
     const chave = (await page.getByTestId('chave-manual').textContent())?.trim() ?? ''
-    await digitar(page, codigoTotp(chave))
+    await digitar(page, await codigoValido(chave))
     await page.getByRole('button', { name: 'Ativar verificação' }).click()
     await page.getByLabel('Guardei meus códigos de recuperação').check()
     await page.getByRole('button', { name: 'Concluir' }).click()
@@ -261,7 +261,7 @@ test.describe('2FA para todos: política da empresa e Meu perfil → Segurança'
     await expect(page.getByText(/obrigatória para você/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Desativar verificação' })).toHaveCount(0)
     const bloqueado = await page.request.post('/v1/auth/two-factor/disable', {
-      data: { password: SENHA, code: codigoTotp(chave) },
+      data: { password: SENHA, code: await codigoValido(chave) },
       headers: { Origin: URL_WEB },
     })
     expect(bloqueado.status()).toBe(403)
@@ -277,7 +277,7 @@ test.describe('2FA para todos: política da empresa e Meu perfil → Segurança'
     await page.reload()
     await expect(page.getByRole('button', { name: 'Desativar verificação' })).toBeVisible()
     await page.locator('#desativar-senha').fill(SENHA)
-    await digitar(page, codigoTotp(chave, Date.now() + 30_000))
+    await digitar(page, await codigoValido(chave))
     await page.getByRole('button', { name: 'Desativar verificação' }).click()
     await expect(page.getByText('Desativada', { exact: true })).toBeVisible()
     await expect(

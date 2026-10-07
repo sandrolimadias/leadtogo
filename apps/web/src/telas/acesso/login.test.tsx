@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -158,6 +158,35 @@ describe('Verificação em duas etapas no login', () => {
     await userEvent.paste('654321')
     expect(screen.getByLabelText('Dígito 1')).toHaveValue('6')
     expect(screen.getByLabelText('Dígito 6')).toHaveValue('1')
+  })
+
+  it('o código preenchido de uma vez (app de senhas, SMS) cai nos seis campos', async () => {
+    abrir()
+    fireEvent.change(await screen.findByLabelText('Dígito 1'), { target: { value: '482913' } })
+    expect(screen.getByLabelText('Dígito 1')).toHaveValue('4')
+    expect(screen.getByLabelText('Dígito 6')).toHaveValue('3')
+  })
+
+  it('digitar por cima de um código errado troca os seis dígitos, sem perder nenhum', async () => {
+    abrir()
+    await digitar('000000')
+    await userEvent.click(screen.getByLabelText('Dígito 1'))
+    await userEvent.keyboard('123456')
+    const lidos = [1, 2, 3, 4, 5, 6].map(
+      (n) => screen.getByLabelText<HTMLInputElement>(`Dígito ${n}`).value,
+    )
+    expect(lidos.join('')).toBe('123456')
+  })
+
+  it('digitar o mesmo dígito que já estava no campo também avança o foco (código com zeros)', async () => {
+    abrir()
+    await digitar('000000')
+    await userEvent.click(screen.getByLabelText('Dígito 1'))
+    await userEvent.keyboard('105000')
+    const lidos = [1, 2, 3, 4, 5, 6].map(
+      (n) => screen.getByLabelText<HTMLInputElement>(`Dígito ${n}`).value,
+    )
+    expect(lidos.join('')).toBe('105000')
   })
 
   it('código incorreto mostra o erro ligado ao grupo de dígitos', async () => {

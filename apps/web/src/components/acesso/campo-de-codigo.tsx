@@ -1,5 +1,5 @@
 import { CircleAlert } from 'lucide-react'
-import { type ClipboardEvent, type KeyboardEvent, useRef } from 'react'
+import { type ClipboardEvent, type KeyboardEvent, useLayoutEffect, useRef } from 'react'
 
 import { cn } from '@/lib/cn'
 
@@ -22,17 +22,31 @@ export function CampoDeCodigo({
   autoFocus?: boolean
 }) {
   const campos = useRef<(HTMLInputElement | null)[]>([])
+  // O valor mais recente, atualizado na hora: duas teclas seguidas, antes de o React redesenhar,
+  // partem do valor certo (senão a segunda apagaria o dígito da primeira)
+  const atual = useRef(valor)
+  useLayoutEffect(() => {
+    atual.current = valor
+  }, [valor])
   const digitos = Array.from({ length: DIGITOS }, (_, i) => valor[i] ?? '')
   const focar = (i: number) => campos.current[Math.max(0, Math.min(DIGITOS - 1, i))]?.focus()
 
   const definir = (i: number, d: string) => {
-    const novos = [...digitos]
+    const novos = Array.from({ length: DIGITOS }, (_, k) => atual.current[k] ?? '')
     novos[i] = d
-    onChange(novos.join('').slice(0, DIGITOS))
+    atual.current = novos.join('').slice(0, DIGITOS)
+    onChange(atual.current)
   }
 
   const aoTeclar = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !digitos[i] && i > 0) {
+    if (/^\d$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // Digitar o MESMO dígito que já está no campo não muda o valor: o React não dispara onChange e o
+      // foco não andaria. Por isso o dígito é tratado aqui, na tecla (o onChange cobre colar e preencher
+      // automático).
+      e.preventDefault()
+      definir(i, e.key)
+      focar(i + 1)
+    } else if (e.key === 'Backspace' && !digitos[i] && i > 0) {
       e.preventDefault()
       definir(i - 1, '')
       focar(i - 1)
@@ -44,6 +58,7 @@ export function CampoDeCodigo({
     const colado = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, DIGITOS)
     if (!colado) return
     e.preventDefault()
+    atual.current = colado
     onChange(colado)
     focar(colado.length)
   }
@@ -60,13 +75,22 @@ export function CampoDeCodigo({
             value={d}
             inputMode="numeric"
             autoComplete={i === 0 ? 'one-time-code' : 'off'}
-            maxLength={1}
             autoFocus={autoFocus && i === 0}
             aria-label={`Dígito ${i + 1}`}
             aria-invalid={erro ? true : undefined}
             aria-describedby={erro ? 'codigo-erro' : undefined}
             onChange={(e) => {
-              const novo = e.target.value.replace(/\D/g, '').slice(-1)
+              const digitado = e.target.value.replace(/\D/g, '')
+              if (digitado.length > 2) {
+                // o app de senhas ou o SMS preencheu o código inteiro de uma vez
+                const todo = digitado.slice(0, DIGITOS)
+                atual.current = todo
+                onChange(todo)
+                focar(todo.length)
+                return
+              }
+              // sem maxLength: o campo já pode ter um dígito; vale o último digitado (a tecla nova)
+              const novo = digitado.slice(-1)
               definir(i, novo)
               if (novo) focar(i + 1)
             }}
