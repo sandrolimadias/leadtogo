@@ -106,8 +106,8 @@ Seguir `esteira_deploy.md`, seção 9.2. Resumo:
 
 | Endereço | Uso |
 |---|---|
-| `crm.aledias.com.br` | Aplicação web (PWA): é o endereço que os usuários acessam |
-| `api.crm.aledias.com.br` | API |
+| `crm.aledias.com.br` | Aplicação web (PWA) **e** a API em `/v1` (o Traefik manda `/v1` para a API e o resto para o web): é o único endereço que os usuários acessam |
+| `api.crm.aledias.com.br` | API para integrações servidor a servidor (webhooks, n8n, Evolution) e health check da esteira |
 | `files.crm.aledias.com.br` | Garage (só se for preciso acesso externo direto) |
 | `t.crm.aledias.com.br` | Rastreamento de e-mail (fase futura) |
 | `status.crm.aledias.com.br` | Página do Uptime Kuma (opcional) |
@@ -119,7 +119,7 @@ Passos no painel de DNS de `aledias.com.br` (Registro.br, Cloudflare ou onde est
 - [ ] Se o DNS estiver na Cloudflare: proxy **desligado** (nuvem cinza) até os certificados do Coolify serem emitidos; depois pode ligar com SSL "Full (strict)".
 - [ ] Se existir um registro **CAA** no domínio, ele precisa permitir `letsencrypt.org`.
 
-> **Cookies de login:** o app e a API ficam no mesmo site (`aledias.com.br`), então o login por cookie funciona sem truques. A API configura o cookie para o domínio `crm.aledias.com.br` e o CORS libera só `https://crm.aledias.com.br`.
+> **Cookies de login:** com o domínio único, o cookie de sessão é só do host `crm.aledias.com.br` (sem `Domain`) e o front chama a API na mesma origem: não há CORS nem cookie entre subdomínios.
 
 **Pronto quando:** `nslookup crm.aledias.com.br` e `nslookup api.crm.aledias.com.br` respondem com o IP da VPS.
 
@@ -277,7 +277,7 @@ Checklist:
 - **Better Auth** montado por `toNodeHandler` em `/v1/auth/*`, com guard próprio; o parser de corpo do Nest não pode consumir o corpo dessa rota. Senha com scrypt. Verificação de e-mail obrigatória em produção (flag). Cliente Valkey: `ioredis` 5.x.
 - **2FA obrigatório para admin:** o guard deixa passar `GET /v1/me`, as rotas de ativação do 2FA e o logout; as demais respondem `403 2fa_obrigatorio`.
 - **Consolidado** (`/v1/consolidado/*`): só para quem está em `conta_administradores` (dono ou administrador); `app.tenant_ids` recebe **todas as empresas da conta**; transação somente leitura.
-- **Cookies e CORS** para `crm.aledias.com.br` (front) e `api.crm.aledias.com.br` (API): ver `configuracao_tecnologia.md`, seção 7.
+- **Domínio único** (`crm.aledias.com.br`: `/v1` para a API, resto para o web), cookie só do host e sem CORS para o front: ver `configuracao_tecnologia.md`, seção 7.
 - `GET /v1/membros` (leitura) entra para provar o isolamento por HTTP e servir à tela de equipe.
 - Mudança de rumo (cache da sessão, UUID v7 do Better Auth): avisar o Ale **antes** de contornar.
 
@@ -445,18 +445,18 @@ Diferenças em relação ao protótipo `Acesso.dc.html` (o documento e a API val
 
 | Recurso | Imagem | Comando | Domínio | Limite de memória |
 |---|---|---|---|---|
-| leadtogo-api | `ghcr.io/<usuario>/leadtogo-api:latest` | padrão (`node dist/main.js`) · **pré-deploy:** `node dist/migrate.js` | `api.crm.aledias.com.br` | 768 MB |
+| leadtogo-api | `ghcr.io/<usuario>/leadtogo-api:latest` | padrão (`node dist/main.js`) · **pré-deploy:** `node dist/migrate.js` | `crm.aledias.com.br` com **prefixo `/v1`** (e `api.crm.aledias.com.br` para integrações) | 768 MB |
 | leadtogo-worker | `ghcr.io/<usuario>/leadtogo-api:latest` | `node dist/worker.js` | — | 512 MB |
 | leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `crm.aledias.com.br` | 128 MB |
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
-3a. [ ] **A decidir:** domínio único. Em produção, o Traefik roteia `crm.aledias.com.br/v1` (que inclui o Better Auth em `/v1/auth/*`) para a API, e o front fala com a API no mesmo domínio: sem CORS e sem cookie entre subdomínios. O `api.crm.aledias.com.br` continua para as integrações (n8n, webhooks). Se adotado, o front usa caminho relativo (como o proxy do desenvolvimento) e `APP_URL`/`API_URL`/cookies são ajustados.
+3a. [ ] **Domínio único (decidido em 07/10/2026):** o Traefik roteia `crm.aledias.com.br/v1` (que inclui o Better Auth em `/v1/auth/*`) para a API e o resto para o web, **sem remover o prefixo**. No Coolify, o `leadtogo-api` recebe os domínios `https://crm.aledias.com.br/v1` e `https://api.crm.aledias.com.br`, e o `leadtogo-web` recebe `https://crm.aledias.com.br` (o Traefik escolhe o prefixo mais longo). A imagem do web é a mesma em todo ambiente (caminhos relativos, CSP `connect-src 'self'`); a API usa `APP_URL=API_URL=https://crm.aledias.com.br`. O `api.crm.aledias.com.br` fica para integrações servidor a servidor (n8n, webhooks, Evolution) e para o health check da esteira. O `compose.imagens.yml` reproduz esse roteamento com um Caddy de borda.
 4. [ ] Healthchecks: API `/health`, web `/`, worker (`node dist/saude-worker.js`). **Stop timeout do worker: 45 s** (esteira_deploy.md, 7.1.1).
 5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
 7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.
 8. [ ] **Cadastrar `TOKEN_ENCRYPTION_KEY` no Coolify** (API e worker; `openssl rand -base64 32`; sem ela a API não sobe em produção). **Escolher o provedor de SMTP de produção** (recuperação de senha, verificação de e-mail e convites) e cadastrar as variáveis `SMTP_*` no Coolify. Até lá, `VERIFICACAO_EMAIL` fica desligada em produção (nenhum e-mail sai).
-9. [ ] **Teste de login real com os dois domínios** (`https://crm.aledias.com.br` → `https://api.crm.aledias.com.br`): cookie de sessão emitido pela API (`HttpOnly`, `Secure`, `SameSite=Lax`), CORS com credenciais só para o front, login, `GET /v1/me` e logout pelo navegador.
+9. [ ] **Teste de login real no domínio único** (`https://crm.aledias.com.br`, com `/v1` roteado para a API): cookie de sessão do host `crm.aledias.com.br` (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`), login, `GET /v1/me`, troca de empresa e logout pelo navegador; conferir também que `https://api.crm.aledias.com.br/health` responde para as integrações.
 10. [ ] **Criar a primeira conta** pelo terminal do Coolify (`PRIMEIRO_ACESSO` fica `fechado`): `node dist/criar-conta.js` (ver `esteira_deploy.md`).
 
 **Pronto quando:** o push passa por toda a esteira, `https://api.crm.aledias.com.br/health` mostra o commit atual e `https://crm.aledias.com.br` abre o login com certificado válido.

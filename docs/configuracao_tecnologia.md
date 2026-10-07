@@ -7,7 +7,7 @@
 > v1.3: multiempresa (conta dona de vários tenants, empresa ativa na sessão, leitura consolidada via RLS)
 > v1.6: arquivos no **Garage** (S3) no lugar do MinIO, descontinuado
 > v1.5: servidor real levantado: Oracle Cloud **ARM64 (aarch64)**, 4 vCPU, 24 GB; imagens multi-arquitetura; PostGIS em imagem com suporte ARM
-> v1.4: domínios definidos: `crm.aledias.com.br` (app) e `api.crm.aledias.com.br` (API)
+> v1.4: domínios definidos: `crm.aledias.com.br` (app e `/v1`, **domínio único**) e `api.crm.aledias.com.br` (integrações servidor a servidor)
 
 ---
 
@@ -148,7 +148,7 @@ crm/
 - **2FA por política da empresa:** o Better Auth não impõe isso sozinho; o guard da API aplica a política (`tenant_configuracoes.dois_fatores_exigido`) da **empresa ativa** ao papel do usuário nela, e sempre aos administradores de conta (dono/administrador). Sem 2FA onde é exigido, responde `403 2fa_obrigatorio`, deixando passar só `GET /v1/me`, a troca de empresa (`POST /v1/sessao/empresa-ativa`: a regra vale na empresa que ficar ativa), as rotas de ativação do 2FA e o logout. Um gancho do Better Auth barra `POST /v1/auth/two-factor/disable` (403 `DOIS_FATORES_OBRIGATORIO`) enquanto alguma regra exigir o 2FA daquele usuário e exige a senha **e** um código atual (`code`) para desativar. `PATCH /v1/configuracoes/seguranca` (só admin) altera a política.
 - Senhas com **scrypt** (padrão do Better Auth, sem dependência nativa na imagem ARM64). Verificação de e-mail obrigatória para entrar **em produção** (flag).
 - O handler do Better Auth é montado direto (`toNodeHandler`) em `/v1/auth/*`, antes do parser de corpo do Nest; a API tem guard próprio (sessão, tenant e 2FA).
-- **Domínios e cookies:** o front fica em `crm.aledias.com.br` e a API em `api.crm.aledias.com.br` (mesmo *site*). O cookie de sessão é emitido pela API (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`, só no host da API); o front chama a API com `credentials: 'include'`, e o CORS libera só `https://crm.aledias.com.br` com credenciais. Em desenvolvimento (`localhost:5173` e `localhost:3000`) o cookie vale sem `Secure`.
+- **Domínio único e cookies:** o usuário só fala com `crm.aledias.com.br`. O **Traefik** (Coolify) roteia `crm.aledias.com.br/v1/*` (inclui o Better Auth em `/v1/auth/*`) para a API e o resto para o web. O front usa **caminhos relativos** (`/v1/...`), como o proxy do Vite em desenvolvimento; por isso a mesma imagem do web serve para qualquer ambiente, a CSP do web é `connect-src 'self'`, o cookie de sessão (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`) vale **só para o host `crm.aledias.com.br`** e o CORS é desnecessário para o front (mesma origem; o CORS do código fica restrito ao `APP_URL` e não é usado). `APP_URL` e `API_URL` são ambos `https://crm.aledias.com.br` (os links dos e-mails de senha e de verificação passam por ele). O `api.crm.aledias.com.br` fica **só para integrações servidor a servidor** (webhooks, n8n, Evolution).
 - Sessões em cookie `HttpOnly`, `Secure`, `SameSite=Lax`; no app Capacitor, token seguro no armazenamento nativo.
 - Recuperação de senha e verificação de e-mail.
 
@@ -250,7 +250,7 @@ Total estimado do Leadtogo: **~3–5 GB**. Medição de 06/10/2026: a VPS usa ~5
 - Definir **limites de memória** por container no Coolify, para que um serviço não derrube os outros.
 - O **OSRM** (fase de roteirização) provavelmente exigirá **upgrade da VPS ou um servidor separado**.
 
-- **Domínios:** `crm.aledias.com.br` (front), `api.crm.aledias.com.br` (API), `files.crm.aledias.com.br` (Garage, se necessário), `t.crm.aledias.com.br` (rastreamento de e-mail).
+- **Domínios:** `crm.aledias.com.br` (front e `/v1`), `api.crm.aledias.com.br` (integrações servidor a servidor e health check da esteira), `files.crm.aledias.com.br` (Garage, se necessário), `t.crm.aledias.com.br` (rastreamento de e-mail).
 - Containers de banco, Valkey e Garage **sem porta pública**.
 - Healthchecks configurados em todos os serviços.
 - Ajuste do Postgres conforme a RAM (`shared_buffers` ≈ 25% da RAM alocada etc.).
@@ -415,7 +415,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 | 19 | Tempo real e push | SSE/Socket.io + Web Push (PWA) + FCM/APNs (Capacitor) |
 | 20 | Multiempresa | Conta → tenants → membros; empresa ativa na sessão; consolidado só leitura via `app.tenant_ids`, só para administradores da conta |
 | 21 | Organizações do Better Auth | **Não usadas**: o Better Auth só faz identidade; empresas, membros e convites são nossos, sob RLS |
-| 21 | Domínios | App em `crm.aledias.com.br`, API em `api.crm.aledias.com.br` (subdomínios via registro curinga `*.crm`) |
+| 21 | Domínios | Domínio único `crm.aledias.com.br` (Traefik: `/v1` → API, resto → web); `api.crm.aledias.com.br` só para integrações (subdomínios via registro curinga `*.crm`) |
 
 ## 16. Próximos passos
 

@@ -245,7 +245,7 @@ jobs:
 ### 7.1 Recursos
 | Recurso | Tipo no Coolify | Imagem / origem | Domínio |
 |---|---|---|---|
-| leadtogo-api | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` | `api.crm.aledias.com.br` |
+| leadtogo-api | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` | `crm.aledias.com.br/v1` (usuários) e `api.crm.aledias.com.br` (integrações servidor a servidor) |
 | leadtogo-worker | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` (comando: worker) | — (sem domínio) |
 | leadtogo-web | Docker Image | `ghcr.io/<usuario>/leadtogo-web:latest` | `crm.aledias.com.br` |
 | leadtogo-db | Database (PostgreSQL) | `imresamu/postgis:17-3.5` (ARM64) | — (só rede interna) |
