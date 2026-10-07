@@ -16,8 +16,8 @@ describe('catálogo de componentes', () => {
       expect(arquivos.length).toBeGreaterThan(0)
       for (const a of arquivos) {
         const js = readFileSync(join(saida, 'assets', a), 'utf8')
-        expect(js, a).not.toContain('Catálogo de componentes')
-        expect(js, a).not.toContain('Toast de sucesso')
+        expect(js, a).not.toContain('Leadtogo · Catálogo')
+        expect(js, a).not.toContain('pendente (etapa')
       }
     } finally {
       rmSync(saida, { recursive: true, force: true })

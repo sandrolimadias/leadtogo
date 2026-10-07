@@ -123,3 +123,18 @@ export function Avatar({
     </span>
   )
 }
+
+/** Equipe em uma linha: os avatares se sobrepõem, com um anel da cor da superfície entre eles. */
+export function AvatarGroup({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <span
+      role="group"
+      className={cn(
+        'inline-flex [&>*]:shadow-[0_0_0_2px_var(--surface)] [&>*+*]:-ml-1.5',
+        className,
+      )}
+    >
+      {children}
+    </span>
+  )
+}

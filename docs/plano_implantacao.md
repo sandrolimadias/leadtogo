@@ -308,6 +308,29 @@ Checklist:
 
 **Pronto quando:** o fluxo completo funciona localmente no desktop e no celular (pelo modo de dispositivo do navegador).
 
+### E9: divisão em sub-etapas e componentes do design system
+
+O E9 é entregue em partes: **E9a** componentes base e catálogo (`/dev/catalogo`); **E9b** camada de autenticação e telas de acesso; **E9c** casca do app (navegação, seletor de empresa, barra superior, celular).
+
+**Catálogo espelhado.** `apps/web/src/dev/catalogo.tsx` tem as mesmas seções, na mesma ordem e com os mesmos exemplos de `docs/design-system/catalogo.html`. Os componentes React seguem `components/bundle.css` (dimensões, bordas, estados) e `index.d.ts` (props); o Radix só entrega comportamento e acessibilidade. A conferência é automática: `pnpm --filter @leadtogo/web comparar:catalogos` captura cada seção dos dois catálogos a 1440 px nos temas claro e escuro (e `DENSIDADE=Compacta|Toque`) com o Playwright, grava em `~/projetos/leadtogo-capturas/catalogo/` e lista os pixels diferentes. Resultado: todas as seções implementadas ficam com 0 pixel de diferença, salvo a dica (Tooltip), que no React é desenhada num portal e por isso não é cortada pela borda do quadro (1 coluna de pixels).
+
+**Componentes que ficam para as telas de negócio** (aparecem no catálogo como "pendente (etapa …)"; recriar a partir de `bundle.css`/`bundle.js` e conferir com `comparar:catalogos`):
+
+| Componente | Etapa | Observação |
+|---|---|---|
+| `StatTile` (com `Sparkline`) | MVP · Dashboard | indicadores; valores tabulares, delta com "vs. período" |
+| `StatusPill` | MVP · Oportunidades | status Ativo/Conquistado/Perdido/Cancelado/Suspenso, sempre com ícone e palavra |
+| `ActivityIcon` | MVP · Atividades | bolha por tipo; também usada em `DealCard`/`TaskCard` |
+| `PriorityMarks` | MVP · Atividades | Importante (estrela) e Urgente (raio) |
+| `ActivityTimeline` | MVP · Atividades | linha do tempo das fichas |
+| `TaskCard` | MVP · Tarefas | card do quadro de tarefas, com checklist |
+| `DealCard` | MVP · Oportunidades | card do Kanban |
+| `KanbanColumn` | MVP · Oportunidades | coluna de 296 px com total e limite; arrastar com dnd |
+| `DataTable` | MVP · Empresas | tabela com seleção, ordenação e densidade compacta (reaproveitada em Contatos) |
+| `TelaFunil` | MVP · Oportunidades | exemplo de tela: só vale quando os acima existirem |
+
+Já prontos para o E9b/E9c: `AppNav`, `TenantSwitcher`, `MenuList`/`Menu`, `Toast` + `toast.*` (Sonner), `Alert`, campo com `suffix`, `Avatar`/`AvatarGroup`, `Icon`, `PainelDoDialogo`.
+
 ---
 
 ## E10. Worker base — Claude Code

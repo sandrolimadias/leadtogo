@@ -1,7 +1,9 @@
-import { CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
+
+import { IconButton } from './button'
 
 export type TomDoAlerta = 'info' | 'success' | 'warning' | 'danger'
 
@@ -31,17 +33,66 @@ export function Alert({
     <div
       role={tone === 'danger' || tone === 'warning' ? 'alert' : 'status'}
       className={cn(
-        'grid grid-cols-[20px_1fr_auto] items-start gap-x-3 gap-y-1 rounded-md px-4 py-3',
+        'grid grid-cols-[20px_1fr_auto] items-start gap-x-3 gap-y-1 rounded-md border border-transparent px-4 py-3',
         classe,
         className,
       )}
     >
       <Icone size={18} strokeWidth={1.75} aria-hidden="true" className="mt-0.5" />
-      <div className="min-w-0">
-        {title ? <div className="font-semibold">{title}</div> : null}
-        {children ? <div className="text-[13px] leading-[18px] text-ink">{children}</div> : null}
-      </div>
-      {actions ? <div className="flex gap-2 self-center">{actions}</div> : null}
+      {title ? <span className="font-semibold">{title}</span> : null}
+      {children ? (
+        <span className={cn('text-[13px] leading-[18px] text-ink', title && 'col-start-2')}>
+          {children}
+        </span>
+      ) : null}
+      {actions ? (
+        <div className="col-start-3 row-span-2 row-start-1 flex gap-2 self-center">{actions}</div>
+      ) : null}
+    </div>
+  )
+}
+
+export type TomDoToast = 'success' | 'danger' | 'info' | 'warning'
+
+const iconesDoToast: Record<TomDoToast, { icone: LucideIcon; classe: string }> = {
+  success: { icone: CircleCheck, classe: 'text-success' },
+  danger: { icone: CircleAlert, classe: 'text-danger' },
+  info: { icone: Info, classe: 'text-info' },
+  warning: { icone: TriangleAlert, classe: 'text-warning' },
+}
+
+/** Aviso temporário (a forma visual). Para disparar um, use `toast.success(...)` de `toast.tsx`. */
+export function Toast({
+  tone = 'success',
+  title,
+  description,
+  action,
+  onClose,
+  className,
+}: {
+  tone?: TomDoToast
+  title: string
+  description?: string
+  action?: ReactNode
+  onClose?: () => void
+  className?: string
+}) {
+  const { icone: Icone, classe } = iconesDoToast[tone]
+  return (
+    <div
+      role={tone === 'danger' || tone === 'warning' ? 'alert' : 'status'}
+      className={cn(
+        'box-border grid w-[360px] max-w-full grid-cols-[20px_1fr_auto] items-start gap-x-3 gap-y-1 rounded-md border border-border bg-surface py-3 pr-3 pl-4 shadow-lg',
+        className,
+      )}
+    >
+      <Icone size={18} strokeWidth={1.75} aria-hidden="true" className={cn('mt-0.5', classe)} />
+      <span className="font-semibold text-ink">{title}</span>
+      <IconButton icon={X} label="Fechar" size="sm" onClick={onClose} />
+      {description ? (
+        <span className="col-start-2 text-[13px] leading-[18px] text-ink-muted">{description}</span>
+      ) : null}
+      {action ? <div className="col-start-2 mt-1 flex gap-1">{action}</div> : null}
     </div>
   )
 }
@@ -79,7 +130,7 @@ export function EmptyState({
 /** Carregando: o formato do conteúdo que vem, em vez de um spinner solto. */
 export function Skeleton({
   width,
-  height = 14,
+  height = 12,
   circle,
   lines,
   className,
@@ -102,7 +153,7 @@ export function Skeleton({
       )}
     />
   )
-  if (lines && lines > 1) {
+  if (lines) {
     return (
       <span role="status" aria-label="Carregando" className="flex flex-col gap-2">
         {Array.from({ length: lines }, (_, i) => um(i, i === lines - 1 ? '60%' : undefined))}

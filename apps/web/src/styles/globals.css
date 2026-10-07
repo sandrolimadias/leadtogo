@@ -32,6 +32,11 @@
     line-height: 20px;
     -webkit-font-smoothing: antialiased;
   }
+  /* Ícone Lucide: nunca encolhe dentro de flex (um texto longo o amassaria), como o .lt-icon do bundle */
+  .lucide {
+    display: inline-block;
+    flex: none;
+  }
   /* Foco visível em todo controle: 2px sólido, 2px afastado (docs/design-system/README.md) */
   :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--focus-ring);

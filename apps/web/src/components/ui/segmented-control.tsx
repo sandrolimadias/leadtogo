@@ -50,9 +50,7 @@ export function SegmentedControl({
           }}
           className={cn(
             'inline-flex h-[calc(var(--ctl)-6px)] cursor-pointer items-center gap-1.5 rounded-xs border-0 px-3 text-[13px] font-semibold',
-            v === atual
-              ? 'bg-surface text-ink shadow-sm'
-              : 'bg-transparent text-ink-muted hover:text-ink',
+            v === atual ? 'bg-surface text-ink shadow-sm' : 'bg-transparent text-ink-muted',
           )}
         >
           {Icone ? <Icone size={15} strokeWidth={1.75} aria-hidden="true" /> : null}

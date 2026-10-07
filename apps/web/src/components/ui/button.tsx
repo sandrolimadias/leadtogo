@@ -50,7 +50,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading ? 'true' : undefined}
       className={cn(
-        'inline-flex h-(--ctl) cursor-pointer items-center justify-center gap-1.5 rounded-sm border border-transparent text-[length:var(--ctl-font)] font-semibold whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-45',
+        'inline-flex h-(--ctl) cursor-pointer items-center justify-center gap-1.5 rounded-sm border border-transparent text-[length:var(--ctl-font)] font-semibold whitespace-nowrap transition-colors duration-[120ms] disabled:cursor-not-allowed disabled:opacity-45',
         variantes[variant],
         tamanhos[size],
         block && 'w-full',
