@@ -264,7 +264,11 @@ describe('POST /v1/primeiro-acesso', () => {
     expect(mensagem.Subject).toBe('Confirme seu e-mail no Leadtogo')
     expect((await entrar(a, email, dados.senha)).status).toBe(403)
     const link = new URL(/https?:\/\/[^\s"<>]+/.exec(mensagem.Text)?.[0] ?? '')
-    await request(a.getHttpServer()).get(`${link.pathname}${link.search}`).redirects(0)
+    const clique = await request(a.getHttpServer())
+      .get(`${link.pathname}${link.search}`)
+      .redirects(0)
+    // o link leva à tela do front que mostra "E-mail confirmado"
+    expect(clique.headers['location']).toBe(`${ORIGEM_DO_FRONT}/verificar-email?confirmado=1`)
     expect((await entrar(a, email, dados.senha)).status).toBe(200)
   })
 

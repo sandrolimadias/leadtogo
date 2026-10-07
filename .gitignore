@@ -40,3 +40,5 @@ apps/web/src/styles/tailwind-theme.css
 apps/web/src/styles/fonts/
 apps/web/src/styles/assets/
 apps/web/dist-teste-catalogo/
+apps/web/test-results/
+apps/web/playwright-report/
