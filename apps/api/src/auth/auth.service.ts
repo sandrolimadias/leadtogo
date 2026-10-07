@@ -28,7 +28,10 @@ export class AuthService {
   /** Envia (ou reenvia) o e-mail de confirmação; o link leva de volta ao front. */
   async enviarVerificacaoDeEmail(email: string): Promise<void> {
     await this.auth.api.sendVerificationEmail({
-      body: { email, callbackURL: new URL(this.config.APP_URL).origin },
+      body: {
+        email,
+        callbackURL: `${new URL(this.config.APP_URL).origin}/verificar-email?confirmado=1`,
+      },
     })
   }
 
