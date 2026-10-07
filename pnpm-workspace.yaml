@@ -5,6 +5,9 @@ packages:
 # Peers opcionais (o better-auth declara drizzle-kit, vitest, jsdom, react...) NÃO são instalados sozinhos: sem
 # isso o drizzle-kit e as ferramentas de teste entram na árvore de produção da imagem da API.
 autoInstallPeers: false
+# Cada pacote resolve os peers só com o que ELE declara (sem juntar as variantes de outros pacotes do workspace):
+# senão o better-auth da API herda drizzle-kit, vitest e react do db e do web, e a imagem de produção os leva.
+dedupePeerDependents: false
 minimumReleaseAgeExclude:
   - '@typescript-eslint/eslint-plugin@8.71.1'
   - '@typescript-eslint/parser@8.71.1'
