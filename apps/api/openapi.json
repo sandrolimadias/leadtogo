@@ -33,6 +33,38 @@
         "security": []
       }
     },
+    "/v1/acesso/opcoes": {
+      "get": {
+        "description": "Público. Diz o que a tela de login pode oferecer. Hoje: se \"Entrar com Google\" está ligado (`LOGIN_GOOGLE` e credenciais).",
+        "operationId": "AcessoPublicoController_opcoes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcoesDeAcesso"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Opções da tela de login",
+        "tags": ["Acesso"],
+        "security": []
+      }
+    },
     "/v1/convites": {
       "post": {
         "description": "Só administradores da empresa ativa. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.",
@@ -721,6 +753,38 @@
         "security": []
       }
     },
+    "/v1/primeiro-acesso/estado": {
+      "get": {
+        "description": "Público. Diz se `POST /v1/primeiro-acesso` aceita pedidos (aberto fora de produção, fechado em produção por padrão; ver `PRIMEIRO_ACESSO`). Não revela mais nada.",
+        "operationId": "PrimeiroAcessoController_estado",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrimeiroAcessoEstado"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "O primeiro acesso está aberto?",
+        "tags": ["Primeiro acesso"],
+        "security": []
+      }
+    },
     "/v1/sessao/empresa-ativa": {
       "post": {
         "description": "Define a empresa ativa DESTA sessão. Só vale para empresa em que o usuário é membro ativo e que está em teste ou ativa; uma empresa alheia e uma inexistente dão o mesmo 403 (`empresa_nao_permitida`). Administrador sem 2FA recebe `2fa_obrigatorio`.",
@@ -1166,6 +1230,16 @@
         ],
         "additionalProperties": false
       },
+      "OpcoesDeAcesso": {
+        "type": "object",
+        "properties": {
+          "loginGoogle": {
+            "type": "boolean"
+          }
+        },
+        "required": ["loginGoogle"],
+        "additionalProperties": false
+      },
       "Preferencias": {
         "type": "object",
         "properties": {
@@ -1262,6 +1336,16 @@
           }
         },
         "required": ["nome", "email", "senha", "empresa"],
+        "additionalProperties": false
+      },
+      "PrimeiroAcessoEstado": {
+        "type": "object",
+        "properties": {
+          "aberto": {
+            "type": "boolean"
+          }
+        },
+        "required": ["aberto"],
         "additionalProperties": false
       },
       "PrimeiroAcessoResultado": {

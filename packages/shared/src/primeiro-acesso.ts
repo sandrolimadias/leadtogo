@@ -48,3 +48,15 @@ export const primeiroAcessoResultadoSchema = z
   })
   .meta({ id: 'PrimeiroAcessoResultado' })
 export type PrimeiroAcessoResultado = z.infer<typeof primeiroAcessoResultadoSchema>
+
+/** Resposta de GET /v1/primeiro-acesso/estado: o cadastro da primeira conta está aberto? */
+export const primeiroAcessoEstadoSchema = z
+  .object({ aberto: z.boolean() })
+  .meta({ id: 'PrimeiroAcessoEstado' })
+export type PrimeiroAcessoEstado = z.infer<typeof primeiroAcessoEstadoSchema>
+
+/** Resposta de GET /v1/acesso/opcoes: o que a tela de login pode oferecer. */
+export const opcoesDeAcessoSchema = z
+  .object({ loginGoogle: z.boolean() })
+  .meta({ id: 'OpcoesDeAcesso' })
+export type OpcoesDeAcesso = z.infer<typeof opcoesDeAcessoSchema>

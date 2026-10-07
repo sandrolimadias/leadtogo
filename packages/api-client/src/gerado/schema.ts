@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/acesso/opcoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Opções da tela de login
+         * @description Público. Diz o que a tela de login pode oferecer. Hoje: se "Entrar com Google" está ligado (`LOGIN_GOOGLE` e credenciais).
+         */
+        get: operations["AcessoPublicoController_opcoes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/convites": {
         parameters: {
             query?: never;
@@ -192,6 +212,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/primeiro-acesso/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * O primeiro acesso está aberto?
+         * @description Público. Diz se `POST /v1/primeiro-acesso` aceita pedidos (aberto fora de produção, fechado em produção por padrão; ver `PRIMEIRO_ACESSO`). Não revela mais nada.
+         */
+        get: operations["PrimeiroAcessoController_estado"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sessao/empresa-ativa": {
         parameters: {
             query?: never;
@@ -334,6 +374,9 @@ export interface components {
             administradorDeConta: boolean;
             doisFatoresPendente: boolean;
         };
+        OpcoesDeAcesso: {
+            loginGoogle: boolean;
+        };
         Preferencias: {
             /** @enum {string} */
             tema: "claro" | "escuro" | "sistema";
@@ -364,6 +407,9 @@ export interface components {
                 cnpj?: string;
             };
             contaNome?: string;
+        };
+        PrimeiroAcessoEstado: {
+            aberto: boolean;
         };
         PrimeiroAcessoResultado: {
             /** Format: uuid */
@@ -427,6 +473,35 @@ export interface operations {
             };
             /** @description Serviço indisponível (`servico_indisponivel`) */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AcessoPublicoController_opcoes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcoesDeAcesso"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1018,6 +1093,35 @@ export interface operations {
             };
             /** @description Serviço indisponível (`servico_indisponivel`) */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PrimeiroAcessoController_estado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrimeiroAcessoEstado"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

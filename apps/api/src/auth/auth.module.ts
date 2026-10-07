@@ -7,13 +7,14 @@ import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { EmailService } from '../email/email.service.js'
 import { BANCO, VALKEY } from '../infra/infra.module.js'
 import { type Auth, criarAuth } from './auth.factory.js'
+import { AcessoPublicoController } from './acesso-publico.controller.js'
 import { AuthController } from './auth.controller.js'
 import { AuthService } from './auth.service.js'
 import { AUTH } from './auth.tokens.js'
 
 @Global()
 @Module({
-  controllers: [AuthController],
+  controllers: [AuthController, AcessoPublicoController],
   providers: [
     {
       provide: AUTH,

@@ -3,8 +3,10 @@ import {
   primeiroAcessoResultadoSchema,
   type PrimeiroAcessoResultado,
   primeiroAcessoSchema,
+  type PrimeiroAcessoEstado,
+  primeiroAcessoEstadoSchema,
 } from '@leadtogo/shared'
-import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Inject, Post } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
 import { Publica } from '../acesso/acesso.decorators.js'
@@ -25,6 +27,19 @@ export class PrimeiroAcessoController {
     @Inject(CONFIGURACAO) private readonly config: Configuracao,
     private readonly servico: PrimeiroAcessoService,
   ) {}
+
+  /** O front só mostra a tela de primeiro acesso quando isto responde `aberto`. */
+  @Documenta({
+    resumo: 'O primeiro acesso está aberto?',
+    descricao:
+      'Público. Diz se `POST /v1/primeiro-acesso` aceita pedidos (aberto fora de produção, fechado em produção por padrão; ver `PRIMEIRO_ACESSO`). Não revela mais nada.',
+    resposta: primeiroAcessoEstadoSchema,
+    erros: [429],
+  })
+  @Get('estado')
+  estado(): PrimeiroAcessoEstado {
+    return { aberto: primeiroAcessoAberto(this.config) }
+  }
 
   /**
    * Cria a conta dona, a primeira empresa e o administrador. Fechado por padrão em produção

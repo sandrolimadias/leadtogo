@@ -293,6 +293,8 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
   const PUBLICAS = [
     'GET /health',
     'ALL /v1/auth/{*caminho}',
+    'GET /v1/acesso/opcoes',
+    'GET /v1/primeiro-acesso/estado',
     'POST /v1/primeiro-acesso',
     'POST /v1/convites/consultar',
     'POST /v1/convites/aceitar',
