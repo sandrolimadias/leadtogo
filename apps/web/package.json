@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/sincronizar-design-system.mjs && vitest run",
     "comparar:catalogos": "node scripts/comparar-catalogos.mjs",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "capturar:acesso": "node scripts/capturar-acesso.mjs"
   },
   "dependencies": {
     "@leadtogo/api-client": "workspace:*",

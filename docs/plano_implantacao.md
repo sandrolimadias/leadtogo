@@ -331,6 +331,27 @@ O E9 é entregue em partes: **E9a** componentes base e catálogo (`/dev/catalogo
 
 Já prontos para o E9b/E9c: `AppNav`, `TenantSwitcher`, `MenuList`/`Menu`, `Toast` + `toast.*` (Sonner), `Alert`, campo com `suffix`, `Avatar`/`AvatarGroup`, `Icon`, `PainelDoDialogo`.
 
+### E9b. Camada de autenticação e telas de acesso — ⏳ aguardando aprovação
+
+Entregue (commits `5a084b3`, `5c9b51a`, `910593f`, `ec2a38c` e os seguintes):
+
+- **API:** `GET /v1/primeiro-acesso/estado` (público, `{ aberto }`) e `GET /v1/acesso/opcoes` (público, `{ loginGoogle }`; o "Entrar com Google" só aparece se a API o liga). Os dois entram na rede de segurança das rotas públicas; `openapi.json` e `api-client` regenerados. O link de confirmação de e-mail agora volta para `/verificar-email?confirmado=1`.
+- **Camada de autenticação (`apps/web/src/auth`):** cliente oficial do Better Auth com o plugin de 2FA em `/v1/auth`; todas as chamadas das telas passam pela interface `ServicosDeAcesso` (a real em `servicos.ts`; os testes usam serviços de mentira); guardas de rotas (sem sessão → `/login?redirect=…`; administrador com `doisFatoresPendente` → `/ativar-2fa` e a casca fica bloqueada até ativar; quem já entrou não vê o login); erros do Better Auth e da API traduzidos para pt-BR (`erros.ts`), sem texto em inglês e sem revelar se um e-mail existe.
+- **Telas (`apps/web/src/telas/acesso`, rotas `_acesso.*`):** `/login`, `/verificacao` (2FA no login: código de 6 dígitos ou de recuperação, "confiar neste aparelho"), `/ativar-2fa` (senha → QR code e chave manual → código → códigos de recuperação), `/esqueci-senha`, `/confira-seu-email`, `/redefinir-senha`, `/verificar-email`, `/convite`, `/primeiro-acesso` (mostra uma mensagem clara quando `estado` responde fechado).
+- **Comportamento:** foco no primeiro campo, Enter envia, erro ligado ao campo (`aria-describedby`/`aria-invalid`) com foco no primeiro inválido, botão com `loading` e trava contra duplo envio.
+- **Testes:** 84 no web (jsdom, fluxos completos pelo roteador real com serviços falsos) e 8 E2E com Playwright contra API, worker, banco e Mailpit reais (`pnpm --filter @leadtogo/web e2e`: sobe a API em :3100, o worker e o Vite em :5183, usa o banco de desenvolvimento com e-mails únicos e o Valkey 2). Cenários: login e ativação obrigatória do 2FA (inclui código de recuperação), recuperação de senha, aceite de convite (conta nova e existente), primeiro acesso, mensagens genéricas. O E12 deve rodar o E2E no CI.
+- **Capturas:** `pnpm --filter @leadtogo/web capturar:acesso` (API simulada pelo Playwright) grava as 22 telas × 1440/390 px × claro/escuro em `~/projetos/leadtogo-capturas/acesso/`.
+
+Diferenças em relação ao protótipo `Acesso.dc.html` (o documento e a API valem):
+
+- Sem "Continuar com Google" no cadastro e sem "Aceitar com Google" no convite: o Google não cria conta (`disableSignUp`). No login, só se `LOGIN_GOOGLE` estiver ligado.
+- Sem "Consultar" CNPJ pela Receita, sem "Segmento principal" e sem a lista de cadastros padrão: nada disso existe ainda (chegam com Empresas e Configurações). O CNPJ é opcional e validado; a tela "Tudo pronto" lista o que foi criado de verdade (conta, empresa, papel).
+- Sem o texto "5 tentativas travam por 15 minutos" (não é a regra da API; o limite é por IP e a mensagem de 429 é genérica) e sem "Abrir o link (simulação)" nem "Para o protótipo, use 123456".
+- "Salvar e entrar" virou "Salvar nova senha" e leva ao login: o Better Auth não abre sessão ao redefinir e o link não carrega o e-mail.
+- Botões de envio ficam habilitados (a validação explica o que falta e o Enter funciona); no protótipo ficavam desativados.
+- Links no acento do design system (o protótipo usava o azul padrão do navegador). A ativação do 2FA pede a senha antes (exigência do Better Auth) e mostra os códigos de recuperação.
+- `/` hoje é só um marcador "Leadtogo" com "Sair"; a casca do app é o E9c.
+
 ---
 
 ## E10. Worker base — Claude Code
