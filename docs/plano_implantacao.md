@@ -412,7 +412,7 @@ Diferenças em relação ao protótipo `Acesso.dc.html` (o documento e a API val
 
 ---
 
-## E11. Imagens Docker — Claude Code ⏳ aguardando aprovação
+## E11. Imagens Docker — Claude Code ✅ aprovado em 07/10/2026
 
 **Pedido:**
 > Crie `docker/api.Dockerfile` (multi-stage, node 24-alpine, usuário não-root, `HEALTHCHECK`, comandos `node dist/main.js`, `node dist/worker.js` e `node dist/migrate.js`) e `docker/web.Dockerfile` (build Vite → Caddy, sem cache para `index.html` e service worker, cache longo para arquivos com hash, compressão, cabeçalhos de segurança). Receba `APP_VERSION` como build-arg. Adicione `.dockerignore`.
