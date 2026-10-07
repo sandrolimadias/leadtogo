@@ -22,6 +22,7 @@ export const meDeAdmin = (extra: Partial<Me> = {}): Me => ({
   },
   empresas: [],
   empresaAtivaId: null,
+  precisaEscolherEmpresa: false,
   administradorDeConta: true,
   doisFatoresPendente: false,
   doisFatoresObrigatorio: true,

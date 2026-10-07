@@ -463,6 +463,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 
 ### Multiempresa (v1.4)
 - Uma **Conta** (o administrador ou o grupo) pode ter **várias empresas** no CRM. Cada empresa é um tenant **isolado**: carteira, equipe, funis, tags e configurações próprios.
+- **Empresa ativa no login:** ao entrar, a sessão já começa na **última empresa usada** (guardada por usuário); sem histórico e com uma só empresa, nela; com várias e nenhuma usada antes, o sistema mostra o **seletor de empresa** antes de abrir o app (`GET /v1/me` traz `precisaEscolherEmpresa`). Empresa suspensa/cancelada ou da qual a pessoa saiu não conta.
 - **Seletor de empresa** no topo, que troca a empresa ativa sem sair do sistema. No celular, fica no menu do perfil.
 - **Um login, vários papéis:** o mesmo usuário pode ser admin numa empresa e vendedor em outra. O papel é definido por empresa.
 - **Painel consolidado** (administradores da conta): soma das empresas para funil, previsão (inclusive MRR), conquistados × perdidos, atividades da equipe e carteira por status, com filtro por empresa. Só leitura; para agir, abre a empresa.

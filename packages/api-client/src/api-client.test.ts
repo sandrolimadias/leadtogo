@@ -24,6 +24,7 @@ describe('cliente da API', () => {
       },
       empresas: [],
       empresaAtivaId: null,
+      precisaEscolherEmpresa: false,
       administradorDeConta: false,
       doisFatoresPendente: false,
       doisFatoresObrigatorio: false,

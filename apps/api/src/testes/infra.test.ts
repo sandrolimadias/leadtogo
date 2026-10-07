@@ -5,11 +5,16 @@ import { afterAll, describe, expect, it } from 'vitest'
 const { cliente } = criarConexao(process.env['DATABASE_URL'] ?? '', { max: 1 })
 afterAll(() => cliente.end())
 
+// O banco é o da URL de teste (leadtogo_api_test; no `pnpm verificar:zero`, um banco temporário)
+const bancoEsperado = new URL(
+  process.env['DATABASE_URL'] ?? 'postgres://x/leadtogo_api_test',
+).pathname.slice(1)
+
 describe('ambiente de teste da API', () => {
-  it('usa o banco leadtogo_api_test com o papel leadtogo_app', async () => {
+  it('usa o banco de teste da API com o papel leadtogo_app', async () => {
     const [r] = await cliente<{ banco: string; usuario: string }[]>`
       SELECT current_database() AS banco, current_user AS usuario`
-    expect(r).toEqual({ banco: 'leadtogo_api_test', usuario: 'leadtogo_app' })
+    expect(r).toEqual({ banco: bancoEsperado, usuario: 'leadtogo_app' })
   })
 
   it('já está migrado do zero', async () => {

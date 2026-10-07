@@ -1351,6 +1351,9 @@
               "$ref": "#/components/schemas/EmpresaDoUsuario"
             }
           },
+          "precisaEscolherEmpresa": {
+            "type": "boolean"
+          },
           "empresaAtivaId": {
             "nullable": true,
             "type": "string",
@@ -1369,6 +1372,7 @@
         "required": [
           "usuario",
           "empresas",
+          "precisaEscolherEmpresa",
           "empresaAtivaId",
           "administradorDeConta",
           "doisFatoresPendente",

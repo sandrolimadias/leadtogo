@@ -30,7 +30,7 @@ export interface Dono {
 /** Conta nova com uma empresa e o administrador (papel dono da conta e admin da empresa), já logado. */
 export async function novoDono(
   app: INestApplication<Server>,
-  opcoes: { com2fa?: boolean } = {},
+  opcoes: { com2fa?: boolean; semEmpresaAtiva?: boolean } = {},
 ): Promise<Dono> {
   const email = emailUnico('dono')
   const r = await app.get(PrimeiroAcessoService).criar(
@@ -45,6 +45,8 @@ export async function novoDono(
   const { cookie } = await entrar(app, email)
   // O 2FA liga DEPOIS do login (com o flag ligado, o login pediria o código)
   if (opcoes.com2fa !== false) await ligar2fa(r.usuarioId)
+  // O login já escolhe a empresa ativa (a única da pessoa); estes testes querem a sessão SEM ela
+  if (opcoes.semEmpresaAtiva) await ativar(r.usuarioId, null)
   return { usuarioId: r.usuarioId, email, contaId: r.contaId, tenantId: r.tenantId, cookie }
 }
 

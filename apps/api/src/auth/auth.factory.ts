@@ -13,6 +13,7 @@ import {
 import type { EmailService } from '../email/email.service.js'
 import { emailRedefinirSenha, emailVerificarEmail } from '../email/modelos.js'
 import { obrigatorioParaUsuario } from '../acesso/dois-fatores.js'
+import { escolherEmpresaAtiva } from '../acesso/empresa-ativa.js'
 import { armazenamentoDeLimite } from './rate-limit-valkey.js'
 
 /** Caminho base do Better Auth dentro da API: tudo em /v1/auth/*. */
@@ -107,6 +108,16 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
         }
       : {},
     plugins: [twoFactor({ issuer: 'Leadtogo' })],
+    databaseHooks: {
+      session: {
+        create: {
+          // A sessão nasce já com a empresa ativa: a última usada, ou a única da pessoa (ver empresa-ativa.ts)
+          before: async (sessao) => ({
+            data: { ...sessao, empresaAtivaId: await escolherEmpresaAtiva(banco, sessao.userId) },
+          }),
+        },
+      },
+    },
     hooks: {
       // Desativar o 2FA: (1) só se nenhuma regra o exigir deste usuário (administrador de conta ou a
       // política de qualquer empresa dele) e (2) com um código atual do app, além da senha que o Better

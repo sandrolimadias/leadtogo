@@ -51,7 +51,7 @@ const guardadoNoBanco = async (usuarioId: string, tenantId: string) =>
 describe('GET /v1/me/preferencias', () => {
   it('sem sessão: 401; sem empresa ativa: 409', async () => {
     expect((await ver()).status).toBe(401)
-    const d = await novoDono(app)
+    const d = await novoDono(app, { semEmpresaAtiva: true })
     const r = await ver(d.cookie)
     expect(r.status).toBe(409)
     expect(erroDe(r).erro).toBe('sem_empresa_ativa')

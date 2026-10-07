@@ -28,6 +28,7 @@ const meAdmin = (pendente) => ({
   },
   empresas: [],
   empresaAtivaId: null,
+  precisaEscolherEmpresa: false,
   administradorDeConta: true,
   doisFatoresPendente: pendente,
   doisFatoresObrigatorio: true,

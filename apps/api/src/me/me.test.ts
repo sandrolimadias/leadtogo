@@ -153,7 +153,7 @@ describe('POST /v1/sessao/empresa-ativa', () => {
   })
 
   it('troca a empresa ativa: grava na sessão e as rotas seguintes passam a ver a nova empresa', async () => {
-    const d = await novoDono(app)
+    const d = await novoDono(app, { semEmpresaAtiva: true })
     const b = await novaEmpresa(d.contaId)
     await vincular(b, d.usuarioId, 'vendedor')
     await membroSemLogin(d.tenantId, 'Só da A')

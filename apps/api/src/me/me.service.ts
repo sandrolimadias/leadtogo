@@ -68,6 +68,7 @@ export class MeService {
       await this.banco.cliente<{ email_verified: boolean }[]>`
         SELECT email_verified FROM auth."user" WHERE id = ${sessao.usuarioId}`
     )[0]?.email_verified
+    const empresas = await this.empresasDe(vinculos, sessao.empresaAtivaId)
     return {
       usuario: {
         id: sessao.usuarioId,
@@ -76,7 +77,8 @@ export class MeService {
         emailVerificado: emailVerificado === true,
         twoFactorEnabled: sessao.twoFactorEnabled,
       },
-      empresas: await this.empresasDe(vinculos, sessao.empresaAtivaId),
+      empresas,
+      precisaEscolherEmpresa: empresas.length > 0 && !empresas.some((e) => e.ativa),
       empresaAtivaId: sessao.empresaAtivaId,
       administradorDeConta,
       doisFatoresPendente: doisFatoresPendente({
@@ -115,6 +117,9 @@ export class MeService {
       WHERE id = ${sessao.sessaoId} AND user_id = ${sessao.usuarioId}
       RETURNING id`
     if (atualizadas.length === 0) throw new ErroApi('nao_autenticado', 'Entre para continuar.', 401)
+    // lembra a escolha: o próximo login começa nesta empresa
+    await this.banco
+      .cliente`UPDATE auth."user" SET ultima_empresa_id = ${empresaId} WHERE id = ${sessao.usuarioId}`
     return { empresaAtivaId: empresaId, empresa: { ...empresa, ativa: true } }
   }
 }

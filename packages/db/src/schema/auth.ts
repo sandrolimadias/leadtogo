@@ -31,6 +31,8 @@ export const user = authSchema.table('user', {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   /** Plugin de 2FA */
   twoFactorEnabled: boolean().default(false),
+  /** Última empresa que a pessoa usou: a próxima sessão já começa nela (campo nosso, fora do Better Auth) */
+  ultimaEmpresaId: uuid().references((): AnyPgColumn => tenants.id, { onDelete: 'set null' }),
 })
 
 export const session = authSchema.table(

@@ -401,6 +401,7 @@ export interface components {
                 twoFactorEnabled: boolean;
             };
             empresas: components["schemas"]["EmpresaDoUsuario"][];
+            precisaEscolherEmpresa: boolean;
             /** Format: uuid */
             empresaAtivaId: string | null;
             administradorDeConta: boolean;

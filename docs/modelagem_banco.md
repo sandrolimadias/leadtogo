@@ -180,7 +180,8 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 ### 3.3 Autenticação (Better Auth)
 O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verification` e `two_factor`, num **schema separado `auth`**. O **plugin de organizações não é usado** (empresas, membros e convites são nossos, sob RLS). Ligações:
 - `user.id` ↔ `membros.usuario_id` e `conta_administradores.usuario_id` (FK)
-- `session.empresa_ativa_id` → `tenants.id` (`ON DELETE SET NULL`): a empresa ativa da sessão (campo nosso, adicionado à tabela do Better Auth)
+- `session.empresa_ativa_id` → `tenants.id` (`ON DELETE SET NULL`): a empresa ativa da sessão (campo nosso, adicionado à tabela do Better Auth). Ao criar a sessão a API a preenche (gancho `databaseHooks.session.create`): `user.ultima_empresa_id` se ainda utilizável, senão a única empresa utilizável, senão nulo
+- `user.ultima_empresa_id` → `tenants.id` (`ON DELETE SET NULL`, migração 0012): a última empresa que a pessoa usou; gravada a cada troca de empresa ativa
 - Tabelas em `auth`: `user` (e-mail em `citext`, único), `session`, `account` (senha em hash scrypt), `verification` e `two_factor`, todas com id `uuid` v7. Sem RLS (nada é por tenant); o `leadtogo_app` tem DML, sem DDL.
 
 ### 3.5 `convites` 🏢 — Convite de membro

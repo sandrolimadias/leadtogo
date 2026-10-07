@@ -17,12 +17,13 @@
     "format": "prettier --write . '!docker/.data'",
     "format:check": "prettier --check . '!docker/.data'",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "turbo run test --concurrency=1",
     "db:generate": "pnpm --filter @leadtogo/db db:generate",
     "db:migrate": "pnpm --filter @leadtogo/db db:migrate",
     "db:seed": "pnpm --filter @leadtogo/db db:seed",
     "db:seed:referencias": "pnpm --filter @leadtogo/db db:seed:referencias",
-    "db:studio": "pnpm --filter @leadtogo/db db:studio"
+    "db:studio": "pnpm --filter @leadtogo/db db:studio",
+    "verificar:zero": "bash scripts/verificar-zero.sh"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

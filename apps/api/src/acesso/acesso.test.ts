@@ -197,7 +197,7 @@ describe('autenticação: o padrão é protegido', () => {
 
 describe('empresa ativa e contexto do tenant', () => {
   it('sem empresa ativa: 409 sem_empresa_ativa; as rotas @SemEmpresa passam', async () => {
-    const { cookie } = await novoDono(app)
+    const { cookie } = await novoDono(app, { semEmpresaAtiva: true })
     const r = await get('/v1/teste-acesso/empresa', cookie)
     expect(r.status).toBe(409)
     expect(erroDe(r).erro).toBe('sem_empresa_ativa')

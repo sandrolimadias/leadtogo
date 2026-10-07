@@ -33,6 +33,11 @@ export const meRespostaSchema = z
       twoFactorEnabled: z.boolean(),
     }),
     empresas: z.array(empresaDoUsuarioSchema),
+    /**
+     * Há empresas, mas nenhuma está ativa (várias e nenhuma usada antes, ou perdeu o vínculo com a
+     * ativa): o front mostra o seletor de empresa.
+     */
+    precisaEscolherEmpresa: z.boolean(),
     /** Empresa ativa da sessão; null até o usuário escolher (POST /v1/sessao/empresa-ativa) */
     empresaAtivaId: z.uuid().nullable(),
     /** Dono ou administrador de alguma conta: tem o painel consolidado */

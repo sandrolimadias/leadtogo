@@ -229,12 +229,7 @@ test.describe('2FA para todos: política da empresa e Meu perfil → Segurança'
     await page.getByLabel(/Li e aceito os termos/).check()
     await page.getByRole('button', { name: 'Aceitar e entrar' }).click()
     await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
-    const me = (await (await page.request.get('/v1/me')).json()) as { empresas: { id: string }[] }
-    const trocar = await page.request.post('/v1/sessao/empresa-ativa', {
-      data: { empresaId: me.empresas[0]?.id },
-      headers: { Origin: URL_WEB },
-    })
-    expect(trocar.status()).toBe(200)
+    // a sessão já nasceu com a empresa ativa (a única dele): nenhuma troca manual
     expect((await page.request.get('/v1/membros')).status()).toBe(200)
 
     // o administrador passa a exigir 2FA de todos: na próxima navegação o vendedor é levado à ativação

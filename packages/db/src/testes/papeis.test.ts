@@ -9,12 +9,17 @@ afterAll(async () => {
   await owner.end()
 })
 
+// O banco de teste é o da URL (leadtogo_test; no `pnpm verificar:zero`, um banco temporário)
+const bancoDeTeste = new URL(
+  process.env['TEST_DATABASE_URL'] ?? 'postgres://x/leadtogo_test',
+).pathname.slice(1)
+
 describe('papéis do banco de teste', () => {
-  it('conecta como os papéis certos, em leadtogo_test', async () => {
+  it('conecta como os papéis certos, no banco de teste', async () => {
     const [a] = await app`SELECT current_user AS usuario, current_database() AS banco`
     const [o] = await owner`SELECT current_user AS usuario, current_database() AS banco`
-    expect(a).toEqual({ usuario: 'leadtogo_app', banco: 'leadtogo_test' })
-    expect(o).toEqual({ usuario: 'leadtogo_owner', banco: 'leadtogo_test' })
+    expect(a).toEqual({ usuario: 'leadtogo_app', banco: bancoDeTeste })
+    expect(o).toEqual({ usuario: 'leadtogo_owner', banco: bancoDeTeste })
   })
 
   it('nenhum dos dois é superusuário nem ignora o RLS', async () => {

@@ -48,7 +48,5 @@ export default defineConfig(({ command }) => ({
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/testes/setup.ts'],
     css: false,
-    // os fluxos completos (roteador + Radix) ficam lentos quando o turbo roda tudo junto
-    testTimeout: 20_000,
   },
 }))
