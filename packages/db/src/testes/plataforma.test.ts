@@ -102,6 +102,7 @@ describe('tenant_configuracoes', () => {
       dias_validade_tag_visita: null,
       status_cliente_ao_conquistar: true,
       rastreio_email_padrao: false,
+      dois_fatores_exigido: 'admin',
       whatsapp_modo_importacao: 'desligado',
       preferencias: {},
     })

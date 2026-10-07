@@ -331,6 +331,12 @@ O E9 é entregue em partes: **E9a** componentes base e catálogo (`/dev/catalogo
 
 Já prontos para o E9b/E9c: `AppNav`, `TenantSwitcher`, `MenuList`/`Menu`, `Toast` + `toast.*` (Sonner), `Alert`, campo com `suffix`, `Avatar`/`AvatarGroup`, `Icon`, `PainelDoDialogo`.
 
+### Pendências registradas para as próximas etapas (2FA para todos)
+
+- **E9c (casca):** na folha de perfil, **Meu perfil → Segurança** para qualquer usuário: ativar o 2FA (reaproveitando a ativação de `src/telas/acesso/ativar-dois-fatores.tsx`), **desativar** (senha + código; escondido quando `GET /v1/me` traz `doisFatoresObrigatorio`) e **gerar novos códigos de recuperação**. A API (política por empresa, guard, gancho de desativação) já está pronta; a rota `/perfil/seguranca` existe como ponto de partida.
+- **MVP · Configurações:** a **tela da política de 2FA** da empresa (Segurança: admin · admin e gestor · todos), usando `GET/PATCH /v1/configuracoes/seguranca` (só admin). Hoje a política só muda pela API.
+- **Contração (depois):** remover `app_vinculos_do_usuario` quando nada mais a usar (a API passou a usar `app_vinculos_com_politica`).
+
 ### E9b. Camada de autenticação e telas de acesso — ⏳ aguardando aprovação
 
 Entregue (commits `5a084b3`, `5c9b51a`, `910593f`, `ec2a38c` e os seguintes):

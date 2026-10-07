@@ -1,6 +1,7 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { type Conexao, novoId, schema } from '@leadtogo/db'
 import { betterAuth } from 'better-auth'
+import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api'
 import { twoFactor } from 'better-auth/plugins'
 import type { Redis } from 'ioredis'
 
@@ -11,6 +12,7 @@ import {
 } from '../configuracao/configuracao.js'
 import type { EmailService } from '../email/email.service.js'
 import { emailRedefinirSenha, emailVerificarEmail } from '../email/modelos.js'
+import { obrigatorioParaUsuario } from '../acesso/dois-fatores.js'
 import { armazenamentoDeLimite } from './rate-limit-valkey.js'
 
 /** Caminho base do Better Auth dentro da API: tudo em /v1/auth/*. */
@@ -37,8 +39,12 @@ export interface DependenciasAuth {
 export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
   const producao = config.NODE_ENV === 'production'
   const origemDoFront = new URL(config.APP_URL).origin
+  // O gancho abaixo precisa chamar a API do próprio Better Auth (verifyTOTP): a instância só existe depois
+  const verificadorDeCodigo: {
+    verificar?: (codigo: string, headers: Headers) => Promise<unknown>
+  } = {}
 
-  return betterAuth({
+  const auth = betterAuth({
     appName: 'Leadtogo',
     baseURL: new URL(config.API_URL).origin,
     basePath: CAMINHO_AUTH,
@@ -101,6 +107,31 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
         }
       : {},
     plugins: [twoFactor({ issuer: 'Leadtogo' })],
+    hooks: {
+      // Desativar o 2FA: (1) só se nenhuma regra o exigir deste usuário (administrador de conta ou a
+      // política de qualquer empresa dele) e (2) com um código atual do app, além da senha que o Better
+      // Auth já pede. O 403 e o 400 saem aqui, antes de qualquer alteração.
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== '/two-factor/disable') return
+        const atual = await getSessionFromCtx(ctx)
+        if (!atual) return // sem sessão o próprio Better Auth responde 401
+        if (await obrigatorioParaUsuario(banco, atual.user.id)) {
+          throw new APIError('FORBIDDEN', {
+            message: 'A verificação em duas etapas é obrigatória para você.',
+            code: 'DOIS_FATORES_OBRIGATORIO',
+          })
+        }
+        const codigo = (ctx.body as { code?: unknown } | undefined)?.code
+        if (typeof codigo !== 'string' || codigo.length === 0) {
+          throw new APIError('BAD_REQUEST', {
+            message: 'Informe um código do app autenticador.',
+            code: 'CODIGO_OBRIGATORIO',
+          })
+        }
+        // lança 401 INVALID_CODE se o código estiver errado
+        await verificadorDeCodigo.verificar?.(codigo, ctx.headers ?? new Headers())
+      }),
+    },
     rateLimit: {
       enabled: true,
       window: 10,
@@ -110,6 +141,8 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
       customRules: {
         '/two-factor/verify-totp': { window: 60, max: 5 },
         '/two-factor/verify-backup-code': { window: 60, max: 5 },
+        '/two-factor/disable': { window: 60, max: 5 },
+        '/two-factor/generate-backup-codes': { window: 60, max: 5 },
         // Cada pedido manda um e-mail: poucos por 5 minutos (anti-spam e anti-enumeração)
         '/request-password-reset': { window: 300, max: 3 },
         '/send-verification-email': { window: 300, max: 3 },
@@ -129,6 +162,9 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
       ipAddress: { ipAddressHeaders: ['x-forwarded-for'] },
     },
   })
+  verificadorDeCodigo.verificar = (codigo, headers) =>
+    auth.api.verifyTOTP({ body: { code: codigo }, headers })
+  return auth
 }
 
 export type Auth = ReturnType<typeof criarAuth>

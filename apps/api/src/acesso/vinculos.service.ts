@@ -1,4 +1,5 @@
 import type { Conexao } from '@leadtogo/db'
+import type { PoliticaDoisFatores } from '@leadtogo/shared'
 import { Inject, Injectable } from '@nestjs/common'
 
 import { BANCO } from '../infra/infra.module.js'
@@ -9,11 +10,16 @@ import type { PapelMembro, Vinculo } from './requisicao.js'
 export class VinculosService {
   constructor(@Inject(BANCO) private readonly banco: Conexao) {}
 
-  /** Empresas em que o usuário é membro ativo, com o papel em cada uma. */
+  /** Empresas em que o usuário é membro ativo, com o papel e a política de 2FA de cada uma. */
   async vinculosDo(usuarioId: string): Promise<Vinculo[]> {
-    const linhas = await this.banco.cliente<{ tenant_id: string; papel: PapelMembro }[]>`
-      SELECT tenant_id, papel FROM app_vinculos_do_usuario(${usuarioId})`
-    return linhas.map((l) => ({ tenantId: l.tenant_id, papel: l.papel }))
+    const linhas = await this.banco.cliente<
+      { tenant_id: string; papel: PapelMembro; dois_fatores_exigido: PoliticaDoisFatores }[]
+    >`SELECT tenant_id, papel, dois_fatores_exigido FROM app_vinculos_com_politica(${usuarioId})`
+    return linhas.map((l) => ({
+      tenantId: l.tenant_id,
+      papel: l.papel,
+      doisFatoresExigido: l.dois_fatores_exigido,
+    }))
   }
 
   /** Todas as empresas das contas que o usuário administra (dono ou administrador): o consolidado. */

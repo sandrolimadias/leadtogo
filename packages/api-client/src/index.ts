@@ -16,6 +16,7 @@ export type ErroDaApi = Esquemas['Erro']
 export type ConviteConsulta = Esquemas['ConviteConsulta']
 export type ConviteAceito = Esquemas['ConviteAceito']
 export type PrimeiroAcessoResultado = Esquemas['PrimeiroAcessoResultado']
+export type Seguranca = Esquemas['ConfiguracaoDeSeguranca']
 export type OpcoesDeAcesso = Esquemas['OpcoesDeAcesso']
 
 /**

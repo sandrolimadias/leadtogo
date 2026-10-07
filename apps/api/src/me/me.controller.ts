@@ -29,7 +29,7 @@ export class MeController {
   @Documenta({
     resumo: 'Quem sou eu',
     descricao:
-      'Usuário, empresas em que é membro (com o papel em cada uma), empresa ativa e se falta ativar o 2FA. Não exige empresa ativa e fica aberto ao administrador que ainda não ativou o 2FA.',
+      'Usuário, empresas em que é membro (com o papel em cada uma), empresa ativa e se falta ativar o 2FA (`doisFatoresPendente`: a regra da empresa ativa) ou se ele é obrigatório (`doisFatoresObrigatorio`: não pode desativar). Não exige empresa ativa e fica aberto a quem ainda não ativou o 2FA.',
     resposta: meRespostaSchema,
     erros: [401],
   })
@@ -40,11 +40,11 @@ export class MeController {
     return this.servico.me(acesso)
   }
 
-  /** Troca a empresa ativa da sessão. Administrador sem 2FA ainda não pode (403 2fa_obrigatorio). */
+  /** Troca a empresa ativa da sessão. Vale mesmo sem 2FA: a regra é a da empresa que fica ativa. */
   @Documenta({
     resumo: 'Trocar a empresa ativa',
     descricao:
-      'Define a empresa ativa DESTA sessão. Só vale para empresa em que o usuário é membro ativo e que está em teste ou ativa; uma empresa alheia e uma inexistente dão o mesmo 403 (`empresa_nao_permitida`). Administrador sem 2FA recebe `2fa_obrigatorio`.',
+      'Define a empresa ativa DESTA sessão. Só vale para empresa em que o usuário é membro ativo e que está em teste ou ativa; uma empresa alheia e uma inexistente dão o mesmo 403 (`empresa_nao_permitida`). Quem ainda não ativou o 2FA também pode trocar: a regra é aplicada na empresa que ficar ativa (nas rotas dela vem `2fa_obrigatorio` se ela o exige).',
     corpo: empresaAtivaSchema,
     resposta: empresaAtivaRespostaSchema,
     erros: [400, 401, 403],
@@ -52,6 +52,7 @@ export class MeController {
   @Post('sessao/empresa-ativa')
   @HttpCode(200)
   @SemEmpresa()
+  @PermiteSem2fa()
   trocarEmpresaAtiva(
     @Acesso() acesso: DadosDeAcesso,
     @Body(new ZodPipe(empresaAtivaSchema)) corpo: EmpresaAtivaEntrada,

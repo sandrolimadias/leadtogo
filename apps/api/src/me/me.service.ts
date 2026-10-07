@@ -9,6 +9,7 @@ import type {
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { DadosDeAcesso, Vinculo } from '../acesso/requisicao.js'
+import { doisFatoresObrigatorio, doisFatoresPendente } from '../acesso/dois-fatores.js'
 import { ErroApi } from '../http/erro-api.js'
 import { BANCO } from '../infra/infra.module.js'
 
@@ -63,7 +64,6 @@ export class MeService {
 
   async me(acesso: DadosDeAcesso): Promise<MeResposta> {
     const { sessao, vinculos, administradorDeConta } = acesso
-    const administrador = administradorDeConta || vinculos.some((v) => v.papel === 'admin')
     const emailVerificado = (
       await this.banco.cliente<{ email_verified: boolean }[]>`
         SELECT email_verified FROM auth."user" WHERE id = ${sessao.usuarioId}`
@@ -79,7 +79,13 @@ export class MeService {
       empresas: await this.empresasDe(vinculos, sessao.empresaAtivaId),
       empresaAtivaId: sessao.empresaAtivaId,
       administradorDeConta,
-      doisFatoresPendente: administrador && !sessao.twoFactorEnabled,
+      doisFatoresPendente: doisFatoresPendente({
+        twoFactorEnabled: sessao.twoFactorEnabled,
+        administradorDeConta,
+        vinculos,
+        empresaAtivaId: sessao.empresaAtivaId,
+      }),
+      doisFatoresObrigatorio: doisFatoresObrigatorio({ administradorDeConta, vinculos }),
     }
   }
 

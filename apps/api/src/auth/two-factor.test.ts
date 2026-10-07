@@ -235,15 +235,20 @@ describe('2FA (TOTP)', () => {
     expect(depois.status).toBe(429)
   })
 
-  it('desativar exige a senha; depois o login volta a ser direto', async () => {
-    const { email, cookie } = await usuarioCom2fa()
+  it('desativar exige a senha e um código atual; depois o login volta a ser direto', async () => {
+    const { email, cookie, segredo } = await usuarioCom2fa()
     const semSenha = await post('/v1/auth/two-factor/disable', cookie, {})
     expect(semSenha.status).toBeGreaterThanOrEqual(400)
     const errada = await post('/v1/auth/two-factor/disable', cookie, {
       password: 'senha-errada-123',
     })
     expect(errada.status).toBeGreaterThanOrEqual(400)
-    const ok = await post('/v1/auth/two-factor/disable', cookie, { password: SENHA_PADRAO })
+    const semCodigo = await post('/v1/auth/two-factor/disable', cookie, { password: SENHA_PADRAO })
+    expect(semCodigo.status).toBe(400)
+    const ok = await post('/v1/auth/two-factor/disable', cookie, {
+      password: SENHA_PADRAO,
+      code: codigoTotp(segredo),
+    })
     expect(ok.status).toBe(200)
     const login = await entrar(app, email)
     expect((login.body as { twoFactorRedirect?: boolean }).twoFactorRedirect).toBeUndefined()

@@ -30,6 +30,7 @@ const meAdmin = (pendente) => ({
   empresaAtivaId: null,
   administradorDeConta: true,
   doisFatoresPendente: pendente,
+  doisFatoresObrigatorio: true,
 })
 const convite = (contaExistente) => ({
   empresa: {

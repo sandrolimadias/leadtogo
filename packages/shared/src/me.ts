@@ -38,10 +38,16 @@ export const meRespostaSchema = z
     /** Dono ou administrador de alguma conta: tem o painel consolidado */
     administradorDeConta: z.boolean(),
     /**
-     * Administrador (de empresa ou de conta) que ainda não ativou o 2FA: até ativar, a API só deixa
-     * passar este endpoint, as rotas de 2FA e o logout.
+     * Quem ainda não ativou o 2FA e a regra o exige agora (administrador de conta, ou a política da
+     * empresa ativa para o papel dele): até ativar, a API só deixa passar este endpoint, a troca de
+     * empresa, as rotas de 2FA e o logout.
      */
     doisFatoresPendente: z.boolean(),
+    /**
+     * Alguma regra (administrador de conta ou a política de qualquer empresa dele) exige 2FA dele:
+     * enquanto for `true`, não pode desativar o 2FA.
+     */
+    doisFatoresObrigatorio: z.boolean(),
   })
   .meta({ id: 'MeResposta' })
 export type MeResposta = z.infer<typeof meRespostaSchema>

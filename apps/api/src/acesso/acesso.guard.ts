@@ -5,6 +5,7 @@ import type { Request } from 'express'
 import { AuthService } from '../auth/auth.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { identificarNoLog } from '../log/contexto-log.js'
+import { doisFatoresPendente } from './dois-fatores.js'
 import {
   CHAVE_CONSOLIDADO,
   CHAVE_PUBLICA,
@@ -17,7 +18,8 @@ import { VinculosService } from './vinculos.service.js'
 /**
  * Controle de acesso de TODA rota (guard global; o padrão é protegido):
  *  1. sessão válida, ou 401 `nao_autenticado`;
- *  2. administrador (de empresa ou de conta) sem 2FA: 403 `2fa_obrigatorio`, salvo `@PermiteSem2fa`;
+ *  2. sem 2FA onde a regra exige (administrador de conta; ou a política da empresa ativa para o papel):
+ *     403 `2fa_obrigatorio`, salvo `@PermiteSem2fa`;
  *  3. a empresa ativa precisa ser uma das do usuário (função `app_vinculos_do_usuario`);
  *  4. consolidado: só administrador da conta, só leitura.
  * A transação com `SET LOCAL app.tenant_id` é aberta depois, pelo TenantInterceptor.
@@ -48,12 +50,21 @@ export class AcessoGuard implements CanActivate {
       this.vinculos.administraConta(sessao.usuarioId),
     ])
 
-    // Administrador sem 2FA não usa a API (só vê o que falta e ativa o 2FA)
-    const administrador = administradorDeConta || vinculos.some((v) => v.papel === 'admin')
-    if (administrador && !sessao.twoFactorEnabled && !marca(CHAVE_SEM_2FA)) {
+    // Sem 2FA onde a regra o exige (administrador de conta, ou a política da empresa ativa para o papel
+    // dele) não usa a API: só vê o que falta, troca de empresa e ativa o 2FA. Em outra empresa, que não
+    // exige, o mesmo usuário segue normalmente.
+    if (
+      !marca(CHAVE_SEM_2FA) &&
+      doisFatoresPendente({
+        twoFactorEnabled: sessao.twoFactorEnabled,
+        administradorDeConta,
+        vinculos,
+        empresaAtivaId: sessao.empresaAtivaId,
+      })
+    ) {
       throw new ErroApi(
         '2fa_obrigatorio',
-        'Administradores precisam ativar a autenticação em dois fatores para continuar.',
+        'A verificação em duas etapas é obrigatória para continuar. Ative-a para usar o Leadtogo.',
         403,
       )
     }

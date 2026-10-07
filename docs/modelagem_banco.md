@@ -117,6 +117,8 @@ USUÁRIO (login único) ── MEMBRO na Empresa A (admin)
 > - `app_vinculos_do_usuario(usuario_id)` → `(tenant_id, papel)` dos membros **ativos e não excluídos** do usuário. Só isso: o resto do membro se lê depois, com o tenant ativo, sob RLS.
 > - `app_empresas_da_conta_do_usuario(usuario_id)` → `tenant_id` das empresas **em teste ou ativas** das contas em que o usuário é `dono` ou `administrador` (o `financeiro` não entra): é o `app.tenant_ids` do painel consolidado.
 >
+> - `app_vinculos_com_politica(usuario_id)` (migração 0011) → `(tenant_id, papel, dois_fatores_exigido)` dos mesmos vínculos, com a política de 2FA de cada empresa (`admin` se a empresa ainda não tem linha em `tenant_configuracoes`). É a que o guard da API usa; a `app_vinculos_do_usuario` fica até a contração (remover quando nada mais a usar). Política extra `FOR SELECT TO leadtogo_owner` em `tenant_configuracoes`, casada com a mesma variável `app.vinculos_usuario` e só para as empresas em que o usuário é membro ativo.
+>
 > Cada função define uma variável de transação (`app.vinculos_usuario` / `app.consolidado_usuario`) e a limpa ao terminar. Uma política `FOR SELECT TO leadtogo_owner` em `membros` e outra em `tenants` só casa com essa variável; como valem só para o papel `leadtogo_owner` (o app não é o owner, e o owner fora das funções não define a variável), nada muda para o app, para o owner direto nem para o isolamento entre empresas. Migração 0006.
 
 ### 3.0.1 `contas` 🌐 — Conta dona (cobrança e gestão)
@@ -172,6 +174,7 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 | status_cliente_ao_conquistar | boolean default true | Ao conquistar, muda tag Status → Cliente |
 | rastreio_email_padrao | boolean default false | 🔮 |
 | whatsapp_modo_importacao | enum | 🔮 automático · manual · desligado |
+| dois_fatores_exigido | enum `politica_dois_fatores` NOT NULL default `admin` | Quem é obrigado a ter 2FA nesta empresa: `admin` · `admin_gestor` · `todos` (migração 0011, de expansão; ver funcionalidades.md, "Segurança e acesso") |
 | preferencias | jsonb | Demais ajustes |
 
 ### 3.3 Autenticação (Better Auth)

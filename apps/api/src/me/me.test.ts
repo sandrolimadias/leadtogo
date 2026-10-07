@@ -258,12 +258,14 @@ describe('POST /v1/sessao/empresa-ativa', () => {
     }
   })
 
-  it('administrador sem 2FA ainda não troca a empresa (só o /me, o 2FA e o logout passam)', async () => {
+  it('quem ainda não ativou o 2FA troca a empresa (a regra vale na empresa que fica ativa); as demais rotas seguem barradas', async () => {
     const d = await novoDono(app, { com2fa: false })
     const r = await trocar(d.cookie, { empresaId: d.tenantId })
-    expect(r.status).toBe(403)
-    expect(erroDe(r).erro).toBe('2fa_obrigatorio')
-    expect(await empresaAtivaNoBanco(d.usuarioId)).toEqual([null])
+    expect(r.status).toBe(200)
+    expect(await empresaAtivaNoBanco(d.usuarioId)).toEqual([d.tenantId])
+    const outra = await get('/v1/teste-me/dados', d.cookie)
+    expect(outra.status).toBe(403)
+    expect(erroDe(outra).erro).toBe('2fa_obrigatorio')
   })
 
   it('perdeu o vínculo com a empresa ativa: as rotas dão 403 e o /me deixa escolher outra', async () => {

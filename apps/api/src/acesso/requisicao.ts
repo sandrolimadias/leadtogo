@@ -1,3 +1,4 @@
+import type { PoliticaDoisFatores } from '@leadtogo/shared'
 import type { Request } from 'express'
 
 /** Papel do membro na empresa ativa (enum `papel_membro`). */
@@ -16,6 +17,8 @@ export interface Sessao {
 export interface Vinculo {
   tenantId: string
   papel: PapelMembro
+  /** Política de 2FA da empresa (`tenant_configuracoes.dois_fatores_exigido`) */
+  doisFatoresExigido: PoliticaDoisFatores
 }
 
 /** O que o TenantGuard decidiu para a requisição; o interceptor o executa. */

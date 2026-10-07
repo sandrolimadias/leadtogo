@@ -228,3 +228,104 @@ describe('app_empresas_da_conta_do_usuario (consolidado)', () => {
     })
   })
 })
+
+const configurar = (tenant: string, politica: string) =>
+  comTenant(
+    app,
+    tenant,
+    (tx) =>
+      tx`INSERT INTO tenant_configuracoes (tenant_id, dois_fatores_exigido) VALUES (${tenant}, ${politica}::politica_dois_fatores)`,
+  )
+
+const comPolitica = (usuario: string | null) =>
+  app<
+    { tenant_id: string; papel: string; dois_fatores_exigido: string }[]
+  >`SELECT * FROM app_vinculos_com_politica(${usuario})`
+
+describe('app_vinculos_com_politica (SECURITY DEFINER): política de 2FA de cada empresa do usuário', () => {
+  it('devolve papel e a política de cada empresa; sem configuração vale o padrão (admin)', async () => {
+    const [a, b, c] = [novoId(), novoId(), novoId()]
+    await prepararTenants(owner, [a, b, c])
+    await configurar(a, 'todos')
+    await configurar(b, 'admin_gestor')
+    const usuario = await novoUsuario()
+    const outro = await novoUsuario()
+    await entrar(a, usuario, 'vendedor')
+    await entrar(b, usuario, 'gestor')
+    await entrar(c, usuario, 'admin')
+    await entrar(c, outro, 'admin') // vínculo de outro usuário não aparece
+    const r = await comPolitica(usuario)
+    expect(r.map((v) => [v.tenant_id, v.papel, v.dois_fatores_exigido]).sort()).toEqual(
+      [
+        [a, 'vendedor', 'todos'],
+        [b, 'gestor', 'admin_gestor'],
+        [c, 'admin', 'admin'],
+      ].sort(),
+    )
+  })
+
+  it('ignora membros inativos e excluídos; usuário desconhecido ou NULL: vazio', async () => {
+    const [a, b, c] = [novoId(), novoId(), novoId()]
+    await prepararTenants(owner, [a, b, c])
+    const usuario = await novoUsuario()
+    await entrar(a, usuario, 'vendedor')
+    await entrar(b, usuario, 'vendedor')
+    await entrar(c, usuario, 'gestor')
+    await comTenant(
+      app,
+      a,
+      (tx) => tx`UPDATE membros SET ativo = false WHERE usuario_id = ${usuario}`,
+    )
+    await comTenant(
+      app,
+      b,
+      (tx) => tx`UPDATE membros SET excluido_em = now() WHERE usuario_id = ${usuario}`,
+    )
+    expect((await comPolitica(usuario)).map((v) => v.tenant_id)).toEqual([c])
+    expect(await comPolitica(novoId())).toHaveLength(0)
+    expect(await comPolitica(null)).toHaveLength(0)
+  })
+
+  it('é SECURITY DEFINER do owner, com search_path fixo, e só o app executa', async () => {
+    const [f] = await owner<{ dono: string; definer: boolean; config: string[] }[]>`
+      SELECT pg_get_userbyid(proowner) AS dono, prosecdef AS definer, proconfig AS config
+      FROM pg_proc WHERE proname = 'app_vinculos_com_politica'`
+    expect(f).toEqual({
+      dono: 'leadtogo_owner',
+      definer: true,
+      config: ['search_path=pg_catalog, pg_temp'],
+    })
+    const [p] = await owner<{ publico: boolean; app: boolean }[]>`
+      SELECT has_function_privilege('public', 'app_vinculos_com_politica(uuid)', 'EXECUTE') AS publico,
+             has_function_privilege('leadtogo_app', 'app_vinculos_com_politica(uuid)', 'EXECUTE') AS app`
+    expect(p).toEqual({ publico: false, app: true })
+  })
+
+  it('não abre uma brecha: o app não lê tenant_configuracoes de fora do tenant ativo, nem com a variável', async () => {
+    const [a, b] = [novoId(), novoId()]
+    await prepararTenants(owner, [a, b])
+    const usuario = await novoUsuario()
+    await entrar(a, usuario, 'admin')
+    await configurar(a, 'todos')
+    await app.begin(async (tx) => {
+      await tx`SELECT * FROM app_vinculos_com_politica(${usuario})`
+      expect(await tx`SELECT 1 FROM tenant_configuracoes`).toHaveLength(0)
+      await tx`SELECT set_config('app.vinculos_usuario', ${usuario}, true)`
+      expect(await tx`SELECT 1 FROM tenant_configuracoes`).toHaveLength(0)
+    })
+    // o tenant B não enxerga a configuração do A
+    expect(
+      await comTenant(
+        app,
+        b,
+        (tx) => tx`SELECT 1 FROM tenant_configuracoes WHERE tenant_id = ${a}`,
+      ),
+    ).toHaveLength(0)
+  })
+
+  it('rejeita um valor fora dos três permitidos', async () => {
+    const [a] = [novoId()]
+    await prepararTenants(owner, [a])
+    await expect(configurar(a, 'ninguem')).rejects.toThrow(/politica_dois_fatores/)
+  })
+})

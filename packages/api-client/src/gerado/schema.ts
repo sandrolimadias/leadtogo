@@ -44,6 +44,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/configuracoes/seguranca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Segurança da empresa ativa
+         * @description Hoje: `doisFatoresExigido`, a política de 2FA da empresa: `admin` (padrão), `admin_gestor` ou `todos`. Quem entra na empresa sem 2FA e a política exige para o papel dele é levado à ativação (`2fa_obrigatorio` nas rotas dela).
+         */
+        get: operations["SegurancaController_obter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Alterar a segurança da empresa ativa
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Vale na próxima requisição de cada pessoa da empresa.
+         */
+        patch: operations["SegurancaController_alterar"];
+        trace?: never;
+    };
     "/v1/convites": {
         parameters: {
             query?: never;
@@ -137,7 +161,7 @@ export interface paths {
         };
         /**
          * Quem sou eu
-         * @description Usuário, empresas em que é membro (com o papel em cada uma), empresa ativa e se falta ativar o 2FA. Não exige empresa ativa e fica aberto ao administrador que ainda não ativou o 2FA.
+         * @description Usuário, empresas em que é membro (com o papel em cada uma), empresa ativa e se falta ativar o 2FA (`doisFatoresPendente`: a regra da empresa ativa) ou se ele é obrigatório (`doisFatoresObrigatorio`: não pode desativar). Não exige empresa ativa e fica aberto a quem ainda não ativou o 2FA.
          */
         get: operations["MeController_me"];
         put?: never;
@@ -243,7 +267,7 @@ export interface paths {
         put?: never;
         /**
          * Trocar a empresa ativa
-         * @description Define a empresa ativa DESTA sessão. Só vale para empresa em que o usuário é membro ativo e que está em teste ou ativa; uma empresa alheia e uma inexistente dão o mesmo 403 (`empresa_nao_permitida`). Administrador sem 2FA recebe `2fa_obrigatorio`.
+         * @description Define a empresa ativa DESTA sessão. Só vale para empresa em que o usuário é membro ativo e que está em teste ou ativa; uma empresa alheia e uma inexistente dão o mesmo 403 (`empresa_nao_permitida`). Quem ainda não ativou o 2FA também pode trocar: a regra é aplicada na empresa que ficar ativa (nas rotas dela vem `2fa_obrigatorio` se ela o exige).
          */
         post: operations["MeController_trocarEmpresaAtiva"];
         delete?: never;
@@ -260,6 +284,14 @@ export interface components {
             token: string;
             nome?: string;
             senha?: string;
+        };
+        ConfiguracaoDeSeguranca: {
+            /** @enum {string} */
+            doisFatoresExigido: "admin" | "admin_gestor" | "todos";
+        };
+        ConfiguracaoDeSegurancaEntrada: {
+            /** @enum {string} */
+            doisFatoresExigido: "admin" | "admin_gestor" | "todos";
         };
         ConsultarConviteEntrada: {
             token: string;
@@ -373,6 +405,7 @@ export interface components {
             empresaAtivaId: string | null;
             administradorDeConta: boolean;
             doisFatoresPendente: boolean;
+            doisFatoresObrigatorio: boolean;
         };
         OpcoesDeAcesso: {
             loginGoogle: boolean;
@@ -502,6 +535,113 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    SegurancaController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDeSeguranca"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    SegurancaController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfiguracaoDeSegurancaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDeSeguranca"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -29,6 +29,12 @@ export const situacaoConta = pgEnum('situacao_conta', ['teste', 'ativa', 'suspen
 export const papelConta = pgEnum('papel_conta', ['dono', 'administrador', 'financeiro'])
 export const situacaoTenant = pgEnum('situacao_tenant', ['teste', 'ativo', 'suspenso', 'cancelado'])
 export const papelMembro = pgEnum('papel_membro', ['admin', 'gestor', 'vendedor'])
+/** Quem precisa de 2FA para usar a empresa (`tenant_configuracoes.dois_fatores_exigido`) */
+export const politicaDoisFatores = pgEnum('politica_dois_fatores', [
+  'admin',
+  'admin_gestor',
+  'todos',
+])
 export const modoImportacaoWhatsapp = pgEnum('modo_importacao_whatsapp', [
   'automatico',
   'manual',
@@ -106,6 +112,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   diasValidadeTagVisita: integer(),
   statusClienteAoConquistar: boolean().notNull().default(true),
   rastreioEmailPadrao: boolean().notNull().default(false),
+  /** admin (padrão) | admin_gestor | todos: quem é obrigado a ter 2FA ao usar esta empresa */
+  doisFatoresExigido: politicaDoisFatores().notNull().default('admin'),
   whatsappModoImportacao: modoImportacaoWhatsapp().notNull().default('desligado'),
   preferencias: jsonb().notNull().default({}),
   ...carimbos(),

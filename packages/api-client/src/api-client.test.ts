@@ -26,6 +26,7 @@ describe('cliente da API', () => {
       empresaAtivaId: null,
       administradorDeConta: false,
       doisFatoresPendente: false,
+      doisFatoresObrigatorio: false,
     }
     const cliente = criarApiClient('https://api.crm.exemplo.com', {
       fetch: (entrada) => {
