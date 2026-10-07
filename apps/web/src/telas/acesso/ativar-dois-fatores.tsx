@@ -51,6 +51,35 @@ export function TelaDeAtivarDoisFatores() {
   const servicos = useServicos()
   const navegar = useNavigate()
   const queryClient = useQueryClient()
+  return (
+    <FluxoDeAtivacao
+      aoConcluir={async () => {
+        await queryClient.invalidateQueries({ queryKey: chaveDoMe })
+        await navegar({ to: '/' })
+      }}
+      aoSair={async () => {
+        await servicos.sair()
+        await queryClient.invalidateQueries({ queryKey: chaveDoMe })
+        await navegar({ to: '/login', search: { redirect: undefined } })
+      }}
+    />
+  )
+}
+
+/**
+ * Os três passos da ativação, usados na ativação obrigatória (`/ativar-2fa`) e na voluntária
+ * (Meu perfil → Segurança). `aoSair` só existe na obrigatória (ali a pessoa não tem outra saída).
+ */
+export function FluxoDeAtivacao({
+  aoConcluir,
+  aoSair,
+  aoCancelar,
+}: {
+  aoConcluir: () => Promise<void>
+  aoSair?: () => Promise<void>
+  aoCancelar?: () => void
+}) {
+  const servicos = useServicos()
   const { enviando, executar } = useEnvio()
   const [etapa, setEtapa] = useState<Etapa>('senha')
   const [senha, setSenha] = useState('')
@@ -96,16 +125,7 @@ export function TelaDeAtivarDoisFatores() {
 
   const concluir = (e: FormEvent) => {
     e.preventDefault()
-    void executar(async () => {
-      await queryClient.invalidateQueries({ queryKey: chaveDoMe })
-      await navegar({ to: '/' })
-    })
-  }
-
-  const sair = async () => {
-    await servicos.sair()
-    await queryClient.invalidateQueries({ queryKey: chaveDoMe })
-    await navegar({ to: '/login', search: { redirect: undefined } })
+    void executar(aoConcluir)
   }
 
   const copiar = async (texto: string, o_que: string) => {
@@ -122,7 +142,11 @@ export function TelaDeAtivarDoisFatores() {
       <form onSubmit={confirmarSenha} noValidate className="flex flex-col gap-5">
         <Cabecalho
           titulo="Ative a verificação em duas etapas"
-          descricao="Administradores precisam dela para usar o Leadtogo. Primeiro, confirme sua senha."
+          descricao={
+            aoSair
+              ? 'Para usar o Leadtogo nesta empresa, é preciso ativar a verificação em duas etapas. Primeiro, confirme sua senha.'
+              : 'Proteja sua conta com um código do app autenticador. Primeiro, confirme sua senha.'
+          }
         />
         <CampoDeSenha
           id="ativar-senha"
@@ -139,13 +163,24 @@ export function TelaDeAtivarDoisFatores() {
         <Button type="submit" variant="primary" block size="lg" loading={enviando}>
           Continuar
         </Button>
-        <button
-          type="button"
-          onClick={() => void sair()}
-          className={`cursor-pointer self-center border-0 bg-transparent p-0 text-sm ${classeDoLinkSuave}`}
-        >
-          Sair
-        </button>
+        {aoSair ? (
+          <button
+            type="button"
+            onClick={() => void aoSair()}
+            className={`cursor-pointer self-center border-0 bg-transparent p-0 text-sm ${classeDoLinkSuave}`}
+          >
+            Sair
+          </button>
+        ) : null}
+        {aoCancelar ? (
+          <button
+            type="button"
+            onClick={aoCancelar}
+            className={`cursor-pointer self-center border-0 bg-transparent p-0 text-sm ${classeDoLinkSuave}`}
+          >
+            Cancelar
+          </button>
+        ) : null}
       </form>
     )
   }

@@ -22,6 +22,7 @@ import { Route as AcessoVerificacaoRouteImport } from './routes/_acesso.verifica
 import { Route as AcessoVerificarEmailRouteImport } from './routes/_acesso.verificar-email'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado.index'
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
+import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
 
 const AcessoRoute = AcessoRouteImport.update({
   id: '/_acesso',
@@ -86,6 +87,12 @@ const DevCatalogoRoute = DevCatalogoRouteImport.update({
   path: '/dev/catalogo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutenticadoPerfilSegurancaRoute =
+  AutenticadoPerfilSegurancaRouteImport.update({
+    id: '/perfil/seguranca',
+    path: '/perfil/seguranca',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/dev/catalogo': typeof DevCatalogoRoute
+  '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AutenticadoIndexRoute
@@ -112,6 +120,7 @@ export interface FileRoutesByTo {
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/dev/catalogo': typeof DevCatalogoRoute
+  '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,6 +137,7 @@ export interface FileRoutesById {
   '/_acesso/verificar-email': typeof AcessoVerificarEmailRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/verificacao'
     | '/verificar-email'
     | '/dev/catalogo'
+    | '/perfil/seguranca'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/verificacao'
     | '/verificar-email'
     | '/dev/catalogo'
+    | '/perfil/seguranca'
   id:
     | '__root__'
     | '/_acesso'
@@ -171,6 +183,7 @@ export interface FileRouteTypes {
     | '/_acesso/verificar-email'
     | '/dev/catalogo'
     | '/_autenticado/'
+    | '/_autenticado/perfil/seguranca'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevCatalogoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_autenticado/perfil/seguranca': {
+      id: '/_autenticado/perfil/seguranca'
+      path: '/perfil/seguranca'
+      fullPath: '/perfil/seguranca'
+      preLoaderRoute: typeof AutenticadoPerfilSegurancaRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
   }
 }
 
@@ -304,10 +324,12 @@ const AcessoRouteWithChildren =
 
 interface AutenticadoRouteChildren {
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+  AutenticadoPerfilSegurancaRoute: typeof AutenticadoPerfilSegurancaRoute
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoIndexRoute: AutenticadoIndexRoute,
+  AutenticadoPerfilSegurancaRoute: AutenticadoPerfilSegurancaRoute,
 }
 
 const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(

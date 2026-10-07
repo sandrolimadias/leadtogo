@@ -130,6 +130,21 @@ export const servicosReais: ServicosDeAcesso = {
       return r.error ? falhaDoAuth(r.error) : ok(undefined)
     }),
 
+  desativarDoisFatores: (senha, codigo) =>
+    protegido(async () => {
+      // o corpo leva `code` além da senha: a API exige os dois (o tipo do cliente só conhece a senha)
+      const r = await authClient.$fetch('/two-factor/disable', {
+        method: 'POST',
+        body: { password: senha, code: codigo },
+      })
+      return r.error ? falhaDoAuth(r.error) : ok(undefined)
+    }),
+  gerarNovosCodigos: (senha) =>
+    protegido(async () => {
+      const r = await authClient.twoFactor.generateBackupCodes({ password: senha })
+      return r.error ? falhaDoAuth(r.error) : ok(r.data.backupCodes)
+    }),
+
   consultarConvite: (token) =>
     protegido(async () => daApi(await api.POST('/v1/convites/consultar', { body: { token } }))),
   aceitarConvite: (dados) =>

@@ -41,6 +41,10 @@ export interface ServicosDeAcesso {
 
   prepararDoisFatores: (senha: string) => Promise<Resultado<ConfiguracaoDoDoisFatores>>
   confirmarDoisFatores: (codigo: string) => Promise<Resultado>
+  /** Desativa o 2FA: senha + código atual do app. A API recusa (403) se alguma regra o exige do usuário. */
+  desativarDoisFatores: (senha: string, codigo: string) => Promise<Resultado>
+  /** Gera novos códigos de recuperação (pede a senha); os antigos deixam de valer. */
+  gerarNovosCodigos: (senha: string) => Promise<Resultado<string[]>>
 
   consultarConvite: (token: string) => Promise<Resultado<ConviteConsulta>>
   aceitarConvite: (dados: {

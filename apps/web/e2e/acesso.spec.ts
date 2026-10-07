@@ -10,6 +10,7 @@ import {
   quantosEmails,
   SENHA,
 } from './ambiente'
+import { URL_WEB } from '../playwright.config'
 
 test.beforeEach(async () => {
   await limparLimites()
@@ -208,5 +209,79 @@ test.describe('Aceitar convite', () => {
   test('link adulterado ou inexistente é convite inválido', async ({ page }) => {
     await page.goto('/convite?token=tokeninventadotokeninventadotokeninventado')
     await expect(page.getByRole('heading', { name: 'Convite inválido' })).toBeVisible()
+  })
+})
+
+test.describe('2FA para todos: política da empresa e Meu perfil → Segurança', () => {
+  test('a política "todos" leva o vendedor à ativação; ativado, ele só desativa quando a regra deixa de exigir', async ({
+    page,
+  }) => {
+    const { api } = await administradorComSessao('politica')
+    const vendedor = emailUnico('vendedor')
+    const convite = await api.post('/v1/convites', { data: { email: vendedor, papel: 'vendedor' } })
+    expect(convite.status()).toBe(201)
+
+    // o vendedor aceita o convite e entra (política padrão: só administradores)
+    const { link } = await linkDoEmail(vendedor)
+    await page.goto(link)
+    await page.getByLabel(/Seu nome/).fill('Vera Vendedora')
+    await page.getByLabel('Crie uma senha').fill(SENHA)
+    await page.getByLabel(/Li e aceito os termos/).check()
+    await page.getByRole('button', { name: 'Aceitar e entrar' }).click()
+    await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
+    const me = (await (await page.request.get('/v1/me')).json()) as { empresas: { id: string }[] }
+    const trocar = await page.request.post('/v1/sessao/empresa-ativa', {
+      data: { empresaId: me.empresas[0]?.id },
+      headers: { Origin: URL_WEB },
+    })
+    expect(trocar.status()).toBe(200)
+    expect((await page.request.get('/v1/membros')).status()).toBe(200)
+
+    // o administrador passa a exigir 2FA de todos: na próxima navegação o vendedor é levado à ativação
+    const exigir = await api.patch('/v1/configuracoes/seguranca', {
+      data: { doisFatoresExigido: 'todos' },
+    })
+    expect(exigir.status()).toBe(200)
+    expect((await page.request.get('/v1/membros')).status()).toBe(403)
+    await page.goto('/')
+    await expect(page).toHaveURL(/\/ativar-2fa$/)
+    await page.getByLabel('Senha', { exact: true }).fill(SENHA)
+    await page.getByRole('button', { name: 'Continuar' }).click()
+    const chave = (await page.getByTestId('chave-manual').textContent())?.trim() ?? ''
+    await digitar(page, codigoTotp(chave))
+    await page.getByRole('button', { name: 'Ativar verificação' }).click()
+    await page.getByLabel('Guardei meus códigos de recuperação').check()
+    await page.getByRole('button', { name: 'Concluir' }).click()
+    await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
+    expect((await page.request.get('/v1/membros')).status()).toBe(200)
+
+    // Segurança: ativa, mas obrigatória (a política exige): sem botão de desativar
+    await page.getByRole('link', { name: 'Meu perfil → Segurança' }).click()
+    await expect(page.getByText('Ativa', { exact: true })).toBeVisible()
+    await expect(page.getByText(/obrigatória para você/)).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Desativar verificação' })).toHaveCount(0)
+    const bloqueado = await page.request.post('/v1/auth/two-factor/disable', {
+      data: { password: SENHA, code: codigoTotp(chave) },
+      headers: { Origin: URL_WEB },
+    })
+    expect(bloqueado.status()).toBe(403)
+
+    // novos códigos de recuperação
+    await page.locator('#codigos-senha').fill(SENHA)
+    await page.getByRole('button', { name: 'Gerar novos códigos' }).click()
+    await expect(page.getByRole('list', { name: 'Novos códigos de recuperação' })).toBeVisible()
+    await page.getByRole('button', { name: 'Pronto, guardei' }).click()
+
+    // o administrador volta à política padrão: agora o vendedor pode desativar (senha + código)
+    await api.patch('/v1/configuracoes/seguranca', { data: { doisFatoresExigido: 'admin' } })
+    await page.reload()
+    await expect(page.getByRole('button', { name: 'Desativar verificação' })).toBeVisible()
+    await page.locator('#desativar-senha').fill(SENHA)
+    await digitar(page, codigoTotp(chave, Date.now() + 30_000))
+    await page.getByRole('button', { name: 'Desativar verificação' }).click()
+    await expect(page.getByText('Desativada', { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Ativar verificação em duas etapas' }),
+    ).toBeVisible()
   })
 })

@@ -50,6 +50,8 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       }),
     ),
     confirmarDoisFatores: vi.fn(async () => ok(undefined)),
+    desativarDoisFatores: vi.fn(async () => ok(undefined)),
+    gerarNovosCodigos: vi.fn(async () => ok(['nova-1111', 'nova-2222', 'nova-3333', 'nova-4444'])),
     consultarConvite: vi.fn(async () => falha('convite_invalido', 'Convite inválido.', 404)),
     aceitarConvite: vi.fn(async () =>
       ok({ tenantId: 't', membroId: 'm', usuarioId: 'u', contaCriada: true }),

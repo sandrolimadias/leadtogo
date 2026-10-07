@@ -14,6 +14,9 @@ const MENSAGENS: Record<string, string> = {
   INVALID_CODE: 'Código incorreto ou vencido.',
   INVALID_BACKUP_CODE: 'Código de recuperação incorreto ou já usado.',
   OTP_HAS_EXPIRED: 'Código incorreto ou vencido.',
+  DOIS_FATORES_OBRIGATORIO:
+    'A verificação em duas etapas é obrigatória para você. Não dá para desativá-la.',
+  CODIGO_OBRIGATORIO: 'Digite o código de 6 números do app autenticador.',
   TOTP_NOT_ENABLED: 'A verificação em duas etapas não está ativa nesta conta.',
   INVALID_TWO_FACTOR_COOKIE: 'A verificação venceu. Entre de novo para receber outra.',
   TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE: 'Muitas tentativas. Aguarde um minuto e tente de novo.',

@@ -74,4 +74,30 @@ describe('serviços reais (Better Auth e API)', () => {
     expect(chamadas[0]?.url).toContain('/v1/auth/request-password-reset')
     expect(String(chamadas[0]?.corpo['redirectTo'])).toMatch(/\/redefinir-senha$/)
   })
+
+  it('desativar o 2FA manda a senha E o código; gerar códigos manda a senha', async () => {
+    const chamadas = simular({ status: 200, corpo: { status: true, backupCodes: ['a-1', 'b-2'] } })
+    expect(await servicosReais.desativarDoisFatores('senha-1', '123456')).toEqual({
+      ok: true,
+      dados: undefined,
+    })
+    expect(chamadas[0]?.url).toContain('/v1/auth/two-factor/disable')
+    expect(chamadas[0]?.corpo).toEqual({ password: 'senha-1', code: '123456' })
+    expect(await servicosReais.gerarNovosCodigos('senha-1')).toEqual({
+      ok: true,
+      dados: ['a-1', 'b-2'],
+    })
+    expect(chamadas[1]?.url).toContain('/v1/auth/two-factor/generate-backup-codes')
+  })
+
+  it('a recusa por regra obrigatória vira mensagem em pt-BR', async () => {
+    simular({ status: 403, corpo: { code: 'DOIS_FATORES_OBRIGATORIO', message: 'x' } })
+    expect(await servicosReais.desativarDoisFatores('s', '123456')).toMatchObject({
+      ok: false,
+      erro: {
+        codigo: 'DOIS_FATORES_OBRIGATORIO',
+        mensagem: expect.stringContaining('obrigatória') as string,
+      },
+    })
+  })
 })
