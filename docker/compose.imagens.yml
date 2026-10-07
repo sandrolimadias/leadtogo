@@ -1,0 +1,78 @@
+# Teste local das IMAGENS de produção (leadtogo-api e leadtogo-web), contra o Postgres, o Valkey, o Garage e
+# o Mailpit do compose de desenvolvimento (docker/compose.dev.yml, no ar: pnpm dev:up).
+# Sobe: migrar (roda e sai) → api + worker → web → borda (Caddy que reproduz o Traefik: /v1 → API, resto → web).
+# O jeito de usar é o script: pnpm imagens:testar   (ele cria um banco temporário, confere tudo e apaga)
+# À mão:  BANCO=leadtogo_img docker compose --env-file .env -f docker/compose.imagens.yml up -d --wait
+name: leadtogo-imagens
+
+x-api: &api
+  image: ${API_IMAGEM:-leadtogo-api:teste}
+  networks: [dev]
+  environment: &api-env
+    NODE_ENV: production
+    LOG_LEVEL: info
+    # domínio único: o navegador só fala com a borda; os links dos e-mails também passam por ela
+    APP_URL: http://localhost:${PORTA_BORDA:-8080}
+    API_URL: http://localhost:${PORTA_BORDA:-8080}
+    TRUST_PROXY: '1'
+    DATABASE_URL: postgres://leadtogo_app:${LEADTOGO_APP_PASSWORD:-senha}@postgres:5432/${BANCO:?defina BANCO (o banco criado por pnpm imagens:testar)}
+    REDIS_URL: redis://valkey:6379/${REDIS_DB:-6}
+    S3_ENDPOINT: http://garage:3900
+    S3_REGION: ${S3_REGION:-garage}
+    S3_BUCKET: ${S3_BUCKET:-leadtogo-arquivos}
+    S3_FORCE_PATH_STYLE: 'true'
+    S3_ACCESS_KEY: ${S3_ACCESS_KEY:?}
+    S3_SECRET_KEY: ${S3_SECRET_KEY:?}
+    BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?}
+    TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?}
+    SMTP_HOST: mailpit
+    SMTP_PORT: '1025'
+    VERIFICACAO_EMAIL: 'false'
+    PRIMEIRO_ACESSO: aberto
+
+services:
+  migrar:
+    <<: *api
+    command: ['node', 'dist/migrate.js']
+    environment:
+      DATABASE_MIGRATION_URL: postgres://leadtogo_owner:${LEADTOGO_OWNER_PASSWORD:-senha}@postgres:5432/${BANCO:?}
+    restart: 'no'
+    healthcheck:
+      disable: true
+
+  api:
+    <<: *api
+    command: ['node', 'dist/main.js']
+    depends_on:
+      migrar: { condition: service_completed_successfully }
+    ports:
+      # a API também direto (como o api.crm.aledias.com.br, para integrações servidor a servidor)
+      - '127.0.0.1:${PORTA_API:-3300}:3000'
+
+  worker:
+    <<: *api
+    command: ['node', 'dist/worker.js']
+    depends_on:
+      migrar: { condition: service_completed_successfully }
+    # maior que o WORKER_ENCERRAMENTO_S (30 s), como no Coolify (esteira_deploy.md, 7.1.1)
+    stop_grace_period: 45s
+
+  web:
+    image: ${WEB_IMAGEM:-leadtogo-web:teste}
+    networks: [dev]
+
+  borda:
+    image: caddy:2-alpine
+    networks: [dev]
+    volumes:
+      - ./edge.Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      api: { condition: service_healthy }
+      web: { condition: service_healthy }
+    ports:
+      - '127.0.0.1:${PORTA_BORDA:-8080}:8000'
+
+networks:
+  dev:
+    name: leadtogo-dev_default
+    external: true

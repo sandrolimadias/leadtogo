@@ -1,0 +1,26 @@
+# Contexto de build das imagens (docker/api.Dockerfile e docker/web.Dockerfile). A raiz do repositório é o contexto.
+**/node_modules
+**/dist
+**/dist-*
+**/.turbo
+.git
+.github
+.env
+.env.*
+!.env.example
+docker/.data
+**/test-results
+**/playwright-report
+**/coverage
+
+# testes não vão para a imagem
+**/*.test.ts
+**/*.test.tsx
+apps/web/e2e
+apps/web/src/testes
+apps/api/src/testes
+packages/db/src/testes
+
+# documentação: só o design system entra (o build do web copia tokens, tema e fontes dele)
+docs/*
+!docs/design-system

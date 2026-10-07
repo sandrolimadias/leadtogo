@@ -1,0 +1,16 @@
+# Roteador de borda do compose.imagens.yml: reproduz o Traefik da produção, numa porta só.
+#   /v1/*  → API (sem tirar o prefixo)      resto → web
+# Em produção quem faz isso é o Traefik do Coolify (crm.aledias.com.br/v1 → leadtogo-api; o resto → leadtogo-web).
+{
+	auto_https off
+	admin off
+}
+
+:8000 {
+	handle /v1/* {
+		reverse_proxy api:3000
+	}
+	handle {
+		reverse_proxy web:8080
+	}
+}

@@ -1,6 +1,7 @@
 # Atualização semanal de dependências (ver docs/esteira_deploy.md, seção 3.2).
 # Um PR agrupado por ecossistema, para não gerar dezenas de PRs avulsos.
-# Os Dockerfiles (docker/) chegam na E11; até lá o ecossistema docker não encontra nada.
+# Os Dockerfiles e os compose (docker/) usam as imagens oficiais (node:24-alpine, caddy:2-alpine) com a
+# versão escrita no próprio FROM/image, para o Dependabot enxergar e propor as atualizações de segurança.
 # Major de PostGIS e Garage fica fora: exige migração de dados, feita à mão.
 version: 2
 updates:

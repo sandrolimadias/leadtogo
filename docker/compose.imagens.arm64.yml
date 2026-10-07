@@ -1,0 +1,7 @@
+# Sobreposição: roda as imagens da API e do web como linux/arm64 (emulação do Docker Desktop), como na VPS.
+#   docker compose --env-file .env -f docker/compose.imagens.yml -f docker/compose.imagens.arm64.yml up -d --wait
+services:
+  migrar: { platform: linux/arm64 }
+  api: { platform: linux/arm64 }
+  worker: { platform: linux/arm64 }
+  web: { platform: linux/arm64 }

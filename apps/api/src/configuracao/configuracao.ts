@@ -153,9 +153,13 @@ const esquema = z
         message: 'obrigatória em produção',
       })
     }
-    // Em produção o front e a API são servidos por HTTPS (cookie Secure, CORS só para o front)
+    // Em produção o front e a API são servidos por HTTPS (cookie Secure). A única exceção é o próprio
+    // computador (localhost): é como o `docker/compose.imagens.yml` roda as imagens de produção para teste, e
+    // os navegadores aceitam cookie Secure em http://localhost.
     for (const chave of ['APP_URL', 'API_URL'] as const) {
-      if (new URL(env[chave]).protocol !== 'https:') {
+      const { protocol, hostname } = new URL(env[chave])
+      const local = ['localhost', '127.0.0.1', '[::1]'].includes(hostname)
+      if (protocol !== 'https:' && !local) {
         ctx.addIssue({ code: 'custom', path: [chave], message: 'em produção deve ser https' })
       }
     }

@@ -1,0 +1,51 @@
+# Caddy do web: arquivos estáticos do PWA. O TLS é do Traefik (Coolify), então aqui é HTTP na porta 8080.
+# A MESMA imagem serve a qualquer ambiente: o front fala com a API por caminhos relativos (/v1), que o
+# Traefik (produção) ou o roteador de borda do compose.imagens.yml leva até a API. Por isso a CSP é 'self'.
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(self), payment=(), usb=()"
+		# sem domínios externos. 'unsafe-inline' só em estilos (Radix e Sonner injetam <style>); nenhum script inline.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+	}
+
+	handle /health {
+		respond "ok" 200
+	}
+
+	# arquivos com hash no nome: nunca mudam, cache de 1 ano
+	handle /assets/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# ícones e favicon: mudam raramente, mas não têm hash
+	handle /icons/* {
+		header Cache-Control "public, max-age=86400"
+		file_server
+	}
+	handle /favicon.svg {
+		header Cache-Control "public, max-age=86400"
+		file_server
+	}
+
+	# todo o resto: index.html (e as rotas do app, que caem nele), service worker, registerSW.js e manifest.
+	# Sem cache: o navegador sempre confere, e o PWA atualiza sem o usuário limpar nada.
+	handle {
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

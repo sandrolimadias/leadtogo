@@ -144,6 +144,8 @@ describe('configuração validada por Zod', () => {
       NODE_ENV: 'production',
       TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
       VERIFICACAO_EMAIL: 'false',
+      APP_URL: 'http://crm.aledias.com.br',
+      API_URL: 'http://api.crm.aledias.com.br',
     })
     expect(erro.problemas.map((p) => p.variavel).sort()).toEqual(['API_URL', 'APP_URL'])
     expect(
@@ -156,6 +158,28 @@ describe('configuração validada por Zod', () => {
         API_URL: 'https://api.crm.aledias.com.br',
       }).NODE_ENV,
     ).toBe('production')
+  })
+
+  it('em produção, http só é aceito no próprio computador (teste local das imagens)', () => {
+    const producao = {
+      ...valida,
+      NODE_ENV: 'production',
+      TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
+      VERIFICACAO_EMAIL: 'false',
+    }
+    expect(
+      carregarConfiguracao({
+        ...producao,
+        APP_URL: 'http://localhost:8080',
+        API_URL: 'http://localhost:8080',
+      }).NODE_ENV,
+    ).toBe('production')
+    const erro = falha({
+      ...producao,
+      APP_URL: 'http://crm.exemplo.com.br',
+      API_URL: 'http://192.168.0.5:3000',
+    })
+    expect(erro.problemas.map((p) => p.variavel).sort()).toEqual(['API_URL', 'APP_URL'])
   })
 
   it('a mensagem de erro nunca mostra valores (podem ser segredos)', () => {

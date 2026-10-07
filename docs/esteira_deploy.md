@@ -226,17 +226,31 @@ jobs:
 
 ## 6. Imagens Docker
 
-> **A VPS é ARM64.** As imagens do Leadtogo são publicadas para `linux/arm64`. No GitHub Actions, o build usa QEMU (emulação), que é mais lento; se o tempo incomodar, trocar o job de build para um runner ARM (`ubuntu-24.04-arm`), se o plano do GitHub permitir. Localmente (WSL, amd64), o Docker builda para a arquitetura da máquina.
+> **A VPS é ARM64.** As imagens do Leadtogo são publicadas para `linux/arm64`. No GitHub Actions, o build usa QEMU (emulação), que é mais lento; se o tempo incomodar, trocar o job de build para um runner ARM (`ubuntu-24.04-arm`), se o plano do GitHub permitir. Localmente (WSL, amd64), o Docker builda para a arquitetura da máquina; o teste em ARM64 é `pnpm imagens:testar --arm64` (emulação do Docker Desktop).
 
-| Imagem | Base | Conteúdo | Usada por |
-|---|---|---|---|
-| `leadtogo-api` | `node:<LTS>-alpine` (multi-stage) | API NestJS compilada + migrações | **API** (`node dist/main.js`) e **worker** (`node dist/worker.js`) |
-| `leadtogo-web` | Build Vite → `caddy:alpine` | Arquivos estáticos do PWA, com cache e compressão | **Web** |
+| Imagem | Base final | Conteúdo | Usada por | Tamanho (descompactado · compactado) |
+|---|---|---|---|---|
+| `leadtogo-api` | `node:24-alpine` (oficial) | `apps/api/dist`, `packages/{db,shared}/dist` (com as migrações SQL) e só as dependências de **produção** (podadas: sem `*.map`, `*.d.ts`, documentação e testes) | **API** (`node dist/main.js`), **worker** (`node dist/worker.js`) e **migração** (`node dist/migrate.js`) | 335 MB (amd64) / 331 MB (arm64) · ~70 MB |
+| `leadtogo-web` | `caddy:2-alpine` (oficial) | `vite build` do PWA + `docker/web.Caddyfile` | **Web** (porta 8080) | 94 MB (amd64) / 90 MB (arm64) · ~24 MB |
 
-- Multi-stage: dependências e build numa etapa, imagem final só com o necessário (menor e mais segura).
-- Usuário **não-root**, `NODE_ENV=production`, `HEALTHCHECK` na imagem.
-- A versão (`APP_VERSION` = commit) vai para a imagem e aparece em `/health`, no rodapé do app e no Sentry, para saber exatamente o que está no ar.
-- Em `leadtogo-web`, o `index.html` e o service worker **sem cache**, e os arquivos com hash **com cache longo**. Assim o PWA atualiza sem o usuário precisar limpar nada.
+Metas: API < 350 MB e web < 100 MB (descompactados). As bases são as imagens oficiais, que recebem as correções de segurança; o Dependabot acompanha o `FROM` de cada Dockerfile.
+
+**`docker/api.Dockerfile`** (contexto: a raiz do repositório; `docker build -f docker/api.Dockerfile --build-arg APP_VERSION=<sha> --build-arg GIT_SHA=<sha> .`)
+- **Três estágios.** `build` roda em `--platform=$BUILDPLATFORM` (o TypeScript compila igual em qualquer arquitetura: `pnpm --filter "@leadtogo/api..." run build`). `deps` instala **só as dependências de produção na arquitetura de destino** (`pnpm install --prod --frozen-lockfile --ignore-scripts --filter "@leadtogo/api..."`) e poda o `node_modules`. `final` junta tudo na árvore do monorepo (os pacotes internos são links relativos).
+- **Sem `drizzle-kit` nem ferramentas de desenvolvimento.** Isso depende de `autoInstallPeers: false` e `dedupePeerDependents: false` no `pnpm-workspace.yaml`: sem eles o `better-auth` herdava `drizzle-kit`, `vitest` e `react` do db e do web (a árvore de produção tinha 290 MB; agora 78 MB podada). Os peers que o código usa de verdade são dependências explícitas (`pnpm peers check` só deve apontar o `typescript` do `openapi-typescript`).
+- **Usuário `node` (não-root)**, `NODE_ENV=production`, **`tini` como PID 1** (o SIGTERM do `docker stop` chega ao Node; o worker termina os jobs e sai com 0). A imagem não tem npm, yarn nem corepack.
+- **Comandos:** `node dist/main.js` (padrão), `node dist/worker.js`, `node dist/migrate.js` (migrador do drizzle-orm; as migrações vão em `packages/db/dist/migrations`) e `node dist/criar-conta.js`.
+- **HEALTHCHECK `node dist/saude.js`**, o mesmo para os dois papéis: tenta `GET 127.0.0.1:$PORT/health` (API); se a porta recusar a conexão, consulta o servidor de saúde do worker (`WORKER_SAUDE_PORTA`, padrão 3001). Uma API que responde 503 é **não saudável** (não cai no worker). `PAPEL=api` ou `PAPEL=worker` força o papel. No Coolify o worker pode usar o mesmo healthcheck da imagem, ou o comando `node dist/saude-worker.js` já documentado em 7.1.1.
+- **Versão e labels:** `APP_VERSION` (build-arg) vira variável de ambiente (aparece em `/health`); `GIT_SHA`, `SOURCE` e `BUILD_DATE` alimentam as labels OCI `org.opencontainers.image.{source,revision,version,created,title}`.
+- Em produção a API recusa `APP_URL`/`API_URL` sem `https`, **exceto `localhost`** (o teste local das imagens roda em modo produção).
+
+**`docker/web.Dockerfile`**
+- O build copia `docs/design-system/` para o contexto **antes** do `vite build` (o `sincronizar-design-system` traz tokens, tema e fontes); por isso o `.dockerignore` mantém `docs/design-system/` e exclui o resto de `docs/`. Roda em `$BUILDPLATFORM` com `vite build` (os tipos são conferidos no CI). `APP_VERSION` é build-arg (aparece no rodapé do app).
+- **Caddy na porta 8080, usuário `web` (não-root)** e `HEALTHCHECK` em `/health`. O TLS é do Traefik.
+- **Domínio único:** o front usa caminhos relativos (`/v1/...`), então **a mesma imagem serve a qualquer ambiente** (nada de URL da API no build). A CSP é `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'` (sem domínios externos; `'unsafe-inline'` só em estilos, porque o Radix e o Sonner injetam `<style>`; não há script inline).
+- **Cabeçalhos:** HSTS (1 ano), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`, `Permissions-Policy`. **Cache:** `index.html`, `sw.js`, `registerSW.js`, `manifest.webmanifest` e o fallback de SPA (qualquer rota do app) com `no-cache`; `/assets/*` (arquivos com hash) com `public, max-age=31536000, immutable`; `/icons/*` e `favicon.svg` com 1 dia. Compressão `zstd`/`gzip`. Assim o PWA atualiza sem o usuário limpar nada.
+
+**Teste local das imagens (`docker/compose.imagens.yml`)**: `pnpm dev:up` e depois `pnpm imagens:testar` (`--sem-build` reaproveita as imagens; `--arm64` testa como `linux/arm64`). O script cria um **banco temporário** (o `leadtogo` de desenvolvimento não é tocado), sobe `migrar` (roda e sai) → `api` + `worker` → `web` → `borda`, e confere: migração com saída 0, usuário não-root e `tini` como PID 1, ausência do `drizzle-kit`, `HEALTHCHECK` saudável nos três, cabeçalhos e cache do web, `/health` da API (versão), **primeiro acesso, login e senha errada no navegador (Playwright) pela borda**, cookie de sessão `HttpOnly; Secure; SameSite=Lax` só do host, nenhuma requisição para outra origem nem violação de CSP, e o **`docker stop` do worker** (sai com 0 em segundos). A `borda` é um Caddy (`docker/edge.Caddyfile`) que **reproduz o Traefik da produção numa porta só: `/v1/*` → API, o resto → web**; a API também fica direta em `127.0.0.1:3300` (como o `api.crm.aledias.com.br`).
 
 ---
 
@@ -247,15 +261,17 @@ jobs:
 |---|---|---|---|
 | leadtogo-api | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` | `crm.aledias.com.br/v1` (usuários) e `api.crm.aledias.com.br` (integrações servidor a servidor) |
 | leadtogo-worker | Docker Image | `ghcr.io/<usuario>/leadtogo-api:latest` (comando: worker) | — (sem domínio) |
-| leadtogo-web | Docker Image | `ghcr.io/<usuario>/leadtogo-web:latest` | `crm.aledias.com.br` |
+| leadtogo-web | Docker Image (porta **8080**) | `ghcr.io/<usuario>/leadtogo-web:latest` | `crm.aledias.com.br` (o resto do domínio) |
 | leadtogo-db | Database (PostgreSQL) | `imresamu/postgis:17-3.5` (ARM64) | — (só rede interna) |
 | leadtogo-cache | Database (Redis/Valkey) | `valkey/valkey` | — |
 | leadtogo-files | Docker Compose (Garage) | `dxflrs/garage:v2.1.0` | `files.crm.aledias.com.br` (API S3, porta 3900) |
 
+- **Domínio único (Traefik do Coolify):** `crm.aledias.com.br` atende os dois recursos. No `leadtogo-api`, cadastre os domínios `https://crm.aledias.com.br/v1` e `https://api.crm.aledias.com.br` (porta 3000); no `leadtogo-web`, `https://crm.aledias.com.br`. O Traefik escolhe o prefixo mais longo (`/v1` vai para a API, o resto para o web) e **não remove o prefixo** (a API já responde em `/v1/*`). Variáveis da API: `APP_URL=https://crm.aledias.com.br` e `API_URL=https://crm.aledias.com.br` (os links dos e-mails de senha e de verificação passam por esse domínio) e `TRUST_PROXY=1`. O cookie de sessão é só do host `crm.aledias.com.br`; não há CORS para o front. `api.crm.aledias.com.br` serve só a integrações servidor a servidor (webhooks, n8n, Evolution) e ao health check da esteira. O `docker/compose.imagens.yml` reproduz esse roteamento localmente.
+- **Healthchecks:** API e worker usam o `HEALTHCHECK` da própria imagem (`node dist/saude.js`, que detecta o papel); o web, o `/health` do Caddy.
 - **Credencial do GHCR no Coolify:** registrar `ghcr.io` com um token do GitHub com permissão **somente `read:packages`**, para baixar as imagens privadas.
 - **Variáveis de ambiente** de produção (banco, Valkey, Garage, chaves do Better Auth, Evolution, n8n, Sentry) ficam **só no Coolify**. O repositório tem apenas o `.env.example`.
 - **Limites de memória** definidos por container (a VPS é compartilhada com n8n e Evolution).
-- **Healthchecks** em todos os recursos; o Coolify só troca a versão quando a nova responde saudável (sem tempo fora do ar).
+- **Healthchecks** em todos os recursos (acima); o Coolify só troca a versão quando a nova responde saudável (sem tempo fora do ar).
 
 ### 7.1.1 Worker: saúde, parada e retenção
 - **Healthcheck (sem porta publicada):** o worker não serve HTTP. Ele abre um servidor mínimo em `127.0.0.1:3001` (`WORKER_SAUDE_PORTA`), só no loopback do container: nem outros containers o alcançam. O comando de saúde do Coolify é **`node dist/saude-worker.js`** (sai com 0 saudável, 1 caso contrário). O servidor responde 200 só se os consumidores das filas estiverem rodando, o Valkey e o Postgres responderem e (com o relay do outbox ligado) o último ciclo tiver menos de 30 s.

@@ -412,16 +412,31 @@ Diferenças em relação ao protótipo `Acesso.dc.html` (o documento e a API val
 
 ---
 
-## E11. Imagens Docker — Claude Code
+## E11. Imagens Docker — Claude Code ⏳ aguardando aprovação
 
 **Pedido:**
 > Crie `docker/api.Dockerfile` (multi-stage, node 24-alpine, usuário não-root, `HEALTHCHECK`, comandos `node dist/main.js`, `node dist/worker.js` e `node dist/migrate.js`) e `docker/web.Dockerfile` (build Vite → Caddy, sem cache para `index.html` e service worker, cache longo para arquivos com hash, compressão, cabeçalhos de segurança). Receba `APP_VERSION` como build-arg. Adicione `.dockerignore`.
 
-- [ ] Imagens buildam localmente; `docker run` da API responde `/health`.
-- [ ] Tamanhos razoáveis (API < 250 MB, web < 60 MB).
-- [ ] **Dockerfile do web:** copiar `docs/design-system/` para dentro do contexto do build **antes** do `vite build`. As cópias de `tokens.css`, `tailwind-theme.css` e das fontes em `apps/web` não estão no Git (geradas por `scripts/sincronizar-design-system.mjs` no `prebuild`); sem a pasta no contexto o build da imagem falha. O `.dockerignore` não pode excluir `docs/design-system/`.
+Entregue (detalhes em `esteira_deploy.md`, seção 6):
 
-**Pronto quando:** `docker compose` de teste com as imagens prontas sobe a aplicação inteira localmente.
+- `docker/api.Dockerfile`: estágio de build em `$BUILDPLATFORM`, dependências de **produção** instaladas na arquitetura de destino e podadas, base final `node:24-alpine`, usuário `node`, `tini` como PID 1, sem `drizzle-kit` nem npm/yarn/corepack, `HEALTHCHECK node dist/saude.js` (detecta API ou worker; `PAPEL` força), labels OCI e `APP_VERSION`/`GIT_SHA` como build-args.
+- `docker/web.Dockerfile` + `docker/web.Caddyfile`: build do Vite (com `docs/design-system/` no contexto), `caddy:2-alpine` na porta 8080 sem root, SPA, cache (sem cache para `index.html`, `sw.js`, `registerSW.js` e manifest; `immutable` por 1 ano nos arquivos com hash), compressão, HSTS, CSP `connect-src 'self'` sem domínios externos e os demais cabeçalhos.
+- `.dockerignore` (sem `node_modules`, `dist`, `.git`, `.env`, `docker/.data`, testes e a documentação, exceto `docs/design-system/`).
+- `docker/compose.imagens.yml` (+ `compose.imagens.arm64.yml`) e `pnpm imagens:testar`: sobe as imagens contra o Postgres, Valkey, Garage e Mailpit de desenvolvimento, **com um banco temporário**, e uma borda Caddy que reproduz o Traefik (`/v1` → API, resto → web).
+- **Domínio único** (decidido em 07/10/2026): o front usa caminhos relativos; sem `VITE_API_URL`; a mesma imagem do web serve a qualquer ambiente.
+- Para isso: `autoInstallPeers: false` e `dedupePeerDependents: false` (produção da API de 290 MB para 78 MB podada), lockfile regenerado e peers usados virados dependências explícitas.
+
+Checklist:
+- [x] Imagens buildam localmente; `docker run` da API responde `/health` (pela borda e direto).
+- [x] Tamanhos (metas revistas: API < 350 MB e web < 100 MB, descompactados): **API 335 MB** (amd64) / 331 MB (arm64), ~70 MB compactada; **web 94 MB** (amd64) / 90 MB (arm64), ~24 MB compactada.
+- [x] **Dockerfile do web:** `docs/design-system/` copiado para o contexto antes do `vite build`.
+- [x] Teste no navegador: `/health`, primeiro acesso, login, senha errada, cookie só do host (`HttpOnly`, `Secure`, `Lax`), sem requisição para outra origem e sem violação de CSP.
+- [x] `docker stop` do worker: sai com 0 em menos de 1 s (SIGTERM chega ao Node pelo `tini`).
+- [x] ARM64 (emulação do Docker Desktop): as duas imagens constroem e passam no mesmo teste.
+
+**Pronto quando:** `docker compose` de teste com as imagens prontas sobe a aplicação inteira localmente. ✅
+
+**Para o E12/E13:** passar `APP_VERSION`, `GIT_SHA`, `SOURCE` e `BUILD_DATE` como build-args; publicar `linux/arm64`; no Coolify, os domínios do domínio único (`esteira_deploy.md`, 7.1) e `APP_URL`/`API_URL` iguais a `https://crm.aledias.com.br`.
 
 ---
 
