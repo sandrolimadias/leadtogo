@@ -301,10 +301,10 @@ Checklist:
 > Fidelidade alta ao protótipo; nada de cores ou espaçamentos fora dos tokens.
 
 Checklist:
-- [ ] Casca idêntica ao protótipo em 1440px e 390px, claro e escuro.
-- [ ] Login → primeiro acesso → casca com a empresa ativa; troca de empresa funcionando.
-- [ ] Lighthouse PWA "instalável"; navegação por teclado com foco visível.
-- [ ] Teste E2E mínimo (Playwright): login e troca de empresa.
+- [x] Casca idêntica ao protótipo em 1440px e 390px, claro e escuro (`comparar:casca`; diferenças registradas).
+- [x] Login → primeiro acesso → casca com a empresa ativa; troca de empresa funcionando.
+- [x] Lighthouse PWA "instalável"; navegação por teclado com foco visível.
+- [x] Teste E2E mínimo (Playwright): login e troca de empresa.
 
 **Pronto quando:** o fluxo completo funciona localmente no desktop e no celular (pelo modo de dispositivo do navegador).
 
@@ -331,7 +331,7 @@ O E9 é entregue em partes: **E9a** componentes base e catálogo (`/dev/catalogo
 
 Já prontos para o E9b/E9c: `AppNav`, `TenantSwitcher`, `MenuList`/`Menu`, `Toast` + `toast.*` (Sonner), `Alert`, campo com `suffix`, `Avatar`/`AvatarGroup`, `Icon`, `PainelDoDialogo`.
 
-### E9c. Casca do app — ⏳ aguardando aprovação
+### E9c. Casca do app — ✅ aprovado em 07/10/2026
 
 Entregue:
 
@@ -351,7 +351,7 @@ Ficam para as telas de negócio (hoje avisam "chega nas próximas etapas"): busc
 - **MVP · Configurações:** a **tela da política de 2FA** da empresa (Segurança: admin · admin e gestor · todos), usando `GET/PATCH /v1/configuracoes/seguranca` (só admin). Hoje a política só muda pela API.
 - **Contração (depois):** remover `app_vinculos_do_usuario` quando nada mais a usar (a API passou a usar `app_vinculos_com_politica`).
 
-### E9c (ajustes) e E9d: PWA, densidade e teclado — ⏳ E9 inteiro aguardando aprovação
+### E9c (ajustes) e E9d: PWA, densidade e teclado — ✅ E9 aprovado em 07/10/2026
 
 **Ajustes do E9c (aprovado)**
 - Menu: "Rotas" (Fase 3) fora; entram "Painel consolidado" (administrador da conta) e "Configurações" (administrador), como no protótipo. O seletor de empresa do administrador da conta traz "Painel consolidado" e "Criar empresa" (esta avisa "em breve"). Confirmado por teste.
@@ -368,7 +368,7 @@ Ficam para as telas de negócio (hoje avisam "chega nas próximas etapas"): busc
 - **Versão no rodapé:** "Leadtogo · versão X" no rodapé do menu lateral, na folha de perfil e no painel das telas de acesso; `APP_VERSION` do ambiente do build (`dev` sem ela). **Para o Dockerfile do web (E11):** passar `APP_VERSION` como argumento de build.
 - **Teclado na casca:** link "Pular para o conteúdo" como primeiro item da tabulação, ordem de Tab (menu, empresa, telas, usuário, busca, ações), menus de empresa e de usuário só por teclado (Enter, setas, Esc devolve o foco) e a folha de perfil prendendo o foco; 5 testes.
 
-### E9b. Camada de autenticação e telas de acesso — ⏳ aguardando aprovação
+### E9b. Camada de autenticação e telas de acesso — ✅ aprovado em 07/10/2026
 
 Entregue (commits `5a084b3`, `5c9b51a`, `910593f`, `ec2a38c` e os seguintes):
 
