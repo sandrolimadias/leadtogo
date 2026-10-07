@@ -6,7 +6,7 @@ Ver `docs/configuracao_tecnologia.md` (seção 8) e `docs/design_system.md`.
 
 ## Estado atual (E9a, fundação)
 
-Vite + React 19, TanStack Router (rotas por arquivo em `src/routes`, `routeTree.gen.ts` gerado) e Query, cliente da API (`src/api`), Tailwind v4 com os tokens, e os componentes base em `src/components/ui`. As telas de acesso e a camada de autenticação (E9b, aguardando aprovação) estão em `src/auth` e `src/telas/acesso`; a casca do app (E9c, aguardando aprovação) está em `src/casca`; o PWA entra na próxima parte.
+Vite + React 19, TanStack Router (rotas por arquivo em `src/routes`, `routeTree.gen.ts` gerado) e Query, cliente da API (`src/api`), Tailwind v4 com os tokens, e os componentes base em `src/components/ui`. As telas de acesso e a camada de autenticação (E9b, aguardando aprovação) estão em `src/auth` e `src/telas/acesso`; a casca do app (E9c, aguardando aprovação) está em `src/casca`; o PWA, a densidade por dispositivo e o teclado (E9d) também estão prontos.
 
 ## Design system: fonte única
 
@@ -24,6 +24,7 @@ Regras: nada de cor, fonte ou espaçamento fora dos tokens; a altura dos control
 - `pnpm build` (sincroniza, typecheck e build) · `pnpm preview`
 - `pnpm e2e`: Playwright contra API, worker, banco e Mailpit reais (suba `pnpm dev:up` e `pnpm db:migrate` antes; sobe a própria API em :3100 e o Vite em :5183)
 - `pnpm comparar:catalogos` e `pnpm capturar:acesso`: capturas de conferência visual em `~/projetos/leadtogo-capturas/`
+- `pnpm verificar:pwa` (build de produção + manifest, ícones, service worker, instalável, versão e densidade) e `pnpm comparar:casca` (casca contra o protótipo)
 - `pnpm test`: Vitest com jsdom e Testing Library (inclui testes de teclado e rótulos acessíveis)
 
 Os pacotes internos (`@leadtogo/shared`, `@leadtogo/api-client`) são lidos direto do código-fonte pela condição `@leadtogo/source`, sem precisar de build.

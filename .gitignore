@@ -42,3 +42,5 @@ apps/web/src/styles/assets/
 apps/web/dist-teste-catalogo/
 apps/web/test-results/
 apps/web/playwright-report/
+apps/web/dist-pwa/
+apps/web/dist-lh/

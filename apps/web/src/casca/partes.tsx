@@ -27,6 +27,22 @@ import { avisarEmBreve, nomeDaEmpresa } from './utilidades'
 
 type Tema = 'claro' | 'escuro' | 'sistema'
 
+/** Primeiro item da tabulação: leva o foco direto ao conteúdo, sem passar por todo o menu. */
+export function PularParaOConteudo() {
+  return (
+    <a
+      href="#conteudo"
+      onClick={(e) => {
+        e.preventDefault()
+        document.getElementById('conteudo')?.focus()
+      }}
+      className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[2000] focus:rounded-sm focus:bg-surface focus:px-3 focus:py-2 focus:font-semibold focus:text-brand focus:shadow-md"
+    >
+      Pular para o conteúdo
+    </a>
+  )
+}
+
 /** Sino de notificações (painel de 360 px). Ainda sem notificações: o painel diz isso. */
 export function Notificacoes({ tamanho = 'md' }: { tamanho?: 'md' | 'lg' }) {
   return (
@@ -129,7 +145,7 @@ export function BarraInferior({
   return (
     <nav
       aria-label="Navegação do celular"
-      className="fixed inset-x-0 bottom-0 z-[100] grid h-[68px] grid-cols-5 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-[100] grid h-[68px] grid-cols-5 border-t border-border bg-surface pb-[max(8px,env(safe-area-inset-bottom))]"
     >
       {itens.map((t) => (
         <Link

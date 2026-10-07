@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 
+import { VERSAO_DO_APP } from '@/casca/empresas'
+
 import { Logo } from './logo'
 
 /**
@@ -24,7 +26,10 @@ export function AcessoLayout({ children }: { children: ReactNode }) {
             mesmo login.
           </p>
         </div>
-        <span className="text-[13px] text-ink-muted">Dados protegidos conforme a LGPD.</span>
+        <span className="text-[13px] text-ink-muted">
+          Dados protegidos conforme a LGPD.
+          <span className="mt-1 block text-[11px] text-ink-subtle">Versão {VERSAO_DO_APP}</span>
+        </span>
       </aside>
       <main className="flex min-w-0 flex-1 flex-col items-center justify-start overflow-auto px-5 py-6 max-md:[--ctl-font:16px] max-md:[--ctl:var(--control-lg)] md:justify-center md:p-12">
         <div className="flex w-full max-w-full flex-col gap-5 md:max-w-[400px]">

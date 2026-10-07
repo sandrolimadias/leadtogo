@@ -16,7 +16,13 @@ import { Logo } from '@/components/acesso/logo'
 import { useDispositivo } from './dispositivo'
 import { VERSAO_DO_APP, useTrocarEmpresa } from './empresas'
 import { ROTULO_DO_PAPEL, TELAS, estaAtiva, telaVisivel, tituloDoCaminho } from './navegacao'
-import { BarraInferior, BarraSuperior, CabecalhoDoCelular, FolhaDePerfil } from './partes'
+import {
+  BarraInferior,
+  BarraSuperior,
+  CabecalhoDoCelular,
+  FolhaDePerfil,
+  PularParaOConteudo,
+} from './partes'
 import { usePreferencias } from './preferencias'
 import { SeletorDeEmpresa } from './seletor-de-empresa'
 import { avisarEmBreve, nomeDaEmpresa, papelDe } from './utilidades'
@@ -52,12 +58,15 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
   if (dispositivo === 'celular') {
     return (
       <div data-density="touch" className="flex min-h-dvh flex-col bg-bg text-ink">
+        <PularParaOConteudo />
         <CabecalhoDoCelular
           titulo={tituloDoCaminho(caminho)}
           me={me}
           aoAbrirPerfil={() => setPerfilAberto(true)}
         />
-        <div className="min-w-0 flex-1 pb-[84px]">{children}</div>
+        <div id="conteudo" tabIndex={-1} className="min-w-0 flex-1 pb-[84px] outline-none">
+          {children}
+        </div>
         <BarraInferior caminho={caminho} aoAbrirPerfil={() => setPerfilAberto(true)} />
         <FolhaDePerfil
           aberta={perfilAberto}
@@ -128,47 +137,48 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
     })),
     { separator: true },
     { icon: LogOut, label: 'Sair', danger: true, onSelect: () => void sair() },
-    { heading: `Versão ${VERSAO_DO_APP}` },
   ]
 
   const rodape = (
-    <div
-      className={cn(
-        'mt-auto flex items-center gap-2.5 border-t border-border px-2 pt-3',
-        recolhido && 'justify-center px-0',
+    <div className="mt-auto flex flex-col gap-1.5 border-t border-border pt-3">
+      <div className={cn('flex items-center gap-2.5 px-2', recolhido && 'justify-center px-0')}>
+        <Menu
+          side={recolhido ? 'right' : 'top'}
+          align="start"
+          items={itensDoUsuario}
+          trigger={
+            <button
+              type="button"
+              aria-label={`Menu de ${me.usuario.nome}`}
+              className={cn(
+                'flex min-w-0 cursor-pointer items-center gap-2.5 rounded-sm border-0 bg-transparent p-0 text-left text-ink',
+                !recolhido && 'flex-1',
+              )}
+            >
+              <Avatar name={me.usuario.nome} />
+              {recolhido ? null : (
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-semibold">{me.usuario.nome}</span>
+                  <span className="text-[12px] text-ink-muted">{papelDe(me)}</span>
+                </span>
+              )}
+              {recolhido ? null : (
+                <ChevronDown
+                  size={15}
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                  className="flex-none text-ink-muted"
+                />
+              )}
+            </button>
+          }
+        />
+      </div>
+      {recolhido ? null : (
+        <p className="m-0 px-2.5 text-[11px] leading-4 text-ink-subtle">
+          Leadtogo · versão {VERSAO_DO_APP}
+        </p>
       )}
-    >
-      <Menu
-        side={recolhido ? 'right' : 'top'}
-        align="start"
-        items={itensDoUsuario}
-        trigger={
-          <button
-            type="button"
-            aria-label={`Menu de ${me.usuario.nome}`}
-            className={cn(
-              'flex min-w-0 cursor-pointer items-center gap-2.5 rounded-sm border-0 bg-transparent p-0 text-left text-ink',
-              !recolhido && 'flex-1',
-            )}
-          >
-            <Avatar name={me.usuario.nome} />
-            {recolhido ? null : (
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-semibold">{me.usuario.nome}</span>
-                <span className="text-[12px] text-ink-muted">{papelDe(me)}</span>
-              </span>
-            )}
-            {recolhido ? null : (
-              <ChevronDown
-                size={15}
-                strokeWidth={1.75}
-                aria-hidden="true"
-                className="flex-none text-ink-muted"
-              />
-            )}
-          </button>
-        }
-      />
     </div>
   )
 
@@ -177,6 +187,7 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
       data-density={dispositivo === 'tablet' ? 'touch' : undefined}
       className="flex h-dvh bg-bg text-ink"
     >
+      <PularParaOConteudo />
       <AppNav
         className="h-full flex-none overflow-y-auto"
         recolhido={recolhido}
@@ -206,7 +217,9 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <BarraSuperior />
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div id="conteudo" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">
+          {children}
+        </div>
       </div>
     </div>
   )

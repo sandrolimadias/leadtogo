@@ -323,3 +323,87 @@ describe('casca no celular e no tablet', () => {
     expect(screen.queryByRole('button', { name: 'Recolher menu' })).toBeNull()
   })
 })
+
+describe('casca: teclado', () => {
+  it('Tab percorre a casca na ordem certa: pular para o conteúdo, menu, empresa, telas, usuário, busca, ações', async () => {
+    renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
+    await screen.findByRole('navigation', { name: 'Principal' })
+    const ordem: string[] = []
+    for (let i = 0; i < 14; i++) {
+      await userEvent.tab()
+      const el = document.activeElement as HTMLElement
+      ordem.push(el.getAttribute('aria-label') ?? el.textContent?.trim().replace(/\s+/g, ' ') ?? '')
+    }
+    expect(ordem[0]).toBe('Pular para o conteúdo')
+    expect(ordem[1]).toBe('Recolher menu')
+    expect(ordem[2]).toMatch(/Aurora Móveis/)
+    expect(ordem.slice(3, 8).map((t) => t.replace(/\d+$/, '').trim())).toEqual([
+      'Dashboard',
+      'Empresas',
+      'Contatos',
+      'Oportunidades',
+      'Tarefas',
+    ])
+    expect(ordem).toContain('Menu de Alessandro Dias')
+    expect(ordem.indexOf('Menu de Alessandro Dias')).toBeLessThan(
+      ordem.indexOf('Registrar atividade'),
+    )
+  })
+
+  it('"Pular para o conteúdo" leva o foco ao conteúdo (Enter)', async () => {
+    renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
+    await screen.findByRole('navigation', { name: 'Principal' })
+    await userEvent.tab()
+    expect(document.activeElement).toHaveTextContent('Pular para o conteúdo')
+    await userEvent.keyboard('{Enter}')
+    expect(document.activeElement?.id).toBe('conteudo')
+  })
+
+  it('o seletor de empresa abre e navega só pelo teclado e o Esc devolve o foco ao botão', async () => {
+    const servicos = servicosDaCasca(meComDuasEmpresas())
+    renderizar(servicos, '/')
+    const botao = await screen.findByRole('button', { name: /Aurora Móveis/ })
+    botao.focus()
+    await userEvent.keyboard('{Enter}')
+    const menu = await screen.findByRole('menu')
+    expect(menu).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+    expect(document.activeElement).toHaveTextContent('Borealis Logística')
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(botao).toHaveFocus()
+    // de novo, e agora escolhe com Enter
+    await userEvent.keyboard('{Enter}')
+    await screen.findByRole('menu')
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+    await waitFor(() => expect(servicos.trocarEmpresa).toHaveBeenCalledWith(B))
+  })
+
+  it('o menu de usuário também é todo por teclado (Enter abre, seta navega, Esc fecha)', async () => {
+    renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
+    const botao = await screen.findByRole('button', { name: 'Menu de Alessandro Dias' })
+    botao.focus()
+    await userEvent.keyboard('{Enter}')
+    await screen.findByRole('menu')
+    await userEvent.keyboard('{ArrowDown}')
+    expect(document.activeElement).toHaveTextContent(/Segurança|Claro|Escuro|Sistema|Sair/)
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(botao).toHaveFocus()
+  })
+
+  it('a folha de perfil do celular prende o foco, fecha com Esc e devolve o foco ao botão', async () => {
+    largura(390)
+    renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
+    const abrir = await screen.findByRole('button', { name: 'Abrir perfil' })
+    await userEvent.click(abrir)
+    const folha = await screen.findByRole('dialog', { name: 'Meu perfil' })
+    for (let i = 0; i < 12; i++) {
+      await userEvent.tab()
+      expect(folha.contains(document.activeElement)).toBe(true)
+    }
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Meu perfil' })).toBeNull())
+    expect(abrir).toHaveFocus()
+  })
+})

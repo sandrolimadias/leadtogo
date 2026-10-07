@@ -1,6 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { criarQueryClient } from './app/consulta'
 import { criarRoteador } from './app/roteador'
@@ -27,6 +27,7 @@ export function App({
         <TooltipProvider>
           <RouterProvider router={roteador} />
           <AvisosDaTela />
+          <DensidadePorDispositivo />
         </TooltipProvider>
       </ServicosProvider>
     </QueryClientProvider>
@@ -36,4 +37,19 @@ export function App({
 /** Os avisos sobem acima da barra inferior no celular. */
 function AvisosDaTela() {
   return <Toaster celular={useDispositivo() === 'celular'} />
+}
+
+/**
+ * `data-density` no <html> conforme o aparelho: toque (44 px, fonte 16 px) no celular e no tablet, padrão
+ * (36 px) no desktop. No <html> vale também para diálogos e menus, que ficam fora da casca.
+ */
+function DensidadePorDispositivo() {
+  const dispositivo = useDispositivo()
+  useEffect(() => {
+    const raiz = document.documentElement
+    if (dispositivo === 'desktop') raiz.removeAttribute('data-density')
+    else raiz.setAttribute('data-density', 'touch')
+    return () => raiz.removeAttribute('data-density')
+  }, [dispositivo])
+  return null
 }

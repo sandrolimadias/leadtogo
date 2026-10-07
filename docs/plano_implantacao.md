@@ -351,6 +351,22 @@ Ficam para as telas de negócio (hoje avisam "chega nas próximas etapas"): busc
 - **MVP · Configurações:** a **tela da política de 2FA** da empresa (Segurança: admin · admin e gestor · todos), usando `GET/PATCH /v1/configuracoes/seguranca` (só admin). Hoje a política só muda pela API.
 - **Contração (depois):** remover `app_vinculos_do_usuario` quando nada mais a usar (a API passou a usar `app_vinculos_com_politica`).
 
+### E9c (ajustes) e E9d: PWA, densidade e teclado — ⏳ E9 inteiro aguardando aprovação
+
+**Ajustes do E9c (aprovado)**
+- Menu: "Rotas" (Fase 3) fora; entram "Painel consolidado" (administrador da conta) e "Configurações" (administrador), como no protótipo. O seletor de empresa do administrador da conta traz "Painel consolidado" e "Criar empresa" (esta avisa "em breve"). Confirmado por teste.
+- Conteúdo das telas de listagem e dashboard: padding 24 px (16 no celular), gap 20 px, largura máxima 1400 px, alinhado ao menu; as telas de formulário (Segurança) mantêm a coluna estreita. Textos "Em breve: …" para o usuário, sem jargão de etapa.
+- Segurança diz o motivo real: `GET /v1/me` traz `doisFatoresMotivo` (administrador da conta, ou a política da empresa X para o papel dele).
+- `pnpm --filter @leadtogo/web comparar:casca`: compara, no tema claro e no escuro, o menu aberto e recolhido, a barra superior, o seletor de empresa aberto (também com o menu recolhido) e, no celular, o cabeçalho, a barra inferior e a folha de perfil contra o protótipo (`~/projetos/leadtogo-capturas/casca-comparacao/`). Diferenças que ficam, por decisão registrada: contadores do menu ("2 paradas", 7) e o selo do sino (não há dados ainda); "Administrador" no lugar de "Admin" (rótulo do design system); cor do logotipo da empresa derivada do nome (o protótipo fixa a cor por empresa); menu do usuário no rodapé do menu (Meu perfil → Segurança, tema, Sair) no lugar do botão "Sair"; na folha do celular, "Meu perfil → Segurança" e o seletor de tema a mais; a pílula "Início" do cabeçalho do celular segue o protótipo. O que restou de pixels nas regiões é, fora isso, antialiasing.
+- Relay do outbox: `OUTBOX_INTERVALO_MS` já era variável de ambiente (padrão 2000 ms); os testes passaram a usar 200 ms.
+
+**E9d**
+- **PWA** (`vite-plugin-pwa`, só no build): manifest (nome, standalone, `theme_color`, `background_color`, pt-BR), ícones PNG commitados em `apps/web/public/icons` (192, 512, maskable 512 e apple-touch; gerados por `pnpm --filter @leadtogo/web gerar:icones` a partir da marca), atualização automática (`autoUpdate`, `skipWaiting`, `clientsClaim`). O service worker guarda só a casca estática; `/v1`, `/health` e `/docs` nunca são interceptados (a leitura offline e a fila entram nas etapas de dados).
+- **Instalável:** `pnpm --filter @leadtogo/web verificar:pwa` faz o build de produção, sobe o preview e confere manifest, ícones (tamanho real), service worker ativo e controlando a página, **instalável** (a checagem do próprio Chrome, `Page.getInstallabilityErrors`, sem erros), casca sem rede, versão no rodapé e `data-density`. Lighthouse 11.7.1 (a última com a categoria PWA; da 12 em diante ela foi removida): `installable-manifest`, `splash-screen`, `themed-omnibox` e `maskable-icon` com nota 1 (relatório em `~/projetos/leadtogo-capturas/pwa/lighthouse-pwa.json`; comando: `CHROME_PATH=<chromium do Playwright> npx lighthouse@11 <url>/login --only-categories=pwa --chrome-flags="--headless=new --no-sandbox"`).
+- **Densidade por dispositivo:** `data-density="touch"` no `<html>` no celular e no tablet (inclui diálogos e menus fora da casca); padrão no desktop. Alvos de 44 px no celular conferidos.
+- **Versão no rodapé:** "Leadtogo · versão X" no rodapé do menu lateral, na folha de perfil e no painel das telas de acesso; `APP_VERSION` do ambiente do build (`dev` sem ela). **Para o Dockerfile do web (E11):** passar `APP_VERSION` como argumento de build.
+- **Teclado na casca:** link "Pular para o conteúdo" como primeiro item da tabulação, ordem de Tab (menu, empresa, telas, usuário, busca, ações), menus de empresa e de usuário só por teclado (Enter, setas, Esc devolve o foco) e a folha de perfil prendendo o foco; 5 testes.
+
 ### E9b. Camada de autenticação e telas de acesso — ⏳ aguardando aprovação
 
 Entregue (commits `5a084b3`, `5c9b51a`, `910593f`, `ec2a38c` e os seguintes):
