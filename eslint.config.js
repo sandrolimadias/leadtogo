@@ -57,6 +57,22 @@ export default defineConfig(
     files: ['apps/web/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat['recommended-latest'], reactRefresh.configs.vite],
     languageOptions: { globals: { ...globals.browser } },
+    rules: {
+      // `throw redirect(...)` é como o TanStack Router desvia a navegação nos guardas das rotas
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        { allow: [{ from: 'package', package: '@tanstack/router-core', name: 'Redirect' }] },
+      ],
+    },
+  },
+
+  // Testes e serviços de mentira: funções async sem await e hooks ao lado de componentes são normais
+  {
+    files: ['apps/web/**/*.test.{ts,tsx}', 'apps/web/src/testes/**'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+      'react-refresh/only-export-components': 'off',
+    },
   },
 
   prettier,

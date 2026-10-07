@@ -13,6 +13,10 @@ export type PreferenciasPatch = Esquemas['PreferenciasPatch']
 export type MembroDaEquipe = Esquemas['MembroDaEquipe']
 export type ConviteResumo = Esquemas['ConviteResumo']
 export type ErroDaApi = Esquemas['Erro']
+export type ConviteConsulta = Esquemas['ConviteConsulta']
+export type ConviteAceito = Esquemas['ConviteAceito']
+export type PrimeiroAcessoResultado = Esquemas['PrimeiroAcessoResultado']
+export type OpcoesDeAcesso = Esquemas['OpcoesDeAcesso']
 
 /**
  * Cliente tipado da API, gerado do OpenAPI (`pnpm --filter @leadtogo/api-client generate`).

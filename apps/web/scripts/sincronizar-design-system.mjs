@@ -16,7 +16,12 @@ export function arquivosDoDesignSystem() {
         .filter((n) => n.endsWith('.woff2'))
         .map((n) => `fonts/${n}`)
     : []
-  return ['tokens.css', 'tailwind-theme.css', ...fontes]
+  const logos = existsSync(join(origem, 'assets/logos'))
+    ? readdirSync(join(origem, 'assets/logos'))
+        .filter((n) => n.endsWith('.svg'))
+        .map((n) => `assets/logos/${n}`)
+    : []
+  return ['tokens.css', 'tailwind-theme.css', ...fontes, ...logos]
 }
 
 export function sincronizar() {

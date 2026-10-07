@@ -9,13 +9,77 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AcessoRouteImport } from './routes/_acesso'
+import { Route as AutenticadoRouteImport } from './routes/_autenticado'
+import { Route as AcessoAtivar2faRouteImport } from './routes/_acesso.ativar-2fa'
+import { Route as AcessoConfiraSeuEmailRouteImport } from './routes/_acesso.confira-seu-email'
+import { Route as AcessoConviteRouteImport } from './routes/_acesso.convite'
+import { Route as AcessoEsqueciSenhaRouteImport } from './routes/_acesso.esqueci-senha'
+import { Route as AcessoLoginRouteImport } from './routes/_acesso.login'
+import { Route as AcessoPrimeiroAcessoRouteImport } from './routes/_acesso.primeiro-acesso'
+import { Route as AcessoRedefinirSenhaRouteImport } from './routes/_acesso.redefinir-senha'
+import { Route as AcessoVerificacaoRouteImport } from './routes/_acesso.verificacao'
+import { Route as AcessoVerificarEmailRouteImport } from './routes/_acesso.verificar-email'
+import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado.index'
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
 
-const IndexRoute = IndexRouteImport.update({
+const AcessoRoute = AcessoRouteImport.update({
+  id: '/_acesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AutenticadoRoute = AutenticadoRouteImport.update({
+  id: '/_autenticado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcessoAtivar2faRoute = AcessoAtivar2faRouteImport.update({
+  id: '/ativar-2fa',
+  path: '/ativar-2fa',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AcessoConfiraSeuEmailRoute = AcessoConfiraSeuEmailRouteImport.update({
+  id: '/confira-seu-email',
+  path: '/confira-seu-email',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AcessoConviteRoute = AcessoConviteRouteImport.update({
+  id: '/convite',
+  path: '/convite',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AcessoEsqueciSenhaRoute = AcessoEsqueciSenhaRouteImport.update({
+  id: '/esqueci-senha',
+  path: '/esqueci-senha',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AcessoLoginRoute = AcessoLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AcessoPrimeiroAcessoRoute = AcessoPrimeiroAcessoRouteImport.update({
+  id: '/primeiro-acesso',
+  path: '/primeiro-acesso',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AcessoRedefinirSenhaRoute = AcessoRedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AcessoVerificacaoRoute = AcessoVerificacaoRouteImport.update({
+  id: '/verificacao',
+  path: '/verificacao',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AcessoVerificarEmailRoute = AcessoVerificarEmailRouteImport.update({
+  id: '/verificar-email',
+  path: '/verificar-email',
+  getParentRoute: () => AcessoRoute,
+} as any)
+const AutenticadoIndexRoute = AutenticadoIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AutenticadoRoute,
 } as any)
 const DevCatalogoRoute = DevCatalogoRouteImport.update({
   id: '/dev/catalogo',
@@ -24,39 +88,182 @@ const DevCatalogoRoute = DevCatalogoRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AutenticadoIndexRoute
+  '/ativar-2fa': typeof AcessoAtivar2faRoute
+  '/confira-seu-email': typeof AcessoConfiraSeuEmailRoute
+  '/convite': typeof AcessoConviteRoute
+  '/esqueci-senha': typeof AcessoEsqueciSenhaRoute
+  '/login': typeof AcessoLoginRoute
+  '/primeiro-acesso': typeof AcessoPrimeiroAcessoRoute
+  '/redefinir-senha': typeof AcessoRedefinirSenhaRoute
+  '/verificacao': typeof AcessoVerificacaoRoute
+  '/verificar-email': typeof AcessoVerificarEmailRoute
   '/dev/catalogo': typeof DevCatalogoRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/': typeof AutenticadoIndexRoute
+  '/ativar-2fa': typeof AcessoAtivar2faRoute
+  '/confira-seu-email': typeof AcessoConfiraSeuEmailRoute
+  '/convite': typeof AcessoConviteRoute
+  '/esqueci-senha': typeof AcessoEsqueciSenhaRoute
+  '/login': typeof AcessoLoginRoute
+  '/primeiro-acesso': typeof AcessoPrimeiroAcessoRoute
+  '/redefinir-senha': typeof AcessoRedefinirSenhaRoute
+  '/verificacao': typeof AcessoVerificacaoRoute
+  '/verificar-email': typeof AcessoVerificarEmailRoute
   '/dev/catalogo': typeof DevCatalogoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_acesso': typeof AcessoRouteWithChildren
+  '/_autenticado': typeof AutenticadoRouteWithChildren
+  '/_acesso/ativar-2fa': typeof AcessoAtivar2faRoute
+  '/_acesso/confira-seu-email': typeof AcessoConfiraSeuEmailRoute
+  '/_acesso/convite': typeof AcessoConviteRoute
+  '/_acesso/esqueci-senha': typeof AcessoEsqueciSenhaRoute
+  '/_acesso/login': typeof AcessoLoginRoute
+  '/_acesso/primeiro-acesso': typeof AcessoPrimeiroAcessoRoute
+  '/_acesso/redefinir-senha': typeof AcessoRedefinirSenhaRoute
+  '/_acesso/verificacao': typeof AcessoVerificacaoRoute
+  '/_acesso/verificar-email': typeof AcessoVerificarEmailRoute
   '/dev/catalogo': typeof DevCatalogoRoute
+  '/_autenticado/': typeof AutenticadoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dev/catalogo'
+  fullPaths:
+    | '/'
+    | '/ativar-2fa'
+    | '/confira-seu-email'
+    | '/convite'
+    | '/esqueci-senha'
+    | '/login'
+    | '/primeiro-acesso'
+    | '/redefinir-senha'
+    | '/verificacao'
+    | '/verificar-email'
+    | '/dev/catalogo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dev/catalogo'
-  id: '__root__' | '/' | '/dev/catalogo'
+  to:
+    | '/'
+    | '/ativar-2fa'
+    | '/confira-seu-email'
+    | '/convite'
+    | '/esqueci-senha'
+    | '/login'
+    | '/primeiro-acesso'
+    | '/redefinir-senha'
+    | '/verificacao'
+    | '/verificar-email'
+    | '/dev/catalogo'
+  id:
+    | '__root__'
+    | '/_acesso'
+    | '/_autenticado'
+    | '/_acesso/ativar-2fa'
+    | '/_acesso/confira-seu-email'
+    | '/_acesso/convite'
+    | '/_acesso/esqueci-senha'
+    | '/_acesso/login'
+    | '/_acesso/primeiro-acesso'
+    | '/_acesso/redefinir-senha'
+    | '/_acesso/verificacao'
+    | '/_acesso/verificar-email'
+    | '/dev/catalogo'
+    | '/_autenticado/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AcessoRoute: typeof AcessoRouteWithChildren
+  AutenticadoRoute: typeof AutenticadoRouteWithChildren
   DevCatalogoRoute: typeof DevCatalogoRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_acesso': {
+      id: '/_acesso'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AcessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_autenticado': {
+      id: '/_autenticado'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AutenticadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_acesso/ativar-2fa': {
+      id: '/_acesso/ativar-2fa'
+      path: '/ativar-2fa'
+      fullPath: '/ativar-2fa'
+      preLoaderRoute: typeof AcessoAtivar2faRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_acesso/confira-seu-email': {
+      id: '/_acesso/confira-seu-email'
+      path: '/confira-seu-email'
+      fullPath: '/confira-seu-email'
+      preLoaderRoute: typeof AcessoConfiraSeuEmailRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_acesso/convite': {
+      id: '/_acesso/convite'
+      path: '/convite'
+      fullPath: '/convite'
+      preLoaderRoute: typeof AcessoConviteRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_acesso/esqueci-senha': {
+      id: '/_acesso/esqueci-senha'
+      path: '/esqueci-senha'
+      fullPath: '/esqueci-senha'
+      preLoaderRoute: typeof AcessoEsqueciSenhaRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_acesso/login': {
+      id: '/_acesso/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AcessoLoginRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_acesso/primeiro-acesso': {
+      id: '/_acesso/primeiro-acesso'
+      path: '/primeiro-acesso'
+      fullPath: '/primeiro-acesso'
+      preLoaderRoute: typeof AcessoPrimeiroAcessoRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_acesso/redefinir-senha': {
+      id: '/_acesso/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof AcessoRedefinirSenhaRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_acesso/verificacao': {
+      id: '/_acesso/verificacao'
+      path: '/verificacao'
+      fullPath: '/verificacao'
+      preLoaderRoute: typeof AcessoVerificacaoRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_acesso/verificar-email': {
+      id: '/_acesso/verificar-email'
+      path: '/verificar-email'
+      fullPath: '/verificar-email'
+      preLoaderRoute: typeof AcessoVerificarEmailRouteImport
+      parentRoute: typeof AcessoRoute
+    }
+    '/_autenticado/': {
+      id: '/_autenticado/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AutenticadoIndexRouteImport
+      parentRoute: typeof AutenticadoRoute
     }
     '/dev/catalogo': {
       id: '/dev/catalogo'
@@ -68,8 +275,48 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AcessoRouteChildren {
+  AcessoAtivar2faRoute: typeof AcessoAtivar2faRoute
+  AcessoConfiraSeuEmailRoute: typeof AcessoConfiraSeuEmailRoute
+  AcessoConviteRoute: typeof AcessoConviteRoute
+  AcessoEsqueciSenhaRoute: typeof AcessoEsqueciSenhaRoute
+  AcessoLoginRoute: typeof AcessoLoginRoute
+  AcessoPrimeiroAcessoRoute: typeof AcessoPrimeiroAcessoRoute
+  AcessoRedefinirSenhaRoute: typeof AcessoRedefinirSenhaRoute
+  AcessoVerificacaoRoute: typeof AcessoVerificacaoRoute
+  AcessoVerificarEmailRoute: typeof AcessoVerificarEmailRoute
+}
+
+const AcessoRouteChildren: AcessoRouteChildren = {
+  AcessoAtivar2faRoute: AcessoAtivar2faRoute,
+  AcessoConfiraSeuEmailRoute: AcessoConfiraSeuEmailRoute,
+  AcessoConviteRoute: AcessoConviteRoute,
+  AcessoEsqueciSenhaRoute: AcessoEsqueciSenhaRoute,
+  AcessoLoginRoute: AcessoLoginRoute,
+  AcessoPrimeiroAcessoRoute: AcessoPrimeiroAcessoRoute,
+  AcessoRedefinirSenhaRoute: AcessoRedefinirSenhaRoute,
+  AcessoVerificacaoRoute: AcessoVerificacaoRoute,
+  AcessoVerificarEmailRoute: AcessoVerificarEmailRoute,
+}
+
+const AcessoRouteWithChildren =
+  AcessoRoute._addFileChildren(AcessoRouteChildren)
+
+interface AutenticadoRouteChildren {
+  AutenticadoIndexRoute: typeof AutenticadoIndexRoute
+}
+
+const AutenticadoRouteChildren: AutenticadoRouteChildren = {
+  AutenticadoIndexRoute: AutenticadoIndexRoute,
+}
+
+const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
+  AutenticadoRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AcessoRoute: AcessoRouteWithChildren,
+  AutenticadoRoute: AutenticadoRouteWithChildren,
   DevCatalogoRoute: DevCatalogoRoute,
 }
 export const routeTree = rootRouteImport
