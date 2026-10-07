@@ -146,6 +146,9 @@ try {
   // service worker (atualização automática: skipWaiting + clientsClaim)
   const sw = await page.evaluate(async () => {
     const r = await navigator.serviceWorker.ready
+    // `ready` resolve quando o worker está "activating"; espera terminar de ativar
+    for (let i = 0; i < 50 && r.active?.state !== 'activated'; i++)
+      await new Promise((x) => setTimeout(x, 100))
     return { ativo: r.active?.state, escopo: r.scope }
   })
   confere(

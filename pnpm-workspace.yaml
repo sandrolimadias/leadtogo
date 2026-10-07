@@ -1,6 +1,10 @@
 packages:
   - apps/*
   - packages/*
+
+# Peers opcionais (o better-auth declara drizzle-kit, vitest, jsdom, react...) NÃO são instalados sozinhos: sem
+# isso o drizzle-kit e as ferramentas de teste entram na árvore de produção da imagem da API.
+autoInstallPeers: false
 minimumReleaseAgeExclude:
   - '@typescript-eslint/eslint-plugin@8.71.1'
   - '@typescript-eslint/parser@8.71.1'
@@ -33,3 +37,4 @@ allowBuilds:
   esbuild: true
   lefthook: true
   '@scarf/scarf': false # telemetria do swagger-ui
+  msgpackr-extract: false # aceleração opcional do bullmq; sem ela usa JS puro (e a imagem não precisa compilar nada)

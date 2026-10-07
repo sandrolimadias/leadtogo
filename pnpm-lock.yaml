@@ -159,7 +159,7 @@ snapshots:
 lockfileVersion: '9.0'
 
 settings:
-  autoInstallPeers: true
+  autoInstallPeers: false
   excludeLinksFromLockfile: false
 
 importers:
@@ -420,6 +420,9 @@ importers:
       vite-plugin-pwa:
         specifier: ^2.0.0
         version: 2.0.0(supports-color@10.2.2)(vite@8.3.3(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.23.15))(workbox-build@7.4.1(supports-color@10.2.2))(workbox-window@7.4.1)
+      workbox-build:
+        specifier: ^7.4.1
+        version: 7.4.1(supports-color@10.2.2)
       workbox-window:
         specifier: ^7.4.1
         version: 7.4.1
