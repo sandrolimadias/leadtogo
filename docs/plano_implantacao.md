@@ -36,7 +36,7 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 | E8 | API base (NestJS + Better Auth + tenant) ✅ | Claude Code | E7 | 2–3 dias |
 | E9 | Web base (casca do app + login) | Claude Code | E8 | 3 dias |
 | E10 | Worker base (filas e eventos) | Claude Code | E8 | 1 dia |
-| E11 | Imagens Docker | Claude Code | E8–E10 | 0,5 dia |
+| E11 | Imagens Docker ✅ | Claude Code | E8–E10 | 0,5 dia |
 | E12 | CI/CD e hooks locais | Claude Code | E11 | 1 dia |
 | E13 | Recursos da aplicação no Coolify e 1º deploy | Ale + Claude Code | E4, E12 | 3–4 h |
 | E14 | Observabilidade e alertas | Ale + Claude Code | E13 | 2–3 h |
