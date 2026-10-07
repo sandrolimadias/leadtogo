@@ -67,12 +67,7 @@ export const servicosReais: ServicosDeAcesso = {
 
   entrar: (email, senha) =>
     protegido(async () => {
-      const r = await authClient.signIn.email({
-        email,
-        password: senha,
-        // se a conta ainda não confirmou o e-mail, o link do novo e-mail volta para cá
-        callbackURL: `${window.location.origin}/verificar-email?confirmado=1`,
-      })
+      const r = await authClient.signIn.email({ email, password: senha })
       if (r.error) return falhaDoAuth(r.error)
       const dados = r.data as { twoFactorRedirect?: boolean } | null
       return ok({ doisFatores: dados?.twoFactorRedirect === true })

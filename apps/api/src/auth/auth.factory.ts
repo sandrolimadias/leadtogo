@@ -73,7 +73,11 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
       sendOnSignIn: true,
       expiresIn: 60 * 60,
       sendVerificationEmail: async ({ user, url }) => {
-        await email.enfileirar(user.email, emailVerificarEmail(user.name, url))
+        // Qualquer e-mail de confirmação (primeiro acesso, reenvio, nova tentativa de login) termina na
+        // tela do front que mostra "E-mail confirmado" ou o erro do link
+        const link = new URL(url)
+        link.searchParams.set('callbackURL', `${origemDoFront}/verificar-email?confirmado=1`)
+        await email.enfileirar(user.email, emailVerificarEmail(user.name, link.toString()))
       },
     },
     session: {

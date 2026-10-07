@@ -214,6 +214,8 @@ describe('verificação de e-mail (flag ligada)', () => {
       .get(`${link.pathname}${link.search}`)
       .redirects(0)
     expect(clique.status).toBe(302)
+    // mesmo o e-mail reenviado ao tentar entrar termina na tela do front
+    expect(clique.headers['location']).toBe(`${ORIGEM_DO_FRONT}/verificar-email?confirmado=1`)
     const [u] = await banco<
       { email_verified: boolean }[]
     >`SELECT email_verified FROM auth."user" WHERE id = ${id}`

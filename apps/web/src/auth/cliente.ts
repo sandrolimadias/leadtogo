@@ -14,4 +14,8 @@ export const authClient = createAuthClient({
   baseURL: base,
   basePath: '/v1/auth',
   plugins: [twoFactorClient()],
+  // o `fetch` é lido a cada chamada (e não na criação do cliente): os testes o trocam
+  fetchOptions: {
+    customFetchImpl: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
+  },
 })

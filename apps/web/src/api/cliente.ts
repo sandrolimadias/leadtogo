@@ -7,4 +7,7 @@ import { criarApiClient } from '@leadtogo/api-client'
  */
 const base = (import.meta.env['VITE_API_URL'] as string | undefined) ?? ''
 
-export const api = criarApiClient(base)
+// `fetch` lido a cada chamada (e não na criação): os testes o trocam
+export const api = criarApiClient(base, {
+  fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
+})
