@@ -151,7 +151,12 @@ export function Sheet({
   footer,
   children,
   className,
-}: Comuns & { className?: string }) {
+  semCabecalho,
+}: Comuns & {
+  className?: string
+  /** O título fica só para o leitor de tela e não há botão de fechar (tocar fora ou Esc fecham): a folha de perfil do protótipo */
+  semCabecalho?: boolean
+}) {
   const aoFechar = useDevolverFoco(open)
   return (
     <DialogoDoRadix.Root open={open} onOpenChange={onOpenChange}>
@@ -166,21 +171,25 @@ export function Sheet({
           )}
         >
           <div aria-hidden="true" className="mx-auto mt-2 h-1 w-10 rounded-full bg-border-strong" />
-          <div className="flex items-start gap-3 px-4 pt-3 pb-2">
-            <div className="min-w-0 flex-1">
-              <DialogoDoRadix.Title className="m-0 text-lg leading-6 font-semibold">
-                {title}
-              </DialogoDoRadix.Title>
-              {description ? (
-                <DialogoDoRadix.Description className="mt-1 mb-0 text-sm leading-5 text-ink-muted">
-                  {description}
-                </DialogoDoRadix.Description>
-              ) : null}
+          {semCabecalho ? (
+            <DialogoDoRadix.Title className="sr-only">{title}</DialogoDoRadix.Title>
+          ) : (
+            <div className="flex items-start gap-3 px-4 pt-3 pb-2">
+              <div className="min-w-0 flex-1">
+                <DialogoDoRadix.Title className="m-0 text-lg leading-6 font-semibold">
+                  {title}
+                </DialogoDoRadix.Title>
+                {description ? (
+                  <DialogoDoRadix.Description className="mt-1 mb-0 text-sm leading-5 text-ink-muted">
+                    {description}
+                  </DialogoDoRadix.Description>
+                ) : null}
+              </div>
+              <DialogoDoRadix.Close asChild>
+                <IconButton icon={X} label="Fechar" />
+              </DialogoDoRadix.Close>
             </div>
-            <DialogoDoRadix.Close asChild>
-              <IconButton icon={X} label="Fechar" />
-            </DialogoDoRadix.Close>
-          </div>
+          )}
           <div className="flex flex-col gap-4 overflow-y-auto px-4 py-3">{children}</div>
           {footer ? (
             <div className="flex justify-end gap-2 border-t border-border px-4 py-3">{footer}</div>

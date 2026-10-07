@@ -1367,6 +1367,28 @@
           },
           "doisFatoresObrigatorio": {
             "type": "boolean"
+          },
+          "doisFatoresMotivo": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "origem": {
+                "type": "string",
+                "enum": ["conta", "empresa"]
+              },
+              "empresaId": {
+                "nullable": true,
+                "type": "string",
+                "format": "uuid"
+              },
+              "papel": {
+                "nullable": true,
+                "type": "string",
+                "enum": ["admin", "gestor", "vendedor"]
+              }
+            },
+            "required": ["origem", "empresaId", "papel"],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -1376,7 +1398,8 @@
           "empresaAtivaId",
           "administradorDeConta",
           "doisFatoresPendente",
-          "doisFatoresObrigatorio"
+          "doisFatoresObrigatorio",
+          "doisFatoresMotivo"
         ],
         "additionalProperties": false
       },

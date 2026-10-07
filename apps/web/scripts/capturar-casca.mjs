@@ -44,6 +44,7 @@ const me = (ativa = A) => ({
   administradorDeConta: false,
   doisFatoresPendente: false,
   doisFatoresObrigatorio: true,
+  doisFatoresMotivo: { origem: 'conta', empresaId: null, papel: null },
 })
 const prefs = (recolhido = false) => ({
   tema: 'sistema',

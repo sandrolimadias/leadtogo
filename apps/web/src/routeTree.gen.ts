@@ -22,11 +22,11 @@ import { Route as AcessoVerificacaoRouteImport } from './routes/_acesso.verifica
 import { Route as AcessoVerificarEmailRouteImport } from './routes/_acesso.verificar-email'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado.index'
 import { Route as AutenticadoConfiguracoesRouteImport } from './routes/_autenticado.configuracoes'
+import { Route as AutenticadoConsolidadoRouteImport } from './routes/_autenticado.consolidado'
 import { Route as AutenticadoContatosRouteImport } from './routes/_autenticado.contatos'
 import { Route as AutenticadoEmpresasRouteImport } from './routes/_autenticado.empresas'
 import { Route as AutenticadoOportunidadesRouteImport } from './routes/_autenticado.oportunidades'
 import { Route as AutenticadoProspeccaoRouteImport } from './routes/_autenticado.prospeccao'
-import { Route as AutenticadoRotasRouteImport } from './routes/_autenticado.rotas'
 import { Route as AutenticadoTarefasRouteImport } from './routes/_autenticado.tarefas'
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
@@ -95,6 +95,11 @@ const AutenticadoConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoConsolidadoRoute = AutenticadoConsolidadoRouteImport.update({
+  id: '/consolidado',
+  path: '/consolidado',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoContatosRoute = AutenticadoContatosRouteImport.update({
   id: '/contatos',
   path: '/contatos',
@@ -114,11 +119,6 @@ const AutenticadoOportunidadesRoute =
 const AutenticadoProspeccaoRoute = AutenticadoProspeccaoRouteImport.update({
   id: '/prospeccao',
   path: '/prospeccao',
-  getParentRoute: () => AutenticadoRoute,
-} as any)
-const AutenticadoRotasRoute = AutenticadoRotasRouteImport.update({
-  id: '/rotas',
-  path: '/rotas',
   getParentRoute: () => AutenticadoRoute,
 } as any)
 const AutenticadoTarefasRoute = AutenticadoTarefasRouteImport.update({
@@ -150,11 +150,11 @@ export interface FileRoutesByFullPath {
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/configuracoes': typeof AutenticadoConfiguracoesRoute
+  '/consolidado': typeof AutenticadoConsolidadoRoute
   '/contatos': typeof AutenticadoContatosRoute
   '/empresas': typeof AutenticadoEmpresasRoute
   '/oportunidades': typeof AutenticadoOportunidadesRoute
   '/prospeccao': typeof AutenticadoProspeccaoRoute
-  '/rotas': typeof AutenticadoRotasRoute
   '/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
@@ -171,11 +171,11 @@ export interface FileRoutesByTo {
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/configuracoes': typeof AutenticadoConfiguracoesRoute
+  '/consolidado': typeof AutenticadoConsolidadoRoute
   '/contatos': typeof AutenticadoContatosRoute
   '/empresas': typeof AutenticadoEmpresasRoute
   '/oportunidades': typeof AutenticadoOportunidadesRoute
   '/prospeccao': typeof AutenticadoProspeccaoRoute
-  '/rotas': typeof AutenticadoRotasRoute
   '/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
@@ -194,11 +194,11 @@ export interface FileRoutesById {
   '/_acesso/verificacao': typeof AcessoVerificacaoRoute
   '/_acesso/verificar-email': typeof AcessoVerificarEmailRoute
   '/_autenticado/configuracoes': typeof AutenticadoConfiguracoesRoute
+  '/_autenticado/consolidado': typeof AutenticadoConsolidadoRoute
   '/_autenticado/contatos': typeof AutenticadoContatosRoute
   '/_autenticado/empresas': typeof AutenticadoEmpresasRoute
   '/_autenticado/oportunidades': typeof AutenticadoOportunidadesRoute
   '/_autenticado/prospeccao': typeof AutenticadoProspeccaoRoute
-  '/_autenticado/rotas': typeof AutenticadoRotasRoute
   '/_autenticado/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
@@ -218,11 +218,11 @@ export interface FileRouteTypes {
     | '/verificacao'
     | '/verificar-email'
     | '/configuracoes'
+    | '/consolidado'
     | '/contatos'
     | '/empresas'
     | '/oportunidades'
     | '/prospeccao'
-    | '/rotas'
     | '/tarefas'
     | '/dev/catalogo'
     | '/perfil/seguranca'
@@ -239,11 +239,11 @@ export interface FileRouteTypes {
     | '/verificacao'
     | '/verificar-email'
     | '/configuracoes'
+    | '/consolidado'
     | '/contatos'
     | '/empresas'
     | '/oportunidades'
     | '/prospeccao'
-    | '/rotas'
     | '/tarefas'
     | '/dev/catalogo'
     | '/perfil/seguranca'
@@ -261,11 +261,11 @@ export interface FileRouteTypes {
     | '/_acesso/verificacao'
     | '/_acesso/verificar-email'
     | '/_autenticado/configuracoes'
+    | '/_autenticado/consolidado'
     | '/_autenticado/contatos'
     | '/_autenticado/empresas'
     | '/_autenticado/oportunidades'
     | '/_autenticado/prospeccao'
-    | '/_autenticado/rotas'
     | '/_autenticado/tarefas'
     | '/dev/catalogo'
     | '/_autenticado/'
@@ -371,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoConfiguracoesRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/consolidado': {
+      id: '/_autenticado/consolidado'
+      path: '/consolidado'
+      fullPath: '/consolidado'
+      preLoaderRoute: typeof AutenticadoConsolidadoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/contatos': {
       id: '/_autenticado/contatos'
       path: '/contatos'
@@ -397,13 +404,6 @@ declare module '@tanstack/react-router' {
       path: '/prospeccao'
       fullPath: '/prospeccao'
       preLoaderRoute: typeof AutenticadoProspeccaoRouteImport
-      parentRoute: typeof AutenticadoRoute
-    }
-    '/_autenticado/rotas': {
-      id: '/_autenticado/rotas'
-      path: '/rotas'
-      fullPath: '/rotas'
-      preLoaderRoute: typeof AutenticadoRotasRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/_autenticado/tarefas': {
@@ -459,11 +459,11 @@ const AcessoRouteWithChildren =
 
 interface AutenticadoRouteChildren {
   AutenticadoConfiguracoesRoute: typeof AutenticadoConfiguracoesRoute
+  AutenticadoConsolidadoRoute: typeof AutenticadoConsolidadoRoute
   AutenticadoContatosRoute: typeof AutenticadoContatosRoute
   AutenticadoEmpresasRoute: typeof AutenticadoEmpresasRoute
   AutenticadoOportunidadesRoute: typeof AutenticadoOportunidadesRoute
   AutenticadoProspeccaoRoute: typeof AutenticadoProspeccaoRoute
-  AutenticadoRotasRoute: typeof AutenticadoRotasRoute
   AutenticadoTarefasRoute: typeof AutenticadoTarefasRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
   AutenticadoPerfilSegurancaRoute: typeof AutenticadoPerfilSegurancaRoute
@@ -471,11 +471,11 @@ interface AutenticadoRouteChildren {
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoConfiguracoesRoute: AutenticadoConfiguracoesRoute,
+  AutenticadoConsolidadoRoute: AutenticadoConsolidadoRoute,
   AutenticadoContatosRoute: AutenticadoContatosRoute,
   AutenticadoEmpresasRoute: AutenticadoEmpresasRoute,
   AutenticadoOportunidadesRoute: AutenticadoOportunidadesRoute,
   AutenticadoProspeccaoRoute: AutenticadoProspeccaoRoute,
-  AutenticadoRotasRoute: AutenticadoRotasRoute,
   AutenticadoTarefasRoute: AutenticadoTarefasRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
   AutenticadoPerfilSegurancaRoute: AutenticadoPerfilSegurancaRoute,

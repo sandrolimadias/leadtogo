@@ -29,7 +29,7 @@ const padroes: Record<string, string> = {
   MAILPIT_URL: 'http://localhost:8025',
   API_URL: 'http://localhost:3000',
   TOKEN_ENCRYPTION_KEY: 'dGVzdGUtdGVzdGUtdGVzdGUtdGVzdGUtdGVzdGUtMTI=',
-  OUTBOX_INTERVALO_MS: '100',
+  OUTBOX_INTERVALO_MS: '200',
   EMAIL_ESPERA_MS: '50',
   S3_ENDPOINT: 'http://localhost:3900',
   S3_BUCKET: 'leadtogo-arquivos',

@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_autenticado/oportunidades')({
     <PaginaVazia
       titulo="Oportunidades"
       icone={Handshake}
-      descricao="O funil (Kanban e lista) chega na etapa MVP · Oportunidades."
+      descricao="Em breve: o funil de vendas, em Kanban e em lista."
     />
   ),
 })

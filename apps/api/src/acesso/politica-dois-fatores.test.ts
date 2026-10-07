@@ -192,6 +192,26 @@ describe('troca de empresa com políticas diferentes: o bloqueio é só onde é 
   })
 })
 
+describe('motivo da obrigatoriedade no /me', () => {
+  it('administrador da conta: motivo "conta"; vendedor numa empresa que exige de todos: "empresa" com o papel; sem regra: null', async () => {
+    const d = await mundo()
+    const dono = (await get('/v1/me', d.cookie)).body as MeResposta
+    expect(dono.doisFatoresMotivo).toEqual({ origem: 'conta', empresaId: null, papel: null })
+
+    await definirPolitica(d.tenantId, 'todos')
+    const v = await usuarioNaEmpresa(d.tenantId, 'vendedor')
+    const comoVendedor = (await get('/v1/me', v.cookie)).body as MeResposta
+    expect(comoVendedor.doisFatoresMotivo).toEqual({
+      origem: 'empresa',
+      empresaId: d.tenantId,
+      papel: 'vendedor',
+    })
+
+    await definirPolitica(d.tenantId, 'admin')
+    expect(((await get('/v1/me', v.cookie)).body as MeResposta).doisFatoresMotivo).toBeNull()
+  })
+})
+
 describe('PATCH /v1/configuracoes/seguranca (só o administrador da empresa)', () => {
   it('GET devolve o padrão; o admin altera para cada valor e o GET reflete', async () => {
     const d = await mundo()

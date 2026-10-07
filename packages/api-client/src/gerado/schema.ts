@@ -407,6 +407,14 @@ export interface components {
             administradorDeConta: boolean;
             doisFatoresPendente: boolean;
             doisFatoresObrigatorio: boolean;
+            doisFatoresMotivo: {
+                /** @enum {string} */
+                origem: "conta" | "empresa";
+                /** Format: uuid */
+                empresaId: string | null;
+                /** @enum {string|null} */
+                papel: "admin" | "gestor" | "vendedor" | null;
+            } | null;
         };
         OpcoesDeAcesso: {
             loginGoogle: boolean;

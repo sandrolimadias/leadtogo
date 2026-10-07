@@ -26,6 +26,7 @@ export const meDeAdmin = (extra: Partial<Me> = {}): Me => ({
   administradorDeConta: true,
   doisFatoresPendente: false,
   doisFatoresObrigatorio: true,
+  doisFatoresMotivo: { origem: 'conta', empresaId: null, papel: null },
   ...extra,
 })
 

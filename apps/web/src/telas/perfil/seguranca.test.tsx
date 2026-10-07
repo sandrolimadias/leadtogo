@@ -13,6 +13,37 @@ const comoVendedor = (extra: Record<string, unknown> = {}) =>
   })
 
 describe('Meu perfil → Segurança', () => {
+  it('diz o motivo real: a política da empresa X para o papel dele', async () => {
+    renderizar(
+      servicosFalsos({
+        me: async () =>
+          comoVendedor({
+            doisFatoresObrigatorio: true,
+            doisFatoresMotivo: {
+              origem: 'empresa',
+              empresaId: '01a111e8-f08a-70b7-b5f3-52998ced0a3a',
+              papel: 'vendedor',
+            },
+            empresas: [
+              {
+                id: '01a111e8-f08a-70b7-b5f3-52998ced0a3a',
+                razaoSocial: 'Aurora Móveis Ltda',
+                nomeFantasia: 'Aurora Móveis',
+                papel: 'vendedor',
+                situacao: 'ativo',
+                ativa: true,
+              },
+            ],
+            empresaAtivaId: '01a111e8-f08a-70b7-b5f3-52998ced0a3a',
+          }),
+      }),
+      '/perfil/seguranca',
+    )
+    expect(
+      await screen.findByText(/política de segurança da empresa Aurora Móveis exige/),
+    ).toHaveTextContent('papel de vendedor')
+  })
+
   it('quem não tem 2FA ativa pelo mesmo fluxo da ativação obrigatória e volta ao status', async () => {
     let ativo = false
     const servicos = servicosFalsos({
@@ -103,6 +134,7 @@ describe('Meu perfil → Segurança', () => {
     await screen.findByText('Ativa')
     expect(screen.queryByRole('button', { name: 'Desativar verificação' })).toBeNull()
     expect(screen.getByText(/obrigatória para você/)).toBeInTheDocument()
+    expect(screen.getByText(/administrador\(a\) da conta/)).toBeInTheDocument()
     // gerar novos códigos continua disponível
     expect(screen.getByRole('button', { name: 'Gerar novos códigos' })).toBeInTheDocument()
   })

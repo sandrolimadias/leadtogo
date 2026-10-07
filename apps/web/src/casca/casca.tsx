@@ -1,7 +1,7 @@
 import type { Me } from '@leadtogo/api-client'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { ChevronDown, LogOut, ShieldCheck, Settings } from 'lucide-react'
+import { ChevronDown, LayoutGrid, LogOut, Plus, ShieldCheck } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -9,18 +9,17 @@ import { chaveDoMe } from '@/auth/guardas'
 import { AppNav, TenantSwitcher, type GrupoDaNavegacao } from '@/components/ui/navegacao'
 import { Avatar } from '@/components/ui/exibicao'
 import { corDoNome } from '@/components/ui/cores'
-import { IconButton } from '@/components/ui/button'
 import { Menu, type ItemDeMenu } from '@/components/ui/menu'
 import { cn } from '@/lib/cn'
 
 import { Logo } from '@/components/acesso/logo'
 import { useDispositivo } from './dispositivo'
 import { VERSAO_DO_APP, useTrocarEmpresa } from './empresas'
-import { ROTULO_DO_PAPEL, TELAS, estaAtiva, tituloDoCaminho } from './navegacao'
+import { ROTULO_DO_PAPEL, TELAS, estaAtiva, telaVisivel, tituloDoCaminho } from './navegacao'
 import { BarraInferior, BarraSuperior, CabecalhoDoCelular, FolhaDePerfil } from './partes'
 import { usePreferencias } from './preferencias'
 import { SeletorDeEmpresa } from './seletor-de-empresa'
-import { nomeDaEmpresa, papelDe } from './utilidades'
+import { avisarEmBreve, nomeDaEmpresa, papelDe } from './utilidades'
 
 /**
  * A casca do app (E9c): menu lateral recolhível no desktop, trilho de ícones no tablet e, no celular,
@@ -39,13 +38,13 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
 
   if (me.precisaEscolherEmpresa) return <SeletorDeEmpresa me={me} />
 
+  const ativa = me.empresas.find((e) => e.ativa)
   const sair = async () => {
     setPerfilAberto(false)
     await servicos.sair()
     await queryClient.invalidateQueries({ queryKey: chaveDoMe })
     await navegar({ to: '/login', search: { redirect: undefined } })
   }
-  const ativa = me.empresas.find((e) => e.ativa)
   const empresaDoMenu = ativa
     ? { name: nomeDaEmpresa(ativa), role: papelDe(me), color: corDoNome(nomeDaEmpresa(ativa)) }
     : null
@@ -75,13 +74,17 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
 
   // desktop e tablet: menu lateral (no tablet sempre recolhido, no desktop conforme a preferência)
   const recolhido = dispositivo === 'tablet' || prefs.menuRecolhido
+  const pessoa = {
+    administradorDeConta: me.administradorDeConta,
+    papelNaEmpresaAtiva: ativa?.papel ?? null,
+  }
   const grupo = (g: 'carteira' | undefined) =>
-    TELAS.filter((t) => t.grupo === g).map((t) => ({
+    TELAS.filter((t) => t.grupo === g && telaVisivel(t, pessoa)).map((t) => ({
       icon: t.icone,
       label: t.titulo,
       href: t.caminho,
       active: estaAtiva(t, caminho),
-      ...(t.selo ? { selo: t.selo } : {}),
+      ...(g === 'carteira' ? { suave: true } : {}),
     }))
   const grupos: GrupoDaNavegacao[] = [
     { items: grupo(undefined) },
@@ -97,6 +100,18 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
         if (!e.ativa) void trocarEmpresa(e.id)
       },
     })),
+    // administrador da conta: o painel consolidado e a criação de empresas (as telas chegam depois)
+    ...(me.administradorDeConta
+      ? ([
+          { separator: true },
+          {
+            icon: LayoutGrid,
+            label: 'Painel consolidado',
+            onSelect: () => void navegar({ to: '/consolidado' }),
+          },
+          { icon: Plus, label: 'Criar empresa', onSelect: () => avisarEmBreve('Criar empresa') },
+        ] satisfies ItemDeMenu[])
+      : []),
   ]
   const itensDoUsuario: ItemDeMenu[] = [
     {
@@ -119,8 +134,8 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
   const rodape = (
     <div
       className={cn(
-        'mt-auto flex items-center gap-2 border-t border-border pt-3',
-        recolhido && 'justify-center',
+        'mt-auto flex items-center gap-2.5 border-t border-border px-2 pt-3',
+        recolhido && 'justify-center px-0',
       )}
     >
       <Menu
@@ -132,14 +147,14 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
             type="button"
             aria-label={`Menu de ${me.usuario.nome}`}
             className={cn(
-              'flex min-w-0 cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent p-0 text-left text-ink',
+              'flex min-w-0 cursor-pointer items-center gap-2.5 rounded-sm border-0 bg-transparent p-0 text-left text-ink',
               !recolhido && 'flex-1',
             )}
           >
             <Avatar name={me.usuario.nome} />
             {recolhido ? null : (
               <span className="flex min-w-0 flex-1 flex-col">
-                <b className="truncate text-[13px]">{me.usuario.nome}</b>
+                <span className="truncate font-semibold">{me.usuario.nome}</span>
                 <span className="text-[12px] text-ink-muted">{papelDe(me)}</span>
               </span>
             )}
@@ -154,11 +169,6 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
           </button>
         }
       />
-      {recolhido ? null : (
-        <Link to="/configuracoes" className="contents">
-          <IconButton icon={Settings} label="Configurações" size="sm" />
-        </Link>
-      )}
     </div>
   )
 

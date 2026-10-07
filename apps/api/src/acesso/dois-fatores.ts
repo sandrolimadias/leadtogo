@@ -33,6 +33,25 @@ export function doisFatoresObrigatorio(dados: {
   )
 }
 
+/**
+ * Por que o 2FA é obrigatório para esta pessoa (o primeiro motivo): administrador da conta, ou a política
+ * de uma empresa dela para o papel que ela tem lá (a empresa ativa vem primeiro). Null se não é obrigatório.
+ */
+export function motivoDoisFatores(dados: {
+  administradorDeConta: boolean
+  vinculos: Vinculo[]
+  empresaAtivaId?: string | null
+}): {
+  origem: 'conta' | 'empresa'
+  empresaId: string | null
+  papel: Vinculo['papel'] | null
+} | null {
+  if (dados.administradorDeConta) return { origem: 'conta', empresaId: null, papel: null }
+  const exigentes = dados.vinculos.filter((v) => politicaExige(v.doisFatoresExigido, v.papel))
+  const v = exigentes.find((e) => e.tenantId === dados.empresaAtivaId) ?? exigentes[0]
+  return v ? { origem: 'empresa', empresaId: v.tenantId, papel: v.papel } : null
+}
+
 /** Para fora do pedido da API (ex.: o gancho do Better Auth que barra a desativação do 2FA). */
 export async function obrigatorioParaUsuario(banco: Conexao, usuarioId: string): Promise<boolean> {
   const [administra, vinculos] = await Promise.all([

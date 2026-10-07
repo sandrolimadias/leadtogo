@@ -81,18 +81,13 @@ describe('casca no desktop', () => {
       'aria-current',
       'page',
     )
-    for (const nome of [
-      'Empresas',
-      'Contatos',
-      'Oportunidades',
-      'Tarefas',
-      'Prospecção',
-      'Rotas',
-    ]) {
+    for (const nome of ['Empresas', 'Contatos', 'Oportunidades', 'Tarefas', 'Prospecção']) {
       expect(within(nav).getByRole('link', { name: new RegExp(nome) })).toBeInTheDocument()
     }
     expect(within(nav).getByText('Carteira')).toBeInTheDocument()
-    expect(within(nav).getByText('Fase 3')).toBeInTheDocument()
+    // item de fase futura (Rotas, Fase 3) fica oculto
+    expect(within(nav).queryByRole('link', { name: /Rotas/ })).toBeNull()
+    expect(screen.queryByText('Fase 3')).toBeNull()
     expect(within(nav).getByRole('button', { name: /Aurora Móveis/ })).toHaveTextContent(
       'Administrador',
     )
@@ -189,6 +184,38 @@ describe('casca no desktop', () => {
   })
 })
 
+describe('itens por papel', () => {
+  it('administrador da conta: Painel consolidado e Configurações no menu e "Painel consolidado" + "Criar empresa" no seletor', async () => {
+    renderizar(servicosDaCasca(meComDuasEmpresas(A, { administradorDeConta: true })), '/')
+    const nav = await screen.findByRole('navigation', { name: 'Principal' })
+    expect(within(nav).getByRole('link', { name: 'Painel consolidado' })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Configurações' })).toBeInTheDocument()
+    await userEvent.click(within(nav).getByRole('button', { name: /Aurora Móveis/ }))
+    const menu = await screen.findByRole('menu')
+    expect(within(menu).getByRole('menuitem', { name: 'Painel consolidado' })).toBeInTheDocument()
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Criar empresa' }))
+    expect(await screen.findByText('Esta função chega nas próximas etapas.')).toBeInTheDocument()
+  })
+
+  it('administrador só de empresa vê Configurações, mas não o consolidado nem "Criar empresa"', async () => {
+    renderizar(servicosDaCasca(meComDuasEmpresas(A)), '/')
+    const nav = await screen.findByRole('navigation', { name: 'Principal' })
+    expect(within(nav).getByRole('link', { name: 'Configurações' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Painel consolidado' })).toBeNull()
+    await userEvent.click(within(nav).getByRole('button', { name: /Aurora Móveis/ }))
+    const menu = await screen.findByRole('menu')
+    expect(within(menu).queryByRole('menuitem', { name: 'Painel consolidado' })).toBeNull()
+    expect(within(menu).queryByRole('menuitem', { name: 'Criar empresa' })).toBeNull()
+  })
+
+  it('vendedor não vê Configurações nem o consolidado', async () => {
+    renderizar(servicosDaCasca(meComDuasEmpresas(B)), '/')
+    const nav = await screen.findByRole('navigation', { name: 'Principal' })
+    expect(within(nav).queryByRole('link', { name: 'Configurações' })).toBeNull()
+    expect(within(nav).queryByRole('link', { name: 'Painel consolidado' })).toBeNull()
+  })
+})
+
 describe('sem empresa ativa: seletor de empresa', () => {
   it('mostra a lista, escolhe uma e abre o app nela', async () => {
     const servicos = servicosDaCasca(meComDuasEmpresas(null))
@@ -259,6 +286,9 @@ describe('casca no celular e no tablet', () => {
       'true',
     )
     expect(within(folha).getByText('Ativa')).toBeInTheDocument()
+    expect(within(folha).getByText('Mais')).toBeInTheDocument()
+    expect(within(folha).getByRole('link', { name: 'Contatos' })).toBeInTheDocument()
+    expect(within(folha).getByRole('link', { name: 'Configurações' })).toBeInTheDocument()
     expect(within(folha).getByRole('link', { name: 'Meu perfil → Segurança' })).toBeInTheDocument()
     await userEvent.click(within(folha).getByRole('button', { name: /Borealis Logística/ }))
     await waitFor(() => expect(servicos.trocarEmpresa).toHaveBeenCalledWith(B))

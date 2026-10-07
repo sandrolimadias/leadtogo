@@ -1,11 +1,13 @@
 import type { Me } from '@leadtogo/api-client'
 import { Link } from '@tanstack/react-router'
-import { Bell, Check, Ellipsis, Plus, Search, ShieldCheck } from 'lucide-react'
+import { Bell, Check, Ellipsis, LogOut, Plus, Search, ShieldCheck } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import type { ReactNode } from 'react'
 
 import { Button, IconButton } from '@/components/ui/button'
 import { TextField } from '@/components/ui/campos'
+import { Logo } from '@/components/acesso/logo'
+import { classeDaCor, corDoNome, iniciais } from '@/components/ui/cores'
 import { Avatar } from '@/components/ui/exibicao'
 import { EmptyState } from '@/components/ui/feedback'
 import { Icon } from '@/components/ui/icone'
@@ -14,7 +16,13 @@ import { Sheet } from '@/components/ui/dialog'
 import { cn } from '@/lib/cn'
 
 import { VERSAO_DO_APP } from './empresas'
-import { ROTULO_DO_PAPEL, TELAS, TELAS_DA_BARRA_INFERIOR, estaAtiva } from './navegacao'
+import {
+  ROTULO_DO_PAPEL,
+  TELAS,
+  TELAS_DA_BARRA_INFERIOR,
+  estaAtiva,
+  telaVisivel,
+} from './navegacao'
 import { avisarEmBreve, nomeDaEmpresa } from './utilidades'
 
 type Tema = 'claro' | 'escuro' | 'sistema'
@@ -83,7 +91,10 @@ export function CabecalhoDoCelular({
   aoAbrirPerfil: () => void
 }) {
   return (
-    <header className="flex h-14 flex-none items-center gap-1 border-b border-border bg-surface pr-2 pl-4">
+    <header className="flex h-14 flex-none items-center gap-1 border-b border-border bg-surface pr-2 pl-3">
+      <span className="mr-2 ml-1 inline-flex">
+        <Logo tamanho={24} />
+      </span>
       <p className="m-0 min-w-0 flex-1 truncate text-lg leading-6 font-semibold">{titulo}</p>
       <IconButton
         icon={Search}
@@ -98,7 +109,7 @@ export function CabecalhoDoCelular({
         onClick={aoAbrirPerfil}
         className="inline-flex size-11 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0"
       >
-        <Avatar name={me.usuario.nome} />
+        <Avatar name={me.usuario.nome} size="sm" />
       </button>
     </header>
   )
@@ -140,8 +151,9 @@ export function BarraInferior({
 }
 
 /**
- * Folha de perfil do celular: usuário, empresa ativa (lista para trocar), Meu perfil → Segurança, tema,
- * Sair e a versão. O seletor de empresa do celular fica aqui.
+ * Folha de perfil do celular (como no protótipo): usuário, empresa ativa (lista para trocar) e "Mais"
+ * (Contatos, Prospecção, Painel consolidado, Configurações, Meu perfil → Segurança, tema e Sair), com a
+ * versão no fim. O seletor de empresa do celular fica aqui.
  */
 export function FolhaDePerfil({
   aberta,
@@ -160,73 +172,103 @@ export function FolhaDePerfil({
   aoTrocarEmpresa: (id: string) => void
   aoSair: () => void
 }) {
-  const linha =
-    'flex min-h-[52px] w-full cursor-pointer items-center gap-3 rounded-md border border-border bg-surface px-3 text-left text-ink'
+  const ativa = me.empresas.find((e) => e.ativa)
+  const pessoa = {
+    administradorDeConta: me.administradorDeConta,
+    papelNaEmpresaAtiva: ativa?.papel ?? null,
+  }
+  const linhaDoMais =
+    'flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-sm border-0 bg-transparent px-2 text-left text-base text-ink no-underline hover:bg-surface-hover'
+  const rotulo =
+    'm-0 px-1 pt-3 pb-1 text-[11px] font-semibold tracking-[.06em] text-ink-subtle uppercase'
+  const mais = TELAS.filter(
+    (t) =>
+      ['/contatos', '/prospeccao', '/consolidado', '/configuracoes'].includes(t.caminho) &&
+      telaVisivel(t, pessoa),
+  )
   return (
-    <Sheet open={aberta} onOpenChange={(o) => !o && aoFechar()} title="Meu perfil">
-      <div className="flex items-center gap-3">
-        <Avatar name={me.usuario.nome} size="lg" />
-        <div className="flex min-w-0 flex-col">
-          <b className="truncate text-[15px]">{me.usuario.nome}</b>
-          <span className="truncate text-[13px] text-ink-muted">{me.usuario.email}</span>
+    <Sheet open={aberta} onOpenChange={(o) => !o && aoFechar()} title="Meu perfil" semCabecalho>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3 border-b border-border pb-3">
+          <Avatar name={me.usuario.nome} size="lg" />
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-base font-semibold">{me.usuario.nome}</span>
+            <span className="truncate text-[13px] text-ink-muted">{me.usuario.email}</span>
+          </div>
         </div>
+
+        {me.empresas.length > 0 ? (
+          <section className="flex flex-col gap-1" aria-label="Empresa ativa">
+            <h3 className={rotulo}>Empresa ativa</h3>
+            {me.empresas.map((e) => {
+              const nome = nomeDaEmpresa(e)
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  aria-pressed={e.ativa}
+                  onClick={() => (e.ativa ? aoFechar() : aoTrocarEmpresa(e.id))}
+                  className={cn(
+                    'flex min-h-[52px] w-full cursor-pointer items-center gap-3 rounded-md border bg-surface px-2 py-1 text-left text-ink',
+                    e.ativa ? 'border-brand bg-surface-selected' : 'border-border',
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'inline-flex size-8 flex-none items-center justify-center rounded-sm text-xs font-bold',
+                      classeDaCor[corDoNome(nome)],
+                    )}
+                  >
+                    {iniciais(nome)}
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-[15px] font-semibold">{nome}</span>
+                    <span className="text-[13px] text-ink-muted">{ROTULO_DO_PAPEL[e.papel]}</span>
+                  </span>
+                  {e.ativa ? (
+                    <span className="flex items-center gap-1 text-[13px] font-semibold text-brand">
+                      <Icon icon={Check} size={16} />
+                      Ativa
+                    </span>
+                  ) : null}
+                </button>
+              )
+            })}
+          </section>
+        ) : null}
+
+        <h3 className={rotulo}>Mais</h3>
+        {mais.map((t) => (
+          <Link key={t.caminho} to={t.caminho as '/'} onClick={aoFechar} className={linhaDoMais}>
+            <Icon icon={t.icone} size={18} />
+            {t.titulo}
+          </Link>
+        ))}
+        <Link to="/perfil/seguranca" onClick={aoFechar} className={linhaDoMais}>
+          <Icon icon={ShieldCheck} size={18} />
+          Meu perfil → Segurança
+        </Link>
+        <div className="flex flex-col gap-2 px-2 py-2">
+          <SegmentedControl
+            label="Tema"
+            value={tema}
+            onChange={(v) => aoMudarTema(v as Tema)}
+            options={[
+              { value: 'claro', label: 'Claro' },
+              { value: 'escuro', label: 'Escuro' },
+              { value: 'sistema', label: 'Sistema' },
+            ]}
+          />
+        </div>
+        <button type="button" onClick={aoSair} className={linhaDoMais}>
+          <Icon icon={LogOut} size={18} />
+          Sair
+        </button>
+        <p className="m-0 pt-2 text-center text-[12px] text-ink-subtle">
+          Leadtogo · versão {VERSAO_DO_APP}
+        </p>
       </div>
-
-      {me.empresas.length > 0 ? (
-        <section className="flex flex-col gap-2" aria-label="Empresa ativa">
-          <h3 className="m-0 text-[11px] font-semibold tracking-[.06em] text-ink-subtle uppercase">
-            Empresa ativa
-          </h3>
-          {me.empresas.map((e) => (
-            <button
-              key={e.id}
-              type="button"
-              aria-pressed={e.ativa}
-              onClick={() => (e.ativa ? aoFechar() : aoTrocarEmpresa(e.id))}
-              className={cn(linha, e.ativa && 'border-brand')}
-            >
-              <span className="flex min-w-0 flex-1 flex-col">
-                <b className="truncate text-[14px]">{nomeDaEmpresa(e)}</b>
-                <span className="text-[12px] text-ink-muted">{ROTULO_DO_PAPEL[e.papel]}</span>
-              </span>
-              {e.ativa ? (
-                <span className="flex items-center gap-1 text-[12px] font-semibold text-brand">
-                  <Icon icon={Check} size={14} />
-                  Ativa
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </section>
-      ) : null}
-
-      <Link to="/perfil/seguranca" onClick={aoFechar} className={cn(linha, 'no-underline')}>
-        <Icon icon={ShieldCheck} size={18} className="text-ink-muted" />
-        <span className="flex-1 text-[14px] font-medium">Meu perfil → Segurança</span>
-      </Link>
-
-      <div className="flex flex-col gap-2">
-        <h3 className="m-0 text-[11px] font-semibold tracking-[.06em] text-ink-subtle uppercase">
-          Tema
-        </h3>
-        <SegmentedControl
-          label="Tema"
-          value={tema}
-          onChange={(v) => aoMudarTema(v as Tema)}
-          options={[
-            { value: 'claro', label: 'Claro' },
-            { value: 'escuro', label: 'Escuro' },
-            { value: 'sistema', label: 'Sistema' },
-          ]}
-        />
-      </div>
-
-      <Button variant="danger-ghost" block size="lg" onClick={aoSair}>
-        Sair
-      </Button>
-      <p className="m-0 text-center text-[12px] text-ink-subtle">
-        Leadtogo · versão {VERSAO_DO_APP}
-      </p>
     </Sheet>
   )
 }
@@ -244,12 +286,12 @@ export function PaginaVazia({
   acao?: ReactNode
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-4 p-6 max-md:p-4">
+    <main className="flex w-full max-w-[1400px] flex-col gap-5 p-6 max-md:p-4">
       <h1 className="m-0 text-[22px] leading-7 font-semibold max-md:sr-only">{titulo}</h1>
       <div className="rounded-lg border border-border bg-surface">
         <EmptyState
           {...(icone ? { icon: icone } : {})}
-          title="Em construção"
+          title="Em breve"
           description={descricao}
           {...(acao ? { actions: acao } : {})}
         />

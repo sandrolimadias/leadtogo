@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_autenticado/contatos')({
     <PaginaVazia
       titulo="Contatos"
       icone={Users}
-      descricao="Os contatos de cada empresa chegam depois do cadastro de Empresas."
+      descricao="Em breve: os contatos de cada empresa."
     />
   ),
 })

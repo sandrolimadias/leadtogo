@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_autenticado/tarefas')({
     <PaginaVazia
       titulo="Tarefas"
       icone={SquareKanban}
-      descricao="O quadro de tarefas do vendedor chega na etapa MVP · Tarefas."
+      descricao="Em breve: o seu quadro de tarefas."
     />
   ),
 })

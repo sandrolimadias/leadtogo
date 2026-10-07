@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_autenticado/empresas')({
     <PaginaVazia
       titulo="Empresas"
       icone={Building2}
-      descricao="A carteira de empresas, com consulta à Receita, chega na próxima etapa (MVP · Empresas)."
+      descricao="Em breve: a carteira de empresas, com consulta à Receita."
     />
   ),
 })

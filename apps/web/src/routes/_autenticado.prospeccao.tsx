@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_autenticado/prospeccao')({
     <PaginaVazia
       titulo="Prospecção"
       icone={Target}
-      descricao="A busca na Receita para montar a carteira chega depois de Empresas."
+      descricao="Em breve: a busca na Receita para montar a carteira."
     />
   ),
 })

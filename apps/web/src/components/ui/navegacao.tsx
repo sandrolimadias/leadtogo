@@ -41,12 +41,19 @@ export function TenantSwitcher({
         title={current.name}
         {...resto}
         className={cn(
-          'inline-flex size-10 cursor-pointer items-center justify-center self-center rounded-sm border border-border text-xs font-bold hover:opacity-90',
-          classeDaCor[current.color ?? 'teal'],
+          'inline-flex size-10 cursor-pointer items-center justify-center self-center rounded-md border border-border bg-surface p-0 hover:bg-surface-hover',
           className,
         )}
       >
-        {iniciais(current.name)}
+        <span
+          aria-hidden="true"
+          className={cn(
+            'inline-flex size-7 items-center justify-center rounded-sm text-[11px] font-bold',
+            classeDaCor[current.color ?? 'teal'],
+          )}
+        >
+          {iniciais(current.name)}
+        </span>
       </button>
     )
   }
@@ -83,6 +90,8 @@ export interface ItemDaNavegacao {
   label: string
   href?: string
   active?: boolean
+  /** Item secundário: texto em tom mais suave (grupo Carteira) */
+  suave?: boolean
   count?: number
   /** Selo no lugar do contador (ex.: "Fase 3") */
   selo?: string
@@ -152,13 +161,14 @@ export function AppNav({
     <nav
       aria-label="Principal"
       className={cn(
-        'box-border flex max-w-full flex-col gap-4 border-r border-border bg-surface p-3 transition-[width] duration-150',
+        'box-border flex max-w-full flex-col border-r border-border bg-surface px-3 transition-[width] duration-150',
+        espacoso ? 'gap-1 py-4' : 'gap-4 py-3',
         recolhido ? 'w-16 items-stretch' : 'w-(--sidebar-width)',
         className,
       )}
     >
       {recolhido ? (
-        <div className="flex flex-col items-center gap-2 py-1">
+        <div className={cn('flex flex-col items-center gap-2 py-1', espacoso && 'pb-3')}>
           {marca}
           {aoAlternarRecolhimento ? (
             <IconButton
@@ -170,7 +180,12 @@ export function AppNav({
           ) : null}
         </div>
       ) : (
-        <div className="flex items-center gap-2 px-2 py-1 text-base leading-5 font-bold tracking-[-.01em] text-ink">
+        <div
+          className={cn(
+            'flex items-center gap-2 px-2 py-1 text-base leading-5 font-bold tracking-[-.01em] text-ink',
+            espacoso && 'pb-3 text-[17px]',
+          )}
+        >
           {marca}
           {productName}
           {aoAlternarRecolhimento ? (
@@ -184,20 +199,27 @@ export function AppNav({
           ) : null}
         </div>
       )}
-      {tenantSlot ?? (tenant ? <TenantSwitcher current={tenant} recolhido={recolhido} /> : null)}
+      <div className={cn(espacoso && 'mb-3')}>
+        {tenantSlot ?? (tenant ? <TenantSwitcher current={tenant} recolhido={recolhido} /> : null)}
+      </div>
       {groups.map((grupo, i) => (
         <div key={grupo.label ?? i} className={cn('flex flex-col', espacoso ? 'gap-1' : 'gap-0.5')}>
           {grupo.label ? (
             recolhido ? (
-              <hr className="mx-2 my-1 h-px border-0 bg-border" />
+              <hr className={cn('mx-2 h-px border-0 bg-border', espacoso ? 'my-3' : 'my-1')} />
             ) : (
-              <span className="px-2 pt-2 pb-1 text-[11px] leading-4 font-semibold tracking-[.06em] text-ink-subtle uppercase">
+              <span
+                className={cn(
+                  'px-2 pt-2 pb-1 text-[11px] leading-4 font-semibold tracking-[.06em] text-ink-subtle uppercase',
+                  espacoso && 'px-2.5 pt-4',
+                )}
+              >
                 {grupo.label}
               </span>
             )
           ) : null}
           {grupo.items.map((item) => {
-            const { icon: Icone, label, href, active, count, selo, onClick } = item
+            const { icon: Icone, label, href, active, suave, count, selo, onClick } = item
             const conteudo = (
               <>
                 <Icone size={17} strokeWidth={1.75} aria-hidden="true" className="flex-none" />
@@ -214,7 +236,12 @@ export function AppNav({
                 ) : null}
               </>
             )
-            const classe = cn(classeDoItem, espacoso && 'h-9', recolhido && 'justify-center px-0')
+            const classe = cn(
+              classeDoItem,
+              espacoso && 'h-9 gap-2.5 px-2.5',
+              espacoso && !suave && 'text-ink',
+              recolhido && 'justify-center px-0',
+            )
             const atual = active ? ('page' as const) : undefined
             if (renderLink) {
               return (

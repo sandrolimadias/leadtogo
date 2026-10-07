@@ -53,6 +53,17 @@ export const meRespostaSchema = z
      * enquanto for `true`, não pode desativar o 2FA.
      */
     doisFatoresObrigatorio: z.boolean(),
+    /**
+     * Por que o 2FA é obrigatório (null se não é): `conta` = é administrador da conta (sempre exigido);
+     * `empresa` = a política de segurança de `empresaId` exige 2FA de quem tem o papel `papel` nela.
+     */
+    doisFatoresMotivo: z
+      .object({
+        origem: z.enum(['conta', 'empresa']),
+        empresaId: z.uuid().nullable(),
+        papel: papelMembroSchema.nullable(),
+      })
+      .nullable(),
   })
   .meta({ id: 'MeResposta' })
 export type MeResposta = z.infer<typeof meRespostaSchema>

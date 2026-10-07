@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_autenticado/')({
     <PaginaVazia
       titulo="Dashboard"
       icone={LayoutDashboard}
-      descricao="Indicadores, previsão e atividades do dia chegam na etapa MVP · Dashboard."
+      descricao="Em breve: indicadores, previsão e atividades do dia."
     />
   ),
 })

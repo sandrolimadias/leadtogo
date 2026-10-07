@@ -14,7 +14,8 @@
     "comparar:catalogos": "node scripts/comparar-catalogos.mjs",
     "e2e": "playwright test",
     "capturar:acesso": "node scripts/capturar-acesso.mjs",
-    "capturar:casca": "node scripts/capturar-casca.mjs"
+    "capturar:casca": "node scripts/capturar-casca.mjs",
+    "comparar:casca": "node scripts/comparar-casca.mjs"
   },
   "dependencies": {
     "@leadtogo/api-client": "workspace:*",

@@ -3,7 +3,10 @@ import { Link } from '@tanstack/react-router'
 import { ArrowLeft, Copy, ShieldCheck, ShieldOff } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
+import type { Me } from '@leadtogo/api-client'
 import { useServicos } from '@/auth/contexto'
+import { ROTULO_DO_PAPEL } from '@/casca/navegacao'
+import { nomeDaEmpresa } from '@/casca/utilidades'
 import { chaveDoMe } from '@/auth/guardas'
 import { CampoDeCodigo } from '@/components/acesso/campo-de-codigo'
 import { CampoDeSenha } from '@/components/acesso/campo-de-senha'
@@ -111,6 +114,7 @@ export function TelaDeSeguranca() {
       {ativo ? (
         <Desativar
           obrigatorio={obrigatorio}
+          motivo={motivoEmTexto(me.data)}
           aoDesativar={async () => {
             await recarregar()
             await me.refetch()
@@ -119,6 +123,19 @@ export function TelaDeSeguranca() {
       ) : null}
     </div>
   )
+}
+
+/** O motivo real da obrigatoriedade, dito pelo servidor: administrador da conta ou a política da empresa. */
+function motivoEmTexto(me: Me | null | undefined): string {
+  const m = me?.doisFatoresMotivo
+  if (!m) return 'Uma regra de segurança exige a verificação em duas etapas de você.'
+  if (m.origem === 'conta') {
+    return 'Você é administrador(a) da conta, e administradores da conta sempre precisam da verificação em duas etapas.'
+  }
+  const empresa = me?.empresas.find((e) => e.id === m.empresaId)
+  const nome = empresa ? nomeDaEmpresa(empresa) : 'da sua empresa'
+  const papel = m.papel ? ROTULO_DO_PAPEL[m.papel].toLowerCase() : 'membro'
+  return `A política de segurança da empresa ${nome} exige a verificação em duas etapas de quem tem o papel de ${papel} nela.`
 }
 
 function NovosCodigos() {
@@ -203,9 +220,11 @@ function NovosCodigos() {
 
 function Desativar({
   obrigatorio,
+  motivo,
   aoDesativar,
 }: {
   obrigatorio: boolean
+  motivo: string
   aoDesativar: () => Promise<void>
 }) {
   const servicos = useServicos()
@@ -218,9 +237,8 @@ function Desativar({
   if (obrigatorio) {
     return (
       <Cartao titulo="Desativar">
-        <Alert tone="info">
-          A verificação em duas etapas é obrigatória para você: a sua empresa (ou a administração da
-          conta) a exige. Por isso ela não pode ser desativada.
+        <Alert tone="info" title="A verificação em duas etapas é obrigatória para você">
+          {motivo} Por isso ela não pode ser desativada.
         </Alert>
       </Cartao>
     )

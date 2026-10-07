@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_autenticado/configuracoes')({
     <PaginaVazia
       titulo="Configurações"
       icone={Settings}
-      descricao="Cadastros auxiliares, usuários e a política de 2FA da empresa chegam na etapa MVP · Configurações."
+      descricao="Em breve: cadastros da empresa, equipe e segurança (verificação em duas etapas)."
     />
   ),
 })
