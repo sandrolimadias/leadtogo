@@ -287,7 +287,7 @@ Checklist:
 
 ---
 
-## E9. Web base (casca do app) — Claude Code
+## E9. Web base (casca do app) — Claude Code ✅ aprovado em 07/10/2026
 
 **Pedido:**
 > Leia `docs/prototipo/README.md` (Shell da aplicação, Tema) e `docs/design_system.md`. Monte `apps/web`:
