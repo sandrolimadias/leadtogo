@@ -1,4 +1,10 @@
-import type { ConviteAceito, ConviteConsulta, Me } from '@leadtogo/api-client'
+import type {
+  ConviteAceito,
+  ConviteConsulta,
+  Me,
+  Preferencias,
+  PreferenciasPatch,
+} from '@leadtogo/api-client'
 import type { PrimeiroAcessoEntrada, PrimeiroAcessoResultado } from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
@@ -27,6 +33,12 @@ export interface ServicosDeAcesso {
   me: () => Promise<Me | null>
   opcoes: () => Promise<{ loginGoogle: boolean }>
   primeiroAcessoAberto: () => Promise<boolean>
+
+  /** Preferências do membro na empresa ativa (tema, menu recolhido...); null sem empresa ativa */
+  preferencias: () => Promise<Preferencias | null>
+  alterarPreferencias: (patch: PreferenciasPatch) => Promise<Resultado<Preferencias>>
+  /** Troca a empresa ativa DESTA sessão (e a API lembra a escolha para o próximo login) */
+  trocarEmpresa: (empresaId: string) => Promise<Resultado>
 
   entrar: (email: string, senha: string) => Promise<Resultado<{ doisFatores: boolean }>>
   entrarComGoogle: () => Promise<void>

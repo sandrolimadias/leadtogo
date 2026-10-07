@@ -35,6 +35,21 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
     me: vi.fn(async () => null),
     opcoes: vi.fn(async () => ({ loginGoogle: false })),
     primeiroAcessoAberto: vi.fn(async () => false),
+    preferencias: vi.fn(async () => ({
+      tema: 'sistema' as const,
+      menuRecolhido: false,
+      visaoDashboard: 'minha' as const,
+      filtroPadrao: {},
+    })),
+    alterarPreferencias: vi.fn(async () =>
+      ok({
+        tema: 'sistema' as const,
+        menuRecolhido: false,
+        visaoDashboard: 'minha' as const,
+        filtroPadrao: {},
+      }),
+    ),
+    trocarEmpresa: vi.fn(async () => ok(undefined)),
     entrar: vi.fn(async () => ok({ doisFatores: false })),
     entrarComGoogle: vi.fn(async () => undefined),
     verificarCodigo: vi.fn(async () => ok(undefined)),

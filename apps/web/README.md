@@ -6,7 +6,7 @@ Ver `docs/configuracao_tecnologia.md` (seção 8) e `docs/design_system.md`.
 
 ## Estado atual (E9a, fundação)
 
-Vite + React 19, TanStack Router (rotas por arquivo em `src/routes`, `routeTree.gen.ts` gerado) e Query, cliente da API (`src/api`), Tailwind v4 com os tokens, e os componentes base em `src/components/ui`. As telas de acesso e a camada de autenticação (E9b, aguardando aprovação) estão em `src/auth` e `src/telas/acesso`; a casca (E9c) e o PWA entram nas próximas partes.
+Vite + React 19, TanStack Router (rotas por arquivo em `src/routes`, `routeTree.gen.ts` gerado) e Query, cliente da API (`src/api`), Tailwind v4 com os tokens, e os componentes base em `src/components/ui`. As telas de acesso e a camada de autenticação (E9b, aguardando aprovação) estão em `src/auth` e `src/telas/acesso`; a casca do app (E9c, aguardando aprovação) está em `src/casca`; o PWA entra na próxima parte.
 
 ## Design system: fonte única
 

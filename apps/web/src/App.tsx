@@ -7,6 +7,7 @@ import { criarRoteador } from './app/roteador'
 import { ServicosProvider } from './auth/contexto'
 import { servicosReais } from './auth/servicos'
 import type { ServicosDeAcesso } from './auth/tipos'
+import { useDispositivo } from './casca/dispositivo'
 import { Toaster } from './components/ui/toaster'
 import { TooltipProvider } from './components/ui/tooltip'
 
@@ -25,9 +26,14 @@ export function App({
       <ServicosProvider servicos={servicos}>
         <TooltipProvider>
           <RouterProvider router={roteador} />
-          <Toaster />
+          <AvisosDaTela />
         </TooltipProvider>
       </ServicosProvider>
     </QueryClientProvider>
   )
+}
+
+/** Os avisos sobem acima da barra inferior no celular. */
+function AvisosDaTela() {
+  return <Toaster celular={useDispositivo() === 'celular'} />
 }

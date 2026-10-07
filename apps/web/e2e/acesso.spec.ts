@@ -16,6 +16,13 @@ test.beforeEach(async () => {
   await limparLimites()
 })
 
+/** Encerra a sessão pelo menu do usuário (desktop). */
+async function sair(page: Page) {
+  await page.getByRole('button', { name: /^Menu de / }).click()
+  await page.getByRole('menuitem', { name: 'Sair' }).click()
+  await expect(page).toHaveURL(/\/login/)
+}
+
 async function entrar(page: Page, email: string, senha: string) {
   await page.goto('/login')
   await page.getByLabel('E-mail').fill(email)
@@ -65,27 +72,26 @@ test.describe('Login e 2FA', () => {
     expect(codigos.length).toBeGreaterThanOrEqual(5)
     await page.getByLabel('Guardei meus códigos de recuperação').check()
     await page.getByRole('button', { name: 'Concluir' }).click()
-    await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 
     // sai e entra de novo: agora pede o código
-    await page.getByRole('button', { name: 'Sair' }).click()
-    await expect(page).toHaveURL(/\/login/)
+    await sair(page)
     await page.context().clearCookies({ name: /two_factor|trust/ })
     await entrar(page, conta.email, conta.senha)
     await expect(page).toHaveURL(/\/verificacao/)
     await digitar(page, await codigoValido(chave))
     await page.getByLabel('Confiar neste aparelho por 30 dias').uncheck()
     await page.getByRole('button', { name: 'Verificar' }).click()
-    await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 
     // e com um código de recuperação (uso único)
-    await page.getByRole('button', { name: 'Sair' }).click()
+    await sair(page)
     await entrar(page, conta.email, conta.senha)
     await expect(page).toHaveURL(/\/verificacao/)
     await page.getByRole('button', { name: 'Usar código de recuperação' }).click()
     await page.getByLabel('Código de recuperação').fill(codigos[0]!.trim())
     await page.getByRole('button', { name: 'Verificar' }).click()
-    await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   })
 
   test('e-mail ou senha errados: mensagem genérica, igual para conta inexistente', async ({
@@ -177,10 +183,10 @@ test.describe('Aceitar convite', () => {
     await page.getByLabel('Crie uma senha').fill(SENHA)
     await page.getByLabel(/Li e aceito os termos/).check()
     await page.getByRole('button', { name: 'Aceitar e entrar' }).click()
-    await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 
     // o convite é de uso único
-    await page.getByRole('button', { name: 'Sair' }).click()
+    await sair(page)
     await page.goto(link)
     await expect(page.getByRole('heading', { name: 'Convite inválido' })).toBeVisible()
   })
@@ -228,7 +234,7 @@ test.describe('2FA para todos: política da empresa e Meu perfil → Segurança'
     await page.getByLabel('Crie uma senha').fill(SENHA)
     await page.getByLabel(/Li e aceito os termos/).check()
     await page.getByRole('button', { name: 'Aceitar e entrar' }).click()
-    await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
     // a sessão já nasceu com a empresa ativa (a única dele): nenhuma troca manual
     expect((await page.request.get('/v1/membros')).status()).toBe(200)
 
@@ -247,11 +253,12 @@ test.describe('2FA para todos: política da empresa e Meu perfil → Segurança'
     await page.getByRole('button', { name: 'Ativar verificação' }).click()
     await page.getByLabel('Guardei meus códigos de recuperação').check()
     await page.getByRole('button', { name: 'Concluir' }).click()
-    await expect(page.getByRole('heading', { name: 'Leadtogo' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
     expect((await page.request.get('/v1/membros')).status()).toBe(200)
 
     // Segurança: ativa, mas obrigatória (a política exige): sem botão de desativar
-    await page.getByRole('link', { name: 'Meu perfil → Segurança' }).click()
+    await page.getByRole('button', { name: /^Menu de / }).click()
+    await page.getByRole('menuitem', { name: 'Meu perfil → Segurança' }).click()
     await expect(page.getByText('Ativa', { exact: true })).toBeVisible()
     await expect(page.getByText(/obrigatória para você/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Desativar verificação' })).toHaveCount(0)

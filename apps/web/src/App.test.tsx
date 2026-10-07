@@ -13,7 +13,7 @@ describe('App: guarda de rotas', () => {
 
   it('com sessão, mostra o app', async () => {
     renderizar(servicosFalsos({ me: async () => meDeAdmin() }), '/')
-    expect(await screen.findByRole('heading', { name: 'Leadtogo' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
   it('administrador sem 2FA fica preso na ativação: a casca está bloqueada', async () => {
@@ -35,7 +35,7 @@ describe('App: guarda de rotas', () => {
 
   it('quem já entrou não vê o login: vai para o app', async () => {
     const { historico } = renderizar(servicosFalsos({ me: async () => meDeAdmin() }), '/login')
-    expect(await screen.findByRole('heading', { name: 'Leadtogo' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
     expect(historico.location.pathname).toBe('/')
   })
 })

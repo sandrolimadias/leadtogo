@@ -65,6 +65,18 @@ export const servicosReais: ServicosDeAcesso = {
     return r.data?.aberto ?? false
   },
 
+  async preferencias() {
+    const r = await api.GET('/v1/me/preferencias')
+    return r.data ?? null
+  },
+  alterarPreferencias: (patch) =>
+    protegido(async () => daApi(await api.PATCH('/v1/me/preferencias', { body: patch }))),
+  trocarEmpresa: (empresaId) =>
+    protegido(async () => {
+      const r = daApi(await api.POST('/v1/sessao/empresa-ativa', { body: { empresaId } }))
+      return r.ok ? ok(undefined) : r
+    }),
+
   entrar: (email, senha) =>
     protegido(async () => {
       const r = await authClient.signIn.email({ email, password: senha })

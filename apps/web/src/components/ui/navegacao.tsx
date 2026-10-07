@@ -1,4 +1,11 @@
-import { ArrowRight, ChevronDown, Settings, type LucideIcon } from 'lucide-react'
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
@@ -17,9 +24,32 @@ export interface EmpresaAtiva {
 /** Botão do topo da navegação: logotipo com as iniciais, nome e papel na empresa ativa. */
 export function TenantSwitcher({
   current,
+  recolhido,
   className,
   ...resto
-}: { current: EmpresaAtiva } & ButtonHTMLAttributes<HTMLButtonElement>) {
+}: {
+  current: EmpresaAtiva
+  /** Menu recolhido: só o quadrado de 40 px com as iniciais */
+  recolhido?: boolean
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  if (recolhido) {
+    return (
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-label={`Empresa ativa: ${current.name}. Trocar de empresa`}
+        title={current.name}
+        {...resto}
+        className={cn(
+          'inline-flex size-10 cursor-pointer items-center justify-center self-center rounded-sm border border-border text-xs font-bold hover:opacity-90',
+          classeDaCor[current.color ?? 'teal'],
+          className,
+        )}
+      >
+        {iniciais(current.name)}
+      </button>
+    )
+  }
   return (
     <button
       type="button"
@@ -54,6 +84,8 @@ export interface ItemDaNavegacao {
   href?: string
   active?: boolean
   count?: number
+  /** Selo no lugar do contador (ex.: "Fase 3") */
+  selo?: string
   onClick?: () => void
 }
 
@@ -62,9 +94,22 @@ export interface GrupoDaNavegacao {
   items: ItemDaNavegacao[]
 }
 
+/** O que o app passa para desenhar o item como link do roteador (em vez de um `<a>` que recarrega). */
+export interface LinkDoItem {
+  item: ItemDaNavegacao
+  className: string
+  'aria-current': 'page' | undefined
+  title: string | undefined
+  children: ReactNode
+}
+
+const classeDoItem =
+  'group flex h-[34px] w-full cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent px-2 text-left font-medium text-ink-muted no-underline hover:bg-surface-hover hover:text-ink aria-[current=page]:bg-surface-selected aria-[current=page]:font-semibold aria-[current=page]:text-brand'
+
 /**
- * Navegação lateral do desktop (248 px). `tenantSlot` troca o seletor de empresa por outro elemento
- * (a casca põe o `TenantSwitcher` dentro de um `Menu`); sem ele, mostra o seletor de `tenant`.
+ * Navegação lateral do desktop (248 px; recolhida, 64 px só com ícones). `tenantSlot` troca o seletor de
+ * empresa por outro elemento (a casca o põe dentro de um `Menu`); `renderLink` desenha os itens como
+ * links do roteador; `rodape` troca o rodapé (usuário) quando a casca precisa de menu próprio.
  */
 export function AppNav({
   productName = 'Leadtogo',
@@ -73,6 +118,12 @@ export function AppNav({
   user,
   onSettings,
   groups,
+  recolhido,
+  aoAlternarRecolhimento,
+  renderLink,
+  rodape,
+  marca: marcaPropria,
+  espacoso,
   className,
 }: {
   productName?: string
@@ -81,62 +132,141 @@ export function AppNav({
   user?: { name: string; role: string }
   onSettings?: () => void
   groups: GrupoDaNavegacao[]
+  recolhido?: boolean
+  /** Mostra o botão de recolher/expandir (a casca guarda a preferência) */
+  aoAlternarRecolhimento?: () => void
+  renderLink?: (link: LinkDoItem) => ReactNode
+  rodape?: ReactNode
+  /** Marca gráfica no lugar da seta do catálogo (a casca usa o logotipo) */
+  marca?: ReactNode
+  /** Itens de 36 px com 4 px entre eles (a casca, README do protótipo); o padrão do catálogo é 34 px e 2 px */
+  espacoso?: boolean
   className?: string
 }) {
+  const marca = marcaPropria ?? (
+    <span className="inline-flex size-6 flex-none items-center justify-center rounded-sm bg-brand text-on-brand">
+      <ArrowRight size={15} strokeWidth={2.5} aria-hidden="true" />
+    </span>
+  )
   return (
     <nav
       aria-label="Principal"
       className={cn(
-        'box-border flex w-(--sidebar-width) max-w-full flex-col gap-4 border-r border-border bg-surface p-3',
+        'box-border flex max-w-full flex-col gap-4 border-r border-border bg-surface p-3 transition-[width] duration-150',
+        recolhido ? 'w-16 items-stretch' : 'w-(--sidebar-width)',
         className,
       )}
     >
-      <div className="flex items-center gap-2 px-2 py-1 text-base leading-5 font-bold tracking-[-.01em] text-ink">
-        <span className="inline-flex size-6 items-center justify-center rounded-sm bg-brand text-on-brand">
-          <ArrowRight size={15} strokeWidth={2.5} aria-hidden="true" />
-        </span>
-        {productName}
-      </div>
-      {tenantSlot ?? (tenant ? <TenantSwitcher current={tenant} /> : null)}
-      {groups.map((grupo, i) => (
-        <div key={grupo.label ?? i} className="flex flex-col gap-0.5">
-          {grupo.label ? (
-            <span className="px-2 pt-2 pb-1 text-[11px] leading-4 font-semibold tracking-[.06em] text-ink-subtle uppercase">
-              {grupo.label}
-            </span>
+      {recolhido ? (
+        <div className="flex flex-col items-center gap-2 py-1">
+          {marca}
+          {aoAlternarRecolhimento ? (
+            <IconButton
+              icon={ChevronRight}
+              label="Expandir menu"
+              size="sm"
+              onClick={aoAlternarRecolhimento}
+            />
           ) : null}
-          {grupo.items.map(({ icon: Icone, label, href, active, count, onClick }) => (
-            <a
-              key={label}
-              href={href ?? '#'}
-              aria-current={active ? 'page' : undefined}
-              onClick={(e) => {
-                if (!href) e.preventDefault()
-                onClick?.()
-              }}
-              className="group flex h-[34px] w-full cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent px-2 text-left font-medium text-ink-muted no-underline hover:bg-surface-hover hover:text-ink aria-[current=page]:bg-surface-selected aria-[current=page]:font-semibold aria-[current=page]:text-brand"
-            >
-              <Icone size={17} strokeWidth={1.75} aria-hidden="true" className="flex-none" />
-              {label}
-              {count !== undefined ? (
-                <span className="ml-auto text-[12px] font-semibold tabular-nums text-ink-muted group-aria-[current=page]:text-brand">
-                  {count}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 px-2 py-1 text-base leading-5 font-bold tracking-[-.01em] text-ink">
+          {marca}
+          {productName}
+          {aoAlternarRecolhimento ? (
+            <IconButton
+              icon={ChevronLeft}
+              label="Recolher menu"
+              size="sm"
+              className="ml-auto"
+              onClick={aoAlternarRecolhimento}
+            />
+          ) : null}
+        </div>
+      )}
+      {tenantSlot ?? (tenant ? <TenantSwitcher current={tenant} recolhido={recolhido} /> : null)}
+      {groups.map((grupo, i) => (
+        <div key={grupo.label ?? i} className={cn('flex flex-col', espacoso ? 'gap-1' : 'gap-0.5')}>
+          {grupo.label ? (
+            recolhido ? (
+              <hr className="mx-2 my-1 h-px border-0 bg-border" />
+            ) : (
+              <span className="px-2 pt-2 pb-1 text-[11px] leading-4 font-semibold tracking-[.06em] text-ink-subtle uppercase">
+                {grupo.label}
+              </span>
+            )
+          ) : null}
+          {grupo.items.map((item) => {
+            const { icon: Icone, label, href, active, count, selo, onClick } = item
+            const conteudo = (
+              <>
+                <Icone size={17} strokeWidth={1.75} aria-hidden="true" className="flex-none" />
+                {recolhido ? <span className="sr-only">{label}</span> : label}
+                {!recolhido && selo ? (
+                  <span className="ml-auto rounded-xs bg-surface-sunken px-1.5 text-[11px] leading-4 font-semibold text-ink-muted">
+                    {selo}
+                  </span>
+                ) : null}
+                {!recolhido && count !== undefined ? (
+                  <span className="ml-auto text-[12px] font-semibold tabular-nums text-ink-muted group-aria-[current=page]:text-brand">
+                    {count}
+                  </span>
+                ) : null}
+              </>
+            )
+            const classe = cn(classeDoItem, espacoso && 'h-9', recolhido && 'justify-center px-0')
+            const atual = active ? ('page' as const) : undefined
+            if (renderLink) {
+              return (
+                <span key={label} className="contents">
+                  {renderLink({
+                    item,
+                    className: classe,
+                    'aria-current': atual,
+                    title: recolhido ? label : undefined,
+                    children: conteudo,
+                  })}
                 </span>
-              ) : null}
-            </a>
-          ))}
+              )
+            }
+            return (
+              <a
+                key={label}
+                href={href ?? '#'}
+                aria-current={atual}
+                title={recolhido ? label : undefined}
+                onClick={(e) => {
+                  if (!href) e.preventDefault()
+                  onClick?.()
+                }}
+                className={classe}
+              >
+                {conteudo}
+              </a>
+            )
+          })}
         </div>
       ))}
-      {user ? (
-        <div className="mt-auto flex items-center gap-2 border-t border-border pt-3">
-          <Avatar name={user.name} />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <b className="truncate text-[13px]">{user.name}</b>
-            <span className="text-[12px] text-ink-muted">{user.role}</span>
-          </span>
-          <IconButton icon={Settings} label="Configurações" size="sm" onClick={onSettings} />
-        </div>
-      ) : null}
+      {rodape ??
+        (user ? (
+          <div
+            className={cn(
+              'mt-auto flex items-center gap-2 border-t border-border pt-3',
+              recolhido && 'justify-center',
+            )}
+          >
+            <Avatar name={user.name} />
+            {recolhido ? null : (
+              <>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <b className="truncate text-[13px]">{user.name}</b>
+                  <span className="text-[12px] text-ink-muted">{user.role}</span>
+                </span>
+                <IconButton icon={Settings} label="Configurações" size="sm" onClick={onSettings} />
+              </>
+            )}
+          </div>
+        ) : null)}
     </nav>
   )
 }

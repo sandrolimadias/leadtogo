@@ -29,6 +29,7 @@ export async function limparLimites(): Promise<void> {
 // ---------- Mailpit ----------
 interface Mensagem {
   ID: string
+  Created: string
 }
 interface MensagemCompleta {
   Subject: string
@@ -40,13 +41,16 @@ interface MensagemCompleta {
 export async function linkDoEmail(
   para: string,
   ms = 20_000,
+  /** Espera até haver pelo menos tantos e-mails para o endereço (o link novo, e não o antigo) */
+  minimo = 1,
 ): Promise<{ assunto: string; link: string }> {
   const limite = Date.now() + ms
   while (Date.now() < limite) {
     const r = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${para}`)}`)
     const { messages } = (await r.json()) as { messages: Mensagem[] }
-    const primeira = messages[0]
-    if (primeira) {
+    // o e-mail mais recente (a pessoa pode ter recebido mais de um)
+    const primeira = [...messages].sort((x, y) => y.Created.localeCompare(x.Created))[0]
+    if (primeira && messages.length >= minimo) {
       const m = (await (
         await fetch(`${MAILPIT}/api/v1/message/${primeira.ID}`)
       ).json()) as MensagemCompleta

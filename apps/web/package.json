@@ -13,7 +13,8 @@
     "test": "node scripts/sincronizar-design-system.mjs && vitest run",
     "comparar:catalogos": "node scripts/comparar-catalogos.mjs",
     "e2e": "playwright test",
-    "capturar:acesso": "node scripts/capturar-acesso.mjs"
+    "capturar:acesso": "node scripts/capturar-acesso.mjs",
+    "capturar:casca": "node scripts/capturar-casca.mjs"
   },
   "dependencies": {
     "@leadtogo/api-client": "workspace:*",

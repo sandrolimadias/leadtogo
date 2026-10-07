@@ -50,7 +50,7 @@ describe('Ativação do 2FA', () => {
     await userEvent.click(screen.getByLabelText('Guardei meus códigos de recuperação'))
     await userEvent.click(concluir)
     await waitFor(() => expect(historico.location.pathname).toBe('/'))
-    expect(await screen.findByRole('heading', { name: 'Leadtogo' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
   it('senha errada mostra o erro no campo', async () => {

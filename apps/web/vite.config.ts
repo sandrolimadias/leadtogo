@@ -48,5 +48,8 @@ export default defineConfig(({ command }) => ({
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/testes/setup.ts'],
     css: false,
+    // Menos arquivos de teste ao mesmo tempo: os fluxos (roteador + Radix) são pesados e ficavam lentos
+    // quando a máquina está ocupada
+    maxWorkers: 2,
   },
 }))

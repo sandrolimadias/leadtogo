@@ -331,6 +331,20 @@ O E9 é entregue em partes: **E9a** componentes base e catálogo (`/dev/catalogo
 
 Já prontos para o E9b/E9c: `AppNav`, `TenantSwitcher`, `MenuList`/`Menu`, `Toast` + `toast.*` (Sonner), `Alert`, campo com `suffix`, `Avatar`/`AvatarGroup`, `Icon`, `PainelDoDialogo`.
 
+### E9c. Casca do app — ⏳ aguardando aprovação
+
+Entregue:
+
+- **Desktop (≥ 1024 px):** menu lateral de 248 px, **recolhível** a 64 px (a preferência é salva por usuário em `membros.preferencias`, via `PATCH /v1/me/preferencias`, com troca otimista), seletor de empresa (menu "Suas empresas" com a ativa marcada; trocar mantém a tela e avisa "Empresa ativa trocada"), barra superior (busca global, "Registrar atividade", sino com painel de notificações), menu do usuário (Meu perfil → Segurança, tema Claro/Escuro/Sistema, Sair, versão) e atalho de Configurações.
+- **Tablet (768–1023 px):** trilho de ícones sempre recolhido, controles de toque.
+- **Celular (< 768 px):** cabeçalho de 56 px (título, busca, sino, avatar), barra inferior de 68 px (Início, Empresas, Funil, Tarefas, Mais) e **folha de perfil** (usuário, **empresa ativa com a lista para trocar**, Meu perfil → Segurança, tema, Sair, versão). Avisos acima da barra inferior. Densidade de toque.
+- **Seletor de empresa quando não há empresa ativa:** tela "Escolha a empresa" no lugar do app (`GET /v1/me` → `precisaEscolherEmpresa`), para quem tem várias empresas e nenhuma usada antes. A API já abre a sessão na última empresa usada ou na única da pessoa.
+- **Telas** `Dashboard`, `Empresas`, `Contatos`, `Oportunidades`, `Tarefas`, `Prospecção`, `Rotas` e `Configurações` como páginas "Em construção" (EmptyState) dentro da casca; `Meu perfil → Segurança` completo (E9b + 2FA para todos).
+- **Tema** claro/escuro/sistema salvo por usuário (e no aparelho, para não piscar). `AppNav`/`TenantSwitcher` ganharam as variações recolhida, links do roteador e logotipo, sem alterar o catálogo (0 pixel de diferença no `comparar:catalogos`).
+- **Testes:** 15 de casca em jsdom (desktop, tablet, celular, seletor, tema, recolher, troca) e 2 E2E (duas empresas: seletor no login, última usada, troca pelo menu, menu recolhido que sobrevive ao recarregar; celular: barra inferior, folha de perfil, troca e Segurança). Capturas: `pnpm --filter @leadtogo/web capturar:casca` → `~/projetos/leadtogo-capturas/casca/` (1440, 820 e 390 px, claro e escuro).
+
+Ficam para as telas de negócio (hoje avisam "chega nas próximas etapas"): busca global, "Registrar atividade", notificações reais (o sino abre o painel vazio), contadores do menu (Oportunidades "paradas", Tarefas), "Painel consolidado" e "Criar empresa" no seletor, e o PWA (`vite-plugin-pwa`, manifest e ícones), que segue pendente do E9.
+
 ### Pendências registradas para as próximas etapas (2FA para todos)
 
 - **E9c (casca):** na folha de perfil, **Meu perfil → Segurança** para qualquer usuário: ativar o 2FA (reaproveitando a ativação de `src/telas/acesso/ativar-dois-fatores.tsx`), **desativar** (senha + código; escondido quando `GET /v1/me` traz `doisFatoresObrigatorio`) e **gerar novos códigos de recuperação**. A API (política por empresa, guard, gancho de desativação) já está pronta; a rota `/perfil/seguranca` existe como ponto de partida.
