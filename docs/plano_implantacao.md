@@ -38,7 +38,7 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 | E10 | Worker base (filas e eventos) | Claude Code | E8 | 1 dia |
 | E11 | Imagens Docker ✅ | Claude Code | E8–E10 | 0,5 dia |
 | E12 | CI/CD e hooks locais ✅ | Claude Code | E11 | 1 dia |
-| E13 | Recursos da aplicação no Coolify e 1º deploy | Ale + Claude Code | E4, E12 | 3–4 h |
+| E13 | Recursos da aplicação no Coolify e 1º deploy ✅ | Ale + Claude Code | E4, E12 | 3–4 h |
 | E14 | Observabilidade e alertas | Ale + Claude Code | E13 | 2–3 h |
 | E15 | Segurança e endurecimento | Ale + Claude Code | E13 | 0,5 dia |
 | E16 | Validação final e runbook | Ale + Claude Code | todas | 0,5 dia |
@@ -462,12 +462,12 @@ Checklist:
 
 ---
 
-## E13. Recursos da aplicação no Coolify e primeiro deploy — Ale + Claude Code
+## E13. Recursos da aplicação no Coolify e primeiro deploy — Ale + Claude Code ✅ concluída em 08/10/2026
 
 > **Roteiro passo a passo, com tudo para copiar: [`runbook_e13.md`](runbook_e13.md).** Mudanças em relação à lista abaixo: o papel do container vem da variável `PAPEL` (`api` ou `worker`), porque o Coolify ignora o comando de partida de recursos Docker Image: o `CMD` da imagem é `node dist/iniciar.js`, e a API migra o banco e semeia as referências ao iniciar (o pré-deploy do Coolify roda no container antigo e é pulado no primeiro deploy); o SMTP de produção é o Resend; o healthcheck de api, worker e web é o `HEALTHCHECK` da própria imagem.
 
-1. [ ] Rodar `packages/db/sql/papeis.sql` no `leadtogo-db` (cria `leadtogo_owner` e `leadtogo_app` com senhas fortes).
-2. [ ] Criar os 3 recursos (tipo *Docker Image*, registro `ghcr.io`):
+1. [x] Rodar `packages/db/sql/papeis.sql` no `leadtogo-db` (cria `leadtogo_owner` e `leadtogo_app` com senhas fortes).
+2. [x] Criar os 3 recursos (tipo *Docker Image*, registro `ghcr.io`):
 
 | Recurso | Imagem | Comando | Domínio | Limite de memória |
 |---|---|---|---|---|
@@ -475,17 +475,29 @@ Checklist:
 | leadtogo-worker | `ghcr.io/<usuario>/leadtogo-api:latest` | `PAPEL=worker` (`CMD` da imagem) | — | 512 MB |
 | leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `crm.aledias.com.br` | 128 MB |
 
-3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
-3a. [ ] **Domínio único (decidido em 07/10/2026):** o Traefik roteia `crm.aledias.com.br/v1` (que inclui o Better Auth em `/v1/auth/*`) para a API e o resto para o web, **sem remover o prefixo**. No Coolify, o `leadtogo-api` recebe os domínios `https://crm.aledias.com.br/v1` e `https://api.crm.aledias.com.br`, e o `leadtogo-web` recebe `https://crm.aledias.com.br` (o Traefik escolhe o prefixo mais longo). A imagem do web é a mesma em todo ambiente (caminhos relativos, CSP `connect-src 'self'`); a API usa `APP_URL=API_URL=https://crm.aledias.com.br`. O `api.crm.aledias.com.br` fica para integrações servidor a servidor (n8n, webhooks, Evolution) e para o health check da esteira. O `compose.imagens.yml` reproduz esse roteamento com um Caddy de borda.
-4. [ ] Healthchecks: os `HEALTHCHECK` das imagens (API `/health`, web `/health`, worker detectado pela própria imagem). **Prazo de parada do worker: `WORKER_ENCERRAMENTO_S=8`** (o Coolify ignora o `--stop-timeout`; esteira_deploy.md, 7.1.1).
-5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
-6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
-7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.
-8. [ ] **Cadastrar `TOKEN_ENCRYPTION_KEY` no Coolify** (API e worker; `openssl rand -base64 32`; sem ela a API não sobe em produção). **SMTP de produção: Resend** (decidido em 08/10/2026; `smtp.resend.com`, 465, remetente `Leadtogo <nao-responda@aledias.com.br>`), com `VERIFICACAO_EMAIL=true` e as variáveis `SMTP_*` no Coolify.
-9. [ ] **Teste de login real no domínio único** (`https://crm.aledias.com.br`, com `/v1` roteado para a API): cookie de sessão do host `crm.aledias.com.br` (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`), login, `GET /v1/me`, troca de empresa e logout pelo navegador; conferir também que `https://api.crm.aledias.com.br/health` responde para as integrações.
-10. [ ] **Criar a primeira conta** pelo terminal do Coolify (`PRIMEIRO_ACESSO` fica `fechado`): `node dist/criar-conta.js` (ver `esteira_deploy.md`).
+3. [x] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
+3a. [x] **Domínio único (decidido em 07/10/2026):** o Traefik roteia `crm.aledias.com.br/v1` (que inclui o Better Auth em `/v1/auth/*`) para a API e o resto para o web, **sem remover o prefixo**. No Coolify, o `leadtogo-api` recebe os domínios `https://crm.aledias.com.br/v1` e `https://api.crm.aledias.com.br`, e o `leadtogo-web` recebe `https://crm.aledias.com.br` (o Traefik escolhe o prefixo mais longo). A imagem do web é a mesma em todo ambiente (caminhos relativos, CSP `connect-src 'self'`); a API usa `APP_URL=API_URL=https://crm.aledias.com.br`. O `api.crm.aledias.com.br` fica para integrações servidor a servidor (n8n, webhooks, Evolution) e para o health check da esteira. O `compose.imagens.yml` reproduz esse roteamento com um Caddy de borda.
+4. [x] Healthchecks: os `HEALTHCHECK` das imagens (API `/health`, web `/health`, worker detectado pela própria imagem). **Prazo de parada do worker: `WORKER_ENCERRAMENTO_S=8`** (o Coolify ignora o `--stop-timeout`; esteira_deploy.md, 7.1.1).
+5. [x] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
+6. [x] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
+7. [x] Ligar `DEPLOY_ENABLED` e fazer um push.
+8. [x] **Cadastrar `TOKEN_ENCRYPTION_KEY` no Coolify** (API e worker; `openssl rand -base64 32`; sem ela a API não sobe em produção). **SMTP de produção: Resend** (decidido em 08/10/2026; `smtp.resend.com`, 465, remetente `Leadtogo <nao-responda@aledias.com.br>`), com `VERIFICACAO_EMAIL=true` e as variáveis `SMTP_*` no Coolify.
+9. [x] **Teste de login real no domínio único** (`https://crm.aledias.com.br`, com `/v1` roteado para a API): cookie de sessão do host `crm.aledias.com.br` (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`), login, `GET /v1/me`, troca de empresa e logout pelo navegador; conferir também que `https://api.crm.aledias.com.br/health` responde para as integrações.
+10. [x] **Criar a primeira conta** pelo terminal do Coolify (`PRIMEIRO_ACESSO` fica `fechado`): `node dist/criar-conta.js` (ver `esteira_deploy.md`).
 
-**Pronto quando:** o push passa por toda a esteira, `https://api.crm.aledias.com.br/health` mostra o commit atual e `https://crm.aledias.com.br` abre o login com certificado válido.
+**Pronto quando:** o push passa por toda a esteira, `https://api.crm.aledias.com.br/health` mostra o commit atual e `https://crm.aledias.com.br` abre o login com certificado válido. ✅
+
+**Concluída em 08/10/2026 (marcada pelo Ale).** O **primeiro deploy automático verde** foi a execução `37835286786` do `ci-cd.yml` (commit `1ef0d0b`): `escopo`, `quality`, `security`, `test` (com E2E), `build` (api e web, ARM64), `deploy`, `verify` e `limpeza`, todos em sucesso; o `verify` conferiu o commit no `/health` de `api.crm.aledias.com.br`, o web em `crm.aledias.com.br` e a rota `/v1` pelo domínio do usuário. Antes dela, três execuções falharam por motivos que viraram correção (abaixo).
+
+**Lições da E13**
+- **O recurso "Docker Image" do Coolify não tem campo de comando de partida** (o container sobe sempre com o `CMD` da imagem). Daí o `PAPEL`: a imagem tem um entrypoint único (`node dist/iniciar.js`) e o papel vem da variável `PAPEL=api|worker`. O "pré-deploy" do Coolify também não serve para migrar (roda no container antigo e é pulado no primeiro deploy), então a API migra e semeia as referências ao iniciar.
+- **O Coolify ignora o `--stop-timeout`** (`docker inspect` mostra `StopTimeout` vazio, ou seja, os 10 s do Docker). Em produção o worker usa `WORKER_ENCERRAMENTO_S=8`.
+- **O Coolify cria sozinho os domínios `www.`** de cada domínio cadastrado; devem ser removidos dos recursos `leadtogo-api` e `leadtogo-web`.
+- **A API de deploy do Coolify exige `POST /api/v1/deploy`** (o `GET` responde 405). O workflow foi corrigido.
+- **O gitleaks só varre o histórico inteiro na execução manual** (`workflow_dispatch`): os segredos falsos de teste só apareceram na primeira, e agora têm `.gitleaks.toml`.
+- **O Coolify troca api, worker e web ao mesmo tempo:** o web pode responder 503 por alguns segundos; o `verify` agora tenta de novo por até 5 minutos no web e no `/v1`.
+- **Push só de documentação não passa pela esteira** (job `escopo`): para testar o deploy sem mudar código, use `gh workflow run ci-cd.yml`.
+- Roteiro completo e atualizado: `runbook_e13.md`.
 
 ---
 
