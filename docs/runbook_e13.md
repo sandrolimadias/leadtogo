@@ -271,17 +271,17 @@ Faça o deploy **depois** de a API estar saudável (o worker usa as tabelas migr
 | Comando de partida | **vazio** (`CMD` da imagem; o papel vem de `PAPEL=worker`) |
 | Porta / domínio | nenhum (o healthcheck escuta só em `127.0.0.1:3001`, dentro do container) |
 | Limite de memória | 512 MB |
-| Stop timeout | **45 s** (*Advanced → Custom Docker Options*: `--stop-timeout 45`) |
+| Stop timeout | **padrão do Docker (10 s)**: o Coolify ignora `--stop-timeout`, então o prazo de parada vem de `WORKER_ENCERRAMENTO_S=8` |
 | Healthcheck | o da imagem (detecta o papel de worker sozinho) |
 
-Confira o stop timeout depois do deploy, na VPS: `docker inspect -f '{{.Config.StopTimeout}}' $(docker ps -q --filter name=<uuid-do-worker>)` deve mostrar `45`. Se o Coolify recusar ou ignorar a opção, o Docker usa 10 s: defina então `WORKER_ENCERRAMENTO_S=8` (precisa ser **menor** que o stop timeout efetivo) até resolver.
+**Por que 8 s:** o Coolify não aplica `--stop-timeout` (confirmado no primeiro deploy real: `docker inspect -f '{{.Config.StopTimeout}}' <container-do-worker>` mostra `<nil>`, ou seja, os 10 s padrão do Docker). Com `WORKER_ENCERRAMENTO_S=8` o worker para de pegar jobs, espera os em andamento por até 8 s e sai com código 0 antes do SIGKILL. O job que não terminar nesse prazo perde o lock (30 s) e outro worker o refaz (entrega "pelo menos uma vez", esteira_deploy.md, 7.1.1). Se um dia o Coolify passar a respeitar o stop timeout, dá para voltar ao padrão de 30 s com `--stop-timeout 45`.
 
 **Variáveis do worker:** as mesmas da API, **exceto `DATABASE_MIGRATION_URL`** (o worker não migra e não deve conhecer a credencial do dono), mais:
 
 | Variável | Valor | Secreta |
 |---|---|---|
 | `PAPEL` | `worker` | não |
-| `WORKER_ENCERRAMENTO_S` | `30` (menor que o stop timeout de 45 s) | não |
+| `WORKER_ENCERRAMENTO_S` | **`8`** (menor que os 10 s do Docker; o padrão do código, 30 s, estouraria o prazo e o worker seria morto com SIGKILL) | não |
 | `WORKER_CONCORRENCIA` | `5` | não |
 
 Fica **saudável** quando os consumidores das filas estão rodando e o Valkey e o Postgres respondem (esteira_deploy.md, 7.1.1).

@@ -42,8 +42,17 @@ export class LogModule implements NestModule {
     const opcoes = {
       level: config.LOG_LEVEL,
       redact: { paths: REDIGIR, censor: '[removido]' },
-      // Todo log da requisição leva request_id e, quando conhecidos, tenant_id e user_id
-      mixin: () => camposDoContexto(contextoAtual()),
+      // Todo log da requisição leva request_id e, quando conhecidos, tenant_id e user_id. Duas fontes, sem
+      // repetir campo: o `mixin` (contexto assíncrono) cobre as linhas da aplicação; o `customProps` (lê da
+      // própria requisição) cobre a linha "request completed", onde o contexto assíncrono pode se perder.
+      // Na linha de conclusão os dois valem, e o JSON sairia com a chave duplicada: o mixin cede os campos
+      // que o logger da linha já traz (suas `bindings`) ou que a própria chamada informa.
+      mixin: (objeto: object, _nivel: number, logger: { bindings?: () => object }) => {
+        const campos: Record<string, string> = camposDoContexto(contextoAtual())
+        const proprios = { ...logger.bindings?.(), ...objeto }
+        for (const chave of Object.keys(campos)) if (chave in proprios) delete campos[chave]
+        return campos
+      },
       customProps: (req: IncomingMessage) => camposDoContexto(contextoDaRequisicao(req)),
       genReqId: (req: IncomingMessage, res: ServerResponse) => {
         const id = idDaRequisicao(req)

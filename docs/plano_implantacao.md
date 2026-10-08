@@ -403,7 +403,7 @@ Diferenças em relação ao protótipo `Acesso.dc.html` (o documento e a API val
 - [x] **Partições de `auditoria`:** job mensal (e na partida) via `app_manter_particoes_auditoria`, sem usar o owner.
 - [x] **Limpezas:** convites cancelados/vencidos há mais de 30 dias e outbox entregue há mais de 14 dias, por funções `SECURITY DEFINER` com prazos fixos e lotes limitados (migração 0009).
 - [x] **Jobs agendados** com `upsertJobScheduler`; dois workers (em processo e como processos reais) não duplicam.
-- [x] **Healthcheck** (`node dist/saude-worker.js`, só loopback) e **encerramento gracioso** (30 s; Coolify 45 s), provado com o `dist/worker.js` real: nenhum job se perde.
+- [x] **Healthcheck** (`node dist/saude-worker.js`, só loopback) e **encerramento gracioso** (30 s por padrão; em produção 8 s, porque o Coolify ignora o stop timeout e o Docker mata em 10 s), provado com o `dist/worker.js` real: nenhum job se perde.
 - [ ] *(E14)* Alerta para eventos do outbox com `falhou_em` preenchido.
 
 **Pronto quando:** testes passam e o worker sobe e encerra sem perder jobs.
@@ -477,7 +477,7 @@ Checklist:
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
 3a. [ ] **Domínio único (decidido em 07/10/2026):** o Traefik roteia `crm.aledias.com.br/v1` (que inclui o Better Auth em `/v1/auth/*`) para a API e o resto para o web, **sem remover o prefixo**. No Coolify, o `leadtogo-api` recebe os domínios `https://crm.aledias.com.br/v1` e `https://api.crm.aledias.com.br`, e o `leadtogo-web` recebe `https://crm.aledias.com.br` (o Traefik escolhe o prefixo mais longo). A imagem do web é a mesma em todo ambiente (caminhos relativos, CSP `connect-src 'self'`); a API usa `APP_URL=API_URL=https://crm.aledias.com.br`. O `api.crm.aledias.com.br` fica para integrações servidor a servidor (n8n, webhooks, Evolution) e para o health check da esteira. O `compose.imagens.yml` reproduz esse roteamento com um Caddy de borda.
-4. [ ] Healthchecks: os `HEALTHCHECK` das imagens (API `/health`, web `/health`, worker detectado pela própria imagem). **Stop timeout do worker: 45 s** (esteira_deploy.md, 7.1.1).
+4. [ ] Healthchecks: os `HEALTHCHECK` das imagens (API `/health`, web `/health`, worker detectado pela própria imagem). **Prazo de parada do worker: `WORKER_ENCERRAMENTO_S=8`** (o Coolify ignora o `--stop-timeout`; esteira_deploy.md, 7.1.1).
 5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
 7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.

@@ -32,14 +32,17 @@ type Linha = Record<string, unknown> & { msg?: string }
 /** Destino de log que guarda cada linha JSON, para os testes inspecionarem. */
 function capturar() {
   const linhas: Linha[] = []
+  const brutas: string[] = []
   const destino = new Writable({
     write(pedaco, _codificacao, pronto) {
-      for (const texto of String(pedaco).split('\n').filter(Boolean))
+      for (const texto of String(pedaco).split('\n').filter(Boolean)) {
+        brutas.push(texto)
         linhas.push(JSON.parse(texto) as Linha)
+      }
       pronto()
     },
   })
-  return { linhas, destino }
+  return { linhas, brutas, destino }
 }
 
 @Controller('teste-log')
@@ -63,7 +66,7 @@ class RotaDeTeste {
 
 describe('logs estruturados (Pino)', () => {
   let app: INestApplication<Server>
-  const { linhas, destino } = capturar()
+  const { linhas, brutas, destino } = capturar()
 
   beforeAll(async () => {
     const modulo = await Test.createTestingModule({
@@ -77,6 +80,7 @@ describe('logs estruturados (Pino)', () => {
   afterAll(() => app.close())
   beforeEach(() => {
     linhas.length = 0
+    brutas.length = 0
   })
 
   it('gera um request_id (UUID v7) por requisição e o devolve em x-request-id', async () => {
@@ -114,6 +118,17 @@ describe('logs estruturados (Pino)', () => {
       req: { method: 'GET', url: '/teste-log' },
       res: { statusCode: 200 },
     })
+  })
+
+  it('cada campo do contexto aparece uma só vez por linha (o JSON.parse esconde chave repetida)', async () => {
+    await request(app.getHttpServer()).get('/teste-log').expect(200)
+    expect(brutas.length).toBeGreaterThanOrEqual(2)
+    for (const bruta of brutas) {
+      for (const campo of ['request_id', 'tenant_id', 'user_id']) {
+        const ocorrencias = bruta.split(`"${campo}":`).length - 1
+        expect(ocorrencias, `${campo} em ${bruta}`).toBeLessThanOrEqual(1)
+      }
+    }
   })
 
   it('uma requisição não vaza tenant nem usuário para a seguinte', async () => {
