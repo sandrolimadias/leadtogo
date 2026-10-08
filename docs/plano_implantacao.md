@@ -37,7 +37,7 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 | E9 | Web base (casca do app + login) | Claude Code | E8 | 3 dias |
 | E10 | Worker base (filas e eventos) | Claude Code | E8 | 1 dia |
 | E11 | Imagens Docker ✅ | Claude Code | E8–E10 | 0,5 dia |
-| E12 | CI/CD e hooks locais | Claude Code | E11 | 1 dia |
+| E12 | CI/CD e hooks locais ✅ | Claude Code | E11 | 1 dia |
 | E13 | Recursos da aplicação no Coolify e 1º deploy | Ale + Claude Code | E4, E12 | 3–4 h |
 | E14 | Observabilidade e alertas | Ale + Claude Code | E13 | 2–3 h |
 | E15 | Segurança e endurecimento | Ale + Claude Code | E13 | 0,5 dia |
@@ -440,13 +440,13 @@ Checklist:
 
 ---
 
-## E12. CI/CD e hooks — Claude Code
+## E12. CI/CD e hooks — Claude Code ✅ aprovado em 08/10/2026
 
 **Pedido:**
 > Implemente `.github/workflows/ci-cd.yml` conforme `docs/esteira_deploy.md` (seção 5): jobs quality, test (Postgres+PostGIS e Valkey como serviços, migrações do zero, testes de RLS), security (pnpm audit alto/crítico e gitleaks), build (matriz api/web → GHCR com tags `sha-<commit>` e `latest`, cache do GitHub Actions), deploy (API do Coolify para api, worker e web) e smoke test conferindo a versão em `/health`. Use `concurrency` para um deploy por vez e o ambiente `production`. Mantenha o deploy **desativado** (condição por variável `DEPLOY_ENABLED`) até a E13.
 
 - [x] Pipeline verde num push de teste (sem deploy): run de 08/10/2026 (escopo, quality, test, security, build api/web; deploy, verify e limpeza dispensados por `DEPLOY_ENABLED` desligado).
-- [ ] Imagens aparecem em *Packages* do GitHub. *(logs do build mostram o push de `sha-<commit>` e `latest` das duas imagens; falta o Ale olhar a aba Packages e conferir a tela de uso de minutos, inclusive o ARM.)*
+- [x] Imagens aparecem em *Packages* do GitHub: `leadtogo-api` e `leadtogo-web` com `latest` e `sha-a064604…` (conferido pelo Ale em 08/10/2026). Uso do mês: **80 min em 20 execuções** (incluindo a montagem do CI), conforme `esteira_deploy.md`.
 - [x] **Playwright no CI:** os testes E2E do web (login, troca de empresa, 2FA, teclado) também rodam no pipeline, com API, Postgres, Valkey e Mailpit como serviços e o Chromium instalado no job (`playwright install --with-deps chromium`).
 
 **Entregue na E12 (08/10/2026):** `.github/workflows/ci-cd.yml` (jobs `escopo`, `quality`, `test` com E2E, `security`, `build` em runner ARM64 nativo, `deploy` atrás de `DEPLOY_ENABLED`, `verify` com 3 verificações e `limpeza` do GHCR); actions fixadas por SHA; `scripts/escopo.sh` (regra de "só documentação", compartilhada com o `pre-push`); `scripts/limpar-ghcr.sh` (nunca apaga `latest`, a versão em produção nem a atual).
@@ -458,7 +458,7 @@ Checklist:
 - **Causa real no CI (corrigida):** (1) `setup-env.ts` aplicava `OUTBOX_INTERVALO_MS` e `EMAIL_ESPERA_MS` com `||=`, então o `.env` ganhava: no CI o `.env.example` define `EMAIL_ESPERA_MS=5000` e 2 testes de `fila-email` falhavam (local passava só porque o `.env` antigo não tinha a chave); agora os tempos de teste são forçados. (2) O `turbo` rodava api, db e web juntos num runner de 2 vCPUs, e os testes (hash de senha, bootstrap do Nest) ficavam 3 a 5 vezes mais lentos que no desenvolvimento, estourando 5 s (`convites.test.ts`); no CI `TURBO_CONCURRENCY=1`. (3) O E2E precisa de `TOKEN_ENCRYPTION_KEY`; o CI gera uma chave descartável.
 - **Segurança:** o `pnpm audit` do CI pegou `shell-quote` crítico (via `concurrently`, só desenvolvimento); fixado `>=1.11.0` em `overrides`.
 
-**Pronto quando:** um push na `main` gera as imagens no GHCR com o commit como tag. ✅ (falta a conferência visual do Ale)
+**Pronto quando:** um push na `main` gera as imagens no GHCR com o commit como tag. ✅ (aprovado pelo Ale em 08/10/2026)
 
 ---
 
