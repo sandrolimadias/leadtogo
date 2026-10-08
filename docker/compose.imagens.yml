@@ -40,9 +40,15 @@ services:
     healthcheck:
       disable: true
 
+  # api e worker usam o CMD padrão da imagem (node dist/iniciar.js); o papel vem de PAPEL, como no Coolify.
+  # A API recebe a URL do dono das tabelas (migra e semeia as referências ao iniciar; o `migrar` acima já
+  # deixou o banco pronto, então aqui é um no-op) e a descarta do ambiente antes de subir.
   api:
     <<: *api
-    command: ['node', 'dist/main.js']
+    environment:
+      <<: *api-env
+      PAPEL: api
+      DATABASE_MIGRATION_URL: postgres://leadtogo_owner:${LEADTOGO_OWNER_PASSWORD:-senha}@postgres:5432/${BANCO:?}
     depends_on:
       migrar: { condition: service_completed_successfully }
     ports:
@@ -51,7 +57,9 @@ services:
 
   worker:
     <<: *api
-    command: ['node', 'dist/worker.js']
+    environment:
+      <<: *api-env
+      PAPEL: worker
     depends_on:
       migrar: { condition: service_completed_successfully }
     # maior que o WORKER_ENCERRAMENTO_S (30 s), como no Coolify (esteira_deploy.md, 7.1.1)

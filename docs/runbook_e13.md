@@ -15,7 +15,7 @@ Roteiro para o Ale executar, do zero até a esteira fazendo o deploy sozinha. Tu
 | Banco / cache | `leadtogo-db` (banco `leadtogo`, PostGIS já ativo) e `leadtogo-cache` (Valkey) |
 | Remetente | `Leadtogo <nao-responda@aledias.com.br>` |
 
-> **Decisão que mudou em relação ao plano: a migração roda no comando de partida da API, não no "pré-deploy" do Coolify.** O pré-deploy do Coolify executa no container **antigo** (antes de a imagem nova existir) e é **pulado no primeiro deploy**, então ele rodaria as migrações da versão anterior, ou nenhuma. Rodando no início do container novo, a migração usa o código novo; se ela falhar, o container sai com erro, não fica saudável e o Coolify **mantém a versão antiga no ar** (mesma proteção). Deixe o campo *Pre-deployment command* **vazio**. A regra "expandir e depois contrair" (esteira_deploy.md, 7.2) continua obrigatória, porque durante a migração a versão antiga ainda atende com o esquema novo.
+> **Decisão que mudou em relação ao plano: o papel do container vem da variável `PAPEL`, e a migração roda ao iniciar a API.** O Coolify **ignora o comando de partida** de recursos Docker Image (o container sobe com o `CMD` da imagem) e o "pré-deploy" executa no container **antigo** (e é pulado no primeiro deploy). Por isso a imagem tem um `CMD` padrão, `node dist/iniciar.js`, que escolhe o papel por `PAPEL`: `api` (padrão) migra o banco, semeia as referências, descarta a `DATABASE_MIGRATION_URL` do ambiente e sobe a API; `worker` só sobe o worker. Se a migração falhar, o container sai com código 1, não fica saudável e o Coolify **mantém a versão antiga no ar**. Deixe **vazios** o campo de comando e o *Pre-deployment command*. A regra "expandir e depois contrair" (esteira_deploy.md, 7.2) continua obrigatória, porque durante a migração a versão antiga ainda atende com o esquema novo.
 
 ---
 
@@ -193,7 +193,7 @@ docker ps --format '{{.Names}}\t{{.Status}}' | grep -i leadtogo   # cada um term
 
 **O que acontece quando a migração falha no comando de partida**
 
-- **Com healthcheck (o caso das nossas imagens):** `migrate.js` sai com código 1, o `&&` impede o `main.js`, o container termina, nunca fica `healthy`, e o Coolify **marca o deploy como falho e mantém a versão antiga no ar**, sem queda. O log do deploy mostra `Falha na migração: ...` (sem a URL do banco).
+- **Com healthcheck (o caso das nossas imagens):** o `iniciar.js` sai com código 1 e a API nem chega a subir, o container termina, nunca fica `healthy`, e o Coolify **marca o deploy como falho e mantém a versão antiga no ar**, sem queda. O log do deploy mostra `Falha na migração: ...` (sem a URL do banco).
 - **Sem nenhum healthcheck:** o Coolify trata "container iniciado" como pronto, e a documentação **não garante** o comportamento quando o container novo morre logo depois. Pode haver uma janela em que a versão antiga já foi parada e a nova caiu. É por isso que a verificação do `docker ps` acima não é opcional.
 - Em ambos os casos, corrija a causa e faça um novo push (a migração é segura de repetir; uma trava do Postgres impede duas ao mesmo tempo).
 
@@ -206,7 +206,7 @@ Mesmo com healthcheck, o Coolify avisa que atualização sem queda não é garan
 | Campo | Valor |
 |---|---|
 | Imagem / tag | `ghcr.io/sandrolimadias/leadtogo-api` / `latest` |
-| Comando de partida (*Custom Start Command*) | `sh -c "node dist/migrate.js && unset DATABASE_MIGRATION_URL && exec node dist/main.js"` |
+| Comando de partida | **vazio** (vale o `CMD` da imagem, `node dist/iniciar.js`); o papel vem de `PAPEL=api` |
 | Porta exposta | `3000` |
 | Domínios | `https://crm.aledias.com.br/v1,https://api.crm.aledias.com.br` |
 | Strip Prefixes (Advanced) | **DESLIGADO** |
@@ -214,7 +214,7 @@ Mesmo com healthcheck, o Coolify avisa que atualização sem queda não é garan
 | Stop timeout | padrão |
 | Healthcheck | o da imagem (ver "Healthcheck e atualização sem queda"); painel desligado |
 
-O comando de partida migra o banco, **descarta a credencial do dono das tabelas** (`unset`) e só então sobe a API (`exec`, para o `tini` entregar o SIGTERM ao Node). Migração com erro → container sai com código 1 → o deploy falha e a versão antiga continua.
+Ao iniciar, `PAPEL=api` migra o banco, semeia as **referências globais** (estados, municípios, países, portes, qualificações e CNAEs; nunca a demonstração), **descarta a credencial do dono das tabelas** do ambiente do processo e só então sobe a API. A semeadura é repetível e barata: só grava o que falta ou mudou (cerca de 1 s quando não há nada a fazer). Se ela falhar, a API sobe mesmo assim e o log mostra `Aviso: referências não semeadas`; repita à mão no terminal do container com `node dist/seed-referencias.js` (o terminal do Coolify herda as variáveis do recurso, inclusive a `DATABASE_MIGRATION_URL`; só o processo da API a descarta da própria memória). `SEMEAR_REFERENCIAS=false` desliga a semeadura. Migração com erro → container sai com código 1 → o deploy falha e a versão antiga continua.
 
 > **⚠ Não corte o prefixo `/v1`.** A API responde em `/v1/*` (inclusive o login em `/v1/auth/*`). O Coolify, por padrão, aplica o **Strip Prefixes** e removeria `/v1` antes de chegar à API: tudo daria 404. Desligue em *Advanced → Strip Prefixes* **antes do primeiro deploy**.
 >
@@ -224,6 +224,7 @@ O comando de partida migra o banco, **descarta a credencial do dono das tabelas*
 
 | Variável | Valor / de onde vem | Secreta |
 |---|---|---|
+| `PAPEL` | `api` | não |
 | `NODE_ENV` | `production` | não |
 | `PORT` | `3000` | não |
 | `LOG_LEVEL` | `info` | não |
@@ -258,7 +259,7 @@ Não defina `APP_VERSION`: a imagem já traz o commit (é o que o `/health` most
 ```
 (Se o binário não estiver em `/garage`, rode `which garage` ou `ls /`.) A chave precisa ter permissão de leitura e escrita no bucket `leadtogo-arquivos`.
 
-**Primeiro deploy:** clique em *Deploy*. No log, procure `Aplicando migrações...` e `Migrações aplicadas.`, depois o container `healthy`. Se falhar com `ErroConfiguracao`, o log lista as variáveis com problema (nunca os valores).
+**Primeiro deploy:** clique em *Deploy*. No log, procure `Aplicando migrações...`, `Migrações aplicadas.` e `Referências em dia: {...}` (na primeira vez, `cnaes: 1332` e `municipios: 5571`), depois o container `healthy`. Se falhar com `ErroConfiguracao`, o log lista as variáveis com problema (nunca os valores).
 
 ### 5.2 `leadtogo-worker`
 
@@ -267,7 +268,7 @@ Faça o deploy **depois** de a API estar saudável (o worker usa as tabelas migr
 | Campo | Valor |
 |---|---|
 | Imagem / tag | `ghcr.io/sandrolimadias/leadtogo-api` / `latest` (**a mesma da API**) |
-| Comando de partida | `node dist/worker.js` |
+| Comando de partida | **vazio** (`CMD` da imagem; o papel vem de `PAPEL=worker`) |
 | Porta / domínio | nenhum (o healthcheck escuta só em `127.0.0.1:3001`, dentro do container) |
 | Limite de memória | 512 MB |
 | Stop timeout | **45 s** (*Advanced → Custom Docker Options*: `--stop-timeout 45`) |
@@ -279,6 +280,7 @@ Confira o stop timeout depois do deploy, na VPS: `docker inspect -f '{{.Config.S
 
 | Variável | Valor | Secreta |
 |---|---|---|
+| `PAPEL` | `worker` | não |
 | `WORKER_ENCERRAMENTO_S` | `30` (menor que o stop timeout de 45 s) | não |
 | `WORKER_CONCORRENCIA` | `5` | não |
 
@@ -289,7 +291,7 @@ Fica **saudável** quando os consumidores das filas estão rodando e o Valkey e 
 | Campo | Valor |
 |---|---|
 | Imagem / tag | `ghcr.io/sandrolimadias/leadtogo-web` / `latest` |
-| Comando de partida | padrão da imagem (Caddy) |
+| Comando de partida | vazio (padrão da imagem, Caddy) |
 | Porta exposta | **8080** |
 | Domínio | `https://crm.aledias.com.br` |
 | Strip Prefixes | indiferente (o domínio não tem prefixo) |
@@ -302,7 +304,17 @@ Fica **saudável** quando os consumidores das filas estão rodando e o Valkey e 
 
 ---
 
-## 6. Primeira conta
+## 6. Referências e primeira conta
+
+Antes da conta, confirme que as referências foram semeadas (terminal do `leadtogo-db`; esperado `1332`, `5571` e `27`):
+
+```bash
+psql -X -U "$POSTGRES_USER" -d leadtogo -At -c "SELECT (SELECT count(*) FROM cnaes), (SELECT count(*) FROM municipios), (SELECT count(*) FROM estados)"
+```
+
+Se vier `0|0|0`, rode no terminal do `leadtogo-api`: `node dist/seed-referencias.js`.
+
+### Primeira conta
 
 Coolify → `leadtogo-api` → aba **Terminal** (shell dentro do container). Ajuste os dados:
 

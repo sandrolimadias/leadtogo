@@ -336,7 +336,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 
 ### 11.3 Container de *worker*
 
-- Mesma imagem Docker da API, iniciada com outro comando (`node dist/worker.js`).
+- Mesma imagem Docker da API, com outro papel: `PAPEL=worker` no `node dist/iniciar.js` (o `CMD` da imagem; o Coolify ignora o comando de partida de recursos Docker Image). `node dist/worker.js` também funciona sozinho.
 - Responsável por: filas BullMQ, entrega de webhooks (n8n), processamento de mensagens WhatsApp, sync de e-mail/agenda, envio de e-mails, notificações, recorrência de tarefas e lembretes.
 - Separar do container da API evita que tarefas pesadas deixem a interface lenta, e cada um escala de forma independente.
 - RAM estimada: **~300–600 MB**.

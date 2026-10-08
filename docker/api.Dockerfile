@@ -1,8 +1,11 @@
 # syntax=docker/dockerfile:1.7
-# Imagem da API, do worker e da migração (a mesma imagem, comando diferente):
-#   node dist/main.js      API
-#   node dist/worker.js    worker (filas e outbox)
-#   node dist/migrate.js   migrações (pré-deploy), com o migrador do drizzle-orm
+# Imagem da API e do worker (a mesma imagem). O papel vem da variável PAPEL, porque o Coolify ignora o comando de
+# partida dos recursos Docker Image. O CMD padrão é `node dist/iniciar.js`:
+#   PAPEL=api (padrão)  migra o banco, semeia as referências, descarta a DATABASE_MIGRATION_URL e sobe a API
+#   PAPEL=worker        sobe o worker (filas e outbox); não migra e não deve receber a DATABASE_MIGRATION_URL
+# Continuam funcionando sozinhos:
+#   node dist/main.js · node dist/worker.js · node dist/migrate.js (drizzle-orm) · node dist/seed-referencias.js ·
+#   node dist/criar-conta.js
 # Contexto: a raiz do repositório.  docker build -f docker/api.Dockerfile --build-arg APP_VERSION=<sha> .
 
 # ---- 1. build: compila o TypeScript. Roda na arquitetura de QUEM CONSTRÓI ($BUILDPLATFORM); o JavaScript
@@ -72,6 +75,8 @@ COPY --from=build /repo/apps/api/package.json ./apps/api/package.json
 COPY --from=build /repo/apps/api/dist ./apps/api/dist
 COPY --from=build /repo/packages/db/package.json ./packages/db/package.json
 COPY --from=build /repo/packages/db/dist ./packages/db/dist
+# dados das referências (CNAEs, municípios...): lidos por dist/seeds/dados.js em ../../seeds/dados
+COPY --from=build /repo/packages/db/seeds/dados ./packages/db/seeds/dados
 COPY --from=build /repo/packages/shared/package.json ./packages/shared/package.json
 COPY --from=build /repo/packages/shared/dist ./packages/shared/dist
 WORKDIR /app/apps/api
@@ -80,4 +85,4 @@ EXPOSE 3000
 # Serve para a API e para o worker (detecta sozinho; PAPEL=api|worker força): ver src/saude/verificar.ts
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 CMD ["node", "dist/saude.js"]
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/iniciar.js"]

@@ -464,15 +464,15 @@ Checklist:
 
 ## E13. Recursos da aplicação no Coolify e primeiro deploy — Ale + Claude Code
 
-> **Roteiro passo a passo, com tudo para copiar: [`runbook_e13.md`](runbook_e13.md).** Mudanças em relação à lista abaixo: a migração roda no comando de partida da API (o pré-deploy do Coolify roda no container antigo e é pulado no primeiro deploy); o SMTP de produção é o Resend; o healthcheck de api, worker e web é o `HEALTHCHECK` da própria imagem.
+> **Roteiro passo a passo, com tudo para copiar: [`runbook_e13.md`](runbook_e13.md).** Mudanças em relação à lista abaixo: o papel do container vem da variável `PAPEL` (`api` ou `worker`), porque o Coolify ignora o comando de partida de recursos Docker Image: o `CMD` da imagem é `node dist/iniciar.js`, e a API migra o banco e semeia as referências ao iniciar (o pré-deploy do Coolify roda no container antigo e é pulado no primeiro deploy); o SMTP de produção é o Resend; o healthcheck de api, worker e web é o `HEALTHCHECK` da própria imagem.
 
 1. [ ] Rodar `packages/db/sql/papeis.sql` no `leadtogo-db` (cria `leadtogo_owner` e `leadtogo_app` com senhas fortes).
 2. [ ] Criar os 3 recursos (tipo *Docker Image*, registro `ghcr.io`):
 
 | Recurso | Imagem | Comando | Domínio | Limite de memória |
 |---|---|---|---|---|
-| leadtogo-api | `ghcr.io/<usuario>/leadtogo-api:latest` `sh -c "node dist/migrate.js && unset DATABASE_MIGRATION_URL && exec node dist/main.js"` (migra ao iniciar; **sem** pré-deploy do Coolify) | `crm.aledias.com.br` com **prefixo `/v1`** (e `api.crm.aledias.com.br` para integrações) | 768 MB |
-| leadtogo-worker | `ghcr.io/<usuario>/leadtogo-api:latest` | `node dist/worker.js` | — | 512 MB |
+| leadtogo-api | `ghcr.io/<usuario>/leadtogo-api:latest` | `PAPEL=api` (padrão; `CMD` da imagem `node dist/iniciar.js`: migra e semeia as referências ao iniciar; **sem** pré-deploy do Coolify) | `crm.aledias.com.br` com **prefixo `/v1`** (e `api.crm.aledias.com.br` para integrações) | 768 MB |
+| leadtogo-worker | `ghcr.io/<usuario>/leadtogo-api:latest` | `PAPEL=worker` (`CMD` da imagem) | — | 512 MB |
 | leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `crm.aledias.com.br` | 128 MB |
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).

@@ -73,6 +73,11 @@ echo "==> Subindo migrar → api + worker → web → borda"
 "${COMPOSE[@]}" ps -a --format 'table {{.Service}}\t{{.Status}}'
 echo "-- migração:"; "${COMPOSE[@]}" logs migrar 2>&1 | grep -E "Aplicando|aplicadas|Falha" | tail -3
 test "$(docker inspect -f '{{.State.ExitCode}}' "$("${COMPOSE[@]}" ps -a -q migrar)")" = 0 && echo "   migrar saiu com 0"
+echo "-- PAPEL=api migrou/semeou ao iniciar e PAPEL=worker subiu sem a URL de migração:"
+"${COMPOSE[@]}" logs api 2>&1 | grep -E "Aplicando|aplicadas|Referências em dia" | sed 's/^[^|]*| /   api: /' | tail -3
+"${COMPOSE[@]}" logs worker 2>&1 | grep -E "Iniciando o worker|DATABASE_MIGRATION_URL" | sed 's/^[^|]*| /   worker: /' | tail -2
+cnaes=$("${DEV[@]}" exec -T -e PGUSER=postgres postgres psql -X -At -d "$BANCO" -c "SELECT count(*) FROM cnaes")
+test "$cnaes" = 1332 && echo "   referências no banco: $cnaes CNAEs" || { echo "   FALHA: $cnaes CNAEs (esperado 1332)" >&2; exit 1; }
 echo "-- usuário e PID 1:"
 docker exec "$("${COMPOSE[@]}" ps -q api)" sh -c 'echo "   api: uid=$(id -u) ($(id -un)), PID 1 = $(cat /proc/1/comm)"; ls /app/node_modules/.bin 2>/dev/null | grep -c drizzle-kit | sed "s/^/   drizzle-kit na imagem: /"'
 echo "-- health dos containers (HEALTHCHECK da imagem):"

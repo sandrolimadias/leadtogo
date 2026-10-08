@@ -60,6 +60,17 @@ describe('seed das referências', () => {
     })
   })
 
+  it('rodar de novo sem mudança não reescreve nenhuma linha (barato a cada start da API)', async () => {
+    await semearReferencias(db)
+    const versoes = async () =>
+      (await owner<{ v: string }[]>`SELECT xmin::text AS v FROM cnaes ORDER BY codigo`).map(
+        (r) => r.v,
+      )
+    const antes = await versoes()
+    await semearReferencias(db)
+    expect(await versoes()).toEqual(antes)
+  })
+
   it('rodar de novo corrige o que foi alterado', async () => {
     await owner`UPDATE estados SET nome = 'Errado', regiao = 'Errada' WHERE uf = 'ES'`
     await owner`UPDATE qualificacoes_socio SET descricao = 'Errada' WHERE codigo = 49`
