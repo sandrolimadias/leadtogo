@@ -191,8 +191,9 @@ jobs:
           UUIDS: ${{ secrets.COOLIFY_UUID_API }} ${{ secrets.COOLIFY_UUID_WORKER }} ${{ secrets.COOLIFY_UUID_WEB }}
         run: |
           for uuid in $UUIDS; do
-            curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/deploy?uuid=$uuid&force=false" >/dev/null
-            echo "deploy disparado: ${uuid:0:6}…"
+            # A API do Coolify aceita só POST em /deploy (o GET antigo responde 405)
+            resposta=$(curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/deploy?uuid=$uuid&force=false")
+            echo "deploy disparado: ${uuid:0:6}… ${resposta:0:200}"
           done
 
   # ---------------------------------------------------------------------------

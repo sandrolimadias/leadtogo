@@ -371,7 +371,7 @@ gh variable set DEPLOY_ENABLED --body true
 
 O deploy automático dispara a cada push de **código** na `main` (push só de documentação não passa pela esteira). Para testá-lo, faça um commit pequeno de código (ex.: um comentário) e acompanhe: `gh run watch`. Para **desligar** (ex.: durante um rollback): `gh variable set DEPLOY_ENABLED --body false`.
 
-O que a esteira faz: `build` publica `sha-<commit>` e `latest` → `deploy` chama `GET /api/v1/deploy?uuid=<UUID>` para api, worker e web → `verify` espera `api.crm.aledias.com.br/health` mostrar o commit novo (até 5 min), abre `crm.aledias.com.br/` e `crm.aledias.com.br/v1/primeiro-acesso/estado` → `limpeza` apaga imagens antigas do GHCR.
+O que a esteira faz: `build` publica `sha-<commit>` e `latest` → `deploy` chama `POST /api/v1/deploy?uuid=<UUID>` (a API atual do Coolify só aceita POST; GET dá 405) para api, worker e web → `verify` espera `api.crm.aledias.com.br/health` mostrar o commit novo (até 5 min), abre `crm.aledias.com.br/` e `crm.aledias.com.br/v1/primeiro-acesso/estado` → `limpeza` apaga imagens antigas do GHCR.
 
 ---
 
