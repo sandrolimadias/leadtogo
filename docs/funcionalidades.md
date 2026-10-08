@@ -512,6 +512,20 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 | Contas conectadas (visão geral) | Admin (vê quem conectou e pode revogar) |
 | Preferências do tenant | Admin (visão de carteira, validade das tags de visitação, automação de status, dias de "sem contato") |
 | Segurança | Admin (**política de 2FA** da empresa: administradores, administradores e gestores, ou todos; ver "Segurança e acesso") |
+| E-mail (SMTP próprio) 🔮 | Admin (servidor de envio da empresa; ver abaixo). **Funcionalidade futura, ainda não implementada** |
+
+### Configurações → E-mail (SMTP próprio da empresa) 🔮
+
+> **Futura (ainda não implementar).** Registrada aqui para orientar o desenho; a tabela prevista está em `modelagem_banco.md`, 11.1 (`tenant_smtp`).
+
+- O admin da empresa pode cadastrar o **próprio servidor SMTP**: servidor, porta, segurança (SSL/TLS, STARTTLS ou nenhuma), usuário, senha e remetente (nome e endereço).
+- A **senha é cifrada** com a `TOKEN_ENCRYPTION_KEY` (AES-256-GCM, com o prefixo de versão da chave) e **nunca volta à tela nem aos logs**: depois de salva, a tela mostra só "senha cadastrada" e permite substituí-la.
+- O botão **"Enviar teste"** envia uma mensagem ao e-mail do próprio admin usando os dados do formulário (mesmo antes de salvar) e mostra o resultado ou o erro do servidor. A configuração só vale como ativa depois de um teste bem-sucedido.
+- **Quais e-mails usam qual servidor:**
+  - **E-mails da empresa** (envio pelo CRM sem conta conectada, resumos, avisos e notificações por e-mail): saem pelo SMTP da empresa, se estiver ativo; **sem configuração, saem pelo SMTP da plataforma** (o mesmo `SMTP_*` do Coolify).
+  - **E-mails de acesso** (verificação de e-mail, recuperação de senha, convites e 2FA): **sempre saem pelo SMTP da plataforma**, nunca pelo da empresa. Assim um SMTP próprio errado ou fora do ar não tranca ninguém para fora, e o remetente dos e-mails de segurança é sempre o da plataforma.
+- Se o SMTP da empresa falhar, a tentativa é registrada e repetida pela fila (como os demais e-mails); o admin vê o último erro na tela.
+- Só o admin acessa. Alterações e testes vão para a auditoria (sem a senha).
 
 ---
 

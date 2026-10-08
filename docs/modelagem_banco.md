@@ -624,6 +624,27 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | `conversas_nao_identificadas` | Números/e-mails desconhecidos |
 | `territorios`, `rotas`, `rota_paradas` | Geolocalização e roteirização |
 | `metas` | Metas por vendedor/período |
+| `tenant_smtp` | SMTP próprio da empresa (futura; detalhe abaixo) |
+
+#### `tenant_smtp` 🏢 (1:1 com tenant) 🔮 — futura, não implementar agora
+SMTP que a empresa pode cadastrar em Configurações → E-mail (ver `funcionalidades.md`, seção 11). Sem linha (ou com `ativo = false`), os e-mails da empresa saem pelo SMTP da plataforma. Os e-mails de acesso (verificação, recuperação de senha, convites e 2FA) **nunca** usam esta tabela.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| tenant_id | uuid PK/FK | RLS habilitado e forçado, como toda tabela de negócio |
+| servidor | varchar NOT NULL | Host do SMTP |
+| porta | int NOT NULL | 1 a 65535 |
+| seguranca | enum `seguranca_smtp` NOT NULL | `ssl` (implícito, ex.: 465) · `starttls` (587) · `nenhuma` |
+| usuario | varchar null | Vai junto com a senha |
+| senha_cifrada | text null | **AES-256-GCM com a `TOKEN_ENCRYPTION_KEY`**, com prefixo de versão da chave (`v1:`), como os e-mails da fila. Nunca em claro, nunca em logs nem na API |
+| remetente_nome | varchar NOT NULL | |
+| remetente_email | varchar NOT NULL | |
+| ativo | boolean NOT NULL default false | Só pode ser `true` depois de um teste bem-sucedido |
+| testado_em | timestamptz null | Último "Enviar teste" bem-sucedido |
+| ultimo_erro | text null | Último erro de envio ou de teste (sem credenciais) |
+| (padrão) | | `criado_em`, `atualizado_em`, `criado_por`, `atualizado_por` |
+
+Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefixo de versão).
 
 ---
 
@@ -666,7 +687,7 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | Prospecção | prospeccoes, prospeccao_resultados | 2 |
 | Sistema | arquivos, comentarios, notificacoes, preferencias_notificacao, filtros_salvos, importacoes, auditoria, eventos_outbox | 8 |
 | **Fase 1** | | **61** |
-| Futuras 🔮 | api_chaves, webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, rotas, rota_paradas, metas | 12 |
+| Futuras 🔮 | api_chaves, webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, rotas, rota_paradas, metas, tenant_smtp | 13 |
 
 ---
 

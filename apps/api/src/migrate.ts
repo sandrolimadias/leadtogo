@@ -1,6 +1,6 @@
 import { migrar } from './migracao/migrar.js'
 
-// Entrypoint de migração (`node dist/migrate.js`): roda no pré-deploy, antes da API subir.
+// Entrypoint de migração (`node dist/migrate.js`): roda no comando de partida da API (antes do `main.js`), ver docs/runbook_e13.md.
 try {
   console.log('Aplicando migrações...')
   await migrar()

@@ -121,7 +121,7 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 | **notify** | Mensagem de sucesso ou falha (e-mail do GitHub, ou Telegram/WhatsApp via n8n) | — |
 
 ### 5.3 O workflow
-O arquivo de verdade é **`.github/workflows/ci-cd.yml`** (o esqueleto antigo deste documento foi aposentado). Pontos que não aparecem na tabela acima:
+O roteiro de implantação no Coolify (DNS, segredos, GHCR, banco, recursos, token e rollback) está em **`runbook_e13.md`**. O arquivo de verdade do workflow é **`.github/workflows/ci-cd.yml`** (o esqueleto antigo deste documento foi aposentado). Pontos que não aparecem na tabela acima:
 - **Deploy desligado** até a E13: o job `deploy` só roda com a variável do repositório `DEPLOY_ENABLED=true` (Settings → Secrets and variables → Actions → Variables); `verify` e `limpeza` dependem dele.
 - O `test` usa o `.env.example` como `.env` (senhas de teste, nenhum segredo) e os mesmos scripts do desenvolvimento, para o CI não divergir do que se roda localmente.
 - O build passa `APP_VERSION`, `GIT_SHA`, `SOURCE` e `BUILD_DATE` como build-args e desliga o atestado de proveniência (`provenance: false`), que criaria versões sem tag no GHCR.
@@ -194,7 +194,7 @@ Metas: API < 350 MB e web < 100 MB (descompactados). As bases são as imagens of
 - Mais de um worker pode rodar ao mesmo tempo: os jobs agendados usam `upsertJobScheduler` (um só job por horário) e o outbox é reservado com `FOR UPDATE SKIP LOCKED`.
 
 ### 7.2 Migrações do banco
-- Rodam no **comando de pré-deploy** do recurso `leadtogo-api` (`node dist/migrate.js`), **antes** de a nova versão receber tráfego. Se a migração falhar, o deploy para e a versão antiga continua no ar.
+- Rodam no **comando de partida** do recurso `leadtogo-api` (`sh -c "node dist/migrate.js && unset DATABASE_MIGRATION_URL && exec node dist/main.js"`), antes de a API subir, **e não no "pré-deploy" do Coolify**: o pré-deploy executa no container *antigo* (e é pulado no primeiro deploy), então rodaria as migrações da versão anterior. Se a migração falhar, o container novo sai com erro, nunca fica saudável e o Coolify mantém a versão antiga no ar. O `unset` tira a credencial do dono das tabelas do ambiente da API depois de migrar. Passo a passo em `runbook_e13.md`.
 - `dist/migrate.js` usa o **migrador do `drizzle-orm`** (`aplicarMigracoes()` do `@leadtogo/db`) com `DATABASE_MIGRATION_URL` (usuário `leadtogo_owner`); o **`drizzle-kit` não vai para a imagem**. O build copia as migrações SQL para `packages/db/dist/migrations`, e a imagem precisa levar essa pasta junto com o `dist` (E11). Exige só `DATABASE_MIGRATION_URL`. Código de saída 1 (com mensagem curta, sem a URL) interrompe o deploy. Uma trava consultiva do Postgres faz dois deploys simultâneos esperarem um ao outro, e repetir é seguro.
 - O worker **não** roda migrações (evita duas execuções ao mesmo tempo).
 - **Regra "expandir e depois contrair"** (obrigatória, já que o push vai direto para produção):
@@ -218,7 +218,7 @@ node dist/criar-conta.js \
 - A **senha não vai em argumento** (ficaria no histórico do shell): o comando a pede num **prompt oculto**. Alternativas: `CRIAR_CONTA_SENHA=... node dist/criar-conta.js ...` ou `echo "$SENHA" | node dist/criar-conta.js ...`. A senha precisa ter de 10 a 128 caracteres e nunca é impressa.
 - O e-mail do administrador **já nasce confirmado** (não depende de SMTP). Ele entra com o e-mail e a senha e, por ser administrador, **precisa ativar o 2FA** no primeiro acesso (até lá a API responde `403 2fa_obrigatorio`; a política de 2FA da empresa pode ampliar a exigência a gestores ou a todos).
 - Códigos de saída: `0` criada · `1` falha (e-mail ou CNPJ já cadastrado, configuração inválida) · `2` dados inválidos. `node dist/criar-conta.js --ajuda` mostra o uso.
-- Enquanto o provedor de SMTP não for escolhido (E13), defina `VERIFICACAO_EMAIL=false` no Coolify: com a verificação ligada (o padrão em produção) a API exige `SMTP_HOST` e não sobe sem ele.
+- O SMTP de produção é o **Resend** (`smtp.resend.com`, porta 465, `SMTP_SECURE=true`, usuário `resend`, senha = API key). Com a verificação de e-mail ligada (o padrão em produção) a API exige `SMTP_HOST` e não sobe sem ele; só desligue `VERIFICACAO_EMAIL` num ambiente sem SMTP.
 - Para abrir o cadastro público (não recomendado em produção): `PRIMEIRO_ACESSO=aberto`.
 
 ---
@@ -364,7 +364,7 @@ O `CLAUDE.md` na raiz do repositório orienta o Claude Code em toda sessão. Res
 2.2 [ ] Preparar o WSL2 (seção 9.2) e clonar o repositório em `~/projetos/leadtogo` (seção 9.3).
 3. [ ] Criar o esqueleto do monorepo, os Dockerfiles, o `compose.dev.yml` e o `ci-cd.yml`.
 4. [ ] No Coolify: criar banco (PostGIS), Valkey e Garage; registrar o GHCR com token `read:packages`.
-5. [ ] No Coolify: criar os recursos `api`, `worker` e `web` (Docker Image), com variáveis, domínios, healthchecks, limites de memória e comando de pré-deploy (migrações).
+5. [ ] No Coolify: criar os recursos `api`, `worker` e `web` (Docker Image), com variáveis, domínios, healthchecks, limites de memória e migração no comando de partida da API (ver `runbook_e13.md`).
 6. [ ] Gerar o token da API do Coolify (só deploy) e cadastrar os secrets no GitHub.
 7. [ ] Configurar o backup automático do banco para o S3 externo e testar uma restauração.
 8. [ ] Primeiro push com uma página "Olá, Leadtogo" e `/health`, para validar a esteira de ponta a ponta.

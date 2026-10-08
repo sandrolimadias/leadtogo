@@ -2,7 +2,7 @@ import { aplicarMigracoes } from '@leadtogo/db'
 
 /**
  * Aplica as migrações pendentes com o usuário dono das tabelas (`DATABASE_MIGRATION_URL`).
- * Usa o migrador do drizzle-orm (o drizzle-kit não vai para a imagem). É o comando de pré-deploy:
+ * Usa o migrador do drizzle-orm (o drizzle-kit não vai para a imagem). É o comando de migração, executado no início da API (docs/runbook_e13.md):
  * `node dist/migrate.js`. Seguro de repetir; dois deploys ao mesmo tempo esperam um ao outro.
  */
 export async function migrar(env: NodeJS.ProcessEnv = process.env): Promise<void> {

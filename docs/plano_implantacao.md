@@ -464,22 +464,24 @@ Checklist:
 
 ## E13. Recursos da aplicação no Coolify e primeiro deploy — Ale + Claude Code
 
+> **Roteiro passo a passo, com tudo para copiar: [`runbook_e13.md`](runbook_e13.md).** Mudanças em relação à lista abaixo: a migração roda no comando de partida da API (o pré-deploy do Coolify roda no container antigo e é pulado no primeiro deploy); o SMTP de produção é o Resend; o healthcheck de api, worker e web é o `HEALTHCHECK` da própria imagem.
+
 1. [ ] Rodar `packages/db/sql/papeis.sql` no `leadtogo-db` (cria `leadtogo_owner` e `leadtogo_app` com senhas fortes).
 2. [ ] Criar os 3 recursos (tipo *Docker Image*, registro `ghcr.io`):
 
 | Recurso | Imagem | Comando | Domínio | Limite de memória |
 |---|---|---|---|---|
-| leadtogo-api | `ghcr.io/<usuario>/leadtogo-api:latest` | padrão (`node dist/main.js`) · **pré-deploy:** `node dist/migrate.js` | `crm.aledias.com.br` com **prefixo `/v1`** (e `api.crm.aledias.com.br` para integrações) | 768 MB |
+| leadtogo-api | `ghcr.io/<usuario>/leadtogo-api:latest` `sh -c "node dist/migrate.js && unset DATABASE_MIGRATION_URL && exec node dist/main.js"` (migra ao iniciar; **sem** pré-deploy do Coolify) | `crm.aledias.com.br` com **prefixo `/v1`** (e `api.crm.aledias.com.br` para integrações) | 768 MB |
 | leadtogo-worker | `ghcr.io/<usuario>/leadtogo-api:latest` | `node dist/worker.js` | — | 512 MB |
 | leadtogo-web | `ghcr.io/<usuario>/leadtogo-web:latest` | padrão | `crm.aledias.com.br` | 128 MB |
 
 3. [ ] Variáveis de ambiente de produção (lista no `.env.example`) cadastradas **só no Coolify**; gerar segredos fortes (`openssl rand -base64 32`).
 3a. [ ] **Domínio único (decidido em 07/10/2026):** o Traefik roteia `crm.aledias.com.br/v1` (que inclui o Better Auth em `/v1/auth/*`) para a API e o resto para o web, **sem remover o prefixo**. No Coolify, o `leadtogo-api` recebe os domínios `https://crm.aledias.com.br/v1` e `https://api.crm.aledias.com.br`, e o `leadtogo-web` recebe `https://crm.aledias.com.br` (o Traefik escolhe o prefixo mais longo). A imagem do web é a mesma em todo ambiente (caminhos relativos, CSP `connect-src 'self'`); a API usa `APP_URL=API_URL=https://crm.aledias.com.br`. O `api.crm.aledias.com.br` fica para integrações servidor a servidor (n8n, webhooks, Evolution) e para o health check da esteira. O `compose.imagens.yml` reproduz esse roteamento com um Caddy de borda.
-4. [ ] Healthchecks: API `/health`, web `/`, worker (`node dist/saude-worker.js`). **Stop timeout do worker: 45 s** (esteira_deploy.md, 7.1.1).
+4. [ ] Healthchecks: os `HEALTHCHECK` das imagens (API `/health`, web `/health`, worker detectado pela própria imagem). **Stop timeout do worker: 45 s** (esteira_deploy.md, 7.1.1).
 5. [ ] Conectar os recursos às redes do banco/cache/Garage e à `leadtogo-net`.
 6. [ ] Gerar o **token da API do Coolify** (só deploy) e cadastrar os secrets no GitHub: `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB`.
 7. [ ] Ligar `DEPLOY_ENABLED` e fazer um push.
-8. [ ] **Cadastrar `TOKEN_ENCRYPTION_KEY` no Coolify** (API e worker; `openssl rand -base64 32`; sem ela a API não sobe em produção). **Escolher o provedor de SMTP de produção** (recuperação de senha, verificação de e-mail e convites) e cadastrar as variáveis `SMTP_*` no Coolify. Até lá, `VERIFICACAO_EMAIL` fica desligada em produção (nenhum e-mail sai).
+8. [ ] **Cadastrar `TOKEN_ENCRYPTION_KEY` no Coolify** (API e worker; `openssl rand -base64 32`; sem ela a API não sobe em produção). **SMTP de produção: Resend** (decidido em 08/10/2026; `smtp.resend.com`, 465, remetente `Leadtogo <nao-responda@aledias.com.br>`), com `VERIFICACAO_EMAIL=true` e as variáveis `SMTP_*` no Coolify.
 9. [ ] **Teste de login real no domínio único** (`https://crm.aledias.com.br`, com `/v1` roteado para a API): cookie de sessão do host `crm.aledias.com.br` (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`), login, `GET /v1/me`, troca de empresa e logout pelo navegador; conferir também que `https://api.crm.aledias.com.br/health` responde para as integrações.
 10. [ ] **Criar a primeira conta** pelo terminal do Coolify (`PRIMEIRO_ACESSO` fica `fechado`): `node dist/criar-conta.js` (ver `esteira_deploy.md`).
 
@@ -544,7 +546,7 @@ Checklist:
 | VPS ARM64 e imagens só amd64 | Conferir `docker manifest inspect` antes de usar qualquer imagem; build do Leadtogo para `linux/arm64` |
 | Erro de isolamento entre empresas | RLS forçado, papel sem bypass e teste de isolamento obrigatório no CI |
 | Perda de dados | Backup diário externo + teste de restauração na E4 e na E16 |
-| Migração quebrar a produção | Regra "expandir e depois contrair"; pré-deploy aborta se falhar; backup antes de mudança destrutiva |
+| Migração quebrar a produção | Regra "expandir e depois contrair"; a migração roda no início da API e, se falhar, o container não fica saudável e a versão antiga continua; backup antes de mudança destrutiva |
 | API pública da Minha Receita instável | Cache em `receita_consultas` + API alternativa (na fase de empresas) |
 | Duas cópias do repositório (Windows e WSL) | A cópia oficial passa a ser a do WSL a partir da E2 |
 
