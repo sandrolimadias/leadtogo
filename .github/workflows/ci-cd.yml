@@ -215,14 +215,24 @@ jobs:
             sleep 10
           done
           echo "::error::A nova versão não respondeu em 5 minutos"; exit 1
+      # O Coolify troca api, worker e web ao mesmo tempo: o web pode levar alguns segundos a mais que a API
+      # (e responder 503 enquanto o container novo não fica saudável). Tenta por até 5 minutos.
       - name: Web respondendo (crm.aledias.com.br)
         run: |
-          curl -fsS -o corpo.html -w 'web: HTTP %{http_code}\n' https://crm.aledias.com.br/
-          grep -qi '<div id="root"' corpo.html || { echo "::error::a página inicial não parece o app"; exit 1; }
+          for _ in $(seq 1 30); do
+            codigo=$(curl -sS -o corpo.html -w '%{http_code}' https://crm.aledias.com.br/ || true)
+            if [ "$codigo" = 200 ] && grep -qi '<div id="root"' corpo.html; then echo "web: HTTP $codigo"; exit 0; fi
+            echo "web: HTTP $codigo, tentando de novo"; sleep 10
+          done
+          echo "::error::o web não respondeu o app em 5 minutos"; exit 1
       - name: Rota pública /v1 pelo domínio do usuário (roteamento do Traefik)
         run: |
-          curl -fsS -w '\n/v1: HTTP %{http_code}\n' https://crm.aledias.com.br/v1/primeiro-acesso/estado | tee estado.txt
-          grep -q '"aberto"' estado.txt || { echo "::error::/v1 não chegou na API"; exit 1; }
+          for _ in $(seq 1 30); do
+            curl -sS https://crm.aledias.com.br/v1/primeiro-acesso/estado -o estado.txt || true
+            if grep -q '"aberto"' estado.txt; then cat estado.txt; echo; exit 0; fi
+            echo "/v1 ainda não chegou na API, tentando de novo"; sleep 10
+          done
+          echo "::error::/v1 não chegou na API em 5 minutos"; exit 1
 
   # ---------------------------------------------------------------------------
   limpeza:
