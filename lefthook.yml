@@ -26,4 +26,10 @@ commit-msg:
 pre-push:
   commands:
     verificacao:
-      run: pnpm lint && pnpm typecheck && pnpm test
+      # Push só de documentação (mesma regra do job `escopo` do CI: scripts/escopo.sh) não roda a suíte
+      run: |
+        if [ "$(bash scripts/escopo.sh {push_files} </dev/null)" = doc ]; then
+          echo "Push só de documentação: lint, tipos e testes dispensados."
+        else
+          pnpm lint && pnpm typecheck && pnpm test
+        fi

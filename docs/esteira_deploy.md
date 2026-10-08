@@ -100,119 +100,32 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 
 ### 5.1 Gatilhos
 - `push` na `main` → CI completo + build + deploy.
-- `push` em outras branches (se um dia usar) → só o CI, sem deploy.
+- `push` em outras branches (se um dia usar) → só o CI, sem build e sem deploy.
 - `workflow_dispatch` → botão para rodar manualmente (ex.: redeploy).
-- **Concorrência:** um deploy por vez. Um push novo cancela o pipeline anterior ainda em andamento (`concurrency: deploy-prod`).
+- **Push só de documentação** (`*.md`, `docs/**`, exceto `docs/design-system/`, que alimenta o build do web): o job `escopo` classifica e todo o resto é dispensado. A regra mora em `scripts/escopo.sh`, a mesma que o hook `pre-push` usa.
+- **Concorrência:** um pipeline por branch; na `main` um push novo **espera** o anterior terminar (nunca cancela, para não interromper um deploy no meio). O job `deploy` ainda tem o grupo `deploy-prod`, de um por vez.
+- **Actions fixadas por SHA** (`uses: actions/checkout@<sha> # v7.0.1`); o Dependabot de `github-actions` atualiza o SHA e o comentário juntos.
 
 ### 5.2 Jobs
 
 | Job | O que faz | Bloqueia o deploy? |
 |---|---|---|
+| **escopo** | Classifica o push: só documentação ou código (`scripts/escopo.sh`). Só documentação dispensa os demais jobs | — |
 | **quality** | `pnpm install --frozen-lockfile`, lint (ESLint), formatação (Prettier), tipos (`tsc`) | Sim |
-| **test** | Testes unitários e de integração (Vitest) com **Postgres+PostGIS e Valkey como serviços**, aplicando as migrações do zero. Inclui os **testes de isolamento multiempresa (RLS)** | Sim |
+| **test** | Sobe os mesmos serviços do desenvolvimento (`docker/dev-up.sh`: Postgres+PostGIS, Valkey, Garage e Mailpit), roda os testes (Vitest, migrações do zero, **isolamento multiempresa/RLS**) e depois o **E2E do Playwright** (API, worker e Vite reais; Chromium instalado no job) | Sim |
 | **security** | `pnpm audit` (alto/crítico), varredura de segredos (gitleaks) | Sim (alto/crítico) |
-| **build** | Build Docker multi-stage de `api` e `web`, com cache, publicando no GHCR com as tags `sha-<commit>` e `latest` | Sim |
+| **build** | Build Docker de `api` e `web` num **runner ARM64 nativo** (`ubuntu-24.04-arm`, sem QEMU), com cache do Actions, publicando no GHCR (`linux/arm64`) com as tags `sha-<commit>` e `latest`. Só na `main` | Sim |
 | **deploy** | Chama a API do Coolify para atualizar `api`, `worker` e `web`, e espera o healthcheck | — |
-| **verify** | Smoke test em produção: `GET /health` da API e página inicial do web respondendo 200 | Avisa se falhar |
+| **verify** | Smoke test em produção: `api.crm.aledias.com.br/health` com o commit novo; `crm.aledias.com.br/` (web) respondendo o app; e uma rota pública `/v1` (`/v1/primeiro-acesso/estado`) por `crm.aledias.com.br`, o caminho do usuário (prova o roteamento do Traefik) | Avisa se falhar |
+| **limpeza** | Apaga versões antigas no GHCR (`scripts/limpar-ghcr.sh`): mantém as 15 `sha-*` mais recentes e **nunca apaga a `latest`, a versão em produção (lida do `/health`) nem a atual**; sem saber a versão em produção, não apaga nada | Não (falha não derruba) |
 | **notify** | Mensagem de sucesso ou falha (e-mail do GitHub, ou Telegram/WhatsApp via n8n) | — |
 
-### 5.3 Esqueleto do workflow (referência para o Claude Code)
-```yaml
-name: ci-cd
-on:
-  push: { branches: [main] }
-  workflow_dispatch:
-concurrency: { group: deploy-prod, cancel-in-progress: true }
-permissions: { contents: read, packages: write }
-
-jobs:
-  quality:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version-file: .nvmrc, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint && pnpm format:check && pnpm typecheck
-
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: imresamu/postgis:17-3.5
-        env: { POSTGRES_PASSWORD: test }
-        ports: ['5432:5432']
-        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
-      valkey:
-        image: valkey/valkey:8
-        ports: ['6379:6379']
-    env:
-      # Superusuário só para preparar o banco; os testes conectam como leadtogo_app/leadtogo_owner
-      PGHOST: localhost
-      PGUSER: postgres
-      PGPASSWORD: test
-      LEADTOGO_OWNER_PASSWORD: test
-      LEADTOGO_APP_PASSWORD: test
-      TEST_DATABASE_URL: postgres://leadtogo_app:test@localhost:5432/leadtogo_test
-      TEST_DATABASE_MIGRATION_URL: postgres://leadtogo_owner:test@localhost:5432/leadtogo_test
-      TEST_API_DATABASE_URL: postgres://leadtogo_app:test@localhost:5432/leadtogo_api_test
-      TEST_API_DATABASE_MIGRATION_URL: postgres://leadtogo_owner:test@localhost:5432/leadtogo_api_test
-      TEST_REDIS_URL: redis://localhost:6379/1
-      REDIS_URL: redis://localhost:6379
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version-file: .nvmrc, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: BANCOS="leadtogo_test leadtogo_api_test" bash packages/db/scripts/garantir-bancos.sh # papéis + banco de teste
-      # Os testes do /health (apps/api) usam Valkey e Garage reais: o Garage entra no CI na E12
-      # (container `dxflrs/garage` com o garage.toml e o init de docker/garage/init.sh).
-      - run: pnpm test # o setup global dos testes aplica as migrações do zero
-
-  build:
-    needs: [quality, test]
-    runs-on: ubuntu-latest
-    strategy: { matrix: { app: [api, web] } }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3   # emula ARM64 no runner amd64
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
-      - uses: docker/build-push-action@v6
-        with:
-          file: docker/${{ matrix.app }}.Dockerfile
-          platforms: linux/arm64            # a VPS é ARM64 (Oracle Ampere)
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/leadtogo-${{ matrix.app }}:sha-${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/leadtogo-${{ matrix.app }}:latest
-          build-args: APP_VERSION=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Deploy no Coolify (api, worker, web)
-        run: |
-          for UUID in ${{ secrets.COOLIFY_UUID_API }} ${{ secrets.COOLIFY_UUID_WORKER }} ${{ secrets.COOLIFY_UUID_WEB }}; do
-            curl -fsS -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-              "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=$UUID&force=false"
-          done
-      - name: Smoke test
-        run: |
-          for i in $(seq 1 30); do
-            curl -fsS https://api.crm.aledias.com.br/health | grep -q '"version":"${{ github.sha }}"' && exit 0
-            sleep 10
-          done
-          echo "Nova versão não respondeu em 5 minutos" && exit 1
-```
-> O esqueleto é referência: o Claude Code ajusta nomes, domínios e versões ao criar o repositório.
+### 5.3 O workflow
+O arquivo de verdade é **`.github/workflows/ci-cd.yml`** (o esqueleto antigo deste documento foi aposentado). Pontos que não aparecem na tabela acima:
+- **Deploy desligado** até a E13: o job `deploy` só roda com a variável do repositório `DEPLOY_ENABLED=true` (Settings → Secrets and variables → Actions → Variables); `verify` e `limpeza` dependem dele.
+- O `test` usa o `.env.example` como `.env` (senhas de teste, nenhum segredo) e os mesmos scripts do desenvolvimento, para o CI não divergir do que se roda localmente.
+- O build passa `APP_VERSION`, `GIT_SHA`, `SOURCE` e `BUILD_DATE` como build-args e desliga o atestado de proveniência (`provenance: false`), que criaria versões sem tag no GHCR.
+- **Custo (repositório privado, 2 000 min/mês no plano gratuito):** estimativa a confirmar no primeiro run (ver abaixo).
 
 ### 5.4 Secrets no GitHub (Settings → Secrets → Actions)
 | Secret | Conteúdo |
@@ -226,7 +139,7 @@ jobs:
 
 ## 6. Imagens Docker
 
-> **A VPS é ARM64.** As imagens do Leadtogo são publicadas para `linux/arm64`. No GitHub Actions, o build usa QEMU (emulação), que é mais lento; se o tempo incomodar, trocar o job de build para um runner ARM (`ubuntu-24.04-arm`), se o plano do GitHub permitir. Localmente (WSL, amd64), o Docker builda para a arquitetura da máquina; o teste em ARM64 é `pnpm imagens:testar --arm64` (emulação do Docker Desktop).
+> **A VPS é ARM64.** As imagens do Leadtogo são publicadas para `linux/arm64`. No GitHub Actions, o build usa QEMU (emulação), que é mais lento; se o tempo incomodar, o job de build já usa o runner ARM nativo (`ubuntu-24.04-arm`), sem QEMU; se o plano deixar de permitir, volte ao QEMU (`docker/setup-qemu-action`). Localmente (WSL, amd64), o Docker builda para a arquitetura da máquina; o teste em ARM64 é `pnpm imagens:testar --arm64` (emulação do Docker Desktop).
 
 | Imagem | Base final | Conteúdo | Usada por | Tamanho (descompactado · compactado) |
 |---|---|---|---|---|
@@ -407,7 +320,7 @@ pnpm dev:up      # serviços (--wait), bancos e papéis do Postgres e init do Ga
 |---|---|---|
 | `pre-commit` | Prettier e ESLint **só nos arquivos alterados** + verificação de segredos (secretlint) | segundos |
 | `commit-msg` | Valida o padrão Conventional Commits (commitlint) | instantâneo |
-| `pre-push` | `pnpm lint` + `pnpm typecheck` + `pnpm test` (mesmos comandos do CI) | 1–3 min |
+| `pre-push` | `pnpm lint` + `pnpm typecheck` + `pnpm test` (mesmos comandos do CI). **Dispensado** quando o push só tem documentação (`scripts/escopo.sh`, a mesma regra do job `escopo`) | 1–3 min (0 em docs) |
 
 > Os hooks são instalados pelo `pnpm install` (script `prepare`). O secretlint aceita apenas as strings de conexão de exemplo em `localhost` (senhas `senha`/`test`), configuradas em `.secretlintrc.json`.
 > O `.lefthook.rc` (apontado por `rc: ./.lefthook.rc` no `lefthook.yml`) acrescenta ao PATH o bin do Node 24 mais recente do nvm (se existir) antes de cada comando dos hooks; assim o commit funciona de qualquer shell (IDE, Claude Code) sem ajustar o PATH. Não renomeie para `.lefthookrc`: o hook gerado pelo lefthook carrega esse nome sozinho com `. .lefthookrc`, que o `sh` (dash) do Ubuntu não encontra, e o commit aborta.
