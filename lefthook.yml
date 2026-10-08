@@ -31,5 +31,6 @@ pre-push:
         if [ "$(bash scripts/escopo.sh {push_files} </dev/null)" = doc ]; then
           echo "Push só de documentação: lint, tipos e testes dispensados."
         else
-          pnpm lint && pnpm typecheck && pnpm test
+          # Uma tarefa por vez, como no CI: api, db e web juntos disputam CPU no WSL e estouram prazos de teste
+          pnpm lint && pnpm typecheck && TURBO_CONCURRENCY=1 pnpm test
         fi
