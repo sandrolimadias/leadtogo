@@ -1,0 +1,14 @@
+# Configuração do gitleaks (job `security` do CI). Estende as regras padrão.
+# O gitleaks-action só varre o histórico inteiro em execução manual (workflow_dispatch); nos pushes varre só os
+# commits novos. Por isso estes valores de teste só apareceram na primeira execução manual.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Valores falsos de teste (nunca segredos reais)"
+regexes = [
+  # BETTER_AUTH_SECRET dos testes e do setup (apps/api/src/**/*.test.ts e testes/setup-env.ts)
+  '''segredo-de-teste-com-(mais-de|pelo-menos)-32-caracteres''',
+  # valor de desenvolvimento do .env.example
+  '''segredo-de-desenvolvimento-nao-use-em-producao''',
+]
