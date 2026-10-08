@@ -15,7 +15,7 @@ Roteiro para o Ale executar, do zero até a esteira fazendo o deploy sozinha. Tu
 | Banco / cache | `leadtogo-db` (banco `leadtogo`, PostGIS já ativo) e `leadtogo-cache` (Valkey) |
 | Remetente | `Leadtogo <nao-responda@aledias.com.br>` |
 
-> **Decisão que mudou em relação ao plano: o papel do container vem da variável `PAPEL`, e a migração roda ao iniciar a API.** O Coolify **ignora o comando de partida** de recursos Docker Image (o container sobe com o `CMD` da imagem) e o "pré-deploy" executa no container **antigo** (e é pulado no primeiro deploy). Por isso a imagem tem um `CMD` padrão, `node dist/iniciar.js`, que escolhe o papel por `PAPEL`: `api` (padrão) migra o banco, semeia as referências, descarta a `DATABASE_MIGRATION_URL` do ambiente e sobe a API; `worker` só sobe o worker. Se a migração falhar, o container sai com código 1, não fica saudável e o Coolify **mantém a versão antiga no ar**. Deixe **vazios** o campo de comando e o *Pre-deployment command*. A regra "expandir e depois contrair" (esteira_deploy.md, 7.2) continua obrigatória, porque durante a migração a versão antiga ainda atende com o esquema novo.
+> **Decisão que mudou em relação ao plano: o papel do container vem da variável `PAPEL`, e a migração roda ao iniciar a API.** O recurso **Docker Image do Coolify não tem campo de comando de partida** (verificado no primeiro deploy real: o container sobe sempre com o `CMD` da imagem) e o "pré-deploy" executa no container **antigo** (e é pulado no primeiro deploy). Por isso a imagem tem um `CMD` padrão, `node dist/iniciar.js`, que escolhe o papel por `PAPEL`: `api` (padrão) migra o banco, semeia as referências, descarta a `DATABASE_MIGRATION_URL` do ambiente e sobe a API; `worker` só sobe o worker. Se a migração falhar, o container sai com código 1, não fica saudável e o Coolify **mantém a versão antiga no ar**. Deixe **vazios** o campo de comando e o *Pre-deployment command*. A regra "expandir e depois contrair" (esteira_deploy.md, 7.2) continua obrigatória, porque durante a migração a versão antiga ainda atende com o esquema novo.
 
 ---
 
@@ -208,7 +208,7 @@ Mesmo com healthcheck, o Coolify avisa que atualização sem queda não é garan
 | Imagem / tag | `ghcr.io/sandrolimadias/leadtogo-api` / `latest` |
 | Comando de partida | **vazio** (vale o `CMD` da imagem, `node dist/iniciar.js`); o papel vem de `PAPEL=api` |
 | Porta exposta | `3000` |
-| Domínios | `https://crm.aledias.com.br/v1,https://api.crm.aledias.com.br` |
+| Domínios | `https://crm.aledias.com.br/v1,https://api.crm.aledias.com.br` (**só estes dois**: veja o aviso dos domínios `www` abaixo) |
 | Strip Prefixes (Advanced) | **DESLIGADO** |
 | Limite de memória | 768 MB |
 | Stop timeout | padrão |
@@ -216,6 +216,8 @@ Mesmo com healthcheck, o Coolify avisa que atualização sem queda não é garan
 
 Ao iniciar, `PAPEL=api` migra o banco, semeia as **referências globais** (estados, municípios, países, portes, qualificações e CNAEs; nunca a demonstração), **descarta a credencial do dono das tabelas** do ambiente do processo e só então sobe a API. A semeadura é repetível e barata: só grava o que falta ou mudou (cerca de 1 s quando não há nada a fazer). Se ela falhar, a API sobe mesmo assim e o log mostra `Aviso: referências não semeadas`; repita à mão no terminal do container com `node dist/seed-referencias.js` (o terminal do Coolify herda as variáveis do recurso, inclusive a `DATABASE_MIGRATION_URL`; só o processo da API a descarta da própria memória). `SEMEAR_REFERENCIAS=false` desliga a semeadura. Migração com erro → container sai com código 1 → o deploy falha e a versão antiga continua.
 
+> **⚠ Remova os domínios `www` que o Coolify cria sozinho.** Ao salvar o campo *Domains*, o Coolify acrescenta por conta própria a variante `www.` de cada domínio (ex.: `https://www.crm.aledias.com.br`). Não existe DNS para `www.crm` (só `crm` e `*.crm`, e o curinga não cobre `www.crm.aledias.com.br` como queremos tratar), então o Traefik tenta emitir certificado que nunca valida e o roteador fica inconsistente. **Depois de salvar os domínios da API e do web, reabra o campo e apague toda entrada `www.`**, salve e reimplante. Confira no fim: a lista de domínios de cada recurso tem exatamente o que está na tabela.
+>
 > **⚠ Não corte o prefixo `/v1`.** A API responde em `/v1/*` (inclusive o login em `/v1/auth/*`). O Coolify, por padrão, aplica o **Strip Prefixes** e removeria `/v1` antes de chegar à API: tudo daria 404. Desligue em *Advanced → Strip Prefixes* **antes do primeiro deploy**.
 >
 > **⚠ Prioridade da rota sobre o web.** `crm.aledias.com.br/v1` (API) e `crm.aledias.com.br` (web) disputam o mesmo domínio. O Traefik escolhe a regra mais longa por padrão, então `Host + PathPrefix(/v1)` vence `Host`. Confira depois do deploy (seção 8, item 1): `/v1/primeiro-acesso/estado` precisa devolver JSON, e `/` precisa devolver a página do app. Se o `/v1` cair no web (HTML em vez de JSON), em *Advanced → Custom Labels* da API acrescente a prioridade explícita (troque `<nome>` pelo nome do roteador que aparece nas labels geradas, em *Configuration → Labels*): `traefik.http.routers.<nome>.priority=100`.
@@ -293,7 +295,7 @@ Fica **saudável** quando os consumidores das filas estão rodando e o Valkey e 
 | Imagem / tag | `ghcr.io/sandrolimadias/leadtogo-web` / `latest` |
 | Comando de partida | vazio (padrão da imagem, Caddy) |
 | Porta exposta | **8080** |
-| Domínio | `https://crm.aledias.com.br` |
+| Domínio | `https://crm.aledias.com.br` (**só este**: veja o aviso dos domínios `www` abaixo) |
 | Strip Prefixes | indiferente (o domínio não tem prefixo) |
 | Limite de memória | 128 MB |
 | Healthcheck | o da imagem (`/health` do Caddy, na 8080) |
