@@ -125,7 +125,7 @@ O arquivo de verdade é **`.github/workflows/ci-cd.yml`** (o esqueleto antigo de
 - **Deploy desligado** até a E13: o job `deploy` só roda com a variável do repositório `DEPLOY_ENABLED=true` (Settings → Secrets and variables → Actions → Variables); `verify` e `limpeza` dependem dele.
 - O `test` usa o `.env.example` como `.env` (senhas de teste, nenhum segredo) e os mesmos scripts do desenvolvimento, para o CI não divergir do que se roda localmente.
 - O build passa `APP_VERSION`, `GIT_SHA`, `SOURCE` e `BUILD_DATE` como build-args e desliga o atestado de proveniência (`provenance: false`), que criaria versões sem tag no GHCR.
-- **Custo (repositório privado, 2 000 min/mês no plano gratuito):** estimativa a confirmar no primeiro run (ver abaixo).
+- **Custo (repositório privado, 2 000 min/mês no plano gratuito).** Primeiro run completo verde (08/10/2026), por tempo de relógio: `test` 7 min (inclui E2E), `quality` 1 min 48 s, `build api` 2 min 12 s e `build web` 1 min 24 s (ARM nativo, com cache frio), `security` 14 s, `escopo` 8 s. Cada job é arredondado para cima ao minuto: **cerca de 13 min de relógio e 17 min faturáveis por push de código**, antes de qualquer multiplicador. **A confirmar na tela de uso** (github.com/settings/billing → *Usage*): minutos cobrados e o multiplicador do runner ARM. Com ~17 min por push, 2 000 min dão ~115 pushes de código por mês; push só de documentação gasta ~1 min (job `escopo`).
 
 ### 5.4 Secrets no GitHub (Settings → Secrets → Actions)
 | Secret | Conteúdo |

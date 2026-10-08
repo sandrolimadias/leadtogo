@@ -445,11 +445,20 @@ Checklist:
 **Pedido:**
 > Implemente `.github/workflows/ci-cd.yml` conforme `docs/esteira_deploy.md` (seção 5): jobs quality, test (Postgres+PostGIS e Valkey como serviços, migrações do zero, testes de RLS), security (pnpm audit alto/crítico e gitleaks), build (matriz api/web → GHCR com tags `sha-<commit>` e `latest`, cache do GitHub Actions), deploy (API do Coolify para api, worker e web) e smoke test conferindo a versão em `/health`. Use `concurrency` para um deploy por vez e o ambiente `production`. Mantenha o deploy **desativado** (condição por variável `DEPLOY_ENABLED`) até a E13.
 
-- [ ] Pipeline verde num push de teste (sem deploy).
-- [ ] Imagens aparecem em *Packages* do GitHub.
-- [ ] **Playwright no CI:** os testes E2E do web (login, troca de empresa, 2FA, teclado) também rodam no pipeline, com API, Postgres, Valkey e Mailpit como serviços e o Chromium instalado no job (`playwright install --with-deps chromium`).
+- [x] Pipeline verde num push de teste (sem deploy): run de 08/10/2026 (escopo, quality, test, security, build api/web; deploy, verify e limpeza dispensados por `DEPLOY_ENABLED` desligado).
+- [ ] Imagens aparecem em *Packages* do GitHub. *(logs do build mostram o push de `sha-<commit>` e `latest` das duas imagens; falta o Ale olhar a aba Packages e conferir a tela de uso de minutos, inclusive o ARM.)*
+- [x] **Playwright no CI:** os testes E2E do web (login, troca de empresa, 2FA, teclado) também rodam no pipeline, com API, Postgres, Valkey e Mailpit como serviços e o Chromium instalado no job (`playwright install --with-deps chromium`).
 
-**Pronto quando:** um push na `main` gera as imagens no GHCR com o commit como tag.
+**Entregue na E12 (08/10/2026):** `.github/workflows/ci-cd.yml` (jobs `escopo`, `quality`, `test` com E2E, `security`, `build` em runner ARM64 nativo, `deploy` atrás de `DEPLOY_ENABLED`, `verify` com 3 verificações e `limpeza` do GHCR); actions fixadas por SHA; `scripts/escopo.sh` (regra de "só documentação", compartilhada com o `pre-push`); `scripts/limpar-ghcr.sh` (nunca apaga `latest`, a versão em produção nem a atual).
+
+**Achados da investigação de estabilidade dos testes:**
+- Os pools não são o problema: no Postgres de desenvolvimento `max_connections=100` e o pico medido com `TURBO_CONCURRENCY=8` foi de **5 conexões** de teste; todos os testes fecham o que abrem (`end()`/`close()`/`quit()` nos `afterAll`/`afterEach`). Não achei conexão vazada.
+- **`CONNECTION_ENDED`, timeout do `vinculos.test.ts` e SIGTERM do worker não reproduziram**, nem com `TURBO_CONCURRENCY=8` nem com a CPU saturada (24 processos `yes` em 12 núcleos): db e API passaram 100% (12 min, de 3 min). Não vou declarar corrigido o que não reproduzi.
+- O que a carga extrema quebrou foi o **web** (jsdom, 5 s por teste): é falta de CPU, não de conexão (sem carga o mais lento leva ~1,1 s).
+- **Causa real no CI (corrigida):** (1) `setup-env.ts` aplicava `OUTBOX_INTERVALO_MS` e `EMAIL_ESPERA_MS` com `||=`, então o `.env` ganhava: no CI o `.env.example` define `EMAIL_ESPERA_MS=5000` e 2 testes de `fila-email` falhavam (local passava só porque o `.env` antigo não tinha a chave); agora os tempos de teste são forçados. (2) O `turbo` rodava api, db e web juntos num runner de 2 vCPUs, e os testes (hash de senha, bootstrap do Nest) ficavam 3 a 5 vezes mais lentos que no desenvolvimento, estourando 5 s (`convites.test.ts`); no CI `TURBO_CONCURRENCY=1`. (3) O E2E precisa de `TOKEN_ENCRYPTION_KEY`; o CI gera uma chave descartável.
+- **Segurança:** o `pnpm audit` do CI pegou `shell-quote` crítico (via `concurrently`, só desenvolvimento); fixado `>=1.11.0` em `overrides`.
+
+**Pronto quando:** um push na `main` gera as imagens no GHCR com o commit como tag. ✅ (falta a conferência visual do Ale)
 
 ---
 
