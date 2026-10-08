@@ -41,3 +41,8 @@ allowBuilds:
   lefthook: true
   '@scarf/scarf': false # telemetria do swagger-ui
   msgpackr-extract: false # aceleração opcional do bullmq; sem ela usa JS puro (e a imagem não precisa compilar nada)
+
+# Correção de segurança de uma dependência transitiva de desenvolvimento (concurrently → shell-quote,
+# GHSA-pqg4-j6r4-53mv, crítica em < 1.11.0). Remova quando o concurrently exigir a versão corrigida.
+overrides:
+  shell-quote: '>=1.11.0'
