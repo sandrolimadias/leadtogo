@@ -166,7 +166,38 @@ unset H A O
 
 ## 5. Recursos no Coolify
 
-Em todos: projeto **Leadtogo**, ambiente **production**, servidor da VPS, tipo **Docker Image** (*New Resource → Docker Image*). Em **Advanced**, deixe **Pre/Post-deployment command vazios**. Deixe o **Healthcheck do Coolify desligado**: vale o `HEALTHCHECK` da própria imagem, e o Coolify só troca a versão quando o container novo fica `healthy` (confirme com `docker ps`, coluna STATUS: `(healthy)`).
+Em todos: projeto **Leadtogo**, ambiente **production** (do Coolify), servidor da VPS, tipo **Docker Image** (*New Resource → Docker Image*). Em **Advanced**, deixe **Pre/Post-deployment command vazios**.
+
+#### Healthcheck e atualização sem queda
+
+Segundo a documentação do Coolify v4, a versão antiga só fica no ar até a nova ficar saudável **se existir um healthcheck**, e ele pode vir de **dois lugares**: do painel do Coolify ou do `HEALTHCHECK` da imagem. Quando a imagem tem `HEALTHCHECK`, o Coolify o detecta e **usa o da imagem no lugar do configurado no painel** ([Health checks](https://coolify.io/docs/knowledge-base/health-checks), [Rolling updates](https://coolify.io/docs/applications/deployments/rolling-updates)). As três imagens do Leadtogo já têm `HEALTHCHECK`, então **não é preciso ligar o healthcheck do painel**: ele seria ignorado.
+
+| Imagem | `HEALTHCHECK` embutido | Ferramenta |
+|---|---|---|
+| `leadtogo-api` (API e worker) | `node dist/saude.js` (30 s, 5 s, início 40 s, 3 falhas; detecta o papel) | Node (não depende de `curl`/`wget`) |
+| `leadtogo-web` | `wget -q -O /dev/null http://127.0.0.1:8080/health` (início 10 s) | `wget` e `curl` presentes |
+
+Confirme, **depois do primeiro deploy**, que o Docker enxerga a verificação (na VPS):
+
+```bash
+docker ps --format '{{.Names}}\t{{.Status}}' | grep -i leadtogo   # cada um termina em (healthy)
+```
+
+**Plano B (só se algum container não mostrar `healthy`/`unhealthy` no `docker ps`, ou seja, sem healthcheck nenhum):** ligue o do painel em *Healthcheck* de cada recurso, método `GET`, esquema `http`, host `127.0.0.1`, e use `wget` (a imagem da API e a do web têm `wget`; a da API **não tem `curl`**):
+
+| Recurso | Porta | Caminho |
+|---|---|---|
+| `leadtogo-api` | `3000` | `/health` |
+| `leadtogo-web` | `8080` | `/health` |
+| `leadtogo-worker` | `3001` | `/health` (o servidor de saúde do worker só existe no loopback do container, por isso o host é `127.0.0.1`) |
+
+**O que acontece quando a migração falha no comando de partida**
+
+- **Com healthcheck (o caso das nossas imagens):** `migrate.js` sai com código 1, o `&&` impede o `main.js`, o container termina, nunca fica `healthy`, e o Coolify **marca o deploy como falho e mantém a versão antiga no ar**, sem queda. O log do deploy mostra `Falha na migração: ...` (sem a URL do banco).
+- **Sem nenhum healthcheck:** o Coolify trata "container iniciado" como pronto, e a documentação **não garante** o comportamento quando o container novo morre logo depois. Pode haver uma janela em que a versão antiga já foi parada e a nova caiu. É por isso que a verificação do `docker ps` acima não é opcional.
+- Em ambos os casos, corrija a causa e faça um novo push (a migração é segura de repetir; uma trava do Postgres impede duas ao mesmo tempo).
+
+Mesmo com healthcheck, o Coolify avisa que atualização sem queda não é garantida: por isso a regra "expandir e depois contrair" (esteira_deploy.md, 7.2) continua obrigatória.
 
 **Dica para não repetir variáveis:** em *Environment → Shared Variables* cadastre uma vez as comuns e use `{{environment.NOME}}` na API e no worker. Se preferir, cole o mesmo bloco nos dois.
 
@@ -181,7 +212,7 @@ Em todos: projeto **Leadtogo**, ambiente **production**, servidor da VPS, tipo *
 | Strip Prefixes (Advanced) | **DESLIGADO** |
 | Limite de memória | 768 MB |
 | Stop timeout | padrão |
-| Healthcheck | o da imagem (`node dist/saude.js`; `start-period` 40 s) |
+| Healthcheck | o da imagem (ver "Healthcheck e atualização sem queda"); painel desligado |
 
 O comando de partida migra o banco, **descarta a credencial do dono das tabelas** (`unset`) e só então sobe a API (`exec`, para o `tini` entregar o SIGTERM ao Node). Migração com erro → container sai com código 1 → o deploy falha e a versão antiga continua.
 
@@ -315,7 +346,7 @@ gh secret set COOLIFY_UUID_WEB
 gh secret list
 ```
 
-(Ou pelo site: repositório → Settings → *Secrets and variables → Actions → New repository secret*.) O job de deploy usa o ambiente `production`, que o GitHub cria sozinho na primeira execução.
+(Ou pelo site: repositório → Settings → *Secrets and variables → Actions → New repository secret*.) Os secrets são do **repositório** (o job de deploy não usa *Environments* do GitHub: em repositório privado no plano gratuito eles não oferecem proteção, e o `DEPLOY_ENABLED` já é o interruptor).
 
 ### 7.4 Quando ligar o `DEPLOY_ENABLED`
 Só com **tudo isto verdadeiro**: os três recursos saudáveis, a primeira conta criada, o checklist da seção 8 (itens 1 a 4) aprovado e os cinco secrets cadastrados. Então:
