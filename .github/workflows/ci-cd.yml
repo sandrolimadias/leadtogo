@@ -81,6 +81,10 @@ jobs:
           cp .env.example .env
           bash docker/dev-up.sh
       - name: Testes (migrações do zero, RLS e integração)
+        # Uma tarefa por vez: o runner tem 2 vCPUs e os testes são CPU-bound (hash de senha, bootstrap do
+        # Nest); api, db e web juntos deixavam os testes 3 a 5 vezes mais lentos e estouravam o prazo de 5 s
+        env:
+          TURBO_CONCURRENCY: '1'
         run: pnpm test
       - name: Migrar o banco de desenvolvimento (usado pelo E2E)
         run: pnpm db:migrate

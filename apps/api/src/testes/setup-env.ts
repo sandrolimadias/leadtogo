@@ -29,14 +29,17 @@ const padroes: Record<string, string> = {
   MAILPIT_URL: 'http://localhost:8025',
   API_URL: 'http://localhost:3000',
   TOKEN_ENCRYPTION_KEY: 'dGVzdGUtdGVzdGUtdGVzdGUtdGVzdGUtdGVzdGUtMTI=',
-  OUTBOX_INTERVALO_MS: '200',
-  EMAIL_ESPERA_MS: '50',
   S3_ENDPOINT: 'http://localhost:3900',
   S3_BUCKET: 'leadtogo-arquivos',
   S3_ACCESS_KEY: 'teste',
   S3_SECRET_KEY: 'teste',
 }
 for (const [chave, valor] of Object.entries(padroes)) process.env[chave] ||= valor
+
+// Tempos que os testes assumem: valem SEMPRE, mesmo que o .env (no CI, o .env.example) defina outros
+// (ex.: EMAIL_ESPERA_MS=5000 no .env.example quebrava a asserção do backoff de 50 ms)
+process.env['OUTBOX_INTERVALO_MS'] = '200'
+process.env['EMAIL_ESPERA_MS'] = '50'
 
 // O supertest registra um listener de 'error' no servidor a cada requisição; os testes que fazem
 // mais de 10 no mesmo app disparam o MaxListenersExceededWarning (todos os apps são fechados).
