@@ -44,7 +44,10 @@ RUN --mount=type=cache,id=pnpm-store-prod,target=/root/.local/share/pnpm/store \
       -o -iname 'README*' -o -iname 'CHANGELOG*' -o -iname 'HISTORY*' -o -iname '*.md' -o -iname '*.markdown' \
       -o -name '*.test.js' -o -name '*.spec.js' \) -type f -delete \
  && find /repo -path '*/node_modules/*' -type d \( -name test -o -name tests -o -name __tests__ -o -name docs -o -name example -o -name examples \) \
-      -prune -exec rm -rf {} +
+      -prune -exec rm -rf {} + \
+ && rm -rf /repo/node_modules/.pnpm/sentry@* /repo/node_modules/.pnpm/oxc-parser@* /repo/node_modules/.pnpm/@oxc-parser+*
+# ^ o @sentry/node 11 puxa a CLI `sentry` e o `oxc-parser` (~25 MB) só para os plugins de bundler
+#   (`@sentry/node/bundler-plugin/*`), que a API nunca importa; o teste de imagens confere que o SDK inicia sem eles.
 
 # ---- 3. final: a imagem oficial do node (recebe as correções de segurança), com tini e sem npm/yarn/corepack
 FROM node:24-alpine AS final

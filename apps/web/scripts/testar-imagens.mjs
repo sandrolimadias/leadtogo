@@ -20,10 +20,15 @@ confere(
   raiz.ok && (await raiz.text()).includes('<div id="root">'),
   'a borda entrega o index.html do web em /',
 )
+// O único domínio externo permitido é o GlitchTip (envio de erros do navegador, connect-src)
+const hostsExternos = [...cabecalho('content-security-policy').matchAll(/https?:\/\/[^\s;]+/g)].map(
+  (m) => m[0],
+)
 confere(
   cabecalho('content-security-policy').includes("connect-src 'self'") &&
-    !/https?:\/\//.test(cabecalho('content-security-policy')),
-  "CSP com connect-src 'self' e sem domínios externos",
+    hostsExternos.length === 1 &&
+    hostsExternos[0] === 'https://erros.crm.aledias.com.br',
+  "CSP com connect-src 'self' e só o GlitchTip como domínio externo",
 )
 confere(cabecalho('strict-transport-security').includes('max-age=31536000'), 'HSTS')
 confere(cabecalho('x-content-type-options') === 'nosniff', 'X-Content-Type-Options: nosniff')
