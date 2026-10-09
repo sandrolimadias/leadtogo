@@ -169,7 +169,7 @@ describe('relay do outbox (Postgres e Valkey reais, sem BYPASSRLS)', () => {
       expect((await linha(e.id, e.tenantId))?.processado_em).not.toBeNull()
   }, 60_000)
 
-  it('falha: espera progressiva (5 s, 10 s), sem nova tentativa antes da hora, e ao esgotar vira falhou_em com payload apagado', async () => {
+  it('falha: espera progressiva (5 s, 10 s), sem nova tentativa antes da hora, e ao esgotar vira falhou_em com o payload mantido (para o reprocessamento)', async () => {
     const { tenantId } = await empresaDeOutraConta()
     const id = await gravarEvento(tenantId, 'teste.falha', { segredo: 'token-que-nao-pode-ficar' })
     const r = relay({ maxTentativas: 3 })
@@ -207,7 +207,8 @@ describe('relay do outbox (Postgres e Valkey reais, sem BYPASSRLS)', () => {
     e = await linha(id, tenantId)
     expect(e?.tentativas).toBe(3)
     expect(e?.falhou_em).not.toBeNull()
-    expect(e?.payload).toEqual({}) // o payload sensível some na falha final
+    // mantido na falha final: o `outbox-tratar --reprocessar` precisa dele (o --descartar o apaga)
+    expect(e?.payload).toEqual({ segredo: 'token-que-nao-pode-ficar' })
     expect(e?.processado_em).toBeNull()
     expect((await r.rodarCiclo()).reservados).toBe(0) // nunca mais reservado
     expect(esperaProgressivaMs(1)).toBe(5000)

@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   bigint,
+  check,
   integer,
   index,
   inet,
@@ -91,8 +92,18 @@ export const eventosOutbox = pgTable(
     ultimoErro: text(),
     /** Esgotou as tentativas: nunca mais é reservado (o alerta da E14 olha esta coluna) */
     falhouEm: timestamp({ withTimezone: true }),
+    /** Quando um operador tratou o evento esgotado (`node dist/outbox-tratar.js`); o alerta da E14 só conta os não tratados */
+    tratadoEm: timestamp({ withTimezone: true }),
+    /** Quem tratou (nome informado ao comando; sem e-mail nem dado pessoal além do nome do operador) */
+    tratadoPor: text(),
+    /** `reprocessado` (voltou à fila do relay) ou `descartado` (abandonado, sem efeito) */
+    tratamento: text(),
   },
   (t) => [
+    check(
+      'eventos_outbox_tratamento_ck',
+      sql`${t.tratamento} IS NULL OR ${t.tratamento} IN ('reprocessado', 'descartado')`,
+    ),
     index('eventos_outbox_pendentes_idx')
       .on(t.criadoEm)
       .where(sql`${t.processadoEm} IS NULL`),

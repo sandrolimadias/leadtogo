@@ -113,7 +113,7 @@ export class RelayDoOutbox {
     }
   }
 
-  /** Falhou: marca o erro e agenda a próxima tentativa; esgotadas as tentativas, `falhou_em` e payload apagado. */
+  /** Falhou: marca o erro e agenda a próxima tentativa; esgotadas as tentativas, `falhou_em` (o payload é MANTIDO, para o `--reprocessar` do `outbox-tratar`). */
   private async registrarFalha(id: string, tenantId: string, erro: unknown): Promise<void> {
     const mensagem = (erro instanceof Error ? erro.message : String(erro)).slice(0, 500)
     try {
@@ -127,7 +127,7 @@ export class RelayDoOutbox {
         if (esgotou) {
           await tx.execute(sql`
             UPDATE eventos_outbox
-            SET falhou_em = now(), payload = '{}'::jsonb, reservado_ate = NULL, ultimo_erro = ${mensagem}
+            SET falhou_em = now(), reservado_ate = NULL, ultimo_erro = ${mensagem}
             WHERE id = ${id}`)
           this.o.log.error(
             { evento: id, tentativas: linha.tentativas },
