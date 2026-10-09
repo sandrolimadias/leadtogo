@@ -292,6 +292,7 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
   /** As ÚNICAS rotas que podem ficar sem login. Adicionar uma aqui é uma decisão consciente. */
   const PUBLICAS = [
     'GET /health',
+    'GET /health/alertas', // protegida por token no cabeçalho (ALERTAS_TOKEN), não por sessão
     'ALL /v1/auth/{*caminho}',
     'GET /v1/acesso/opcoes',
     'GET /v1/primeiro-acesso/estado',

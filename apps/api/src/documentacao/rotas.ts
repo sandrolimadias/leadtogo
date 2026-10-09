@@ -44,7 +44,7 @@ export function listarRotas(app: INestApplication): RotaRegistrada[] {
         const metodo = numero === undefined ? undefined : METODOS[numero]
         if (metodo === undefined || caminho === undefined) continue
         const sufixo = caminho === '/' ? '' : `/${caminho}`
-        const base = prefixo === 'health' ? '' : '/v1'
+        const base = prefixo === 'health' || prefixo === 'health/alertas' ? '' : '/v1'
         const bruto = `${base}/${prefixo}${sufixo}`.replace(/\/+/g, '/')
         achadas.push({
           rota: `${metodo.toUpperCase()} ${bruto}`,

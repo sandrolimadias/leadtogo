@@ -34,3 +34,15 @@ export const saudeSchema = z
   })
   .meta({ id: 'Saude' })
 export type Saude = z.infer<typeof saudeSchema>
+
+/** GET /health/alertas (Uptime Kuma, com token): só contagens, nunca dados de empresa. */
+export const alertasSchema = z
+  .object({
+    status: z.enum(['ok', 'alerta', 'erro']),
+    eventos_esgotados: z.number().int().nullable(),
+    jobs_falhos: z.record(z.string(), z.number().int().nullable()),
+    jobs_falhos_total: z.number().int(),
+    limite_jobs_falhos: z.number().int(),
+  })
+  .meta({ id: 'Alertas' })
+export type Alertas = z.infer<typeof alertasSchema>

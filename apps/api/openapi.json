@@ -33,6 +33,58 @@
         "security": []
       }
     },
+    "/health/alertas": {
+      "get": {
+        "description": "Protegido pelo cabeçalho X-Alertas-Token (variável ALERTAS_TOKEN; sem ela o endpoint responde 404). 200 com tudo em dia; 503 com eventos do outbox esgotados e não tratados, falhas finais de jobs (últimas 24 h) a partir do limite, ou se não for possível verificar. Só contagens.",
+        "operationId": "AlertasController_verificar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alertas"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alertas operacionais (Uptime Kuma)",
+        "tags": ["Saúde"],
+        "security": []
+      }
+    },
     "/v1/acesso/opcoes": {
       "get": {
         "description": "Público. Diz o que a tela de login pode oferecer. Hoje: se \"Entrar com Google\" está ligado (`LOGIN_GOOGLE` e credenciais).",
@@ -1021,6 +1073,48 @@
           }
         },
         "required": ["token"],
+        "additionalProperties": false
+      },
+      "Alertas": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok", "alerta", "erro"]
+          },
+          "eventos_esgotados": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "jobs_falhos": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "jobs_falhos_total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "limite_jobs_falhos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "status",
+          "eventos_esgotados",
+          "jobs_falhos",
+          "jobs_falhos_total",
+          "limite_jobs_falhos"
+        ],
         "additionalProperties": false
       },
       "ConfiguracaoDeSeguranca": {

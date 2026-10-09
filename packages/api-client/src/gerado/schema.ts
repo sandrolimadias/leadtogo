@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health/alertas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alertas operacionais (Uptime Kuma)
+         * @description Protegido pelo cabeçalho X-Alertas-Token (variável ALERTAS_TOKEN; sem ela o endpoint responde 404). 200 com tudo em dia; 503 com eventos do outbox esgotados e não tratados, falhas finais de jobs (últimas 24 h) a partir do limite, ou se não for possível verificar. Só contagens.
+         */
+        get: operations["AlertasController_verificar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/acesso/opcoes": {
         parameters: {
             query?: never;
@@ -285,6 +305,16 @@ export interface components {
             nome?: string;
             senha?: string;
         };
+        Alertas: {
+            /** @enum {string} */
+            status: "ok" | "alerta" | "erro";
+            eventos_esgotados: number | null;
+            jobs_falhos: {
+                [key: string]: number | null;
+            };
+            jobs_falhos_total: number;
+            limite_jobs_falhos: number;
+        };
         ConfiguracaoDeSeguranca: {
             /** @enum {string} */
             doisFatoresExigido: "admin" | "admin_gestor" | "todos";
@@ -511,6 +541,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Saude"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AlertasController_verificar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Alertas"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
                 };
             };
             /** @description Serviço indisponível (`servico_indisponivel`) */

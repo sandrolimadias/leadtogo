@@ -13,7 +13,12 @@ import { aplicarSegurancaHttp } from './http/seguranca-http.js'
 /** Configuração comum da aplicação HTTP (a mesma no main, nos testes e na geração do OpenAPI). */
 export function configurarApp(app: INestApplication, config: Configuracao): void {
   app.useLogger(app.get(Logger))
-  app.setGlobalPrefix('v1', { exclude: [{ path: 'health', method: RequestMethod.GET }] })
+  app.setGlobalPrefix('v1', {
+    exclude: [
+      { path: 'health', method: RequestMethod.GET },
+      { path: 'health/alertas', method: RequestMethod.GET },
+    ],
+  })
   app.enableShutdownHooks()
   aplicarSegurancaHttp(app, config)
 }
