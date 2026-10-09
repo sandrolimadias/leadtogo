@@ -102,6 +102,14 @@ const esquema = z
     SMTP_PASSWORD: opcional(z.string().min(1)),
     SMTP_FROM: z.string().min(3).default('Leadtogo <nao-responder@leadtogo.local>'),
 
+    // Observabilidade (docs/runbook_observabilidade.md). Sem SENTRY_DSN o SDK fica desligado.
+    /** DSN do projeto leadtogo-api no GlitchTip (API e worker; a tag `papel` diferencia) */
+    SENTRY_DSN: opcional(url(['http:', 'https:'])),
+    /** Token do GET /health/alertas (header X-Alertas-Token). Sem ele o endpoint não existe (404) */
+    ALERTAS_TOKEN: opcional(z.string().min(32, 'deve ter ao menos 32 caracteres')),
+    /** Falhas finais de jobs nas últimas 24 h a partir das quais o /health/alertas responde 503 */
+    ALERTAS_LIMITE_JOBS_FALHOS: z.coerce.number().int().min(1).default(1),
+
     // Arquivos (Garage / S3)
     S3_ENDPOINT: url(['http:', 'https:']),
     S3_REGION: z.string().min(1).default('garage'),

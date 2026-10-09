@@ -8,6 +8,7 @@ import {
 import type { Request, Response } from 'express'
 
 import { contextoDaRequisicao } from '../log/contexto-log.js'
+import { reportarErro, tagsDoContexto } from '../observabilidade/erros.js'
 import { sqlstateDe } from './sqlstate.js'
 import { CODIGO_POR_STATUS, type DetalheErro, ErroApi } from './erro-api.js'
 
@@ -79,6 +80,7 @@ export class FiltroDeExcecoes implements ExceptionFilter {
     } else if (status >= 500) {
       // Falha inesperada: o detalhe vai só para o log (com o request_id), nunca para o cliente
       this.log.error(erro instanceof Error ? (erro.stack ?? erro.message) : String(erro))
+      reportarErro(erro, tagsDoContexto(contextoDaRequisicao(req)))
       corpo = { statusCode: 500, erro: 'erro_interno', mensagem: 'Erro interno. Tente novamente.' }
     } else if (erro instanceof HttpException) {
       corpo = {

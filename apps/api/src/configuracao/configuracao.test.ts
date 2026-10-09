@@ -191,4 +191,22 @@ describe('configuração validada por Zod', () => {
     expect(erro.message).not.toContain('senhasecreta')
     expect(erro.message).not.toContain('segredo-super-secreto')
   })
+
+  it('observabilidade: tudo opcional (vazio vale como ausente), com limite padrão 1', () => {
+    const c = carregarConfiguracao({ ...valida, SENTRY_DSN: '', ALERTAS_TOKEN: '' })
+    expect(c.SENTRY_DSN).toBeUndefined()
+    expect(c.ALERTAS_TOKEN).toBeUndefined()
+    expect(c.ALERTAS_LIMITE_JOBS_FALHOS).toBe(1)
+    expect(
+      carregarConfiguracao({ ...valida, SENTRY_DSN: 'https://chave@erros.crm.aledias.com.br/1' })
+        .SENTRY_DSN,
+    ).toBeDefined()
+  })
+
+  it('observabilidade: o token dos alertas exige 32 caracteres e o DSN deve ser uma URL', () => {
+    expect(falha({ ...valida, ALERTAS_TOKEN: 'curto' }).problemas[0]?.variavel).toBe(
+      'ALERTAS_TOKEN',
+    )
+    expect(falha({ ...valida, SENTRY_DSN: 'nao-e-url' }).problemas[0]?.variavel).toBe('SENTRY_DSN')
+  })
 })

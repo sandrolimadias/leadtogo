@@ -3,6 +3,7 @@ import { SwaggerModule } from '@nestjs/swagger'
 import { criarApp } from './app.js'
 import { carregarConfiguracao, ErroConfiguracao } from './configuracao/configuracao.js'
 import { montarDocumento } from './documentacao/openapi.js'
+import { iniciarObservabilidade } from './observabilidade/erros.js'
 
 // Falha ao iniciar, com a lista do que falta, se a configuração estiver inválida.
 let config
@@ -15,6 +16,8 @@ try {
   }
   throw erro
 }
+
+iniciarObservabilidade(config, 'api')
 
 const app = await criarApp(config)
 

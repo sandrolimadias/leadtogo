@@ -3,6 +3,7 @@ import type { Redis } from 'ioredis'
 import type { Logger } from 'pino'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
+import { reportarErro } from '../observabilidade/erros.js'
 import { type NomeDaFila, criarConexaoDeFila, opcoesDeFila, opcoesDeWorker } from './filas.js'
 
 export type Processador = (job: Job) => Promise<unknown>
@@ -52,12 +53,14 @@ export class WorkerFilas {
     worker.on('error', (erro) =>
       this.log.error({ fila: nome, erro: erro.message }, 'erro no worker'),
     )
-    worker.on('failed', (job, erro) =>
+    worker.on('failed', (job, erro) => {
       this.log.warn(
         { fila: nome, job: job?.id, tentativa: job?.attemptsMade, erro: erro.message },
         'job falhou',
-      ),
-    )
+      )
+      // Só a falha final (sem tentativas sobrando) vai ao GlitchTip; os dados do job nunca vão
+      if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) reportarErro(erro, { fila: nome })
+    })
     this.workers.set(nome, worker)
     return worker
   }

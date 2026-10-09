@@ -7,6 +7,7 @@ import { pino } from 'pino'
 
 import { carregarConfiguracao, ErroConfiguracao } from './configuracao/configuracao.js'
 import { BANCO, VALKEY } from './infra/infra.module.js'
+import { iniciarObservabilidade } from './observabilidade/erros.js'
 import { iniciarWorker } from './worker/iniciar.js'
 import { WorkerModule } from './worker.module.js'
 
@@ -21,6 +22,8 @@ try {
   }
   throw erro
 }
+
+iniciarObservabilidade(config, 'worker')
 
 const log = pino({
   level: config.LOG_LEVEL,
