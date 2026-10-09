@@ -518,11 +518,16 @@ Checklist:
 - [ ] Cabeçalhos de segurança (CSP, HSTS, X-Frame-Options) conferidos em `securityheaders.com`.
 - [ ] `/docs` (Swagger) protegido em produção.
 - [ ] Rate limit testado no login (bloqueia após várias tentativas).
+- [x] Firewall da Oracle conferido: de fora, só **22, 80 e 443** abertas.
+- [x] Portas de e-mail removidas.
+- [x] Backups diários no R2 e restauração testados em 09/10/2026 (`docs/runbook_backup.md`).
 - [ ] Banco, Valkey e Garage **sem porta pública** (verificar com `nmap` de fora).
 - [ ] 2FA obrigatório para administradores.
-- [ ] Script de **espelhamento do Garage** para o S3 externo agendado.
+- [ ] (pendente até haver anexos, ver `docs/runbook_backup.md`, seção 4) Script de **espelhamento do Garage** para o S3 externo agendado.
 - [ ] Revisão de dependências: `pnpm audit` limpo de alto/crítico.
 - [ ] Política de privacidade/LGPD: rascunho em `docs/lgpd.md` (dados tratados, base legal, retenção, exclusão).
+
+> **Nota:** o status "Degraded" do Garage no Coolify é só visual (os volumes aparecem listados como serviços); o Garage está saudável e responde normalmente.
 
 **Pronto quando:** checklist completo e nenhum alerta alto ou crítico pendente.
 
