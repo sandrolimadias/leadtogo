@@ -170,6 +170,12 @@ jobs:
             GIT_SHA=${{ github.sha }}
             SOURCE=${{ github.server_url }}/${{ github.repository }}
             BUILD_DATE=${{ steps.data.outputs.build }}
+            VITE_SENTRY_DSN=${{ vars.SENTRY_DSN_WEB }}
+            SENTRY_URL=${{ vars.SENTRY_URL }}
+            SENTRY_ORG=${{ vars.SENTRY_ORG }}
+          # Só o web usa: envia os source maps ao GlitchTip (sem o segredo cadastrado, o build não gera mapas)
+          secrets: |
+            ${{ matrix.app == 'web' && format('sentry_auth_token={0}', secrets.SENTRY_AUTH_TOKEN) || '' }}
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 

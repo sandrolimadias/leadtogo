@@ -5,7 +5,7 @@
 #   PAPEL=worker        sobe o worker (filas e outbox); não migra e não deve receber a DATABASE_MIGRATION_URL
 # Continuam funcionando sozinhos:
 #   node dist/main.js · node dist/worker.js · node dist/migrate.js (drizzle-orm) · node dist/seed-referencias.js ·
-#   node dist/criar-conta.js
+#   node dist/criar-conta.js · node dist/outbox-tratar.js (eventos esgotados) · node dist/testar-erro.js (GlitchTip)
 # Contexto: a raiz do repositório.  docker build -f docker/api.Dockerfile --build-arg APP_VERSION=<sha> .
 
 # ---- 1. build: compila o TypeScript. Roda na arquitetura de QUEM CONSTRÓI ($BUILDPLATFORM); o JavaScript
@@ -85,4 +85,5 @@ EXPOSE 3000
 # Serve para a API e para o worker (detecta sozinho; PAPEL=api|worker força): ver src/saude/verificar.ts
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 CMD ["node", "dist/saude.js"]
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/iniciar.js"]
+# --enable-source-maps: as pilhas de erro (log e GlitchTip) mostram o .ts original; os .map ficam na imagem (privada)
+CMD ["node", "--enable-source-maps", "dist/iniciar.js"]

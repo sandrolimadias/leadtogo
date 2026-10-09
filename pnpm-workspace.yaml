@@ -40,6 +40,7 @@ allowBuilds:
   esbuild: true
   lefthook: true
   '@scarf/scarf': false # telemetria do swagger-ui
+  '@sentry/cli': false # o binário vem do pacote opcional da plataforma (@sentry/cli-linux-*); o postinstall só serve de reserva
   msgpackr-extract: false # aceleração opcional do bullmq; sem ela usa JS puro (e a imagem não precisa compilar nada)
 
 # Correção de segurança de uma dependência transitiva de desenvolvimento (concurrently → shell-quote,

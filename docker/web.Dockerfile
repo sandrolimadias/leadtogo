@@ -2,6 +2,9 @@
 # Imagem do web: build do Vite + Caddy servindo os arquivos estáticos (porta 8080, sem root).
 # Contexto: a raiz do repositório (precisa de docs/design-system/: tokens, tema e fontes que o build copia).
 #   docker build -f docker/web.Dockerfile --build-arg APP_VERSION=<sha> .
+# Observabilidade (opcional; o CI fornece): VITE_SENTRY_DSN entra no JS (o DSN do navegador é público); com o
+# segredo `sentry_auth_token` (--secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN) os source maps sobem para o
+# GlitchTip e NUNCA chegam à imagem final (o token também não fica em nenhuma camada).
 
 # ---- 1. build: roda na arquitetura de quem constrói; o resultado (HTML/JS/CSS) é o mesmo para qualquer destino
 FROM --platform=$BUILDPLATFORM node:24-alpine AS build
@@ -22,10 +25,21 @@ COPY packages/api-client packages/api-client
 COPY docs/design-system docs/design-system
 COPY apps/web apps/web
 ARG APP_VERSION=dev
-ENV APP_VERSION=${APP_VERSION}
+ARG VITE_SENTRY_DSN=
+ARG SENTRY_URL=
+ARG SENTRY_ORG=
+ENV APP_VERSION=${APP_VERSION} \
+    VITE_SENTRY_DSN=${VITE_SENTRY_DSN} \
+    SENTRY_URL=${SENTRY_URL} \
+    SENTRY_ORG=${SENTRY_ORG}
 WORKDIR /repo/apps/web
-# `vite build` (os tipos já são conferidos no CI); o PWA (manifest e service worker) sai junto
-RUN node scripts/sincronizar-design-system.mjs && pnpm exec vite build
+# `vite build` (os tipos já são conferidos no CI); o PWA (manifest e service worker) sai junto. Sem o segredo o
+# build não gera nenhum mapa. Com ele, o plugin do Sentry injeta os debug IDs, envia os mapas e os apaga.
+# `validar-dist` apaga qualquer .map que sobrar (upload que falhou) e confere o precache do service worker.
+RUN --mount=type=secret,id=sentry_auth_token \
+    node scripts/sincronizar-design-system.mjs \
+ && SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" pnpm exec vite build \
+ && node scripts/validar-dist.mjs
 
 # ---- 2. final: a imagem oficial do Caddy, sem root
 FROM caddy:2-alpine AS final
