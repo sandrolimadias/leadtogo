@@ -28,21 +28,24 @@ export RCLONE_CONFIG_R2_PROVIDER=Cloudflare
 export RCLONE_CONFIG_R2_ACCESS_KEY_ID='<access key do R2>'
 export RCLONE_CONFIG_R2_SECRET_ACCESS_KEY='<secret do R2>'
 export RCLONE_CONFIG_R2_ENDPOINT='https://<account-id>.r2.cloudflarestorage.com'
+export RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true
 
 # listar e escolher o arquivo mais recente do banco desejado
 docker run --rm \
   -e RCLONE_CONFIG_R2_TYPE -e RCLONE_CONFIG_R2_PROVIDER \
   -e RCLONE_CONFIG_R2_ACCESS_KEY_ID -e RCLONE_CONFIG_R2_SECRET_ACCESS_KEY \
-  -e RCLONE_CONFIG_R2_ENDPOINT \
+  -e RCLONE_CONFIG_R2_ENDPOINT -e RCLONE_CONFIG_R2_NO_CHECK_BUCKET \
   rclone/rclone lsf -R r2:vps-backup
 
 # baixar
 docker run --rm -v "$PWD:/dados" \
   -e RCLONE_CONFIG_R2_TYPE -e RCLONE_CONFIG_R2_PROVIDER \
   -e RCLONE_CONFIG_R2_ACCESS_KEY_ID -e RCLONE_CONFIG_R2_SECRET_ACCESS_KEY \
-  -e RCLONE_CONFIG_R2_ENDPOINT \
+  -e RCLONE_CONFIG_R2_ENDPOINT -e RCLONE_CONFIG_R2_NO_CHECK_BUCKET \
   rclone/rclone copy "r2:vps-backup/<caminho/do/arquivo>" /dados
 ```
+
+**Lição: `RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true` é obrigatória.** Sem ela, o rclone tenta verificar/criar o bucket antes de copiar, e uma chave do R2 sem permissão de administração do bucket falha com erro de acesso negado (típico `403 AccessDenied`), mesmo com a leitura liberada. Com a variável, o rclone vai direto aos objetos. Vale para qualquer comando rclone contra o R2, inclusive o futuro espelhamento do Garage (seção 4).
 
 (`<...>` são valores a preencher; as chaves do R2 ficam no gerenciador de senhas, nunca no repositório.)
 
@@ -74,7 +77,7 @@ docker exec pg-restore-teste psql -U postgres -d leadtogo -At -c "<consulta de c
 ```bash
 docker rm -f pg-restore-teste
 rm -rf ~/restore-teste
-unset RCLONE_CONFIG_R2_TYPE RCLONE_CONFIG_R2_PROVIDER RCLONE_CONFIG_R2_ACCESS_KEY_ID \
+unset RCLONE_CONFIG_R2_NO_CHECK_BUCKET RCLONE_CONFIG_R2_TYPE RCLONE_CONFIG_R2_PROVIDER RCLONE_CONFIG_R2_ACCESS_KEY_ID \
       RCLONE_CONFIG_R2_SECRET_ACCESS_KEY RCLONE_CONFIG_R2_ENDPOINT
 ```
 
@@ -102,6 +105,6 @@ Perda máxima esperada (RPO): até 24h, pois o backup é diário às 3h.
 
 O bucket `leadtogo-arquivos` do Garage **ainda não é copiado** para fora da VPS. Hoje não há anexos, então não há o que perder. **Quando houver anexos:**
 
-- espelhar o bucket no R2 com `rclone sync` (container `rclone/rclone`, credenciais por variável, como em 2.1), com origem no endpoint do Garage (`S3_ENDPOINT`, região `garage`, chave `leadtogo-app`) e destino num bucket/prefixo próprio do R2;
+- espelhar o bucket no R2 com `rclone sync` (container `rclone/rclone`, credenciais por variável, como em 2.1), com `RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true` e origem no endpoint do Garage (`S3_ENDPOINT`, região `garage`, chave `leadtogo-app`) e destino num bucket/prefixo próprio do R2;
 - agendar diariamente (cron do Coolify ou tarefa agendada) e acompanhar a execução;
 - fazer um teste de restauração dos arquivos, como o do banco.
