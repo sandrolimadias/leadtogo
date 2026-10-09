@@ -50,7 +50,7 @@ O Supabase self-hosted é composto por cerca de 10 a 12 serviços (Kong, GoTrue,
 | Repositório / CI | **GitHub + GitHub Actions** |
 | Deploy | **Coolify** (deploy automático por branch) |
 | Ambientes | **Dev local + Produção** |
-| Observabilidade | **Essencial:** GlitchTip/Sentry + Uptime Kuma + logs estruturados (Pino) |
+| Observabilidade | **Essencial:** GlitchTip self-hosted (SDK do Sentry) + Uptime Kuma + logs estruturados (Pino); alertas por e-mail |
 | Automações | **n8n** (já instalado na VPS) — webhooks de saída do CRM + API REST com chaves por tenant |
 | WhatsApp | **Evolution API** (já instalada na VPS) — webhook de mensagens para o CRM |
 | E-mail e agenda | **Gmail API + Google Calendar API** e **Microsoft Graph** (OAuth 2.0); BCC via caixa IMAP (`imapflow`); SMTP de reserva (`nodemailer`) |
@@ -237,7 +237,7 @@ crm/
 | Valkey | `valkey/valkey` | ~100–300 MB |
 | Garage | `dxflrs/garage:v2.1.0` | ~100–300 MB |
 | Uptime Kuma | `louislam/uptime-kuma` | ~150 MB |
-| GlitchTip (opcional) | self-hosted, ou Sentry em nuvem (plano gratuito) | ~500 MB–1 GB |
+| GlitchTip | self-hosted (decidido em 09/10/2026), com banco e Valkey próprios | ~500 MB–1 GB |
 | Coolify + Traefik | — | ~1 GB |
 | **n8n** *(já existente)* | com seu próprio banco | ~300 MB–1 GB |
 | **Evolution API** *(já existente)* | com seu próprio banco/cache | ~300 MB–1 GB (cresce com o nº de instâncias) |
@@ -246,7 +246,7 @@ crm/
 Total estimado do Leadtogo: **~3–5 GB**. Medição de 06/10/2026: a VPS usa ~5 GB de 23 GB (n8n, Evolution, 2 WordPress com MySQL, Coolify), então há folga confortável.
 
 - **Conferir o consumo real** dos serviços existentes antes de subir o CRM (`docker stats` na VPS ou métricas do Coolify).
-- Para poupar RAM, preferir o **Sentry em nuvem (plano gratuito)** ao GlitchTip self-hosted.
+- O **GlitchTip self-hosted** foi o escolhido (dados dos erros ficam na VPS); acompanhe a RAM dele nas métricas do Coolify.
 - Definir **limites de memória** por container no Coolify, para que um serviço não derrube os outros.
 - O **OSRM** (fase de roteirização) provavelmente exigirá **upgrade da VPS ou um servidor separado**.
 
@@ -372,10 +372,18 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 
 ## 13. Observabilidade (Essencial)
 
-- **Erros:** GlitchTip self-hosted (compatível com o SDK do Sentry) ou Sentry em nuvem, no front e no back.
-- **Disponibilidade:** Uptime Kuma monitorando app, API e banco, com alerta por e-mail/Telegram.
-- **Logs:** estruturados em JSON (Pino) com `request_id`, `tenant_id` e `user_id`, consultados pelo Coolify.
+- **Erros:** **GlitchTip self-hosted** (`https://erros.crm.aledias.com.br`), com o SDK do Sentry: `@sentry/node` na API e no worker (projeto `leadtogo-api`, tag `papel` = `api` ou `worker`) e `@sentry/react` no web (projeto `leadtogo-web`).
+  - `release` = `APP_VERSION` (o commit), `environment` = `production`, `tracesSampleRate` 0, sem replay. No SDK 11 o antigo `sendDefaultPii` virou `dataCollection`, configurado para não coletar usuário, cookies, cabeçalhos, corpos, query string, variáveis locais nem trechos de código.
+  - Todo evento passa por `limparEvento` (`packages/shared/src/limpeza-erros.ts`): remove cookies, `Authorization`, corpo da requisição, e-mails, CPF/CNPJ (inclusive alfanumérico) e telefones. Só `tenant_id`, `user_id` e `request_id` (uuids) saem, como tags.
+  - **Sem `SENTRY_DSN` o SDK fica desligado** (desenvolvimento e testes não enviam nada).
+  - **DSN do web:** build arg `VITE_SENTRY_DSN` (Variable `SENTRY_DSN_WEB` do GitHub). O web é estático e o DSN do navegador é público por desenho; uma configuração em runtime exigiria um arquivo gerado pelo Caddy fora do precache do service worker, sem ganho enquanto houver só um ambiente. A CSP do web libera `connect-src https://erros.crm.aledias.com.br`.
+  - **Source maps:** o web usa `@sentry/vite-plugin` no build (debug IDs, upload ao GlitchTip, mapas apagados), só com `SENTRY_AUTH_TOKEN`, e os `.map` nunca entram na imagem. A API mantém os `.map` na imagem e roda com `--enable-source-maps`, sem upload.
+- **Disponibilidade:** Uptime Kuma monitorando o web, a API (`/health` cobre banco, Valkey e Garage), a rota `/v1`, o painel e o GlitchTip, e **`GET /health/alertas`** (protegido por `ALERTAS_TOKEN`) para os problemas silenciosos: eventos do outbox esgotados (função `SECURITY DEFINER`, sem `BYPASSRLS`) e falhas finais de jobs do BullMQ nas últimas 24 h. A resposta só tem contagens. Eventos esgotados são tratados com `node dist/outbox-tratar.js`.
+- **Alertas:** **só e-mail por enquanto** (Uptime Kuma e notificações do Coolify, via Resend). Evolução futura: Telegram e WhatsApp (Evolution/n8n), incluindo a notificação de deploy.
+- **Logs:** estruturados em JSON (Pino) com `request_id`, `tenant_id` e `user_id`, consultados pelo Coolify; a tag `request_id` do GlitchTip leva ao log da requisição.
+- **Teste:** `node dist/testar-erro.js` (terminal do container) envia um erro de teste, sem rota HTTP.
 - Evolução futura: Grafana + Loki + Prometheus, se necessário.
+- Passo a passo e testes: `docs/runbook_observabilidade.md`.
 
 ---
 
@@ -405,7 +413,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 | 9 | VPS | Oracle Cloud ARM64, 4 vCPU, 24 GB RAM (antes estimado em 12 GB) |
 | 10 | Repositório / deploy | GitHub + Coolify |
 | 11 | Ambientes | Dev local + Produção |
-| 12 | Observabilidade | Essencial (GlitchTip/Sentry + Uptime Kuma + logs) |
+| 12 | Observabilidade | Essencial (GlitchTip self-hosted + Uptime Kuma + logs); alertas só por e-mail, Telegram/WhatsApp depois |
 | 13 | n8n | Instância já existente; integração por webhooks (HMAC) + API com chaves por tenant |
 | 14 | Evolution API | Instância já existente; 1 instância por vendedor, webhook para o CRM, mídias no Garage do CRM |
 | 15 | Isolamento | Postgres e Valkey próprios do CRM; comunicação entre serviços só por API, via rede Docker interna |

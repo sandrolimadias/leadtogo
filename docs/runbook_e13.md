@@ -253,7 +253,7 @@ Ao iniciar, `PAPEL=api` migra o banco, semeia as **referências globais** (estad
 | `S3_ACCESS_KEY` | chave `leadtogo-app` do Garage (começa com `GK`) | **sim** |
 | `S3_SECRET_KEY` | segredo da chave `leadtogo-app` | **sim** |
 
-Não defina `APP_VERSION`: a imagem já traz o commit (é o que o `/health` mostra e a esteira confere). `LOGIN_GOOGLE`, `GOOGLE_*`, `SENTRY_DSN` e integrações ficam de fora até serem usados. Os demais ajustes (`RATE_LIMIT_*`, `EMAIL_*`, `OUTBOX_INTERVALO_MS`, `SMTP_TIMEOUT_MS`) têm padrões adequados.
+Não defina `APP_VERSION`: a imagem já traz o commit (é o que o `/health` mostra e a esteira confere). `LOGIN_GOOGLE`, `GOOGLE_*` e integrações ficam de fora até serem usados; `SENTRY_DSN` e `ALERTAS_TOKEN` entram na E14 (`runbook_observabilidade.md`). Os demais ajustes (`RATE_LIMIT_*`, `EMAIL_*`, `OUTBOX_INTERVALO_MS`, `SMTP_TIMEOUT_MS`) têm padrões adequados.
 
 **Chave do Garage:** se não tiver a chave anotada, no terminal do container do Garage (recurso `leadtogo-files`):
 ```bash

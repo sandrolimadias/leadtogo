@@ -503,13 +503,25 @@ Checklist:
 
 ## E14. Observabilidade e alertas — Ale + Claude Code
 
-- [ ] **Sentry** (nuvem, plano gratuito; ou GlitchTip) em API, worker e web, com `release = APP_VERSION` e sem dados pessoais nos eventos.
-- [ ] **Uptime Kuma** (no Coolify): monitores para `app.`, `api./health`, banco e painel do Coolify, com alerta por e-mail/Telegram.
-- [ ] **Notificação de deploy:** fluxo no n8n recebendo um webhook do GitHub Actions (sucesso/falha) e avisando no WhatsApp ou Telegram.
-- [ ] Logs da API acessíveis no Coolify, com `request_id` para rastrear.
-- [ ] **Alerta de eventos esgotados:** avisar (Uptime Kuma/n8n) quando houver linhas em `eventos_outbox` com `falhou_em` preenchido, ou seja, eventos que esgotaram as tentativas (e-mails e notificações que não saíram). Mesmo critério para jobs falhos acumulados nas filas do BullMQ.
+> **Decisões (09/10/2026):** erros no **GlitchTip self-hosted** (SDK do Sentry) em `https://erros.crm.aledias.com.br`, projetos `leadtogo-api` (API e worker, tag `papel`) e `leadtogo-web`; alertas **só por e-mail** por enquanto (Uptime Kuma e notificações do Coolify, via Resend). Telegram, WhatsApp (Evolution/n8n) e a notificação de deploy pelo n8n ficam como evolução futura. Passo a passo e testes: `docs/runbook_observabilidade.md`.
 
-**Pronto quando:** um erro forçado aparece no Sentry com o commit, e desligar a API dispara o alerta do Uptime Kuma.
+**Código (Claude Code):**
+- [x] SDK do Sentry na API e no worker (`@sentry/node`) e no web (`@sentry/react`): `release = APP_VERSION` (commit), `environment = production`, sem tracing, sem PII (`beforeSend` remove cookies, `Authorization`, corpo, e-mails, CPF/CNPJ e telefones; só `tenant_id`, `user_id` e `request_id` como tags). Sem `SENTRY_DSN`, o SDK fica desligado.
+- [x] DSN do web por build arg (`VITE_SENTRY_DSN`, Variable `SENTRY_DSN_WEB` do GitHub): o DSN do navegador é público e o web é estático.
+- [x] Source maps do web: `@sentry/vite-plugin` (debug IDs, upload ao GlitchTip, mapas apagados) só quando `SENTRY_AUTH_TOKEN` existe; os `.map` não ficam na imagem; precache do PWA conferido (`validar-dist.mjs`). API: mapas na imagem e `--enable-source-maps`, sem upload.
+- [x] `GET /health/alertas` (token em `X-Alertas-Token`, `ALERTAS_TOKEN`): 200 ou 503 por eventos esgotados do outbox (função `SECURITY DEFINER`, sem `BYPASSRLS`) e falhas finais de jobs nas últimas 24 h (limite `ALERTAS_LIMITE_JOBS_FALHOS`, padrão 1). Só contagens.
+- [x] `node dist/outbox-tratar.js` (`--listar`, `--reprocessar`, `--descartar`, com `--por`): registra quem e quando; o alerta ignora o tratado. O payload do evento esgotado passa a ser mantido (necessário para reprocessar).
+- [x] `node dist/testar-erro.js` dispara o erro de teste (sem rota HTTP).
+- [x] Logs da API com `request_id`, `tenant_id` e `user_id` (já existiam, E8).
+- [ ] `HEALTHCHECK` do web: **já existe** na imagem; investigar o 503 curto no próximo deploy (runbook, seção 8).
+
+**Infraestrutura (Ale):**
+- [ ] Instalar o GlitchTip no Coolify, criar organização e projetos, copiar DSNs e token (runbook, seção 1).
+- [ ] Cadastrar as variáveis no Coolify e no GitHub (runbook, seção 2).
+- [ ] Instalar o Uptime Kuma e criar os monitores: web, `api./health` (cobre banco, Valkey e Garage), rota `/v1`, `/health/alertas`, painel do Coolify e GlitchTip (seção 3).
+- [ ] Notificações do Coolify por e-mail: deploy, backup, disco (seção 4).
+
+**Pronto quando:** um erro forçado (`node dist/testar-erro.js`) aparece no GlitchTip com o commit, e desligar a API dispara o alerta do Uptime Kuma por e-mail (runbook, seção 5).
 
 ---
 

@@ -133,7 +133,10 @@ O roteiro de implantação no Coolify (DNS, segredos, GHCR, banco, recursos, tok
 | `COOLIFY_URL` | Endereço do painel do Coolify (HTTPS) |
 | `COOLIFY_TOKEN` | Token da API do Coolify **só com permissão de deploy** |
 | `COOLIFY_UUID_API`, `COOLIFY_UUID_WORKER`, `COOLIFY_UUID_WEB` | Identificadores dos três recursos no Coolify |
+| `SENTRY_AUTH_TOKEN` | Token da API do GlitchTip (escrita em projetos e releases). **Opcional**: sem ele o build do web não gera source maps. Entra no `docker build` como segredo do BuildKit (`--mount=type=secret`), nunca em camada da imagem |
 | (automático) `GITHUB_TOKEN` | Publica as imagens no GHCR |
+
+**Variables** (Settings → Secrets and variables → Actions → *Variables*; não são segredos): `DEPLOY_ENABLED`, `SENTRY_DSN_WEB` (DSN do projeto `leadtogo-web`, vira o build arg `VITE_SENTRY_DSN`; o DSN do navegador é público), `SENTRY_URL` (`https://erros.crm.aledias.com.br`) e `SENTRY_ORG` (slug da organização no GlitchTip). Passo a passo em `runbook_observabilidade.md`.
 
 ---
 
@@ -143,16 +146,16 @@ O roteiro de implantação no Coolify (DNS, segredos, GHCR, banco, recursos, tok
 
 | Imagem | Base final | Conteúdo | Usada por | Tamanho (descompactado · compactado) |
 |---|---|---|---|---|
-| `leadtogo-api` | `node:24-alpine` (oficial) | `apps/api/dist`, `packages/{db,shared}/dist` (com as migrações SQL) e só as dependências de **produção** (podadas: sem `*.map`, `*.d.ts`, documentação e testes) | **API** (`node dist/main.js`), **worker** (`node dist/worker.js`) e **migração** (`node dist/migrate.js`) | 335 MB (amd64) / 331 MB (arm64) · ~70 MB |
+| `leadtogo-api` | `node:24-alpine` (oficial) | `apps/api/dist`, `packages/{db,shared}/dist` (com as migrações SQL) e só as dependências de **produção** (podadas: sem `*.map`, `*.d.ts`, documentação e testes) | **API** (`node dist/main.js`), **worker** (`node dist/worker.js`) e **migração** (`node dist/migrate.js`) | ~354 MB (amd64, medido em 09/10/2026 com o SDK do Sentry; era 335 MB) · ~75 MB |
 | `leadtogo-web` | `caddy:2-alpine` (oficial) | `vite build` do PWA + `docker/web.Caddyfile` | **Web** (porta 8080) | 94 MB (amd64) / 90 MB (arm64) · ~24 MB |
 
-Metas: API < 350 MB e web < 100 MB (descompactados). As bases são as imagens oficiais, que recebem as correções de segurança; o Dependabot acompanha o `FROM` de cada Dockerfile.
+Metas: API < 360 MB (era 350: o `@sentry/node` 11 e suas dependências somam ~20 MB, já descontados ~27 MB de ferramentas de build que o Dockerfile remove) e web < 100 MB (descompactados). As bases são as imagens oficiais, que recebem as correções de segurança; o Dependabot acompanha o `FROM` de cada Dockerfile.
 
 **`docker/api.Dockerfile`** (contexto: a raiz do repositório; `docker build -f docker/api.Dockerfile --build-arg APP_VERSION=<sha> --build-arg GIT_SHA=<sha> .`)
-- **Três estágios.** `build` roda em `--platform=$BUILDPLATFORM` (o TypeScript compila igual em qualquer arquitetura: `pnpm --filter "@leadtogo/api..." run build`). `deps` instala **só as dependências de produção na arquitetura de destino** (`pnpm install --prod --frozen-lockfile --ignore-scripts --filter "@leadtogo/api..."`) e poda o `node_modules`. `final` junta tudo na árvore do monorepo (os pacotes internos são links relativos).
+- **Três estágios.** `build` roda em `--platform=$BUILDPLATFORM` (o TypeScript compila igual em qualquer arquitetura: `pnpm --filter "@leadtogo/api..." run build`). `deps` instala **só as dependências de produção na arquitetura de destino** (`pnpm install --prod --frozen-lockfile --ignore-scripts --filter "@leadtogo/api..."`) e poda o `node_modules` (inclusive `sentry` e `oxc-parser`, que o `@sentry/node` 11 traz só para os plugins de bundler). `final` junta tudo na árvore do monorepo (os pacotes internos são links relativos).
 - **Sem `drizzle-kit` nem ferramentas de desenvolvimento.** Isso depende de `autoInstallPeers: false` e `dedupePeerDependents: false` no `pnpm-workspace.yaml`: sem eles o `better-auth` herdava `drizzle-kit`, `vitest` e `react` do db e do web (a árvore de produção tinha 290 MB; agora 78 MB podada). Os peers que o código usa de verdade são dependências explícitas (`pnpm peers check` só deve apontar o `typescript` do `openapi-typescript`).
 - **Usuário `node` (não-root)**, `NODE_ENV=production`, **`tini` como PID 1** (o SIGTERM do `docker stop` chega ao Node; o worker termina os jobs e sai com 0). A imagem não tem npm, yarn nem corepack.
-- **Comandos:** `node dist/iniciar.js` (**`CMD` padrão**: escolhe o papel por `PAPEL=api|worker`; a API migra, semeia as referências e sobe), e, sozinhos, `node dist/main.js`, `node dist/worker.js`, `node dist/migrate.js` (migrador do drizzle-orm; as migrações vão em `packages/db/dist/migrations`), `node dist/seed-referencias.js` (só as referências globais, nunca a demonstração; os dados vão em `packages/db/seeds/dados`) e `node dist/criar-conta.js`.
+- **Comandos:** `node dist/iniciar.js` (**`CMD` padrão**: escolhe o papel por `PAPEL=api|worker`; a API migra, semeia as referências e sobe), e, sozinhos, `node dist/main.js`, `node dist/worker.js`, `node dist/migrate.js` (migrador do drizzle-orm; as migrações vão em `packages/db/dist/migrations`), `node dist/seed-referencias.js` (só as referências globais, nunca a demonstração; os dados vão em `packages/db/seeds/dados`) e `node dist/criar-conta.js`. Comandos de operação: `node dist/outbox-tratar.js` (lista, reprocessa e descarta os eventos do outbox que esgotaram as tentativas, registrando quem tratou) e `node dist/testar-erro.js` (erro de teste para o GlitchTip). O `CMD` roda `node --enable-source-maps`, e os `.map` do `tsc` ficam na imagem (privada), para a pilha dos erros mostrar o `.ts` original.
 - **HEALTHCHECK `node dist/saude.js`**, o mesmo para os dois papéis: tenta `GET 127.0.0.1:$PORT/health` (API); se a porta recusar a conexão, consulta o servidor de saúde do worker (`WORKER_SAUDE_PORTA`, padrão 3001). Uma API que responde 503 é **não saudável** (não cai no worker). `PAPEL=api` ou `PAPEL=worker` força o papel. No Coolify o worker pode usar o mesmo healthcheck da imagem, ou o comando `node dist/saude-worker.js` já documentado em 7.1.1.
 - **Versão e labels:** `APP_VERSION` (build-arg) vira variável de ambiente (aparece em `/health`); `GIT_SHA`, `SOURCE` e `BUILD_DATE` alimentam as labels OCI `org.opencontainers.image.{source,revision,version,created,title}`.
 - Em produção a API recusa `APP_URL`/`API_URL` sem `https`, **exceto `localhost`** (o teste local das imagens roda em modo produção).
@@ -160,7 +163,8 @@ Metas: API < 350 MB e web < 100 MB (descompactados). As bases são as imagens of
 **`docker/web.Dockerfile`**
 - O build copia `docs/design-system/` para o contexto **antes** do `vite build` (o `sincronizar-design-system` traz tokens, tema e fontes); por isso o `.dockerignore` mantém `docs/design-system/` e exclui o resto de `docs/`. Roda em `$BUILDPLATFORM` com `vite build` (os tipos são conferidos no CI). `APP_VERSION` é build-arg (aparece no rodapé do app).
 - **Caddy na porta 8080, usuário `web` (não-root)** e `HEALTHCHECK` em `/health`. O TLS é do Traefik.
-- **Domínio único:** o front usa caminhos relativos (`/v1/...`), então **a mesma imagem serve a qualquer ambiente** (nada de URL da API no build). A CSP é `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'` (sem domínios externos; `'unsafe-inline'` só em estilos, porque o Radix e o Sonner injetam `<style>`; não há script inline).
+- **Observabilidade no build:** `VITE_SENTRY_DSN`, `SENTRY_URL` e `SENTRY_ORG` são build args; o segredo `sentry_auth_token` (BuildKit) só existe durante o `vite build`. Com ele, o `@sentry/vite-plugin` injeta os debug IDs, envia os mapas ao GlitchTip e os apaga; sem ele, **nenhum mapa é gerado**. `scripts/validar-dist.mjs` roda no fim do build: apaga qualquer `.map` que sobrar (upload que falhou não derruba o deploy) e confere o precache do service worker (cada entrada existe e a revisão bate com o arquivo final). A imagem final nunca tem `.map`.
+- **Domínio único:** o front usa caminhos relativos (`/v1/...`), então **a mesma imagem serve a qualquer ambiente** (nada de URL da API no build). A CSP é `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://erros.crm.aledias.com.br; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'` (único domínio externo: o GlitchTip, em `connect-src`; `'unsafe-inline'` só em estilos, porque o Radix e o Sonner injetam `<style>`; não há script inline).
 - **Cabeçalhos:** HSTS (1 ano), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`, `Permissions-Policy`. **Cache:** `index.html`, `sw.js`, `registerSW.js`, `manifest.webmanifest` e o fallback de SPA (qualquer rota do app) com `no-cache`; `/assets/*` (arquivos com hash) com `public, max-age=31536000, immutable`; `/icons/*` e `favicon.svg` com 1 dia. Compressão `zstd`/`gzip`. Assim o PWA atualiza sem o usuário limpar nada.
 
 **Teste local das imagens (`docker/compose.imagens.yml`)**: `pnpm dev:up` e depois `pnpm imagens:testar` (`--sem-build` reaproveita as imagens; `--arm64` testa como `linux/arm64`). O script cria um **banco temporário** (o `leadtogo` de desenvolvimento não é tocado), sobe `migrar` (roda e sai) → `api` + `worker` → `web` → `borda`, e confere: migração com saída 0, usuário não-root e `tini` como PID 1, ausência do `drizzle-kit`, `HEALTHCHECK` saudável nos três, cabeçalhos e cache do web, `/health` da API (versão), **primeiro acesso, login e senha errada no navegador (Playwright) pela borda**, cookie de sessão `HttpOnly; Secure; SameSite=Lax` só do host, nenhuma requisição para outra origem nem violação de CSP, e o **`docker stop` do worker** (sai com 0 em segundos). A `borda` é um Caddy (`docker/edge.Caddyfile`) que **reproduz o Traefik da produção numa porta só: `/v1/*` → API, o resto → web**; a API também fica direta em `127.0.0.1:3300` (como o `api.crm.aledias.com.br`).
@@ -339,9 +343,11 @@ pnpm dev:up      # serviços (--wait), bancos e papéis do Postgres e init do Ga
 
 ## 12. Observabilidade da esteira
 
-- **Sentry** (ou GlitchTip) recebe a versão de cada deploy: erros novos aparecem ligados ao commit que os introduziu.
-- **Uptime Kuma** monitora `app.`, `api.` e `/health`, com alerta.
-- **Notificação de deploy** (sucesso ou falha), por e-mail do GitHub ou por um webhook do **n8n** que avisa no WhatsApp/Telegram.
+- **GlitchTip** (SDK do Sentry) recebe a versão de cada deploy (`release` = commit): erros novos aparecem ligados ao commit que os introduziu. O CI envia os source maps do web quando `SENTRY_AUTH_TOKEN` existe.
+- **Uptime Kuma** monitora o web, `api./health`, a rota `/v1`, `api./health/alertas` (eventos do outbox esgotados e jobs falhos), o painel do Coolify e o GlitchTip, com alerta **por e-mail** (Resend).
+- **Falha de deploy ou de backup:** e-mail do GitHub (workflow) e das notificações do Coolify.
+- **Evolução futura:** notificação de deploy (sucesso ou falha) e alertas por Telegram/WhatsApp, via webhook para o **n8n**/Evolution.
+- Passo a passo e testes: `runbook_observabilidade.md`.
 
 ---
 
@@ -370,4 +376,4 @@ O `CLAUDE.md` na raiz do repositório orienta o Claude Code em toda sessão. Res
 6. [ ] Gerar o token da API do Coolify (só deploy) e cadastrar os secrets no GitHub.
 7. [ ] Configurar o backup automático do banco para o S3 externo e testar uma restauração.
 8. [ ] Primeiro push com uma página "Olá, Leadtogo" e `/health`, para validar a esteira de ponta a ponta.
-9. [ ] Configurar o Uptime Kuma, o Sentry e a notificação de deploy.
+9. [ ] Configurar o Uptime Kuma, o GlitchTip e as notificações por e-mail (`runbook_observabilidade.md`).
