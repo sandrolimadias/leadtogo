@@ -3,6 +3,7 @@
 export * from './cnpj.js'
 export * from './convites.js'
 export * from './erro.js'
+export * from './limpeza-erros.js'
 export * from './me.js'
 export * from './preferencias.js'
 export * from './primeiro-acesso.js'
