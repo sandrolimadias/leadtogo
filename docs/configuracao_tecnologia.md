@@ -382,7 +382,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 - **Alertas:** **só e-mail por enquanto** (Uptime Kuma e notificações do Coolify, via Resend). Evolução futura: Telegram e WhatsApp (Evolution/n8n), incluindo a notificação de deploy.
 - **Logs:** estruturados em JSON (Pino) com `request_id`, `tenant_id` e `user_id`, consultados pelo Coolify; a tag `request_id` do GlitchTip leva ao log da requisição.
 - **Teste:** `node dist/testar-erro.js` (terminal do container) envia um erro de teste, sem rota HTTP.
-- Evolução futura: Grafana + Loki + Prometheus, se necessário.
+- **Evolução futura:** **Zabbix + Grafana** para métricas de infraestrutura (VPS, containers, PostgreSQL e Valkey), instalados **fora da VPS** (servidor próprio, acessado via Tailscale). O GlitchTip continua para erros de código. `/health`, `/health/alertas` e o batimento do backup migram para itens HTTP/trapper do Zabbix. Substitui a ideia anterior de Grafana + Loki + Prometheus.
 - Passo a passo e testes: `docs/runbook_observabilidade.md`.
 
 ---
