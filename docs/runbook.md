@@ -38,6 +38,7 @@ Referências: `runbook_e13.md` (Coolify, banco e primeiro deploy), `esteira_depl
 - **Migrações** rodam **ao iniciar a API** (`node dist/iniciar.js`), antes de ela responder. Se a migração falhar, o container novo nunca fica saudável e o Coolify **mantém a versão antiga no ar**: nada a desfazer; leia o log do deploy no Coolify, corrija e envie um novo push. Nunca edite uma migração já aplicada; corrija com uma migração nova. Migração destrutiva só com aviso e commit `BREAKING-DB:` (e backup manual antes).
 - **Redeploy manual** (mesma imagem, sem mudança de código): no Coolify, nos recursos `leadtogo-api`, `leadtogo-worker` e `leadtogo-web`, botão *Redeploy*. Para publicar de novo o último commit pela esteira: `gh workflow run ci-cd.yml --ref main`.
 - Depois de um deploy com migração, conferir no banco (`runbook_e13.md`, seção 4.6): `SELECT id, to_timestamp(created_at/1000) AS gerada_em FROM drizzle.__drizzle_migrations ORDER BY id DESC LIMIT 5;`. A data é a de **geração** da migração, não a de aplicação.
+- **Que versão está no ar:** `curl -s https://api.crm.aledias.com.br/health` devolve `version` (o SHA do commit publicado; compare com `git rev-parse --short HEAD` ou com a esteira). Na VPS, `docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}' | grep leadtogo` mostra a tag de cada recurso.
 - **Conferência pós-deploy (2 min):** `curl -s https://api.crm.aledias.com.br/health` (versão = commit, banco/Valkey/Garage `ok`); entrar no app; Uptime Kuma sem monitor vermelho; GlitchTip sem erro novo.
 
 ## 2. Rollback
@@ -61,8 +62,8 @@ Se o deploy novo **não ficou saudável**, o Coolify já manteve a versão anter
 **Quando:** dado apagado ou corrompido, migração que estragou dados, ou VPS perdida (seção 5). Só com decisão do Ale; avise os usuários antes (o sistema fica fora do ar).
 
 **Banco** (`runbook_backup.md`):
-- 2: **teste de restauração** num Postgres limpo, sem tocar na produção. O arquivo do Coolify é um `pg_dumpall` SQL compactado (`.gz`, todos os bancos e os papéis): baixa com `rclone copyto`, restaura com `gunzip | psql` (**não** é `pg_restore`), compara contagens e **apaga tudo** no fim. Faça pelo menos uma vez por trimestre.
-- 3: **restauração em produção (emergência)**: parar `api` e `worker` → preservar o estado atual (backup manual) → baixar e **validar** o backup num container descartável → restaurar (banco novo + trocar nomes, ou recriar o `leadtogo-db`) → conferir os papéis `leadtogo_owner` e `leadtogo_app` (sem `BYPASSRLS`) → subir `api` e `worker` (as migrações pendentes rodam ao iniciar a API) → `/health`, login e abrir uma empresa → registrar o incidente e fazer um backup manual.
+- 2: **teste de restauração** num Postgres limpo, sem tocar na produção. O arquivo do Coolify é um `pg_dumpall` SQL compactado (`.gz`, todos os bancos e os papéis): baixa com `rclone copyto`, restaura com `gunzip | psql` (**não** é `pg_restore`), compara contagens e **apaga tudo** no fim. Faça todo mês (checklist da seção 8).
+- 3: **restauração em produção (emergência)**: **backup manual do estado atual** (mesmo corrompido) → baixar e **validar** o backup num container limpo → restaurar em **banco novo** (`leadtogo_restaurado`), **sem `--no-owner` nem `--no-acl`** (o RLS depende do dono e dos `GRANT`) → conferir contagens e papéis (`leadtogo_owner` e `leadtogo_app`, sem `BYPASSRLS`) → com `api` e `worker` parados, trocar os nomes (`leadtogo` → `leadtogo_antigo`, `leadtogo_restaurado` → `leadtogo`) → subir `api` e `worker` (as migrações pendentes rodam ao iniciar a API) → `/health`, login e isolamento entre empresas → registrar o incidente. Se o banco foi perdido, recriar o `leadtogo-db`. **Ainda não ensaiado de ponta a ponta** (pendência antes do primeiro cliente).
 - **RPO:** até 24 h (backup diário às 3h, 30 cópias no R2). Um dado excluído só some dos backups quando o backup expira (`lgpd.md`, seção 5).
 - Para **olhar** o banco de produção (sem restaurar): `runbook_e13.md`, seção 4.6 (`psql` no container; o banco se chama `leadtogo`, e o `POSTGRES_DB` do container aponta para `postgres`).
 
@@ -70,19 +71,19 @@ Se o deploy novo **não ficou saudável**, o Coolify já manteve a versão anter
 
 ## 4. Girar segredos
 
-**Regra:** guarde os valores novos no **gerenciador de senhas** antes de aplicar. Variáveis de produção ficam **só no Coolify** (sem aspas, nunca como *Build Variable*); nada disso vai para o repositório nem para o chat. Depois de girar qualquer item, faça a conferência pós-deploy (seção 1) e confirme que o login e o envio de e-mail funcionam.
+**Regra:** guarde os valores novos no **gerenciador de senhas** antes de aplicar. Variáveis de produção ficam **só no Coolify** (sem aspas, nunca como *Build Variable*); nada disso vai para o repositório nem para o chat. **Ordem segura (vale para todos):** (1) gere o valor novo e guarde no gerenciador de senhas; (2) crie o novo **sem** revogar o antigo, quando o serviço permitir; (3) troque nos consumidores e faça redeploy; (4) confira; (5) só então revogue o antigo. Depois de girar qualquer item, faça a conferência pós-deploy (seção 1) e confirme que o login e o envio de e-mail funcionam.
 
 | Segredo | Onde fica | Efeito de girar | Como |
 |---|---|---|---|
 | `LEADTOGO_APP_PASSWORD` e `LEADTOGO_OWNER_PASSWORD` | Coolify (`DATABASE_URL`, `DATABASE_MIGRATION_URL`) e o banco | API e worker perdem a conexão até atualizar | Passo a passo na seção 4.1 abaixo |
-| `BETTER_AUTH_SECRET` | Coolify | **Invalida todas as sessões e os 2FA cadastrados** (cada pessoa precisaria reativar o 2FA): só gire com motivo forte, como vazamento | `openssl rand -hex 32`; atualizar e redeploy |
-| `TOKEN_ENCRYPTION_KEY` | Coolify (**guarde uma cópia fora**) | E-mails na fila e segredos cifrados ficam ilegíveis se a chave se perder | `openssl rand -base64 32`; só troque sem itens pendentes na fila |
+| `BETTER_AUTH_SECRET` | Coolify (api e worker) | **Invalida todas as sessões e os 2FA cadastrados** (cada pessoa precisaria reativar o 2FA): só gire com motivo forte, como vazamento | `openssl rand -hex 32`; atualizar nos dois e redeploy; avisar a equipe |
+| `TOKEN_ENCRYPTION_KEY` | Coolify (**guarde uma cópia fora**) | **Tudo o que foi cifrado com a chave antiga fica ilegível sem ela** (e-mails na fila, segredos cifrados). Girar **não** recifra os dados | `openssl rand -base64 32`; só troque com a fila vazia e **guarde a antiga** até confirmar que nada depende dela; depois atualizar e redeploy |
 | Chave do Garage `leadtogo-app` (`S3_ACCESS_KEY` e `S3_SECRET_KEY`) | Coolify | Upload e leitura de arquivos param até atualizar | Criar chave nova no Garage, dar acesso ao bucket, trocar no Coolify, redeploy, apagar a antiga |
-| Chave do Garage `backup-leitura` e credenciais do R2 | `/root/backup-garage.env` na VPS (`chmod 600`) e *Storage* do Coolify | O espelho e os backups falham até atualizar | `runbook_backup.md`, seção 4.4 (um `key create` por nome: dois criam duas chaves) |
-| API key do Resend (`SMTP_PASSWORD`) | Coolify (api e worker) e Uptime Kuma (chave `uptime-kuma`) | E-mails de convite, recuperação de senha e alertas param | Criar a chave nova no Resend, atualizar no Coolify e no Kuma, redeploy, revogar a antiga |
+| Chave do Garage `backup-leitura` e credenciais do R2 (token do R2: `vps-backup`, escopo mínimo) | `/root/backup-garage.env` na VPS (`chmod 600`) e *Storage* do Coolify | O espelho e os backups falham até atualizar | `runbook_backup.md`, seção 4.4 (um `key create` por nome: dois criam duas chaves) |
+| Chaves do Resend, **uma por uso**: `app` (`SMTP_PASSWORD`), `coolify`, `uptime-kuma` e `glitchtip` | `app`: Coolify (api e worker); `coolify`: notificações do Coolify; `uptime-kuma`: SMTP do Kuma; `glitchtip`: SMTP do GlitchTip | Param os e-mails do uso correspondente (convite e recuperação de senha, alertas do Coolify, do Kuma ou do GlitchTip) | Criar a chave nova **do mesmo nome** no Resend, atualizar só o consumidor dela (a `app` exige redeploy de api e worker), testar o envio, revogar a antiga |
 | `SENTRY_DSN` (api e worker), `SENTRY_DSN_WEB` e `SENTRY_AUTH_TOKEN` | Coolify; `SENTRY_DSN_WEB` (variável) e `SENTRY_AUTH_TOKEN` (secret) no GitHub | Erros deixam de chegar; `SENTRY_AUTH_TOKEN` só afeta o upload de source maps na esteira | `runbook_observabilidade.md`, seção 1 |
 | `ALERTAS_TOKEN` | Coolify e cabeçalho `X-Alertas-Token` do monitor "Alertas" no Kuma | O monitor passa a dar 401 até atualizar | Gerar novo, atualizar nos dois lugares |
-| `COOLIFY_TOKEN` (e os `COOLIFY_UUID_*`) | Secrets do GitHub (`gh secret set`) | O job `deploy` falha | Novo token na API do Coolify, `gh secret set COOLIFY_TOKEN` |
+| Token da API do Coolify (`COOLIFY_TOKEN`; os `COOLIFY_UUID_*` só mudam se o recurso for recriado) | Secrets do GitHub (`gh secret set`) | O job `deploy` falha | Criar o token novo no Coolify, `gh secret set COOLIFY_TOKEN`, rodar `gh workflow run ci-cd.yml --ref main`, e só então apagar o antigo |
 | Token do GHCR (`read:packages`) | Registro `ghcr.io` no Coolify | A VPS não consegue baixar imagens novas | Token *classic* só com `read:packages`; atualizar o registro |
 | Push URL do Uptime Kuma | `/root/backup-garage.push` (`chmod 600`) | O backup deixa de avisar | `runbook_backup.md`, seção 4.1 |
 | Chave SSH | `~/.ssh` do Ale e `authorized_keys` da VPS | — | Adicionar a nova chave **antes** de remover a antiga; SSH só por chave |
@@ -119,13 +120,20 @@ Se o segredo vazou de verdade: gire, revise os acessos recentes (GitHub, Coolify
 | Serviço | Para quê | Acesso | Credenciais |
 |---|---|---|---|
 | Oracle Cloud | VPS, firewall (Security List) | conta do Ale | gerenciador de senhas |
-| SSH da VPS | administração | **só chave** (`PasswordAuthentication no`) | chave privada do Ale; evolução: só pelo Tailscale, porta 22 fechada |
+| SSH da VPS | administração | **só chave** (`PasswordAuthentication no`, `PermitRootLogin without-password`; conferido em 12/10/2026) | chave privada no computador do Ale, com cópia em HD externo; evolução: só pelo Tailscale, porta 22 fechada |
 | Coolify (`painel.aledias.com.br`) | recursos, variáveis, deploy, backups do banco | usuário administrador | gerenciador de senhas |
 | GitHub | código, esteira, secrets, GHCR | conta do Ale | gerenciador de senhas + 2FA |
+| GHCR (`ghcr.io`) | imagens; a VPS puxa com token `read:packages` | mesma conta do GitHub | token no Coolify (registro) e no gerenciador de senhas |
 | Cloudflare | DNS e R2 (`vps-backup`) | conta do Ale | gerenciador de senhas + 2FA |
+| Domínio `aledias.com.br` | registro do domínio e DNS (o DNS fica na Cloudflare) | conta no **registrador** (*confirmar qual*) | gerenciador de senhas + 2FA |
 | Resend | e-mails transacionais | conta do Ale | gerenciador de senhas |
 | GlitchTip / Uptime Kuma | erros e disponibilidade | usuários administradores dos dois | gerenciador de senhas |
 | Leadtogo (administrador da conta) | uso do sistema | login com **2FA obrigatório** | senha do Ale + app autenticador + códigos de recuperação guardados à parte |
+
+**Chave SSH da VPS: emergência e perda.**
+- **Acesso de emergência:** o **console da Oracle Cloud** (terminal pelo navegador) entra na VPS **sem a chave**. A conta da Oracle tem **2FA**: mantenha os códigos de recuperação no gerenciador de senhas.
+- **Se a chave for perdida ou vazar:** (1) entre pelo console da Oracle; (2) no computador, gere um par novo (`ssh-keygen -t ed25519`); (3) coloque a **chave pública nova** no `authorized_keys` do `root` na VPS; (4) remova a antiga do mesmo arquivo; (5) **teste o login com a nova antes de fechar o console**; (6) guarde a cópia da privada nova no HD externo. Se vazou, gire também os segredos que a VPS guarda (seção 4).
+- O servidor aceita **só chave** (senha desativada), então perder a chave **e** o acesso à conta da Oracle trava a administração: por isso a cópia no HD externo e o 2FA com códigos guardados.
 
 **Quem entra ou sai da equipe (empresa):** *Configurações → Usuários e equipe* (só administrador): convidar, mudar papel, **desativar** (vale na próxima requisição; o histórico fica) e reativar. Ex-membros: desative no mesmo dia. O dono da conta não é rebaixado nem desativado por outro administrador, e a empresa nunca fica sem administrador.
 
@@ -144,10 +152,11 @@ Se o segredo vazou de verdade: gire, revise os acessos recentes (GitHub, Coolify
 
 - [ ] **Backups do banco:** no Coolify, o último backup de **cada** banco (inclusive o do GlitchTip) com sucesso; no R2, arquivo novo no bucket `vps-backup`.
 - [ ] **Espelho do Garage:** `systemctl list-timers | grep backup-garage` (próxima execução), `tail /var/log/backup-garage.log` (código de saída 0) e o monitor "Espelho Garage → R2" verde no Kuma.
-- [ ] **Teste de restauração:** a cada trimestre, restaurar o backup do dia num banco temporário (seção 3) e conferir as contagens.
+- [ ] **Teste de restauração:** restaurar o backup mais recente num container limpo (`runbook_backup.md`, seção 2), conferir as contagens contra a produção e **apagar tudo** no fim.
+- [ ] **E-mails de alerta:** revisar a caixa dos alertas do mês (Coolify, Kuma, GlitchTip) e confirmar que cada um foi tratado ou entendido.
 - [ ] **Uptime Kuma:** todos os monitores verdes; exportar o backup do Kuma (*Settings → Backup*) e guardar.
 - [ ] **GlitchTip:** sem erros novos sem tratar; eventos do outbox esgotados tratados (`node dist/outbox-tratar.js`, `runbook_observabilidade.md`, seção 6).
-- [ ] **Disco e memória da VPS:** Coolify sem alerta de disco; o disco tem folga (a VPS é compartilhada com n8n e Evolution).
+- [ ] **Disco e memória da VPS:** `df -h /` e `free -h` na VPS; Coolify sem alerta de disco; o disco tem folga (e `docker system df` mostra o que limpar) (a VPS é compartilhada com n8n e Evolution).
 - [ ] **Dependências e segurança:** PRs do Dependabot revisados, `pnpm audit` sem alto/crítico, esteira verde na `main`.
 - [ ] **Sistema:** atualizações do Ubuntu e do Coolify aplicadas (de forma planejada, fora do horário de uso, com backup manual antes).
 - [ ] **Certificados:** os de `crm`, `api.crm`, `files.crm`, `status.crm` e `erros.crm` válidos (renovam sozinhos).
