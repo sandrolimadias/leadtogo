@@ -40,7 +40,7 @@ export class TenantInterceptor implements NestInterceptor {
       this.banco.db.transaction(
         async (tx) => {
           await tx.execute(sql`SELECT set_config('app.user_id', ${sessao.usuarioId}, true)`)
-          const ctx: ContextoDaRequisicao = { usuarioId: sessao.usuarioId, tx }
+          const ctx: ContextoDaRequisicao = { usuarioId: sessao.usuarioId, tx, ip: req.ip }
 
           if (acesso.tipo === 'empresa') {
             await tx.execute(sql`SELECT set_config('app.tenant_id', ${acesso.tenantId}, true)`)

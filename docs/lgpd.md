@@ -33,7 +33,7 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 | **Atividades** | `atividades` e complementares, `comentarios`, `arquivos` | descrição de visitas, ligações e tarefas, comentários e anexos (texto livre pode conter dados pessoais), participantes | **PD** (texto livre) |
 | **Oportunidades** | `oportunidades`, `oportunidade_itens`, `oportunidade_contatos`, `oportunidade_historico` | valores, fases, motivos, contatos envolvidos | PD indireto (via contatos) |
 | **Prospecção** | `prospeccoes`, `prospeccao_resultados`, `receita_consultas` | resultados de busca na base pública da Receita; o cache de consultas é compartilhado e público | PD (PJ) |
-| **Auditoria** | `auditoria` (particionada por mês) | quem alterou o quê (antes/depois em `jsonb`), `membro_id`, **IP**, origem, data | **PD** (e pode copiar dados pessoais dos registros alterados) |
+| **Auditoria** | `auditoria` (particionada por mês) | quem alterou o quê (antes/depois em `jsonb`), `membro_id`, **IP** (passa a ser gravado desde a E16a, a partir do mesmo `req.ip` do rate limit: respeita `TRUST_PROXY` e ignora `X-Forwarded-For` forjado), origem, data | **PD** (e pode copiar dados pessoais dos registros alterados) |
 | **Outbox** | `eventos_outbox` | eventos para notificações e webhooks, com `payload` em `jsonb` | **PD** possível, conforme o evento |
 | **Notificações e filtros** | `notificacoes`, `preferencias_notificacao`, `filtros_salvos`, `importacoes` | mensagens internas, preferências; planilhas importadas (arquivos em `arquivos`) | PD possível |
 | **Cadastros auxiliares** | tags, funis, origens, produtos etc. | sem dado pessoal | não |
@@ -73,7 +73,7 @@ Transferência internacional (arts. 33 a 36):
 | Usuários e sessões | permanecem enquanto a conta existir. A sessão vale 7 dias, mas as linhas expiradas de `auth.session` (com IP e user agent) **não são apagadas por nenhuma rotina**: só saem quando o Better Auth as encontra ao validar a sessão | rotina de limpeza das sessões expiradas; prazo após o encerramento da conta |
 | Backups do banco (R2) | diários, às 3h, **30 cópias** (política do Coolify) | |
 | Arquivos (Garage) e espelho no R2 | espelho diário; versões antigas, alteradas ou apagadas ficam em `garage-alterados/<data>/` por **90 dias** (regra de ciclo de vida do R2) | |
-| Auditoria | partições mensais; o job mensal só **cria** partições (12 meses à frente) e **nunca descarta** as antigas, então hoje a retenção é ilimitada. **Login e logout não são gravados na auditoria** (ela registra alterações de dados) | **prazo de retenção** e descarte das partições antigas |
+| Auditoria | partições mensais; o job mensal só **cria** partições (12 meses à frente) e **nunca descarta** as antigas, então hoje a retenção é ilimitada, **e ela agora também guarda o IP de quem fez o ato**. **Login e logout não são gravados na auditoria** (ela registra alterações de dados) | **prazo de retenção** e descarte das partições antigas |
 | Registros de acesso (`acessos_log`) | **6 meses**, depois apagados (partição mensal descartada pelo job de manutenção). Decisão na seção 5.1; **ainda não implementado** | implementação (prioridade alta) |
 | Outbox | eventos processados ficam na tabela | prazo de limpeza dos processados |
 | Filas no Valkey | jobs concluídos por 24 h, falhos por 14 dias | |
@@ -149,5 +149,5 @@ Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **re
 - [ ] **Implementar `acessos_log`** (decisão da seção 5.1: 6 meses, partição mensal, descarte pelo job de manutenção, acesso restrito). **Prioridade alta, antes do primeiro cliente.** Proposta técnica: tabela fora do alcance dos tenants, só INSERT pelo app, gravada por `databaseHooks` do Better Auth (login, falha, logout, troca de senha, 2FA), com `request_id` opcional. **Confirmar com o advogado** se o art. 15 do Marco Civil se aplica ao Leadtogo e se o prazo de 6 meses é o adequado.
 - [ ] Definir o mecanismo de **transferência internacional** do R2 (ENAM) e avaliar migrar os backups para o Object Storage da Oracle em São Paulo.
 - [ ] **Rotina de limpeza de sessões expiradas** (`auth.session`, com IP e user agent): hoje nenhuma rotina as apaga.
-- [ ] **Política de retenção da auditoria**: prazo e descarte das partições antigas (hoje a retenção é ilimitada).
+- [ ] **Política de retenção da auditoria** (pendência do MVP, junto com o `acessos_log`): a auditoria passou a conter **IP** e a retenção segue **ilimitada**; definir prazo e descarte das partições antigas.
 - [ ] Prazo de limpeza do **outbox** processado e retenção da **auditoria**.

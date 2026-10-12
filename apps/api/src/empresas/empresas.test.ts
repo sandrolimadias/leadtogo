@@ -135,6 +135,16 @@ describe('POST /v1/empresas', () => {
     expect((await auditoriaDe(d.tenantId)).filter((x) => x.acao === 'criar_empresa')).toEqual([])
   })
 
+  it('a auditoria da criação grava o IP do cliente (pelo proxy confiável)', async () => {
+    const d = await novoDono(app)
+    const r = await criar(d.cookie, { razaoSocial: nomeUnico() }).set(
+      'X-Forwarded-For',
+      '198.51.100.8',
+    )
+    const id = (r.body as EmpresaCriada).empresa.id
+    expect((await auditoriaDe(id))[0]?.ip).toBe('198.51.100.8')
+  })
+
   it('a empresa nova aparece em /me e dá para entrar nela; lá só existe o criador', async () => {
     const d = await novoDono(app)
     const criada = (await criar(d.cookie, { razaoSocial: nomeUnico() })).body as EmpresaCriada

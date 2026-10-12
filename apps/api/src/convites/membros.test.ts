@@ -122,6 +122,24 @@ describe('PATCH /v1/membros/:id', () => {
     expect(lista.find((m) => m.id === membroId)).toMatchObject({ ativo: false })
   })
 
+  it('a auditoria grava o IP do cliente: pelo proxy confiável vale o X-Forwarded-For; sem proxy, o forjado é ignorado', async () => {
+    const { d, membroId } = await equipe('vendedor')
+    await alterar(d.cookie, membroId, { papel: 'gestor' }).set('X-Forwarded-For', '198.51.100.7')
+    const reg = (await auditoriaDe(d.tenantId)).filter((x) => x.entidade === 'membro')
+    expect(reg[0]?.ip).toBe('198.51.100.7') // TRUST_PROXY=1: o cabeçalho do proxy é a origem real
+
+    await app.close()
+    app = await criarAppComRotas([], configuracaoDeTeste({ TRUST_PROXY: '0' }))
+    const sem = await equipe('vendedor')
+    await alterar(sem.d.cookie, sem.membroId, { papel: 'gestor' }).set(
+      'X-Forwarded-For',
+      '203.0.113.99',
+    )
+    const regSem = (await auditoriaDe(sem.d.tenantId)).filter((x) => x.entidade === 'membro')
+    expect(regSem[0]?.ip).toMatch(/^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/)
+    expect(regSem[0]?.ip).not.toBe('203.0.113.99') // cabeçalho forjado sem proxy confiável não vale
+  })
+
   it('ninguém altera a si mesmo', async () => {
     const { u, membroId } = await equipe('admin')
     const r = await alterar(u.cookie, membroId, { papel: 'vendedor' })

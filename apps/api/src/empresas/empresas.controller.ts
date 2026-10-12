@@ -4,8 +4,9 @@ import {
   type EmpresaCriada,
   empresaCriadaSchema,
 } from '@leadtogo/shared'
-import { Body, Controller, Post } from '@nestjs/common'
+import { Body, Controller, Post, Req } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
+import type { Request } from 'express'
 
 import { SemEmpresa } from '../acesso/acesso.decorators.js'
 import { Acesso } from '../acesso/dados-de-acesso.decorator.js'
@@ -34,8 +35,9 @@ export class EmpresasController {
   @Limite({ nome: 'empresas-criar', max: 10, janelaS: 3600 })
   criar(
     @Acesso() acesso: DadosDeAcesso,
+    @Req() req: Request,
     @Body(new ZodPipe(criarEmpresaSchema)) dados: CriarEmpresa,
   ): Promise<EmpresaCriada> {
-    return this.servico.criar(acesso, dados)
+    return this.servico.criar(acesso, dados, req.ip)
   }
 }

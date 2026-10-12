@@ -19,7 +19,7 @@ export class EmpresasService {
     private readonly auditoria: AuditoriaService,
   ) {}
 
-  async criar(acesso: DadosDeAcesso, dados: CriarEmpresa): Promise<EmpresaCriada> {
+  async criar(acesso: DadosDeAcesso, dados: CriarEmpresa, ip?: string): Promise<EmpresaCriada> {
     if (!acesso.administradorDeConta) {
       throw new ErroApi(
         'acesso_negado',
@@ -58,6 +58,7 @@ export class EmpresasService {
         entidadeId: tenantId,
         acao: 'criar_empresa',
         alteracoes: { razaoSocial: dados.razaoSocial, contaId },
+        ip,
       })
       return criada
     })

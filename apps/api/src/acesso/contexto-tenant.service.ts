@@ -17,6 +17,8 @@ export interface ContextoDaRequisicao {
   /** Empresas do consolidado (só leitura) */
   tenantIds?: string[]
   membro?: { id: string; papel: PapelMembro }
+  /** IP do cliente (`req.ip`, que respeita TRUST_PROXY: o mesmo do rate limit; X-Forwarded-For forjado não vale) */
+  ip?: string | undefined
 }
 
 /**
@@ -54,6 +56,10 @@ export class ContextoTenantService {
     const { tenantId } = this.atual()
     if (!tenantId) throw new ErroApi('sem_empresa_ativa', 'Esta rota exige uma empresa ativa.', 409)
     return tenantId
+  }
+
+  get ip(): string | undefined {
+    return this.atual().ip
   }
 
   get tenantIds(): string[] {
