@@ -101,6 +101,11 @@ export const membroDaEquipeSchema = z
     /** Tem acesso ao sistema (false = vendedor externo, sem login) */
     temLogin: z.boolean(),
     cor: z.string().nullable(),
+    /**
+     * Data (AAAA-MM-DD, fuso de São Paulo) da sessão mais recente da pessoa: aproximada (a sessão só
+     * se atualiza uma vez por dia). Só para administradores; null se nunca entrou ou sem login.
+     */
+    ultimoAcesso: z.iso.date().nullable().optional(),
   })
   .meta({ id: 'MembroDaEquipe' })
 export type MembroDaEquipe = z.infer<typeof membroDaEquipeSchema>

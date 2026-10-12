@@ -142,6 +142,7 @@ export class ConvitesService {
   /** Equipe da empresa ativa. O e-mail só aparece para administradores e gestores. */
   async equipe(incluirInativos: boolean): Promise<MembroDaEquipe[]> {
     const veEmail = this.ctx.membro.papel === 'admin' || this.ctx.membro.papel === 'gestor'
+    const veAcesso = this.ctx.membro.papel === 'admin'
     const linhas = await this.ctx.db().execute<{
       id: string
       nome: string
@@ -151,11 +152,14 @@ export class ConvitesService {
       ativo: boolean
       tem_login: boolean
       cor: string | null
+      ultimo_acesso: string | null
     }>(sql`
-      SELECT id, nome, cargo, email, papel, ativo, (usuario_id IS NOT NULL) AS tem_login, cor
-      FROM membros
-      WHERE excluido_em IS NULL AND (${incluirInativos} OR ativo)
-      ORDER BY lower(nome), id`)
+      SELECT m.id, m.nome, m.cargo, m.email, m.papel, m.ativo, (m.usuario_id IS NOT NULL) AS tem_login, m.cor,
+             (SELECT to_char(max(s.updated_at) AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD')
+              FROM auth.session s WHERE s.user_id = m.usuario_id) AS ultimo_acesso
+      FROM membros m
+      WHERE m.excluido_em IS NULL AND (${incluirInativos} OR m.ativo)
+      ORDER BY lower(m.nome), m.id`)
     return [...linhas].map((m) => ({
       id: m.id,
       nome: m.nome,
@@ -165,6 +169,7 @@ export class ConvitesService {
       ativo: m.ativo,
       temLogin: m.tem_login,
       cor: m.cor,
+      ...(veAcesso ? { ultimoAcesso: m.ultimo_acesso } : {}),
     }))
   }
 

@@ -519,6 +519,27 @@ describe('GET /v1/membros', () => {
     expect(vista.every((m) => !('email' in m))).toBe(true)
   })
 
+  it('o último acesso (só a data) aparece só para o administrador; sem login ou sem sessão é null', async () => {
+    const d = await adminPronto()
+    const entrou = await usuarioSimples(app)
+    await vincular(d.tenantId, entrou.id, 'vendedor', 'Que Entrou')
+    const nuncaEntrou = await membroSemLogin(d.tenantId, 'Sem Login')
+    expect(nuncaEntrou).toBeTruthy()
+    const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(
+      new Date(),
+    )
+    const lista = (await com(http().get('/v1/membros'), d.cookie)).body as MembroDaEquipe[]
+    expect(lista.find((m) => m.nome === 'Que Entrou')?.ultimoAcesso).toBe(hoje)
+    expect(lista.find((m) => m.nome === 'Sem Login')?.ultimoAcesso).toBeNull()
+    for (const papel of ['gestor', 'vendedor'] as const) {
+      const u = await usuarioSimples(app)
+      await vincular(d.tenantId, u.id, papel)
+      await ativar(u.id, d.tenantId)
+      const vista = (await com(http().get('/v1/membros'), u.cookie)).body as MembroDaEquipe[]
+      expect(vista.every((m) => !('ultimoAcesso' in m))).toBe(true)
+    }
+  })
+
   it('mostra só a equipe da empresa ativa, não a de outra empresa do mesmo usuário nem de outra conta', async () => {
     const d = await adminPronto()
     const b = await novaEmpresa(d.contaId)
