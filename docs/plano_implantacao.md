@@ -41,7 +41,7 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 | E13 | Recursos da aplicação no Coolify e 1º deploy ✅ | Ale + Claude Code | E4, E12 | 3–4 h |
 | E14 | Observabilidade e alertas | Ale + Claude Code | E13 | 2–3 h |
 | E15 | Segurança e endurecimento | Ale + Claude Code | E13 | 0,5 dia |
-| E16a | Telas de gestão multiempresa | Claude Code | E9, E15 | 3–4 dias |
+| E16a | Telas de gestão multiempresa ✅ | Claude Code | E9, E15 | 3–4 dias |
 | E16 | Validação final e runbook | Ale + Claude Code | todas | 0,5 dia |
 
 **Total estimado:** de 2 a 3 semanas, com dedicação parcial. E3 e E4 podem andar em paralelo com E5–E10.
@@ -549,11 +549,21 @@ Checklist:
 
 ---
 
-## E16a. Telas de gestão multiempresa — Claude Code
+## E16a. Telas de gestão multiempresa — Claude Code ✅ concluída em 12/10/2026
 
 **Por quê:** a E16 pede criar a empresa B, convidar um vendedor e trocar de empresa, mas hoje só existem o link "Criar empresa" no seletor (mostra um aviso "em breve") e a API de convites, sem tela. Esta etapa entrega as telas que faltam para a E16 poder ser feita **pelo app**, sem SQL nem `curl`.
 
-**Status:** **plano aprovado pelo Ale em 12/10/2026; API e web entregues e em produção, E2E escrito (`apps/web/e2e/gestao.spec.ts`, 5 cenários); falta a conferência manual do Ale em produção.** Leitura de base: `funcionalidades.md` (seções 10 e 11), `docs/prototipo/README.md` e `Configuracoes.dc.html` (Usuários e equipe), `design_system.md`, `modelagem_banco.md` (3.0 e 3.4).
+**Status:** **concluída em 12/10/2026** (API, web e E2E em produção, esteira #33 verde). Falta só a conferência manual do Ale pelo roteiro da E16.
+
+**Resumo do que foi entregue:**
+- **Criar empresa** (`/criar-empresa`, `POST /v1/empresas`): só o administrador da conta; a pessoa já entra na empresa nova; CNPJ validado, sem unicidade global e com aviso só dentro da mesma conta.
+- **Configurações → Usuários e equipe** (`PATCH /v1/membros/:id`): convidar, reenviar e cancelar convites, mudar papel, desativar e reativar, com último acesso (data aproximada). Proteções: ninguém altera a si mesmo, o dono da conta é protegido e a empresa nunca fica sem administrador.
+- **Configurações → Segurança:** a política de 2FA da empresa pela tela.
+- **Acesso encerrado:** o membro desativado com a sessão aberta recebe um aviso claro e vai para outra empresa dele ou para o login.
+- **Auditoria com IP:** criar empresa, convidar, cancelar convite, mudar papel, desativar e reativar geram registro com o IP do cliente (mesma origem do rate limit); a retenção da auditoria é pendência do MVP (`lgpd.md`).
+- **Migração 0014** (CNPJ sem unicidade global): conferida em produção em 12/10/2026 (`runbook_e13.md`, 4.6).
+- **Testes:** 344 na API, 154 no web e **16 E2E** (11 antigos e 5 de `gestao.spec.ts`), todos verdes na esteira.
+- **Também no caminho:** correção do envio do convite (commit do hash antes do e-mail), regras de rate limit explícitas e runner da esteira fixo em `ubuntu-24.04`.
 
 ### O que a API já cobre e o que falta
 
