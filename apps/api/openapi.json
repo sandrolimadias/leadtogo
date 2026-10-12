@@ -617,6 +617,77 @@
         "security": []
       }
     },
+    "/v1/empresas": {
+      "post": {
+        "description": "Só dono ou administrador da conta. Cria a empresa (em teste) na conta, as configurações padrão e o criador como administrador dela, numa transação, com registro na auditoria. A empresa NÃO vira a ativa: troque com `POST /v1/sessao/empresa-ativa`. O CNPJ é opcional e validado; não há unicidade global (não revela outras contas), só o aviso `cnpjRepetidoNaConta` quando a mesma conta já tem o CNPJ. Com mais de uma conta administrada, `contaId` é obrigatório.",
+        "operationId": "EmpresasController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarEmpresaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaCriada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar empresa do grupo",
+        "tags": ["Empresas do grupo"]
+      }
+    },
     "/v1/me": {
       "get": {
         "description": "Usuário, empresas em que é membro (com o papel em cada uma), empresa ativa e se falta ativar o 2FA (`doisFatoresPendente`: a regra da empresa ativa) ou se ele é obrigatório (`doisFatoresObrigatorio`: não pode desativar). Não exige empresa ativa e fica aberto a quem ainda não ativou o 2FA.",
@@ -840,6 +911,86 @@
           }
         },
         "summary": "Equipe da empresa ativa",
+        "tags": ["Equipe e convites"]
+      }
+    },
+    "/v1/membros/{id}": {
+      "patch": {
+        "description": "Só administradores da empresa ativa. Muda o papel e/ou ativa e desativa (desativar vale na próxima requisição da pessoa e mantém o histórico). Recusa: alterar a si mesmo (403) e o dono da conta (403); a empresa nunca fica sem administrador (quem altera é sempre outro administrador ativo). Membro de outra empresa dá 404. Registra na auditoria.",
+        "operationId": "MembrosController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarMembroEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembroDaEquipe"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar papel ou situação de um membro",
         "tags": ["Equipe e convites"]
       }
     },
@@ -1117,6 +1268,19 @@
         ],
         "additionalProperties": false
       },
+      "AlterarMembroEntrada": {
+        "type": "object",
+        "properties": {
+          "papel": {
+            "type": "string",
+            "enum": ["admin", "gestor", "vendedor"]
+          },
+          "ativo": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "ConfiguracaoDeSeguranca": {
         "type": "object",
         "properties": {
@@ -1286,6 +1450,30 @@
         "required": ["email", "papel"],
         "additionalProperties": false
       },
+      "CriarEmpresaEntrada": {
+        "type": "object",
+        "properties": {
+          "razaoSocial": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "nomeFantasia": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "cnpj": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contaId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["razaoSocial"],
+        "additionalProperties": false
+      },
       "EmpresaAtivaEntrada": {
         "type": "object",
         "properties": {
@@ -1309,6 +1497,19 @@
           }
         },
         "required": ["empresaAtivaId", "empresa"],
+        "additionalProperties": false
+      },
+      "EmpresaCriada": {
+        "type": "object",
+        "properties": {
+          "empresa": {
+            "$ref": "#/components/schemas/EmpresaDoUsuario"
+          },
+          "cnpjRepetidoNaConta": {
+            "type": "boolean"
+          }
+        },
+        "required": ["empresa", "cnpjRepetidoNaConta"],
         "additionalProperties": false
       },
       "EmpresaDoUsuario": {
@@ -1408,6 +1609,11 @@
           "cor": {
             "nullable": true,
             "type": "string"
+          },
+          "ultimoAcesso": {
+            "nullable": true,
+            "type": "string",
+            "format": "date"
           }
         },
         "required": ["id", "nome", "cargo", "papel", "ativo", "temLogin", "cor"],

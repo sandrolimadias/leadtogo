@@ -172,6 +172,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/empresas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Criar empresa do grupo
+         * @description Só dono ou administrador da conta. Cria a empresa (em teste) na conta, as configurações padrão e o criador como administrador dela, numa transação, com registro na auditoria. A empresa NÃO vira a ativa: troque com `POST /v1/sessao/empresa-ativa`. O CNPJ é opcional e validado; não há unicidade global (não revela outras contas), só o aviso `cnpjRepetidoNaConta` quando a mesma conta já tem o CNPJ. Com mais de uma conta administrada, `contaId` é obrigatório.
+         */
+        post: operations["EmpresasController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -234,6 +254,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/membros/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Alterar papel ou situação de um membro
+         * @description Só administradores da empresa ativa. Muda o papel e/ou ativa e desativa (desativar vale na próxima requisição da pessoa e mantém o histórico). Recusa: alterar a si mesmo (403) e o dono da conta (403); a empresa nunca fica sem administrador (quem altera é sempre outro administrador ativo). Membro de outra empresa dá 404. Registra na auditoria.
+         */
+        patch: operations["MembrosController_alterar"];
         trace?: never;
     };
     "/v1/primeiro-acesso": {
@@ -315,6 +355,11 @@ export interface components {
             jobs_falhos_total: number;
             limite_jobs_falhos: number;
         };
+        AlterarMembroEntrada: {
+            /** @enum {string} */
+            papel?: "admin" | "gestor" | "vendedor";
+            ativo?: boolean;
+        };
         ConfiguracaoDeSeguranca: {
             /** @enum {string} */
             doisFatoresExigido: "admin" | "admin_gestor" | "todos";
@@ -379,6 +424,13 @@ export interface components {
             /** @enum {string} */
             papel: "admin" | "gestor" | "vendedor";
         };
+        CriarEmpresaEntrada: {
+            razaoSocial: string;
+            nomeFantasia?: string;
+            cnpj?: string;
+            /** Format: uuid */
+            contaId?: string;
+        };
         EmpresaAtivaEntrada: {
             /** Format: uuid */
             empresaId: string;
@@ -387,6 +439,10 @@ export interface components {
             /** Format: uuid */
             empresaAtivaId: string;
             empresa: components["schemas"]["EmpresaDoUsuario"];
+        };
+        EmpresaCriada: {
+            empresa: components["schemas"]["EmpresaDoUsuario"];
+            cnpjRepetidoNaConta: boolean;
         };
         EmpresaDoUsuario: {
             /** Format: uuid */
@@ -420,6 +476,8 @@ export interface components {
             ativo: boolean;
             temLogin: boolean;
             cor: string | null;
+            /** Format: date */
+            ultimoAcesso?: string | null;
         };
         MeResposta: {
             usuario: {
@@ -1065,6 +1123,66 @@ export interface operations {
             };
         };
     };
+    EmpresasController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarEmpresaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpresaCriada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     MeController_me: {
         parameters: {
             query?: never;
@@ -1250,6 +1368,68 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MembrosController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarMembroEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembroDaEquipe"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
