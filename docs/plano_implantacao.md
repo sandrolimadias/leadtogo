@@ -41,6 +41,7 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 | E13 | Recursos da aplicação no Coolify e 1º deploy ✅ | Ale + Claude Code | E4, E12 | 3–4 h |
 | E14 | Observabilidade e alertas | Ale + Claude Code | E13 | 2–3 h |
 | E15 | Segurança e endurecimento | Ale + Claude Code | E13 | 0,5 dia |
+| E16a | Telas de gestão multiempresa | Claude Code | E9, E15 | 3–4 dias |
 | E16 | Validação final e runbook | Ale + Claude Code | todas | 0,5 dia |
 
 **Total estimado:** de 2 a 3 semanas, com dedicação parcial. E3 e E4 podem andar em paralelo com E5–E10.
@@ -545,6 +546,95 @@ Checklist:
 > **Nota:** o status "Degraded" do Garage no Coolify é só visual (os volumes aparecem listados como serviços); o Garage está saudável e responde normalmente.
 
 **Pronto quando:** checklist completo e nenhum alerta alto ou crítico pendente.
+
+---
+
+## E16a. Telas de gestão multiempresa — Claude Code
+
+**Por quê:** a E16 pede criar a empresa B, convidar um vendedor e trocar de empresa, mas hoje só existem o link "Criar empresa" no seletor (mostra um aviso "em breve") e a API de convites, sem tela. Esta etapa entrega as telas que faltam para a E16 poder ser feita **pelo app**, sem SQL nem `curl`.
+
+**Status:** **plano aprovado pelo Ale em 12/10/2026, com as decisões e os ajustes abaixo; em implementação (bloco API, depois web, depois E2E).** Leitura de base: `funcionalidades.md` (seções 10 e 11), `docs/prototipo/README.md` e `Configuracoes.dc.html` (Usuários e equipe), `design_system.md`, `modelagem_banco.md` (3.0 e 3.4).
+
+### O que a API já cobre e o que falta
+
+| Necessidade | Situação |
+|---|---|
+| Convidar por e-mail com papel (`POST /v1/convites`, só admin, 30 por hora) | ✅ pronto. Reenviar é convidar de novo (o pendente anterior é cancelado) |
+| Listar pendentes e cancelar (`GET /v1/convites`, `DELETE /v1/convites/:id`) | ✅ pronto (vencidos aparecem como `expirado`) |
+| Consultar e aceitar o convite (`POST /v1/convites/consultar` e `/aceitar`, públicos) | ✅ pronto: conta nova (nome e senha) e conta existente (com sessão); token inválido, vencido, cancelado e já usado dão o **mesmo 404** |
+| Correção do envio do convite fora da transação | ✅ **já feita e em produção** (`e878725`: o hash é gravado com commit antes de o e-mail sair; teste da corrida com atraso de 400 ms) |
+| Listar a equipe (`GET /v1/membros`) | 🟡 existe, mas **falta o último acesso** (nome, e-mail, papel, ativo e `temLogin` já vêm) |
+| Mudar papel e desativar/reativar membro | ❌ **falta**: `PATCH /v1/membros/:id` (só admin; `papel` e `ativo`) |
+| Criar empresa do grupo | ❌ **falta**: `POST /v1/empresas` (só administrador da conta): cria tenant, configurações e o criador como admin da nova empresa, numa transação; CNPJ duplicado dá 409 |
+| Política de 2FA (`GET` e `PATCH /v1/configuracoes/seguranca`, só admin) | ✅ pronto |
+| Trocar a empresa ativa (`POST /v1/sessao/empresa-ativa`) | ✅ pronto |
+
+**Regras novas da API (a cobrir com testes, inclusive de isolamento entre tenants):**
+- Só **admin** altera papel e ativo; gestor e vendedor recebem 403.
+- **Nunca ficar sem administrador:** não se rebaixa nem se desativa o **último admin ativo**; ninguém altera o **próprio** papel ou situação (evita o auto-bloqueio).
+- Desativar vale **na próxima requisição**: a pessoa perde a empresa (não conta mais em `/me`) e, se era a empresa ativa, cai no seletor ou em outra empresa dela. O histórico é mantido (`ativo=false`, sem apagar).
+- Quem foi desativado volta por **Reativar** (hoje o convite recusa quem ainda é membro inativo com `ja_e_membro`).
+- `POST /v1/empresas`: a nova empresa nasce na **conta** do administrador (se ele administra mais de uma, `contaId` é obrigatório); mudanças de papel e criação vão para a **auditoria**.
+- **Último acesso:** vem da sessão mais recente do usuário (`auth.session.updated_at`, atualizada no máximo uma vez por dia). É aproximado, e o `acessos_log` (`lgpd.md`, 5.1) o tornará exato. **A tela mostra só a data, sem hora.**
+- **Dono da conta protegido:** o dono (`conta_administradores.papel = 'dono'`) não pode ser rebaixado nem desativado por outro admin da empresa, além da regra do último admin.
+- **Membro desativado com sessão aberta:** a requisição seguinte responde 403 (`membro_inativo`); o web mostra uma mensagem clara e leva para **outra empresa do usuário**, se houver, ou para o login. Coberto por E2E.
+- **Auditoria:** criar empresa, convidar, cancelar convite, mudar papel, desativar e reativar geram registro em `auditoria`.
+- **Isolamento:** todo endpoint novo tem teste de isolamento (o admin da empresa A não altera membro, convite nem dado da B).
+- **CNPJ ao criar empresa:** razão social obrigatória; nome fantasia e CNPJ opcionais; CNPJ validado (alfanumérico, com dígitos verificadores) pelo Zod compartilhado. **Sem unicidade global de CNPJ**, para não revelar que outra conta existe; no máximo um aviso quando o CNPJ já está em outra empresa **da mesma conta**. Consulta à Receita e cópia de configurações ficam para depois.
+
+### Telas e estados
+
+Cada tela segue o design system (tokens, `Skeleton`, `Alert`, `Dialog`, `Toast`) e o responsivo (tabela no desktop, cartões no celular).
+
+| Tela | Rota | Quem | Estados |
+|---|---|---|---|
+| **Criar empresa** | `/criar-empresa` (pelo item do seletor; o aviso "em breve" sai) | administrador da conta; os outros não veem o item e a rota redireciona | formulário (razão social, nome fantasia, CNPJ opcional validado) · enviando · erro de campo · CNPJ já cadastrado (409) · sem permissão · limite (429). Ao criar: toast, **troca para a empresa nova** e vai ao início |
+| **Configurações** (casca) | `/configuracoes` com menu lateral interno: **Usuários** e **Segurança** | admin (o item do menu já é só dele); gestor e vendedor são redirecionados | substitui o "Em breve"; as demais seções (tags, funis…) entram nas etapas dos seus módulos |
+| **Usuários** | `/configuracoes/usuarios` | admin | **carregando** (esqueleto) · **vazio** (só a própria pessoa: convite à ação) · **erro** (alerta com "Tentar de novo") · lista: nome e e-mail, **papel** (seletor), situação (*Ativo*, *Inativo*, *Convidado*, *Convite expirado*), *Com acesso*/*Sem acesso*, **último acesso**, ação (*Desativar*/*Reativar*; *Reenviar*/*Cancelar* nos convites). Contagem "N ativos · N convites pendentes" |
+| **Convidar pessoa** (diálogo) | dentro de Usuários | admin | e-mail e papel; "O convite vale por 7 dias" · enviando · e-mail já é da equipe (409) · limite (429) · aviso quando o SMTP não está configurado (`emailEnviado=false`) |
+| **Confirmações** (diálogos) | dentro de Usuários | admin | desativar; rebaixar um admin; cancelar convite. Erros "último administrador" e "não é possível alterar você mesmo" aparecem no diálogo |
+| **Segurança da empresa** | `/configuracoes/seguranca` | admin | **carregando** · **erro** · seleção da política (*administradores*, *administradores e gestores*, *todos*) com a explicação de quem será obrigado · salvar · sucesso (a regra vale na próxima requisição de cada pessoa) |
+| **Aceitar convite** | `/convite?token=…` (já existe) | convidado | carregando · **convite inválido** (inexistente, vencido, cancelado ou já usado, com o mesmo texto) · conta nova (nome, senha, termos) · conta existente (entrar e aceitar) · sessão de **outro e-mail** · erro ao aceitar. Falta cobrir: **2FA obrigatório logo após aceitar** (quando a política da empresa exigir) |
+
+### Divergências entre o protótipo e `funcionalidades.md` (vale o documento)
+
+| Protótipo (`Configuracoes.dc.html`) | `funcionalidades.md` | Decisão |
+|---|---|---|
+| "Convidar pessoa" tem o campo **Gestor** (hierarquia) | o convite só leva e-mail e papel; a hierarquia não é regra de negócio definida | **fora do E16a, para o MVP**: sem campo Gestor; entra com o módulo de carteira |
+| Botão **Transferir carteira** em Usuários | a transferência é do gestor ou admin e depende da carteira (seção 10) | **fora do E16a, para o MVP**: entra com o módulo de Empresas |
+| Vendedor **"Sem acesso"** (sem login) criado na própria tela | "vendedor = membro, pode existir sem login" (decisão 25) | só **exibe** quem já existe assim; criar vendedor sem login fica para o módulo de carteira |
+| Seção Usuários visível para "Admin" | Usuários e papéis: Admin; **gestor não acessa configurações** | igual; **gestor e vendedor não veem o menu nem a rota** |
+| Sem tela de **Segurança** nem de criar empresa do grupo | política de 2FA por empresa (seção 10) e "criar empresas" pelo administrador da conta (multiempresa) | telas **novas**, desenhadas pelo design system |
+| Sem "último acesso" | não definido | mostra o último acesso aproximado (acima); decisão registrada neste plano |
+| Convite expirado, cancelado e já usado em telas diferentes (pedido) | a API responde o **mesmo 404** de propósito (não revela o motivo) | **uma só tela** "Convite inválido", com a orientação de pedir novo convite ao administrador |
+
+### Testes
+
+- **Unitários e de integração (API):** papéis (só admin), último administrador, alterar a si mesmo, desativar vale na requisição seguinte, reativar, criar empresa (conta, CNPJ duplicado, não administrador da conta), **isolamento** (o admin da A não altera membro nem convite da B), auditoria.
+- **Unitários (web, Testing Library):** cada estado das telas acima (vazio, carregando, erro, sucesso), validação dos formulários, regras de exibição por papel, item "Criar empresa" só para administrador da conta.
+- **E2E (Playwright), com a E16 como roteiro:** (1) administrador cria a **empresa B** e passa a estar nela; (2) convida um **vendedor para a A**; (3) o convidado **aceita com outro e-mail** (conta nova) e, com a política "todos", **ativa o 2FA**; (4) o vendedor da A **não vê a B**, **não vê o menu Configurações** e a rota `/configuracoes/usuarios` o redireciona; (5) admin muda o papel, desativa e reativa; (6) reenvia e cancela um convite; (7) altera a política de 2FA.
+
+### Commits previstos (pequenos, com os testes de cada um)
+
+1. `feat(api): PATCH /v1/membros/:id (papel e ativo) com a regra do último administrador`
+2. `feat(api): último acesso na lista de membros`
+3. `feat(api): POST /v1/empresas (administrador da conta cria empresa do grupo)`
+4. `chore(api-client): contratos novos (OpenAPI)`
+5. `feat(web): criar empresa e entrada na empresa nova`
+6. `feat(web): Configurações com menu interno e proteção por papel`
+7. `feat(web): Configurações → Usuários (lista, papéis, desativar e reativar)`
+8. `feat(web): convidar, reenviar e cancelar convites`
+9. `feat(web): Configurações → Segurança da empresa (política de 2FA)`
+10. `test(e2e): gestão multiempresa (empresa B, convite, vendedor isolado, 2FA)`
+11. `docs: funcionalidades, prototipo/README e este plano atualizados`
+
+### Decisões do Ale (12/10/2026)
+
+1. **Gestor** sem Usuários e Segurança, como no documento. A visão de equipe do gestor vem com carteira e painel, no MVP.
+2. **Último acesso aproximado** serve até existir o `acessos_log`; mostra só a data.
+3. **Criar empresa:** regras de CNPJ acima; consulta à Receita e cópia de configurações ficam para depois.
+
+**Pronto quando:** o roteiro do E2E acima passa na esteira e em produção, e o Ale consegue fazer à mão os testes de aceitação da E16 (empresa A e B, convite do vendedor, isolamento) só pelo app.
 
 ---
 
