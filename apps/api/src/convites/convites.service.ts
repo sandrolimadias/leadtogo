@@ -15,6 +15,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { Request } from 'express'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
+import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { AuthService } from '../auth/auth.service.js'
 import { EmailService } from '../email/email.service.js'
 import { ErroApi } from '../http/erro-api.js'
@@ -51,6 +52,7 @@ export class ConvitesService {
   constructor(
     @Inject(BANCO) private readonly banco: Conexao,
     private readonly ctx: ContextoTenantService,
+    private readonly auditoria: AuditoriaService,
     private readonly auth: AuthService,
     private readonly email: EmailService,
   ) {}
@@ -102,6 +104,12 @@ export class ConvitesService {
     await db.execute(sql`
       INSERT INTO eventos_outbox (id, tenant_id, tipo, entidade_id, payload)
       VALUES (${novoId()}, ${this.ctx.tenantId}, 'convite.enviar', ${id}, ${JSON.stringify({ conviteId: id })}::jsonb)`)
+    await this.auditoria.registrar({
+      entidade: 'convite',
+      entidadeId: id,
+      acao: 'convidar',
+      alteracoes: { email: dados.email, papel: dados.papel },
+    })
     const emailEnviado = this.email.configurado
     return { ...resumoDe(linha), emailEnviado }
   }
@@ -117,12 +125,18 @@ export class ConvitesService {
   /** Cancela um convite pendente DESTA empresa; o de outra empresa (ou inexistente) dá 404 igual. */
   async revogar(id: string): Promise<void> {
     this.exigirAdministrador()
-    const feito = await this.ctx.db().execute(sql`
+    const feito = await this.ctx.db().execute<{ email: string; papel: PapelMembro }>(sql`
       UPDATE convites SET revogado_em = now(), atualizado_em = now()
       WHERE id = ${id} AND aceito_em IS NULL AND revogado_em IS NULL
-      RETURNING id`)
-    if (feito.length === 0)
-      throw new ErroApi('convite_nao_encontrado', 'Convite não encontrado.', 404)
+      RETURNING email, papel`)
+    const [cancelado] = feito
+    if (!cancelado) throw new ErroApi('convite_nao_encontrado', 'Convite não encontrado.', 404)
+    await this.auditoria.registrar({
+      entidade: 'convite',
+      entidadeId: id,
+      acao: 'cancelar_convite',
+      alteracoes: { email: cancelado.email, papel: cancelado.papel },
+    })
   }
 
   /** Equipe da empresa ativa. O e-mail só aparece para administradores e gestores. */

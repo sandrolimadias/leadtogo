@@ -27,6 +27,7 @@ import {
 import { aguardarMensagem, limparCaixa, mensagensPara, primeiroLink } from '../testes/mailpit.js'
 import {
   ativar,
+  auditoriaDe,
   dono,
   membroComEmail,
   membroSemLogin,
@@ -434,6 +435,40 @@ describe('consultar e aceitar o convite (sem sessão)', () => {
     for (let i = 0; i < 12; i++)
       statuses.push((await aceitar({ token: `lixo-${i}`.padEnd(30, 'x') })).status)
     expect(statuses).toContain(429)
+  })
+})
+
+describe('auditoria dos convites', () => {
+  it('convidar e cancelar geram registro (quem, o quê) na empresa certa e não aparecem na outra', async () => {
+    const d = await adminPronto()
+    const outra = await novoDono(app)
+    const email = emailUnico('auditado')
+    const { convite } = await convidarEPegarToken(d.cookie, email, 'gestor')
+    const cancelar = await com(
+      http().delete(`/v1/convites/${convite.id}`).set('Origin', ORIGEM_DO_FRONT),
+      d.cookie,
+    )
+    expect(cancelar.status).toBe(204)
+
+    const registros = (await auditoriaDe(d.tenantId)).filter((r) => r.entidade === 'convite')
+    expect(registros.map((r) => r.acao)).toEqual(['convidar', 'cancelar_convite'])
+    expect(registros[0]).toMatchObject({
+      entidade_id: convite.id,
+      alteracoes: { email, papel: 'gestor' },
+      origem: 'app',
+    })
+    expect(registros[0]?.membro_id).toBeTruthy()
+    expect(JSON.stringify(registros)).not.toMatch(/token/i)
+    // a outra empresa não vê nada disso
+    expect((await auditoriaDe(outra.tenantId)).filter((r) => r.entidade === 'convite')).toEqual([])
+  })
+
+  it('convite recusado (já é da equipe) não gera registro', async () => {
+    const d = await adminPronto()
+    await membroComEmail(d.tenantId, 'ja@exemplo.com')
+    const r = await convidar(d.cookie, { email: 'ja@exemplo.com', papel: 'vendedor' })
+    expect(r.status).toBe(409)
+    expect((await auditoriaDe(d.tenantId)).filter((x) => x.entidade === 'convite')).toEqual([])
   })
 })
 

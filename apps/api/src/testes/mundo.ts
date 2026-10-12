@@ -137,3 +137,21 @@ export async function membroComEmail(tenantId: string, email: string, nome = 'Me
   })
   return id
 }
+
+export interface RegistroLido {
+  entidade: string
+  entidade_id: string | null
+  acao: string
+  alteracoes: Record<string, unknown> | null
+  membro_id: string | null
+  origem: string
+}
+
+/** Registros da auditoria de uma empresa (lidos como owner, com o tenant ativo por causa do RLS). */
+export async function auditoriaDe(tenantId: string): Promise<RegistroLido[]> {
+  return dono.begin(async (tx) => {
+    await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+    return tx<RegistroLido[]>`
+      SELECT entidade, entidade_id, acao, alteracoes, membro_id, origem FROM auditoria ORDER BY id`
+  })
+}

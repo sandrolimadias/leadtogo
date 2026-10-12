@@ -6,6 +6,7 @@ import type { Configuracao } from './configuracao/configuracao.js'
 import { AcessoGuard } from './acesso/acesso.guard.js'
 import { AcessoModule } from './acesso/acesso.module.js'
 import { TenantInterceptor } from './acesso/tenant.interceptor.js'
+import { AuditoriaModule } from './auditoria/auditoria.module.js'
 import { AuthModule } from './auth/auth.module.js'
 import { ConfiguracoesModule } from './configuracoes/configuracoes.module.js'
 import { MeModule } from './me/me.module.js'
@@ -43,6 +44,7 @@ export class AppModule {
         EmailModule,
         AuthModule,
         AcessoModule,
+        AuditoriaModule,
         MeModule,
         ConfiguracoesModule,
         ConvitesModule,
