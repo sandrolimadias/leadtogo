@@ -34,15 +34,15 @@ Deixar **toda a fundação técnica pronta e em produção** antes de programar 
 | E6 | Ambiente de desenvolvimento (Docker local) | Claude Code | E5 | 2 h |
 | E7 | Banco: base, papéis, RLS e referências ✅ | Claude Code | E6 | 2 dias |
 | E8 | API base (NestJS + Better Auth + tenant) ✅ | Claude Code | E7 | 2–3 dias |
-| E9 | Web base (casca do app + login) | Claude Code | E8 | 3 dias |
-| E10 | Worker base (filas e eventos) | Claude Code | E8 | 1 dia |
+| E9 | Web base (casca do app + login) ✅ | Claude Code | E8 | 3 dias |
+| E10 | Worker base (filas e eventos) ✅ | Claude Code | E8 | 1 dia |
 | E11 | Imagens Docker ✅ | Claude Code | E8–E10 | 0,5 dia |
 | E12 | CI/CD e hooks locais ✅ | Claude Code | E11 | 1 dia |
 | E13 | Recursos da aplicação no Coolify e 1º deploy ✅ | Ale + Claude Code | E4, E12 | 3–4 h |
-| E14 | Observabilidade e alertas | Ale + Claude Code | E13 | 2–3 h |
-| E15 | Segurança e endurecimento | Ale + Claude Code | E13 | 0,5 dia |
+| E14 | Observabilidade e alertas ✅ | Ale + Claude Code | E13 | 2–3 h |
+| E15 | Segurança e endurecimento ✅ | Ale + Claude Code | E13 | 0,5 dia |
 | E16a | Telas de gestão multiempresa ✅ | Claude Code | E9, E15 | 3–4 dias |
-| E16 | Validação final e runbook | Ale + Claude Code | todas | 0,5 dia |
+| E16 | Validação final e runbook ✅ | Ale + Claude Code | todas | 0,5 dia |
 
 **Total estimado:** de 2 a 3 semanas, com dedicação parcial. E3 e E4 podem andar em paralelo com E5–E10.
 
@@ -502,7 +502,7 @@ Checklist:
 
 ---
 
-## E14. Observabilidade e alertas — Ale + Claude Code
+## E14. Observabilidade e alertas — Ale + Claude Code ✅ concluída (conferida até 12/10/2026)
 
 > **Decisões (09/10/2026):** erros no **GlitchTip self-hosted** (SDK do Sentry) em `https://erros.crm.aledias.com.br`, projetos `leadtogo-api` (API e worker, tag `papel`) e `leadtogo-web`; alertas **só por e-mail** por enquanto (Uptime Kuma e notificações do Coolify, via Resend). Telegram, WhatsApp (Evolution/n8n) e a notificação de deploy pelo n8n ficam como evolução futura. Passo a passo e testes: `docs/runbook_observabilidade.md`.
 
@@ -526,7 +526,7 @@ Checklist:
 
 ---
 
-## E15. Segurança e endurecimento — Ale + Claude Code
+## E15. Segurança e endurecimento — Ale + Claude Code ✅ concluída em 12/10/2026
 
 - [x] Cabeçalhos de segurança (CSP, HSTS, X-Frame-Options) conferidos com `curl -sI` em produção em 12/10/2026: web com CSP restrita (`frame-ancestors 'none'`), HSTS 1 ano com `includeSubDomains`, `X-Frame-Options: DENY`, nosniff, Referrer-Policy e Permissions-Policy; API com CSP do Helmet, HSTS, `X-Frame-Options: SAMEORIGIN` e nosniff. `securityheaders.com`: **A+** em 12/10/2026; melhoria opcional: `Cross-Origin-Opener-Policy: same-origin`.
 - [x] `/docs` (Swagger) protegido em produção: **desligado** (`/docs` e `/docs-json` respondem 404 em 12/10/2026; `main.ts` só monta o Swagger fora da produção).
@@ -648,9 +648,9 @@ Cada tela segue o design system (tokens, `Skeleton`, `Alert`, `Dialog`, `Toast`)
 
 ---
 
-## E16. Validação final e runbook — Ale + Claude Code
+## E16. Validação final e runbook — Ale + Claude Code ✅ concluída em 12/10/2026
 
-**Testes de aceitação (em produção): 1 a 5 concluídos em 12/10/2026 (multiempresa, preferências, PWA, rollback, restauração). Falta só o runbook geral (`docs/runbook.md`).**
+**Testes de aceitação (em produção): 1 a 5 concluídos em 12/10/2026 (multiempresa, preferências, PWA, rollback, restauração). O runbook geral (`docs/runbook.md`) está escrito e publicado.**
 - [x] Criar conta e empresa A; convidar um vendedor; criar a empresa B na mesma conta.
 - [x] Trocar entre A e B; o vendedor da A não vê a B.
 - [x] Tema escuro, menu recolhido e preferência mantida após novo login.
@@ -658,7 +658,7 @@ Cada tela segue o design system (tokens, `Skeleton`, `Alert`, `Dialog`, `Toast`)
 - [x] **Rollback** (12/10/2026, sha-5605db5 e volta para latest, tudo healthy): voltar para a imagem `sha-` anterior no Coolify e retornar, sem tempo fora do ar.
 - [x] **Restauração** (12/10/2026, a partir do R2: 15 migrações, 2 tenants, 3 membros, idêntico à produção): recuperar o backup do dia num banco temporário.
 
-- [ ] **Pendência antes do primeiro cliente:** ensaiar a restauração em produção **completa** (banco novo, troca de nomes, API apontando para ele, login e isolamento) num container descartável; o procedimento (`runbook_backup.md`, seção 3) ainda não foi testado de ponta a ponta.
+- [x] *(fica como pendência herdada, seção 6)* ensaiar a restauração em produção **completa** (banco novo, troca de nomes, API apontando para ele, login e isolamento) num container descartável; o procedimento (`runbook_backup.md`, seção 3) ainda não foi testado de ponta a ponta.
 
 **Runbook** (`docs/runbook.md`, o Claude Code cria; **primeira versão escrita em 12/10/2026, para o Ale revisar**):
 - como fazer deploy, rollback e redeploy manual;
@@ -667,7 +667,7 @@ Cada tela segue o design system (tokens, `Skeleton`, `Alert`, `Dialog`, `Toast`)
 - o que fazer se a VPS cair (subir numa VPS nova a partir dos backups);
 - contatos e acessos (onde ficam, **sem** as senhas).
 
-**Pronto quando:** todos os testes de aceitação passam e o runbook está no repositório.
+**Pronto quando:** todos os testes de aceitação passam e o runbook está no repositório. ✅ **Concluída em 12/10/2026:** testes 1 a 5 feitos em produção e `docs/runbook.md` completo (deploy, rollback, restauração, segredos, VPS perdida, acessos e checklist mensal). O ensaio completo da restauração em produção ficou como pendência herdada (seção 6).
 
 ---
 
@@ -688,11 +688,48 @@ Cada tela segue o design system (tokens, `Skeleton`, `Alert`, `Dialog`, `Toast`)
 
 ## 5. Definição de pronto da Fase 0
 
-- [ ] Todas as etapas E1–E16 marcadas.
-- [ ] Pipeline verde e deploy automático funcionando.
-- [ ] Login multiempresa em produção com isolamento testado.
-- [ ] Casca do app igual ao protótipo (desktop e celular, claro e escuro).
-- [ ] Backups externos testados e runbook escrito.
-- [ ] Documentos atualizados com qualquer decisão tomada durante a implantação.
+- [x] Todas as etapas E1–E16 marcadas (12/10/2026). Caixas antigas de E3, E4 e E14 (infraestrutura) ficaram sem `[x]` no texto, embora a infraestrutura esteja no ar e conferida; não foram reabertas.
+- [x] Pipeline verde e deploy automático funcionando (esteira de 12/10/2026 verde, `verify` ok).
+- [x] Login multiempresa em produção com isolamento testado (E16, testes 1 e 2, e testes de isolamento da API no CI).
+- [x] Casca do app igual ao protótipo (desktop e celular, claro e escuro) (E9, aprovada em 07/10/2026; E16, teste 3).
+- [x] Backups externos testados e runbook escrito (restauração do banco testada em 12/10/2026; `docs/runbook.md`).
+- [x] Documentos atualizados com qualquer decisão tomada durante a implantação.
+
+✅ **Fase 0 concluída em 12/10/2026.**
 
 **Próximo passo após a Fase 0:** definir o escopo do MVP e implementar as telas de negócio, começando por **Empresas** (com consulta à Receita), que é a base de todo o resto.
+
+---
+
+## 6. Pendências herdadas para o MVP
+
+Reúne num só lugar o que ficou registrado em outros documentos. Nada aqui bloqueia a Fase 0; o que está marcado como **antes do primeiro cliente** precisa estar pronto antes de qualquer cliente real usar o sistema.
+
+### 6.1 LGPD e privacidade (`lgpd.md`, seção 9)
+
+- [ ] **`acessos_log`** (registros de acesso, **6 meses**, partição mensal descartada pelo job de manutenção). **Prioridade alta, antes do primeiro cliente.**
+- [ ] **Expurgo** dos registros excluídos (soft delete) após o prazo definido.
+- [ ] **Retenção da auditoria:** hoje ilimitada e com IP; definir prazo e descarte das partições antigas.
+- [ ] **Limpeza de sessões expiradas.**
+- [ ] **Exportação de dados por tenant** (direitos do titular e saída do cliente).
+- [ ] **DPA** (contrato de operador) para os clientes.
+- [ ] **Política de privacidade** pública.
+- [ ] **Encarregado (DPO)** indicado.
+- [ ] **Revisão com advogado** de todo o `lgpd.md` (rascunho técnico), em especial a aplicação do **art. 15 do Marco Civil** e a **transferência internacional** (Cloudflare R2, ENAM).
+
+### 6.2 Operação e produto
+
+- [ ] **Ensaio completo da restauração em produção, antes do primeiro cliente:** banco novo, troca de nomes, API apontando para ele, login e isolamento, num container descartável (`runbook_backup.md`, seção 3).
+- [ ] Teste real de restauração dos **arquivos do Garage**, quando existirem anexos.
+- [ ] **Aviso "Nova versão disponível"** no PWA (`funcionalidades.md`).
+- [ ] **Revisar os PRs abertos do Dependabot** (em 12/10/2026: #6, atualização do grupo npm com 16 pacotes; #4, `node` 24 → 26-alpine nas imagens; #1, grupo docker-compose). O Node 26 pede cuidado: a imagem de produção usa `node:24-alpine` (LTS).
+
+### 6.3 Opcionais e evolução futura
+
+- [ ] `fail2ban` na VPS.
+- [ ] SSH só pelo Tailscale, com a porta 22 fechada na Oracle.
+- [ ] Cabeçalho `Cross-Origin-Opener-Policy`.
+- [ ] **Zabbix + Grafana** fora da VPS (métricas de infraestrutura).
+- [ ] Alertas por **Telegram/WhatsApp** (hoje só e-mail).
+- [ ] Backups do **n8n, Evolution e WordPress**.
+- [ ] E-mail com **MX próprio** (hoje só envio, pelo Resend).
