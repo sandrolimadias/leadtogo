@@ -283,6 +283,13 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 | `etiquetas` | cor, dono_id null (null = da equipe) | Etiquetas de atividades/tarefas no Kanban |
 | `campos_personalizados` | entidade enum(empresa/contato/oportunidade), chave, tipo enum, opcoes jsonb, obrigatorio, filtravel | Definição dos campos extras |
 
+> **Implementação (Módulo 1, migração 0015):** criadas `verticais`, `solucoes`, `origens`, `motivos`, `tag_grupos`, `tags`, `tipos_atividade`, `funis` e `funil_fases` (as demais deste capítulo entram com o módulo que as usa; `faixas_*` ficam fora do MVP, ver `escopo_mvp.md`). Todas com `excluido_em`, `criado_por` e `atualizado_por`, RLS forçado e fábrica no teste de isolamento. Diferenças em relação à tabela acima:
+> - **Cor** é o **nome da cor da paleta de tags** do design system (enum `cor_de_tag`: gray, red, orange, amber, green, teal, blue, indigo, purple, pink), não hexadecimal; assim a cor segue os tokens e o tema escuro. Vale para `verticais`, `solucoes`, `tags`, `tipos_atividade` e `funil_fases`.
+> - **Nome único** (sem diferença de caixa, entre os não excluídos): por empresa, exceto `tags` (único **dentro do grupo**) e `funil_fases` (único **dentro do funil**).
+> - `chave_sistema` (única por empresa, parcial) também existe em `tag_grupos` e `origens` (ex.: `importacao`), além de `tags` e `tipos_atividade`.
+> - Enum `status_oportunidade` criado já aqui (`motivos.aplica_a`, com ao menos um valor); o Módulo 6 o reaproveita.
+> - `funis`: no máximo **um padrão** por empresa (índice único parcial). `funil_fases`: `probabilidade_padrao` de 0 a 100 e `dias_alerta_parada` nulo (sem alerta) ou maior que zero.
+
 ### 5.1 `produtos` 🏢
 | Coluna | Tipo | Observação |
 |---|---|---|

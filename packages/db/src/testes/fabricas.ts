@@ -108,6 +108,70 @@ fabricas['auditoria'] = definirFabrica({
   },
 })
 
+// Cadastros auxiliares (Módulo 1): as simples só precisam de nome; as com pai criam o pai antes.
+const cadastroSimples = (tabela: string, extra = '') =>
+  definirFabrica({
+    colunaAlteravel: 'nome',
+    criar: async (tx, tenantId) => {
+      const id = novoId()
+      await tx.unsafe(
+        `INSERT INTO ${tabela} (id, tenant_id, nome${extra ? ', aplica_a' : ''}) VALUES ($1, $2, $3${extra ? ', $4' : ''})`,
+        extra ? [id, tenantId, `Item ${id}`, extra] : [id, tenantId, `Item ${id}`],
+      )
+      return id
+    },
+  })
+
+fabricas['verticais'] = cadastroSimples('verticais')
+fabricas['solucoes'] = cadastroSimples('solucoes')
+fabricas['origens'] = cadastroSimples('origens')
+fabricas['motivos'] = cadastroSimples('motivos', '{perdido}')
+
+fabricas['tag_grupos'] = cadastroSimples('tag_grupos')
+
+fabricas['tags'] = definirFabrica<string>({
+  colunaAlteravel: 'nome',
+  // O pai: um grupo de tags do tenant
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const id = novoId()
+      await tx`INSERT INTO tag_grupos (id, tenant_id, nome) VALUES (${id}, ${tenantId}, 'Grupo')`
+      return id
+    }),
+  criar: async (tx, tenantId, grupoId) => {
+    const id = novoId()
+    await tx`INSERT INTO tags (id, tenant_id, nome, tag_grupo_id) VALUES (${id}, ${tenantId}, ${`Tag ${id}`}, ${grupoId})`
+    return id
+  },
+})
+
+fabricas['tipos_atividade'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO tipos_atividade (id, tenant_id, nome, icone) VALUES (${id}, ${tenantId}, ${`Tipo ${id}`}, 'phone')`
+    return id
+  },
+})
+
+fabricas['funis'] = cadastroSimples('funis')
+
+fabricas['funil_fases'] = definirFabrica<string>({
+  colunaAlteravel: 'nome',
+  // O pai: um funil do tenant
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const id = novoId()
+      await tx`INSERT INTO funis (id, tenant_id, nome) VALUES (${id}, ${tenantId}, 'Funil')`
+      return id
+    }),
+  criar: async (tx, tenantId, funilId) => {
+    const id = novoId()
+    await tx`INSERT INTO funil_fases (id, tenant_id, nome, funil_id) VALUES (${id}, ${tenantId}, ${`Fase ${id}`}, ${funilId})`
+    return id
+  },
+})
+
 /** Cria o que as fábricas pressupõem para os tenants de teste: uma conta e a linha de cada tenant. */
 export async function prepararTenants(owner: Sql, ids: string[]): Promise<void> {
   const contaId = novoId()
