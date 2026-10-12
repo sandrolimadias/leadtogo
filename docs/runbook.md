@@ -74,7 +74,7 @@ Se o deploy novo **não ficou saudável**, o Coolify já manteve a versão anter
 
 | Segredo | Onde fica | Efeito de girar | Como |
 |---|---|---|---|
-| `LEADTOGO_APP_PASSWORD` e `LEADTOGO_OWNER_PASSWORD` | Coolify (`DATABASE_URL`, `DATABASE_MIGRATION_URL`) e o banco | API e worker perdem a conexão até atualizar | Gerar `openssl rand -hex 24`; reexecutar o `papeis.sql` com as senhas novas (idempotente, `runbook_e13.md`, seção 4.2) e atualizar as URLs no Coolify (4.5); redeploy de api e worker |
+| `LEADTOGO_APP_PASSWORD` e `LEADTOGO_OWNER_PASSWORD` | Coolify (`DATABASE_URL`, `DATABASE_MIGRATION_URL`) e o banco | API e worker perdem a conexão até atualizar | Passo a passo na seção 4.1 abaixo |
 | `BETTER_AUTH_SECRET` | Coolify | **Invalida todas as sessões e os 2FA cadastrados** (cada pessoa precisaria reativar o 2FA): só gire com motivo forte, como vazamento | `openssl rand -hex 32`; atualizar e redeploy |
 | `TOKEN_ENCRYPTION_KEY` | Coolify (**guarde uma cópia fora**) | E-mails na fila e segredos cifrados ficam ilegíveis se a chave se perder | `openssl rand -base64 32`; só troque sem itens pendentes na fila |
 | Chave do Garage `leadtogo-app` (`S3_ACCESS_KEY` e `S3_SECRET_KEY`) | Coolify | Upload e leitura de arquivos param até atualizar | Criar chave nova no Garage, dar acesso ao bucket, trocar no Coolify, redeploy, apagar a antiga |
@@ -86,6 +86,16 @@ Se o deploy novo **não ficou saudável**, o Coolify já manteve a versão anter
 | Token do GHCR (`read:packages`) | Registro `ghcr.io` no Coolify | A VPS não consegue baixar imagens novas | Token *classic* só com `read:packages`; atualizar o registro |
 | Push URL do Uptime Kuma | `/root/backup-garage.push` (`chmod 600`) | O backup deixa de avisar | `runbook_backup.md`, seção 4.1 |
 | Chave SSH | `~/.ssh` do Ale e `authorized_keys` da VPS | — | Adicionar a nova chave **antes** de remover a antiga; SSH só por chave |
+
+### 4.1 Senhas dos papéis do banco (`leadtogo_app` e `leadtogo_owner`)
+
+Entre o passo 2 e o 4 a aplicação **perde a conexão**: faça em horário sem uso.
+
+1. **Gerar a senha nova** (sem caracteres que quebram URL): `openssl rand -base64 32 | tr -d '/+=' | cut -c1-32`. Guarde no gerenciador de senhas antes de aplicar.
+2. **No container do Postgres** (`psql`: `runbook_e13.md`, seção 4.6): `ALTER ROLE leadtogo_app PASSWORD '<nova>';` (e/ou `leadtogo_owner`). A senha vai no comando: não deixe no histórico compartilhado nem em chat.
+3. **No Coolify**, atualizar a senha dentro das URLs: `DATABASE_URL` (`leadtogo_app`) na **api e no worker**, e `DATABASE_MIGRATION_URL` (`leadtogo_owner`) **só na api** (o worker não deve recebê-la).
+4. **Redeploy de api e worker**; conferir `/health` (`database` ok) e o worker `healthy`.
+5. **Fechar:** apagar a senha antiga do gerenciador de senhas.
 
 Se o segredo vazou de verdade: gire, revise os acessos recentes (GitHub, Coolify, Oracle, Cloudflare, Resend), confira o GlitchTip e os logs e, havendo dado pessoal exposto, siga `lgpd.md`, seção 8.
 
