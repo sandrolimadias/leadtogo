@@ -45,11 +45,14 @@ Referências: `runbook_e13.md` (Coolify, banco e primeiro deploy), `esteira_depl
 Detalhe: `runbook_e13.md`, seção 9 (e `esteira_deploy.md`, seção 8). Resumo:
 
 1. **Pare as publicações:** `gh variable set DEPLOY_ENABLED --body false` (senão o próximo push sobrescreve o rollback).
-2. **Ache o commit anterior bom:** `git log --oneline -10` e `git rev-parse <abreviado>` (a tag é o SHA completo, 40 caracteres; a limpeza do GHCR guarda as 15 `sha-*` mais recentes).
-3. **No Coolify**, nos três recursos (`leadtogo-api`, `leadtogo-worker`, `leadtogo-web`): trocar a **Tag** de `latest` para `sha-<40 caracteres>` (a mesma nos três) e *Deploy* (~1 min).
+2. **Ache o commit anterior bom:** `git log --oneline -10` e `git rev-parse <abreviado>` (a tag é o SHA completo, 40 caracteres; a limpeza do GHCR guarda as 15 `sha-*` mais recentes). Escolha o de **antes do problema** e confira as migrações aplicadas depois dele: só é seguro voltar se todas foram do tipo **expandir**.
+3. **No Coolify**, nos **três** recursos (`leadtogo-api`, `leadtogo-worker`, `leadtogo-web`): em **Container image → Tag** (não "Docker Image Tag"), trocar `latest` por `sha-<40 caracteres>` (a mesma nos três) e *Deploy* (~1 min). **O worker usa a mesma imagem da API e é fácil esquecer.**
 4. **Conferir:** `/health` mostra o SHA antigo.
 5. **Banco:** o rollback de imagem **não desfaz migração**. A regra "expandir e depois contrair" faz o código antigo funcionar com o esquema novo. Se a própria migração é o problema: nova migração corretiva; em último caso, restauração (seção 3).
 6. **Definitivo:** `git revert <commit>` + push; depois volte a **Tag** dos três recursos para `latest` e religue o `DEPLOY_ENABLED`.
+7. **Ao terminar (rollback ou teste), os três voltam para `latest`.** Confira na VPS: `docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}' | grep leadtogo` (todas as linhas com `:latest` e `healthy`). A esteira faz deploy da tag configurada: se um recurso ficar numa `sha-` antiga, os pushes seguintes **não o atualizam**.
+
+**Testado em 12/10/2026:** api, worker e web foram para `sha-5605db5` e voltaram para `latest`, todos healthy.
 
 Se o deploy novo **não ficou saudável**, o Coolify já manteve a versão anterior: não é rollback, é só corrigir e publicar de novo.
 
