@@ -101,10 +101,49 @@ Só com decisão do Ale. Antes de começar, avisar os usuários: o sistema ficar
 
 Perda máxima esperada (RPO): até 24h, pois o backup é diário às 3h.
 
-## 4. Pendência: arquivos do Garage
+## 4. Espelho dos arquivos do Garage
 
-O bucket `leadtogo-arquivos` do Garage **ainda não é copiado** para fora da VPS. Hoje não há anexos, então não há o que perder. **Quando houver anexos:**
+O bucket `leadtogo-arquivos` do Garage é espelhado no R2 por `rclone sync` (container `rclone/rclone`, credenciais em `/root/backup-garage.env`), pelo script `/root/backup-garage.sh` da VPS. O destino é `r2:vps-backup/garage/leadtogo-arquivos`; o que for alterado ou apagado na origem vai para `r2:vps-backup/garage-alterados/<data>` (`--backup-dir`). O log é `/var/log/backup-garage.log`, com o código de saída de cada execução.
 
-- espelhar o bucket no R2 com `rclone sync` (container `rclone/rclone`, credenciais por variável, como em 2.1), com `RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true` e origem no endpoint do Garage (`S3_ENDPOINT`, região `garage`, chave `leadtogo-app`) e destino num bucket/prefixo próprio do R2;
-- agendar diariamente (cron do Coolify ou tarefa agendada) e acompanhar a execução;
-- fazer um teste de restauração dos arquivos, como o do banco.
+### 4.1 Aviso ao Uptime Kuma (monitor Push)
+
+O script avisa o Uptime Kuma pelo monitor do tipo **Push** "Espelho Garage → R2" (ver `runbook_observabilidade.md`, seção 3):
+
+- `status=up&msg=OK` quando o `rclone` termina com código 0;
+- `status=down&msg=falhou-codigo-N` quando falha. A falha gera e-mail **na hora**, sem esperar o prazo do monitor.
+
+Configuração do monitor: *Heartbeat Interval* **86400 s**, *Retries* **1**, *Heartbeat Retry Interval* **3600 s**. Sem aviso por cerca de **25 h**, o monitor dispara o alerta (cobre o timer que não rodou ou a VPS desligada).
+
+A Push URL fica em `/root/backup-garage.push` (`chmod 600`), **fora do script**, porque funciona como segredo: nunca vai para o repositório, log ou chat. O script remove a query string da URL e monta a sua própria. Se o push falhar, o log registra `aviso: push ao Uptime Kuma falhou`, mas o código de saída continua sendo o do `rclone`.
+
+Para trocar a Push URL (a digitação não aparece na tela nem no histórico do shell):
+
+```bash
+read -rsp "Push URL: " U; printf '%s\n' "$U" > /root/backup-garage.push; chmod 600 /root/backup-garage.push; unset U
+```
+
+### 4.2 Script atual (`/root/backup-garage.sh`)
+
+```sh
+#!/bin/sh
+DATA=$(date +%Y-%m-%d)
+LOG=/var/log/backup-garage.log
+PUSH=$(cat /root/backup-garage.push 2>/dev/null)
+PUSH=${PUSH%%\?*}
+echo "=== $(date '+%F %T') ===" >> "$LOG"
+docker run --rm --env-file /root/backup-garage.env rclone/rclone:latest \
+  sync garage:leadtogo-arquivos r2:vps-backup/garage/leadtogo-arquivos \
+  --backup-dir "r2:vps-backup/garage-alterados/$DATA" \
+  --fast-list --stats-one-line -v >> "$LOG" 2>&1
+RC=$?
+echo "codigo de saida: $RC" >> "$LOG"
+if [ -n "$PUSH" ]; then
+  if [ "$RC" -eq 0 ]; then ST=up; MSG=OK; else ST=down; MSG="falhou-codigo-$RC"; fi
+  curl -fsS -m 10 "$PUSH?status=$ST&msg=$MSG" >/dev/null 2>&1 || echo "aviso: push ao Uptime Kuma falhou" >> "$LOG"
+fi
+exit $RC
+```
+
+### 4.3 Pendência
+
+Fazer um teste de restauração dos arquivos (baixar do R2 e conferir, como o do banco na seção 2).

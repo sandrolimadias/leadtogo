@@ -535,7 +535,7 @@ Checklist:
 - [x] Backups diários no R2 e restauração testados em 09/10/2026 (`docs/runbook_backup.md`).
 - [ ] Banco, Valkey e Garage **sem porta pública** (verificar com `nmap` de fora).
 - [ ] 2FA obrigatório para administradores.
-- [ ] (pendente até haver anexos, ver `docs/runbook_backup.md`, seção 4) Script de **espelhamento do Garage** para o S3 externo agendado.
+- [x] Script de **espelhamento do Garage** para o R2, com aviso ao Uptime Kuma (`docs/runbook_backup.md`, seção 4); falta o teste de restauração dos arquivos.
 - [ ] Revisão de dependências: `pnpm audit` limpo de alto/crítico.
 - [ ] Política de privacidade/LGPD: rascunho em `docs/lgpd.md` (dados tratados, base legal, retenção, exclusão).
 

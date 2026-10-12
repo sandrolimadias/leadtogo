@@ -55,22 +55,27 @@ O GlitchTip tem banco próprio: o backup diário do Coolify para o R2 já cobre 
 
 1. **New Resource → Services → Uptime Kuma**. Domínio opcional: `status.crm.aledias.com.br` (`plano_implantacao.md`, seção 3). Crie o usuário administrador.
 2. **Notificação** (Settings → Notifications → *Email (SMTP)*): host `smtp.resend.com`, porta `465`, SSL/TLS ligado, usuário `resend`, senha = API key do Resend, remetente de domínio verificado, destinatário o seu e-mail. Marque **"Default enabled"** e **"Apply on all existing monitors"**.
-3. **Monitores** (todos *HTTP(s)*; intervalo 60 s; **tentativas: 3** com intervalo de nova tentativa de 30 s, para o 503 curto de um deploy não gerar alerta):
+3. **Monitores** (todos *HTTP(s)*, exceto o *Push* do espelho do Garage; intervalo 60 s; **tentativas: 3** com intervalo de nova tentativa de 30 s, para o 503 curto de um deploy não gerar alerta):
 
 | Monitor | URL | O que verifica |
 |---|---|---|
 | Web | `https://crm.aledias.com.br/` | tipo *HTTP(s) – Keyword*, palavra `id="root"` |
 | API e dependências | `https://api.crm.aledias.com.br/health` | *Keyword* `"status":"ok"` (o `/health` já checa **banco, Valkey e Garage**: é o monitor de banco) |
 | Rota pública `/v1` | `https://crm.aledias.com.br/v1/primeiro-acesso/estado` | *Keyword* `"aberto"` (a resposta é `{"aberto":false}` com o cadastro fechado), garante o roteamento do Traefik até a API |
-| **Alertas** (eventos e jobs) | `https://api.crm.aledias.com.br/health/alertas` | *HTTP(s)*, status aceito só `200-299`; em **Headers**: `{"X-Alertas-Token": "<ALERTAS_TOKEN>"}` |
+| **Alertas** (eventos e jobs) | `https://api.crm.aledias.com.br/health/alertas` | *HTTP(s)* GET, intervalo de **300 s**, *Authentication* None, status aceito só `200-299` (503 = há alerta; 401 = token errado); em **Headers**: `{"X-Alertas-Token": "<ALERTAS_TOKEN>"}` |
 | Painel do Coolify | `https://painel.aledias.com.br` | status aceito `200-399` |
 | GlitchTip | `https://erros.crm.aledias.com.br/` | status aceito `200-399` |
+| **Espelho Garage → R2** | tipo **Push** (a URL fica só em `/root/backup-garage.push`) | o script de backup avisa `up`/`down` ao terminar; sem aviso por ~25 h, alerta. Detalhes em `runbook_backup.md`, seção 4 |
 
 O monitor "Alertas" fica vermelho (503) quando há **evento do outbox esgotado e não tratado**, **falha final de job nas últimas 24 h** (a partir de `ALERTAS_LIMITE_JOBS_FALHOS`, padrão 1) ou quando não é possível verificar (status `erro`). A resposta só tem contagens:
 
 ```json
 {"status":"alerta","eventos_esgotados":1,"jobs_falhos":{"manutencao":0,"notificacoes":0,"email":0,"outbox":0},"jobs_falhos_total":0,"limite_jobs_falhos":1}
 ```
+
+O **Backup do Uptime Kuma** é um export manual em *Settings → Backup* (o banco é o SQLite embutido; a perda só exige recriar os monitores). A notificação SMTP usa o Resend com chave própria `uptime-kuma`.
+
+**Lição (PWA em cache):** depois de um deploy, o PWA serve a versão em cache. Para testar o web, atualize o service worker (DevTools → Application → Service Workers → *Update*) e recarregue com `Ctrl+Shift+R`.
 
 O banco não tem porta pública (de propósito): não há monitor TCP direto. Se o Postgres cair, `database` vira `erro` no `/health` e o monitor da API alerta.
 
