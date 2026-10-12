@@ -104,6 +104,30 @@ describe('cadastros auxiliares: funis e regras', () => {
     ).rejects.toThrow(/funis_padrao_uq/)
   })
 
+  it('mesmo com duas gravações simultâneas, o banco nunca aceita dois funis padrão', async () => {
+    const t = await novoTenant()
+    const tentar = (nome: string) =>
+      comTenant(app, t, async (tx) => {
+        await tx`INSERT INTO funis (id, tenant_id, nome, padrao) VALUES (${novoId()}, ${t}, ${nome}, true)`
+        // segura a transação aberta para a outra disputar o índice
+        await new Promise((r) => setTimeout(r, 300))
+      })
+    const resultados = await Promise.allSettled([tentar('A'), tentar('B'), tentar('C')])
+    expect(resultados.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    for (const r of resultados.filter((x) => x.status === 'rejected')) {
+      expect(String(r.reason)).toMatch(/funis_padrao_uq/)
+    }
+    const [linha] = await comTenant(
+      app,
+      t,
+      (tx) =>
+        tx<
+          { n: number }[]
+        >`SELECT count(*)::int AS n FROM funis WHERE padrao AND excluido_em IS NULL`,
+    )
+    expect(linha?.n).toBe(1)
+  })
+
   it('a fase repete o nome em funis diferentes e valida probabilidade e dias de alerta', async () => {
     const t = await novoTenant()
     const [f1, f2] = [novoId(), novoId()]

@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, ne, schema } from '@leadtogo/db'
+import { and, asc, eq, isNull, ne, schema, sql } from '@leadtogo/db'
 import type {
   AlterarFaseEntrada,
   AlterarFunilEntrada,
@@ -122,6 +122,13 @@ export class FunisService {
   async alterar(id: string, dados: AlterarFunilEntrada): Promise<Funil> {
     exigirAdmin(this.ctx)
     const db = this.ctx.db()
+    if (dados.padrao) {
+      // Duas trocas de padrão ao mesmo tempo são feitas uma de cada vez (o índice único também
+      // garantiria um padrão só, mas a segunda levaria um erro de unicidade em vez de simplesmente trocar)
+      await db.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${`funil_padrao:${this.ctx.tenantId}`}))`,
+      )
+    }
     const atual = await this.funil(id)
     if (dados.ativo === false && atual.padrao) {
       throw new ErroApi(
@@ -178,7 +185,7 @@ export class FunisService {
         409,
       )
     }
-    // Quando houver oportunidades (Módulo 6), um funil com oportunidades não se exclui: entra aqui
+    // Módulo 6: funil com oportunidades ativas só se exclui depois de movê-las (só fechadas, pode); a conferência entra aqui
     const agora = new Date()
     await db
       .update(funilFases)
@@ -283,7 +290,7 @@ export class FunisService {
     if ((await this.fasesDe(funil.id)).length <= 1) {
       throw new ErroApi('ultima_fase', 'O funil precisa ter ao menos uma fase.', 409)
     }
-    // Quando houver oportunidades (Módulo 6), fase com oportunidades não se exclui: é preciso movê-las
+    // Módulo 6: fase com oportunidades ativas só se exclui depois de movê-las; com só fechadas, pode (mantém o histórico e a "fase em que parou"). A conferência entra aqui
     await this.ctx
       .db()
       .update(funilFases)

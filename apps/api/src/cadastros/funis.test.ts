@@ -188,6 +188,20 @@ describe('funis', () => {
     expect((await chamar('delete', d.cookie, `/${vendas?.id}`)).status).toBe(404)
   })
 
+  it('duas trocas de padrão ao mesmo tempo: as duas dão certo e sobra exatamente um padrão', async () => {
+    const d = await novoDono(app)
+    const b = await criarFunil(d.cookie, 'B')
+    const c = await criarFunil(d.cookie, 'C')
+    const [rb, rc] = await Promise.all([
+      chamar('patch', d.cookie, `/${b.id}`, { padrao: true }),
+      chamar('patch', d.cookie, `/${c.id}`, { padrao: true }),
+    ])
+    expect([rb.status, rc.status]).toEqual([200, 200])
+    const padroes = (await funis(d.cookie, '?incluirInativos=true')).filter((f) => f.padrao)
+    expect(padroes).toHaveLength(1)
+    expect([b.id, c.id]).toContain(padroes[0]?.id)
+  })
+
   it('funil inativo não vira padrão sem ser reativado; reativar e tornar padrão juntos funciona', async () => {
     const d = await novoDono(app)
     const outro = await criarFunil(d.cookie, 'Renovação')
