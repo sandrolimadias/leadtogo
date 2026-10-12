@@ -527,17 +527,20 @@ Checklist:
 
 ## E15. Segurança e endurecimento — Ale + Claude Code
 
-- [ ] Cabeçalhos de segurança (CSP, HSTS, X-Frame-Options) conferidos em `securityheaders.com`.
-- [ ] `/docs` (Swagger) protegido em produção.
-- [ ] Rate limit testado no login (bloqueia após várias tentativas).
+- [x] Cabeçalhos de segurança (CSP, HSTS, X-Frame-Options) conferidos com `curl -sI` em produção em 12/10/2026: web com CSP restrita (`frame-ancestors 'none'`), HSTS 1 ano com `includeSubDomains`, `X-Frame-Options: DENY`, nosniff, Referrer-Policy e Permissions-Policy; API com CSP do Helmet, HSTS, `X-Frame-Options: SAMEORIGIN` e nosniff. Falta só a nota em `securityheaders.com` (opcional).
+- [x] `/docs` (Swagger) protegido em produção: **desligado** (`/docs` e `/docs-json` respondem 404 em 12/10/2026; `main.ts` só monta o Swagger fora da produção).
+- [x] Rate limit testado no login: teste automatizado em `auth.test.ts` (3 tentativas erradas respondem 401 e a seguinte 429; contador no Valkey; `X-Forwarded-For` forjado não burla). Limites: login 3 por 10 s (padrão do Better Auth), 2FA 5 por 60 s, e-mails de recuperação/verificação 3 por 5 min, demais rotas do auth 100 por 10 s; API geral 300 por 60 s (`RATE_LIMIT_MAX`, `RATE_LIMIT_JANELA_S`).
 - [x] Firewall da Oracle conferido: de fora, só **22, 80 e 443** abertas.
 - [x] Portas de e-mail removidas.
 - [x] Backups diários no R2 e restauração testados em 09/10/2026 (`docs/runbook_backup.md`).
-- [ ] Banco, Valkey e Garage **sem porta pública** (verificar com `nmap` de fora).
-- [ ] 2FA obrigatório para administradores.
-- [x] Script de **espelhamento do Garage** para o R2, com aviso ao Uptime Kuma (`docs/runbook_backup.md`, seção 4); falta o teste de restauração dos arquivos.
-- [ ] Revisão de dependências: `pnpm audit` limpo de alto/crítico.
-- [ ] Política de privacidade/LGPD: rascunho em `docs/lgpd.md` (dados tratados, base legal, retenção, exclusão).
+- [x] Banco, Valkey e Garage **sem porta pública** (verificado: só 22, 80 e 443 abertas).
+- [x] 2FA obrigatório para administradores (política `dois_fatores_exigido`).
+- [x] **Espelhamento do Garage** para o R2 (timer do systemd às 3h30) com aviso ao Uptime Kuma (`docs/runbook_backup.md`, seção 4); falta o teste real de restauração dos arquivos, pendente até existirem anexos.
+- [x] Revisão de dependências: `pnpm audit` em 12/10/2026 sem alto/crítico; 1 **moderada** (esbuild ≤ 0.24.2, GHSA-67mh-4wv8-2f99, via `drizzle-kit` → `@esbuild-kit`, só ferramenta de desenvolvimento, fora da imagem de produção).
+- [ ] Política de privacidade/LGPD: rascunho em `docs/lgpd.md` (dados tratados, base legal, retenção, exclusão). **`docs/lgpd.md` ainda não existe.**
+- [x] SSH só por chave (`PasswordAuthentication no`, `PermitRootLogin without-password`), conferido em 12/10/2026.
+- [ ] (opcional) `fail2ban`.
+- [ ] (evolução futura) SSH só pelo Tailscale e porta 22 fechada na Oracle.
 
 > **Nota:** o status "Degraded" do Garage no Coolify é só visual (os volumes aparecem listados como serviços); o Garage está saudável e responde normalmente.
 
