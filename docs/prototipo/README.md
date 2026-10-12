@@ -198,4 +198,6 @@ docs/
   funcionalidades.md, modelagem_banco.md
 ```
 
+> **Configurações → Usuários e equipe (E16a):** o protótipo traz o campo *Gestor* no convite, o botão *Transferir carteira* e o vendedor *Sem acesso* criado na tela. Esses três **ficam para o MVP** (valem `funcionalidades.md` e `revisao_prototipo.md`, seção 6). As telas **Segurança** e **Criar empresa** não foram prototipadas.
+
 Em cada `.dc.html`, a marcação está entre `<x-dc>` e `</x-dc>` (estilos inline com `var(--token)`), e a lógica de estado/interação na classe `Component` do `<script data-dc-script>` — leia ambos para regras de exibição (ex.: quando mostrar "Sem próxima atividade", cores de atraso, validações).

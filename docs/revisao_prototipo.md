@@ -49,3 +49,18 @@ O protótipo cobre **7 fluxos** (Dashboard, Empresas, Ficha da empresa, Nova emp
 - O botão "Importar planilha" aparece na lista de empresas, mas o fluxo de importação (mapeamento de colunas, prévia, erros) não foi desenhado. Foi incluído no pedido da segunda rodada.
 - "Rotas (Fase 3)" aparece no menu como item futuro, com badge. No MVP, esconder ou manter desativado.
 - `support.js` e a barra Tema/Dispositivo do protótipo **não** fazem parte do produto.
+
+## 6. Divergências da tela Usuários e equipe (E16a, 12/10/2026)
+
+Onde o protótipo (`Configuracoes.dc.html`) e `funcionalidades.md` divergem, **vale o documento**:
+
+| Protótipo | Documento | Decisão |
+|---|---|---|
+| "Convidar pessoa" tem o campo **Gestor** (hierarquia) | o convite leva só e-mail e papel | **Fica para o MVP**, com o módulo de carteira |
+| Botão **Transferir carteira** em Usuários | a transferência é do gestor ou admin e depende da carteira (seção 10) | **Fica para o MVP**, com o módulo de Empresas |
+| Vendedor **"Sem acesso"** criado na própria tela | vendedor = membro que pode existir sem login (decisão 25) | só **exibe** quem já existe assim; criar fica para o MVP |
+| Seção visível para "Admin" | gestor não acessa configurações | igual: só o administrador da empresa |
+| Sem tela de **Segurança** nem de **criar empresa** do grupo | política de 2FA por empresa e criação de empresas pelo administrador da conta | telas novas, pelo design system |
+| Sem "último acesso" | não definido | mostra a data aproximada da sessão mais recente |
+| Convite expirado, cancelado e já usado em telas diferentes (pedido) | a API responde o mesmo 404 de propósito | uma só tela "Convite inválido" |
+

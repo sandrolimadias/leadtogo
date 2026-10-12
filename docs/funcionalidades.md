@@ -468,9 +468,19 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 - **Um login, vários papéis:** o mesmo usuário pode ser admin numa empresa e vendedor em outra. O papel é definido por empresa.
 - **Painel consolidado** (administradores da conta): soma das empresas para funil, previsão (inclusive MRR), conquistados × perdidos, atividades da equipe e carteira por status, com filtro por empresa. Só leitura; para agir, abre a empresa.
 - **Copiar configurações** de uma empresa para outra (funis, tags, tipos de atividade, origens, motivos, soluções, produtos, faixas, verticais, campos personalizados e quadro modelo). Útil ao criar uma nova empresa no grupo.
+- **Criar empresa (tela `/criar-empresa`, E16a):** só o dono ou administrador da conta, pelo item "Criar empresa" do seletor. Razão social obrigatória; nome fantasia e CNPJ opcionais (CNPJ validado, alfanumérico, com dígitos verificadores). A empresa nasce em teste, com as configurações padrão e quem criou como administrador, e a pessoa já entra nela. **Não há unicidade global de CNPJ** (não revela que outra conta existe): só um aviso quando a **mesma conta** já tem o CNPJ. Consulta à Receita e cópia de configurações ficam para depois. Registrada na auditoria.
 - **Gestão da conta:** criar ou desativar empresas, administradores da conta (dono, administrador, financeiro) e, no futuro, plano e cobrança.
 - **Notificações** de todas as empresas na mesma central, com a identificação da empresa.
 - Uma mesma empresa cliente pode existir em duas empresas do grupo, como cadastros independentes. Não há compartilhamento de carteira.
+
+### Equipe e convites (E16a)
+
+- **Quem usa:** só o **administrador da empresa ativa** (Configurações → Usuários e equipe). Gestor e vendedor não veem o menu nem a rota. A visão de equipe do gestor vem com a carteira e o painel, no MVP.
+- **Lista:** nome, e-mail, papel, situação (*Ativo*, *Inativo*, *Convidado*, *Convite expirado*), com ou sem acesso e **último acesso** (só a data, aproximada: vem da sessão mais recente, atualizada no máximo uma vez por dia, até existir o registro de acessos).
+- **Convidar** por e-mail com papel (validade de 7 dias, uso único); **reenviar** cria outro convite e o anterior deixa de valer; **cancelar** invalida o link. O link inválido, vencido, cancelado ou já usado mostra a **mesma** tela "Convite inválido" (a API não revela o motivo).
+- **Mudar papel, desativar e reativar:** desativar vale na próxima requisição da pessoa e mantém o histórico. Quem está com a sessão aberta recebe um aviso claro e é levado a outra empresa dela, se houver, ou ao login.
+- **Proteções:** ninguém altera o próprio papel nem a própria situação; o **dono da conta** não é rebaixado nem desativado por outro administrador; a empresa nunca fica sem administrador ativo.
+- **Auditoria:** criar empresa, convidar, cancelar convite, mudar papel, desativar e reativar geram registro (quem, o quê, **IP**).
 
 ### Segurança e acesso (v1.6)
 
@@ -489,7 +499,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 - **Como a regra é aplicada:** vale a política da **empresa ativa**, para o **papel que a pessoa tem nela**. Quem entra numa empresa que o exige e ainda não tem 2FA é levado à **ativação** e fica barrado nas demais telas e rotas (`403 2fa_obrigatorio`) até ativar. **Ao trocar de empresa vale a regra da nova:** a troca sempre é permitida, e o mesmo usuário pode estar livre numa empresa e barrado em outra. A mudança da política vale na próxima requisição de cada pessoa.
 - **Administradores da conta** (dono ou administrador, painel consolidado) precisam de 2FA sempre, qualquer que seja a política.
 - **Quem não pode desativar:** administradores da conta e qualquer usuário a quem a política de **alguma** das empresas dele obriga (o administrador não desativa enquanto a regra exigir).
-- **Quem altera a política:** só o **administrador** da empresa. Por ora só pela API (`PATCH /v1/configuracoes/seguranca`); a tela fica nas **Configurações** (item "Segurança" abaixo).
+- **Quem altera a política:** só o **administrador** da empresa, pela tela **Configurações → Segurança** (e pela API, `PATCH /v1/configuracoes/seguranca`).
 - **Outras regras de acesso:** login com e-mail e senha (mínimo de 10 caracteres), mensagens que **não revelam** se um e-mail existe (login e recuperação de senha), recuperação por link de 1 hora e uso único, confirmação de e-mail, convite de 7 dias e uso único, **sessão de 7 dias** renovada por uso. Google só entra para quem já tem conta (e só se a flag estiver ligada).
 
 ---
@@ -505,7 +515,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 | Motivos de perda | Admin |
 | Catálogo de produtos | Admin / Gestor |
 | Campos personalizados | Admin |
-| Usuários e papéis | Admin |
+| Usuários e papéis | Admin (**tela pronta na E16a**: convidar por e-mail com papel, reenviar e cancelar convites, mudar papel, desativar e reativar; ver "Equipe e convites" na seção 10) |
 | Integrações | Admin (chaves de API, webhooks, conexões WhatsApp, logs). Fase futura, com menu previsto |
 | Quadro de tarefas modelo e etiquetas da equipe | Admin / Gestor |
 | Modelos de e-mail | Admin / Gestor (modelos da empresa); cada usuário pode ter os seus |

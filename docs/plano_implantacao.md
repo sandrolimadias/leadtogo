@@ -553,7 +553,7 @@ Checklist:
 
 **Por quê:** a E16 pede criar a empresa B, convidar um vendedor e trocar de empresa, mas hoje só existem o link "Criar empresa" no seletor (mostra um aviso "em breve") e a API de convites, sem tela. Esta etapa entrega as telas que faltam para a E16 poder ser feita **pelo app**, sem SQL nem `curl`.
 
-**Status:** **plano aprovado pelo Ale em 12/10/2026, com as decisões e os ajustes abaixo; em implementação (bloco API, depois web, depois E2E).** Leitura de base: `funcionalidades.md` (seções 10 e 11), `docs/prototipo/README.md` e `Configuracoes.dc.html` (Usuários e equipe), `design_system.md`, `modelagem_banco.md` (3.0 e 3.4).
+**Status:** **plano aprovado pelo Ale em 12/10/2026; API e web entregues e em produção, E2E escrito (`apps/web/e2e/gestao.spec.ts`, 5 cenários); falta a conferência manual do Ale em produção.** Leitura de base: `funcionalidades.md` (seções 10 e 11), `docs/prototipo/README.md` e `Configuracoes.dc.html` (Usuários e equipe), `design_system.md`, `modelagem_banco.md` (3.0 e 3.4).
 
 ### O que a API já cobre e o que falta
 
