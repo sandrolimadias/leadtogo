@@ -162,6 +162,32 @@ unset H A O
 
 - Se a API não resolver o `<uuid>` (erro `ENOTFOUND`), os recursos não estão na mesma rede: em **cada** recurso (db, cache, api, worker) ligue *Advanced → Connect to Predefined Network* e reimplante (ou conecte-os à `leadtogo-net`, plano 4.2).
 
+### 4.6 Consultar o banco em produção (psql no container)
+
+**Atenção:** no container do Postgres a variável `POSTGRES_DB` aponta para `postgres`, **não** para o banco da aplicação. O banco do Leadtogo se chama **`leadtogo`**: sempre passe `-d leadtogo`.
+
+Na VPS (o `name=` é o identificador do recurso `leadtogo-db` no Coolify):
+
+```bash
+docker exec -it $(docker ps -q -f name=orq8miun4hoaqnvwbntlxzwt | head -n 1) sh -c 'psql -U "$POSTGRES_USER" -d leadtogo'
+```
+
+(sem o `-t`/`-i` do `-it` também serve para uma consulta só, com `psql -c '...'`.)
+
+- **Tabela de controle das migrações:** `drizzle.__drizzle_migrations` (schema `drizzle`, não o `public`), com as colunas `id`, `hash` e `created_at` (conferidas em produção em 12/10/2026: **15 migrações, de 0000 a 0014**). Para ver as últimas aplicadas:
+
+```sql
+SELECT id, to_timestamp(created_at/1000) AS gerada_em FROM drizzle.__drizzle_migrations ORDER BY id DESC LIMIT 5;
+```
+
+  **`created_at` é a data de geração da migração** (o momento em que o `drizzle-kit generate` a criou, em milissegundos), **não** a data em que ela foi aplicada no banco. Para saber se uma migração foi aplicada, conte as linhas e confira o efeito dela (como na 0014, abaixo).
+- **Migração 0014 conferida em produção em 12/10/2026:** a restrição `tenants_cnpj_key` foi removida e o índice `tenants_conta_cnpj_idx` foi criado. Para repetir a conferência:
+
+```sql
+SELECT count(*) FROM pg_constraint WHERE conname = 'tenants_cnpj_key';          -- esperado: 0
+SELECT indexname FROM pg_indexes WHERE indexname = 'tenants_conta_cnpj_idx';    -- esperado: 1 linha
+```
+
 ---
 
 ## 5. Recursos no Coolify
