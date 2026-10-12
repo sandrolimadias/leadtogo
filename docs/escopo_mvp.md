@@ -44,6 +44,7 @@ Formulário **Registrar atividade** (protótipo), situação, resultado, importa
 
 ### Módulo 6 — Oportunidades
 **Kanban por funil**, arrastar entre fases, **diálogo de fechamento** (Conquistado/Perdido/Cancelado/Suspenso, motivo, *retomar em*, empresa vira Cliente), **valores digitados** (único, mensal, total), probabilidade sugerida pela etapa, histórico de fases e lista simples.
+- **Regra de exclusão de fase (decidida em 12/10/2026):** fase com oportunidades **ativas** só pode ser excluída depois de **mover** essas oportunidades; com **só oportunidades fechadas**, pode ser excluída (exclusão lógica), mantendo o histórico de fases e a "fase em que parou". O mesmo vale para excluir um **funil**. A API de funis (Módulo 1) ainda não confere isso, porque ainda não há oportunidades: a verificação entra junto com a tabela `oportunidades`, com teste.
 
 ### Módulo 7 — Dashboard
 Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase, previsão do mês, conquistadas × perdidas, carteira por status e sem contato há 60 dias. **Só a visão "Minha".**

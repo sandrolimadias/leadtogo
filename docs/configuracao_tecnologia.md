@@ -2,6 +2,7 @@
 
 > Documento de definições técnicas do projeto.
 > Status: **Aprovado (v1.1)** · Data: 05/10/2026
+> v1.7: **modelo comercial** (SaaS multiempresa, com a porta aberta para on-premise) e as proteções a adotar desde já (seção 17)
 > v1.1: n8n e Evolution API (já em produção na VPS) incorporados à arquitetura
 > v1.2: e-mail (Gmail/Microsoft Graph, BCC, rastreamento), agendas, tarefas Kanban, notificações e container de *worker*
 > v1.3: multiempresa (conta dona de vários tenants, empresa ativa na sessão, leitura consolidada via RLS)
@@ -423,6 +424,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 | 19 | Tempo real e push | SSE/Socket.io + Web Push (PWA) + FCM/APNs (Capacitor) |
 | 20 | Multiempresa | Conta → tenants → membros; empresa ativa na sessão; consolidado só leitura via `app.tenant_ids`, só para administradores da conta |
 | 21 | Organizações do Better Auth | **Não usadas**: o Better Auth só faz identidade; empresas, membros e convites são nossos, sob RLS |
+| 22 | Modelo comercial | **SaaS multiempresa**, com a porta aberta para **on-premise** (Docker no cliente) no futuro; proteções adotadas desde já na seção 17 |
 | 21 | Domínios | Domínio único `crm.aledias.com.br` (Traefik: `/v1` → API, resto → web); `api.crm.aledias.com.br` só para integrações (subdomínios via registro curinga `*.crm`) |
 
 ## 16. Próximos passos
@@ -431,3 +433,28 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 2. **Modelagem do banco** (entidades, relacionamentos, RLS).
 3. Montar o **esqueleto do monorepo** e o ambiente dev local.
 4. Configurar o Coolify (serviços, domínios, backups) e o CI no GitHub.
+
+---
+
+## 17. Modelo comercial e distribuição
+
+**Decisão (12/10/2026):** o Leadtogo será vendido como **SaaS multiempresa**, com a **porta aberta para o on-premise** (Docker no servidor do cliente) no futuro. Isso **substitui** a ideia anterior de licença perpétua. Não há um segundo produto: é o mesmo código e as mesmas imagens. O que se faz **desde já** é evitar escolhas que fechem essa porta.
+
+### Proteções a adotar desde já
+
+1. **Imagens para `amd64` e `arm64`.** Hoje só `linux/arm64` (a VPS é ARM). Passa a publicar **também `linux/amd64`**, que é o que quase todo servidor de cliente usa. O build usa **runner nativo** para cada arquitetura (`ubuntu-24.04` para amd64 e `ubuntu-24.04-arm` para arm64), **sem QEMU**, e um manifesto multi-arquitetura no GHCR. Entra como **commit de CI próprio, logo depois do Módulo 1** (ver `esteira_deploy.md`).
+2. **Nenhuma dependência obrigatória dos serviços do Ale.** O sistema sobe e funciona sem o n8n, a Evolution API, o GlitchTip, o Uptime Kuma e o Resend do Ale:
+   - **E-mail:** hoje o SMTP é **global, por variável de ambiente** (`SMTP_HOST`...), sem ele nenhum e-mail sai e o app funciona; o **SMTP por tenant** (Configurações → E-mail, já previsto em `funcionalidades.md`) é o que o on-premise e os clientes com domínio próprio vão usar. O Resend é só o padrão do SaaS.
+   - **GlitchTip/Sentry:** **opcional** (sem `SENTRY_DSN`, o app roda normalmente).
+   - **Backup:** destino e agenda **configuráveis** (hoje o script cobre o Garage local e o R2); sem credenciais externas obrigatórias.
+   - Integrações (n8n, WhatsApp) continuam opcionais e por tenant.
+3. **Migrações só para frente.** Sempre **expandir e depois contrair**, nunca editar migração aplicada. Isso permite atualizar um cliente on-premise que está várias versões atrás, aplicando as migrações em sequência, sem *rollback* de esquema.
+4. **Limites de plano num módulo isolado** (`apps/api/src/plano/`, a criar): toda regra do tipo "até N usuários", "até N empresas", recurso ligado ou desligado passa por **uma única interface** (`PlanoService`: limites e recursos do tenant). No SaaS, ela lê a **assinatura** (`contas.plano` e a cobrança); no on-premise, leria uma **chave de licença** assinada. O restante do código **não** conhece a origem dos limites.
+
+### Pendências pós-MVP do SaaS
+
+- **Cadastro e cobrança self-service** (criar a conta, escolher o plano, pagar e cancelar sem o Ale).
+- **Painel administrativo** do Ale (contas, empresas, uso, suspensão, suporte).
+- **Plano de capacidade** (quantos clientes por VPS, quando separar banco, fila e arquivos, custo por cliente).
+- **Contratos** (termos de uso, DPA, SLA e política de privacidade; ver `lgpd.md`).
+- **Empacotamento on-premise** (compose do cliente, instalação, atualização e licença), só quando houver o primeiro cliente que peça.

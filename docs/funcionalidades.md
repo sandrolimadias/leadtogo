@@ -294,7 +294,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 - Ao mudar para **Perdido, Cancelado ou Suspenso**: exige o **Motivo** (lista cadastrável por status) e guarda a **fase em que parou** (análise de onde se perde).
 - **Suspenso** tem o campo "**Retomar em**", que cria uma atividade de retomada.
 - Reabrir (voltar para Ativo) é permitido, com registro no histórico.
-- Não é possível excluir uma etapa que tem oportunidades; antes é preciso movê-las.
+- **Excluir etapa (v1.6):** com oportunidades **ativas** na etapa, é preciso **movê-las antes**. Havendo só oportunidades **fechadas** (Conquistado, Perdido, Cancelado ou Suspenso), a etapa pode ser excluída (exclusão lógica), e o histórico de fases e a **"fase em que parou"** continuam mostrando o nome dela.
 - **Histórico de etapas:** cada mudança de etapa é registrada (data, usuário, de → para). Isso permite calcular tempo médio por etapa e conversão.
 
 ---
