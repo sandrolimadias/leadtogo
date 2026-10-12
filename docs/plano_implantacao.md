@@ -527,7 +527,7 @@ Checklist:
 
 ## E15. Segurança e endurecimento — Ale + Claude Code
 
-- [x] Cabeçalhos de segurança (CSP, HSTS, X-Frame-Options) conferidos com `curl -sI` em produção em 12/10/2026: web com CSP restrita (`frame-ancestors 'none'`), HSTS 1 ano com `includeSubDomains`, `X-Frame-Options: DENY`, nosniff, Referrer-Policy e Permissions-Policy; API com CSP do Helmet, HSTS, `X-Frame-Options: SAMEORIGIN` e nosniff. Falta só a nota em `securityheaders.com` (opcional).
+- [x] Cabeçalhos de segurança (CSP, HSTS, X-Frame-Options) conferidos com `curl -sI` em produção em 12/10/2026: web com CSP restrita (`frame-ancestors 'none'`), HSTS 1 ano com `includeSubDomains`, `X-Frame-Options: DENY`, nosniff, Referrer-Policy e Permissions-Policy; API com CSP do Helmet, HSTS, `X-Frame-Options: SAMEORIGIN` e nosniff. `securityheaders.com`: **A+** em 12/10/2026; melhoria opcional: `Cross-Origin-Opener-Policy: same-origin`.
 - [x] `/docs` (Swagger) protegido em produção: **desligado** (`/docs` e `/docs-json` respondem 404 em 12/10/2026; `main.ts` só monta o Swagger fora da produção).
 - [x] Rate limit testado no login: teste automatizado em `auth.test.ts` (3 tentativas erradas respondem 401 e a seguinte 429; contador no Valkey; `X-Forwarded-For` forjado não burla). Limites: login 3 por 10 s (padrão do Better Auth), 2FA 5 por 60 s, e-mails de recuperação/verificação 3 por 5 min, demais rotas do auth 100 por 10 s; API geral 300 por 60 s (`RATE_LIMIT_MAX`, `RATE_LIMIT_JANELA_S`).
 - [x] Firewall da Oracle conferido: de fora, só **22, 80 e 443** abertas.
