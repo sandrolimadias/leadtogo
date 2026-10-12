@@ -215,6 +215,20 @@ describe('proteções de login', () => {
     expect((await valkey.keys(`${PREFIXO_LIMITE_AUTH}*`)).length).toBeGreaterThan(0)
   })
 
+  it('regras explícitas além do login: /sign-up/* também responde 429 depois de 3 tentativas por 10 s', async () => {
+    const a = await subir({ TRUST_PROXY: '0' })
+    const statuses: number[] = []
+    for (let i = 0; i < 5; i++) {
+      const r = await request(a.getHttpServer())
+        .post('/v1/auth/sign-up/email')
+        .set('Origin', ORIGEM_DO_FRONT)
+        .send({ name: 'Intruso', email: emailUnico('intruso'), password: SENHA_PADRAO })
+      statuses.push(r.status)
+    }
+    expect(statuses.slice(0, 3).every((s) => s !== 429)).toBe(true)
+    expect(statuses.slice(3)).toEqual([429, 429])
+  })
+
   it('o limite é por IP real: X-Forwarded-For forjado não burla (sem proxy confiável)', async () => {
     const a = await subir({ TRUST_PROXY: '0' })
     const { email } = await criarUsuario(a)

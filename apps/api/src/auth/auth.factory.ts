@@ -152,6 +152,12 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
       customRules: {
         // Explícito (igual ao padrão do Better Auth): uma atualização da biblioteca não muda o limite do login sem aviso
         '/sign-in/*': { window: 10, max: 3 },
+        '/sign-up/*': { window: 10, max: 3 },
+        '/change-password': { window: 10, max: 3 },
+        '/change-email': { window: 10, max: 3 },
+        '/forget-password*': { window: 60, max: 3 },
+        // Sem regra própria na biblioteca: vale o limite geral do Better Auth (100 por 10 s)
+        '/reset-password*': { window: 10, max: 100 },
         '/two-factor/verify-totp': { window: 60, max: 5 },
         '/two-factor/verify-backup-code': { window: 60, max: 5 },
         '/two-factor/disable': { window: 60, max: 5 },
