@@ -104,3 +104,11 @@ export const membroDaEquipeSchema = z
   })
   .meta({ id: 'MembroDaEquipe' })
 export type MembroDaEquipe = z.infer<typeof membroDaEquipeSchema>
+
+/** PATCH /v1/membros/:id (administrador): muda o papel e/ou ativa e desativa o membro. */
+export const alterarMembroSchema = z
+  .object({ papel: papelMembroSchema.optional(), ativo: z.boolean().optional() })
+  .strict()
+  .refine((v) => v.papel !== undefined || v.ativo !== undefined, 'informe o papel ou a situação')
+  .meta({ id: 'AlterarMembroEntrada' })
+export type AlterarMembroEntrada = z.infer<typeof alterarMembroSchema>

@@ -571,13 +571,13 @@ Checklist:
 
 **Regras novas da API (a cobrir com testes, inclusive de isolamento entre tenants):**
 - Só **admin** altera papel e ativo; gestor e vendedor recebem 403.
-- **Nunca ficar sem administrador:** não se rebaixa nem se desativa o **último admin ativo**; ninguém altera o **próprio** papel ou situação (evita o auto-bloqueio).
+- **Nunca ficar sem administrador:** ninguém altera o **próprio** papel ou situação, e quem altera é sempre outro admin ativo (conferido sob trava no banco: dois admins tirando o acesso um do outro ao mesmo tempo, só o primeiro vale e o segundo leva 403). Assim o **último admin ativo** nunca é rebaixado nem desativado.
 - Desativar vale **na próxima requisição**: a pessoa perde a empresa (não conta mais em `/me`) e, se era a empresa ativa, cai no seletor ou em outra empresa dela. O histórico é mantido (`ativo=false`, sem apagar).
 - Quem foi desativado volta por **Reativar** (hoje o convite recusa quem ainda é membro inativo com `ja_e_membro`).
 - `POST /v1/empresas`: a nova empresa nasce na **conta** do administrador (se ele administra mais de uma, `contaId` é obrigatório); mudanças de papel e criação vão para a **auditoria**.
 - **Último acesso:** vem da sessão mais recente do usuário (`auth.session.updated_at`, atualizada no máximo uma vez por dia). É aproximado, e o `acessos_log` (`lgpd.md`, 5.1) o tornará exato. **A tela mostra só a data, sem hora.**
 - **Dono da conta protegido:** o dono (`conta_administradores.papel = 'dono'`) não pode ser rebaixado nem desativado por outro admin da empresa, além da regra do último admin.
-- **Membro desativado com sessão aberta:** a requisição seguinte responde 403 (`membro_inativo`); o web mostra uma mensagem clara e leva para **outra empresa do usuário**, se houver, ou para o login. Coberto por E2E.
+- **Membro desativado com sessão aberta:** a requisição seguinte responde 403 (`empresa_ativa_invalida`, que já existe); o web mostra uma mensagem clara e leva para **outra empresa do usuário**, se houver, ou para o login. Coberto por E2E.
 - **Auditoria:** criar empresa, convidar, cancelar convite, mudar papel, desativar e reativar geram registro em `auditoria`.
 - **Isolamento:** todo endpoint novo tem teste de isolamento (o admin da empresa A não altera membro, convite nem dado da B).
 - **CNPJ ao criar empresa:** razão social obrigatória; nome fantasia e CNPJ opcionais; CNPJ validado (alfanumérico, com dígitos verificadores) pelo Zod compartilhado. **Sem unicidade global de CNPJ**, para não revelar que outra conta existe; no máximo um aviso quando o CNPJ já está em outra empresa **da mesma conta**. Consulta à Receita e cópia de configurações ficam para depois.
