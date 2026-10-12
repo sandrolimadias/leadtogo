@@ -8,17 +8,32 @@ import type {
   MembroDaEquipe,
   Preferencias,
   PreferenciasPatch,
+  Motivo,
+  Origem,
   Seguranca,
+  Solucao,
   TagGrupo,
+  TipoAtividade,
+  Vertical,
 } from '@leadtogo/api-client'
 import type {
   AlterarMembroEntrada,
+  AlterarMotivoEntrada,
+  AlterarOrigemEntrada,
+  AlterarSolucaoEntrada,
   AlterarTagEntrada,
   AlterarTagGrupoEntrada,
+  AlterarTipoAtividadeEntrada,
+  AlterarVerticalEntrada,
   CriarConviteEntrada,
   CriarEmpresaEntrada,
+  CriarMotivoEntrada,
+  CriarOrigemEntrada,
+  CriarSolucaoEntrada,
   CriarTagEntrada,
   CriarTagGrupoEntrada,
+  CriarTipoAtividadeEntrada,
+  CriarVerticalEntrada,
   PoliticaDoisFatores,
   PrimeiroAcessoEntrada,
   PrimeiroAcessoResultado,
@@ -56,6 +71,32 @@ export interface ServicosDeTags {
   excluirTag: (id: string) => Promise<Resultado>
   /** Os ids de TODAS as tags do grupo, na ordem nova */
   reordenarTags: (grupoId: string, ids: string[]) => Promise<Resultado<TagGrupo>>
+}
+
+/**
+ * Cadastro simples da empresa ativa (verticais, soluções, origens, motivos, tipos de atividade): a
+ * mesma forma de API para os cinco. Só o administrador escreve.
+ */
+export interface ServicosDeCadastro<Item, Criar, Alterar> {
+  /** Todos, inclusive os inativos (a tela os mostra com a palavra "Inativo") */
+  listar: () => Promise<Resultado<Item[]>>
+  criar: (dados: Criar) => Promise<Resultado<Item>>
+  alterar: (id: string, dados: Alterar) => Promise<Resultado<Item>>
+  excluir: (id: string) => Promise<Resultado>
+  /** Os ids de TODOS os itens, na ordem nova */
+  reordenar: (ids: string[]) => Promise<Resultado<Item[]>>
+}
+
+export interface ServicosDeCadastros {
+  verticais: ServicosDeCadastro<Vertical, CriarVerticalEntrada, AlterarVerticalEntrada>
+  solucoes: ServicosDeCadastro<Solucao, CriarSolucaoEntrada, AlterarSolucaoEntrada>
+  origens: ServicosDeCadastro<Origem, CriarOrigemEntrada, AlterarOrigemEntrada>
+  motivos: ServicosDeCadastro<Motivo, CriarMotivoEntrada, AlterarMotivoEntrada>
+  tiposAtividade: ServicosDeCadastro<
+    TipoAtividade,
+    CriarTipoAtividadeEntrada,
+    AlterarTipoAtividadeEntrada
+  >
 }
 
 /**
@@ -112,4 +153,5 @@ export interface ServicosDeAcesso {
 
   // Cadastros auxiliares (Módulo 1)
   tags: ServicosDeTags
+  cadastros: ServicosDeCadastros
 }

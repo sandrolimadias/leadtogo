@@ -125,6 +125,43 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       excluirTag: vi.fn(async () => ok(undefined)),
       reordenarTags: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
+    cadastros: {
+      verticais: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        reordenar: vi.fn(async () => ok([])),
+      },
+      solucoes: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        reordenar: vi.fn(async () => ok([])),
+      },
+      origens: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        reordenar: vi.fn(async () => ok([])),
+      },
+      motivos: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        reordenar: vi.fn(async () => ok([])),
+      },
+      tiposAtividade: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        reordenar: vi.fn(async () => ok([])),
+      },
+    },
     ...troca,
   }
   return s as typeof s & ServicosDeAcesso

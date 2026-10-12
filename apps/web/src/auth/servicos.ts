@@ -4,7 +4,12 @@ import { api } from '@/api/cliente'
 
 import { authClient } from './cliente'
 import { erroDeRede, traduzirErro } from './erros'
-import type { ConfiguracaoDoDoisFatores, Resultado, ServicosDeAcesso } from './tipos'
+import type {
+  ConfiguracaoDoDoisFatores,
+  Resultado,
+  ServicosDeAcesso,
+  ServicosDeCadastro,
+} from './tipos'
 
 const ok = <T>(dados: T): Resultado<T> => ({ ok: true, dados })
 
@@ -44,6 +49,49 @@ function daApi<T>(r: { data?: T; error?: ErroDaApi; response: Response }): Resul
 function semCorpo(r: { error?: ErroDaApi; response: Response }): Resultado {
   if (r.response.ok) return ok(undefined)
   return daApi({ ...r, data: undefined })
+}
+
+/**
+ * Os cinco cadastros simples têm a mesma API (`GET/POST /v1/configuracoes/<rota>`, `PATCH/DELETE
+ * /<rota>/{id}`, `PUT /<rota>/ordem`). O cliente tipado exige o caminho literal de cada rota, então a
+ * fábrica fala com ele por esta forma mínima; os tipos de cada cadastro vêm da interface
+ * `ServicosDeCadastros`, e `servicos.test.ts` confere método, caminho e corpo das cinco rotas.
+ */
+interface ClienteCru {
+  GET: (url: string, init?: object) => Promise<RespostaCrua>
+  POST: (url: string, init?: object) => Promise<RespostaCrua>
+  PATCH: (url: string, init?: object) => Promise<RespostaCrua>
+  PUT: (url: string, init?: object) => Promise<RespostaCrua>
+  DELETE: (url: string, init?: object) => Promise<RespostaCrua>
+}
+type RespostaCrua = { data?: unknown; error?: ErroDaApi; response: Response }
+
+function cadastroReal<Item, Criar, Alterar>(
+  rota: string,
+): ServicosDeCadastro<Item, Criar, Alterar> {
+  const cru = api as unknown as ClienteCru
+  const base = `/v1/configuracoes/${rota}`
+  const porId = (id: string) => ({ params: { path: { id } } })
+  return {
+    listar: () =>
+      protegido(async () =>
+        daApi<Item[]>(
+          (await cru.GET(base, { params: { query: { incluirInativos: 'true' } } })) as never,
+        ),
+      ),
+    criar: (dados) =>
+      protegido(async () => daApi<Item>((await cru.POST(base, { body: dados })) as never)),
+    alterar: (id, dados) =>
+      protegido(async () =>
+        daApi<Item>((await cru.PATCH(`${base}/{id}`, { ...porId(id), body: dados })) as never),
+      ),
+    excluir: (id) =>
+      protegido(async () => semCorpo((await cru.DELETE(`${base}/{id}`, porId(id))) as never)),
+    reordenar: (ids) =>
+      protegido(async () =>
+        daApi<Item[]>((await cru.PUT(`${base}/ordem`, { body: { ids } })) as never),
+      ),
+  }
 }
 
 function chaveDoUri(uri: string): string {
@@ -198,6 +246,14 @@ export const servicosReais: ServicosDeAcesso = {
         }),
       ),
     ),
+
+  cadastros: {
+    verticais: cadastroReal('verticais'),
+    solucoes: cadastroReal('solucoes'),
+    origens: cadastroReal('origens'),
+    motivos: cadastroReal('motivos'),
+    tiposAtividade: cadastroReal('tipos-atividade'),
+  },
 
   tags: {
     listar: () =>
