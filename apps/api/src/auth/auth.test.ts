@@ -229,6 +229,20 @@ describe('proteções de login', () => {
     expect(statuses.slice(3)).toEqual([429, 429])
   })
 
+  it('/reset-password: 10 tentativas por 60 s, a 11ª responde 429', async () => {
+    const a = await subir({ TRUST_PROXY: '0' })
+    const statuses: number[] = []
+    for (let i = 0; i < 11; i++) {
+      const r = await request(a.getHttpServer())
+        .post('/v1/auth/reset-password')
+        .set('Origin', ORIGEM_DO_FRONT)
+        .send({ token: 'token-que-nao-existe', newPassword: SENHA_PADRAO })
+      statuses.push(r.status)
+    }
+    expect(statuses.slice(0, 10).includes(429)).toBe(false)
+    expect(statuses[10]).toBe(429)
+  })
+
   it('o limite é por IP real: X-Forwarded-For forjado não burla (sem proxy confiável)', async () => {
     const a = await subir({ TRUST_PROXY: '0' })
     const { email } = await criarUsuario(a)
