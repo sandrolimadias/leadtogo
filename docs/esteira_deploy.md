@@ -238,7 +238,7 @@ node dist/criar-conta.js \
 | Bug no código, banco intacto | **Opção rápida:** no Coolify, trocar a tag da imagem de `latest` para `sha-<commit anterior>` e fazer redeploy (cerca de 1 minuto). **Opção definitiva:** `git revert` do commit + push, e a esteira refaz tudo |
 | Deploy não ficou saudável | Automático: o Coolify mantém a versão anterior no ar |
 | Migração com problema | Corrigir com **uma nova migração** (nunca editar migração já aplicada); em último caso, restaurar o backup |
-| Desastre na VPS | Restaurar o backup externo do banco + Garage numa VPS nova e apontar o DNS (procedimento em `docs/runbook.md`, a criar) |
+| Desastre na VPS | Restaurar o backup externo do banco + Garage numa VPS nova e apontar o DNS (procedimento em `docs/runbook.md`, seção 5) |
 
 ---
 

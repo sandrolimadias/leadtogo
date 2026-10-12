@@ -95,7 +95,7 @@ Só com decisão do Ale. Antes de começar, avisar os usuários: o sistema ficar
    - banco íntegro, só dados ruins: criar um banco novo (`leadtogo_novo`), restaurar nele, trocar os nomes (`ALTER DATABASE ... RENAME`) com as conexões encerradas;
    - VPS/banco perdido: recriar o recurso `leadtogo-db` (`imresamu/postgis:17-3.5`, sem porta pública), criar o banco `leadtogo` e restaurar com `pg_restore`.
 6. **Papéis:** conferir `leadtogo_owner` e `leadtogo_app` (sem `BYPASSRLS`, `leadtogo_app` não dono das tabelas) e as permissões. `pg_restore --no-owner` não recria o dono; reaplicar os `GRANT`/`OWNER TO` do script de papéis.
-7. **Migrações:** o pre-deploy da `api` aplica as pendentes; as já aplicadas ficam registradas no banco restaurado (nunca editar migração aplicada).
+7. **Migrações:** a `api` aplica as pendentes **ao iniciar** (`node dist/iniciar.js`, antes de responder); as já aplicadas ficam registradas no banco restaurado (nunca editar migração aplicada).
 8. **Subir `api` e `worker`**, conferir `/health`, fazer login e abrir uma empresa.
 9. **Registrar** o incidente (data, causa, backup usado, dados perdidos entre o backup e a falha) e refazer um backup manual.
 

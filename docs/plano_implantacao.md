@@ -658,7 +658,7 @@ Cada tela segue o design system (tokens, `Skeleton`, `Alert`, `Dialog`, `Toast`)
 - [ ] **Rollback:** voltar para a imagem `sha-` anterior no Coolify e retornar, sem tempo fora do ar.
 - [ ] **Restauração:** recuperar o backup do dia num banco temporário.
 
-**Runbook** (`docs/runbook.md`, o Claude Code cria):
+**Runbook** (`docs/runbook.md`, o Claude Code cria; **primeira versão escrita em 12/10/2026, para o Ale revisar**):
 - como fazer deploy, rollback e redeploy manual;
 - como restaurar banco e arquivos;
 - como girar senhas e tokens;
