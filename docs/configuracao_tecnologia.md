@@ -2,7 +2,7 @@
 
 > Documento de definições técnicas do projeto.
 > Status: **Aprovado (v1.1)** · Data: 05/10/2026
-> v1.7: **modelo comercial** (em aberto entre SaaS multiempresa e licença perpétua) e as proteções a adotar desde já (seção 17)
+> v1.7: **modelo comercial** (SaaS multiempresa, com a porta aberta para on-premise) e as proteções a adotar desde já (seção 17)
 > v1.1: n8n e Evolution API (já em produção na VPS) incorporados à arquitetura
 > v1.2: e-mail (Gmail/Microsoft Graph, BCC, rastreamento), agendas, tarefas Kanban, notificações e container de *worker*
 > v1.3: multiempresa (conta dona de vários tenants, empresa ativa na sessão, leitura consolidada via RLS)
@@ -424,7 +424,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 | 19 | Tempo real e push | SSE/Socket.io + Web Push (PWA) + FCM/APNs (Capacitor) |
 | 20 | Multiempresa | Conta → tenants → membros; empresa ativa na sessão; consolidado só leitura via `app.tenant_ids`, só para administradores da conta |
 | 21 | Organizações do Better Auth | **Não usadas**: o Better Auth só faz identidade; empresas, membros e convites são nossos, sob RLS |
-| 22 | Modelo comercial | **Em aberto**: SaaS multiempresa com porta aberta para on-premise (decisão anterior) ou **licença perpétua** (decisão mais recente, 12/10/2026); a detalhar depois do MVP, sem mudar a arquitetura; proteções adotadas desde já na seção 17 |
+| 22 | Modelo comercial | **SaaS multiempresa** (decidido); on-premise (Docker no cliente, eventualmente com licença perpétua + manutenção anual) como possibilidade futura para clientes maiores; proteções adotadas desde já na seção 17 |
 | 21 | Domínios | Domínio único `crm.aledias.com.br` (Traefik: `/v1` → API, resto → web); `api.crm.aledias.com.br` só para integrações (subdomínios via registro curinga `*.crm`) |
 
 ## 16. Próximos passos
@@ -438,9 +438,9 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 
 ## 17. Modelo comercial e distribuição
 
-> **Em aberto (a confirmar pelo Ale).** Duas mensagens do mesmo dia (12/10/2026) dizem coisas diferentes: a primeira decidiu **SaaS multiempresa**, com a porta aberta para o on-premise, e disse que isso **substituía** a licença perpétua; a mais recente diz que o Leadtogo **será vendido com licença perpétua**. Este documento registra a mais recente como a **intenção atual de negócio**, **a detalhar depois do MVP**, e mantém as proteções abaixo, que valem para os dois caminhos. **Nenhuma mudança de arquitetura** decorre disto agora: o sistema segue multiempresa, hospedado, com RLS.
+**Decisão (12/10/2026, confirmada pelo Ale):** o Leadtogo é vendido como **SaaS multiempresa**. O **on-premise** (Docker no servidor do cliente, eventualmente com **licença perpétua + manutenção anual**) fica como **possibilidade futura, para clientes maiores**. A ideia anterior de vender só com licença perpétua está **substituída**.
 
-**A detalhar depois do MVP** (modelo de distribuição): instalação no servidor do cliente ou hospedado por nós; como as **atualizações** chegam; **chave de licença** (o que ela libera e como é verificada, inclusive offline); **suporte** (prazos, canais, o que está incluído). O que já não depende dessa escolha: o mesmo código e as mesmas imagens atendem os dois casos, e o **módulo de limites de plano** (abaixo) é o ponto único onde a assinatura do SaaS ou uma chave de licença entram.
+Não há um segundo produto: é o mesmo código e as mesmas imagens. O que se faz **desde já** é evitar escolhas que fechem a porta do on-premise; **nenhuma mudança de arquitetura** decorre disto: o sistema segue multiempresa, hospedado, com RLS. O modelo de distribuição do on-premise (como as atualizações chegam, a chave de licença e como é verificada, o suporte) **só se detalha quando houver o primeiro cliente que peça**.
 
 ### Proteções a adotar desde já
 

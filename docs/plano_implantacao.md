@@ -734,7 +734,7 @@ Reúne num só lugar o que ficou registrado em outros documentos. Nada aqui bloq
 - [ ] Backups do **n8n, Evolution e WordPress**.
 - [ ] E-mail com **MX próprio** (hoje só envio, pelo Resend).
 
-### 6.4 Pós-MVP: modelo comercial (`configuracao_tecnologia.md`, seção 17)
+### 6.4 Pós-MVP do SaaS (`configuracao_tecnologia.md`, seção 17)
 
 - [ ] Imagens `linux/amd64` além de `arm64`, com runner nativo (commit de CI logo depois do Módulo 1).
 - [ ] Módulo isolado de limites de plano (`PlanoService`), antes do primeiro cliente externo com plano.
