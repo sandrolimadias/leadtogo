@@ -255,6 +255,91 @@ export const servicosReais: ServicosDeAcesso = {
     tiposAtividade: cadastroReal('tipos-atividade'),
   },
 
+  funis: {
+    listar: () =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/configuracoes/funis', {
+            params: { query: { incluirInativos: 'true' } },
+          }),
+        ),
+      ),
+    criar: (dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/configuracoes/funis', {
+            // o cliente gerado trata o que tem padrão como obrigatório: os padrões vão explícitos
+            body: {
+              nome: dados.nome,
+              fases: dados.fases.map((f) => ({
+                nome: f.nome,
+                cor: f.cor ?? 'gray',
+                probabilidadePadrao: f.probabilidadePadrao ?? 0,
+                diasAlertaParada: f.diasAlertaParada ?? null,
+              })),
+            },
+          }),
+        ),
+      ),
+    alterar: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/configuracoes/funis/{id}', {
+            params: { path: { id } },
+            body: dados,
+          }),
+        ),
+      ),
+    excluir: (id) =>
+      protegido(async () =>
+        semCorpo(await api.DELETE('/v1/configuracoes/funis/{id}', { params: { path: { id } } })),
+      ),
+    reordenar: (ids) =>
+      protegido(async () =>
+        daApi(await api.PUT('/v1/configuracoes/funis/ordem', { body: { ids } })),
+      ),
+    criarFase: (funilId, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/configuracoes/funis/{id}/fases', {
+            params: { path: { id: funilId } },
+            body: {
+              nome: dados.nome,
+              cor: dados.cor ?? 'gray',
+              probabilidadePadrao: dados.probabilidadePadrao ?? 0,
+              diasAlertaParada: dados.diasAlertaParada ?? null,
+            },
+          }),
+        ),
+      ),
+    alterarFase: (faseId, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/configuracoes/funis/fases/{faseId}', {
+            params: { path: { faseId } },
+            body: dados,
+          }),
+        ),
+      ),
+    excluirFase: (faseId) =>
+      protegido(async () =>
+        daApi(
+          await api.DELETE('/v1/configuracoes/funis/fases/{faseId}', {
+            params: { path: { faseId } },
+          }),
+        ),
+      ),
+    reordenarFases: (funilId, ids) =>
+      protegido(async () =>
+        daApi(
+          await api.PUT('/v1/configuracoes/funis/{id}/fases/ordem', {
+            params: { path: { id: funilId } },
+            body: { ids },
+          }),
+        ),
+      ),
+  },
+
   tags: {
     listar: () =>
       protegido(async () =>

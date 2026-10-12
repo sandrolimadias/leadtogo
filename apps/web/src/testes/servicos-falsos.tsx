@@ -114,6 +114,17 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
     alterarPoliticaDeDoisFatores: vi.fn(async (p: string) =>
       ok({ doisFatoresExigido: p as 'admin' | 'admin_gestor' | 'todos' }),
     ),
+    funis: {
+      listar: vi.fn(async () => ok([])),
+      criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      excluir: vi.fn(async () => ok(undefined)),
+      reordenar: vi.fn(async () => ok([])),
+      criarFase: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      alterarFase: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      excluirFase: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      reordenarFases: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+    },
     tags: {
       listar: vi.fn(async () => ok([])),
       criarGrupo: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),

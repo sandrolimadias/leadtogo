@@ -8,6 +8,7 @@ import type {
   MembroDaEquipe,
   Preferencias,
   PreferenciasPatch,
+  Funil,
   Motivo,
   Origem,
   Seguranca,
@@ -17,6 +18,8 @@ import type {
   Vertical,
 } from '@leadtogo/api-client'
 import type {
+  AlterarFaseEntrada,
+  AlterarFunilEntrada,
   AlterarMembroEntrada,
   AlterarMotivoEntrada,
   AlterarOrigemEntrada,
@@ -27,6 +30,8 @@ import type {
   AlterarVerticalEntrada,
   CriarConviteEntrada,
   CriarEmpresaEntrada,
+  CriarFaseEntrada,
+  CriarFunilEntrada,
   CriarMotivoEntrada,
   CriarOrigemEntrada,
   CriarSolucaoEntrada,
@@ -55,6 +60,23 @@ export interface ConfiguracaoDoDoisFatores {
   /** Chave para digitar à mão, extraída do URI */
   chave: string
   codigosDeBackup: string[]
+}
+
+/** Funis e fases (Configurações → Funis e fases). Só o administrador escreve. */
+export interface ServicosDeFunis {
+  /** Funis com as fases, inclusive os inativos */
+  listar: () => Promise<Resultado<Funil[]>>
+  criar: (dados: CriarFunilEntrada) => Promise<Resultado<Funil>>
+  alterar: (id: string, dados: AlterarFunilEntrada) => Promise<Resultado<Funil>>
+  excluir: (id: string) => Promise<Resultado>
+  /** Os ids de TODOS os funis, na ordem nova */
+  reordenar: (ids: string[]) => Promise<Resultado<Funil[]>>
+  // As operações de fase devolvem o funil completo
+  criarFase: (funilId: string, dados: CriarFaseEntrada) => Promise<Resultado<Funil>>
+  alterarFase: (faseId: string, dados: AlterarFaseEntrada) => Promise<Resultado<Funil>>
+  excluirFase: (faseId: string) => Promise<Resultado<Funil>>
+  /** Os ids de TODAS as fases do funil, na ordem nova */
+  reordenarFases: (funilId: string, ids: string[]) => Promise<Resultado<Funil>>
 }
 
 /** Cadastro de grupos de tags e tags (Configurações → Tags). Só o administrador escreve. */
@@ -154,4 +176,5 @@ export interface ServicosDeAcesso {
   // Cadastros auxiliares (Módulo 1)
   tags: ServicosDeTags
   cadastros: ServicosDeCadastros
+  funis: ServicosDeFunis
 }

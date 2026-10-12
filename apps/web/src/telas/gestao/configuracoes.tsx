@@ -1,5 +1,5 @@
 import { Link, Outlet } from '@tanstack/react-router'
-import { CalendarCheck, Compass, Factory, ShieldCheck, Tags, Users } from 'lucide-react'
+import { CalendarCheck, Compass, Factory, Funnel, ShieldCheck, Tags, Users } from 'lucide-react'
 
 import { Icon } from '@/components/ui/icone'
 import { cn } from '@/lib/cn'
@@ -8,6 +8,7 @@ const SECOES = [
   { para: '/configuracoes/usuarios', titulo: 'Usuários e equipe', icone: Users },
   { para: '/configuracoes/tags', titulo: 'Tags', icone: Tags },
   { para: '/configuracoes/tipos-de-atividade', titulo: 'Tipos de atividade', icone: CalendarCheck },
+  { para: '/configuracoes/funis', titulo: 'Funis e fases', icone: Funnel },
   { para: '/configuracoes/origens-e-motivos', titulo: 'Origens e motivos', icone: Compass },
   { para: '/configuracoes/verticais-e-solucoes', titulo: 'Verticais e soluções', icone: Factory },
   { para: '/configuracoes/seguranca', titulo: 'Segurança', icone: ShieldCheck },

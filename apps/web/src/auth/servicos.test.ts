@@ -137,3 +137,41 @@ describe('tags: método, caminho e corpo', () => {
     expect(chamadas[5]?.corpo).toEqual({ tagGrupoId: ID, nome: 'T', cor: 'gray' })
   })
 })
+
+describe('funis: método, caminho e corpo', () => {
+  it('cada operação usa a rota certa', async () => {
+    const f = servicosReais.funis
+    await f.listar()
+    await f.criar({ nome: 'F', fases: [{ nome: 'A' }] })
+    await f.alterar(ID, { padrao: true })
+    await f.excluir(ID)
+    await f.reordenar([ID])
+    await f.criarFase(ID, { nome: 'B' })
+    await f.alterarFase(ID, { nome: 'C' })
+    await f.excluirFase(ID)
+    await f.reordenarFases(ID, [ID])
+    expect(chamadas.map((c) => `${c.metodo} ${c.caminho}${c.consulta}`)).toEqual([
+      'GET /v1/configuracoes/funis?incluirInativos=true',
+      'POST /v1/configuracoes/funis',
+      `PATCH /v1/configuracoes/funis/${ID}`,
+      `DELETE /v1/configuracoes/funis/${ID}`,
+      'PUT /v1/configuracoes/funis/ordem',
+      `POST /v1/configuracoes/funis/${ID}/fases`,
+      `PATCH /v1/configuracoes/funis/fases/${ID}`,
+      `DELETE /v1/configuracoes/funis/fases/${ID}`,
+      `PUT /v1/configuracoes/funis/${ID}/fases/ordem`,
+    ])
+    // os padrões que o cliente gerado trata como obrigatórios vão explícitos
+    expect(chamadas[1]?.corpo).toEqual({
+      nome: 'F',
+      fases: [{ nome: 'A', cor: 'gray', probabilidadePadrao: 0, diasAlertaParada: null }],
+    })
+    expect(chamadas[5]?.corpo).toEqual({
+      nome: 'B',
+      cor: 'gray',
+      probabilidadePadrao: 0,
+      diasAlertaParada: null,
+    })
+    expect(chamadas[2]?.corpo).toEqual({ padrao: true })
+  })
+})
