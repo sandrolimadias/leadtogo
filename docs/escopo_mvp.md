@@ -18,8 +18,27 @@ No início, **só o Ale usa o sistema: um usuário, administrador**. Os papéis 
 
 Cada módulo vai para produção **sozinho** (commits pequenos na `main`, com testes, conforme o `CLAUDE.md`). O módulo seguinte só começa com o anterior no ar.
 
-### Módulo 1 — Configurações base
+### Módulo 1 — Configurações base ✅ *entregue em 12/10/2026*
 Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, verticais, funil e etapas, origens, motivos e soluções. Os **valores padrão são criados por tenant** (empresas novas e as que já existem) e há **telas simples de edição** em Configurações.
+
+**O que foi entregue** (9 tabelas, API e telas; detalhes em `modelagem_banco.md`, seções 3.2 e 5):
+- **Padrões por empresa**, criados uma única vez (marca `padroes_criados_em`; o que o administrador exclui não volta): grupos **Status** (Lead, Prospect, Cliente, Inativo) e **Visitação** (Visitada, Contactada), tipos de atividade (Ligação, WhatsApp, E-mail, Visita, Reunião, Tarefa), funil **Vendas** com 4 fases (alerta de parada em 14 dias), 5 origens e 12 motivos. Verticais e soluções começam vazias. As empresas que já existiam receberam os padrões no deploy.
+- **API** em `/v1/configuracoes/...` (tag-grupos, tags, tipos-atividade, verticais, solucoes, origens, motivos, funis): ler é de qualquer membro, escrever é do administrador; auditoria, exclusão lógica, nome único e reordenação.
+- **Telas** em Configurações: Tags, Tipos de atividade, Funis e fases, Origens e motivos, Verticais e soluções (reordenar por botões, sem arrastar).
+- **O que o sistema protege:** grupos Status e Visitação (só renomear); tags `lead`, `cliente`, `visitada` e `contactada` (renomear e recolorir, sem inativar nem excluir); origem **Importação** e tipo **Tarefa** (idem; a Tarefa fica sempre com empresa opcional e sem contar como visita ou contato); o **funil padrão** (sempre exatamente um, garantido também por índice único no banco) e a **última fase** de um funil.
+- **Faixas de funcionários e de faturamento** ficaram fora do MVP (ver seção 3).
+
+**O que o Módulo 1 deixa para os próximos** (as verificações de uso entram junto da tabela que passa a usar o cadastro, cada uma com teste):
+
+| Módulo | Verificação pendente |
+|---|---|
+| 2 (Empresas) | Tag em uso por alguma empresa, **agora ou no histórico de Status**, só se inativa (regra acima). O mesmo para o grupo de tags |
+| 5 (Atividades) | Tipo de atividade com atividades registradas |
+| 6 (Oportunidades) | Fase com oportunidades **ativas** exige mover antes; só com fechadas, pode excluir. O mesmo para o funil (regra acima). Motivo, origem e solução usados por oportunidades |
+| 2 (Empresas) | Vertical em uso por alguma empresa |
+
+*A sugestão para motivo, origem, solução, vertical e tipo de atividade em uso é a mesma das tags (só inativar, para não perder histórico); o Ale ainda não decidiu.*
+
 
 ### Módulo 2 — Empresas
 - Cadastro por **CNPJ, CPF ou sem documento**.

@@ -78,6 +78,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 
 ### Regras
 - Trocar uma tag de grupo de seleção única **substitui** a anterior, e a mudança fica no histórico. Assim é possível medir quantos leads viraram clientes e quando.
+- **Proteções do sistema (v1.6, Módulo 1):** os grupos **Status** e **Visitação** só podem ser renomeados (a seleção e o "obrigatório" não mudam, e não se inativam nem excluem); Visitação é **automático**, então não aceita tags novas. As tags `lead`, `cliente`, `visitada` e `contactada` são usadas pelas regras (importação, "empresa vira Cliente", controle de visitadas e contactadas): podem ser renomeadas e recoloridas, mas **não inativadas nem excluídas**. **Prospect** e **Inativo** não têm regra e podem ser inativadas ou excluídas.
 - **Tag em uso não se exclui (v1.6):** uma tag aplicada a alguma empresa, **agora ou no histórico de Status**, só pode ser **inativada**; a exclusão fica para tags que nunca foram usadas. Isso preserva o histórico de conversão (quantos Leads viraram Clientes e quando). Vale também para o grupo que contém tags em uso.
 - Filtros por tag em todas as listas (combinação **E / OU**).
 - **Automação opcional (configurável):** ao ganhar uma oportunidade, mudar o Status da empresa para *Cliente*.
@@ -262,6 +263,8 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 
 Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (contato) · **Visita** (visita) · **Reunião** (contato) · **Tarefa** (nenhum, empresa opcional).
 
+> **Proteções (v1.6, Módulo 1):** o tipo **Tarefa** pode ser renomeado e mudar ícone e cor, mas não é inativado nem excluído, **não exige empresa** e **não conta como visita nem contato**. Os demais tipos padrão são livres. O ícone é escolhido numa lista do design system.
+
 > **Atividade × Tarefa (v1.3):** estão unificadas. A tarefa é uma atividade do tipo *Tarefa*. Todas aparecem na agenda, na linha do tempo (quando têm empresa) e no Kanban de Tarefas (seção 9A).
 
 ### Onde aparecem
@@ -296,6 +299,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 - Ao mudar para **Perdido, Cancelado ou Suspenso**: exige o **Motivo** (lista cadastrável por status) e guarda a **fase em que parou** (análise de onde se perde).
 - **Suspenso** tem o campo "**Retomar em**", que cria uma atividade de retomada.
 - Reabrir (voltar para Ativo) é permitido, com registro no histórico.
+- **Funil padrão (v1.6):** há **sempre exatamente um**. Tornar outro funil o padrão troca o anterior; o padrão não pode ser inativado nem excluído. Um funil nasce com ao menos uma etapa e a **última etapa** de um funil não pode ser excluída. A etapa tem nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (vazio = sem alerta); etapas são só excluídas, não inativadas.
 - **Excluir etapa (v1.6):** com oportunidades **ativas** na etapa, é preciso **movê-las antes**. Havendo só oportunidades **fechadas** (Conquistado, Perdido, Cancelado ou Suspenso), a etapa pode ser excluída (exclusão lógica), e o histórico de fases e a **"fase em que parou"** continuam mostrando o nome dela.
 - **Histórico de etapas:** cada mudança de etapa é registrada (data, usuário, de → para). Isso permite calcular tempo médio por etapa e conversão.
 
