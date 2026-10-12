@@ -135,6 +135,32 @@ describe('POST /v1/empresas', () => {
     expect((await auditoriaDe(d.tenantId)).filter((x) => x.acao === 'criar_empresa')).toEqual([])
   })
 
+  it('a empresa nova já nasce com os cadastros padrão (tags, tipos, funil, origens e motivos)', async () => {
+    const d = await novoDono(app)
+    const r = await criar(d.cookie, { razaoSocial: nomeUnico() })
+    expect(r.status).toBe(201)
+    const id = (r.body as EmpresaCriada).empresa.id
+    const n = await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${id}, true)`
+      const [l] = await tx<
+        {
+          tags: number
+          tipos: number
+          fases: number
+          origens: number
+          motivos: number
+          marca: boolean
+        }[]
+      >`
+        SELECT (SELECT count(*)::int FROM tags) AS tags, (SELECT count(*)::int FROM tipos_atividade) AS tipos,
+               (SELECT count(*)::int FROM funil_fases) AS fases, (SELECT count(*)::int FROM origens) AS origens,
+               (SELECT count(*)::int FROM motivos) AS motivos,
+               (SELECT padroes_criados_em IS NOT NULL FROM tenant_configuracoes) AS marca`
+      return l
+    })
+    expect(n).toEqual({ tags: 6, tipos: 6, fases: 4, origens: 5, motivos: 12, marca: true })
+  })
+
   it('a auditoria da criação grava o IP do cliente (pelo proxy confiável)', async () => {
     const d = await novoDono(app)
     const r = await criar(d.cookie, { razaoSocial: nomeUnico() }).set(

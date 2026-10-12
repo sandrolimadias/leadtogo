@@ -175,7 +175,10 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 | rastreio_email_padrao | boolean default false | 🔮 |
 | whatsapp_modo_importacao | enum | 🔮 automático · manual · desligado |
 | dois_fatores_exigido | enum `politica_dois_fatores` NOT NULL default `admin` | Quem é obrigado a ter 2FA nesta empresa: `admin` · `admin_gestor` · `todos` (migração 0011, de expansão; ver funcionalidades.md, "Segurança e acesso") |
+| padroes_criados_em | timestamptz null | Quando os cadastros padrão (seção 5) foram criados. **Preenchido, nunca mais se recria**: um padrão que o administrador excluiu não volta (migração 0016, de expansão) |
 | preferencias | jsonb | Demais ajustes |
+
+> **Cadastros padrão por empresa (Módulo 1):** `criarPadroesDoTenant` (`packages/db/src/padroes.ts`) reserva a marca `padroes_criados_em` e cria tags (Status e Visitação), tipos de atividade, funil "Vendas" com 4 fases (alerta de parada de 14 dias), origens e motivos. Roda no primeiro acesso, ao criar empresa do grupo e no seed de demonstração. **Backfill:** a cada start da API (`iniciar.js`, depois do migrate e do seed de referências, com a credencial do dono) o passo `criarPadroesPendentesPorUrl` atende as empresas ainda sem a marca. Como o RLS forçado impede o dono de listar `tenants`, a migração 0016 criou `app_tenants_sem_padroes()` (`SECURITY DEFINER`, política só para o `leadtogo_owner`, travada numa variável que só a função define; devolve apenas ids, sem `EXECUTE` para o `leadtogo_app`). Falha numa empresa não derruba a API: fica o aviso no log e o próximo start tenta de novo.
 
 ### 3.3 Autenticação (Better Auth)
 O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verification` e `two_factor`, num **schema separado `auth`**. O **plugin de organizações não é usado** (empresas, membros e convites são nossos, sob RLS). Ligações:

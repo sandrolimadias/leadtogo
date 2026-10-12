@@ -16,6 +16,17 @@ const { contaId, tenantId, membroAdminId, emailAdmin } = DEMONSTRACAO
 
 async function limpar() {
   await comTenant(owner, tenantId, async (tx) => {
+    for (const tabela of [
+      'motivos',
+      'origens',
+      'funil_fases',
+      'funis',
+      'tipos_atividade',
+      'tags',
+      'tag_grupos',
+    ]) {
+      await tx`DELETE FROM ${tx(tabela)} WHERE tenant_id = ${tenantId}`
+    }
     await tx`DELETE FROM membros WHERE tenant_id = ${tenantId}`
     await tx`DELETE FROM tenant_configuracoes WHERE tenant_id = ${tenantId}`
     await tx`DELETE FROM tenants WHERE id = ${tenantId}`
@@ -67,7 +78,7 @@ afterAll(async () => {
 })
 
 describe('tenant de demonstração', () => {
-  it('cria só a conta, o tenant, as configurações e um membro admin', async () => {
+  it('cria a conta, o tenant, as configurações e um membro admin', async () => {
     await semearDemonstracao(db)
     expect(await contagens()).toEqual({ contas: 1, tenants: 1, configuracoes: 1, membros: 1 })
 
@@ -97,6 +108,24 @@ describe('tenant de demonstração', () => {
     expect(m).toEqual({ papel: 'admin', nome: 'Administrador Demonstração' })
     const [t] = await comTenant(owner, tenantId, (tx) => tx`SELECT razao_social FROM tenants`)
     expect(t?.['razao_social']).toBe('Empresa Demonstração Ltda')
+  })
+
+  it('cria os cadastros padrão uma vez só: o que foi excluído não volta no próximo seed', async () => {
+    const contarTags = () =>
+      comTenant(
+        owner,
+        tenantId,
+        (tx) => tx<{ n: number }[]>`SELECT count(*)::int AS n FROM tags WHERE excluido_em IS NULL`,
+      )
+    await semearDemonstracao(db)
+    expect((await contarTags())[0]?.n).toBe(6)
+    await comTenant(
+      owner,
+      tenantId,
+      (tx) => tx`UPDATE tags SET excluido_em = now() WHERE nome = 'Inativo'`,
+    )
+    await semearDemonstracao(db)
+    expect((await contarTags())[0]?.n).toBe(5)
   })
 
   it('não mexe nas configurações que o usuário ajustou', async () => {

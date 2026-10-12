@@ -74,6 +74,24 @@ const contar = async (tabela: string) =>
   (await owner<{ n: number }[]>`SELECT count(*)::int AS n FROM ${owner(tabela)}`)[0]?.n ?? 0
 
 describe('POST /v1/primeiro-acesso', () => {
+  it('a empresa do primeiro acesso já nasce com os cadastros padrão', async () => {
+    const a = await subir()
+    const r = await post(a, dadosValidos())
+    expect(r.status).toBe(201)
+    const { tenantId } = r.body as PrimeiroAcessoResultado
+    const lido = await app_.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+      return {
+        status: await tx`SELECT nome FROM tags WHERE chave_sistema = 'cliente'`,
+        tipos: await tx`SELECT 1 FROM tipos_atividade`,
+        funis: await tx<{ nome: string }[]>`SELECT nome FROM funis WHERE padrao`,
+      }
+    })
+    expect(lido.status).toHaveLength(1)
+    expect(lido.tipos).toHaveLength(6)
+    expect(lido.funis.map((f) => f.nome)).toEqual(['Vendas'])
+  })
+
   it('cria usuário, conta dona, vínculo dono, empresa, configurações e membro admin', async () => {
     const a = await subir()
     const cnpj = cnpjUnico()

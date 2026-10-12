@@ -1,5 +1,5 @@
 import type { Conexao } from '@leadtogo/db'
-import { novoId, schema, sql } from '@leadtogo/db'
+import { criarPadroesDoTenant, novoId, schema, sql } from '@leadtogo/db'
 import type { PrimeiroAcesso, PrimeiroAcessoResultado } from '@leadtogo/shared'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
@@ -77,6 +77,7 @@ export class PrimeiroAcessoService {
           email: dados.email,
           papel: 'admin',
         })
+        await criarPadroesDoTenant(tx, tenantId, membroId)
       })
     } catch (erro) {
       // Desfaz o usuário criado antes da transação (as contas e sessões dele caem em cascata)

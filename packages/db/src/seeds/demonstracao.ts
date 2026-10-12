@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 
 import { contas, membros, tenantConfiguracoes, tenants } from '../schema/index.js'
+import { criarPadroesDoTenant } from '../padroes.js'
 import { type Db, upsert } from './upsert.js'
 
 /**
@@ -21,8 +22,8 @@ export function deveSemearDemonstracao(env: NodeJS.ProcessEnv): boolean {
 
 /**
  * Tenant de demonstração: só a conta, o tenant, as configurações e um membro admin.
- * Os cadastros padrão (grupos de tags Status e Visitação, tipos de atividade, funil com fases)
- * entram quando essas tabelas forem criadas. Roda com o leadtogo_owner e é idempotente.
+ * Os cadastros padrão (tags, tipos de atividade, funil, origens e motivos) entram por
+ * `criarPadroesDoTenant`. Roda com o leadtogo_owner e é idempotente.
  */
 export async function semearDemonstracao(db: Db): Promise<Record<string, number>> {
   const { contaId, tenantId, membroAdminId, emailAdmin } = DEMONSTRACAO
@@ -78,6 +79,8 @@ export async function semearDemonstracao(db: Db): Promise<Record<string, number>
       membros.id,
       ['nome', 'email', 'papel', 'cargo'],
     )
+    // Cadastros padrão (uma vez só: com a marca preenchida, não recria nada)
+    await criarPadroesDoTenant(tx, tenantId, membroAdminId)
   })
 
   return { contas: 1, tenants: 1, tenant_configuracoes: 1, membros: 1 }

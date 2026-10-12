@@ -119,6 +119,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   doisFatoresExigido: politicaDoisFatores().notNull().default('admin'),
   whatsappModoImportacao: modoImportacaoWhatsapp().notNull().default('desligado'),
   preferencias: jsonb().notNull().default({}),
+  /** Quando os cadastros padrão (tags, tipos, funil...) foram criados; preenchido, nunca mais se recria */
+  padroesCriadosEm: timestamp({ withTimezone: true }),
   ...carimbos(),
 })
 

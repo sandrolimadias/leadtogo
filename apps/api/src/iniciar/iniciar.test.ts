@@ -12,6 +12,7 @@ function dependencias(extra: Partial<Dependencias> = {}) {
   const deps = {
     migrar: vi.fn(async () => undefined),
     semear: vi.fn(async () => ({ estados: 27 })),
+    criarPadroes: vi.fn(async () => ({ criados: 0, falhas: [] })),
     carregar: vi.fn(async () => undefined),
     info: (l: string) => linhas.push(l),
     erro: (l: string) => linhas.push(l),
@@ -43,13 +44,17 @@ describe('iniciar() — PAPEL=api (padrão)', () => {
         ordem.push(`semear:${url === URL_DONO}`)
         return { estados: 27 }
       }),
+      criarPadroes: vi.fn(async (url) => {
+        ordem.push(`padroes:${url === URL_DONO}`)
+        return { criados: 2, falhas: [] }
+      }),
       carregar: vi.fn(async (papel) => {
         ordem.push(`carregar:${papel}:${'DATABASE_MIGRATION_URL' in env}`)
       }),
     })
     expect(await iniciar(env, deps)).toBe(0)
     // a credencial já não existe no process.env quando a API é carregada
-    expect(ordem).toEqual(['migrar:true', 'semear:true', 'carregar:api:false'])
+    expect(ordem).toEqual(['migrar:true', 'semear:true', 'padroes:true', 'carregar:api:false'])
     expect(env['DATABASE_MIGRATION_URL']).toBeUndefined()
   })
 
@@ -95,12 +100,44 @@ describe('iniciar() — PAPEL=api (padrão)', () => {
   })
 })
 
+describe('iniciar() — cadastros padrão (backfill)', () => {
+  it('falha total ou de uma empresa não derruba a API: só avisa, sem a URL', async () => {
+    const total = dependencias({
+      criarPadroes: vi.fn(async () => {
+        throw new Error('sem permissão')
+      }),
+    })
+    expect(await iniciar({ DATABASE_MIGRATION_URL: URL_DONO }, total.deps)).toBe(0)
+    expect(total.deps.carregar).toHaveBeenCalledWith('api')
+    expect(total.linhas.join('\n')).toContain('cadastros padrão não criados')
+
+    const parcial = dependencias({
+      criarPadroes: vi.fn(async () => ({
+        criados: 1,
+        falhas: [{ tenantId: 'tenant-b', erro: 'violação' }],
+      })),
+    })
+    expect(await iniciar({ DATABASE_MIGRATION_URL: URL_DONO }, parcial.deps)).toBe(0)
+    const saida = parcial.linhas.join('\n')
+    expect(saida).toContain('1 empresa(s) atendida(s)')
+    expect(saida).toContain('padrões não criados para a empresa tenant-b')
+    expect(saida).not.toContain('segredo-do-dono')
+  })
+
+  it('roda mesmo com SEMEAR_REFERENCIAS=false', async () => {
+    const { deps } = dependencias()
+    await iniciar({ DATABASE_MIGRATION_URL: URL_DONO, SEMEAR_REFERENCIAS: 'false' }, deps)
+    expect(deps.criarPadroes).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('iniciar() — PAPEL=worker', () => {
   it('não exige a URL de migração, não migra nem semeia e sobe o worker', async () => {
     const { deps } = dependencias()
     expect(await iniciar({ PAPEL: 'worker' }, deps)).toBe(0)
     expect(deps.migrar).not.toHaveBeenCalled()
     expect(deps.semear).not.toHaveBeenCalled()
+    expect(deps.criarPadroes).not.toHaveBeenCalled()
     expect(deps.carregar).toHaveBeenCalledWith('worker')
   })
 

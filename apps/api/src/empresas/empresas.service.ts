@@ -1,4 +1,4 @@
-import { type Conexao, novoId, schema, sql } from '@leadtogo/db'
+import { type Conexao, criarPadroesDoTenant, novoId, schema, sql } from '@leadtogo/db'
 import type { CriarEmpresa, EmpresaCriada } from '@leadtogo/shared'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
@@ -53,6 +53,7 @@ export class EmpresasService {
       await tx
         .insert(membros)
         .values({ id: membroId, tenantId, usuarioId, nome, email, papel: 'admin' })
+      await criarPadroesDoTenant(tx, tenantId, membroId)
       await this.auditoria.registrarEm(tx, tenantId, membroId, {
         entidade: 'empresa',
         entidadeId: tenantId,

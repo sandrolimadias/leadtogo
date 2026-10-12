@@ -1,4 +1,4 @@
-import { semearReferenciasPorUrl } from '@leadtogo/db'
+import { criarPadroesPendentesPorUrl, semearReferenciasPorUrl } from '@leadtogo/db'
 
 import { migrar } from '../migracao/migrar.js'
 
@@ -9,6 +9,10 @@ export interface Dependencias {
   migrar: (env: NodeJS.ProcessEnv) => Promise<void>
   /** Semeia as referências globais com a URL do dono das tabelas */
   semear: (url: string) => Promise<Record<string, number>>
+  /** Cria os cadastros padrão das empresas que ainda não os tiveram (backfill; idempotente) */
+  criarPadroes: (
+    url: string,
+  ) => Promise<{ criados: number; falhas: { tenantId: string; erro: string }[] }>
   /** Carrega o processo do papel (importa main.js ou worker.js, que sobem sozinhos) */
   carregar: (papel: Papel) => Promise<unknown>
   info: (linha: string) => void
@@ -77,6 +81,24 @@ export async function iniciar(env: NodeJS.ProcessEnv, deps: Dependencias): Promi
     }
   }
 
+  // Cadastros padrão (tags, tipos, funil...) das empresas que ainda não os tiveram: é o backfill das
+  // empresas anteriores ao Módulo 1. Cada empresa só é atendida uma vez (marca `padroes_criados_em`),
+  // então repetir no deploy seguinte não recria o que o administrador excluiu. Falha não derruba a API:
+  // fica o aviso e o próximo start tenta de novo.
+  if (urlMigracao) {
+    try {
+      const { criados, falhas } = await deps.criarPadroes(urlMigracao)
+      deps.info(`Cadastros padrão: ${criados} empresa(s) atendida(s).`)
+      for (const f of falhas) {
+        deps.erro(
+          `Aviso: padrões não criados para a empresa ${f.tenantId} (tenta de novo no próximo start): ${f.erro}`,
+        )
+      }
+    } catch (e) {
+      deps.erro(`Aviso: cadastros padrão não criados (a API sobe mesmo assim): ${mensagem(e)}`)
+    }
+  }
+
   await deps.carregar('api')
   return 0
 }
@@ -85,6 +107,7 @@ export async function iniciar(env: NodeJS.ProcessEnv, deps: Dependencias): Promi
 export const dependenciasReais: Dependencias = {
   migrar,
   semear: semearReferenciasPorUrl,
+  criarPadroes: criarPadroesPendentesPorUrl,
   carregar: (papel) => (papel === 'api' ? import('../main.js') : import('../worker.js')),
   info: (linha) => console.log(linha),
   erro: (linha) => console.error(linha),

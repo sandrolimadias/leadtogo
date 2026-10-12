@@ -113,6 +113,13 @@
       "when": 1791832212362,
       "tag": "0015_cadastros_auxiliares",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791832578680,
+      "tag": "0016_padroes_do_tenant",
+      "breakpoints": true
     }
   ]
 }
