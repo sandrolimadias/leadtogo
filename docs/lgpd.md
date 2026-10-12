@@ -88,7 +88,7 @@ Transferência internacional (arts. 33 a 36):
 
 | Aspecto | Decisão |
 |---|---|
-| **Conteúdo** | `user_id`; `tenant_id` quando houver; evento (login, logout, falha de login, troca de senha, 2FA); data/hora (`timestamptz`); IP; user agent |
+| **Conteúdo** | `user_id`; `tenant_id` quando houver; evento (login, logout, falha de login, troca de senha e 2FA: **falha de verificação, ativação e desativação**; a verificação do 2FA que dá certo não gera evento próprio, pois já é o `login`); data/hora (`timestamptz`); IP; user agent |
 | **Base legal** | **Obrigação legal** (art. 7º, II; art. 15 do Marco Civil, **aplicação a confirmar com advogado**) ou **legítimo interesse** em segurança (art. 7º, IX). A base definitiva depende da confirmação do advogado |
 | **Retenção** | **6 meses**. Tabela **particionada por mês**; o **job de manutenção descarta a partição mais antiga** que passar do prazo (nada de `DELETE` linha a linha) |
 | **Acesso** | restrito: só leitura administrativa, **fora do alcance dos tenants** (sem acesso pela API de negócio; o app só insere, como na `auditoria`) |
