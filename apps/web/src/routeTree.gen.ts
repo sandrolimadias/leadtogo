@@ -30,6 +30,9 @@ import { Route as AutenticadoOportunidadesRouteImport } from './routes/_autentic
 import { Route as AutenticadoProspeccaoRouteImport } from './routes/_autenticado.prospeccao'
 import { Route as AutenticadoTarefasRouteImport } from './routes/_autenticado.tarefas'
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
+import { Route as AutenticadoConfiguracoesIndexRouteImport } from './routes/_autenticado.configuracoes.index'
+import { Route as AutenticadoConfiguracoesSegurancaRouteImport } from './routes/_autenticado.configuracoes.seguranca'
+import { Route as AutenticadoConfiguracoesUsuariosRouteImport } from './routes/_autenticado.configuracoes.usuarios'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
 
 const AcessoRoute = AcessoRouteImport.update({
@@ -137,6 +140,24 @@ const DevCatalogoRoute = DevCatalogoRouteImport.update({
   path: '/dev/catalogo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutenticadoConfiguracoesIndexRoute =
+  AutenticadoConfiguracoesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
+const AutenticadoConfiguracoesSegurancaRoute =
+  AutenticadoConfiguracoesSegurancaRouteImport.update({
+    id: '/seguranca',
+    path: '/seguranca',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
+const AutenticadoConfiguracoesUsuariosRoute =
+  AutenticadoConfiguracoesUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
 const AutenticadoPerfilSegurancaRoute =
   AutenticadoPerfilSegurancaRouteImport.update({
     id: '/perfil/seguranca',
@@ -155,7 +176,7 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof AcessoRedefinirSenhaRoute
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
-  '/configuracoes': typeof AutenticadoConfiguracoesRoute
+  '/configuracoes': typeof AutenticadoConfiguracoesRouteWithChildren
   '/consolidado': typeof AutenticadoConsolidadoRoute
   '/contatos': typeof AutenticadoContatosRoute
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
@@ -164,7 +185,10 @@ export interface FileRoutesByFullPath {
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
+  '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
+  '/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AutenticadoIndexRoute
@@ -177,7 +201,6 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof AcessoRedefinirSenhaRoute
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
-  '/configuracoes': typeof AutenticadoConfiguracoesRoute
   '/consolidado': typeof AutenticadoConsolidadoRoute
   '/contatos': typeof AutenticadoContatosRoute
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
@@ -186,7 +209,10 @@ export interface FileRoutesByTo {
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
+  '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
+  '/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/configuracoes': typeof AutenticadoConfiguracoesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -201,7 +227,7 @@ export interface FileRoutesById {
   '/_acesso/redefinir-senha': typeof AcessoRedefinirSenhaRoute
   '/_acesso/verificacao': typeof AcessoVerificacaoRoute
   '/_acesso/verificar-email': typeof AcessoVerificarEmailRoute
-  '/_autenticado/configuracoes': typeof AutenticadoConfiguracoesRoute
+  '/_autenticado/configuracoes': typeof AutenticadoConfiguracoesRouteWithChildren
   '/_autenticado/consolidado': typeof AutenticadoConsolidadoRoute
   '/_autenticado/contatos': typeof AutenticadoContatosRoute
   '/_autenticado/criar-empresa': typeof AutenticadoCriarEmpresaRoute
@@ -211,7 +237,10 @@ export interface FileRoutesById {
   '/_autenticado/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
+  '/_autenticado/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/_autenticado/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/_autenticado/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -235,7 +264,10 @@ export interface FileRouteTypes {
     | '/prospeccao'
     | '/tarefas'
     | '/dev/catalogo'
+    | '/configuracoes/seguranca'
+    | '/configuracoes/usuarios'
     | '/perfil/seguranca'
+    | '/configuracoes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -248,7 +280,6 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/verificacao'
     | '/verificar-email'
-    | '/configuracoes'
     | '/consolidado'
     | '/contatos'
     | '/criar-empresa'
@@ -257,7 +288,10 @@ export interface FileRouteTypes {
     | '/prospeccao'
     | '/tarefas'
     | '/dev/catalogo'
+    | '/configuracoes/seguranca'
+    | '/configuracoes/usuarios'
     | '/perfil/seguranca'
+    | '/configuracoes'
   id:
     | '__root__'
     | '/_acesso'
@@ -281,7 +315,10 @@ export interface FileRouteTypes {
     | '/_autenticado/tarefas'
     | '/dev/catalogo'
     | '/_autenticado/'
+    | '/_autenticado/configuracoes/seguranca'
+    | '/_autenticado/configuracoes/usuarios'
     | '/_autenticado/perfil/seguranca'
+    | '/_autenticado/configuracoes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -439,6 +476,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevCatalogoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_autenticado/configuracoes/': {
+      id: '/_autenticado/configuracoes/'
+      path: '/'
+      fullPath: '/configuracoes/'
+      preLoaderRoute: typeof AutenticadoConfiguracoesIndexRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
+    '/_autenticado/configuracoes/seguranca': {
+      id: '/_autenticado/configuracoes/seguranca'
+      path: '/seguranca'
+      fullPath: '/configuracoes/seguranca'
+      preLoaderRoute: typeof AutenticadoConfiguracoesSegurancaRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
+    '/_autenticado/configuracoes/usuarios': {
+      id: '/_autenticado/configuracoes/usuarios'
+      path: '/usuarios'
+      fullPath: '/configuracoes/usuarios'
+      preLoaderRoute: typeof AutenticadoConfiguracoesUsuariosRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
     '/_autenticado/perfil/seguranca': {
       id: '/_autenticado/perfil/seguranca'
       path: '/perfil/seguranca'
@@ -476,8 +534,28 @@ const AcessoRouteChildren: AcessoRouteChildren = {
 const AcessoRouteWithChildren =
   AcessoRoute._addFileChildren(AcessoRouteChildren)
 
+interface AutenticadoConfiguracoesRouteChildren {
+  AutenticadoConfiguracoesSegurancaRoute: typeof AutenticadoConfiguracoesSegurancaRoute
+  AutenticadoConfiguracoesUsuariosRoute: typeof AutenticadoConfiguracoesUsuariosRoute
+  AutenticadoConfiguracoesIndexRoute: typeof AutenticadoConfiguracoesIndexRoute
+}
+
+const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildren =
+  {
+    AutenticadoConfiguracoesSegurancaRoute:
+      AutenticadoConfiguracoesSegurancaRoute,
+    AutenticadoConfiguracoesUsuariosRoute:
+      AutenticadoConfiguracoesUsuariosRoute,
+    AutenticadoConfiguracoesIndexRoute: AutenticadoConfiguracoesIndexRoute,
+  }
+
+const AutenticadoConfiguracoesRouteWithChildren =
+  AutenticadoConfiguracoesRoute._addFileChildren(
+    AutenticadoConfiguracoesRouteChildren,
+  )
+
 interface AutenticadoRouteChildren {
-  AutenticadoConfiguracoesRoute: typeof AutenticadoConfiguracoesRoute
+  AutenticadoConfiguracoesRoute: typeof AutenticadoConfiguracoesRouteWithChildren
   AutenticadoConsolidadoRoute: typeof AutenticadoConsolidadoRoute
   AutenticadoContatosRoute: typeof AutenticadoContatosRoute
   AutenticadoCriarEmpresaRoute: typeof AutenticadoCriarEmpresaRoute
@@ -490,7 +568,7 @@ interface AutenticadoRouteChildren {
 }
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
-  AutenticadoConfiguracoesRoute: AutenticadoConfiguracoesRoute,
+  AutenticadoConfiguracoesRoute: AutenticadoConfiguracoesRouteWithChildren,
   AutenticadoConsolidadoRoute: AutenticadoConsolidadoRoute,
   AutenticadoContatosRoute: AutenticadoContatosRoute,
   AutenticadoCriarEmpresaRoute: AutenticadoCriarEmpresaRoute,

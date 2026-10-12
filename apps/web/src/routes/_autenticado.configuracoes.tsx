@@ -1,14 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Settings } from 'lucide-react'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { PaginaVazia } from '@/casca/partes'
+import { Configuracoes } from '@/telas/gestao/configuracoes'
 
+// Configurações: só o administrador da empresa ativa. Gestor e vendedor (e quem só administra a conta)
+// não veem o menu e, se digitarem o endereço, voltam para o início.
 export const Route = createFileRoute('/_autenticado/configuracoes')({
-  component: () => (
-    <PaginaVazia
-      titulo="Configurações"
-      icone={Settings}
-      descricao="Em breve: cadastros da empresa, equipe e segurança (verificação em duas etapas)."
-    />
-  ),
+  beforeLoad: ({ context }) => {
+    const ativa = context.me.empresas.find((e) => e.ativa)
+    if (ativa?.papel !== 'admin') throw redirect({ to: '/' })
+  },
+  component: Configuracoes,
 })
