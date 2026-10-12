@@ -284,3 +284,78 @@ export const alterarTipoAtividadeSchema = z
   .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
   .meta({ id: 'AlterarTipoAtividadeEntrada' })
 export type AlterarTipoAtividadeEntrada = z.infer<typeof alterarTipoAtividadeSchema>
+
+// ---- Funis e fases (docs/funcionalidades.md, seção 6) ----
+
+const probabilidadeSchema = z.number().int().min(0).max(100)
+/** Dias sem atividade na fase para destacar a oportunidade como parada; null = sem alerta. */
+const diasAlertaSchema = z.number().int().min(1).max(3650).nullable()
+
+export const funilFaseSchema = z
+  .object({
+    id: z.uuid(),
+    funilId: z.uuid(),
+    nome: z.string(),
+    cor: corDeTagSchema,
+    probabilidadePadrao: z.number().int(),
+    diasAlertaParada: z.number().int().nullable(),
+    ordem: z.number().int(),
+  })
+  .meta({ id: 'FunilFase' })
+export type FunilFase = z.infer<typeof funilFaseSchema>
+
+export const funilSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    /** Funil aberto por padrão no Kanban: sempre exatamente um por empresa */
+    padrao: z.boolean(),
+    ativo: z.boolean(),
+    ordem: z.number().int(),
+    fases: z.array(funilFaseSchema),
+  })
+  .meta({ id: 'Funil' })
+export type Funil = z.infer<typeof funilSchema>
+
+export const criarFaseSchema = z
+  .object({
+    nome: nomeDeCadastroSchema,
+    cor: corDeTagSchema.default('gray'),
+    probabilidadePadrao: probabilidadeSchema.default(0),
+    diasAlertaParada: diasAlertaSchema.default(null),
+  })
+  .strict()
+  .meta({ id: 'CriarFunilFaseEntrada' })
+export type CriarFaseEntrada = z.input<typeof criarFaseSchema>
+
+export const alterarFaseSchema = z
+  .object({
+    nome: nomeDeCadastroSchema,
+    cor: corDeTagSchema,
+    probabilidadePadrao: probabilidadeSchema,
+    diasAlertaParada: diasAlertaSchema,
+  })
+  .partial()
+  .strict()
+  .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
+  .meta({ id: 'AlterarFunilFaseEntrada' })
+export type AlterarFaseEntrada = z.infer<typeof alterarFaseSchema>
+
+/** Um funil nasce com ao menos uma fase (a primeira etapa do andamento). */
+export const criarFunilSchema = z
+  .object({
+    nome: nomeDeCadastroSchema,
+    fases: z.array(criarFaseSchema).min(1, 'informe ao menos uma fase').max(30),
+  })
+  .strict()
+  .meta({ id: 'CriarFunilEntrada' })
+export type CriarFunilEntrada = z.input<typeof criarFunilSchema>
+
+/** `padrao` só aceita `true` (tornar este o funil padrão): o padrão anterior deixa de ser. */
+export const alterarFunilSchema = z
+  .object({ nome: nomeDeCadastroSchema, ativo: z.boolean(), padrao: z.literal(true) })
+  .partial()
+  .strict()
+  .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
+  .meta({ id: 'AlterarFunilEntrada' })
+export type AlterarFunilEntrada = z.infer<typeof alterarFunilSchema>

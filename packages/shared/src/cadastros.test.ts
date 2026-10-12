@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest'
 
 import {
   alterarTagGrupoSchema,
+  alterarFaseSchema,
+  alterarFunilSchema,
   alterarMotivoSchema,
   alterarOrigemSchema,
   alterarTagSchema,
   alterarTipoAtividadeSchema,
   CORES_DE_TAG,
   corDeTagSchema,
+  criarFaseSchema,
+  criarFunilSchema,
   criarMotivoSchema,
   criarOrigemSchema,
   criarSolucaoSchema,
@@ -131,5 +135,42 @@ describe('verticais, soluções, origens, motivos e tipos de atividade', () => {
       false,
     )
     expect(alterarOrigemSchema.safeParse({ ativo: false }).success).toBe(true)
+  })
+})
+
+describe('funis e fases', () => {
+  it('fase: probabilidade de 0 a 100, alerta nulo ou de 1 dia em diante, padrões', () => {
+    expect(criarFaseSchema.parse({ nome: ' Proposta ' })).toEqual({
+      nome: 'Proposta',
+      cor: 'gray',
+      probabilidadePadrao: 0,
+      diasAlertaParada: null,
+    })
+    expect(
+      criarFaseSchema.safeParse({ nome: 'P', probabilidadePadrao: 100, diasAlertaParada: 14 })
+        .success,
+    ).toBe(true)
+    for (const ruim of [
+      { nome: 'P', probabilidadePadrao: 101 },
+      { nome: 'P', probabilidadePadrao: -1 },
+      { nome: 'P', probabilidadePadrao: 50.5 },
+      { nome: 'P', diasAlertaParada: 0 },
+      { nome: 'P', cor: 'magenta' },
+    ]) {
+      expect(criarFaseSchema.safeParse(ruim).success, JSON.stringify(ruim)).toBe(false)
+    }
+    expect(alterarFaseSchema.safeParse({}).success).toBe(false)
+    expect(alterarFaseSchema.safeParse({ diasAlertaParada: null }).success).toBe(true)
+  })
+
+  it('funil nasce com ao menos uma fase; só se pode tornar padrão (nunca desmarcar)', () => {
+    expect(
+      criarFunilSchema.safeParse({ nome: 'Renovação', fases: [{ nome: 'Contato' }] }).success,
+    ).toBe(true)
+    expect(criarFunilSchema.safeParse({ nome: 'Renovação', fases: [] }).success).toBe(false)
+    expect(criarFunilSchema.safeParse({ nome: 'Renovação' }).success).toBe(false)
+    expect(alterarFunilSchema.safeParse({ padrao: true }).success).toBe(true)
+    expect(alterarFunilSchema.safeParse({ padrao: false }).success).toBe(false)
+    expect(alterarFunilSchema.safeParse({}).success).toBe(false)
   })
 })

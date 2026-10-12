@@ -71,6 +71,6 @@ export { aplicarMigracoes, pastaMigracoes } from './migrar.js'
 
 // A mesma instância do drizzle-orm que o `db` usa: quem monta consultas com `sql` fora deste
 // pacote (a API) importa daqui, para os tipos casarem (o pnpm pode ter mais de uma cópia).
-export { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+export { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 export { criarPadroesDoTenant }
 export type { Db }

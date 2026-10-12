@@ -7,6 +7,8 @@ import {
   TiposAtividadeService,
   VerticaisService,
 } from './cadastros-simples.services.js'
+import { FunisController } from './funis.controller.js'
+import { FunisService } from './funis.service.js'
 import { MotivosController } from './motivos.controller.js'
 import { OrigensController } from './origens.controller.js'
 import { SolucoesController } from './solucoes.controller.js'
@@ -24,6 +26,7 @@ import { VerticaisController } from './verticais.controller.js'
     SolucoesController,
     OrigensController,
     MotivosController,
+    FunisController,
   ],
   providers: [
     TagsService,
@@ -32,6 +35,7 @@ import { VerticaisController } from './verticais.controller.js'
     SolucoesService,
     OrigensService,
     MotivosService,
+    FunisService,
   ],
 })
 export class CadastrosModule {}
