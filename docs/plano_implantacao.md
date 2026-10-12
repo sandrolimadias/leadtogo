@@ -658,6 +658,8 @@ Cada tela segue o design system (tokens, `Skeleton`, `Alert`, `Dialog`, `Toast`)
 - [x] **Rollback** (12/10/2026, sha-5605db5 e volta para latest, tudo healthy): voltar para a imagem `sha-` anterior no Coolify e retornar, sem tempo fora do ar.
 - [x] **Restauração** (12/10/2026, a partir do R2: 15 migrações, 2 tenants, 3 membros, idêntico à produção): recuperar o backup do dia num banco temporário.
 
+- [ ] **Pendência antes do primeiro cliente:** ensaiar a restauração em produção **completa** (banco novo, troca de nomes, API apontando para ele, login e isolamento) num container descartável; o procedimento (`runbook_backup.md`, seção 3) ainda não foi testado de ponta a ponta.
+
 **Runbook** (`docs/runbook.md`, o Claude Code cria; **primeira versão escrita em 12/10/2026, para o Ale revisar**):
 - como fazer deploy, rollback e redeploy manual;
 - como restaurar banco e arquivos;

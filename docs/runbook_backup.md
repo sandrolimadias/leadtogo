@@ -80,16 +80,28 @@ O `vps-backup` contém **hashes de senha dos papéis**: mantenha-o **privado** e
 
 **Procedimento de emergência:** só com decisão do Ale, e avisando os usuários antes (o sistema fica fora do ar). Rode antes o teste da seção 2 com o mesmo arquivo: só siga se as contagens fizerem sentido.
 
-1. **Parar quem escreve no banco:** no Coolify, parar `api` e `worker` (o `web` pode ficar).
-2. **Preservar o estado atual**, se o banco ainda responder: backup manual (*Backups → Execute now*) antes de qualquer coisa.
-3. **Baixar o backup escolhido** (2.1) e **validá-lo** num container limpo (2.2 e 2.3).
-4. **Restaurar só o banco `leadtogo`** a partir do dump (o dump inteiro traz também `postgres` e os papéis; não sobrescreva o servidor de produção com ele):
-   - banco íntegro, só dados ruins: extraia do SQL só o banco `leadtogo` (ou, mais simples, no container de teste faça `pg_dump -Fc leadtogo` e restaure esse arquivo com `pg_restore`) num banco novo (`leadtogo_novo`) e troque os nomes (`ALTER DATABASE ... RENAME`) com as conexões encerradas;
-   - VPS/banco perdido: recrie o recurso `leadtogo-db` (`imresamu/postgis:17-3.5`, sem porta pública) e restaure o dump nele como em 2.2 (servidor limpo: o dump recria os papéis).
-5. **Papéis:** conferir `leadtogo_owner` e `leadtogo_app` (sem `BYPASSRLS`, `leadtogo_app` não dono das tabelas) e as permissões; se preciso, reaplicar o script de papéis.
+1. **Antes de tudo, "Backup Now"** do estado atual no Coolify (*Backups → Execute now*), **mesmo corrompido**, para poder voltar atrás. Só depois mexa em qualquer coisa.
+2. **Baixar o backup escolhido** (2.1) e **validá-lo** num container limpo (2.2 e 2.3).
+3. **Restaurar num banco NOVO** do servidor de produção, `leadtogo_restaurado` (o `leadtogo` atual não é tocado). O dump é de **todos os bancos** e os papéis já existem em produção; por isso, a partir do container de teste, gere só o banco: `pg_dump -Fc leadtogo` lá e `pg_restore` aqui:
+   ```bash
+   createdb -U postgres leadtogo_restaurado
+   pg_restore -U postgres -d leadtogo_restaurado <arquivo.dump>      # SEM --no-owner e SEM --no-acl
+   ```
+   **Nunca use `--no-owner` nem `--no-acl`:** as funções `SECURITY DEFINER` e as políticas de RLS dependem do dono (`leadtogo_owner`) e dos `GRANT` para `leadtogo_app`. Sem eles a aplicação sobe, mas falha ou **perde o isolamento entre empresas**.
+4. **Conferir as contagens** em `leadtogo_restaurado` (consulta da seção 2.3) e os papéis: `leadtogo_owner` e `leadtogo_app` (sem `BYPASSRLS`, `leadtogo_app` não dono das tabelas).
+5. **Trocar os nomes**, só agora, com `api` e `worker` **parados** no Coolify (o `web` pode ficar) e sem conexões no banco:
+   ```sql
+   ALTER DATABASE leadtogo RENAME TO leadtogo_antigo;
+   ALTER DATABASE leadtogo_restaurado RENAME TO leadtogo;
+   ```
+   **Mantenha o `leadtogo_antigo`** até confirmar que está tudo bem; só depois apague.
 6. **Migrações:** a `api` aplica as pendentes **ao iniciar** (`node dist/iniciar.js`); as já aplicadas ficam registradas no banco restaurado (nunca editar migração aplicada).
-7. **Subir `api` e `worker`**, conferir `/health`, fazer login e abrir uma empresa.
+7. **Subir `api` e `worker`** e conferir: `/health`; login; **isolamento** (um usuário da empresa A não vê a empresa B).
 8. **Registrar** o incidente (data, causa, backup usado, dados perdidos entre o backup e a falha) e fazer um backup manual.
+
+Se o banco/VPS foi **perdido**: recrie o recurso `leadtogo-db` (`imresamu/postgis:17-3.5`, sem porta pública) e restaure o dump inteiro como em 2.2 (servidor limpo: o dump recria os papéis); depois, passos 6 a 8.
+
+> **Pendência antes do primeiro cliente:** esse procedimento **ainda não foi testado de ponta a ponta**. Ensaiar completo num container descartável (com os papéis e a aplicação apontando para ele): restaurar em banco novo, trocar os nomes, subir a API e conferir login e isolamento.
 
 Perda máxima esperada (RPO): até 24h, pois o backup é diário às 3h.
 
