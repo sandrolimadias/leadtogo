@@ -14,6 +14,7 @@ import { PrimeiroAcessoModule } from './primeiro-acesso/primeiro-acesso.module.j
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
 import { ConvitesModule } from './convites/convites.module.js'
 import { EmailModule } from './email/email.module.js'
+import { EmpresasModule } from './empresas/empresas.module.js'
 import { FiltroDeExcecoes } from './http/filtro-excecoes.js'
 import { HealthModule } from './health/health.module.js'
 import { InfraModule } from './infra/infra.module.js'
@@ -48,6 +49,7 @@ export class AppModule {
         MeModule,
         ConfiguracoesModule,
         ConvitesModule,
+        EmpresasModule,
         PrimeiroAcessoModule,
         HealthModule,
       ],

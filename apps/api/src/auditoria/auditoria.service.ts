@@ -1,7 +1,9 @@
-import { sql } from '@leadtogo/db'
+import { type Conexao, sql } from '@leadtogo/db'
 import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
+
+type Transacao = Parameters<Parameters<Conexao['db']['transaction']>[0]>[0]
 
 export interface RegistroDeAuditoria {
   entidade: string
@@ -20,9 +22,19 @@ export class AuditoriaService {
   constructor(private readonly ctx: ContextoTenantService) {}
 
   async registrar(registro: RegistroDeAuditoria): Promise<void> {
-    await this.ctx.db().execute(sql`
+    await this.registrarEm(this.ctx.db(), this.ctx.tenantId, this.ctx.membro.id, registro)
+  }
+
+  /** Para quando o ato cria a própria empresa (não há empresa ativa na requisição): tenant e autor explícitos. */
+  async registrarEm(
+    tx: Transacao,
+    tenantId: string,
+    membroId: string,
+    registro: RegistroDeAuditoria,
+  ): Promise<void> {
+    await tx.execute(sql`
       INSERT INTO auditoria (tenant_id, entidade, entidade_id, acao, alteracoes, membro_id, origem)
-      VALUES (${this.ctx.tenantId}, ${registro.entidade}, ${registro.entidadeId ?? null}, ${registro.acao},
-              ${registro.alteracoes ? JSON.stringify(registro.alteracoes) : null}::jsonb, ${this.ctx.membro.id}, 'app')`)
+      VALUES (${tenantId}, ${registro.entidade}, ${registro.entidadeId ?? null}, ${registro.acao},
+              ${registro.alteracoes ? JSON.stringify(registro.alteracoes) : null}::jsonb, ${membroId}, 'app')`)
   }
 }
