@@ -34,10 +34,26 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na decisão, aniversário, consentimento LGPD e **"converter sócio em contato"**. Lista e ficha.
 
 ### Módulo 4 — Importação de planilha (Excel/CSV)
-- Empresas e contatos; mapeamento de colunas, prévia, validação e relatório de erros.
-- Deduplicação por **CNPJ dentro do tenant**.
-- Escolha do **Status** (*Cliente* para a carteira, *Lead* para leads) e origem **"Importação"**.
-- **Enriquecimento pela Receita em segundo plano** (fila no worker, respeitando o limite da API), com **progresso visível**.
+*Decidido pelo Ale em 12/10/2026; **substitui** a descrição anterior. Vem depois dos Módulos 1 a 3. Detalhes de regra em `funcionalidades.md` (seção 3, "Importação por planilha").*
+
+- **Tela igual ao mockup** do Claude Design (`prototipo/Importar.dc.html`), com os passos **Enviar arquivo · Mapear colunas · Regras** (novo) **· Prévia · Carteira · Importar · Relatório**, alternância **Empresas / Contatos**, Excel e CSV e o botão **"Baixar modelo"**.
+- **Limite: até 10.000 linhas e 10 MB** por arquivo (o mockup diz 5.000; vale este documento).
+- **Mapear colunas: fonte dos dados**, uma escolha por importação:
+  - **Usar os dados da planilha**;
+  - **Buscar tudo na Receita** (basta a coluna CNPJ);
+  - **Completar com a Receita só os campos vazios**.
+- **Consulta à Minha Receita:** um CNPJ por vez, **no worker**, com intervalo **configurável (padrão 3 s)**, *retry* em 429 e 5xx e cache em `receita_consultas`. **Progresso visível** na tela.
+- **Regras de importação, em perfis nomeados por empresa (tenant).** Nada fixo no código: o produto será vendido. Um perfil define:
+  - **situação ativa** (liga/desliga);
+  - **matriz, filial ou ambas**;
+  - **excluir MEI** (liga/desliga);
+  - **CNAE principal dentro de uma lista** (com a opção de aceitar também nos CNAEs secundários);
+  - **ação para quem não passa:** *pular e listar no relatório* (padrão) ou *importar com a tag "Fora do perfil"*.
+- Na importação se escolhe **um perfil ou "Sem regras"**. As regras são aplicadas **depois da consulta à Receita**. O **Relatório** oferece **"importar mesmo assim"** para os fora do perfil.
+- A **lista de CNAEs do Ale** (`docs/cnaes_interesse.md`, que o Ale ainda vai fornecer: o arquivo não está no repositório) **vira o primeiro perfil dele**, não um padrão do sistema.
+- **Lote nomeado, filtrável e desfazível.** **Status** e as demais escolhas ficam no passo **Carteira** (*Cliente* para a carteira, *Lead* para leads; origem **"Importação"**). Os alertas de "sem contato/visita" valem, por padrão, **só para Cliente e Prospect**.
+- **Deduplicação por CNPJ dentro do tenant.**
+- Os **perfis serão reaproveitados na Prospecção**.
 
 ### Módulo 5 — Atividades
 Formulário **Registrar atividade** (protótipo), situação, resultado, importante/urgente, **efeito na carteira** (tags Visitada/Contactada, última visita e último contato), **"Registrar e agendar próxima"**, atrasadas e linha do tempo na ficha.
@@ -67,7 +83,7 @@ Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase,
 
 | Item | Motivo |
 |---|---|
-| **Prospecção** | **Fase própria logo após o MVP.** Exige base completa de CNPJs ou API paga; a Minha Receita não oferece busca por CNAE + município |
+| **Prospecção** | **Fase própria logo após o MVP.** Exige a base completa de CNPJs; a API pública da Minha Receita não busca por CNAE + município. **Direção (12/10/2026):** instância **própria** da Minha Receita (código aberto), com a base completa da Receita, o que permite buscar por município (IBGE), CNAE principal, situação, matriz e porte/MEI direto no banco e tira a dependência da API pública. Também é o que permite escalar a importação com vários clientes. Reaproveita os perfis de regras do Módulo 4 |
 | Kanban de Tarefas | Com um usuário só, "Minhas atividades" do Dashboard cobre o dia a dia |
 | Catálogo de produtos/itens | O MVP usa valores digitados na oportunidade (único, mensal, total) |
 | Campos personalizados | Não há necessidade comprovada; os campos fixos cobrem o uso inicial |

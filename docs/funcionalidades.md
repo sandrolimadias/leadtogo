@@ -156,6 +156,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 
 ### Recursos extras
 - **Importação por planilha** (Excel/CSV): mapeamento de colunas, prévia, validação e relatório de erros. Importa empresas e contatos.
+  - **Decisões de 12/10/2026 (v1.6):** passos *Enviar arquivo · Mapear colunas · Regras · Prévia · Carteira · Importar · Relatório*; até **10.000 linhas e 10 MB**; fonte dos dados (*usar a planilha*, *buscar tudo na Receita* ou *completar só os vazios*); consulta à Receita **um CNPJ por vez, no worker**, com intervalo configurável (padrão 3 s) e *retry* em 429/5xx; **regras em perfis nomeados por empresa** (situação ativa, matriz/filial, excluir MEI, CNAE principal em lista com opção de aceitar nos secundários, e a ação para quem não passa: pular e listar, ou importar com a tag "Fora do perfil"); **lote nomeado, filtrável e desfazível**. Detalhes em `escopo_mvp.md` (Módulo 4).
 - **Detecção de duplicados:** alerta no cadastro e na importação por CNPJ igual, nome muito parecido ou telefone igual. Opção de **mesclar** duplicados.
 - **Exportação** da lista filtrada para Excel/CSV, respeitando as permissões do usuário.
 
@@ -173,6 +174,7 @@ Gerar listas de leads a partir da base pública de CNPJs.
   - a origem do cadastro fica como **Prospecção**.
 - As buscas ficam salvas e podem ser **repetidas** para encontrar empresas novas desde a última vez.
 - Integra com a geolocalização (fase 2): ver os leads importados no mapa e montar o roteiro de visitas.
+- **Direção técnica (12/10/2026):** a busca por CNAE + município exige a base completa da Receita. O caminho previsto é uma **instância própria da Minha Receita** (código aberto), o que permite filtrar por município (IBGE), CNAE principal, situação, matriz e porte/MEI direto no banco, sem depender da API pública. Os **perfis de regras** da importação (seção 3, "Recursos extras") são reaproveitados aqui.
 
 ---
 
@@ -753,6 +755,8 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 | 29 | Registrar atividade (v1.5) | Situação padrão Realizada; resultado obrigatório ao realizar; "Mais opções" com Oportunidade, Lembrete e Repetir |
 | 30 | Fechamento (v1.5) | Interruptor "empresa vira Cliente" por fechamento, padrão vindo da configuração do tenant |
 | 31 | Navegação (v1.5) | Menu lateral recolhível (preferência salva por usuário); celular com barra inferior (Início, Empresas, Funil, Tarefas, Mais) e botão "+" |
+| 32 | Importação (v1.6) | Perfis de regras nomeados por empresa, aplicados depois da consulta à Receita; limite de 10.000 linhas e 10 MB; lote desfazível; ver `escopo_mvp.md` (Módulo 4) |
+| 33 | Prospecção (v1.6) | Instância própria da Minha Receita com a base completa, pós-MVP; reaproveita os perfis de regras |
 
 ## 16. Próximos passos
 
