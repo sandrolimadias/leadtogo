@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { chaveDoMe, exigirAplicativo } from '@/auth/guardas'
+import { useAcessoEncerrado } from '@/casca/acesso-encerrado'
 import { Casca } from '@/casca/casca'
 import { identificarSessao } from '@/observabilidade/erros'
 
@@ -20,6 +21,7 @@ export const Route = createFileRoute('/_autenticado')({
     // o guarda já buscou a sessão; aqui ela só é mantida em dia (troca de empresa, 2FA...)
     const sessao = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me, initialData: inicial })
     const me = sessao.data
+    useAcessoEncerrado(me)
     // os eventos de erro levam só o id do usuário e o da empresa ativa (tags)
     const usuarioId = me?.usuario.id
     const empresaId = me?.empresaAtivaId
