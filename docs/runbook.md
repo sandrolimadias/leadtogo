@@ -61,8 +61,8 @@ Se o deploy novo **não ficou saudável**, o Coolify já manteve a versão anter
 **Quando:** dado apagado ou corrompido, migração que estragou dados, ou VPS perdida (seção 5). Só com decisão do Ale; avise os usuários antes (o sistema fica fora do ar).
 
 **Banco** (`runbook_backup.md`):
-- 2: **teste de restauração** num Postgres descartável, sem tocar na produção (baixar do R2 com `rclone`, `pg_restore`, conferir contagens). Faça pelo menos uma vez por trimestre.
-- 3: **restauração em produção**: parar `api` e `worker` → preservar o estado atual (backup manual) → baixar e **validar** o backup num container descartável → restaurar (banco novo + trocar nomes, ou recriar o `leadtogo-db`) → conferir os papéis `leadtogo_owner` e `leadtogo_app` (sem `BYPASSRLS`) → subir `api` e `worker` (as migrações pendentes rodam ao iniciar a API) → `/health`, login e abrir uma empresa → registrar o incidente e fazer um backup manual.
+- 2: **teste de restauração** num Postgres limpo, sem tocar na produção. O arquivo do Coolify é um `pg_dumpall` SQL compactado (`.gz`, todos os bancos e os papéis): baixa com `rclone copyto`, restaura com `gunzip | psql` (**não** é `pg_restore`), compara contagens e **apaga tudo** no fim. Faça pelo menos uma vez por trimestre.
+- 3: **restauração em produção (emergência)**: parar `api` e `worker` → preservar o estado atual (backup manual) → baixar e **validar** o backup num container descartável → restaurar (banco novo + trocar nomes, ou recriar o `leadtogo-db`) → conferir os papéis `leadtogo_owner` e `leadtogo_app` (sem `BYPASSRLS`) → subir `api` e `worker` (as migrações pendentes rodam ao iniciar a API) → `/health`, login e abrir uma empresa → registrar o incidente e fazer um backup manual.
 - **RPO:** até 24 h (backup diário às 3h, 30 cópias no R2). Um dado excluído só some dos backups quando o backup expira (`lgpd.md`, seção 5).
 - Para **olhar** o banco de produção (sem restaurar): `runbook_e13.md`, seção 4.6 (`psql` no container; o banco se chama `leadtogo`, e o `POSTGRES_DB` do container aponta para `postgres`).
 

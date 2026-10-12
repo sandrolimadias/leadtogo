@@ -1,6 +1,6 @@
 # Runbook de backup e restauração
 
-Referências: `plano_implantacao.md` (4.4 e E15) e `runbook_e13.md`. Restauração testada em **09/10/2026**.
+Referências: `plano_implantacao.md` (4.4 e E15) e `runbook_e13.md`. Restauração testada em **12/10/2026** (seção 2).
 
 ## 1. Backups em funcionamento
 
@@ -16,88 +16,80 @@ Conferência rotineira: no Coolify, abrir o banco → *Backups* → ver a últim
 
 ## 2. Teste de restauração (descartável, sem tocar na produção)
 
-Fazer do WSL (ou de qualquer máquina com Docker). Nada de arquivo de configuração do rclone: as credenciais entram por variável de ambiente e morrem com o container.
+Feito **na VPS**, como `root`, com o `/root/backup-garage.env` (credenciais do R2 por `--env-file`; nada de arquivo de configuração do rclone). Testado em **12/10/2026**: restaurado em container limpo, resultado idêntico à produção (15 migrações, 2 tenants, 3 membros). O procedimento anterior (formato custom + `pg_restore`) estava **errado**.
 
-### 2.1 Baixar o backup com rclone
+### 2.0 O que é o arquivo do Coolify
 
-```bash
-mkdir -p ~/restore-teste && cd ~/restore-teste
+- É um **`pg_dumpall` em SQL compactado** (`pg-dump-all-<epoch>-<id>.gz`), com **todos os bancos do servidor** (`postgres` e `leadtogo`) e os **papéis, com hash de senha**.
+- **Não** é formato custom: `pg_restore` não lê. Restaura-se com `gunzip | psql`.
+- Local no R2: `r2:vps-backup/data/coolify/backups/databases/root-team-0/postgresql-leadtogo-orq8miun4hoaqnvwbntlxzwt/`.
+- O bucket tem backups de **outros bancos** (como o do GlitchTip): identifique o arquivo pelo **caminho do recurso + data**, nunca pelo último nome de uma lista ordenada.
 
-export RCLONE_CONFIG_R2_TYPE=s3
-export RCLONE_CONFIG_R2_PROVIDER=Cloudflare
-export RCLONE_CONFIG_R2_ACCESS_KEY_ID='<access key do R2>'
-export RCLONE_CONFIG_R2_SECRET_ACCESS_KEY='<secret do R2>'
-export RCLONE_CONFIG_R2_ENDPOINT='https://<account-id>.r2.cloudflarestorage.com'
-export RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true
-
-# listar e escolher o arquivo mais recente do banco desejado
-docker run --rm \
-  -e RCLONE_CONFIG_R2_TYPE -e RCLONE_CONFIG_R2_PROVIDER \
-  -e RCLONE_CONFIG_R2_ACCESS_KEY_ID -e RCLONE_CONFIG_R2_SECRET_ACCESS_KEY \
-  -e RCLONE_CONFIG_R2_ENDPOINT -e RCLONE_CONFIG_R2_NO_CHECK_BUCKET \
-  rclone/rclone lsf -R r2:vps-backup
-
-# baixar
-docker run --rm -v "$PWD:/dados" \
-  -e RCLONE_CONFIG_R2_TYPE -e RCLONE_CONFIG_R2_PROVIDER \
-  -e RCLONE_CONFIG_R2_ACCESS_KEY_ID -e RCLONE_CONFIG_R2_SECRET_ACCESS_KEY \
-  -e RCLONE_CONFIG_R2_ENDPOINT -e RCLONE_CONFIG_R2_NO_CHECK_BUCKET \
-  rclone/rclone copy "r2:vps-backup/<caminho/do/arquivo>" /dados
-```
-
-**Lição: `RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true` é obrigatória.** Sem ela, o rclone tenta verificar/criar o bucket antes de copiar, e uma chave do R2 sem permissão de administração do bucket falha com erro de acesso negado (típico `403 AccessDenied`), mesmo com a leitura liberada. Com a variável, o rclone vai direto aos objetos. Vale para qualquer comando rclone contra o R2, inclusive o futuro espelhamento do Garage (seção 4).
-
-(`<...>` são valores a preencher; as chaves do R2 ficam no gerenciador de senhas, nunca no repositório.)
-
-### 2.2 Restaurar num Postgres descartável
-
-Mesma imagem da produção, para a versão e o PostGIS baterem:
+### 2.1 Listar e baixar
 
 ```bash
-docker run -d --name pg-restore-teste -e POSTGRES_PASSWORD=teste imresamu/postgis:17-3.5
-# aguardar subir: docker exec pg-restore-teste pg_isready -U postgres
+# lsl já é recursivo: não usar -R
+docker run --rm --env-file /root/backup-garage.env rclone/rclone:latest lsl r2:vps-backup/data \
+  | grep orq8miun4hoaqnvwbntlxzwt | sort -k2,3 | tail -n 3
 
-docker exec pg-restore-teste createdb -U postgres leadtogo
-docker cp ./<arquivo-baixado> pg-restore-teste:/tmp/backup.dmp
-
-# formato custom (.dmp) do Coolify; se vier .sql, usar psql -f no lugar
-docker exec pg-restore-teste pg_restore -U postgres -d leadtogo --no-owner /tmp/backup.dmp
+mkdir -p /root/restore-teste
+docker run --rm --env-file /root/backup-garage.env -v /root/restore-teste:/dados rclone/rclone:latest \
+  copyto "r2:vps-backup/data/coolify/backups/databases/root-team-0/postgresql-leadtogo-orq8miun4hoaqnvwbntlxzwt/<arquivo>.gz" \
+  /dados/backup.sql.gz
 ```
 
-### 2.3 Conferir as contagens
+`RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true` (já no `.env`) é obrigatória: sem ela o rclone tenta verificar/criar o bucket e uma chave sem permissão de administração falha com `403 AccessDenied`. Detalhes das credenciais: seção 4.4.
 
-Em 09/10/2026 o resultado esperado era **`1332|5571|1|1`**. Rodar as mesmas contagens usadas naquele teste e comparar com o esperado (se o banco já tiver mais dados, o esperado muda: registrar o novo valor aqui ao refazer o teste).
+### 2.2 Restaurar num servidor LIMPO
+
+**Não crie papéis nem banco antes:** o dump os cria. Mesma imagem da produção, para a versão e o PostGIS baterem:
 
 ```bash
-docker exec pg-restore-teste psql -U postgres -d leadtogo -At -c "<consulta de contagens>"
+docker run -d --name restore-teste -e POSTGRES_PASSWORD=teste \
+  -v /root/restore-teste:/backup imresamu/postgis:17-3.5
+# aguardar: docker exec restore-teste pg_isready -U postgres
+
+docker exec restore-teste sh -c 'gunzip -c /backup/backup.sql.gz | psql -U postgres -q -d postgres'
 ```
 
-### 2.4 Limpar
+Avisos `already exists` (papel `postgres`) são normais.
+
+### 2.3 Conferir contra a produção
+
+Rode a mesma consulta nos dois lados (restauração: `docker exec restore-teste psql -U postgres -d leadtogo -At -c ...`; produção: `runbook_e13.md`, seção 4.6) e compare:
+
+```sql
+SELECT (SELECT count(*) FROM drizzle.__drizzle_migrations), (SELECT count(*) FROM tenants), (SELECT count(*) FROM membros);
+```
+
+Em 12/10/2026: **15 migrações, 2 tenants, 3 membros**, igual à produção. Se houve dados novos desde o backup, o esperado muda: compare com o que a produção tinha às 3h e registre o novo valor aqui ao refazer o teste.
+
+### 2.4 Limpar (sempre)
 
 ```bash
-docker rm -f pg-restore-teste
-rm -rf ~/restore-teste
-unset RCLONE_CONFIG_R2_NO_CHECK_BUCKET RCLONE_CONFIG_R2_TYPE RCLONE_CONFIG_R2_PROVIDER RCLONE_CONFIG_R2_ACCESS_KEY_ID \
-      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY RCLONE_CONFIG_R2_ENDPOINT
+docker rm -f restore-teste && rm -rf /root/restore-teste
 ```
 
-O backup baixado contém dados reais: não deixe cópia no computador.
+O arquivo e o container contêm **dados pessoais e hashes de senha**: não deixe cópia em lugar nenhum.
 
-## 3. Restauração em produção (desastre)
+### 2.5 Segurança do bucket
 
-Só com decisão do Ale. Antes de começar, avisar os usuários: o sistema ficará fora do ar.
+O `vps-backup` contém **hashes de senha dos papéis**: mantenha-o **privado** e use token do R2 com **escopo mínimo** (só o bucket; leitura quando só for restaurar).
+
+## 3. Restauração em produção (emergência)
+
+**Procedimento de emergência:** só com decisão do Ale, e avisando os usuários antes (o sistema fica fora do ar). Rode antes o teste da seção 2 com o mesmo arquivo: só siga se as contagens fizerem sentido.
 
 1. **Parar quem escreve no banco:** no Coolify, parar `api` e `worker` (o `web` pode ficar).
-2. **Preservar o estado atual**, se o banco ainda responder: gerar um backup manual (*Backups → Execute now*) ou `pg_dump` antes de qualquer coisa.
-3. **Baixar o backup escolhido** como em 2.1 (o mais recente, ou o último anterior ao problema).
-4. **Validar antes** no container descartável (2.2 e 2.3). Só siga se as contagens fizerem sentido.
-5. **Restaurar:**
-   - banco íntegro, só dados ruins: criar um banco novo (`leadtogo_novo`), restaurar nele, trocar os nomes (`ALTER DATABASE ... RENAME`) com as conexões encerradas;
-   - VPS/banco perdido: recriar o recurso `leadtogo-db` (`imresamu/postgis:17-3.5`, sem porta pública), criar o banco `leadtogo` e restaurar com `pg_restore`.
-6. **Papéis:** conferir `leadtogo_owner` e `leadtogo_app` (sem `BYPASSRLS`, `leadtogo_app` não dono das tabelas) e as permissões. `pg_restore --no-owner` não recria o dono; reaplicar os `GRANT`/`OWNER TO` do script de papéis.
-7. **Migrações:** a `api` aplica as pendentes **ao iniciar** (`node dist/iniciar.js`, antes de responder); as já aplicadas ficam registradas no banco restaurado (nunca editar migração aplicada).
-8. **Subir `api` e `worker`**, conferir `/health`, fazer login e abrir uma empresa.
-9. **Registrar** o incidente (data, causa, backup usado, dados perdidos entre o backup e a falha) e refazer um backup manual.
+2. **Preservar o estado atual**, se o banco ainda responder: backup manual (*Backups → Execute now*) antes de qualquer coisa.
+3. **Baixar o backup escolhido** (2.1) e **validá-lo** num container limpo (2.2 e 2.3).
+4. **Restaurar só o banco `leadtogo`** a partir do dump (o dump inteiro traz também `postgres` e os papéis; não sobrescreva o servidor de produção com ele):
+   - banco íntegro, só dados ruins: extraia do SQL só o banco `leadtogo` (ou, mais simples, no container de teste faça `pg_dump -Fc leadtogo` e restaure esse arquivo com `pg_restore`) num banco novo (`leadtogo_novo`) e troque os nomes (`ALTER DATABASE ... RENAME`) com as conexões encerradas;
+   - VPS/banco perdido: recrie o recurso `leadtogo-db` (`imresamu/postgis:17-3.5`, sem porta pública) e restaure o dump nele como em 2.2 (servidor limpo: o dump recria os papéis).
+5. **Papéis:** conferir `leadtogo_owner` e `leadtogo_app` (sem `BYPASSRLS`, `leadtogo_app` não dono das tabelas) e as permissões; se preciso, reaplicar o script de papéis.
+6. **Migrações:** a `api` aplica as pendentes **ao iniciar** (`node dist/iniciar.js`); as já aplicadas ficam registradas no banco restaurado (nunca editar migração aplicada).
+7. **Subir `api` e `worker`**, conferir `/health`, fazer login e abrir uma empresa.
+8. **Registrar** o incidente (data, causa, backup usado, dados perdidos entre o backup e a falha) e fazer um backup manual.
 
 Perda máxima esperada (RPO): até 24h, pois o backup é diário às 3h.
 

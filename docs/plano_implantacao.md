@@ -650,13 +650,13 @@ Cada tela segue o design system (tokens, `Skeleton`, `Alert`, `Dialog`, `Toast`)
 
 ## E16. Validação final e runbook — Ale + Claude Code
 
-**Testes de aceitação (em produção):**
-- [ ] Criar conta e empresa A; convidar um vendedor; criar a empresa B na mesma conta.
-- [ ] Trocar entre A e B; o vendedor da A não vê a B.
-- [ ] Tema escuro, menu recolhido e preferência mantida após novo login.
-- [ ] Instalar o PWA no celular e entrar.
-- [ ] **Rollback:** voltar para a imagem `sha-` anterior no Coolify e retornar, sem tempo fora do ar.
-- [ ] **Restauração:** recuperar o backup do dia num banco temporário.
+**Testes de aceitação (em produção): 1 a 5 concluídos em 12/10/2026 (multiempresa, preferências, PWA, rollback, restauração). Falta só o runbook geral (`docs/runbook.md`).**
+- [x] Criar conta e empresa A; convidar um vendedor; criar a empresa B na mesma conta.
+- [x] Trocar entre A e B; o vendedor da A não vê a B.
+- [x] Tema escuro, menu recolhido e preferência mantida após novo login.
+- [x] Instalar o PWA no celular e entrar.
+- [x] **Rollback** (12/10/2026, sha-5605db5 e volta para latest, tudo healthy): voltar para a imagem `sha-` anterior no Coolify e retornar, sem tempo fora do ar.
+- [x] **Restauração** (12/10/2026, a partir do R2: 15 migrações, 2 tenants, 3 membros, idêntico à produção): recuperar o backup do dia num banco temporário.
 
 **Runbook** (`docs/runbook.md`, o Claude Code cria; **primeira versão escrita em 12/10/2026, para o Ale revisar**):
 - como fazer deploy, rollback e redeploy manual;

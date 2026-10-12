@@ -119,7 +119,7 @@ Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **re
 | Autenticação | senha em hash scrypt; **2FA obrigatório** para administradores (`dois_fatores_exigido`); segredo TOTP e códigos de backup do 2FA **cifrados em repouso** (verificado no código do Better Auth 1.7.7: `symmetricEncrypt` com `BETTER_AUTH_SECRET`; `storeBackupCodes` é `encrypted` por padrão; vale reverificar ao atualizar a biblioteca) |
 | Criptografia em trânsito | HTTPS com **HSTS** (1 ano, `includeSubDomains`) no web e na API; cookies de sessão HttpOnly, Secure e SameSite |
 | Tokens de integrações | os tokens das contas conectadas (Google, Microsoft, WhatsApp; fases futuras) serão gravados **criptografados** |
-| Backups | diários e **externos à VPS** (R2), com restauração testada em 09/10/2026 |
+| Backups | diários e **externos à VPS** (R2), com restauração testada em 12/10/2026 |
 | Mínimo privilégio | usuário do banco da aplicação sem DDL; `auditoria` só com INSERT e SELECT; chave do Garage para backup **só de leitura**; papéis admin, gestor e vendedor e regra de carteira |
 | Contra abuso | **rate limit** no login (3 tentativas por 10 s), no 2FA e nos e-mails; limite geral da API |
 | Rastreabilidade | logs estruturados com `request_id`, `tenant_id` e `user_id`; auditoria de alterações |
