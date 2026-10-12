@@ -150,6 +150,8 @@ export function criarAuth({ config, banco, valkey, email }: DependenciasAuth) {
       customStorage: armazenamentoDeLimite(valkey),
       // Códigos de 6 dígitos são fáceis de adivinhar: poucas tentativas por minuto
       customRules: {
+        // Explícito (igual ao padrão do Better Auth): uma atualização da biblioteca não muda o limite do login sem aviso
+        '/sign-in/*': { window: 10, max: 3 },
         '/two-factor/verify-totp': { window: 60, max: 5 },
         '/two-factor/verify-backup-code': { window: 60, max: 5 },
         '/two-factor/disable': { window: 60, max: 5 },
