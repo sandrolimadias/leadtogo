@@ -78,6 +78,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 
 ### Regras
 - Trocar uma tag de grupo de seleção única **substitui** a anterior, e a mudança fica no histórico. Assim é possível medir quantos leads viraram clientes e quando.
+- **Tag em uso não se exclui (v1.6):** uma tag aplicada a alguma empresa, **agora ou no histórico de Status**, só pode ser **inativada**; a exclusão fica para tags que nunca foram usadas. Isso preserva o histórico de conversão (quantos Leads viraram Clientes e quando). Vale também para o grupo que contém tags em uso.
 - Filtros por tag em todas as listas (combinação **E / OU**).
 - **Automação opcional (configurável):** ao ganhar uma oportunidade, mudar o Status da empresa para *Cliente*.
 

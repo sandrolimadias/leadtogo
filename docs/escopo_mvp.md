@@ -28,6 +28,7 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - Telefones em **E.164**; vendedor (padrão: o usuário), vertical e tags.
 - **Lista** com busca, filtros do protótipo e chips fixos: *Todas, Minha carteira, Sem visita há 90 dias, Nunca visitadas, Sem próxima atividade*.
 - **Ficha** com abas *Resumo, Contatos, Atividades, Oportunidades e Histórico*.
+- **Regra das tags (decidida em 12/10/2026):** tag em uso por alguma empresa, **atual ou no histórico de Status** (`empresa_tags_historico`), **não pode ser excluída, só inativada**, para preservar o histórico de conversão (Lead → Cliente). O mesmo vale para excluir um **grupo** de tags com tags em uso. A API de tags (Módulo 1) ainda não confere o uso, porque ainda não há tags aplicadas a empresas: a verificação entra junto com `empresa_tags` e `empresa_tags_historico`, no Módulo 2, com teste.
 
 ### Módulo 3 — Contatos
 Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na decisão, aniversário, consentimento LGPD e **"converter sócio em contato"**. Lista e ficha.
