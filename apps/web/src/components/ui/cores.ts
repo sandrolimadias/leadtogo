@@ -14,6 +14,20 @@ export const CORES_DE_TAG = [
 ] as const
 export type CorDeTag = (typeof CORES_DE_TAG)[number]
 
+/** Nome da cor em português (o seletor de cor diz a cor por escrito, não só pelo desenho). */
+export const ROTULO_DA_COR: Record<CorDeTag, string> = {
+  gray: 'Cinza',
+  red: 'Vermelho',
+  orange: 'Laranja',
+  amber: 'Âmbar',
+  green: 'Verde',
+  teal: 'Azul-petróleo',
+  blue: 'Azul',
+  indigo: 'Índigo',
+  purple: 'Roxo',
+  pink: 'Rosa',
+}
+
 /** Classes completas (o Tailwind só gera o que aparece escrito por inteiro) */
 export const classeDaCor: Record<CorDeTag, string> = {
   gray: 'bg-tag-gray-bg text-tag-gray-fg',

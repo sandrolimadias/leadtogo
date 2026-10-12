@@ -1,11 +1,12 @@
 import { Link, Outlet } from '@tanstack/react-router'
-import { ShieldCheck, Users } from 'lucide-react'
+import { ShieldCheck, Tags, Users } from 'lucide-react'
 
 import { Icon } from '@/components/ui/icone'
 import { cn } from '@/lib/cn'
 
 const SECOES = [
   { para: '/configuracoes/usuarios', titulo: 'Usuários e equipe', icone: Users },
+  { para: '/configuracoes/tags', titulo: 'Tags', icone: Tags },
   { para: '/configuracoes/seguranca', titulo: 'Segurança', icone: ShieldCheck },
 ] as const
 

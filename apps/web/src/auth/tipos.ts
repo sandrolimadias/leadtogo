@@ -9,14 +9,20 @@ import type {
   Preferencias,
   PreferenciasPatch,
   Seguranca,
+  TagGrupo,
 } from '@leadtogo/api-client'
 import type {
   AlterarMembroEntrada,
+  AlterarTagEntrada,
+  AlterarTagGrupoEntrada,
   CriarConviteEntrada,
   CriarEmpresaEntrada,
+  CriarTagEntrada,
+  CriarTagGrupoEntrada,
   PoliticaDoisFatores,
   PrimeiroAcessoEntrada,
   PrimeiroAcessoResultado,
+  Tag,
 } from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
@@ -34,6 +40,22 @@ export interface ConfiguracaoDoDoisFatores {
   /** Chave para digitar à mão, extraída do URI */
   chave: string
   codigosDeBackup: string[]
+}
+
+/** Cadastro de grupos de tags e tags (Configurações → Tags). Só o administrador escreve. */
+export interface ServicosDeTags {
+  /** Grupos com as tags, inclusive as inativas (a tela as mostra com a palavra "Inativa") */
+  listar: () => Promise<Resultado<TagGrupo[]>>
+  criarGrupo: (dados: CriarTagGrupoEntrada) => Promise<Resultado<TagGrupo>>
+  alterarGrupo: (id: string, dados: AlterarTagGrupoEntrada) => Promise<Resultado<TagGrupo>>
+  excluirGrupo: (id: string) => Promise<Resultado>
+  /** Os ids de TODOS os grupos, na ordem nova */
+  reordenarGrupos: (ids: string[]) => Promise<Resultado<TagGrupo[]>>
+  criarTag: (dados: CriarTagEntrada) => Promise<Resultado<Tag>>
+  alterarTag: (id: string, dados: AlterarTagEntrada) => Promise<Resultado<Tag>>
+  excluirTag: (id: string) => Promise<Resultado>
+  /** Os ids de TODAS as tags do grupo, na ordem nova */
+  reordenarTags: (grupoId: string, ids: string[]) => Promise<Resultado<TagGrupo>>
 }
 
 /**
@@ -87,4 +109,7 @@ export interface ServicosDeAcesso {
   alterarMembro: (id: string, dados: AlterarMembroEntrada) => Promise<Resultado<MembroDaEquipe>>
   seguranca: () => Promise<Resultado<Seguranca>>
   alterarPoliticaDeDoisFatores: (politica: PoliticaDoisFatores) => Promise<Resultado<Seguranca>>
+
+  // Cadastros auxiliares (Módulo 1)
+  tags: ServicosDeTags
 }

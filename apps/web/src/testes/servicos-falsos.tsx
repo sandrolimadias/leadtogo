@@ -114,6 +114,17 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
     alterarPoliticaDeDoisFatores: vi.fn(async (p: string) =>
       ok({ doisFatoresExigido: p as 'admin' | 'admin_gestor' | 'todos' }),
     ),
+    tags: {
+      listar: vi.fn(async () => ok([])),
+      criarGrupo: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      alterarGrupo: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      excluirGrupo: vi.fn(async () => ok(undefined)),
+      reordenarGrupos: vi.fn(async () => ok([])),
+      criarTag: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      alterarTag: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      excluirTag: vi.fn(async () => ok(undefined)),
+      reordenarTags: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+    },
     ...troca,
   }
   return s as typeof s & ServicosDeAcesso

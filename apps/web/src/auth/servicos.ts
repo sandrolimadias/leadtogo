@@ -40,6 +40,12 @@ function daApi<T>(r: { data?: T; error?: ErroDaApi; response: Response }): Resul
   }
 }
 
+/** Resposta sem corpo (204): sucesso se o status for 2xx; senão, o erro da API. */
+function semCorpo(r: { error?: ErroDaApi; response: Response }): Resultado {
+  if (r.response.ok) return ok(undefined)
+  return daApi({ ...r, data: undefined })
+}
+
 function chaveDoUri(uri: string): string {
   try {
     return new URL(uri).searchParams.get('secret') ?? ''
@@ -192,4 +198,73 @@ export const servicosReais: ServicosDeAcesso = {
         }),
       ),
     ),
+
+  tags: {
+    listar: () =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/configuracoes/tag-grupos', {
+            params: { query: { incluirInativos: 'true' } },
+          }),
+        ),
+      ),
+    criarGrupo: (dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/configuracoes/tag-grupos', {
+            // o cliente gerado trata o que tem padrão como obrigatório: o padrão é enviado explícito
+            body: { ...dados, obrigatorio: dados.obrigatorio ?? false },
+          }),
+        ),
+      ),
+    alterarGrupo: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/configuracoes/tag-grupos/{id}', {
+            params: { path: { id } },
+            body: dados,
+          }),
+        ),
+      ),
+    excluirGrupo: (id) =>
+      protegido(async () =>
+        semCorpo(
+          await api.DELETE('/v1/configuracoes/tag-grupos/{id}', { params: { path: { id } } }),
+        ),
+      ),
+    reordenarGrupos: (ids) =>
+      protegido(async () =>
+        daApi(await api.PUT('/v1/configuracoes/tag-grupos/ordem', { body: { ids } })),
+      ),
+    criarTag: (dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/configuracoes/tags', {
+            body: { ...dados, cor: dados.cor ?? 'gray' },
+          }),
+        ),
+      ),
+    alterarTag: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/configuracoes/tags/{id}', {
+            params: { path: { id } },
+            body: dados,
+          }),
+        ),
+      ),
+    excluirTag: (id) =>
+      protegido(async () =>
+        semCorpo(await api.DELETE('/v1/configuracoes/tags/{id}', { params: { path: { id } } })),
+      ),
+    reordenarTags: (grupoId, ids) =>
+      protegido(async () =>
+        daApi(
+          await api.PUT('/v1/configuracoes/tag-grupos/{id}/tags/ordem', {
+            params: { path: { id: grupoId } },
+            body: { ids },
+          }),
+        ),
+      ),
+  },
 }

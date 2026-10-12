@@ -20,6 +20,15 @@ export type ConviteAceito = Esquemas['ConviteAceito']
 export type PrimeiroAcessoResultado = Esquemas['PrimeiroAcessoResultado']
 export type Seguranca = Esquemas['ConfiguracaoDeSeguranca']
 export type OpcoesDeAcesso = Esquemas['OpcoesDeAcesso']
+export type TagGrupo = Esquemas['TagGrupo']
+export type Tag = Esquemas['Tag']
+export type Vertical = Esquemas['Vertical']
+export type Solucao = Esquemas['Solucao']
+export type Origem = Esquemas['Origem']
+export type Motivo = Esquemas['Motivo']
+export type TipoAtividade = Esquemas['TipoAtividade']
+export type Funil = Esquemas['Funil']
+export type FunilFase = Esquemas['FunilFase']
 
 /**
  * Cliente tipado da API, gerado do OpenAPI (`pnpm --filter @leadtogo/api-client generate`).

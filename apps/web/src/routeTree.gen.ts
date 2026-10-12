@@ -32,6 +32,7 @@ import { Route as AutenticadoTarefasRouteImport } from './routes/_autenticado.ta
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
 import { Route as AutenticadoConfiguracoesIndexRouteImport } from './routes/_autenticado.configuracoes.index'
 import { Route as AutenticadoConfiguracoesSegurancaRouteImport } from './routes/_autenticado.configuracoes.seguranca'
+import { Route as AutenticadoConfiguracoesTagsRouteImport } from './routes/_autenticado.configuracoes.tags'
 import { Route as AutenticadoConfiguracoesUsuariosRouteImport } from './routes/_autenticado.configuracoes.usuarios'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
 
@@ -152,6 +153,12 @@ const AutenticadoConfiguracoesSegurancaRoute =
     path: '/seguranca',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
+const AutenticadoConfiguracoesTagsRoute =
+  AutenticadoConfiguracoesTagsRouteImport.update({
+    id: '/tags',
+    path: '/tags',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
 const AutenticadoConfiguracoesUsuariosRoute =
   AutenticadoConfiguracoesUsuariosRouteImport.update({
     id: '/usuarios',
@@ -186,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
+  '/configuracoes/tags': typeof AutenticadoConfiguracoesTagsRoute
   '/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
@@ -210,6 +218,7 @@ export interface FileRoutesByTo {
   '/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
+  '/configuracoes/tags': typeof AutenticadoConfiguracoesTagsRoute
   '/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/configuracoes': typeof AutenticadoConfiguracoesIndexRoute
@@ -238,6 +247,7 @@ export interface FileRoutesById {
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
   '/_autenticado/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
+  '/_autenticado/configuracoes/tags': typeof AutenticadoConfiguracoesTagsRoute
   '/_autenticado/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/_autenticado/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/_autenticado/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/dev/catalogo'
     | '/configuracoes/seguranca'
+    | '/configuracoes/tags'
     | '/configuracoes/usuarios'
     | '/perfil/seguranca'
     | '/configuracoes/'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/dev/catalogo'
     | '/configuracoes/seguranca'
+    | '/configuracoes/tags'
     | '/configuracoes/usuarios'
     | '/perfil/seguranca'
     | '/configuracoes'
@@ -316,6 +328,7 @@ export interface FileRouteTypes {
     | '/dev/catalogo'
     | '/_autenticado/'
     | '/_autenticado/configuracoes/seguranca'
+    | '/_autenticado/configuracoes/tags'
     | '/_autenticado/configuracoes/usuarios'
     | '/_autenticado/perfil/seguranca'
     | '/_autenticado/configuracoes/'
@@ -490,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoConfiguracoesSegurancaRouteImport
       parentRoute: typeof AutenticadoConfiguracoesRoute
     }
+    '/_autenticado/configuracoes/tags': {
+      id: '/_autenticado/configuracoes/tags'
+      path: '/tags'
+      fullPath: '/configuracoes/tags'
+      preLoaderRoute: typeof AutenticadoConfiguracoesTagsRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
     '/_autenticado/configuracoes/usuarios': {
       id: '/_autenticado/configuracoes/usuarios'
       path: '/usuarios'
@@ -536,6 +556,7 @@ const AcessoRouteWithChildren =
 
 interface AutenticadoConfiguracoesRouteChildren {
   AutenticadoConfiguracoesSegurancaRoute: typeof AutenticadoConfiguracoesSegurancaRoute
+  AutenticadoConfiguracoesTagsRoute: typeof AutenticadoConfiguracoesTagsRoute
   AutenticadoConfiguracoesUsuariosRoute: typeof AutenticadoConfiguracoesUsuariosRoute
   AutenticadoConfiguracoesIndexRoute: typeof AutenticadoConfiguracoesIndexRoute
 }
@@ -544,6 +565,7 @@ const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildr
   {
     AutenticadoConfiguracoesSegurancaRoute:
       AutenticadoConfiguracoesSegurancaRoute,
+    AutenticadoConfiguracoesTagsRoute: AutenticadoConfiguracoesTagsRoute,
     AutenticadoConfiguracoesUsuariosRoute:
       AutenticadoConfiguracoesUsuariosRoute,
     AutenticadoConfiguracoesIndexRoute: AutenticadoConfiguracoesIndexRoute,
