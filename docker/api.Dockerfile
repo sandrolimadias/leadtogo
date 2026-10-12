@@ -66,7 +66,8 @@ RUN apk add --no-cache tini \
            /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg /usr/local/include /root/.npm
 ENV NODE_ENV=production \
     APP_VERSION=${APP_VERSION} \
-    PORT=3000
+    PORT=3000 \
+    NODE_OPTIONS=--enable-source-maps
 WORKDIR /app
 # mesma árvore do monorepo (os pacotes internos são links relativos dentro de node_modules)
 COPY --from=deps /repo/node_modules ./node_modules
@@ -88,5 +89,6 @@ EXPOSE 3000
 # Serve para a API e para o worker (detecta sozinho; PAPEL=api|worker força): ver src/saude/verificar.ts
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 CMD ["node", "dist/saude.js"]
 ENTRYPOINT ["/sbin/tini", "--"]
-# --enable-source-maps: as pilhas de erro (log e GlitchTip) mostram o .ts original; os .map ficam na imagem (privada)
-CMD ["node", "--enable-source-maps", "dist/iniciar.js"]
+# NODE_OPTIONS=--enable-source-maps (ENV acima): as pilhas de erro (log e GlitchTip) mostram o .ts original em
+# qualquer comando node do container (inclusive `docker exec ... node dist/testar-erro.js`); os .map ficam na imagem (privada)
+CMD ["node", "dist/iniciar.js"]

@@ -80,6 +80,9 @@ cnaes=$("${DEV[@]}" exec -T -e PGUSER=postgres postgres psql -X -At -d "$BANCO" 
 test "$cnaes" = 1332 && echo "   referências no banco: $cnaes CNAEs" || { echo "   FALHA: $cnaes CNAEs (esperado 1332)" >&2; exit 1; }
 echo "-- usuário e PID 1:"
 docker exec "$("${COMPOSE[@]}" ps -q api)" sh -c 'echo "   api: uid=$(id -u) ($(id -un)), PID 1 = $(cat /proc/1/comm)"; ls /app/node_modules/.bin 2>/dev/null | grep -c drizzle-kit | sed "s/^/   drizzle-kit na imagem: /"'
+echo "-- source maps ativos em qualquer comando node do container (NODE_OPTIONS da imagem):"
+mapas=$(docker exec "$("${COMPOSE[@]}" ps -q api)" node -p 'process.sourceMapsEnabled')
+test "$mapas" = true && echo "   api: node iniciado à mão com source maps ativos" || { echo "   FALHA: source maps desligados (process.sourceMapsEnabled=$mapas)" >&2; exit 1; }
 echo "-- health dos containers (HEALTHCHECK da imagem):"
 for s in api worker web; do
   echo "   $s: $(docker inspect -f '{{.State.Health.Status}}' "$("${COMPOSE[@]}" ps -q "$s")")"

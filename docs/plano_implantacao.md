@@ -508,7 +508,7 @@ Checklist:
 **Código (Claude Code):**
 - [x] SDK do Sentry na API e no worker (`@sentry/node`) e no web (`@sentry/react`): `release = APP_VERSION` (commit), `environment = production`, sem tracing, sem PII (`beforeSend` remove cookies, `Authorization`, corpo, e-mails, CPF/CNPJ e telefones; só `tenant_id`, `user_id` e `request_id` como tags). Sem `SENTRY_DSN`, o SDK fica desligado.
 - [x] DSN do web por build arg (`VITE_SENTRY_DSN`, Variable `SENTRY_DSN_WEB` do GitHub): o DSN do navegador é público e o web é estático.
-- [x] Source maps do web: `@sentry/vite-plugin` (debug IDs, upload ao GlitchTip, mapas apagados) só quando `SENTRY_AUTH_TOKEN` existe; os `.map` não ficam na imagem; precache do PWA conferido (`validar-dist.mjs`). API: mapas na imagem e `--enable-source-maps`, sem upload.
+- [x] Source maps do web: `@sentry/vite-plugin` (debug IDs, upload ao GlitchTip, mapas apagados) só quando `SENTRY_AUTH_TOKEN` existe; os `.map` não ficam na imagem; precache do PWA conferido (`validar-dist.mjs`). API: mapas na imagem e `NODE_OPTIONS=--enable-source-maps` na imagem, sem upload.
 - [x] `GET /health/alertas` (token em `X-Alertas-Token`, `ALERTAS_TOKEN`): 200 ou 503 por eventos esgotados do outbox (função `SECURITY DEFINER`, sem `BYPASSRLS`) e falhas finais de jobs nas últimas 24 h (limite `ALERTAS_LIMITE_JOBS_FALHOS`, padrão 1). Só contagens.
 - [x] `node dist/outbox-tratar.js` (`--listar`, `--reprocessar`, `--descartar`, com `--por`): registra quem e quando; o alerta ignora o tratado. O payload do evento esgotado passa a ser mantido (necessário para reprocessar).
 - [x] `node dist/testar-erro.js` dispara o erro de teste (sem rota HTTP).
