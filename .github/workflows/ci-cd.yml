@@ -20,7 +20,7 @@ jobs:
   # ---------------------------------------------------------------------------
   escopo:
     name: escopo
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       codigo: ${{ steps.classificar.outputs.codigo }}
     steps:
@@ -46,7 +46,7 @@ jobs:
   quality:
     needs: escopo
     if: needs.escopo.outputs.codigo == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -64,7 +64,7 @@ jobs:
   test:
     needs: escopo
     if: needs.escopo.outputs.codigo == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -110,7 +110,7 @@ jobs:
   security:
     needs: escopo
     if: needs.escopo.outputs.codigo == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -184,7 +184,7 @@ jobs:
     # Desligado até a E13: ligue a variável do repositório DEPLOY_ENABLED=true (Settings → Variables).
     needs: [escopo, build]
     if: needs.escopo.outputs.codigo == 'true' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     concurrency:
       group: deploy-prod
@@ -207,7 +207,7 @@ jobs:
     # Teste de fumaça pelo caminho do usuário e pelo da integração
     needs: [escopo, deploy]
     if: needs.escopo.outputs.codigo == 'true' && needs.deploy.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: A API nova responde com este commit (api.crm.aledias.com.br/health)
@@ -246,7 +246,7 @@ jobs:
     # (scripts/limpar-ghcr.sh). Falha aqui não derruba o pipeline.
     needs: [escopo, verify]
     if: needs.verify.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     continue-on-error: true
     permissions:

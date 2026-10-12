@@ -120,6 +120,8 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 | **limpeza** | Apaga versões antigas no GHCR (`scripts/limpar-ghcr.sh`): mantém as 15 `sha-*` mais recentes e **nunca apaga a `latest`, a versão em produção (lida do `/health`) nem a atual**; sem saber a versão em produção, não apaga nada | Não (falha não derruba) |
 | **notify** | Mensagem de sucesso ou falha (e-mail do GitHub, ou Telegram/WhatsApp via n8n) | — |
 
+> **Runner fixo em `ubuntu-24.04`** (e o build ARM em `ubuntu-24.04-arm`), em vez de `ubuntu-latest`: o GitHub passa o `ubuntu-latest` para o Ubuntu 26 em **19/10/2026**, e uma troca silenciosa de sistema poderia quebrar a esteira sem nenhuma mudança nossa. **A troca de versão do runner será feita de forma planejada, num commit próprio**, conferindo antes Node, Playwright (Chromium), Docker e o serviço do PostGIS.
+
 ### 5.3 O workflow
 O roteiro de implantação no Coolify (DNS, segredos, GHCR, banco, recursos, token e rollback) está em **`runbook_e13.md`**. O arquivo de verdade do workflow é **`.github/workflows/ci-cd.yml`** (o esqueleto antigo deste documento foi aposentado). Pontos que não aparecem na tabela acima:
 - **Deploy desligado** até a E13: o job `deploy` só roda com a variável do repositório `DEPLOY_ENABLED=true` (Settings → Secrets and variables → Actions → Variables); `verify` e `limpeza` dependem dele.
