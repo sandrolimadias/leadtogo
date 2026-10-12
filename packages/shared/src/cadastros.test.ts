@@ -2,11 +2,19 @@ import { describe, expect, it } from 'vitest'
 
 import {
   alterarTagGrupoSchema,
+  alterarMotivoSchema,
+  alterarOrigemSchema,
   alterarTagSchema,
+  alterarTipoAtividadeSchema,
   CORES_DE_TAG,
   corDeTagSchema,
+  criarMotivoSchema,
+  criarOrigemSchema,
+  criarSolucaoSchema,
   criarTagGrupoSchema,
   criarTagSchema,
+  criarTipoAtividadeSchema,
+  criarVerticalSchema,
   novaOrdemSchema,
 } from './cadastros.js'
 
@@ -73,5 +81,55 @@ describe('nova ordem', () => {
     expect(novaOrdemSchema.safeParse({ ids: [UUID] }).success).toBe(true)
     expect(novaOrdemSchema.safeParse({ ids: [] }).success).toBe(false)
     expect(novaOrdemSchema.safeParse({ ids: ['a'] }).success).toBe(false)
+  })
+})
+
+describe('verticais, soluções, origens, motivos e tipos de atividade', () => {
+  it('motivo: só perdido, cancelado e suspenso; ao menos um, sem repetir', () => {
+    const ok = criarMotivoSchema.safeParse({ nome: 'Preço', aplicaA: ['perdido'] })
+    expect(ok.success).toBe(true)
+    for (const ruim of [
+      { nome: 'X', aplicaA: [] },
+      { nome: 'X', aplicaA: ['conquistado'] },
+      { nome: 'X', aplicaA: ['ativo'] },
+      { nome: 'X', aplicaA: ['perdido', 'perdido'] },
+      { nome: 'X' },
+    ]) {
+      expect(criarMotivoSchema.safeParse(ruim).success, JSON.stringify(ruim)).toBe(false)
+    }
+    expect(alterarMotivoSchema.safeParse({}).success).toBe(false)
+  })
+
+  it('tipo de atividade: padrões, ícone no formato Lucide e conta como válido', () => {
+    expect(criarTipoAtividadeSchema.parse({ nome: ' Almoço ', icone: 'utensils' })).toEqual({
+      nome: 'Almoço',
+      icone: 'utensils',
+      cor: 'gray',
+      contaComo: 'nenhum',
+      exigeEmpresa: true,
+      sincronizaAgenda: false,
+    })
+    for (const ruim of [
+      { nome: 'X', icone: 'Phone' },
+      { nome: 'X', icone: '<script>' },
+      { nome: 'X', icone: 'a b' },
+      { nome: 'X', icone: 'phone', contaComo: 'tudo' },
+      { nome: 'X', icone: 'phone', chaveSistema: 'visita' },
+    ]) {
+      expect(criarTipoAtividadeSchema.safeParse(ruim).success, JSON.stringify(ruim)).toBe(false)
+    }
+    expect(alterarTipoAtividadeSchema.safeParse({}).success).toBe(false)
+  })
+
+  it('solução aceita descrição vazia ou nula; vertical e origem só os campos permitidos', () => {
+    expect(criarSolucaoSchema.safeParse({ nome: 'S', descricao: null }).success).toBe(true)
+    expect(criarSolucaoSchema.safeParse({ nome: 'S', descricao: 'x'.repeat(501) }).success).toBe(
+      false,
+    )
+    expect(criarVerticalSchema.safeParse({ nome: 'V', cor: 'magenta' }).success).toBe(false)
+    expect(criarOrigemSchema.safeParse({ nome: 'O', chaveSistema: 'importacao' }).success).toBe(
+      false,
+    )
+    expect(alterarOrigemSchema.safeParse({ ativo: false }).success).toBe(true)
   })
 })

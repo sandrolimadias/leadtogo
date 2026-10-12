@@ -113,3 +113,174 @@ export const alterarTagSchema = z
   .refine((d) => Object.keys(d).length > 0, 'informe ao menos um campo')
   .meta({ id: 'AlterarTagEntrada' })
 export type AlterarTagEntrada = z.infer<typeof alterarTagSchema>
+
+// ---- Verticais, soluções, origens, motivos e tipos de atividade (Módulo 1) ----
+
+const algumCampo = (d: object) => Object.keys(d).length > 0
+const MENSAGEM_ALGUM_CAMPO = 'informe ao menos um campo'
+
+export const verticalSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    cor: corDeTagSchema,
+    ativo: z.boolean(),
+    ordem: z.number().int(),
+  })
+  .meta({ id: 'Vertical' })
+export type Vertical = z.infer<typeof verticalSchema>
+export const criarVerticalSchema = z
+  .object({ nome: nomeDeCadastroSchema, cor: corDeTagSchema.default('gray') })
+  .strict()
+  .meta({ id: 'CriarVerticalEntrada' })
+export type CriarVerticalEntrada = z.input<typeof criarVerticalSchema>
+export const alterarVerticalSchema = z
+  .object({ nome: nomeDeCadastroSchema, cor: corDeTagSchema, ativo: z.boolean() })
+  .partial()
+  .strict()
+  .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
+  .meta({ id: 'AlterarVerticalEntrada' })
+export type AlterarVerticalEntrada = z.infer<typeof alterarVerticalSchema>
+
+const descricaoSchema = z.string().trim().max(500, 'use até 500 caracteres')
+export const solucaoSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    cor: corDeTagSchema,
+    descricao: z.string().nullable(),
+    ativo: z.boolean(),
+    ordem: z.number().int(),
+  })
+  .meta({ id: 'Solucao' })
+export type Solucao = z.infer<typeof solucaoSchema>
+export const criarSolucaoSchema = z
+  .object({
+    nome: nomeDeCadastroSchema,
+    cor: corDeTagSchema.default('gray'),
+    descricao: descricaoSchema.nullish(),
+  })
+  .strict()
+  .meta({ id: 'CriarSolucaoEntrada' })
+export type CriarSolucaoEntrada = z.input<typeof criarSolucaoSchema>
+export const alterarSolucaoSchema = z
+  .object({
+    nome: nomeDeCadastroSchema,
+    cor: corDeTagSchema,
+    descricao: descricaoSchema.nullable(),
+    ativo: z.boolean(),
+  })
+  .partial()
+  .strict()
+  .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
+  .meta({ id: 'AlterarSolucaoEntrada' })
+export type AlterarSolucaoEntrada = z.infer<typeof alterarSolucaoSchema>
+
+export const origemSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    ativo: z.boolean(),
+    ordem: z.number().int(),
+    /** Origem usada por regras do sistema (`importacao`); null nas criadas pelo usuário */
+    chaveSistema: z.string().nullable(),
+  })
+  .meta({ id: 'Origem' })
+export type Origem = z.infer<typeof origemSchema>
+export const criarOrigemSchema = z
+  .object({ nome: nomeDeCadastroSchema })
+  .strict()
+  .meta({ id: 'CriarOrigemEntrada' })
+export type CriarOrigemEntrada = z.infer<typeof criarOrigemSchema>
+export const alterarOrigemSchema = z
+  .object({ nome: nomeDeCadastroSchema, ativo: z.boolean() })
+  .partial()
+  .strict()
+  .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
+  .meta({ id: 'AlterarOrigemEntrada' })
+export type AlterarOrigemEntrada = z.infer<typeof alterarOrigemSchema>
+
+/** Status de fechamento em que um motivo pode valer (Conquistado não pede motivo). */
+export const STATUS_COM_MOTIVO = ['perdido', 'cancelado', 'suspenso'] as const
+export const statusComMotivoSchema = z.enum(STATUS_COM_MOTIVO)
+export type StatusComMotivo = z.infer<typeof statusComMotivoSchema>
+const aplicaASchema = z
+  .array(statusComMotivoSchema)
+  .min(1, 'escolha ao menos um status')
+  .refine((v) => new Set(v).size === v.length, 'status repetido')
+
+export const motivoSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    aplicaA: z.array(statusComMotivoSchema),
+    ativo: z.boolean(),
+    ordem: z.number().int(),
+  })
+  .meta({ id: 'Motivo' })
+export type Motivo = z.infer<typeof motivoSchema>
+export const criarMotivoSchema = z
+  .object({ nome: nomeDeCadastroSchema, aplicaA: aplicaASchema })
+  .strict()
+  .meta({ id: 'CriarMotivoEntrada' })
+export type CriarMotivoEntrada = z.infer<typeof criarMotivoSchema>
+export const alterarMotivoSchema = z
+  .object({ nome: nomeDeCadastroSchema, aplicaA: aplicaASchema, ativo: z.boolean() })
+  .partial()
+  .strict()
+  .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
+  .meta({ id: 'AlterarMotivoEntrada' })
+export type AlterarMotivoEntrada = z.infer<typeof alterarMotivoSchema>
+
+export const contaComoSchema = z.enum(['visita', 'contato', 'nenhum'])
+export type ContaComo = z.infer<typeof contaComoSchema>
+/** Nome de ícone Lucide (kebab-case); a tela oferece uma lista, a API só confere o formato. */
+const iconeSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/, 'nome de ícone inválido')
+  .max(40)
+
+export const tipoAtividadeSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    icone: z.string(),
+    cor: corDeTagSchema,
+    contaComo: contaComoSchema,
+    exigeEmpresa: z.boolean(),
+    sincronizaAgenda: z.boolean(),
+    ativo: z.boolean(),
+    ordem: z.number().int(),
+    /** Tipo padrão do sistema (`ligacao`, `visita`, `tarefa`...); null nos criados pelo usuário */
+    chaveSistema: z.string().nullable(),
+  })
+  .meta({ id: 'TipoAtividade' })
+export type TipoAtividade = z.infer<typeof tipoAtividadeSchema>
+export const criarTipoAtividadeSchema = z
+  .object({
+    nome: nomeDeCadastroSchema,
+    icone: iconeSchema,
+    cor: corDeTagSchema.default('gray'),
+    contaComo: contaComoSchema.default('nenhum'),
+    exigeEmpresa: z.boolean().default(true),
+    sincronizaAgenda: z.boolean().default(false),
+  })
+  .strict()
+  .meta({ id: 'CriarTipoAtividadeEntrada' })
+export type CriarTipoAtividadeEntrada = z.input<typeof criarTipoAtividadeSchema>
+export const alterarTipoAtividadeSchema = z
+  .object({
+    nome: nomeDeCadastroSchema,
+    icone: iconeSchema,
+    cor: corDeTagSchema,
+    contaComo: contaComoSchema,
+    exigeEmpresa: z.boolean(),
+    sincronizaAgenda: z.boolean(),
+    ativo: z.boolean(),
+  })
+  .partial()
+  .strict()
+  .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
+  .meta({ id: 'AlterarTipoAtividadeEntrada' })
+export type AlterarTipoAtividadeEntrada = z.infer<typeof alterarTipoAtividadeSchema>

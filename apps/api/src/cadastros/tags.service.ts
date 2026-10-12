@@ -14,7 +14,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ehViolacaoDeUnicidade } from '../http/sqlstate.js'
 import { ErroApi } from '../http/erro-api.js'
-import { conferirNovaOrdem, exigirAdmin } from './cadastros.base.js'
+import { conferirNovaOrdem, diferencas, exigirAdmin } from './cadastros.base.js'
 
 const { tagGrupos, tags } = schema
 
@@ -370,18 +370,4 @@ export class TagsService {
       throw erro
     }
   }
-}
-
-/** O que realmente muda (antes → depois), para a auditoria. Nome comparado já aparado. */
-function diferencas(
-  atual: Record<string, unknown>,
-  dados: Record<string, unknown>,
-): Record<string, { de: unknown; para: unknown }> {
-  const saida: Record<string, { de: unknown; para: unknown }> = {}
-  for (const [campo, valor] of Object.entries(dados)) {
-    if (valor === undefined) continue
-    const novo = typeof valor === 'string' ? valor.trim() : valor
-    if (atual[campo] !== novo) saida[campo] = { de: atual[campo], para: novo }
-  }
-  return saida
 }
