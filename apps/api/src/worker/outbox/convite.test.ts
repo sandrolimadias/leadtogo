@@ -108,12 +108,13 @@ describe('convite.enviar (token gerado pelo worker, só o hash no banco)', () =>
     } while (cursor !== '0')
   })
 
-  it('SMTP fora do ar: nada é gravado (o hash segue o antigo), o evento volta com espera e depois entrega', async () => {
+  it('SMTP fora do ar: nenhum e-mail sai, o hash gravado nunca foi entregue, o evento volta com espera e a nova tentativa gera token novo', async () => {
     const c = await conviteComEvento()
     const r = await relay({ SMTP_PORT: '1' }).rodarCiclo()
     expect(r.falhas).toBeGreaterThanOrEqual(1)
-    expect(await c.hashAtual()).toBe(c.placeholder) // transação desfeita
-    expect(await mensagensPara(c.email)).toHaveLength(0)
+    const hashSemEntrega = await c.hashAtual()
+    expect(hashSemEntrega).not.toBe(c.placeholder) // o hash já foi gravado (commit antes do envio)...
+    expect(await mensagensPara(c.email)).toHaveLength(0) // ...mas nenhum link chegou a ninguém
     const [e] = await dono.begin(async (tx) => {
       await tx`SELECT set_config('app.tenant_id', ${c.tenantId}, true)`
       return tx<{ tentativas: number; ultimo_erro: string; proxima_tentativa_em: Date }[]>`
@@ -132,6 +133,29 @@ describe('convite.enviar (token gerado pelo worker, só o hash no banco)', () =>
     const token =
       new URL(primeiroLink(await aguardarMensagem(c.email))).searchParams.get('token') ?? ''
     expect(await c.hashAtual()).toBe(hash(token))
+    expect(hash(token)).not.toBe(hashSemEntrega) // token novo na nova tentativa
+  })
+
+  it('o hash já está commitado quando o e-mail chega: clicar logo no link nunca dá convite inválido (atraso de 400 ms depois do envio)', async () => {
+    const c = await conviteComEvento()
+    const config = configuracaoDeTeste({ FILA_PREFIXO: prefixo })
+    const real = new EnviadorSmtp(config, log)
+    const lento = {
+      enviar: async (...a: Parameters<EnviadorSmtp['enviar']>) => {
+        await real.enviar(...a)
+        await new Promise((res) => setTimeout(res, 400)) // a corrida: o relay ainda não terminou
+      },
+    } as EnviadorSmtp
+    const ciclo = new RelayDoOutbox({
+      banco,
+      filas,
+      log,
+      manipuladores: manipuladoresPadrao(config, lento),
+    }).rodarCiclo()
+    const token =
+      new URL(primeiroLink(await aguardarMensagem(c.email))).searchParams.get('token') ?? ''
+    expect(await c.hashAtual()).toBe(hash(token)) // lido com o relay ainda dentro do atraso
+    await ciclo
   })
 
   it('convite cancelado antes do envio: nenhum e-mail, nenhum token', async () => {
@@ -145,7 +169,7 @@ describe('convite.enviar (token gerado pelo worker, só o hash no banco)', () =>
     expect(await c.hashAtual()).toBe(c.placeholder)
   })
 
-  it('SMTP que não responde: a transação desfaz dentro do prazo, a conexão volta ao pool e o relay tenta de novo', async () => {
+  it('SMTP que não responde: a falha vem dentro do prazo, a conexão volta ao pool e o relay tenta de novo', async () => {
     // Servidor que aceita a conexão e nunca fala (nem o "220" do SMTP)
     const mudo: Server = createServer(() => undefined)
     await new Promise<void>((r) => mudo.listen(0, '127.0.0.1', r))
@@ -173,7 +197,7 @@ describe('convite.enviar (token gerado pelo worker, só o hash no banco)', () =>
       expect(r.falhas).toBeGreaterThanOrEqual(1)
       expect(gasto).toBeLessThan(1000 + 2500) // o prazo de 1 s, com folga; nunca os 10 s do padrão
 
-      expect(await c.hashAtual()).toBe(c.placeholder) // transação desfeita: nenhum hash novo
+      expect(await c.hashAtual()).not.toBe(c.placeholder) // hash gravado, mas nenhum link saiu
       expect(await mensagensPara(c.email)).toHaveLength(0)
       // a única conexão do pool voltou: responde na hora
       await expect(

@@ -20,11 +20,17 @@ export interface EventoDoOutbox {
  * evento ativo (`SET LOCAL app.tenant_id`). Se lançar erro, o evento volta com espera progressiva.
  * Se enfileirar usando `jobId: 'evento-<id>'`, uma segunda entrega do mesmo evento é descartada
  * enquanto o job existir; depois disso, quem consome precisa ser idempotente.
+ *
+ * Um manipulador pode devolver uma função `aposCommit`: o relay faz o commit da transação do
+ * manipulador, **depois** chama a função (sem transação aberta, sem segurar conexão do pool) e só então
+ * marca o evento como entregue. Serve a efeitos externos que dependem do que a transação gravou (ex.:
+ * enviar um e-mail com um link cujo hash precisa estar visível quando a pessoa clicar). Se a função
+ * lançar erro, o evento volta com espera progressiva, e o manipulador roda de novo na próxima tentativa.
  */
 export type ManipuladorDeEvento = (
   evento: EventoDoOutbox,
   contexto: { tx: Transacao; filas: WorkerFilas },
-) => Promise<void>
+) => Promise<void | (() => Promise<void>)>
 
 /** Espera antes da tentativa seguinte: 5 s, 10 s, 20 s... até 1 h. */
 export function esperaProgressivaMs(tentativas: number): number {
@@ -82,6 +88,7 @@ export class RelayDoOutbox {
 
   private async processar(id: string, tenantId: string): Promise<boolean> {
     try {
+      let aposCommit: (() => Promise<void>) | undefined
       await this.noTenant(tenantId, async (tx) => {
         const [linha] = await tx.execute<{
           tipo: string
@@ -96,21 +103,33 @@ export class RelayDoOutbox {
           typeof linha.payload === 'string' ? JSON.parse(linha.payload) : linha.payload
         const manipulador = this.o.manipuladores[linha.tipo]
         if (!manipulador) throw new Error(`tipo de evento desconhecido: ${linha.tipo}`)
-        await manipulador(
+        const depois = await manipulador(
           { id, tenantId, tipo: linha.tipo, payload, tentativas: linha.tentativas },
           { tx, filas: this.o.filas },
         )
-        // Entregue à fila: o payload sai do banco (o job o carrega) e a reserva é liberada
-        await tx.execute(sql`
-          UPDATE eventos_outbox
-          SET processado_em = now(), payload = '{}'::jsonb, reservado_ate = NULL, ultimo_erro = NULL
-          WHERE id = ${id}`)
+        if (typeof depois === 'function') {
+          aposCommit = depois // a marcação de entregue fica para depois do efeito externo
+          return
+        }
+        await this.marcarEntregue(tx, id)
       })
+      if (aposCommit) {
+        await aposCommit()
+        await this.noTenant(tenantId, (tx) => this.marcarEntregue(tx, id))
+      }
       return true
     } catch (erro) {
       await this.registrarFalha(id, tenantId, erro)
       return false
     }
+  }
+
+  /** Entregue: o payload sai do banco (o job o carrega) e a reserva é liberada. */
+  private async marcarEntregue(tx: Transacao, id: string): Promise<void> {
+    await tx.execute(sql`
+      UPDATE eventos_outbox
+      SET processado_em = now(), payload = '{}'::jsonb, reservado_ate = NULL, ultimo_erro = NULL
+      WHERE id = ${id} AND processado_em IS NULL`)
   }
 
   /** Falhou: marca o erro e agenda a próxima tentativa; esgotadas as tentativas, `falhou_em` (o payload é MANTIDO, para o `--reprocessar` do `outbox-tratar`). */

@@ -24,9 +24,16 @@ export function manipuladoresPadrao(
   const manipuladores: Record<string, ManipuladorDeEvento> = {}
 
   /**
-   * Convite: o TOKEN nasce aqui, na hora do envio, e só o hash vai para o banco, na mesma transação
-   * em que o e-mail é enviado. O token não passa pelo outbox, pelo Valkey nem por log. Se o envio
-   * falhar, a transação desfaz a gravação do hash e o relay tenta de novo com espera progressiva.
+   * Convite: o TOKEN nasce aqui, na hora do envio, e só o hash vai para o banco. O token não passa pelo
+   * outbox, pelo Valkey nem por log. Em três passos:
+   *  (a) esta transação gera o token e grava o hash, e o relay faz o COMMIT;
+   *  (b) só depois, fora da transação, o e-mail é enviado (quando o link chega à caixa de entrada, o
+   *      hash já está visível: clicar logo em seguida nunca dá "convite inválido");
+   *  (c) o relay marca o evento como entregue.
+   * Se o envio falhar, o evento volta com espera progressiva e a nova tentativa gera um token NOVO: o
+   * hash anterior nunca foi entregue a ninguém e é substituído. Se o processo cair entre (b) e (c), a
+   * nova tentativa reenvia com outro token e o link do primeiro e-mail deixa de valer (entrega pelo
+   * menos uma vez; vale o link do e-mail mais recente).
    */
   manipuladores['convite.enviar'] = async (evento, { tx }) => {
     const { conviteId } = evento.payload as { conviteId: string }
@@ -50,15 +57,16 @@ export function manipuladoresPadrao(
     await tx.execute(sql`
       UPDATE convites SET token_hash = ${hashDoToken(token)}, atualizado_em = now() WHERE id = ${conviteId}`)
     const link = `${new URL(config.APP_URL).origin}/convite?token=${token}`
-    await enviador.enviar(
-      convite.email,
-      emailConvite({
-        empresa: convite.nome_fantasia ?? convite.razao_social,
-        convidadoPor: convite.convidante ?? 'Um administrador',
-        papel: convite.papel,
-        link,
-      }),
-    )
+    return () =>
+      enviador.enviar(
+        convite.email,
+        emailConvite({
+          empresa: convite.nome_fantasia ?? convite.razao_social,
+          convidadoPor: convite.convidante ?? 'Um administrador',
+          papel: convite.papel,
+          link,
+        }),
+      )
   }
 
   /** Notificação para um membro: vira um job na fila `notificacoes`, com o id do evento como jobId. */
