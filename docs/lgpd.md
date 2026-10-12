@@ -45,7 +45,7 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 | Grupo | Base legal | Observação |
 |---|---|---|
 | Contas de usuário, membros, sessões, 2FA | **Execução de contrato** (art. 7º, V) | sem a conta o serviço não funciona |
-| Logs de acesso, IP, auditoria da plataforma | **Obrigação legal** (art. 15 do Marco Civil, guarda de registros de acesso a aplicações **(confirmar com advogado)**) e **legítimo interesse** (segurança e prevenção a fraude) | |
+| Registros de acesso (`acessos_log`, seção 5.1) e auditoria da plataforma | **Obrigação legal** (art. 7º, II; art. 15 do Marco Civil, **aplicação a confirmar com advogado**) ou **legítimo interesse** em segurança (art. 7º, IX) | |
 | Cobrança e gestão da conta cliente | **Execução de contrato** e **obrigação legal** (fiscal) | |
 | Dados que o tenant cadastra (empresas-alvo, contatos, atividades, oportunidades) | **Definida pela empresa cliente**, como controladora. Tipicamente **legítimo interesse** em prospecção e relacionamento B2B (art. 7º, IX), com teste de balanceamento e respeito ao opt-out | O Leadtogo oferece os campos de consentimento e opt-out, mas **não escolhe** a base |
 | Dados públicos da Receita (empresas, sócios) | **Dado tornado manifestamente público** (art. 7º, § 4º), respeitada a finalidade | consulta pela Minha Receita |
@@ -74,12 +74,27 @@ Transferência internacional (arts. 33 a 36):
 | Backups do banco (R2) | diários, às 3h, **30 cópias** (política do Coolify) | |
 | Arquivos (Garage) e espelho no R2 | espelho diário; versões antigas, alteradas ou apagadas ficam em `garage-alterados/<data>/` por **90 dias** (regra de ciclo de vida do R2) | |
 | Auditoria | partições mensais; o job mensal só **cria** partições (12 meses à frente) e **nunca descarta** as antigas, então hoje a retenção é ilimitada. **Login e logout não são gravados na auditoria** (ela registra alterações de dados) | **prazo de retenção** e descarte das partições antigas |
+| Registros de acesso (`acessos_log`) | **6 meses**, depois apagados (partição mensal descartada pelo job de manutenção). Decisão na seção 5.1; **ainda não implementado** | implementação (prioridade alta) |
 | Outbox | eventos processados ficam na tabela | prazo de limpeza dos processados |
 | Filas no Valkey | jobs concluídos por 24 h, falhos por 14 dias | |
 | Eventos do GlitchTip | **90 dias** (padrão do GlitchTip, `GLITCHTIP_MAX_EVENT_LIFE_DAYS`), self-hosted em São Paulo | |
 | Logs da aplicação (Pino, no Coolify) | conferido na VPS (`/etc/docker/daemon.json`, e no container da API): `log-driver` `json-file`, `max-size` **10m**, `max-file` **3**. A retenção é **por tamanho (até 30 MB por container), não por tempo**, e os logs são **perdidos a cada deploy**, porque o container é recriado. Portanto **não servem para guarda legal**. A fonte durável de erros é o GlitchTip (90 dias); a guarda de 6 meses do art. 15 do Marco Civil, se confirmada pelo advogado, depende da tabela `acessos_log` proposta na seção 9 | nenhuma, enquanto `acessos_log` não existir |
 
 > **Um dado excluído só some dos backups quando o backup expira.** Excluir um registro hoje (soft delete) não remove o dado do banco nem dos backups; o expurgo definitivo remove do banco, e as cópias antigas no R2 desaparecem em até 30 dias (banco) e 90 dias (versões de arquivos). Isso deve constar na política pública e no DPA. Nunca restaurar um backup antigo sem reaplicar as exclusões feitas depois dele.
+
+### 5.1 Registros de acesso (`acessos_log`): decisão
+
+**Decisão do Ale:** os registros de acesso são guardados por **6 meses** e então **apagados**.
+
+| Aspecto | Decisão |
+|---|---|
+| **Conteúdo** | `user_id`; `tenant_id` quando houver; evento (login, logout, falha de login, troca de senha, 2FA); data/hora (`timestamptz`); IP; user agent |
+| **Base legal** | **Obrigação legal** (art. 7º, II; art. 15 do Marco Civil, **aplicação a confirmar com advogado**) ou **legítimo interesse** em segurança (art. 7º, IX). A base definitiva depende da confirmação do advogado |
+| **Retenção** | **6 meses**. Tabela **particionada por mês**; o **job de manutenção descarta a partição mais antiga** que passar do prazo (nada de `DELETE` linha a linha) |
+| **Acesso** | restrito: só leitura administrativa, **fora do alcance dos tenants** (sem acesso pela API de negócio; o app só insere, como na `auditoria`) |
+| **Implementação** | **pendência do MVP, prioridade alta: antes do primeiro cliente** (seção 9). Ainda **não implementada** |
+
+Os logs do container não substituem este registro: a retenção é de até 30 MB por container e eles se perdem a cada deploy.
 
 ## 6. Direitos dos titulares (art. 18)
 
@@ -131,7 +146,7 @@ Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **re
 - [ ] **Política de privacidade pública** e termos de uso (com a orientação de não registrar dados sensíveis).
 - [ ] **Nomeação do encarregado (DPO)** e canal de contato público.
 - [ ] Confirmar com o advogado os itens marcados **(confirmar)** e preencher as lacunas `<…>` que restarem.
-- [ ] **Guarda de registros de acesso (art. 15 do Marco Civil da Internet)**: o provedor de aplicação com fins econômicos deve guardar os registros de acesso por **6 meses**, em ambiente controlado; **confirmar com advogado** se e como se aplica ao Leadtogo. Proposta para atender: tabela `acessos_log` **sem RLS por tenant e fora do alcance dos tenants** (só INSERT pelo app, como a `auditoria`), com `usuario_id`, evento (login ok, login falho, logout, 2FA), IP, user agent, data/hora (`timestamptz`) e `request_id`; gravada por `databaseHooks` do Better Auth; **particionada por mês**, com job que descarta partições com mais de 6 meses (prazo máximo a confirmar, pois guardar além do necessário pede base legal própria). Os logs do container não servem como registro: a retenção é de até 30 MB por container e eles se perdem a cada deploy.
+- [ ] **Implementar `acessos_log`** (decisão da seção 5.1: 6 meses, partição mensal, descarte pelo job de manutenção, acesso restrito). **Prioridade alta, antes do primeiro cliente.** Proposta técnica: tabela fora do alcance dos tenants, só INSERT pelo app, gravada por `databaseHooks` do Better Auth (login, falha, logout, troca de senha, 2FA), com `request_id` opcional. **Confirmar com o advogado** se o art. 15 do Marco Civil se aplica ao Leadtogo e se o prazo de 6 meses é o adequado.
 - [ ] Definir o mecanismo de **transferência internacional** do R2 (ENAM) e avaliar migrar os backups para o Object Storage da Oracle em São Paulo.
 - [ ] **Rotina de limpeza de sessões expiradas** (`auth.session`, com IP e user agent): hoje nenhuma rotina as apaga.
 - [ ] **Política de retenção da auditoria**: prazo e descarte das partições antigas (hoje a retenção é ilimitada).
