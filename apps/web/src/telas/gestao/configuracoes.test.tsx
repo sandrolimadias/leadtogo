@@ -307,7 +307,7 @@ describe('Configurações → Segurança da empresa', () => {
       '/configuracoes/seguranca',
     )
     const admins = await screen.findByRole('radio', {
-      name: /^AdministradoresSó os administradores/,
+      name: /^Administradores\s*Só os administradores/,
     })
     expect(admins).toBeChecked()
     const salvar = screen.getByRole('button', { name: 'Salvar' })
