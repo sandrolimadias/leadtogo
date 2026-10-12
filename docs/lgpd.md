@@ -54,13 +54,16 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 
 | Suboperador | Para quê | Dados | Localização |
 |---|---|---|---|
-| **Oracle Cloud** (VPS) | hospedagem de tudo: aplicação, PostgreSQL, Valkey e Garage (arquivos) | todos os dados | `<região>` (preencher) |
-| **Cloudflare R2** | backups do banco e espelho dos arquivos do Garage | cópias de todos os dados do banco e dos anexos | `<jurisdição/região do bucket>` (preencher) |
-| **Resend** | envio de e-mails transacionais (convites, recuperação de senha, verificação) e e-mails de alerta do Uptime Kuma | e-mail e nome do destinatário, conteúdo do e-mail | `<região>` (confirmar; provável transferência internacional) |
-| **GlitchTip** (self-hosted na mesma VPS) | erros da aplicação | **sem dados pessoais**: todo evento passa por `limparEvento` (`packages/shared/src/limpeza-erros.ts`), que remove cookies, `Authorization`, corpos, e-mails, CPF/CNPJ e telefones; só `tenant_id`, `user_id` e `request_id` (uuids) saem como tags | mesma VPS |
+| **Oracle Cloud** (VPS) | hospedagem de tudo: aplicação, PostgreSQL, Valkey e Garage (arquivos) | todos os dados | **São Paulo** (`sa-saopaulo-1`), no Brasil |
+| **Cloudflare R2** | backups do banco e espelho dos arquivos do Garage | cópias de todos os dados do banco e dos anexos | **Leste da América do Norte (ENAM)**: **transferência internacional** (arts. 33 a 36). Alternativa futura: Object Storage da Oracle em São Paulo, para manter os backups no Brasil |
+| **Resend** | envio de e-mails transacionais (convites, recuperação de senha, verificação) e e-mails de alerta do Uptime Kuma | e-mail e nome do destinatário, conteúdo do e-mail | **São Paulo** (`sa-east-1`), no Brasil. O Resend é uma empresa estrangeira, então o contrato dele entra na análise de transferência (seção abaixo) |
+| **GlitchTip** (self-hosted na mesma VPS) | erros da aplicação | **sem dados pessoais**: todo evento passa por `limparEvento` (`packages/shared/src/limpeza-erros.ts`), que remove cookies, `Authorization`, corpos, e-mails, CPF/CNPJ e telefones; só `tenant_id`, `user_id` e `request_id` (uuids) saem como tags | mesma VPS (São Paulo) |
 | **GitHub** | código-fonte, CI/CD e imagens | **só código**, nenhum dado de cliente | EUA |
 
-Transferência internacional (art. 33): Cloudflare, Resend e GitHub podem tratar dados fora do Brasil. Definir o mecanismo (cláusulas-padrão, adequação) com o advogado.
+Transferência internacional (arts. 33 a 36):
+
+- **Cloudflare R2:** os backups ficam na jurisdição **ENAM (leste da América do Norte)**, portanto há transferência internacional de dados pessoais (cópias do banco e dos anexos). Definir o mecanismo (cláusulas-padrão, adequação) com o advogado e informar no DPA e na política pública. **Alternativa futura:** Object Storage da Oracle em São Paulo, que mantém os backups no Brasil.
+- **Resend e GitHub:** a região de envio do Resend é São Paulo, mas a empresa é estrangeira (confirmar com o advogado se há acesso ou transferência a considerar); o GitHub só recebe código, sem dados pessoais de clientes.
 
 ## 5. Retenção e exclusão
 
@@ -73,7 +76,7 @@ Transferência internacional (art. 33): Cloudflare, Resend e GitHub podem tratar
 | Auditoria | partições mensais; o job mensal só **cria** partições (12 meses à frente) e **nunca descarta** as antigas, então hoje a retenção é ilimitada. **Login e logout não são gravados na auditoria** (ela registra alterações de dados) | **prazo de retenção** e descarte das partições antigas |
 | Outbox | eventos processados ficam na tabela | prazo de limpeza dos processados |
 | Filas no Valkey | jobs concluídos por 24 h, falhos por 14 dias | |
-| Eventos do GlitchTip | **prazo padrão da instalação** `<dias>` (conferir) | |
+| Eventos do GlitchTip | **90 dias** (padrão do GlitchTip, `GLITCHTIP_MAX_EVENT_LIFE_DAYS`), self-hosted em São Paulo | |
 | Logs da aplicação (Pino, no Coolify) | nada no repositório define rotação ou retenção; vale o padrão do Docker/Coolify na VPS (por padrão, `json-file` **sem limite** de tempo, apagado só quando o container é recriado). **Conferir na VPS** (`docker inspect --format '{{.HostConfig.LogConfig}}' <container>` e `/etc/docker/daemon.json`) | definir limite de tamanho/tempo |
 
 > **Um dado excluído só some dos backups quando o backup expira.** Excluir um registro hoje (soft delete) não remove o dado do banco nem dos backups; o expurgo definitivo remove do banco, e as cópias antigas no R2 desaparecem em até 30 dias (banco) e 90 dias (versões de arquivos). Isso deve constar na política pública e no DPA. Nunca restaurar um backup antigo sem reaplicar as exclusões feitas depois dele.
@@ -127,7 +130,9 @@ Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **re
 - [ ] **DPA** (termo de tratamento de dados) com as empresas clientes.
 - [ ] **Política de privacidade pública** e termos de uso (com a orientação de não registrar dados sensíveis).
 - [ ] **Nomeação do encarregado (DPO)** e canal de contato público.
-- [ ] Preencher as lacunas `<…>` deste documento (regiões, prazos do GlitchTip e dos logs) e confirmar os itens marcados.
+- [ ] Preencher as lacunas `<…>` deste documento (logs do Docker, que aguardam a conferência na VPS) e confirmar os itens marcados.
 - [ ] **Guarda de registros de acesso (art. 15 do Marco Civil da Internet)**: o provedor de aplicação com fins econômicos deve guardar os registros de acesso por **6 meses**, em ambiente controlado; **confirmar com advogado** se e como se aplica ao Leadtogo. Proposta para atender: tabela `acessos_log` **sem RLS por tenant e fora do alcance dos tenants** (só INSERT pelo app, como a `auditoria`), com `usuario_id`, evento (login ok, login falho, logout, 2FA), IP, user agent, data/hora (`timestamptz`) e `request_id`; gravada por `databaseHooks` do Better Auth; **particionada por mês**, com job que descarta partições com mais de 6 meses (prazo máximo a confirmar, pois guardar além do necessário pede base legal própria). Os logs do container não servem como registro, pois a retenção deles é indefinida e sem integridade.
-- [ ] Definir o mecanismo de **transferência internacional** (Cloudflare, Resend, GitHub).
+- [ ] Definir o mecanismo de **transferência internacional** do R2 (ENAM) e avaliar migrar os backups para o Object Storage da Oracle em São Paulo.
+- [ ] **Rotina de limpeza de sessões expiradas** (`auth.session`, com IP e user agent): hoje nenhuma rotina as apaga.
+- [ ] **Política de retenção da auditoria**: prazo e descarte das partições antigas (hoje a retenção é ilimitada).
 - [ ] Prazo de limpeza do **outbox** processado e retenção da **auditoria**.
