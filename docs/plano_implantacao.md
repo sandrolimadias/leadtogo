@@ -537,7 +537,7 @@ Checklist:
 - [x] 2FA obrigatório para administradores (política `dois_fatores_exigido`).
 - [x] **Espelhamento do Garage** para o R2 (timer do systemd às 3h30) com aviso ao Uptime Kuma (`docs/runbook_backup.md`, seção 4); falta o teste real de restauração dos arquivos, pendente até existirem anexos.
 - [x] Revisão de dependências: `pnpm audit` em 12/10/2026 sem alto/crítico; 1 **moderada** (esbuild ≤ 0.24.2, GHSA-67mh-4wv8-2f99, via `drizzle-kit` → `@esbuild-kit`, só ferramenta de desenvolvimento, fora da imagem de produção).
-- [ ] Política de privacidade/LGPD: rascunho em `docs/lgpd.md` (dados tratados, base legal, retenção, exclusão). **`docs/lgpd.md` ainda não existe.**
+- [x] Política de privacidade/LGPD: rascunho técnico em `docs/lgpd.md` (papéis, inventário, base legal, suboperadores, retenção, direitos, segurança, incidentes e pendências do MVP); revisar com advogado antes de publicar.
 - [x] SSH só por chave (`PasswordAuthentication no`, `PermitRootLogin without-password`), conferido em 12/10/2026.
 - [ ] (opcional) `fail2ban`.
 - [ ] (evolução futura) SSH só pelo Tailscale e porta 22 fechada na Oracle.
