@@ -25,7 +25,7 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 
 | Grupo | Tabelas | Dados | Pessoal? |
 |---|---|---|---|
-| **Usuários** (schema `auth`) | `user`, `session`, `account`, `verification`, `two_factor` | nome, e-mail, senha em hash (scrypt), segredo e códigos do 2FA, sessões (IP e navegador **(confirmar)**), empresa ativa | **PD** |
+| **Usuários** (schema `auth`) | `user`, `session`, `account`, `verification`, `two_factor` | nome, e-mail, senha em hash (scrypt), segredo e códigos do 2FA, sessões (a tabela `auth.session` tem as colunas `ip_address` e `user_agent`, preenchidas no login), empresa ativa | **PD** |
 | **Membros** | `membros`, `convites` | nome, cargo, telefone, e-mail, foto, papel, gestor, preferências de interface; e-mail do convidado | **PD** |
 | **Contas e empresas clientes** | `contas`, `conta_administradores`, `tenants`, `tenant_configuracoes` | dados cadastrais da empresa cliente (CNPJ, endereço, contatos de cobrança), administradores da conta | PD (PJ) |
 | **Empresas-alvo** (carteira) | `empresas`, `empresa_telefones`, `empresa_cnaes`, `empresa_tags`, `empresa_socios` | CNPJ, razão social, endereço, telefones, nomes de sócios e qualificação (vindos da Receita ou digitados). O CPF mascarado do sócio **não é gravado** | PD (PJ) |
@@ -67,14 +67,14 @@ Transferência internacional (art. 33): Cloudflare, Resend e GitHub podem tratar
 | Dado | Regra atual | A definir |
 |---|---|---|
 | Registros de negócio | **Soft delete**: `excluido_em` preenchido, o registro some das telas, mas **continua no banco** | **Prazo de expurgo definitivo** (por exemplo, N dias após a exclusão) e a rotina que o executa |
-| Usuários e sessões | permanecem enquanto a conta existir; sessões expiram | prazo após o encerramento da conta |
+| Usuários e sessões | permanecem enquanto a conta existir. A sessão vale 7 dias, mas as linhas expiradas de `auth.session` (com IP e user agent) **não são apagadas por nenhuma rotina**: só saem quando o Better Auth as encontra ao validar a sessão | rotina de limpeza das sessões expiradas; prazo após o encerramento da conta |
 | Backups do banco (R2) | diários, às 3h, **30 cópias** (política do Coolify) | |
 | Arquivos (Garage) e espelho no R2 | espelho diário; versões antigas, alteradas ou apagadas ficam em `garage-alterados/<data>/` por **90 dias** (regra de ciclo de vida do R2) | |
-| Auditoria | partições mensais, com criação e manutenção por job mensal | **prazo de retenção** e descarte das partições antigas |
+| Auditoria | partições mensais; o job mensal só **cria** partições (12 meses à frente) e **nunca descarta** as antigas, então hoje a retenção é ilimitada. **Login e logout não são gravados na auditoria** (ela registra alterações de dados) | **prazo de retenção** e descarte das partições antigas |
 | Outbox | eventos processados ficam na tabela | prazo de limpeza dos processados |
 | Filas no Valkey | jobs concluídos por 24 h, falhos por 14 dias | |
 | Eventos do GlitchTip | **prazo padrão da instalação** `<dias>` (conferir) | |
-| Logs da aplicação (Pino, no Coolify) | `<prazo>` (conferir a rotação do Docker) | |
+| Logs da aplicação (Pino, no Coolify) | nada no repositório define rotação ou retenção; vale o padrão do Docker/Coolify na VPS (por padrão, `json-file` **sem limite** de tempo, apagado só quando o container é recriado). **Conferir na VPS** (`docker inspect --format '{{.HostConfig.LogConfig}}' <container>` e `/etc/docker/daemon.json`) | definir limite de tamanho/tempo |
 
 > **Um dado excluído só some dos backups quando o backup expira.** Excluir um registro hoje (soft delete) não remove o dado do banco nem dos backups; o expurgo definitivo remove do banco, e as cópias antigas no R2 desaparecem em até 30 dias (banco) e 90 dias (versões de arquivos). Isso deve constar na política pública e no DPA. Nunca restaurar um backup antigo sem reaplicar as exclusões feitas depois dele.
 
@@ -98,7 +98,7 @@ Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **re
 | Medida | Como está |
 |---|---|
 | Isolamento entre empresas | **RLS habilitado e forçado** em toda tabela de negócio, com teste de isolamento (o tenant A não lê nem grava dados do B) |
-| Autenticação | senha em hash scrypt; **2FA obrigatório** para administradores (`dois_fatores_exigido`); segredos do 2FA tratados pelo Better Auth (**confirmar** que ficam cifrados em repouso) |
+| Autenticação | senha em hash scrypt; **2FA obrigatório** para administradores (`dois_fatores_exigido`); segredo TOTP e códigos de backup do 2FA **cifrados em repouso** (verificado no código do Better Auth 1.7.7: `symmetricEncrypt` com `BETTER_AUTH_SECRET`; `storeBackupCodes` é `encrypted` por padrão; vale reverificar ao atualizar a biblioteca) |
 | Criptografia em trânsito | HTTPS com **HSTS** (1 ano, `includeSubDomains`) no web e na API; cookies de sessão HttpOnly, Secure e SameSite |
 | Tokens de integrações | os tokens das contas conectadas (Google, Microsoft, WhatsApp; fases futuras) serão gravados **criptografados** |
 | Backups | diários e **externos à VPS** (R2), com restauração testada em 09/10/2026 |
@@ -128,5 +128,6 @@ Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **re
 - [ ] **Política de privacidade pública** e termos de uso (com a orientação de não registrar dados sensíveis).
 - [ ] **Nomeação do encarregado (DPO)** e canal de contato público.
 - [ ] Preencher as lacunas `<…>` deste documento (regiões, prazos do GlitchTip e dos logs) e confirmar os itens marcados.
+- [ ] **Guarda de registros de acesso (art. 15 do Marco Civil da Internet)**: o provedor de aplicação com fins econômicos deve guardar os registros de acesso por **6 meses**, em ambiente controlado; **confirmar com advogado** se e como se aplica ao Leadtogo. Proposta para atender: tabela `acessos_log` **sem RLS por tenant e fora do alcance dos tenants** (só INSERT pelo app, como a `auditoria`), com `usuario_id`, evento (login ok, login falho, logout, 2FA), IP, user agent, data/hora (`timestamptz`) e `request_id`; gravada por `databaseHooks` do Better Auth; **particionada por mês**, com job que descarta partições com mais de 6 meses (prazo máximo a confirmar, pois guardar além do necessário pede base legal própria). Os logs do container não servem como registro, pois a retenção deles é indefinida e sem integridade.
 - [ ] Definir o mecanismo de **transferência internacional** (Cloudflare, Resend, GitHub).
 - [ ] Prazo de limpeza do **outbox** processado e retenção da **auditoria**.
