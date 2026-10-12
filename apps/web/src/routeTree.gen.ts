@@ -24,6 +24,7 @@ import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado.inde
 import { Route as AutenticadoConfiguracoesRouteImport } from './routes/_autenticado.configuracoes'
 import { Route as AutenticadoConsolidadoRouteImport } from './routes/_autenticado.consolidado'
 import { Route as AutenticadoContatosRouteImport } from './routes/_autenticado.contatos'
+import { Route as AutenticadoCriarEmpresaRouteImport } from './routes/_autenticado.criar-empresa'
 import { Route as AutenticadoEmpresasRouteImport } from './routes/_autenticado.empresas'
 import { Route as AutenticadoOportunidadesRouteImport } from './routes/_autenticado.oportunidades'
 import { Route as AutenticadoProspeccaoRouteImport } from './routes/_autenticado.prospeccao'
@@ -105,6 +106,11 @@ const AutenticadoContatosRoute = AutenticadoContatosRouteImport.update({
   path: '/contatos',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoCriarEmpresaRoute = AutenticadoCriarEmpresaRouteImport.update({
+  id: '/criar-empresa',
+  path: '/criar-empresa',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoEmpresasRoute = AutenticadoEmpresasRouteImport.update({
   id: '/empresas',
   path: '/empresas',
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AutenticadoConfiguracoesRoute
   '/consolidado': typeof AutenticadoConsolidadoRoute
   '/contatos': typeof AutenticadoContatosRoute
+  '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/empresas': typeof AutenticadoEmpresasRoute
   '/oportunidades': typeof AutenticadoOportunidadesRoute
   '/prospeccao': typeof AutenticadoProspeccaoRoute
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AutenticadoConfiguracoesRoute
   '/consolidado': typeof AutenticadoConsolidadoRoute
   '/contatos': typeof AutenticadoContatosRoute
+  '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/empresas': typeof AutenticadoEmpresasRoute
   '/oportunidades': typeof AutenticadoOportunidadesRoute
   '/prospeccao': typeof AutenticadoProspeccaoRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/_autenticado/configuracoes': typeof AutenticadoConfiguracoesRoute
   '/_autenticado/consolidado': typeof AutenticadoConsolidadoRoute
   '/_autenticado/contatos': typeof AutenticadoContatosRoute
+  '/_autenticado/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/_autenticado/empresas': typeof AutenticadoEmpresasRoute
   '/_autenticado/oportunidades': typeof AutenticadoOportunidadesRoute
   '/_autenticado/prospeccao': typeof AutenticadoProspeccaoRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/consolidado'
     | '/contatos'
+    | '/criar-empresa'
     | '/empresas'
     | '/oportunidades'
     | '/prospeccao'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/consolidado'
     | '/contatos'
+    | '/criar-empresa'
     | '/empresas'
     | '/oportunidades'
     | '/prospeccao'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/_autenticado/configuracoes'
     | '/_autenticado/consolidado'
     | '/_autenticado/contatos'
+    | '/_autenticado/criar-empresa'
     | '/_autenticado/empresas'
     | '/_autenticado/oportunidades'
     | '/_autenticado/prospeccao'
@@ -385,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoContatosRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/criar-empresa': {
+      id: '/_autenticado/criar-empresa'
+      path: '/criar-empresa'
+      fullPath: '/criar-empresa'
+      preLoaderRoute: typeof AutenticadoCriarEmpresaRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/empresas': {
       id: '/_autenticado/empresas'
       path: '/empresas'
@@ -461,6 +480,7 @@ interface AutenticadoRouteChildren {
   AutenticadoConfiguracoesRoute: typeof AutenticadoConfiguracoesRoute
   AutenticadoConsolidadoRoute: typeof AutenticadoConsolidadoRoute
   AutenticadoContatosRoute: typeof AutenticadoContatosRoute
+  AutenticadoCriarEmpresaRoute: typeof AutenticadoCriarEmpresaRoute
   AutenticadoEmpresasRoute: typeof AutenticadoEmpresasRoute
   AutenticadoOportunidadesRoute: typeof AutenticadoOportunidadesRoute
   AutenticadoProspeccaoRoute: typeof AutenticadoProspeccaoRoute
@@ -473,6 +493,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoConfiguracoesRoute: AutenticadoConfiguracoesRoute,
   AutenticadoConsolidadoRoute: AutenticadoConsolidadoRoute,
   AutenticadoContatosRoute: AutenticadoContatosRoute,
+  AutenticadoCriarEmpresaRoute: AutenticadoCriarEmpresaRoute,
   AutenticadoEmpresasRoute: AutenticadoEmpresasRoute,
   AutenticadoOportunidadesRoute: AutenticadoOportunidadesRoute,
   AutenticadoProspeccaoRoute: AutenticadoProspeccaoRoute,

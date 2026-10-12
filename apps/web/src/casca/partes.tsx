@@ -261,6 +261,12 @@ export function FolhaDePerfil({
             {t.titulo}
           </Link>
         ))}
+        {me.administradorDeConta ? (
+          <Link to="/criar-empresa" onClick={aoFechar} className={linhaDoMais}>
+            <Icon icon={Plus} size={18} />
+            Criar empresa
+          </Link>
+        ) : null}
         <Link to="/perfil/seguranca" onClick={aoFechar} className={linhaDoMais}>
           <Icon icon={ShieldCheck} size={18} />
           Meu perfil → Segurança

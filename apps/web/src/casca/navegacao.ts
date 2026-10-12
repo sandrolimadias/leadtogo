@@ -67,8 +67,8 @@ export function telaVisivel(
   pessoa: { administradorDeConta: boolean; papelNaEmpresaAtiva: PapelMembro | null },
 ): boolean {
   if (tela.quem === 'administrador-da-conta') return pessoa.administradorDeConta
-  if (tela.quem === 'administrador')
-    return pessoa.administradorDeConta || pessoa.papelNaEmpresaAtiva === 'admin'
+  // Configurações: só o administrador DA EMPRESA ativa (a API recusa os demais, inclusive quem só administra a conta)
+  if (tela.quem === 'administrador') return pessoa.papelNaEmpresaAtiva === 'admin'
   return true
 }
 

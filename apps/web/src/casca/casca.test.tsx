@@ -186,7 +186,10 @@ describe('casca no desktop', () => {
 
 describe('itens por papel', () => {
   it('administrador da conta: Painel consolidado e Configurações no menu e "Painel consolidado" + "Criar empresa" no seletor', async () => {
-    renderizar(servicosDaCasca(meComDuasEmpresas(A, { administradorDeConta: true })), '/')
+    const { historico } = renderizar(
+      servicosDaCasca(meComDuasEmpresas(A, { administradorDeConta: true })),
+      '/',
+    )
     const nav = await screen.findByRole('navigation', { name: 'Principal' })
     expect(within(nav).getByRole('link', { name: 'Painel consolidado' })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'Configurações' })).toBeInTheDocument()
@@ -194,7 +197,7 @@ describe('itens por papel', () => {
     const menu = await screen.findByRole('menu')
     expect(within(menu).getByRole('menuitem', { name: 'Painel consolidado' })).toBeInTheDocument()
     await userEvent.click(within(menu).getByRole('menuitem', { name: 'Criar empresa' }))
-    expect(await screen.findByText('Esta função chega nas próximas etapas.')).toBeInTheDocument()
+    await waitFor(() => expect(historico.location.pathname).toBe('/criar-empresa'))
   })
 
   it('administrador só de empresa vê Configurações, mas não o consolidado nem "Criar empresa"', async () => {

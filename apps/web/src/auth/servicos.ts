@@ -163,4 +163,33 @@ export const servicosReais: ServicosDeAcesso = {
     protegido(async () => daApi(await api.POST('/v1/convites/aceitar', { body: dados }))),
   criarPrimeiroAcesso: (dados) =>
     protegido(async () => daApi(await api.POST('/v1/primeiro-acesso', { body: dados }))),
+
+  criarEmpresa: (dados) =>
+    protegido(async () => daApi(await api.POST('/v1/empresas', { body: dados }))),
+  equipe: () =>
+    protegido(async () =>
+      daApi(await api.GET('/v1/membros', { params: { query: { incluirInativos: 'true' } } })),
+    ),
+  convitesPendentes: () => protegido(async () => daApi(await api.GET('/v1/convites'))),
+  convidar: (dados) =>
+    protegido(async () => daApi(await api.POST('/v1/convites', { body: dados }))),
+  cancelarConvite: (id) =>
+    protegido(async () => {
+      const r = await api.DELETE('/v1/convites/{id}', { params: { path: { id } } })
+      if (r.response.ok) return ok(undefined)
+      return daApi({ ...r, data: undefined })
+    }),
+  alterarMembro: (id, dados) =>
+    protegido(async () =>
+      daApi(await api.PATCH('/v1/membros/{id}', { params: { path: { id } }, body: dados })),
+    ),
+  seguranca: () => protegido(async () => daApi(await api.GET('/v1/configuracoes/seguranca'))),
+  alterarPoliticaDeDoisFatores: (politica) =>
+    protegido(async () =>
+      daApi(
+        await api.PATCH('/v1/configuracoes/seguranca', {
+          body: { doisFatoresExigido: politica },
+        }),
+      ),
+    ),
 }

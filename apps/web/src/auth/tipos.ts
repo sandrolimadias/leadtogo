@@ -1,11 +1,23 @@
 import type {
   ConviteAceito,
   ConviteConsulta,
+  ConviteCriado,
+  ConviteResumo,
+  EmpresaCriada,
   Me,
+  MembroDaEquipe,
   Preferencias,
   PreferenciasPatch,
+  Seguranca,
 } from '@leadtogo/api-client'
-import type { PrimeiroAcessoEntrada, PrimeiroAcessoResultado } from '@leadtogo/shared'
+import type {
+  AlterarMembroEntrada,
+  CriarConviteEntrada,
+  CriarEmpresaEntrada,
+  PoliticaDoisFatores,
+  PrimeiroAcessoEntrada,
+  PrimeiroAcessoResultado,
+} from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
 export interface ErroDeAcesso {
@@ -65,4 +77,14 @@ export interface ServicosDeAcesso {
     senha?: string
   }) => Promise<Resultado<ConviteAceito>>
   criarPrimeiroAcesso: (dados: PrimeiroAcessoEntrada) => Promise<Resultado<PrimeiroAcessoResultado>>
+
+  // Gestão multiempresa (E16a): só o administrador da empresa ativa (criar empresa: da conta)
+  criarEmpresa: (dados: CriarEmpresaEntrada) => Promise<Resultado<EmpresaCriada>>
+  equipe: () => Promise<Resultado<MembroDaEquipe[]>>
+  convitesPendentes: () => Promise<Resultado<ConviteResumo[]>>
+  convidar: (dados: CriarConviteEntrada) => Promise<Resultado<ConviteCriado>>
+  cancelarConvite: (id: string) => Promise<Resultado>
+  alterarMembro: (id: string, dados: AlterarMembroEntrada) => Promise<Resultado<MembroDaEquipe>>
+  seguranca: () => Promise<Resultado<Seguranca>>
+  alterarPoliticaDeDoisFatores: (politica: PoliticaDoisFatores) => Promise<Resultado<Seguranca>>
 }

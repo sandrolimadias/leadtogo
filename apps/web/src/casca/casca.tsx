@@ -25,7 +25,7 @@ import {
 } from './partes'
 import { usePreferencias } from './preferencias'
 import { SeletorDeEmpresa } from './seletor-de-empresa'
-import { avisarEmBreve, nomeDaEmpresa, papelDe } from './utilidades'
+import { nomeDaEmpresa, papelDe } from './utilidades'
 
 /**
  * A casca do app (E9c): menu lateral recolhível no desktop, trilho de ícones no tablet e, no celular,
@@ -118,7 +118,11 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
             label: 'Painel consolidado',
             onSelect: () => void navegar({ to: '/consolidado' }),
           },
-          { icon: Plus, label: 'Criar empresa', onSelect: () => avisarEmBreve('Criar empresa') },
+          {
+            icon: Plus,
+            label: 'Criar empresa',
+            onSelect: () => void navegar({ to: '/criar-empresa' }),
+          },
         ] satisfies ItemDeMenu[])
       : []),
   ]

@@ -33,6 +33,8 @@ const MENSAGENS: Record<string, string> = {
   email_ja_cadastrado: 'Já existe uma conta com este e-mail. Entre ou recupere a senha.',
   origem_nao_permitida:
     'Não foi possível concluir por este endereço. Abra o Leadtogo pelo link oficial.',
+  empresa_ativa_invalida: 'Seu acesso a esta empresa foi encerrado.',
+  conta_obrigatoria: 'Você administra mais de uma conta. Escolha em qual criar a empresa.',
   servico_indisponivel: 'O serviço está indisponível agora. Tente de novo em alguns minutos.',
 }
 

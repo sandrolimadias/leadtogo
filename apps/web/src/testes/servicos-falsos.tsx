@@ -82,6 +82,38 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         verificacaoEmailPendente: false,
       }),
     ),
+    criarEmpresa: vi.fn(async () =>
+      ok({
+        empresa: {
+          id: '0192f0a0-0000-7000-8000-0000000000b1',
+          razaoSocial: 'Filial Ltda',
+          nomeFantasia: null,
+          papel: 'admin' as const,
+          situacao: 'teste' as const,
+          ativa: false,
+        },
+        cnpjRepetidoNaConta: false,
+      }),
+    ),
+    equipe: vi.fn(async () => ok([])),
+    convitesPendentes: vi.fn(async () => ok([])),
+    convidar: vi.fn(async () =>
+      ok({
+        id: '0192f0a0-0000-7000-8000-0000000000c1',
+        email: 'nova@exemplo.com.br',
+        papel: 'vendedor' as const,
+        expiraEm: '2026-10-20T12:00:00.000Z',
+        criadoEm: '2026-10-13T12:00:00.000Z',
+        situacao: 'pendente' as const,
+        emailEnviado: true,
+      }),
+    ),
+    cancelarConvite: vi.fn(async () => ok(undefined)),
+    alterarMembro: vi.fn(async () => falha('membro_nao_encontrado', 'Membro não encontrado.', 404)),
+    seguranca: vi.fn(async () => ok({ doisFatoresExigido: 'admin' as const })),
+    alterarPoliticaDeDoisFatores: vi.fn(async (p: string) =>
+      ok({ doisFatoresExigido: p as 'admin' | 'admin_gestor' | 'todos' }),
+    ),
     ...troca,
   }
   return s as typeof s & ServicosDeAcesso
