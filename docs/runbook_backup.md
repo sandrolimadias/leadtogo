@@ -144,6 +144,73 @@ fi
 exit $RC
 ```
 
-### 4.3 Pendência
+### 4.3 Agendamento (timer do systemd)
 
-Fazer um teste de restauração dos arquivos (baixar do R2 e conferir, como o do banco na seção 2).
+A imagem Ubuntu da Oracle não tem cron; o agendamento é um timer do systemd. O horário da VPS é `America/Sao_Paulo` (-03).
+
+`/etc/systemd/system/backup-garage.service`:
+
+```ini
+[Unit]
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/backup-garage.sh
+```
+
+`/etc/systemd/system/backup-garage.timer`:
+
+```ini
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target
+```
+
+Operação:
+
+```bash
+systemctl list-timers | grep backup-garage     # próxima execução
+systemctl start backup-garage.service          # rodar agora
+systemctl status backup-garage.service         # resultado da última execução
+tail /var/log/backup-garage.log
+```
+
+### 4.4 Credenciais
+
+- **`/root/backup-garage.env`** (`chmod 600`), lido pelo `--env-file` do Docker. **Sem aspas nos valores**: o `--env-file` mantém as aspas como parte do valor.
+  - `RCLONE_CONFIG_GARAGE_*`: `type` s3, `provider` Other, `endpoint` `https://files.crm.aledias.com.br`, `region` `garage`, `force_path_style` ligado, mais a chave de acesso e o segredo.
+  - `RCLONE_CONFIG_R2_*`: `provider` Cloudflare, `endpoint` da conta **sem o nome do bucket no final**, chave de acesso, segredo e `RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true`.
+- **Garage:** chave dedicada **`backup-leitura`**, só com permissão de leitura (R) no bucket `leadtogo-arquivos`. Não reutilizar a `leadtogo-app`. Para recriar:
+
+  ```bash
+  garage key create backup-leitura
+  garage bucket allow --read leadtogo-arquivos --key backup-leitura
+  ```
+
+  Cuidado: dois `key create` com o mesmo nome criam **duas chaves** (erro "2 matching keys" depois).
+- **R2:** bucket `vps-backup` (singular). Regra de ciclo de vida **`limpar-garage-alterados`**: prefixo `garage-alterados/`, apagar após **90 dias**. A regra padrão "Default Multipart Abort Rule" fica intacta. **Nunca criar regra de exclusão sem prefixo**: ela apagaria os backups do banco em `data/`.
+- Chaves de acesso, segredos e o ID da conta ficam só na VPS e no gerenciador de segredos, nunca no repositório.
+
+### 4.5 Erros comuns do rclone
+
+| Mensagem | Causa |
+|---|---|
+| `is a file not a directory` | endpoint inválido |
+| `No such key` | Key ID errado |
+| `Operation is not allowed for this key` | chave sem permissão no bucket |
+| `Invalid signature` | segredo errado, ou com aspas/espaços no `.env` |
+| `CreateBucket AccessDenied` | falta `RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true` (o token do R2 não cria buckets, o que é correto) |
+
+### 4.6 Restauração dos arquivos
+
+Use `rclone copy r2:vps-backup/garage/leadtogo-arquivos` para o Garage, com **temporariamente** uma chave com permissão de escrita (a `backup-leitura` não grava; remova a permissão extra depois). Versões antigas de arquivos alterados ou apagados ficam em `garage-alterados/<data>/`.
+
+### 4.7 Pendência
+
+Teste real de restauração dos arquivos, pendente até existirem arquivos no bucket.
