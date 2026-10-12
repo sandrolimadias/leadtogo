@@ -51,7 +51,7 @@ describe('tenants (isolado pela coluna id)', () => {
     expect(vistas.map((v) => v.id)).not.toContain(c)
   })
 
-  it('tem padrões de fuso, moeda e situação, e o CNPJ é único', async () => {
+  it('tem padrões de fuso, moeda e situação, e o CNPJ pode repetir entre empresas (sem unicidade global)', async () => {
     const [a, b] = await novosTenants(2)
     const [t] = await comTenant(
       app,
@@ -65,9 +65,8 @@ describe('tenants (isolado pela coluna id)', () => {
       pais_codigo: 105, // Brasil, no código da Receita
     })
     await comTenant(owner, a!, (tx) => tx`UPDATE tenants SET cnpj = '12ABC34501DE35'`)
-    await expect(
-      comTenant(owner, b!, (tx) => tx`UPDATE tenants SET cnpj = '12ABC34501DE35'`),
-    ).rejects.toThrow(/duplicate key/)
+    // sem unicidade global: repetir não falha (e não revela que outra conta usa o CNPJ)
+    await comTenant(owner, b!, (tx) => tx`UPDATE tenants SET cnpj = '12ABC34501DE35'`)
   })
 
   it('exige conta e município existente', async () => {

@@ -7,7 +7,6 @@ import { AuthService } from '../auth/auth.service.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { verificacaoEmailObrigatoria } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
-import { ErroApi } from '../http/erro-api.js'
 import { BANCO } from '../infra/infra.module.js'
 import { identificarNoLog } from '../log/contexto-log.js'
 
@@ -17,14 +16,6 @@ export interface OpcoesCriarConta {
 }
 
 const { contas, contaAdministradores, membros, tenantConfiguracoes, tenants } = schema
-
-/** Violação de unicidade do Postgres (23505) no `tenants.cnpj`, vinda direto ou embrulhada pelo Drizzle. */
-function ehCnpjDuplicado(erro: unknown): boolean {
-  const e = erro as { code?: string; constraint_name?: string; cause?: unknown } | null
-  if (!e) return false
-  if (e.code === '23505' && e.constraint_name === 'tenants_cnpj_key') return true
-  return e.cause ? ehCnpjDuplicado(e.cause) : false
-}
 
 /**
  * Primeiro acesso: o usuário (Better Auth), a conta dona, o vínculo `dono`, a primeira empresa, as
@@ -93,9 +84,6 @@ export class PrimeiroAcessoService {
         (e: unknown) =>
           this.log.error(`não foi possível desfazer o usuário do primeiro acesso: ${String(e)}`),
       )
-      if (ehCnpjDuplicado(erro)) {
-        throw new ErroApi('cnpj_ja_cadastrado', 'Já existe uma empresa com este CNPJ.', 409)
-      }
       throw erro
     }
 

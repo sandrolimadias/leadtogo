@@ -151,7 +151,7 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 | id | uuid PK | |
 | razao_social | text NOT NULL | |
 | nome_fantasia | text | |
-| cnpj | varchar(14) UNIQUE | Alfanumérico (ver seção 12) |
+| cnpj | varchar(14) | Alfanumérico (ver seção 12). **Sem unicidade global** (migração 0014): a restrição revelava a quem cadastra que outra conta usa o CNPJ. Índice `(conta_id, cnpj)` para avisar sobre repetição dentro da mesma conta |
 | email, telefone, website | text | Contato institucional |
 | cep, tipo_logradouro, logradouro, numero, complemento, bairro | text | |
 | municipio_codigo | int FK → `municipios` | Cidade + UF |

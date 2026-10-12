@@ -75,8 +75,8 @@ export const tenants = pgTable(
     id: chaveUuid(),
     razaoSocial: text().notNull(),
     nomeFantasia: text(),
-    /** Alfanumérico (docs/modelagem_banco.md, seção 12) */
-    cnpj: varchar({ length: 14 }).unique('tenants_cnpj_key'),
+    /** Alfanumérico (docs/modelagem_banco.md, seção 12). Sem unicidade global: não revela que outra conta existe */
+    cnpj: varchar({ length: 14 }),
     email: text(),
     telefone: text(),
     website: text(),
@@ -99,7 +99,10 @@ export const tenants = pgTable(
     moeda: char({ length: 3 }).notNull().default('BRL'),
     ...carimbos(),
   },
-  (t) => [index('tenants_conta_idx').on(t.contaId)],
+  (t) => [
+    index('tenants_conta_idx').on(t.contaId),
+    index('tenants_conta_cnpj_idx').on(t.contaId, t.cnpj),
+  ],
 )
 
 export const tenantConfiguracoes = pgTable('tenant_configuracoes', {

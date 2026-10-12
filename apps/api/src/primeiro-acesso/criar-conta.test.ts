@@ -145,28 +145,13 @@ describe('node dist/criar-conta.js (o mesmo fluxo do POST /v1/primeiro-acesso)',
     expect(r.tudo()).toContain('senha')
   })
 
-  it('e-mail e CNPJ já cadastrados: código 1 com mensagem clara, sem sobras', async () => {
+  it('e-mail já cadastrado: código 1 com mensagem clara, sem sobras', async () => {
     const email = emailUnico('duplicado')
-    const cnpj = cnpjUnico()
-    expect(
-      await executarCriarConta(argumentos(email, ['--cnpj', cnpj]), envTeste(), io().entradaSaida),
-    ).toBe(0)
+    expect(await executarCriarConta(argumentos(email), envTeste(), io().entradaSaida)).toBe(0)
 
     const mesmoEmail = io()
     expect(await executarCriarConta(argumentos(email), envTeste(), mesmoEmail.entradaSaida)).toBe(1)
     expect(mesmoEmail.tudo()).toContain('Já existe uma conta com este e-mail')
-
-    const mesmoCnpj = io()
-    const outro = emailUnico('cnpjrepetido')
-    expect(
-      await executarCriarConta(
-        argumentos(outro, ['--cnpj', cnpj]),
-        envTeste(),
-        mesmoCnpj.entradaSaida,
-      ),
-    ).toBe(1)
-    expect(mesmoCnpj.tudo()).toContain('Já existe uma empresa com este CNPJ')
-    expect(await owner`SELECT 1 FROM auth."user" WHERE email = ${outro}`).toHaveLength(0)
   })
 
   it('--ajuda mostra o uso (código 0); opção desconhecida dá código 2', async () => {

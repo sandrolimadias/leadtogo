@@ -99,6 +99,13 @@
       "when": 1791570131402,
       "tag": "0013_outbox_tratamento",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791817469097,
+      "tag": "0014_cnpj_sem_unicidade_global",
+      "breakpoints": true
     }
   ]
 }

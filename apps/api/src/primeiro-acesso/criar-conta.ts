@@ -25,7 +25,7 @@ A senha NÃO vai em argumento (ficaria no histórico do shell). Informe por:
   - CRIAR_CONTA_SENHA=... na linha de comando; ou
   - uma linha lida da entrada padrão (echo "$SENHA" | node dist/criar-conta.js ...).
 
-Códigos de saída: 0 criada; 1 falha (ex.: e-mail ou CNPJ já cadastrado); 2 dados inválidos.`
+Códigos de saída: 0 criada; 1 falha (ex.: e-mail já cadastrado); 2 dados inválidos.`
 
 export interface EntradaSaida {
   /** Escreve uma linha na saída padrão */

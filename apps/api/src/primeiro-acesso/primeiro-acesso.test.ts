@@ -157,10 +157,9 @@ describe('POST /v1/primeiro-acesso', () => {
     expect([await contar('contas'), await contar('conta_administradores')]).toEqual(antes)
   })
 
-  it('CNPJ repetido: 409 e DESFAZ tudo (sem usuário, conta nem vínculo órfãos)', async () => {
+  it('CNPJ já usado por outra conta: o cadastro segue normal (não revela que a outra conta existe)', async () => {
     const a = await subir()
     const cnpj = cnpjUnico()
-    // o CNPJ já em uso por outra empresa (inserida direto, como se fosse de outra conta)
     const outroTenant = '01a11111-1111-7111-8111-111111111111'
     const outraConta = '01a11111-1111-7111-8111-111111111112'
     await owner`INSERT INTO contas (id, nome) VALUES (${outraConta}, 'Outra conta') ON CONFLICT DO NOTHING`
@@ -168,22 +167,15 @@ describe('POST /v1/primeiro-acesso', () => {
       await tx`SELECT set_config('app.tenant_id', ${outroTenant}, true)`
       await tx`INSERT INTO tenants (id, razao_social, conta_id, cnpj) VALUES (${outroTenant}, 'Dona do CNPJ', ${outraConta}, ${cnpj}) ON CONFLICT DO NOTHING`
     })
-    const antes = {
-      contas: await contar('contas'),
-      admins: await contar('conta_administradores'),
-      users: await contar('auth."user"'.replace('"', '').replace('"', '')),
-    }
     const dados = dadosValidos({ empresa: { razaoSocial: 'Empresa Cópia', cnpj } })
     const r = await post(a, dados)
-    expect(r.status).toBe(409)
-    expect(erroDe(r).erro).toBe('cnpj_ja_cadastrado')
-    expect(await contar('contas')).toBe(antes.contas)
-    expect(await contar('conta_administradores')).toBe(antes.admins)
-    expect(
-      await owner`SELECT 1 FROM auth."user" WHERE email = ${dados.email.toLowerCase()}`,
-    ).toHaveLength(0)
-    // e o e-mail fica livre para um novo cadastro correto
-    await post(a, { ...dados, empresa: { razaoSocial: 'Empresa Certa' } }).expect(201)
+    expect(r.status).toBe(201)
+    const doNovo = (r.body as { tenantId: string }).tenantId
+    const linhas = await owner.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_ids', ${`{${doNovo},${outroTenant}}`}, true)`
+      return tx`SELECT id FROM tenants WHERE cnpj = ${cnpj}`
+    })
+    expect(linhas).toHaveLength(2) // as duas empresas coexistem, cada uma na sua conta
   })
 
   it('valida a entrada: 400 com os campos, e recusa campos que o cliente não pode mandar', async () => {

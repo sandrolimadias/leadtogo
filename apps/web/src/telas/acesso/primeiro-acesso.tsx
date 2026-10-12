@@ -139,8 +139,7 @@ export function TelaDePrimeiroAcesso() {
           setErroDoEmail(r.erro.mensagem)
           setTentou(false)
           setPasso(0)
-        } else if (r.erro.codigo === 'cnpj_ja_cadastrado') setErroDoCnpj(r.erro.mensagem)
-        else setFalha(r.erro.mensagem)
+        } else setFalha(r.erro.mensagem)
         return
       }
       setVerificacaoPendente(r.dados.verificacaoEmailPendente)

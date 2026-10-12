@@ -31,7 +31,6 @@ const MENSAGENS: Record<string, string> = {
   primeiro_acesso_fechado:
     'O cadastro de novas contas está fechado. Peça um convite ao administrador.',
   email_ja_cadastrado: 'Já existe uma conta com este e-mail. Entre ou recupere a senha.',
-  cnpj_ja_cadastrado: 'Já existe uma empresa com este CNPJ.',
   origem_nao_permitida:
     'Não foi possível concluir por este endereço. Abra o Leadtogo pelo link oficial.',
   servico_indisponivel: 'O serviço está indisponível agora. Tente de novo em alguns minutos.',
