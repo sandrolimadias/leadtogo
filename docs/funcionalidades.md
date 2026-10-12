@@ -8,6 +8,7 @@
 > v1.4: **multiempresa**: uma conta pode ter várias empresas; usuários com papel por empresa; painel consolidado
 > v1.3: revisões da modelagem do banco: atividades e tarefas unificadas, Status da oportunidade separado da Fase, Solução, recorrência de produtos, Vertical, Prospecção (Minha Receita), vendedor = membro da equipe. Campos detalhados em `modelagem_banco.md`
 > Complementa: `configuracao_tecnologia.md`
+> **Escopo do MVP (12/10/2026):** o recorte do que entra primeiro, a ordem dos módulos e o que fica de fora estão em [`escopo_mvp.md`](escopo_mvp.md). As regras deste documento **não mudam**; o MVP só escolhe quais delas implementar primeiro.
 
 ---
 
