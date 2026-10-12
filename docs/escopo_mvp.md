@@ -50,7 +50,8 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
   - **CNAE principal dentro de uma lista** (com a opção de aceitar também nos CNAEs secundários);
   - **ação para quem não passa:** *pular e listar no relatório* (padrão) ou *importar com a tag "Fora do perfil"*.
 - Na importação se escolhe **um perfil ou "Sem regras"**. As regras são aplicadas **depois da consulta à Receita**. O **Relatório** oferece **"importar mesmo assim"** para os fora do perfil.
-- A **lista de CNAEs do Ale** (`docs/cnaes_interesse.md`, que o Ale ainda vai fornecer: o arquivo não está no repositório) **vira o primeiro perfil dele**, não um padrão do sistema.
+- A **lista de CNAEs do Ale** (`cnaes_interesse.md`: 133 códigos, dos quais **15 não existem** na tabela `cnaes` e aguardam a decisão dele) **vira o primeiro perfil dele**, não um padrão do sistema.
+- **Lista de CNAEs do perfil:** aceita códigos **colados** com **6 ou 7 dígitos** (completa o zero à esquerda) e **com ou sem pontuação** (`0710-3/01`, `0710301`, `710301`), e **mostra os inválidos antes de salvar**.
 - **Lote nomeado, filtrável e desfazível.** **Status** e as demais escolhas ficam no passo **Carteira** (*Cliente* para a carteira, *Lead* para leads; origem **"Importação"**). Os alertas de "sem contato/visita" valem, por padrão, **só para Cliente e Prospect**.
 - **Deduplicação por CNPJ dentro do tenant.**
 - Os **perfis serão reaproveitados na Prospecção**.
