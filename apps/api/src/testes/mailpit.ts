@@ -33,8 +33,12 @@ export async function mensagensPara(email: string): Promise<MensagemResumo[]> {
   return messages
 }
 
-/** Espera chegar uma mensagem para o endereço (até `ms`) e devolve o conteúdo completo. */
-export async function aguardarMensagem(email: string, ms = 5000): Promise<MensagemCompleta> {
+/**
+ * Espera chegar uma mensagem para o endereço (até `ms`) e devolve o conteúdo completo. O e-mail passa
+ * pelo outbox, pela fila e pelo worker antes do SMTP: com a máquina ou o runner lentos isso passa de 5 s
+ * (sem nenhuma limpeza concorrente: os arquivos rodam em sequência e a caixa só é limpa antes do envio).
+ */
+export async function aguardarMensagem(email: string, ms = 15_000): Promise<MensagemCompleta> {
   const limite = Date.now() + ms
   while (Date.now() < limite) {
     const [mensagem] = await mensagensPara(email)
