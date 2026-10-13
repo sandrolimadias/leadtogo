@@ -438,6 +438,25 @@ describe('Ficha da empresa: aba Resumo', () => {
     expect(screen.queryByText(/na Receita$/)).toBeNull()
   })
 
+  it('sem documento: o campo se chama "Documento" e diz que não há', async () => {
+    await abrir(
+      servicos(
+        {},
+        empresa({
+          tipoDocumento: 'nenhum',
+          documento: null,
+          matrizFilial: null,
+          receita: null,
+          cnaes: [],
+        }),
+      ),
+    )
+    const dados = screen.getByRole('region', { name: 'Dados cadastrais' })
+    expect(within(dados).getByText('Documento').nextSibling).toHaveTextContent('Sem documento')
+    expect(within(dados).queryByText('CNPJ')).toBeNull()
+    expect(screen.getByText('Nenhum CNAE informado.')).toBeInTheDocument()
+  })
+
   it('sem permissão de editar: nem "Editar tags" nem "Atualizar pela Receita"', async () => {
     await abrir(
       servicos({}, empresa({ permissoes: { editar: false, excluir: false, transferir: false } })),

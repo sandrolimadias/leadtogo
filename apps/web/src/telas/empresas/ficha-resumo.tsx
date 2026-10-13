@@ -93,7 +93,12 @@ export function DadosCadastrais({ e }: { e: EmpresaCarteira }) {
         {e.razaoSocial}
       </Campo>
       <Campo rotulo="Nome fantasia">{e.nomeFantasia ?? vazio}</Campo>
-      <Campo rotulo={e.tipoDocumento === 'cpf' ? 'CPF' : 'CNPJ'} mono>
+      <Campo
+        rotulo={
+          e.tipoDocumento === 'cpf' ? 'CPF' : e.tipoDocumento === 'cnpj' ? 'CNPJ' : 'Documento'
+        }
+        mono
+      >
         {documentoFormatado(e.tipoDocumento, e.documento)}
       </Campo>
       {e.tipoDocumento === 'cnpj' && e.matrizFilial ? (
@@ -194,7 +199,7 @@ export function DadosCadastrais({ e }: { e: EmpresaCarteira }) {
 /** CNAEs: código com máscara (mono) e descrição; o principal leva o selo. */
 export function CnaesDaEmpresa({ cnaes }: { cnaes: EmpresaCarteira['cnaes'] }) {
   if (cnaes.length === 0) {
-    return <p className="m-0 text-sm text-ink-muted">Nenhum CNAE informado.</p>
+    return <p className="m-0 px-4 py-3.5 text-sm text-ink-muted">Nenhum CNAE informado.</p>
   }
   return (
     <ul className="m-0 list-none p-0">

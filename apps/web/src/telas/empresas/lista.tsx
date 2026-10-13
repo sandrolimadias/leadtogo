@@ -238,6 +238,10 @@ export function ListaDeEmpresas() {
 
   const selects = (
     <div
+      // cada filtro precisa de ~200 px para o texto caber ("Última visita: qualquer"); sem espaço, a barra quebra
+      style={
+        celular ? undefined : { minWidth: (unicoMembro ? 4 : 5) * 200 + (unicoMembro ? 3 : 4) * 8 }
+      }
       className={cn(
         'grid min-w-0 flex-[3] gap-2',
         celular ? 'w-full grid-cols-2' : unicoMembro ? 'grid-cols-4' : 'grid-cols-5',
