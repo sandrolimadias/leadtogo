@@ -64,12 +64,15 @@ export function DadosDaEmpresa({
   mudar,
   daReceita,
   rotuloDoNome,
+  mostrarOrigemDosTelefones = true,
 }: {
   f: Formulario
   mudar: Mudar
   /** Os dados vieram da Receita (a dica "Da Receita" aparece nos campos) */
   daReceita: boolean
   rotuloDoNome: string
+  /** Diz de onde veio cada telefone ("da Receita", "digitado"); na edição a origem não importa */
+  mostrarOrigemDosTelefones?: boolean
 }) {
   const dica = (texto: string) => (daReceita ? texto : undefined)
   const [novoTelefone, setNovoTelefone] = useState('')
@@ -189,7 +192,7 @@ export function DadosDaEmpresa({
             <div key={t.chave} className="flex flex-col gap-1">
               <Checkbox
                 label={formatarTelefone(t.numero)}
-                description={`${t.tipo === 'celular' ? 'Celular' : t.tipo === 'fixo' ? 'Fixo' : 'Outro'} · ${t.daReceita ? 'da Receita' : 'digitado'}`}
+                description={`${t.tipo === 'celular' ? 'Celular' : t.tipo === 'fixo' ? 'Fixo' : 'Outro'}${mostrarOrigemDosTelefones ? ` · ${t.daReceita ? 'da Receita' : 'digitado'}` : ''}`}
                 checked={t.incluir}
                 onChange={(e) => mudarTelefone(t.chave, { incluir: e.target.checked })}
               />
@@ -278,10 +281,11 @@ export function DadosDaCarteira({
 }: {
   f: Formulario
   mudar: Mudar
-  /** Nulo: o vendedor padrão (o usuário) e o campo não aparece */
+  /** Nulo: o campo não aparece (vendedor padrão, ou quem não pode escolher) */
   vendedores: { value: string; label: string }[] | null
   verticais: { value: string; label: string }[]
-  status: { value: string; label: string }[]
+  /** Nulo: o Status não se escolhe aqui (na edição, ele muda em "Editar tags") */
+  status: { value: string; label: string }[] | null
 }) {
   return (
     <div className="grid grid-cols-3 gap-x-4 gap-y-3.5 max-md:grid-cols-1">
@@ -289,7 +293,7 @@ export function DadosDaCarteira({
         <Select
           label="Vendedor"
           required
-          placeholder="Eu mesmo (padrão)"
+          {...(f.vendedorId === '' ? { placeholder: 'Eu mesmo (padrão)' } : {})}
           options={vendedores}
           value={f.vendedorId}
           onChange={(e) => mudar({ vendedorId: e.target.value })}
@@ -302,13 +306,15 @@ export function DadosDaCarteira({
         value={f.verticalId}
         onChange={(e) => mudar({ verticalId: e.target.value })}
       />
-      <Select
-        label="Status"
-        required
-        options={status}
-        value={f.statusTagId}
-        onChange={(e) => mudar({ statusTagId: e.target.value })}
-      />
+      {status ? (
+        <Select
+          label="Status"
+          required
+          options={status}
+          value={f.statusTagId}
+          onChange={(e) => mudar({ statusTagId: e.target.value })}
+        />
+      ) : null}
       <TextField
         label="Website"
         placeholder="empresa.com.br"

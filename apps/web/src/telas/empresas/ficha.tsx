@@ -6,24 +6,28 @@ import {
   Building2,
   Check,
   ChevronRight,
+  Ellipsis,
   MessageCircle,
   Navigation,
   Pencil,
   Phone,
   RefreshCw,
+  Trash2,
   TriangleAlert,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { useDispositivo } from '@/casca/dispositivo'
-import { Button } from '@/components/ui/button'
+import { Button, IconButton } from '@/components/ui/button'
 import { type CorDeTag } from '@/components/ui/cores'
 import { Avatar, Badge, Tag } from '@/components/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
+import { Menu } from '@/components/ui/menu'
 import { ConteudoDaAba, Tabs } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
+import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
 
 import { dataCurta, diasDesde, linkDeRota, tempoRelativo } from './formatos'
 import { ComparacaoComAReceita } from './ficha-receita'
@@ -107,6 +111,9 @@ export function FichaDaEmpresa() {
   const [comparacao, setComparacao] = useState<ConsultaDaReceitaDaEmpresa | null>(null)
   const [aplicando, setAplicando] = useState(false)
   const [erroAoAplicar, setErroAoAplicar] = useState<string>()
+  const [excluindo, setExcluindo] = useState(false)
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
+  const [erroDaExclusao, setErroDaExclusao] = useState<string>()
 
   const consulta = useQuery({
     queryKey: ['carteira', 'empresa', empresaId],
@@ -213,6 +220,49 @@ export function FichaDaEmpresa() {
     await atualizar()
   }
 
+  const excluir = async () => {
+    setExcluindo(true)
+    setErroDaExclusao(undefined)
+    const r = await servicos.carteira.excluir(e.id)
+    setExcluindo(false)
+    if (!r.ok) {
+      setErroDaExclusao(r.erro.mensagem)
+      return
+    }
+    toast.success('Empresa excluída', { description: `${e.nome} saiu da carteira.` })
+    setConfirmandoExclusao(false)
+    queryClient.removeQueries({ queryKey: ['carteira', 'empresa', e.id] })
+    await queryClient.invalidateQueries({ queryKey: ['carteira'] })
+    voltar()
+  }
+
+  const itensDoMenu = [
+    ...(e.permissoes.editar
+      ? [
+          {
+            icon: Pencil,
+            label: 'Editar',
+            onSelect: () =>
+              void navegar({ to: '/empresas/$empresaId/editar', params: { empresaId: e.id } }),
+          },
+        ]
+      : []),
+    ...(e.permissoes.editar && e.permissoes.excluir ? [{ separator: true as const }] : []),
+    ...(e.permissoes.excluir
+      ? [
+          {
+            icon: Trash2,
+            label: 'Excluir',
+            danger: true,
+            onSelect: () => {
+              setErroDaExclusao(undefined)
+              setConfirmandoExclusao(true)
+            },
+          },
+        ]
+      : []),
+  ]
+
   const consultarReceita = async () => {
     setConsultandoReceita(true)
     const r = await servicos.carteira.consultarReceitaDaEmpresa(e.id)
@@ -314,12 +364,21 @@ export function FichaDaEmpresa() {
               ) : null}
             </div>
           </div>
-          {celular ? null : (
-            <div className="flex items-center gap-2">
-              <LinkDeIcone href={ligar} label="Ligar" icone={Phone} />
-              <LinkDeIcone href={whatsapp} label="WhatsApp" icone={MessageCircle} />
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {celular ? null : (
+              <>
+                <LinkDeIcone href={ligar} label="Ligar" icone={Phone} />
+                <LinkDeIcone href={whatsapp} label="WhatsApp" icone={MessageCircle} />
+              </>
+            )}
+            {itensDoMenu.length > 0 ? (
+              <Menu
+                align="end"
+                items={itensDoMenu}
+                trigger={<IconButton icon={Ellipsis} label="Mais ações" variant="secondary" />}
+              />
+            ) : null}
+          </div>
         </div>
 
         <div className="grid grid-cols-5 gap-x-6 gap-y-3 border-t border-border pt-3 text-sm max-md:grid-cols-2">
@@ -473,6 +532,16 @@ export function FichaDaEmpresa() {
           aoSalvar={(ids) => void salvarTags(ids)}
         />
       ) : null}
+      <DialogoDeConfirmacao
+        aberto={confirmandoExclusao}
+        titulo="Excluir esta empresa?"
+        descricao={`${e.nome} sai da carteira e deixa de aparecer nas listas. Por enquanto não há lixeira para recuperá-la.`}
+        rotuloDoBotao="Excluir empresa"
+        erro={erroDaExclusao}
+        enviando={excluindo}
+        aoConfirmar={() => void excluir()}
+        aoFechar={() => setConfirmandoExclusao(false)}
+      />
       {comparacao ? (
         <ComparacaoComAReceita
           consulta={comparacao}

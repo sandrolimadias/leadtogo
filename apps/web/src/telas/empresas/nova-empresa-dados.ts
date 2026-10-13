@@ -1,5 +1,6 @@
-import type { DadosDaReceita } from '@leadtogo/api-client'
+import type { DadosDaReceita, EmpresaCarteira } from '@leadtogo/api-client'
 import {
+  type AlterarEmpresaCarteiraEntrada,
   type CriarEmpresaCarteiraEntrada,
   normalizarCnpj,
   normalizarTelefone,
@@ -204,5 +205,75 @@ export function corpoDoCadastro(
           },
         }
       : {}),
+  }
+}
+
+/** A ficha vira o formulário da edição (o documento e o Status ficam de fora). */
+export function formularioDaEmpresa(e: EmpresaCarteira): Formulario {
+  return {
+    ...formularioVazio(),
+    razaoSocial: e.razaoSocial,
+    nomeFantasia: e.nomeFantasia ?? '',
+    regimeTributario: e.regimeTributario,
+    dataInicio: e.dataInicioAtividades ?? '',
+    mei: e.mei,
+    porteCodigo: e.porte?.codigo ?? null,
+    cep: e.endereco.cep ? mascararCep(e.endereco.cep) : '',
+    tipoLogradouro: e.endereco.tipoLogradouro ?? '',
+    logradouro: e.endereco.logradouro ?? '',
+    numero: e.endereco.numero ?? '',
+    complemento: e.endereco.complemento ?? '',
+    bairro: e.endereco.bairro ?? '',
+    municipioCodigo: e.endereco.municipio?.codigoIbge ?? null,
+    municipioTexto: e.endereco.municipio
+      ? `${e.endereco.municipio.nome}/${e.endereco.municipio.uf}`
+      : '',
+    paisCodigo: e.endereco.paisCodigo,
+    telefones: e.telefones.map((t) => ({
+      chave: t.id,
+      numero: t.numero,
+      e164: t.e164,
+      tipo: t.tipo === 'whatsapp' ? 'celular' : t.tipo,
+      incluir: true,
+      whatsapp: t.tipo === 'whatsapp',
+      daReceita: false,
+    })),
+    cnaes: e.cnaes,
+    socios: e.socios.map((s) => ({ nome: s.nome, qualificacao: s.qualificacao })),
+    vendedorId: e.vendedor.id,
+    verticalId: e.vertical?.id ?? '',
+    website: e.website ?? '',
+    observacoes: e.observacoes ?? '',
+  }
+}
+
+/** O que a API recebe na edição: só o que a tela deixa mudar. Texto vazio limpa o campo. */
+export function corpoDaEdicao(
+  f: Formulario,
+  opcoes: { podeTransferir: boolean },
+): AlterarEmpresaCarteiraEntrada {
+  return {
+    razaoSocial: f.razaoSocial.trim(),
+    nomeFantasia: f.nomeFantasia,
+    mei: f.mei,
+    dataInicioAtividades: f.dataInicio === '' ? null : f.dataInicio,
+    regimeTributario: f.regimeTributario,
+    ...(opcoes.podeTransferir && f.vendedorId ? { vendedorId: f.vendedorId } : {}),
+    verticalId: f.verticalId === '' ? null : f.verticalId,
+    website: f.website,
+    observacoes: f.observacoes,
+    endereco: {
+      cep: f.cep,
+      tipoLogradouro: f.tipoLogradouro,
+      logradouro: f.logradouro,
+      numero: f.numero,
+      complemento: f.complemento,
+      bairro: f.bairro,
+      municipioCodigo: f.municipioCodigo,
+      paisCodigo: f.paisCodigo,
+    },
+    telefones: f.telefones
+      .filter((t) => t.incluir)
+      .map((t) => ({ numero: t.numero, tipo: t.whatsapp ? ('whatsapp' as const) : t.tipo })),
   }
 }

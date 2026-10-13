@@ -161,6 +161,8 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         falha('indisponivel', 'Não configurado no teste.', 500),
       ),
       definirTags: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      excluir: vi.fn(async () => ok(undefined)),
     },
     cadastros: {
       verticais: {

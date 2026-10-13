@@ -482,5 +482,18 @@ export const servicosReais: ServicosDeAcesso = {
           }),
         ),
       ),
+    alterar: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/carteira/empresas/{id}', {
+            params: { path: { id } },
+            body: dados as never,
+          }),
+        ),
+      ),
+    excluir: (id) =>
+      protegido(async () =>
+        semCorpo(await api.DELETE('/v1/carteira/empresas/{id}', { params: { path: { id } } })),
+      ),
   },
 }

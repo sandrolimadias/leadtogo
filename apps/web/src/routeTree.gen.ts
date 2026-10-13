@@ -43,6 +43,7 @@ import { Route as AutenticadoEmpresasIndexRouteImport } from './routes/_autentic
 import { Route as AutenticadoEmpresasEmpresaIdRouteImport } from './routes/_autenticado.empresas.$empresaId'
 import { Route as AutenticadoEmpresasNovaRouteImport } from './routes/_autenticado.empresas.nova'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
+import { Route as AutenticadoEmpresasEmpresaIdEditarRouteImport } from './routes/_autenticado.empresas.$empresaId_.editar'
 
 const AcessoRoute = AcessoRouteImport.update({
   id: '/_acesso',
@@ -226,6 +227,12 @@ const AutenticadoPerfilSegurancaRoute =
     path: '/perfil/seguranca',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoEmpresasEmpresaIdEditarRoute =
+  AutenticadoEmpresasEmpresaIdEditarRouteImport.update({
+    id: '/$empresaId_/editar',
+    path: '/$empresaId/editar',
+    getParentRoute: () => AutenticadoEmpresasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AutenticadoIndexRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
   '/empresas/': typeof AutenticadoEmpresasIndexRoute
+  '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AutenticadoIndexRoute
@@ -292,6 +300,7 @@ export interface FileRoutesByTo {
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/configuracoes': typeof AutenticadoConfiguracoesIndexRoute
   '/empresas': typeof AutenticadoEmpresasIndexRoute
+  '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -329,6 +338,7 @@ export interface FileRoutesById {
   '/_autenticado/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/_autenticado/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
   '/_autenticado/empresas/': typeof AutenticadoEmpresasIndexRoute
+  '/_autenticado/empresas/$empresaId_/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/perfil/seguranca'
     | '/configuracoes/'
     | '/empresas/'
+    | '/empresas/$empresaId/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -397,6 +408,7 @@ export interface FileRouteTypes {
     | '/perfil/seguranca'
     | '/configuracoes'
     | '/empresas'
+    | '/empresas/$empresaId/editar'
   id:
     | '__root__'
     | '/_acesso'
@@ -433,6 +445,7 @@ export interface FileRouteTypes {
     | '/_autenticado/perfil/seguranca'
     | '/_autenticado/configuracoes/'
     | '/_autenticado/empresas/'
+    | '/_autenticado/empresas/$empresaId_/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -681,6 +694,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoPerfilSegurancaRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/empresas/$empresaId_/editar': {
+      id: '/_autenticado/empresas/$empresaId_/editar'
+      path: '/$empresaId/editar'
+      fullPath: '/empresas/$empresaId/editar'
+      preLoaderRoute: typeof AutenticadoEmpresasEmpresaIdEditarRouteImport
+      parentRoute: typeof AutenticadoEmpresasRoute
+    }
   }
 }
 
@@ -751,12 +771,15 @@ interface AutenticadoEmpresasRouteChildren {
   AutenticadoEmpresasEmpresaIdRoute: typeof AutenticadoEmpresasEmpresaIdRoute
   AutenticadoEmpresasNovaRoute: typeof AutenticadoEmpresasNovaRoute
   AutenticadoEmpresasIndexRoute: typeof AutenticadoEmpresasIndexRoute
+  AutenticadoEmpresasEmpresaIdEditarRoute: typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
 
 const AutenticadoEmpresasRouteChildren: AutenticadoEmpresasRouteChildren = {
   AutenticadoEmpresasEmpresaIdRoute: AutenticadoEmpresasEmpresaIdRoute,
   AutenticadoEmpresasNovaRoute: AutenticadoEmpresasNovaRoute,
   AutenticadoEmpresasIndexRoute: AutenticadoEmpresasIndexRoute,
+  AutenticadoEmpresasEmpresaIdEditarRoute:
+    AutenticadoEmpresasEmpresaIdEditarRoute,
 }
 
 const AutenticadoEmpresasRouteWithChildren =

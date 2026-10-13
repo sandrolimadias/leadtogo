@@ -26,6 +26,7 @@ import type {
   Vertical,
 } from '@leadtogo/api-client'
 import type {
+  AlterarEmpresaCarteiraEntrada,
   AlterarFaseEntrada,
   AlterarFunilEntrada,
   AlterarMembroEntrada,
@@ -130,6 +131,10 @@ export interface ServicosDaCarteira {
   aplicarReceitaDaEmpresa: (id: string) => Promise<Resultado<EmpresaCarteira>>
   /** Troca as tags dos grupos manuais (Status, Interesse...) */
   definirTags: (id: string, tagIds: string[]) => Promise<Resultado<EmpresaCarteira>>
+  /** Edita a empresa: só o que vier muda (o documento e o Status não se alteram aqui) */
+  alterar: (id: string, dados: AlterarEmpresaCarteiraEntrada) => Promise<Resultado<EmpresaCarteira>>
+  /** Exclusão lógica (só administrador e gestor), sem lixeira por enquanto */
+  excluir: (id: string) => Promise<Resultado>
 }
 
 /**

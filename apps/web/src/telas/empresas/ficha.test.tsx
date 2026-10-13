@@ -699,3 +699,83 @@ describe('Ficha da empresa: no celular', () => {
     expect(screen.queryByRole('button', { name: /Atividade/ })).toBeNull()
   })
 })
+
+describe('Ficha da empresa: Mais ações (editar e excluir)', () => {
+  const abrirMenu = async () => {
+    await userEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
+    return screen.findByRole('menu')
+  }
+
+  it('administrador e gestor: Editar e Excluir; Editar abre a tela de edição', async () => {
+    const x = servicos()
+    const { historico: h } = await abrir(x)
+    const menu = await abrirMenu()
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((i) => i.textContent),
+    ).toEqual(['Editar', 'Excluir'])
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Editar' }))
+    await waitFor(() => expect(h.location.pathname).toBe(`/empresas/${id(100)}/editar`))
+  })
+
+  it('vendedor na própria empresa: só Editar (excluir é de gestor e administrador)', async () => {
+    await abrir(
+      servicos({}, empresa({ permissoes: { editar: true, excluir: false, transferir: false } })),
+    )
+    const menu = await abrirMenu()
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((i) => i.textContent),
+    ).toEqual(['Editar'])
+  })
+
+  it('só vendo a empresa de outro vendedor: sem menu de ações', async () => {
+    await abrir(
+      servicos({}, empresa({ permissoes: { editar: false, excluir: false, transferir: false } })),
+    )
+    expect(screen.queryByRole('button', { name: 'Mais ações' })).toBeNull()
+  })
+
+  it('Excluir pede confirmação, exclui, avisa e volta para a lista', async () => {
+    const excluir = vi.fn(async (_id: string) => ok(undefined))
+    const x = servicos({ excluir })
+    const { historico: h } = await abrir(x)
+    const menu = await abrirMenu()
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Excluir' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Excluir esta empresa?' })
+    expect(within(dialogo).getByText(/não há lixeira/)).toBeInTheDocument()
+    expect(excluir).not.toHaveBeenCalled()
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Excluir empresa' }))
+    await waitFor(() => expect(excluir).toHaveBeenCalledWith(id(100)))
+    expect(await screen.findByText('Empresa excluída')).toBeInTheDocument()
+    await waitFor(() => expect(h.location.pathname).toBe('/empresas'))
+  })
+
+  it('"Voltar" na confirmação não exclui nada', async () => {
+    const excluir = vi.fn(async (_id: string) => ok(undefined))
+    await abrir(servicos({ excluir }))
+    const menu = await abrirMenu()
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Excluir' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Excluir esta empresa?' })
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Voltar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(excluir).not.toHaveBeenCalled()
+  })
+
+  it('erro ao excluir: mostra o motivo no diálogo e continua na ficha', async () => {
+    const excluir = vi.fn(async (_id: string) =>
+      falha('acesso_negado', 'Só gestor e administrador excluem empresas.', 403),
+    )
+    const { historico: h } = await abrir(servicos({ excluir }))
+    const menu = await abrirMenu()
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Excluir' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Excluir esta empresa?' })
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Excluir empresa' }))
+    expect(
+      await within(dialogo).findByText('Só gestor e administrador excluem empresas.'),
+    ).toBeInTheDocument()
+    expect(h.location.pathname).toBe(`/empresas/${id(100)}`)
+  })
+})
