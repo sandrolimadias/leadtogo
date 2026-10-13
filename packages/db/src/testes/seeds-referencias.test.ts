@@ -8,6 +8,8 @@ const app = conectarApp()
 
 const TABELAS = ['municipios', 'cnaes', 'qualificacoes_socio', 'portes', 'paises', 'estados']
 async function limpar() {
+  // empresas e filhas apontam para as referências (FK); o TRUNCATE ignora o RLS e esvazia a carteira de teste
+  await owner`TRUNCATE empresas CASCADE`
   for (const t of TABELAS) await owner`DELETE FROM ${owner(t)}`
 }
 async function contar(): Promise<Record<string, number>> {

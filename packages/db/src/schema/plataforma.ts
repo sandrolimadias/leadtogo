@@ -114,6 +114,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   /** null = a tag de visita não expira */
   diasValidadeTagVisita: integer(),
   statusClienteAoConquistar: boolean().notNull().default(true),
+  /** Não cadastra empresa (CNPJ) que não esteja ativa na Receita; o aviso vale só para cadastro novo */
+  bloquearEmpresaNaoAtiva: boolean().notNull().default(true),
   rastreioEmailPadrao: boolean().notNull().default(false),
   /** admin (padrão) | admin_gestor | todos: quem é obrigado a ter 2FA ao usar esta empresa */
   doisFatoresExigido: politicaDoisFatores().notNull().default('admin'),

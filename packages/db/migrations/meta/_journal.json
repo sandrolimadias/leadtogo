@@ -120,6 +120,13 @@
       "when": 1791832578680,
       "tag": "0016_padroes_do_tenant",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791851613248,
+      "tag": "0017_carteira_empresas",
+      "breakpoints": true
     }
   ]
 }

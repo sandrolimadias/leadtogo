@@ -171,6 +171,7 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 | vendedor_ve_todas_empresas | boolean default false | Regra de carteira |
 | dias_sem_contato_alerta | int default 60 | Dashboard / filtros |
 | dias_validade_tag_visita | int null | null = não expira |
+| bloquear_empresa_nao_ativa | boolean default true | Não cadastra CNPJ que não esteja ativo na Receita (só cadastro novo); migração 0017 |
 | status_cliente_ao_conquistar | boolean default true | Ao conquistar, muda tag Status → Cliente |
 | rastreio_email_padrao | boolean default false | 🔮 |
 | whatsapp_modo_importacao | enum | 🔮 automático · manual · desligado |
@@ -366,6 +367,16 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 - GIN trigram em `razao_social` e `nome_fantasia` (busca por similaridade, sem acento)
 - GiST em `localizacao`
 - `(tenant_id, ultima_visita_em)`, `(tenant_id, ultimo_contato_em)`
+
+> **Implementação (Módulo 2, migração 0017):** criadas `empresas`, `empresa_telefones`, `empresa_cnaes`, `empresa_socios`, `empresa_tags` e `empresa_tags_historico`, todas com RLS forçado e fábrica no teste de isolamento. Diferenças em relação à tabela acima:
+> - **Fora do MVP (entram depois, por expansão):** `faixa_funcionarios_id`, `faixa_faturamento_id`, `numero_funcionarios`, `campos_extras` e a geolocalização (`localizacao`, `geo_*`).
+> - `pais_codigo` é **nulo para o Brasil** e só se preenche para estabelecimento no exterior (código de país da Receita). Sem o padrão 105, a empresa brasileira não depende de a tabela `paises` estar carregada.
+> - `situacao_nao_verificada boolean`: a empresa foi salva sem poder consultar a Receita (as duas fontes fora do ar); o worker reconsulta depois. A **situação cadastral** em si continua sendo lida de `receita_consultas`, não de um campo da empresa.
+> - `proxima_atividade_id` é só `uuid` por enquanto; a FK para `atividades` entra no Módulo 5. `cnpj_raiz` é coluna **gerada** (só para CNPJ).
+> - `empresa_socios.qualificacao_texto` guarda a qualificação como veio da Receita (para o código que ainda não está em `qualificacoes_socio`); `contato_id` entra no Módulo 3.
+> - **Busca:** índices trigram em `lower(f_unaccent(razao_social))`, `lower(f_unaccent(nome_fantasia))` e `documento`.
+> - **`app_registrar_cnae(codigo, descricao)`** (`SECURITY DEFINER`, só o `leadtogo_app` executa): grava um CNAE que a Receita trouxe e ainda não está em `cnaes`, derivando divisão, grupo, classe e seção do próprio código (conferido contra as 1.332 subclasses existentes). O app continua sem `INSERT` direto na tabela.
+> - **`tenant_configuracoes.bloquear_empresa_nao_ativa`** (padrão `true`): não cadastra CNPJ que não esteja ativo na Receita. Vale só para cadastro novo.
 
 ### 6.2 `empresa_telefones` — **Telefone (mais de 1)**
 | Coluna | Tipo | Observação |

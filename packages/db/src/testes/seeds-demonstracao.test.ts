@@ -70,6 +70,7 @@ beforeAll(async () => {
 })
 afterAll(async () => {
   await limpar()
+  await owner`TRUNCATE empresas CASCADE` // as empresas de teste apontam para as referências (FK)
   for (const t of ['municipios', 'cnaes', 'qualificacoes_socio', 'portes', 'paises', 'estados']) {
     await owner`DELETE FROM ${owner(t)}`
   }
