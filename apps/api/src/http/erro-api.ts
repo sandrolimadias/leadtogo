@@ -16,6 +16,8 @@ export class ErroApi extends HttpException {
     mensagem: string,
     status: number,
     readonly detalhes?: DetalheErro[],
+    /** Dados extras para o front (vão em `dados` na resposta); nada sensível */
+    readonly dados?: Record<string, unknown>,
   ) {
     super(mensagem, status)
   }

@@ -14,6 +14,8 @@ export const erroSchema = z
     mensagem: z.string(),
     request_id: z.string().optional(),
     detalhes: z.array(detalheDeErroSchema).optional(),
+    /** Dados extras do erro, quando o front precisa deles (ex.: a empresa que já existe, no 409 de duplicado) */
+    dados: z.record(z.string(), z.unknown()).optional(),
   })
   .meta({ id: 'Erro' })
 export type ErroDaApi = z.infer<typeof erroSchema>

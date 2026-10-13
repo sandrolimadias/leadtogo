@@ -20,6 +20,7 @@ export interface RespostaDeErro {
   mensagem: string
   request_id?: string
   detalhes?: DetalheErro[]
+  dados?: Record<string, unknown>
 }
 
 /** Erros dos parsers de corpo (body-parser/http-errors) trazem `status` e `type`. */
@@ -69,6 +70,7 @@ export class FiltroDeExcecoes implements ExceptionFilter {
         erro: erro.codigo,
         mensagem: erro.message,
         ...(erro.detalhes ? { detalhes: erro.detalhes } : {}),
+        ...(erro.dados ? { dados: erro.dados } : {}),
       }
     } else if (NEGADOS_PELO_BANCO[sqlstateDe(erro) ?? ''] && !(erro instanceof HttpException)) {
       const [codigo, mensagem] = NEGADOS_PELO_BANCO[sqlstateDe(erro) ?? ''] ?? [

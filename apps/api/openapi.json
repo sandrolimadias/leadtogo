@@ -117,6 +117,336 @@
         "security": []
       }
     },
+    "/v1/carteira/empresas": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Cadastro por CNPJ, CPF ou sem documento. Para CNPJ a API consulta a Receita (cache de 30 dias): empresa baixada, inapta, suspensa ou nula é recusada com 409 `empresa_nao_ativa` quando o bloqueio da empresa está ligado (padrão). Com a Receita fora do ar, salva com `situacaoNaoVerificada` e o sistema reconsulta depois, avisando o vendedor se a empresa não estiver ativa. Documento repetido: 409 `empresa_ja_cadastrada` com `dados.existente` (id e nome só se o usuário vê aquela empresa). O vendedor cadastra só na própria carteira; o Status inicial é Lead. Sócios e a situação vêm da Receita, nunca do cliente. Registra na auditoria.",
+        "operationId": "EmpresasDaCarteiraController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarEmpresaDaCarteiraEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaDaCarteira"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar empresa na carteira",
+        "tags": ["Carteira: empresas"]
+      }
+    },
+    "/v1/carteira/empresas/{id}": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Traz dados cadastrais, telefones, CNAEs, sócios, tags, matriz e filiais visíveis, a situação da última consulta à Receita e o que o usuário pode fazer (`permissoes`).",
+        "operationId": "EmpresasDaCarteiraController_detalhar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaDaCarteira"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ficha da empresa",
+        "tags": ["Carteira: empresas"]
+      },
+      "patch": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Só o que vier muda; o documento e o Status não se alteram aqui. `endereco`, `telefones` e `cnaes`, se vierem, substituem o conjunto todo. Passar a carteira para outro vendedor (`vendedorId`) é só de gestor e administrador. Registra na auditoria o que mudou.",
+        "operationId": "EmpresasDaCarteiraController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarEmpresaDaCarteiraEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaDaCarteira"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar empresa",
+        "tags": ["Carteira: empresas"]
+      },
+      "delete": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Exclusão lógica (sem lixeira no MVP), só de gestor e administrador; o documento pode ser cadastrado de novo. As filiais deixam de apontar para a matriz excluída. Registra na auditoria.",
+        "operationId": "EmpresasDaCarteiraController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir empresa",
+        "tags": ["Carteira: empresas"]
+      }
+    },
     "/v1/configuracoes/funis": {
       "get": {
         "description": "Qualquer membro da empresa ativa. Funis e fases em ordem de exibição; sem `incluirInativos=true`, esconde os funis inativados. Excluídos nunca aparecem. Há sempre um funil com `padrao: true`.",
@@ -4711,6 +5041,87 @@
         ],
         "additionalProperties": false
       },
+      "AlterarEmpresaDaCarteiraEntrada": {
+        "type": "object",
+        "properties": {
+          "razaoSocial": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "nomeFantasia": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "mei": {
+            "type": "boolean"
+          },
+          "dataInicioAtividades": {
+            "nullable": true,
+            "type": "string",
+            "format": "date"
+          },
+          "porteCodigo": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "regimeTributario": {
+            "type": "string",
+            "enum": [
+              "mei",
+              "simples_nacional",
+              "lucro_presumido",
+              "lucro_real",
+              "imune_isenta",
+              "nao_informado"
+            ]
+          },
+          "vendedorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "verticalId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "website": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "endereco": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EnderecoDaEmpresaEntrada"
+              }
+            ]
+          },
+          "telefones": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TelefoneDaEmpresaEntrada"
+            }
+          },
+          "cnaes": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CnaesDaEmpresaEntrada"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarFunilEntrada": {
         "type": "object",
         "properties": {
@@ -4932,6 +5343,28 @@
         },
         "additionalProperties": false
       },
+      "CnaesDaEmpresaEntrada": {
+        "type": "object",
+        "properties": {
+          "principal": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 100000,
+            "maximum": 9999999
+          },
+          "secundarios": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 100000,
+              "maximum": 9999999
+            }
+          }
+        },
+        "required": ["principal", "secundarios"],
+        "additionalProperties": false
+      },
       "ConfiguracaoDeSeguranca": {
         "type": "object",
         "properties": {
@@ -5139,6 +5572,100 @@
           }
         },
         "required": ["email", "papel"],
+        "additionalProperties": false
+      },
+      "CriarEmpresaDaCarteiraEntrada": {
+        "type": "object",
+        "properties": {
+          "tipoDocumento": {
+            "type": "string",
+            "enum": ["cnpj", "cpf", "nenhum"]
+          },
+          "documento": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "razaoSocial": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "nomeFantasia": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "mei": {
+            "type": "boolean"
+          },
+          "dataInicioAtividades": {
+            "nullable": true,
+            "type": "string",
+            "format": "date"
+          },
+          "porteCodigo": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "regimeTributario": {
+            "type": "string",
+            "enum": [
+              "mei",
+              "simples_nacional",
+              "lucro_presumido",
+              "lucro_real",
+              "imune_isenta",
+              "nao_informado"
+            ]
+          },
+          "vendedorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "verticalId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "website": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "endereco": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EnderecoDaEmpresaEntrada"
+              }
+            ]
+          },
+          "telefones": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TelefoneDaEmpresaEntrada"
+            }
+          },
+          "cnaes": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CnaesDaEmpresaEntrada"
+              }
+            ]
+          },
+          "statusTagId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["tipoDocumento", "razaoSocial"],
         "additionalProperties": false
       },
       "CriarEmpresaEntrada": {
@@ -5646,6 +6173,418 @@
         "required": ["empresa", "cnpjRepetidoNaConta"],
         "additionalProperties": false
       },
+      "EmpresaDaCarteira": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoDocumento": {
+            "type": "string",
+            "enum": ["cnpj", "cpf", "nenhum"]
+          },
+          "documento": {
+            "nullable": true,
+            "type": "string"
+          },
+          "matrizFilial": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["matriz", "filial"]
+          },
+          "matriz": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "filiais": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "documento": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome", "documento"],
+              "additionalProperties": false
+            }
+          },
+          "razaoSocial": {
+            "type": "string"
+          },
+          "nomeFantasia": {
+            "nullable": true,
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "mei": {
+            "type": "boolean"
+          },
+          "dataInicioAtividades": {
+            "nullable": true,
+            "type": "string"
+          },
+          "porte": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "codigo": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "descricao": {
+                "type": "string"
+              }
+            },
+            "required": ["codigo", "descricao"],
+            "additionalProperties": false
+          },
+          "regimeTributario": {
+            "type": "string",
+            "enum": [
+              "mei",
+              "simples_nacional",
+              "lucro_presumido",
+              "lucro_real",
+              "imune_isenta",
+              "nao_informado"
+            ]
+          },
+          "vendedor": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "vertical": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "cor": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome", "cor"],
+            "additionalProperties": false
+          },
+          "website": {
+            "nullable": true,
+            "type": "string"
+          },
+          "endereco": {
+            "type": "object",
+            "properties": {
+              "cep": {
+                "nullable": true,
+                "type": "string"
+              },
+              "tipoLogradouro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "logradouro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "numero": {
+                "nullable": true,
+                "type": "string"
+              },
+              "complemento": {
+                "nullable": true,
+                "type": "string"
+              },
+              "bairro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "municipio": {
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "codigoIbge": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "uf": {
+                    "type": "string"
+                  }
+                },
+                "required": ["codigoIbge", "nome", "uf"],
+                "additionalProperties": false
+              },
+              "paisCodigo": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "cep",
+              "tipoLogradouro",
+              "logradouro",
+              "numero",
+              "complemento",
+              "bairro",
+              "municipio",
+              "paisCodigo"
+            ],
+            "additionalProperties": false
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "origemCadastro": {
+            "type": "string",
+            "enum": ["manual", "receita", "importacao", "prospeccao", "whatsapp", "api"]
+          },
+          "telefones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "numero": {
+                  "type": "string"
+                },
+                "e164": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                },
+                "descricao": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "numero", "e164", "tipo", "descricao", "principal"],
+              "additionalProperties": false
+            }
+          },
+          "cnaes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigo": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "descricao": {
+                  "type": "string"
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["codigo", "descricao", "principal"],
+              "additionalProperties": false
+            }
+          },
+          "socios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "qualificacao": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome", "qualificacao"],
+              "additionalProperties": false
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "cor": {
+                  "type": "string"
+                },
+                "tagGrupoId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "automatica": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "nome", "cor", "tagGrupoId", "automatica"],
+              "additionalProperties": false
+            }
+          },
+          "receita": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "situacao": {
+                "type": "string"
+              },
+              "motivo": {
+                "nullable": true,
+                "type": "string"
+              },
+              "ativa": {
+                "type": "boolean"
+              },
+              "desde": {
+                "nullable": true,
+                "type": "string"
+              },
+              "consultadoEm": {
+                "type": "string"
+              }
+            },
+            "required": ["situacao", "motivo", "ativa", "desde", "consultadoEm"],
+            "additionalProperties": false
+          },
+          "situacaoNaoVerificada": {
+            "type": "boolean"
+          },
+          "receitaAtualizadoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ultimaVisitaEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ultimoContatoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "proximaAtividadeEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string"
+          },
+          "atualizadoEm": {
+            "type": "string"
+          },
+          "permissoes": {
+            "type": "object",
+            "properties": {
+              "editar": {
+                "type": "boolean"
+              },
+              "excluir": {
+                "type": "boolean"
+              },
+              "transferir": {
+                "type": "boolean"
+              }
+            },
+            "required": ["editar", "excluir", "transferir"],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "tipoDocumento",
+          "documento",
+          "matrizFilial",
+          "matriz",
+          "filiais",
+          "razaoSocial",
+          "nomeFantasia",
+          "nome",
+          "mei",
+          "dataInicioAtividades",
+          "porte",
+          "regimeTributario",
+          "vendedor",
+          "vertical",
+          "website",
+          "endereco",
+          "observacoes",
+          "origemCadastro",
+          "telefones",
+          "cnaes",
+          "socios",
+          "tags",
+          "receita",
+          "situacaoNaoVerificada",
+          "receitaAtualizadoEm",
+          "ultimaVisitaEm",
+          "ultimoContatoEm",
+          "proximaAtividadeEm",
+          "criadoEm",
+          "atualizadoEm",
+          "permissoes"
+        ],
+        "additionalProperties": false
+      },
       "EmpresaDoUsuario": {
         "type": "object",
         "properties": {
@@ -5673,6 +6612,55 @@
           }
         },
         "required": ["id", "razaoSocial", "nomeFantasia", "papel", "situacao", "ativa"],
+        "additionalProperties": false
+      },
+      "EnderecoDaEmpresaEntrada": {
+        "type": "object",
+        "properties": {
+          "cep": {
+            "nullable": true,
+            "type": "string"
+          },
+          "tipoLogradouro": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 50
+          },
+          "logradouro": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "numero": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 30
+          },
+          "complemento": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "bairro": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 100
+          },
+          "municipioCodigo": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991
+          },
+          "paisCodigo": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991
+          }
+        },
         "additionalProperties": false
       },
       "Erro": {
@@ -5707,6 +6695,10 @@
               "required": ["campo", "mensagem"],
               "additionalProperties": false
             }
+          },
+          "dados": {
+            "type": "object",
+            "additionalProperties": {}
           }
         },
         "required": ["statusCode", "erro", "mensagem"],
@@ -6302,6 +7294,30 @@
           "ordem",
           "tags"
         ],
+        "additionalProperties": false
+      },
+      "TelefoneDaEmpresaEntrada": {
+        "type": "object",
+        "properties": {
+          "numero": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "tipo": {
+            "type": "string",
+            "enum": ["fixo", "celular", "whatsapp", "outro"]
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 100
+          },
+          "principal": {
+            "type": "boolean"
+          }
+        },
+        "required": ["numero"],
         "additionalProperties": false
       },
       "TipoAtividade": {

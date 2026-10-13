@@ -56,6 +56,15 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - Empresa já cadastrada que deixa de ser ativa **continua no CRM**, com o aviso de situação.
 - CPF e "sem documento" não são afetados. **O mesmo bloqueio valerá na importação (Módulo 4).**
 
+**Detalhes da API da empresa** (`/v1/carteira/empresas`, commit 4; decididos na implementação, dentro do plano aprovado)
+- O **documento (CNPJ/CPF) não muda** depois do cadastro; o **Status** muda pelas tags (commit 6), não pelo `PATCH`.
+- Para CNPJ, a API consulta a Receita **por conta própria** (situação, sócios e descrição de CNAE novo): o cliente manda os campos editáveis, mas **sócios e situação nunca vêm do cliente**. CNAE que não está na tabela só entra se a Receita o trouxe naquela consulta; senão, 400 `cnae_desconhecido`.
+- **Vendedor** cadastra só na própria carteira e edita só a própria (mesmo com "ver todas"); **gestor e admin** escolhem o vendedor, passam a carteira e excluem. Empresa que o usuário não vê responde **404**.
+- **Duplicado:** 409 `empresa_ja_cadastrada` com `dados.existente` (`id` e `nome` só se o usuário vê a empresa; senão só `visivel: false`). Documento de empresa excluída pode ser cadastrado de novo.
+- Receita fora do ar: salva com `situacaoNaoVerificada` e agenda o evento `empresa.verificar_situacao` (reconsulta de hora em hora, até 24 vezes). Cache vencido conta como "não verificada".
+- Excluir uma **matriz** solta as filiais (`matriz_id` nulo); cadastrar a matriz depois liga as filiais soltas.
+- Fora do MVP, por ora: editar o documento de uma empresa cadastrada (ex.: "sem documento" que ganhou CNPJ).
+
 **Lista `/empresas`**
 - **Chips com contagem:** Todas, Minha carteira, Sem visita há 90 dias, Nunca visitadas, Sem próxima atividade. Os três últimos (e suas contagens) consideram por padrão só Status **Cliente e Prospect**, com a opção "Incluir leads"; "Todas" mostra tudo.
 - **Filtros:** busca sem acento (nome, CNPJ, cidade), Status, Visitação, Vendedor, Cidade, Última visita; "Limpar filtros"; filtros na URL.

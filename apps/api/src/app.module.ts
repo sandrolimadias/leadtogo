@@ -9,6 +9,7 @@ import { TenantInterceptor } from './acesso/tenant.interceptor.js'
 import { AuditoriaModule } from './auditoria/auditoria.module.js'
 import { AuthModule } from './auth/auth.module.js'
 import { CadastrosModule } from './cadastros/cadastros.module.js'
+import { CarteiraModule } from './carteira/carteira.module.js'
 import { ConfiguracoesModule } from './configuracoes/configuracoes.module.js'
 import { MeModule } from './me/me.module.js'
 import { ReceitaModule } from './receita/receita.module.js'
@@ -51,6 +52,7 @@ export class AppModule {
         MeModule,
         ConfiguracoesModule,
         CadastrosModule,
+        CarteiraModule,
         ConvitesModule,
         EmpresasModule,
         PrimeiroAcessoModule,
