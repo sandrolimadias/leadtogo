@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, schema } from '@leadtogo/db'
+import { and, asc, eq, isNull, schema, sql } from '@leadtogo/db'
 import {
   type AlterarTagEntrada,
   type AlterarTagGrupoEntrada,
@@ -163,7 +163,13 @@ export class TagsService {
         409,
       )
     }
-    // Quando houver tags aplicadas a empresas (Módulo 2), o uso passa a ser conferido aqui
+    if (await this.grupoJaFoiUsado(id)) {
+      throw new ErroApi(
+        'grupo_em_uso',
+        `O grupo "${grupo.nome}" tem tags que já foram usadas por empresas (inclusive no histórico): não dá para excluir, só inativar.`,
+        409,
+      )
+    }
     const agora = new Date()
     await db
       .update(tags)
@@ -288,7 +294,13 @@ export class TagsService {
         409,
       )
     }
-    // Quando houver empresas com a tag (Módulo 2), o uso passa a ser conferido aqui
+    if (await this.tagJaFoiUsada(id)) {
+      throw new ErroApi(
+        'tag_em_uso',
+        `A tag "${tag.nome}" já foi usada por empresas (inclusive no histórico de Status): não dá para excluir, só inativar.`,
+        409,
+      )
+    }
     await this.ctx
       .db()
       .update(tags)
@@ -327,6 +339,22 @@ export class TagsService {
   }
 
   // ---- internos ----
+
+  /** A tag está (ou já esteve) em alguma empresa, mesmo excluída: o histórico de Status depende dela. */
+  private async tagJaFoiUsada(tagId: string): Promise<boolean> {
+    const [r] = await this.ctx.db().execute<{ usada: boolean }>(sql`
+      SELECT (EXISTS (SELECT 1 FROM empresa_tags WHERE tag_id = ${tagId})
+           OR EXISTS (SELECT 1 FROM empresa_tags_historico WHERE tag_id = ${tagId})) AS usada`)
+    return r?.usada === true
+  }
+
+  /** Alguma tag do grupo (mesmo já excluída) já foi usada por empresa. */
+  private async grupoJaFoiUsado(grupoId: string): Promise<boolean> {
+    const [r] = await this.ctx.db().execute<{ usada: boolean }>(sql`
+      SELECT (EXISTS (SELECT 1 FROM empresa_tags et JOIN tags t ON t.id = et.tag_id WHERE t.tag_grupo_id = ${grupoId})
+           OR EXISTS (SELECT 1 FROM empresa_tags_historico h JOIN tags t ON t.id = h.tag_id WHERE t.tag_grupo_id = ${grupoId})) AS usada`)
+    return r?.usada === true
+  }
 
   /** Grupo não excluído da empresa ativa (o RLS esconde o de outra empresa: o mesmo 404). */
   private async grupo(id: string): Promise<LinhaGrupo> {

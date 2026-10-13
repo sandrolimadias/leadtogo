@@ -8,6 +8,8 @@ import {
   contagensDaListaSchema,
   type CriarEmpresaCarteira,
   criarEmpresaCarteiraSchema,
+  type DefinirTagsDaEmpresa,
+  definirTagsDaEmpresaSchema,
   type EmpresaCarteira,
   empresaCarteiraSchema,
   type ListaDeEmpresas,
@@ -25,6 +27,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
@@ -126,6 +129,21 @@ export class EmpresasDaCarteiraController {
     @Body(new ZodPipe(alterarEmpresaCarteiraSchema)) dados: AlterarEmpresaCarteira,
   ): Promise<EmpresaCarteira> {
     return this.servico.alterar(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Definir as tags da empresa',
+    descricao: `${CARTEIRA} Substitui as tags dos grupos manuais (Status, Interesse...): grupo de seleção única aceita uma tag (400 \`grupo_selecao_unica\`), grupo obrigatório exige uma (400 \`grupo_obrigatorio\`), tag inativa não se aplica de novo (400 \`tag_inativa\`). As tags de grupo automático (Visitação) são do sistema (400 \`tag_automatica\` se pedidas à mão) e continuam como estão. Cada tag que entra ou sai vai para o histórico de tags (base da conversão Lead → Cliente) e para a auditoria.`,
+    corpo: definirTagsDaEmpresaSchema,
+    resposta: empresaCarteiraSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Put(':id/tags')
+  definirTags(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(definirTagsDaEmpresaSchema)) dados: DefinirTagsDaEmpresa,
+  ): Promise<EmpresaCarteira> {
+    return this.servico.definirTags(id, dados.tagIds)
   }
 
   @Documenta({

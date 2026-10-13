@@ -15,6 +15,12 @@ import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
 import { sqlstateDe } from '../http/sqlstate.js'
 import { type ConsultaDeCnpj, ReceitaService } from '../receita/receita.service.js'
+import {
+  catalogoDeTags,
+  conferirTagsDaEmpresa,
+  gravarDiferencaDeTags,
+  tagsAtuaisDaEmpresa,
+} from './empresa-tags.js'
 import { lerEmpresa } from './empresa-leitura.js'
 import {
   type EscopoDaCarteira,
@@ -32,8 +38,6 @@ const {
   empresaTelefones,
   empresaCnaes,
   empresaSocios,
-  empresaTags,
-  empresaTagsHistorico,
   membros,
   verticais,
   municipios,
@@ -174,7 +178,7 @@ export class EmpresasDaCarteiraService {
     await this.gravarTelefones(db, tenantId, id, telefones)
     await this.gravarCnaes(db, tenantId, id, cnaesParaGravar)
     if (consulta) await this.gravarSocios(db, tenantId, id, consulta.dados)
-    await this.aplicarStatus(db, tenantId, id, status, escopo.membroId)
+    await gravarDiferencaDeTags(db, tenantId, id, new Set(), new Set([status]), escopo.membroId)
     if (matrizFilial && documento) await this.ligarMatrizEFiliais(db, id, matrizFilial, documento)
     if (naoVerificada) {
       // Receita fora do ar: o worker reconsulta de hora em hora (até 24 vezes) e avisa o vendedor
@@ -286,6 +290,41 @@ export class EmpresasDaCarteiraService {
       acao: 'alterar',
       alteracoes,
     })
+    return this.detalhar(id)
+  }
+
+  /**
+   * Define as tags da empresa nos grupos manuais (Status, Interesse...). Respeita seleção única e
+   * grupo obrigatório; as tags automáticas (Visitação) não mudam. Cada tag que entra ou sai vai para o
+   * histórico de tags (conversão Lead → Cliente) e para a auditoria.
+   */
+  async definirTags(id: string, tagIds: string[]): Promise<EmpresaCarteira> {
+    const db = this.ctx.db()
+    const escopo = await escopoDaCarteira(this.ctx)
+    const atual = await this.carregar(db, escopo, id)
+    if (!podeEditar(escopo, atual.vendedorId)) {
+      throw negado('Você só edita empresas da sua carteira.')
+    }
+    const catalogo = await catalogoDeTags(db)
+    const atuais = await tagsAtuaisDaEmpresa(db, id)
+    const finais = conferirTagsDaEmpresa(catalogo, atuais, tagIds)
+    const { adicionadas, removidas } = await gravarDiferencaDeTags(
+      db,
+      this.ctx.tenantId,
+      id,
+      atuais,
+      finais,
+      escopo.membroId,
+    )
+    if (adicionadas.length > 0 || removidas.length > 0) {
+      const nomes = (ids: string[]) => ids.map((t) => catalogo.get(t)?.nome ?? t)
+      await this.auditoria.registrar({
+        entidade: 'empresa',
+        entidadeId: id,
+        acao: 'alterar_tags',
+        alteracoes: { adicionadas: nomes(adicionadas), removidas: nomes(removidas) },
+      })
+    }
     return this.detalhar(id)
   }
 
@@ -537,20 +576,6 @@ export class EmpresasDaCarteiraService {
         origem: 'receita' as const,
       })),
     )
-  }
-
-  /** Aplica o Status inicial e o registra no histórico de tags (base da conversão Lead → Cliente). */
-  private async aplicarStatus(
-    db: Transacao,
-    tenantId: string,
-    empresaId: string,
-    tagId: string,
-    membroId: string,
-  ): Promise<void> {
-    await db.insert(empresaTags).values({ tenantId, empresaId, tagId, aplicadaPor: membroId })
-    await db
-      .insert(empresaTagsHistorico)
-      .values({ tenantId, empresaId, tagId, acao: 'adicionada', por: membroId })
   }
 
   /**

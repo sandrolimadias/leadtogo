@@ -108,7 +108,7 @@ export class TagsController {
 
   @Documenta({
     resumo: 'Excluir grupo de tags',
-    descricao: `${ESCRITA} Exclusão lógica do grupo e das tags dele. Grupo do sistema não se exclui (409 \`grupo_de_sistema\`).`,
+    descricao: `${ESCRITA} Exclusão lógica do grupo e das tags dele. Grupo do sistema não se exclui (409 \`grupo_de_sistema\`). Só se exclui o que nunca foi usado: se alguma tag do grupo já esteve em uma empresa (inclusive no histórico de Status), 409 \`grupo_em_uso\`: só inativar.`,
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
@@ -163,7 +163,7 @@ export class TagsController {
 
   @Documenta({
     resumo: 'Excluir tag',
-    descricao: `${ESCRITA} Exclusão lógica. Tag usada pelas regras do sistema não se exclui (409 \`tag_de_sistema\`).`,
+    descricao: `${ESCRITA} Exclusão lógica. Tag usada pelas regras do sistema não se exclui (409 \`tag_de_sistema\`). Só se exclui o que nunca foi usado: tag que já esteve em uma empresa (atual ou no histórico de Status) dá 409 \`tag_em_uso\`: só inativar.`,
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })

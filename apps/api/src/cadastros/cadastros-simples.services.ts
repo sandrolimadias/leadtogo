@@ -1,4 +1,4 @@
-import { schema } from '@leadtogo/db'
+import { schema, sql } from '@leadtogo/db'
 import type {
   AlterarMotivoEntrada,
   AlterarOrigemEntrada,
@@ -40,6 +40,21 @@ export class VerticaisService extends CadastroSimplesService<
       paraDto: (l) => ({ id: l.id, nome: l.nome, cor: l.cor, ativo: l.ativo, ordem: l.ordem }),
       valoresCriar: (d) => ({ nome: d.nome, cor: d.cor ?? 'gray' }),
       valoresAlterar: (d) => ({ nome: d.nome, cor: d.cor, ativo: d.ativo }),
+      // Excluir só o que nunca foi usado: vertical de alguma empresa (mesmo excluída) só se inativa
+      conferirExclusao: async (l) => {
+        const [uso] = await ctx
+          .db()
+          .execute<{ usada: boolean }>(
+            sql`SELECT EXISTS (SELECT 1 FROM empresas WHERE vertical_id = ${l.id}) AS usada`,
+          )
+        if (uso?.usada) {
+          throw new ErroApi(
+            'vertical_em_uso',
+            `A vertical "${l.nome}" já foi usada por empresas: não dá para excluir, só inativar.`,
+            409,
+          )
+        }
+      },
     })
   }
 }

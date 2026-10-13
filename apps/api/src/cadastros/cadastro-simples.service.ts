@@ -36,7 +36,8 @@ export interface ConfigDoCadastro<Linha extends LinhaComum, Dto, Criar, Alterar>
   valoresAlterar: (dados: Alterar) => Record<string, unknown>
   /** Regra de proteção do sistema: lança `ErroApi` 409 se a alteração não é permitida */
   conferirAlteracao?: (linha: Linha, valores: Record<string, unknown>) => void
-  conferirExclusao?: (linha: Linha) => void
+  /** Pode ser assíncrona: confere o uso do item (excluir só o que nunca foi usado) */
+  conferirExclusao?: (linha: Linha) => void | Promise<void>
 }
 
 /**
@@ -131,12 +132,12 @@ export abstract class CadastroSimplesService<
     return this.cfg.paraDto(linha)
   }
 
-  /** Exclusão lógica. Quando o item passar a ser usado por outros módulos, a conferência de uso entra aqui. */
+  /** Exclusão lógica. Cada cadastro confere, em `conferirExclusao`, se o item já foi usado (só se exclui o que nunca foi usado). */
   async excluir(id: string): Promise<void> {
     exigirAdmin(this.ctx)
     const { t } = this
     const atual = await this.achar(id)
-    this.cfg.conferirExclusao?.(atual)
+    await this.cfg.conferirExclusao?.(atual)
     await this.ctx
       .db()
       .update(t)

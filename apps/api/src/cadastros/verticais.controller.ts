@@ -100,7 +100,9 @@ export class VerticaisController {
 
   @Documenta({
     resumo: 'Excluir vertical',
-    descricao: ESCRITA + ' Exclusão lógica; o nome fica livre para um novo item.',
+    descricao:
+      ESCRITA +
+      ' Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: vertical de alguma empresa dá 409 `vertical_em_uso`: só inativar.',
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })

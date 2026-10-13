@@ -32,7 +32,7 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 
 | Módulo | Passa a usar | Verificação pendente |
 |---|---|---|
-| 2 (Empresas) | tags e grupos de tags (`empresa_tags` e o histórico de Status), verticais | Excluir só se nunca usado, **nem no histórico de Status**; usado, só inativar |
+| 2 (Empresas) | tags e grupos de tags (`empresa_tags` e o histórico de Status), verticais | **Feito (13/10/2026):** excluir só se nunca usado, **nem no histórico de Status** (409 `tag_em_uso`, `grupo_em_uso`, `vertical_em_uso`); usado, só inativar. Empresa excluída continua contando como uso |
 | 5 (Atividades) | tipos de atividade | Idem |
 | 6 (Oportunidades) | funis, fases, motivos, origens, soluções | Idem. **Fases passam a poder ser inativadas** (a coluna `ativo` já existe; a API e a tela do Módulo 1 não oferecem, porque a fase só era excluível). A regra "fase com oportunidades **ativas** exige mover antes" continua valendo para tirar a fase de uso |
 
@@ -72,6 +72,10 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - **Colunas:** Empresa (nome + CNPJ), Tags (**todas**, sem "+N", quebrando linha), Cidade, Última visita, Último contato, Próxima atividade. **Sem a coluna Vendedor.** A coluna "Em aberto" fica oculta até o Módulo 6. Alertas: visita a partir de 90 dias, contato a partir de 60.
 - **Celular:** cards com Ligar, WhatsApp e Rota. **Aplicar tag em massa**, respeitando grupos de seleção única.
 
+**Tags da empresa** (`PUT /v1/carteira/empresas/{id}/tags`, commit 6)
+- Substitui as tags dos grupos **manuais** (Status, Interesse...): seleção única aceita uma, grupo obrigatório (Status) exige uma, tag inativa não se aplica de novo. As tags de grupo **automático** (Visitação) são do sistema e não mudam por aqui.
+- Cada tag que entra ou sai grava uma linha em `empresa_tags_historico` (base da conversão Lead → Cliente) e um registro de auditoria (`alterar_tags`). O Status inicial do cadastro também entra no histórico.
+
 **Detalhes da API da lista** (`GET /v1/carteira/empresas`, `/contagens` e `/opcoes`, commit 5)
 - "Cliente e Prospect" dos chips é pelas **chaves do sistema** das tags (`cliente`, `prospect`), que sobrevivem a renomear. "Incluir leads" traz os demais Status.
 - Filtro `tags`: a empresa precisa ter **todas** as tags pedidas (ex.: um Status e uma Visitação). Última visita "sem visita há 60/90 dias" **inclui quem nunca foi visitado**.
@@ -92,7 +96,7 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - Abas **Contatos, Atividades e Oportunidades** e botões "Nova atividade"/"Nova oportunidade" ficam **escondidos** até o módulo de cada uma (nada de "chega no Módulo X").
 - **Editar:** mesma tela do cadastro, sem o passo da Receita.
 
-- **Regra das tags (decidida em 12/10/2026):** tag em uso por alguma empresa, **atual ou no histórico de Status** (`empresa_tags_historico`), **não pode ser excluída, só inativada**, para preservar o histórico de conversão (Lead → Cliente). O mesmo vale para excluir um **grupo** de tags com tags em uso. A API de tags (Módulo 1) ainda não confere o uso, porque ainda não há tags aplicadas a empresas: a verificação entra junto com `empresa_tags` e `empresa_tags_historico`, no Módulo 2, com teste.
+- **Regra das tags (decidida em 12/10/2026):** tag em uso por alguma empresa, **atual ou no histórico de Status** (`empresa_tags_historico`), **não pode ser excluída, só inativada**, para preservar o histórico de conversão (Lead → Cliente). O mesmo vale para excluir um **grupo** de tags com tags em uso. A conferência de uso já está na API de tags (commit 6 do Módulo 2), com teste.
 
 ### Módulo 3 — Contatos
 Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na decisão, aniversário, consentimento LGPD e **"converter sócio em contato"**. Lista e ficha.

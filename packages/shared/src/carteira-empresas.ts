@@ -255,3 +255,14 @@ export const empresaExistenteSchema = z
   })
   .meta({ id: 'EmpresaExistente' })
 export type EmpresaExistente = z.infer<typeof empresaExistenteSchema>
+
+/**
+ * PUT /v1/carteira/empresas/{id}/tags: as tags que a empresa passa a ter nos grupos manuais. Grupo de
+ * seleção única aceita uma só; grupo obrigatório (Status) exige uma. As tags dos grupos automáticos
+ * (Visitação) são do sistema: continuam como estão.
+ */
+export const definirTagsDaEmpresaSchema = z
+  .object({ tagIds: z.array(z.uuid()).max(50) })
+  .strict()
+  .meta({ id: 'DefinirTagsDaEmpresaEntrada' })
+export type DefinirTagsDaEmpresa = z.output<typeof definirTagsDaEmpresaSchema>

@@ -116,6 +116,26 @@ export interface paths {
         patch: operations["EmpresasDaCarteiraController_alterar"];
         trace?: never;
     };
+    "/v1/carteira/empresas/{id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Definir as tags da empresa
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Substitui as tags dos grupos manuais (Status, Interesse...): grupo de seleção única aceita uma tag (400 `grupo_selecao_unica`), grupo obrigatório exige uma (400 `grupo_obrigatorio`), tag inativa não se aplica de novo (400 `tag_inativa`). As tags de grupo automático (Visitação) são do sistema (400 `tag_automatica` se pedidas à mão) e continuam como estão. Cada tag que entra ou sai vai para o histórico de tags (base da conversão Lead → Cliente) e para a auditoria.
+         */
+        put: operations["EmpresasDaCarteiraController_definirTags"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/carteira/empresas/contagens": {
         parameters: {
             query?: never;
@@ -552,7 +572,7 @@ export interface paths {
         post?: never;
         /**
          * Excluir grupo de tags
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do grupo e das tags dele. Grupo do sistema não se exclui (409 `grupo_de_sistema`).
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do grupo e das tags dele. Grupo do sistema não se exclui (409 `grupo_de_sistema`). Só se exclui o que nunca foi usado: se alguma tag do grupo já esteve em uma empresa (inclusive no histórico de Status), 409 `grupo_em_uso`: só inativar.
          */
         delete: operations["TagsController_excluirGrupo"];
         options?: never;
@@ -636,7 +656,7 @@ export interface paths {
         post?: never;
         /**
          * Excluir tag
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. Tag usada pelas regras do sistema não se exclui (409 `tag_de_sistema`).
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. Tag usada pelas regras do sistema não se exclui (409 `tag_de_sistema`). Só se exclui o que nunca foi usado: tag que já esteve em uma empresa (atual ou no histórico de Status) dá 409 `tag_em_uso`: só inativar.
          */
         delete: operations["TagsController_excluirTag"];
         options?: never;
@@ -752,7 +772,7 @@ export interface paths {
         post?: never;
         /**
          * Excluir vertical
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: vertical de alguma empresa dá 409 `vertical_em_uso`: só inativar.
          */
         delete: operations["VerticaisController_excluir"];
         options?: never;
@@ -1376,6 +1396,9 @@ export interface components {
                 qualificacaoCodigo: number | null;
                 qualificacaoTexto: string | null;
             }[];
+        };
+        DefinirTagsDaEmpresaEntrada: {
+            tagIds: string[];
         };
         EmpresaAtivaEntrada: {
             /** Format: uuid */
@@ -2202,6 +2225,77 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AlterarEmpresaDaCarteiraEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpresaDaCarteira"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_definirTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefinirTagsDaEmpresaEntrada"];
             };
         };
         responses: {
