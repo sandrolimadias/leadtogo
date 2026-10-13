@@ -152,6 +152,15 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       ),
       consultarCnpj: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      detalhar: vi.fn(async () => falha('empresa_nao_encontrada', 'Empresa não encontrada.', 404)),
+      historico: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 20 })),
+      consultarReceitaDaEmpresa: vi.fn(async () =>
+        falha('indisponivel', 'Não configurado no teste.', 500),
+      ),
+      aplicarReceitaDaEmpresa: vi.fn(async () =>
+        falha('indisponivel', 'Não configurado no teste.', 500),
+      ),
+      definirTags: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
     cadastros: {
       verticais: {

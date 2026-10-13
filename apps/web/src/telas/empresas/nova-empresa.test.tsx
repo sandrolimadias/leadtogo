@@ -169,7 +169,7 @@ function servicos(
   const base = servicosFalsos()
   const s = servicosFalsos({
     me: async () => me(papel),
-    carteira: c,
+    carteira: { ...base.carteira, ...c },
     tags: { ...base.tags, listar: vi.fn(async () => ok(grupos)) },
     cadastros: {
       ...base.cadastros,

@@ -1,5 +1,6 @@
 import type {
   ConfiguracaoDaCarteira,
+  ConsultaDaReceitaDaEmpresa,
   ConsultaReceita,
   ContagensDaLista,
   ConviteAceito,
@@ -8,6 +9,7 @@ import type {
   ConviteResumo,
   EmpresaCarteira,
   EmpresaCriada,
+  HistoricoDaEmpresa,
   ListaDeEmpresas,
   Me,
   MembroDaEquipe,
@@ -118,6 +120,16 @@ export interface ServicosDaCarteira {
   consultarCnpj: (cnpj: string) => Promise<Resultado<ConsultaReceita>>
   /** Cadastra a empresa. 409 `empresa_nao_ativa` / `empresa_ja_cadastrada` (com `dados.existente`) */
   criar: (dados: CriarEmpresaCarteiraEntrada) => Promise<Resultado<EmpresaCarteira>>
+  /** A ficha. 404 `empresa_nao_encontrada` (inexistente, excluída ou de outro vendedor) */
+  detalhar: (id: string) => Promise<Resultado<EmpresaCarteira>>
+  /** Aba Histórico: auditoria legível, do mais recente ao mais antigo */
+  historico: (id: string, pagina: number) => Promise<Resultado<HistoricoDaEmpresa>>
+  /** "Atualizar pela Receita", passo 1: reconsulta sem cache e devolve o que difere */
+  consultarReceitaDaEmpresa: (id: string) => Promise<Resultado<ConsultaDaReceitaDaEmpresa>>
+  /** Passo 2: aplica as diferenças (todas, ou só os campos pedidos) */
+  aplicarReceitaDaEmpresa: (id: string) => Promise<Resultado<EmpresaCarteira>>
+  /** Troca as tags dos grupos manuais (Status, Interesse...) */
+  definirTags: (id: string, tagIds: string[]) => Promise<Resultado<EmpresaCarteira>>
 }
 
 /**

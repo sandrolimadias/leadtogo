@@ -444,5 +444,43 @@ export const servicosReais: ServicosDeAcesso = {
       protegido(async () =>
         daApi(await api.POST('/v1/carteira/empresas', { body: dados as never })),
       ),
+    detalhar: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/carteira/empresas/{id}', { params: { path: { id } } })),
+      ),
+    historico: (id, pagina) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/empresas/{id}/historico', {
+            params: { path: { id }, query: { pagina, porPagina: 20 } },
+          }),
+        ),
+      ),
+    consultarReceitaDaEmpresa: (id) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/empresas/{id}/receita/consultar', {
+            params: { path: { id } },
+          }),
+        ),
+      ),
+    aplicarReceitaDaEmpresa: (id) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/empresas/{id}/receita/aplicar', {
+            params: { path: { id } },
+            body: {},
+          }),
+        ),
+      ),
+    definirTags: (id, tagIds) =>
+      protegido(async () =>
+        daApi(
+          await api.PUT('/v1/carteira/empresas/{id}/tags', {
+            params: { path: { id } },
+            body: { tagIds },
+          }),
+        ),
+      ),
   },
 }
