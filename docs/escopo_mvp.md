@@ -38,12 +38,45 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 
 
 ### Módulo 2 — Empresas
-- Cadastro por **CNPJ, CPF ou sem documento**.
-- Consulta à **Minha Receita** (com alternativa em caso de falha), preenchendo endereço, CNAEs, sócios, porte e situação.
-- **Matriz/filial** pela raiz do CNPJ.
-- Telefones em **E.164**; vendedor (padrão: o usuário), vertical e tags.
-- **Lista** com busca, filtros do protótipo e chips fixos: *Todas, Minha carteira, Sem visita há 90 dias, Nunca visitadas, Sem próxima atividade*.
-- **Ficha** com abas *Resumo, Contatos, Atividades, Oportunidades e Histórico*.
+*Plano aprovado pelo Ale em 13/10/2026, com execução autônoma do módulo inteiro. Estado: **em desenvolvimento**.*
+
+**Cadastro e API**
+- Cadastro por **CNPJ, CPF ou sem documento**. Rotas em `/v1/carteira/empresas` (não colidem com `/v1/empresas`, as empresas do grupo) e `/v1/receita`.
+- **Receita:** `GET https://minhareceita.org/{cnpj}`; cache de 30 dias em `receita_consultas` ("consultar de novo" ignora o cache); timeout de 8 s; em timeout, rede, 429 ou 5xx tenta a **BrasilAPI**; 400/404 são definitivos; as duas falhando = `503 receita_indisponivel`. URLs e timeout por variável (`MINHA_RECEITA_URL`, `BRASILAPI_URL`, `RECEITA_TIMEOUT_MS`), com padrões. Limite de 20 consultas/min por IP. Sócios **sem CPF**. CNAE desconhecido entra pela função `app_registrar_cnae`. Se a BrasilAPI depender da própria Minha Receita, ela fica como segunda tentativa e a limitação é registrada em `configuracao_tecnologia.md` (a alternativa real será uma instância própria).
+- **Matriz/filial:** `cnpj_raiz` gerada; ao salvar uma filial, liga à matriz do tenant e vice-versa, na mesma transação.
+- **Telefone:** normalizador próprio do Brasil em `packages/shared` (sem biblioteca); guarda o digitado e o E.164. Vendedor padrão = usuário logado.
+- **Duplicado:** CNPJ repetido no tenant = 409 com a empresa existente ("Abrir ficha"), sem revelar o nome se for de vendedor que o usuário não vê.
+- **Carteira por papel:** vendedor vê a própria (ou todas, se `vendedor_ve_todas_empresas`); gestor e admin veem tudo.
+- **Exclusão lógica**, só admin e gestor, **sem lixeira** (lixeira e restauração = pendência pós-MVP).
+
+**Empresa não ativa na Receita** (baixada, inapta, suspensa, nula): **não pode ser cadastrada**.
+- Configuração por tenant `bloquear_empresa_nao_ativa`, padrão **ligada**, em Configurações (Segurança ou Preferências).
+- Ligada: a tela mostra a situação e o motivo e desabilita Salvar; a API também recusa (`409 empresa_nao_ativa`).
+- **Receita indisponível:** permite salvar com o selo "situação não verificada"; um job no worker reconsulta depois e, se não estiver ativa, avisa o responsável (**sem excluir**).
+- Empresa já cadastrada que deixa de ser ativa **continua no CRM**, com o aviso de situação.
+- CPF e "sem documento" não são afetados. **O mesmo bloqueio valerá na importação (Módulo 4).**
+
+**Lista `/empresas`**
+- **Chips com contagem:** Todas, Minha carteira, Sem visita há 90 dias, Nunca visitadas, Sem próxima atividade. Os três últimos (e suas contagens) consideram por padrão só Status **Cliente e Prospect**, com a opção "Incluir leads"; "Todas" mostra tudo.
+- **Filtros:** busca sem acento (nome, CNPJ, cidade), Status, Visitação, Vendedor, Cidade, Última visita; "Limpar filtros"; filtros na URL.
+- Filtro Vendedor e chip "Minha carteira" ficam **ocultos** quando o tenant tem um único membro ativo.
+- **Colunas:** Empresa (nome + CNPJ), Tags (**todas**, sem "+N", quebrando linha), Cidade, Última visita, Último contato, Próxima atividade. **Sem a coluna Vendedor.** A coluna "Em aberto" fica oculta até o Módulo 6. Alertas: visita a partir de 90 dias, contato a partir de 60.
+- **Celular:** cards com Ligar, WhatsApp e Rota. **Aplicar tag em massa**, respeitando grupos de seleção única.
+
+**Nova empresa `/empresas/nova`** (3 passos do protótipo)
+- **Documento** (CNPJ, CPF ou sem documento) com consulta e os estados: aguardando, encontrada, já cadastrada, não ativa (bloqueada), falha, CNPJ inválido.
+- **Conferir dados da Receita** (editáveis). Sem faixas de funcionários e faturamento (fora do MVP).
+- **Carteira:** Vendedor (oculto com um membro só), Vertical, Status (padrão Lead), Website, Observações.
+
+**Ficha `/empresas/:id`** (mockup da ficha completa; o resto entra nos Módulos 3, 5 e 6)
+- **Cabeçalho:** nome, Matriz/Filial, situação na Receita, razão social, CNPJ, tags + "Editar tags"; botões Ligar e WhatsApp com o telefone da empresa; "Mais ações" com Editar e Excluir.
+- **Faixa de resumo:** Vendedor (oculto com um membro só), Vertical, Última visita, Último contato, Próxima atividade (os três últimos com "Nunca"/"—" até o Módulo 5).
+- **Aba Resumo:** cards Dados cadastrais, CNAEs (principal marcado), Sócios (só nome e qualificação; "Converter em contato" entra no Módulo 3) e Observações. Sem campos personalizados nem faixas.
+- **"Atualizar pela Receita"** no card Dados cadastrais: reconsulta ignorando o cache, atualiza situação e data e mostra um diálogo com o que mudou (atual × Receita), com "Aplicar alterações" ou "Manter como está"; gera auditoria. Mostra "Receita em DD/MM/AAAA" ao lado.
+- **Aba Histórico** (auditoria legível).
+- Abas **Contatos, Atividades e Oportunidades** e botões "Nova atividade"/"Nova oportunidade" ficam **escondidos** até o módulo de cada uma (nada de "chega no Módulo X").
+- **Editar:** mesma tela do cadastro, sem o passo da Receita.
+
 - **Regra das tags (decidida em 12/10/2026):** tag em uso por alguma empresa, **atual ou no histórico de Status** (`empresa_tags_historico`), **não pode ser excluída, só inativada**, para preservar o histórico de conversão (Lead → Cliente). O mesmo vale para excluir um **grupo** de tags com tags em uso. A API de tags (Módulo 1) ainda não confere o uso, porque ainda não há tags aplicadas a empresas: a verificação entra junto com `empresa_tags` e `empresa_tags_historico`, no Módulo 2, com teste.
 
 ### Módulo 3 — Contatos
