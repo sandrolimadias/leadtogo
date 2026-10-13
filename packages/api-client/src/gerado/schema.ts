@@ -116,6 +116,26 @@ export interface paths {
         patch: operations["EmpresasDaCarteiraController_alterar"];
         trace?: never;
     };
+    "/v1/carteira/empresas/{id}/historico": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Histórico da empresa
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. A aba Histórico da ficha: a auditoria da empresa em português (quem, quando, o que mudou, com nomes no lugar de ids) e as tags que o sistema aplicou ou tirou sozinho (`por.nome` = "Sistema"). Do mais recente para o mais antigo, paginado.
+         */
+        get: operations["EmpresasDaCarteiraController_historicoDaEmpresa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/carteira/empresas/{id}/tags": {
         parameters: {
             query?: never;
@@ -1543,6 +1563,23 @@ export interface components {
             municipioCodigo?: number | null;
             paisCodigo?: number | null;
         };
+        EntradaDoHistoricoDaEmpresa: {
+            id: string;
+            em: string;
+            por: {
+                /** Format: uuid */
+                id: string | null;
+                nome: string;
+            };
+            automatica: boolean;
+            titulo: string;
+            mudancas: {
+                campo: string;
+                rotulo: string;
+                de: string | null;
+                para: string | null;
+            }[];
+        };
         Erro: {
             statusCode: number;
             erro: string;
@@ -1575,6 +1612,12 @@ export interface components {
             probabilidadePadrao: number;
             diasAlertaParada: number | null;
             ordem: number;
+        };
+        HistoricoDaEmpresa: {
+            itens: components["schemas"]["EntradaDoHistoricoDaEmpresa"][];
+            total: number;
+            pagina: number;
+            porPagina: number;
         };
         ItemDaListaDeEmpresas: {
             /** Format: uuid */
@@ -2235,6 +2278,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmpresaDaCarteira"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_historicoDaEmpresa: {
+        parameters: {
+            query?: {
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricoDaEmpresa"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */

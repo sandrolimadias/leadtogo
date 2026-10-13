@@ -76,6 +76,9 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - Substitui as tags dos grupos **manuais** (Status, Interesse...): seleção única aceita uma, grupo obrigatório (Status) exige uma, tag inativa não se aplica de novo. As tags de grupo **automático** (Visitação) são do sistema e não mudam por aqui.
 - Cada tag que entra ou sai grava uma linha em `empresa_tags_historico` (base da conversão Lead → Cliente) e um registro de auditoria (`alterar_tags`). O Status inicial do cadastro também entra no histórico.
 
+**Histórico da empresa** (`GET /v1/carteira/empresas/{id}/historico`, commit 7)
+- A aba Histórico mostra a **auditoria em português** (quem, quando, o que mudou, com nomes no lugar de ids: vendedor, vertical, cidade, porte) e as **tags que o sistema aplicou ou tirou sozinho** ("Sistema"). Do mais recente ao mais antigo, paginado; segue a regra de carteira (404 para a empresa que o usuário não vê). Passar a carteira para outro vendedor aparece como "Carteira transferida".
+
 **Detalhes da API da lista** (`GET /v1/carteira/empresas`, `/contagens` e `/opcoes`, commit 5)
 - "Cliente e Prospect" dos chips é pelas **chaves do sistema** das tags (`cliente`, `prospect`), que sobrevivem a renomear. "Incluir leads" traz os demais Status.
 - Filtro `tags`: a empresa precisa ter **todas** as tags pedidas (ex.: um Status e uma Visitação). Última visita "sem visita há 60/90 dias" **inclui quem nunca foi visitado**.

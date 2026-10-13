@@ -2,6 +2,8 @@ import {
   type AlterarEmpresaCarteira,
   alterarEmpresaCarteiraSchema,
   type ConsultaDaLista,
+  type ConsultaDoHistorico,
+  consultaDoHistoricoSchema,
   consultaDaListaSchema,
   consultaDeContagensSchema,
   type ContagensDaLista,
@@ -12,6 +14,8 @@ import {
   definirTagsDaEmpresaSchema,
   type EmpresaCarteira,
   empresaCarteiraSchema,
+  type HistoricoDaEmpresa,
+  historicoDaEmpresaSchema,
   type ListaDeEmpresas,
   listaDeEmpresasSchema,
   type OpcoesDaLista,
@@ -36,6 +40,7 @@ import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { EmpresasDaCarteiraService } from './empresas.service.js'
+import { HistoricoDaEmpresaService } from './historico.service.js'
 import { ListaDeEmpresasService } from './lista.service.js'
 
 const CARTEIRA =
@@ -48,6 +53,7 @@ export class EmpresasDaCarteiraController {
   constructor(
     private readonly servico: EmpresasDaCarteiraService,
     private readonly lista: ListaDeEmpresasService,
+    private readonly historico: HistoricoDaEmpresaService,
   ) {}
 
   @Documenta({
@@ -114,6 +120,21 @@ export class EmpresasDaCarteiraController {
   @Get(':id')
   detalhar(@Param('id', new ParseUUIDPipe()) id: string): Promise<EmpresaCarteira> {
     return this.servico.detalhar(id)
+  }
+
+  @Documenta({
+    resumo: 'Histórico da empresa',
+    descricao: `${CARTEIRA} A aba Histórico da ficha: a auditoria da empresa em português (quem, quando, o que mudou, com nomes no lugar de ids) e as tags que o sistema aplicou ou tirou sozinho (\`por.nome\` = "Sistema"). Do mais recente para o mais antigo, paginado.`,
+    consulta: consultaDoHistoricoSchema,
+    resposta: historicoDaEmpresaSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Get(':id/historico')
+  historicoDaEmpresa(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query(new ZodPipe(consultaDoHistoricoSchema)) consulta: ConsultaDoHistorico,
+  ): Promise<HistoricoDaEmpresa> {
+    return this.historico.listar(id, consulta)
   }
 
   @Documenta({
