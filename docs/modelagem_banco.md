@@ -408,6 +408,8 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 | origem | enum(receita/manual) | |
 
 > O CPF mascarado do sócio (`***501257**`) **não é gravado**, porque não serve para nada e é dado pessoal (LGPD).
+>
+> **Implementação (Módulo 3, migração 0019):** `contato_id` (nulo, FK → `contatos`, índice `(tenant_id, contato_id)`) foi adicionada à tabela; a FK está só no SQL da migração (importar `contatos` no schema Drizzle de `carteira.ts` faria ciclo de módulos). O "Atualizar pela Receita" **reconcilia os sócios pelo nome** (sem acento nem caixa): o sócio que já existe é atualizado no lugar, o novo entra, o que saiu da Receita é removido, **exceto o já convertido em contato**, que fica. Assim o vínculo sobrevive.
 
 ### 6.5 `empresa_tags` — Status, Visitação e demais tags
 | Coluna | Tipo | Observação |

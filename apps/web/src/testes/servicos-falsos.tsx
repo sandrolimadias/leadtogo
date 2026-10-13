@@ -123,6 +123,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       excluir: vi.fn(async () => ok(undefined)),
       vincular: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       alterarVinculo: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      converterSocio: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       daEmpresa: vi.fn(async () => ok([])),
     },
     configuracaoDaCarteira: vi.fn(async () =>

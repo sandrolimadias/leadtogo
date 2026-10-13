@@ -115,6 +115,7 @@ export function FichaDaEmpresa() {
   const [aba, setAba] = useState('resumo')
   const [editandoTags, setEditandoTags] = useState(false)
   const [salvandoTags, setSalvandoTags] = useState(false)
+  const [convertendoSocio, setConvertendoSocio] = useState<string | null>(null)
   const [erroDasTags, setErroDasTags] = useState<string>()
   const [consultandoReceita, setConsultandoReceita] = useState(false)
   const [comparacao, setComparacao] = useState<ConsultaDaReceitaDaEmpresa | null>(null)
@@ -228,6 +229,20 @@ export function FichaDaEmpresa() {
     setEditandoTags(false)
     toast.success('Tags salvas')
     await atualizar()
+  }
+
+  const converterSocio = async (socioId: string) => {
+    setConvertendoSocio(socioId)
+    const r = await servicos.contatos.converterSocio(e.id, socioId)
+    setConvertendoSocio(null)
+    if (!r.ok) {
+      toast.error('Não foi possível converter o sócio', { description: r.erro.mensagem })
+      return
+    }
+    toast.success('Sócio convertido em contato', {
+      description: `${r.dados.nome} agora está na aba Contatos.`,
+    })
+    await Promise.all([atualizar(), queryClient.invalidateQueries({ queryKey: ['contatos'] })])
   }
 
   const excluir = async () => {
@@ -511,7 +526,12 @@ export function FichaDaEmpresa() {
             <div className="flex min-w-0 flex-col gap-4">
               {e.socios.length > 0 ? (
                 <Cartao titulo="Sócios" semMargem>
-                  <SociosDaEmpresa socios={e.socios} />
+                  <SociosDaEmpresa
+                    socios={e.socios}
+                    podeConverter={e.permissoes.editar}
+                    convertendo={convertendoSocio}
+                    aoConverter={(id) => void converterSocio(id)}
+                  />
                 </Cartao>
               ) : null}
               <Cartao titulo="Observações">

@@ -292,6 +292,14 @@ export const servicosReais: ServicosDeAcesso = {
           }),
         ),
       ),
+    converterSocio: (empresaId, socioId) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/empresas/{id}/socios/{socioId}/converter', {
+            params: { path: { id: empresaId, socioId } },
+          }),
+        ),
+      ),
     daEmpresa: (empresaId) =>
       protegido(async () =>
         daApi(

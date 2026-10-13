@@ -78,7 +78,9 @@ const empresa = (extra: Partial<EmpresaCarteira> = {}): EmpresaCarteira => ({
   cnaes: [
     { codigo: 2539001, descricao: 'Serviços de usinagem, tornearia e solda', principal: true },
   ],
-  socios: [{ id: id(401), nome: 'ROGERIO BINDACO', qualificacao: 'Sócio-Administrador' }],
+  socios: [
+    { id: id(401), nome: 'ROGERIO BINDACO', qualificacao: 'Sócio-Administrador', contatoId: null },
+  ],
   tags: [{ id: id(13), nome: 'Cliente', cor: 'green', tagGrupoId: id(1), automatica: false }],
   receita: null,
   situacaoNaoVerificada: false,

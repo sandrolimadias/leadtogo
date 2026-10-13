@@ -9,6 +9,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { contato } from '@/telas/contatos/fixtures'
 import { falha, meDeAdmin, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 
 const A = '01a111e8-f08a-70b7-b5f3-52998ced0a3a'
@@ -175,7 +176,9 @@ const empresa = (extra: Partial<EmpresaCarteira> = {}): EmpresaCarteira => ({
     { codigo: 2539001, descricao: 'Serviços de usinagem, tornearia e solda', principal: true },
     { codigo: 2543800, descricao: 'Fabricação de ferramentas', principal: false },
   ],
-  socios: [{ id: id(401), nome: 'ROGERIO BINDACO', qualificacao: 'Sócio-Administrador' }],
+  socios: [
+    { id: id(401), nome: 'ROGERIO BINDACO', qualificacao: 'Sócio-Administrador', contatoId: null },
+  ],
   tags: [
     { id: id(13), nome: 'Cliente', cor: 'green', tagGrupoId: id(1), automatica: false },
     { id: id(31), nome: 'Retrofit', cor: 'blue', tagGrupoId: id(3), automatica: false },
@@ -384,7 +387,7 @@ describe('Ficha da empresa: aba Resumo', () => {
     expect(within(dados).queryByText(/Funcionários|Faturamento|personalizad/i)).toBeNull()
   })
 
-  it('CNAEs com o principal marcado, Sócios sem "Converter em contato" e Observações', async () => {
+  it('CNAEs com o principal marcado, Sócios e Observações', async () => {
     await abrir(servicos())
     const cnaes = screen.getByRole('region', { name: 'CNAEs' })
     expect(within(cnaes).getByText('2539-0/01')).toBeInTheDocument()
@@ -393,10 +396,77 @@ describe('Ficha da empresa: aba Resumo', () => {
     const socios = screen.getByRole('region', { name: 'Sócios' })
     expect(within(socios).getByText('ROGERIO BINDACO')).toBeInTheDocument()
     expect(within(socios).getByText('Sócio-Administrador')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Converter em contato/ })).toBeNull()
     expect(
       within(screen.getByRole('region', { name: 'Observações' })).getByText(/Indicação do Zé/),
     ).toBeInTheDocument()
+  })
+
+  describe('converter sócio em contato', () => {
+    const convertido = (extra: Record<string, unknown> = {}) =>
+      ({ ...contato({ id: id(555), nome: 'ROGERIO BINDACO' }), ...extra }) as never
+
+    it('converte, avisa e passa a mostrar o selo "Contato" no lugar do botão', async () => {
+      const x = servicos({}, empresa())
+      const converter = vi.fn(async (_e: string, _s: string) => ok(convertido()))
+      x.s.contatos = { ...x.s.contatos, converterSocio: converter }
+      let convertidoJa = false
+      x.c.detalhar.mockImplementation(async () =>
+        ok(
+          empresa({
+            socios: [
+              {
+                id: id(401),
+                nome: 'ROGERIO BINDACO',
+                qualificacao: 'Sócio-Administrador',
+                contatoId: convertidoJa ? id(555) : null,
+              },
+            ],
+          }),
+        ),
+      )
+      await abrir(x)
+      convertidoJa = true
+      await userEvent.click(screen.getByRole('button', { name: 'Converter em contato' }))
+      expect(converter).toHaveBeenCalledWith(id(100), id(401))
+      expect(await screen.findByText('Sócio convertido em contato')).toBeInTheDocument()
+      const socios = screen.getByRole('region', { name: 'Sócios' })
+      expect(
+        await within(socios).findByRole('link', { name: 'Abrir o contato ROGERIO BINDACO' }),
+      ).toHaveAttribute('href', `/contatos/${id(555)}`)
+      expect(within(socios).queryByRole('button', { name: 'Converter em contato' })).toBeNull()
+    })
+
+    it('sócio já convertido mostra o selo e não o botão', async () => {
+      const dados = empresa({
+        socios: [{ id: id(401), nome: 'ROGERIO BINDACO', qualificacao: null, contatoId: id(555) }],
+      })
+      await abrir(servicos({}, dados))
+      expect(screen.queryByRole('button', { name: 'Converter em contato' })).toBeNull()
+      expect(screen.getByText('Contato')).toBeInTheDocument()
+    })
+
+    it('erro da API: mostra o motivo e mantém o botão', async () => {
+      const x = servicos({}, empresa())
+      x.s.contatos = {
+        ...x.s.contatos,
+        converterSocio: vi.fn(async () =>
+          falha('socio_ja_convertido', 'Este sócio já foi convertido em contato.', 409),
+        ),
+      }
+      await abrir(x)
+      await userEvent.click(screen.getByRole('button', { name: 'Converter em contato' }))
+      expect(
+        await screen.findByText('Este sócio já foi convertido em contato.'),
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Converter em contato' })).toBeEnabled()
+    })
+
+    it('quem não edita a empresa não vê o botão', async () => {
+      await abrir(
+        servicos({}, empresa({ permissoes: { editar: false, excluir: false, transferir: false } })),
+      )
+      expect(screen.queryByRole('button', { name: 'Converter em contato' })).toBeNull()
+    })
   })
 
   it('filial: aponta para a matriz; matriz: lista as filiais cadastradas', async () => {

@@ -624,15 +624,27 @@ export class EmpresasDaCarteiraService {
       )
   }
 
-  /** Sócios vêm sempre da Receita (nome e qualificação; nunca o CPF). */
+  /**
+   * Sócios vêm sempre da Receita (nome e qualificação; nunca o CPF). Reconcilia pelo nome: quem já existe
+   * é atualizado no lugar (o `contato_id` de quem foi convertido em contato sobrevive), quem é novo entra,
+   * e quem saiu da Receita é removido, **menos** o sócio já convertido, que fica (os sócios são somados).
+   */
   async gravarSocios(
     db: Transacao,
     tenantId: string,
     empresaId: string,
     dados: DadosDaReceita,
   ): Promise<void> {
-    await db.delete(empresaSocios).where(eq(empresaSocios.empresaId, empresaId))
-    if (dados.socios.length === 0) return
+    const chave = (nome: string) =>
+      nome.normalize('NFD').replace(/\p{M}/gu, '').trim().replace(/\s+/g, ' ').toLowerCase()
+    const existentes = await db
+      .select()
+      .from(empresaSocios)
+      .where(eq(empresaSocios.empresaId, empresaId))
+    const porNome = new Map<string, (typeof existentes)[number][]>()
+    for (const e of existentes)
+      porNome.set(chave(e.nome), [...(porNome.get(chave(e.nome)) ?? []), e])
+
     const codigos = dados.socios.flatMap((s) =>
       s.qualificacaoCodigo === null ? [] : [s.qualificacaoCodigo],
     )
@@ -646,19 +658,35 @@ export class EmpresasDaCarteiraService {
               .where(inArray(qualificacoesSocio.codigo, codigos))
           ).map((q) => q.c),
     )
-    await db.insert(empresaSocios).values(
-      dados.socios.map((s) => ({
-        tenantId,
-        empresaId,
+    const novos: (typeof empresaSocios.$inferInsert)[] = []
+    const mantidos = new Set<string>()
+    for (const s of dados.socios) {
+      const campos = {
         nome: s.nome,
         qualificacaoCodigo:
           s.qualificacaoCodigo !== null && conhecidos.has(s.qualificacaoCodigo)
             ? s.qualificacaoCodigo
             : null,
         qualificacaoTexto: s.qualificacaoTexto,
-        origem: 'receita' as const,
-      })),
-    )
+      }
+      const achado = porNome.get(chave(s.nome))?.shift()
+      if (achado) {
+        mantidos.add(achado.id)
+        await db.update(empresaSocios).set(campos).where(eq(empresaSocios.id, achado.id))
+      } else {
+        novos.push({ tenantId, empresaId, ...campos, origem: 'receita' as const })
+      }
+    }
+    const sobrando = existentes.filter((e) => !mantidos.has(e.id) && e.contatoId === null)
+    if (sobrando.length > 0) {
+      await db.delete(empresaSocios).where(
+        inArray(
+          empresaSocios.id,
+          sobrando.map((e) => e.id),
+        ),
+      )
+    }
+    if (novos.length > 0) await db.insert(empresaSocios).values(novos)
   }
 
   /**

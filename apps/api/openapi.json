@@ -1723,6 +1723,104 @@
         "tags": ["Carteira: empresas"]
       }
     },
+    "/v1/carteira/empresas/{id}/socios/{socioId}/converter": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação do sócio; sem telefone nem e-mail) e marca o sócio como \"Contato\". O vínculo sobrevive ao \"Atualizar pela Receita\". Sócio já convertido: 409 `socio_ja_convertido`. Exige editar a empresa (o vendedor, só a própria carteira). Registra na auditoria. Devolve o contato.",
+        "operationId": "EmpresasDaCarteiraController_converterSocioEmContato",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "socioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Converter sócio em contato",
+        "tags": ["Carteira: empresas"]
+      }
+    },
     "/v1/carteira/empresas/{id}/tags": {
       "put": {
         "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Substitui as tags dos grupos manuais (Status, Interesse...): grupo de seleção única aceita uma tag (400 `grupo_selecao_unica`), grupo obrigatório exige uma (400 `grupo_obrigatorio`), tag inativa não se aplica de novo (400 `tag_inativa`). As tags de grupo automático (Visitação) são do sistema (400 `tag_automatica` se pedidas à mão) e continuam como estão. Cada tag que entra ou sai vai para o histórico de tags (base da conversão Lead → Cliente) e para a auditoria.",
@@ -9190,9 +9288,14 @@
                 "qualificacao": {
                   "nullable": true,
                   "type": "string"
+                },
+                "contatoId": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
                 }
               },
-              "required": ["id", "nome", "qualificacao"],
+              "required": ["id", "nome", "qualificacao", "contatoId"],
               "additionalProperties": false
             }
           },

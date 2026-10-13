@@ -208,7 +208,13 @@ export const empresaCarteiraSchema = z
       z.object({ codigo: z.number().int(), descricao: z.string(), principal: z.boolean() }),
     ),
     socios: z.array(
-      z.object({ id: z.uuid(), nome: z.string(), qualificacao: z.string().nullable() }),
+      z.object({
+        id: z.uuid(),
+        nome: z.string(),
+        qualificacao: z.string().nullable(),
+        /** Preenchido quando o sócio já foi convertido em contato */
+        contatoId: z.uuid().nullable(),
+      }),
     ),
     tags: z.array(
       z.object({

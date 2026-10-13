@@ -182,9 +182,15 @@ export const empresaSocios = pgTable(
     /** A qualificação como veio da Receita, para o código que ainda não está na tabela */
     qualificacaoTexto: text(),
     origem: origemSocio().notNull().default('receita'),
+    /** Preenchido quando o sócio é convertido em contato (o "Atualizar pela Receita" não o apaga) */
+    // A FK para `contatos` está na migração 0019 (importar `contatos` aqui faria um ciclo com `contatos.ts`)
+    contatoId: uuid(),
     ...carimbos(),
   },
-  (t) => [index('empresa_socios_empresa_idx').on(t.tenantId, t.empresaId)],
+  (t) => [
+    index('empresa_socios_empresa_idx').on(t.tenantId, t.empresaId),
+    index('empresa_socios_contato_idx').on(t.tenantId, t.contatoId),
+  ],
 )
 
 export const empresaTags = pgTable(

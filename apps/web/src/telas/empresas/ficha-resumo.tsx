@@ -3,6 +3,7 @@ import { formatarTelefone } from '@leadtogo/shared'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { Avatar, Badge } from '@/components/ui/exibicao'
 import { cn } from '@/lib/cn'
 
@@ -221,8 +222,21 @@ export function CnaesDaEmpresa({ cnaes }: { cnaes: EmpresaCarteira['cnaes'] }) {
   )
 }
 
-/** Sócios: só nome e qualificação (sem CPF, por LGPD). */
-export function SociosDaEmpresa({ socios }: { socios: EmpresaCarteira['socios'] }) {
+/**
+ * Sócios: só nome e qualificação (sem CPF, por LGPD). "Converter em contato" cria o contato; depois da
+ * conversão o sócio mostra o selo "Contato", que abre a ficha dele.
+ */
+export function SociosDaEmpresa({
+  socios,
+  podeConverter,
+  convertendo,
+  aoConverter,
+}: {
+  socios: EmpresaCarteira['socios']
+  podeConverter: boolean
+  convertendo: string | null
+  aoConverter: (socioId: string) => void
+}) {
   return (
     <ul className="m-0 list-none p-0">
       {socios.map((s) => (
@@ -237,6 +251,24 @@ export function SociosDaEmpresa({ socios }: { socios: EmpresaCarteira['socios'] 
               <span className="text-[13px] text-ink-muted">{s.qualificacao}</span>
             ) : null}
           </span>
+          {s.contatoId ? (
+            <Link
+              to="/contatos/$contatoId"
+              params={{ contatoId: s.contatoId }}
+              aria-label={`Abrir o contato ${s.nome}`}
+            >
+              <Badge tone="success">Contato</Badge>
+            </Link>
+          ) : podeConverter ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={convertendo !== null}
+              onClick={() => aoConverter(s.id)}
+            >
+              {convertendo === s.id ? 'Convertendo…' : 'Converter em contato'}
+            </Button>
+          ) : null}
         </li>
       ))}
     </ul>

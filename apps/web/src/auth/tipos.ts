@@ -177,6 +177,8 @@ export interface ServicosDeContatos {
     empresaId: string,
     dados: AlterarVinculoEntrada,
   ) => Promise<Resultado<Contato>>
+  /** Converte o sócio da empresa em contato (vínculo com cargo = qualificação). 409 `socio_ja_convertido` */
+  converterSocio: (empresaId: string, socioId: string) => Promise<Resultado<Contato>>
   /** Os contatos de uma empresa (aba Contatos da ficha): ativos primeiro, depois os inativos */
   daEmpresa: (empresaId: string) => Promise<Resultado<ContatoDaEmpresa[]>>
 }

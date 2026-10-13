@@ -3,6 +3,7 @@ import type { Server } from 'node:http'
 import {
   completarCnpj,
   type ConsultaDaReceitaDaEmpresa,
+  type Contato,
   type EmpresaCarteira,
   type HistoricoDaEmpresa,
 } from '@leadtogo/shared'
@@ -393,5 +394,139 @@ describe('POST /v1/carteira/empresas/:id/receita/aplicar', () => {
       { campo: 'situacao', rotulo: 'Situação na Receita', de: 'ATIVA', para: 'SUSPENSA' },
     ])
     expect(h.itens[2]?.mudancas).toEqual([])
+  })
+})
+
+describe('POST /v1/carteira/empresas/:id/socios/:socioId/converter', () => {
+  const converter = (cookie: string | undefined, empresaId: string, socioId: string) =>
+    chamar('post', cookie, `${EMPRESAS}/${empresaId}/socios/${socioId}/converter`)
+  const ficha = async (cookie: string, id: string) =>
+    empresaDe(await chamar('get', cookie, `${EMPRESAS}/${id}`))
+
+  it('cria o contato com o nome do sócio e o vínculo (cargo = qualificação), sem telefone nem e-mail', async () => {
+    const { d, empresa } = await cadastrada()
+    const socio = empresa.socios[0]
+    expect(socio).toMatchObject({ nome: 'FULANO DE TAL', contatoId: null })
+    expect((await converter(undefined, empresa.id, socio?.id ?? '')).status).toBe(401)
+
+    const r = await converter(d.cookie, empresa.id, socio?.id ?? '')
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    const c = r.body as Contato
+    expect(c).toMatchObject({ nome: 'FULANO DE TAL', telefones: [], emails: [] })
+    expect(c.vinculos).toHaveLength(1)
+    expect(c.vinculos[0]).toMatchObject({
+      empresa: { id: empresa.id },
+      cargo: 'Sócio-Administrador',
+      principal: false,
+      ativo: true,
+    })
+    expect((await ficha(d.cookie, empresa.id)).socios[0]?.contatoId).toBe(c.id)
+    const daEmpresa = await chamar('get', d.cookie, `${EMPRESAS}/${empresa.id}/contatos`)
+    expect((daEmpresa.body as { id: string }[]).map((x) => x.id)).toEqual([c.id])
+    const reg = (await auditoriaDe(d.tenantId)).find(
+      (a) => a.entidade === 'contato' && a.entidade_id === c.id,
+    )
+    expect(reg?.alteracoes).toMatchObject({ nome: 'FULANO DE TAL', origem: 'socio' })
+  })
+
+  it('não converte duas vezes (409) e não duplica o contato', async () => {
+    const { d, empresa } = await cadastrada()
+    const socioId = empresa.socios[0]?.id ?? ''
+    expect((await converter(d.cookie, empresa.id, socioId)).status).toBe(201)
+    const de = await converter(d.cookie, empresa.id, socioId)
+    expect(de.status).toBe(409)
+    expect(erroDe(de)).toBe('socio_ja_convertido')
+    const daEmpresa = await chamar('get', d.cookie, `${EMPRESAS}/${empresa.id}/contatos`)
+    expect(daEmpresa.body as unknown[]).toHaveLength(1)
+  })
+
+  it('sócio inexistente ou de outra empresa: 404; outra empresa (tenant) não enxerga a empresa: 404', async () => {
+    const a = await cadastrada()
+    const b = await cadastrada()
+    const socioDeA = a.empresa.socios[0]?.id ?? ''
+    const semSocio = await converter(
+      a.d.cookie,
+      a.empresa.id,
+      '0199a000-0000-7000-8000-000000000001',
+    )
+    expect(semSocio.status).toBe(404)
+    expect(erroDe(semSocio)).toBe('socio_nao_encontrado')
+    // o sócio de A pela empresa de B (mesmo tenant não: B é de outro tenant, então a empresa nem aparece)
+    expect((await converter(b.d.cookie, a.empresa.id, socioDeA)).status).toBe(404)
+    expect((await converter(b.d.cookie, b.empresa.id, socioDeA)).status).toBe(404)
+    expect((await ficha(a.d.cookie, a.empresa.id)).socios[0]?.contatoId).toBeNull()
+  })
+
+  it('o vínculo do sócio sobrevive ao "Atualizar pela Receita": mesmo sócio, mesmo contato, sócios somados', async () => {
+    const { d, cnpj, empresa } = await cadastrada()
+    const socioId = empresa.socios[0]?.id ?? ''
+    const contato = (await converter(d.cookie, empresa.id, socioId)).body as Contato
+
+    // A Receita agora traz o mesmo sócio (nome com outra caixa e acento) com outra qualificação, e um novo
+    receitaTem(cnpj, {
+      qsa: [
+        {
+          nome_socio: 'Fulano de Tál',
+          codigo_qualificacao_socio: 22,
+          qualificacao_socio: 'Sócio',
+        },
+        {
+          nome_socio: 'BELTRANA DA SILVA',
+          codigo_qualificacao_socio: 22,
+          qualificacao_socio: 'Sócio',
+        },
+      ],
+    })
+    expect((await consultar(d.cookie, empresa.id)).status).toBe(200)
+    const r = await aplicar(d.cookie, empresa.id, { campos: ['socios'] })
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    const socios = empresaDe(r).socios
+    expect(socios).toHaveLength(2)
+    expect(socios.find((s) => s.id === socioId)).toMatchObject({
+      nome: 'Fulano de Tál',
+      qualificacao: 'Sócio',
+      contatoId: contato.id,
+    })
+    expect(socios.find((s) => s.nome === 'BELTRANA DA SILVA')?.contatoId).toBeNull()
+
+    // o contato e o vínculo continuam lá
+    const depois = (await chamar('get', d.cookie, `/v1/carteira/contatos/${contato.id}`))
+      .body as Contato
+    expect(depois.vinculos).toHaveLength(1)
+    expect(depois.vinculos[0]).toMatchObject({ empresa: { id: empresa.id }, ativo: true })
+  })
+
+  it('sócio convertido que saiu da Receita fica; o não convertido que saiu é removido', async () => {
+    const { d, cnpj, empresa } = await cadastrada({
+      qsa: [
+        {
+          nome_socio: 'FULANO DE TAL',
+          codigo_qualificacao_socio: 49,
+          qualificacao_socio: 'Sócio-Administrador',
+        },
+        { nome_socio: 'CICRANO SOUZA', codigo_qualificacao_socio: 22, qualificacao_socio: 'Sócio' },
+        {
+          nome_socio: 'BELTRANA DA SILVA',
+          codigo_qualificacao_socio: 22,
+          qualificacao_socio: 'Sócio',
+        },
+      ],
+    })
+    const idDe = (nome: string) => empresa.socios.find((s) => s.nome === nome)?.id ?? ''
+    await converter(d.cookie, empresa.id, idDe('FULANO DE TAL'))
+
+    receitaTem(cnpj, {
+      qsa: [
+        {
+          nome_socio: 'BELTRANA DA SILVA',
+          codigo_qualificacao_socio: 22,
+          qualificacao_socio: 'Sócio',
+        },
+      ],
+    })
+    await consultar(d.cookie, empresa.id)
+    const socios = empresaDe(await aplicar(d.cookie, empresa.id, { campos: ['socios'] })).socios
+    expect(socios.map((s) => s.nome).sort()).toEqual(['BELTRANA DA SILVA', 'FULANO DE TAL'])
+    expect(socios.find((s) => s.nome === 'FULANO DE TAL')?.contatoId).not.toBeNull()
   })
 })

@@ -1,4 +1,6 @@
 import {
+  type Contato,
+  contatoSchema,
   type ContatoDaEmpresa,
   contatoDaEmpresaSchema,
   type AlterarEmpresaCarteira,
@@ -51,6 +53,7 @@ import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { AtualizarPelaReceitaService } from './atualizar-receita.service.js'
+import { ConverterSocioService } from './converter-socio.service.js'
 import { EmpresasDaCarteiraService } from './empresas.service.js'
 import { HistoricoDaEmpresaService } from './historico.service.js'
 import { ListaDeEmpresasService } from './lista.service.js'
@@ -69,6 +72,7 @@ export class EmpresasDaCarteiraController {
     private readonly historico: HistoricoDaEmpresaService,
     private readonly atualizacaoDaReceita: AtualizarPelaReceitaService,
     private readonly vinculos: VinculosDoContatoService,
+    private readonly converterSocio: ConverterSocioService,
   ) {}
 
   @Documenta({
@@ -178,6 +182,22 @@ export class EmpresasDaCarteiraController {
   @Get(':id/contatos')
   contatosDaEmpresa(@Param('id', new ParseUUIDPipe()) id: string): Promise<ContatoDaEmpresa[]> {
     return this.vinculos.daEmpresa(id)
+  }
+
+  @Documenta({
+    resumo: 'Converter sócio em contato',
+    descricao: `${CARTEIRA} Cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação do sócio; sem telefone nem e-mail) e marca o sócio como "Contato". O vínculo sobrevive ao "Atualizar pela Receita". Sócio já convertido: 409 \`socio_ja_convertido\`. Exige editar a empresa (o vendedor, só a própria carteira). Registra na auditoria. Devolve o contato.`,
+    resposta: contatoSchema,
+    status: 201,
+    erros: [400, 401, 403, 404, 409, 429],
+  })
+  @Post(':id/socios/:socioId/converter')
+  @Limite({ nome: 'carteira-socios-converter', max: 60, janelaS: 60 })
+  converterSocioEmContato(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('socioId', new ParseUUIDPipe()) socioId: string,
+  ): Promise<Contato> {
+    return this.converterSocio.converter(id, socioId)
   }
 
   @Documenta({

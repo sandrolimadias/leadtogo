@@ -100,6 +100,7 @@ export async function lerEmpresa(
           id: empresaSocios.id,
           nome: empresaSocios.nome,
           qualificacaoTexto: empresaSocios.qualificacaoTexto,
+          contatoId: empresaSocios.contatoId,
           qualificacaoDescricao: qualificacoesSocio.descricao,
         })
         .from(empresaSocios)
@@ -210,6 +211,7 @@ export async function lerEmpresa(
       id: s.id,
       nome: s.nome,
       qualificacao: s.qualificacaoDescricao ?? s.qualificacaoTexto,
+      contatoId: s.contatoId,
     })),
     tags: tagsDaEmpresa,
     receita,
