@@ -1,4 +1,5 @@
 import type {
+  ConfiguracaoDaCarteira,
   ConsultaReceita,
   ContagensDaLista,
   ConviteAceito,
@@ -45,6 +46,7 @@ import type {
   CriarTipoAtividadeEntrada,
   ConsultaDaListaEntrada,
   CriarEmpresaCarteiraEntrada,
+  ConfiguracaoDaCarteiraPatch,
   CriarVerticalEntrada,
   PoliticaDoisFatores,
   PrimeiroAcessoEntrada,
@@ -195,6 +197,12 @@ export interface ServicosDeAcesso {
   alterarMembro: (id: string, dados: AlterarMembroEntrada) => Promise<Resultado<MembroDaEquipe>>
   seguranca: () => Promise<Resultado<Seguranca>>
   alterarPoliticaDeDoisFatores: (politica: PoliticaDoisFatores) => Promise<Resultado<Seguranca>>
+
+  // Regras da carteira (Configurações → Carteira): só o administrador altera
+  configuracaoDaCarteira: () => Promise<Resultado<ConfiguracaoDaCarteira>>
+  alterarConfiguracaoDaCarteira: (
+    patch: ConfiguracaoDaCarteiraPatch,
+  ) => Promise<Resultado<ConfiguracaoDaCarteira>>
 
   // Cadastros auxiliares (Módulo 1)
   tags: ServicosDeTags

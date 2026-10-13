@@ -1,5 +1,14 @@
 import { Link, Outlet } from '@tanstack/react-router'
-import { CalendarCheck, Compass, Factory, Funnel, ShieldCheck, Tags, Users } from 'lucide-react'
+import {
+  Building2,
+  CalendarCheck,
+  Compass,
+  Factory,
+  Funnel,
+  ShieldCheck,
+  Tags,
+  Users,
+} from 'lucide-react'
 
 import { Icon } from '@/components/ui/icone'
 import { cn } from '@/lib/cn'
@@ -11,6 +20,7 @@ const SECOES = [
   { para: '/configuracoes/funis', titulo: 'Funis e fases', icone: Funnel },
   { para: '/configuracoes/origens-e-motivos', titulo: 'Origens e motivos', icone: Compass },
   { para: '/configuracoes/verticais-e-solucoes', titulo: 'Verticais e soluções', icone: Factory },
+  { para: '/configuracoes/carteira', titulo: 'Carteira', icone: Building2 },
   { para: '/configuracoes/seguranca', titulo: 'Segurança', icone: ShieldCheck },
 ] as const
 

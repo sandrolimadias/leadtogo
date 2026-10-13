@@ -65,6 +65,9 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - Excluir uma **matriz** solta as filiais (`matriz_id` nulo); cadastrar a matriz depois liga as filiais soltas.
 - Fora do MVP, por ora: editar o documento de uma empresa cadastrada (ex.: "sem documento" que ganhou CNPJ).
 
+**Configurações → Carteira** (`GET/PATCH /v1/configuracoes/carteira`; entrou como commit próprio depois da tela de nova empresa)
+- Duas chaves, cada uma vale na hora, **só o administrador altera**: **Bloquear o cadastro de empresa não ativa na Receita** (padrão ligado; só cadastro novo) e **Vendedores podem ver todas as empresas** (padrão desligado; o vendedor vê tudo, edita só a própria). A mudança vai para a auditoria (antes e depois).
+
 **Lista `/empresas`**
 - **Chips com contagem:** Todas, Minha carteira, Sem visita há 90 dias, Nunca visitadas, Sem próxima atividade. Os três últimos (e suas contagens) consideram por padrão só Status **Cliente e Prospect**, com a opção "Incluir leads"; "Todas" mostra tudo.
 - **Filtros:** busca sem acento (nome, CNPJ, cidade), Status, Visitação, Vendedor, Cidade, Última visita; "Limpar filtros"; filtros na URL.

@@ -236,6 +236,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/configuracoes/carteira": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Regras da carteira da empresa ativa
+         * @description Qualquer membro da empresa ativa. `bloquearEmpresaNaoAtiva` (padrão ligado): não cadastra CNPJ que a Receita não dê como ativo (409 `empresa_nao_ativa`), só em cadastro novo. `vendedorVeTodasEmpresas` (padrão desligado): o vendedor vê as empresas de todos os vendedores, mas edita só a própria.
+         */
+        get: operations["ConfiguracaoDaCarteiraController_obter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Alterar as regras da carteira
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Só o que vier muda. Vale na próxima requisição de cada pessoa. Registra na auditoria.
+         */
+        patch: operations["ConfiguracaoDaCarteiraController_alterar"];
+        trace?: never;
+    };
     "/v1/configuracoes/funis": {
         parameters: {
             query?: never;
@@ -1235,6 +1259,14 @@ export interface components {
         CnaesDaEmpresaEntrada: {
             principal: number | null;
             secundarios: number[];
+        };
+        ConfiguracaoDaCarteira: {
+            bloquearEmpresaNaoAtiva: boolean;
+            vendedorVeTodasEmpresas: boolean;
+        };
+        ConfiguracaoDaCarteiraEntrada: {
+            bloquearEmpresaNaoAtiva?: boolean;
+            vendedorVeTodasEmpresas?: boolean;
         };
         ConfiguracaoDeSeguranca: {
             /** @enum {string} */
@@ -2777,6 +2809,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpcoesDaLista"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDaCarteiraController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDaCarteira"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDaCarteiraController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfiguracaoDaCarteiraEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDaCarteira"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
                 };
             };
             /** @description Sem login (`nao_autenticado`) ou sessão expirada */

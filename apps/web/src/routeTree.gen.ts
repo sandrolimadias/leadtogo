@@ -31,6 +31,7 @@ import { Route as AutenticadoProspeccaoRouteImport } from './routes/_autenticado
 import { Route as AutenticadoTarefasRouteImport } from './routes/_autenticado.tarefas'
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
 import { Route as AutenticadoConfiguracoesIndexRouteImport } from './routes/_autenticado.configuracoes.index'
+import { Route as AutenticadoConfiguracoesCarteiraRouteImport } from './routes/_autenticado.configuracoes.carteira'
 import { Route as AutenticadoConfiguracoesFunisRouteImport } from './routes/_autenticado.configuracoes.funis'
 import { Route as AutenticadoConfiguracoesOrigensEMotivosRouteImport } from './routes/_autenticado.configuracoes.origens-e-motivos'
 import { Route as AutenticadoConfiguracoesSegurancaRouteImport } from './routes/_autenticado.configuracoes.seguranca'
@@ -154,6 +155,12 @@ const AutenticadoConfiguracoesIndexRoute =
     path: '/',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
+const AutenticadoConfiguracoesCarteiraRoute =
+  AutenticadoConfiguracoesCarteiraRouteImport.update({
+    id: '/carteira',
+    path: '/carteira',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
 const AutenticadoConfiguracoesFunisRoute =
   AutenticadoConfiguracoesFunisRouteImport.update({
     id: '/funis',
@@ -240,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
+  '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
@@ -271,6 +279,7 @@ export interface FileRoutesByTo {
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
+  '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
@@ -307,6 +316,7 @@ export interface FileRoutesById {
   '/_autenticado/tarefas': typeof AutenticadoTarefasRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
+  '/_autenticado/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/_autenticado/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/_autenticado/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/_autenticado/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
@@ -342,6 +352,7 @@ export interface FileRouteTypes {
     | '/prospeccao'
     | '/tarefas'
     | '/dev/catalogo'
+    | '/configuracoes/carteira'
     | '/configuracoes/funis'
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/seguranca'
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/prospeccao'
     | '/tarefas'
     | '/dev/catalogo'
+    | '/configuracoes/carteira'
     | '/configuracoes/funis'
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/seguranca'
@@ -408,6 +420,7 @@ export interface FileRouteTypes {
     | '/_autenticado/tarefas'
     | '/dev/catalogo'
     | '/_autenticado/'
+    | '/_autenticado/configuracoes/carteira'
     | '/_autenticado/configuracoes/funis'
     | '/_autenticado/configuracoes/origens-e-motivos'
     | '/_autenticado/configuracoes/seguranca'
@@ -584,6 +597,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoConfiguracoesIndexRouteImport
       parentRoute: typeof AutenticadoConfiguracoesRoute
     }
+    '/_autenticado/configuracoes/carteira': {
+      id: '/_autenticado/configuracoes/carteira'
+      path: '/carteira'
+      fullPath: '/configuracoes/carteira'
+      preLoaderRoute: typeof AutenticadoConfiguracoesCarteiraRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
     '/_autenticado/configuracoes/funis': {
       id: '/_autenticado/configuracoes/funis'
       path: '/funis'
@@ -692,6 +712,7 @@ const AcessoRouteWithChildren =
   AcessoRoute._addFileChildren(AcessoRouteChildren)
 
 interface AutenticadoConfiguracoesRouteChildren {
+  AutenticadoConfiguracoesCarteiraRoute: typeof AutenticadoConfiguracoesCarteiraRoute
   AutenticadoConfiguracoesFunisRoute: typeof AutenticadoConfiguracoesFunisRoute
   AutenticadoConfiguracoesOrigensEMotivosRoute: typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   AutenticadoConfiguracoesSegurancaRoute: typeof AutenticadoConfiguracoesSegurancaRoute
@@ -704,6 +725,8 @@ interface AutenticadoConfiguracoesRouteChildren {
 
 const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildren =
   {
+    AutenticadoConfiguracoesCarteiraRoute:
+      AutenticadoConfiguracoesCarteiraRoute,
     AutenticadoConfiguracoesFunisRoute: AutenticadoConfiguracoesFunisRoute,
     AutenticadoConfiguracoesOrigensEMotivosRoute:
       AutenticadoConfiguracoesOrigensEMotivosRoute,

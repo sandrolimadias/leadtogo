@@ -247,6 +247,11 @@ export const servicosReais: ServicosDeAcesso = {
       ),
     ),
 
+  configuracaoDaCarteira: () =>
+    protegido(async () => daApi(await api.GET('/v1/configuracoes/carteira'))),
+  alterarConfiguracaoDaCarteira: (patch) =>
+    protegido(async () => daApi(await api.PATCH('/v1/configuracoes/carteira', { body: patch }))),
+
   cadastros: {
     verticais: cadastroReal('verticais'),
     solucoes: cadastroReal('solucoes'),

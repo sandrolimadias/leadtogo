@@ -39,6 +39,7 @@ export type EntradaDoHistorico = Esquemas['EntradaDoHistoricoDaEmpresa']
 export type ConsultaReceita = Esquemas['ConsultaReceita']
 export type DadosDaReceita = Esquemas['DadosDaReceita']
 export type ConsultaDaReceitaDaEmpresa = Esquemas['ConsultaDaReceitaDaEmpresa']
+export type ConfiguracaoDaCarteira = Esquemas['ConfiguracaoDaCarteira']
 
 /**
  * Cliente tipado da API, gerado do OpenAPI (`pnpm --filter @leadtogo/api-client generate`).

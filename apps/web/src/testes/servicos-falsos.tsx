@@ -114,6 +114,12 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
     alterarPoliticaDeDoisFatores: vi.fn(async (p: string) =>
       ok({ doisFatoresExigido: p as 'admin' | 'admin_gestor' | 'todos' }),
     ),
+    configuracaoDaCarteira: vi.fn(async () =>
+      ok({ bloquearEmpresaNaoAtiva: true, vendedorVeTodasEmpresas: false }),
+    ),
+    alterarConfiguracaoDaCarteira: vi.fn(async () =>
+      ok({ bloquearEmpresaNaoAtiva: true, vendedorVeTodasEmpresas: false }),
+    ),
     funis: {
       listar: vi.fn(async () => ok([])),
       criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
