@@ -275,11 +275,11 @@ describe('Contatos: a lista', () => {
     expect(await screen.findByRole('table')).toBeInTheDocument()
   })
 
-  it('"Novo contato" leva ao cadastro; clicar no contato abre (a edição, até a ficha existir)', async () => {
+  it('"Novo contato" leva ao cadastro; clicar no contato abre a ficha', async () => {
     const x = servicos()
     const { historico } = await abrir(x)
     await userEvent.click(await screen.findByText('Contato 2'))
-    await waitFor(() => expect(historico.location.pathname).toBe(`/contatos/${id(102)}/editar`))
+    await waitFor(() => expect(historico.location.pathname).toBe(`/contatos/${id(102)}`))
   })
 
   it('o botão "Novo contato" do topo abre o cadastro', async () => {

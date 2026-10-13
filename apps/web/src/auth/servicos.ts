@@ -270,6 +270,10 @@ export const servicosReais: ServicosDeAcesso = {
           }),
         ),
       ),
+    excluir: (id) =>
+      protegido(async () =>
+        semCorpo(await api.DELETE('/v1/carteira/contatos/{id}', { params: { path: { id } } })),
+      ),
   },
 
   configuracaoDaCarteira: () =>

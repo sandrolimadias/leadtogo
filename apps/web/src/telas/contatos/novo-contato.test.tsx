@@ -88,7 +88,7 @@ describe('Novo contato', () => {
       emails: [],
     })
     expect(await screen.findByText('Contato criado')).toBeInTheDocument()
-    await waitFor(() => expect(historico.location.pathname).toBe(`/contatos/${id(100)}/editar`))
+    await waitFor(() => expect(historico.location.pathname).toBe(`/contatos/${id(100)}`))
   })
 
   it('nome vazio e aniversário pela metade avisam nos campos e não enviam', async () => {
@@ -211,7 +211,7 @@ describe('Novo contato', () => {
     await userEvent.click(within(alerta).getByRole('button', { name: 'Criar mesmo assim' }))
     await waitFor(() => expect(criar).toHaveBeenCalledTimes(2))
     expect((criar.mock.calls[1] as [Record<string, unknown>])[0]['ignorarDuplicado']).toBe(true)
-    await waitFor(() => expect(historico.location.pathname).toBe(`/contatos/${id(100)}/editar`))
+    await waitFor(() => expect(historico.location.pathname).toBe(`/contatos/${id(100)}`))
   })
 
   it('duplicado de carteira que o usuário não vê: avisa sem nome e sem "Abrir contato"', async () => {

@@ -55,7 +55,7 @@ describe('Editar contato', () => {
 
   it('salva o que mudou (a pessoa inteira, sem o vínculo) e avisa', async () => {
     const x = servicos()
-    await abrir(x)
+    const { historico } = await abrir(x)
     const nome = screen.getByRole('textbox', { name: /^Nome/ })
     await userEvent.clear(nome)
     await userEvent.type(nome, 'Rogério B. Bindaco')
@@ -76,6 +76,7 @@ describe('Editar contato', () => {
     })
     expect(corpo(x)['vinculo']).toBeUndefined()
     expect(await screen.findByText('Contato atualizado')).toBeInTheDocument()
+    await waitFor(() => expect(historico.location.pathname).toBe(`/contatos/${id(100)}`))
   })
 
   it('limpar o dia e o mês do aniversário envia null; sem mexer no consentimento ele não vai', async () => {

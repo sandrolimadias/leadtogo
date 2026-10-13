@@ -43,14 +43,17 @@ const ABAS = [
 ]
 
 /** Botão-ícone que é um link (Ligar, WhatsApp): o `IconButton` é um <button>, e aqui o destino é um endereço. */
-function LinkDeIcone({
+export function LinkDeIcone({
   href,
   label,
   icone: Icone,
+  semDestino,
 }: {
   href: string | null
   label: string
   icone: typeof Phone
+  /** Dica quando o botão está desativado */
+  semDestino?: string
 }) {
   const classes =
     'inline-flex size-(--ctl) shrink-0 items-center justify-center rounded-sm border border-border-strong bg-surface text-ink'
@@ -68,7 +71,7 @@ function LinkDeIcone({
       role="link"
       aria-disabled="true"
       aria-label={label}
-      title={`${label}: a empresa não tem telefone`}
+      title={semDestino ? `${label}: ${semDestino}` : `${label}: a empresa não tem telefone`}
       className={cn(classes, 'cursor-not-allowed opacity-45')}
     >
       <Icone size={16} strokeWidth={1.75} aria-hidden="true" />

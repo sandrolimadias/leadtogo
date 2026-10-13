@@ -151,6 +151,11 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
   - **Filtros:** Empresa, Cargo, Papel na decisão e Tag da empresa, todos na URL. **Empresa, cargo e tag valem para o mesmo vínculo ativo** ("Diretor na Usidantec"); o vínculo inativo não entra nesses filtros, mas o contato continua na lista. O cargo é comparado pelo texto inteiro, sem diferença de acento ou caixa, e a lista de cargos vem dos vínculos ativos que o usuário vê. O vendedor não descobre a carteira dos outros pelo filtro de empresa.
   - **Filtro de Empresa:** lista as **100 primeiras empresas da carteira, por nome**; uma empresa fora delas continua funcionando quando chega pela URL (o nome é buscado). Na ficha da empresa (commit 5) a aba Contatos mostra os contatos dela sem esse limite.
   - **Celular:** cartões com Ligar, WhatsApp e E-mail; filtros atrás do botão "Filtros · N". "Não quer contato" só **avisa**: Ligar e WhatsApp continuam ativos (decisão aprovada).
+- *Commit 4 (Ficha do contato):*
+  - **Cabeçalho:** nome, papel na decisão, selo "Não quer contato", linha "cargo · empresa" do vínculo ativo principal ("Sem empresa vinculada" ou "Sem vínculo ativo" quando for o caso) e as ações Ligar, WhatsApp, E-mail (usam o telefone e o e-mail principais), Editar e "Mais ações" (Excluir contato só para gestor e administrador, com confirmação). Sem "Nova atividade" e sem as abas Atividades e Oportunidades até os Módulos 5 e 6; sem abas por enquanto (o Histórico entra no commit 7).
+  - **Empresas vinculadas:** só leitura neste commit (nome com link para a ficha da empresa, cargo, "Principal", Ativo ou Inativo). **Vincular, trocar o principal e inativar chegam no commit 5.**
+  - **Consentimento:** a chave "Pediu para não receber contato" **grava na hora** (sem passar pela edição), para quem pode editar o contato. Base legal exibida: "Legítimo interesse" (padrão do sistema; ver `docs/lgpd.md`, seção 3.1). Origem e data aparecem depois da primeira mudança.
+  - **Depois de criar ou editar** o contato, a tela vai para a ficha (e "Abrir contato" do aviso de duplicado também).
 
 ### Módulo 4 — Importação de planilha (Excel/CSV)
 *Decidido pelo Ale em 12/10/2026; **substitui** a descrição anterior. Vem depois dos Módulos 1 a 3. Detalhes de regra em `funcionalidades.md` (seção 3, "Importação por planilha").*

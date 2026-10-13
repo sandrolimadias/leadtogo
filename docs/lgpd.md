@@ -50,6 +50,13 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 | Dados que o tenant cadastra (empresas-alvo, contatos, atividades, oportunidades) | **Definida pela empresa cliente**, como controladora. Tipicamente **legítimo interesse** em prospecção e relacionamento B2B (art. 7º, IX), com teste de balanceamento e respeito ao opt-out | O Leadtogo oferece os campos de consentimento e opt-out, mas **não escolhe** a base |
 | Dados públicos da Receita (empresas, sócios) | **Dado tornado manifestamente público** (art. 7º, § 4º), respeitada a finalidade | consulta pela Minha Receita |
 
+### 3.1 Contatos (Módulo 3): base legal exibida e opt-out
+
+- **Base legal exibida:** a ficha do contato mostra "Base legal: **Legítimo interesse**" (art. 7º, IX, prospecção e relacionamento B2B) como **padrão do sistema**. É uma informação ao usuário, não uma escolha do Leadtogo: a **empresa cliente continua sendo a controladora** e responde pela base e pelo teste de balanceamento (tabela acima). Quando houver base por contato (por exemplo, consentimento expresso), o campo passa a ser editável.
+- **Opt-out ("Pediu para não receber contato"):** desliga `aceita_whatsapp` e `aceita_email` juntos, grava `consentimento_em` e `consentimento_origem` (hoje só `manual`) e mostra o selo **"Não quer contato"** em todas as telas. **Não bloqueia** Ligar e WhatsApp por enquanto: o bloqueio efetivo de envio entra com as fases de e-mail e WhatsApp. O registro vai para a auditoria do contato (antes e depois).
+- **Exclusão:** contato excluído (só gestor e administrador) sai das telas e das buscas; os dados seguem a retenção da seção 5. Pedidos de eliminação do titular (art. 18, VI) são atendidos pelo administrador da empresa cliente.
+- **Dado público da Receita:** o sócio convertido em contato leva só o nome e a qualificação; telefone e e-mail não são trazidos.
+
 ## 4. Suboperadores e localização dos dados
 
 | Suboperador | Para quê | Dados | Localização |

@@ -164,6 +164,8 @@ export interface ServicosDeContatos {
   detalhar: (id: string) => Promise<Resultado<Contato>>
   /** Edita a pessoa (os vínculos com empresas têm operações próprias) */
   alterar: (id: string, dados: AlterarContatoEntrada) => Promise<Resultado<Contato>>
+  /** Exclusão lógica, só de gestor e administrador (o vendedor recebe 403) */
+  excluir: (id: string) => Promise<Resultado>
 }
 
 /**

@@ -63,7 +63,8 @@ function Formulario({ contato }: { contato: Contato }) {
     if (r.ok) {
       toast.success('Contato atualizado', { description: `${r.dados.nome} foi salvo.` })
       await queryClient.invalidateQueries({ queryKey: ['contatos'] })
-      setF(formularioDoContato(r.dados))
+      queryClient.setQueryData(['contatos', 'contato', contato.id], r.dados)
+      void navegar(rotaDoContato(contato.id))
       return
     }
     if (r.erro.codigo === 'contato_duplicado') {
@@ -122,8 +123,8 @@ function Formulario({ contato }: { contato: Contato }) {
       </main>
 
       <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-surface px-6 py-3 max-md:px-4">
-        <Button variant="ghost" onClick={() => void navegar({ to: '/contatos' })}>
-          Voltar
+        <Button variant="ghost" onClick={() => void navegar(rotaDoContato(contato.id))}>
+          Cancelar
         </Button>
         <Button
           variant="primary"

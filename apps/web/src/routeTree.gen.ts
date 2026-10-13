@@ -41,6 +41,7 @@ import { Route as AutenticadoConfiguracoesTiposDeAtividadeRouteImport } from './
 import { Route as AutenticadoConfiguracoesUsuariosRouteImport } from './routes/_autenticado.configuracoes.usuarios'
 import { Route as AutenticadoConfiguracoesVerticaisESolucoesRouteImport } from './routes/_autenticado.configuracoes.verticais-e-solucoes'
 import { Route as AutenticadoContatosIndexRouteImport } from './routes/_autenticado.contatos.index'
+import { Route as AutenticadoContatosContatoIdRouteImport } from './routes/_autenticado.contatos.$contatoId'
 import { Route as AutenticadoContatosNovoRouteImport } from './routes/_autenticado.contatos.novo'
 import { Route as AutenticadoEmpresasIndexRouteImport } from './routes/_autenticado.empresas.index'
 import { Route as AutenticadoEmpresasEmpresaIdRouteImport } from './routes/_autenticado.empresas.$empresaId'
@@ -220,6 +221,12 @@ const AutenticadoContatosIndexRoute =
     path: '/',
     getParentRoute: () => AutenticadoContatosRoute,
   } as any)
+const AutenticadoContatosContatoIdRoute =
+  AutenticadoContatosContatoIdRouteImport.update({
+    id: '/$contatoId',
+    path: '/$contatoId',
+    getParentRoute: () => AutenticadoContatosRoute,
+  } as any)
 const AutenticadoContatosNovoRoute = AutenticadoContatosNovoRouteImport.update({
   id: '/novo',
   path: '/novo',
@@ -290,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
   '/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/configuracoes/verticais-e-solucoes': typeof AutenticadoConfiguracoesVerticaisESolucoesRoute
+  '/contatos/$contatoId': typeof AutenticadoContatosContatoIdRoute
   '/contatos/novo': typeof AutenticadoContatosNovoRoute
   '/empresas/$empresaId': typeof AutenticadoEmpresasEmpresaIdRoute
   '/empresas/nova': typeof AutenticadoEmpresasNovaRoute
@@ -326,6 +334,7 @@ export interface FileRoutesByTo {
   '/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
   '/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/configuracoes/verticais-e-solucoes': typeof AutenticadoConfiguracoesVerticaisESolucoesRoute
+  '/contatos/$contatoId': typeof AutenticadoContatosContatoIdRoute
   '/contatos/novo': typeof AutenticadoContatosNovoRoute
   '/empresas/$empresaId': typeof AutenticadoEmpresasEmpresaIdRoute
   '/empresas/nova': typeof AutenticadoEmpresasNovaRoute
@@ -368,6 +377,7 @@ export interface FileRoutesById {
   '/_autenticado/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
   '/_autenticado/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/_autenticado/configuracoes/verticais-e-solucoes': typeof AutenticadoConfiguracoesVerticaisESolucoesRoute
+  '/_autenticado/contatos/$contatoId': typeof AutenticadoContatosContatoIdRoute
   '/_autenticado/contatos/novo': typeof AutenticadoContatosNovoRoute
   '/_autenticado/empresas/$empresaId': typeof AutenticadoEmpresasEmpresaIdRoute
   '/_autenticado/empresas/nova': typeof AutenticadoEmpresasNovaRoute
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/configuracoes/tipos-de-atividade'
     | '/configuracoes/usuarios'
     | '/configuracoes/verticais-e-solucoes'
+    | '/contatos/$contatoId'
     | '/contatos/novo'
     | '/empresas/$empresaId'
     | '/empresas/nova'
@@ -445,6 +456,7 @@ export interface FileRouteTypes {
     | '/configuracoes/tipos-de-atividade'
     | '/configuracoes/usuarios'
     | '/configuracoes/verticais-e-solucoes'
+    | '/contatos/$contatoId'
     | '/contatos/novo'
     | '/empresas/$empresaId'
     | '/empresas/nova'
@@ -486,6 +498,7 @@ export interface FileRouteTypes {
     | '/_autenticado/configuracoes/tipos-de-atividade'
     | '/_autenticado/configuracoes/usuarios'
     | '/_autenticado/configuracoes/verticais-e-solucoes'
+    | '/_autenticado/contatos/$contatoId'
     | '/_autenticado/contatos/novo'
     | '/_autenticado/empresas/$empresaId'
     | '/_autenticado/empresas/nova'
@@ -729,6 +742,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoContatosIndexRouteImport
       parentRoute: typeof AutenticadoContatosRoute
     }
+    '/_autenticado/contatos/$contatoId': {
+      id: '/_autenticado/contatos/$contatoId'
+      path: '/$contatoId'
+      fullPath: '/contatos/$contatoId'
+      preLoaderRoute: typeof AutenticadoContatosContatoIdRouteImport
+      parentRoute: typeof AutenticadoContatosRoute
+    }
     '/_autenticado/contatos/novo': {
       id: '/_autenticado/contatos/novo'
       path: '/novo'
@@ -848,12 +868,14 @@ const AutenticadoConfiguracoesRouteWithChildren =
   )
 
 interface AutenticadoContatosRouteChildren {
+  AutenticadoContatosContatoIdRoute: typeof AutenticadoContatosContatoIdRoute
   AutenticadoContatosNovoRoute: typeof AutenticadoContatosNovoRoute
   AutenticadoContatosIndexRoute: typeof AutenticadoContatosIndexRoute
   AutenticadoContatosContatoIdEditarRoute: typeof AutenticadoContatosContatoIdEditarRoute
 }
 
 const AutenticadoContatosRouteChildren: AutenticadoContatosRouteChildren = {
+  AutenticadoContatosContatoIdRoute: AutenticadoContatosContatoIdRoute,
   AutenticadoContatosNovoRoute: AutenticadoContatosNovoRoute,
   AutenticadoContatosIndexRoute: AutenticadoContatosIndexRoute,
   AutenticadoContatosContatoIdEditarRoute:
