@@ -104,7 +104,7 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 **Ficha `/empresas/:id`** (mockup da ficha completa; o resto entra nos Módulos 3, 5 e 6)
 - **Cabeçalho:** nome, Matriz/Filial, situação na Receita, razão social, CNPJ, tags + "Editar tags"; botões Ligar e WhatsApp com o telefone da empresa; "Mais ações" com Editar e Excluir.
 - **Faixa de resumo:** Vendedor (oculto com um membro só), Vertical, Última visita, Último contato, Próxima atividade (os três últimos com "Nunca"/"—" até o Módulo 5).
-- **Aba Resumo:** cards Dados cadastrais, CNAEs (principal marcado), Sócios (só nome e qualificação; "Converter em contato" entra no Módulo 3) e Observações. Sem campos personalizados nem faixas.
+- **Aba Resumo:** cards Dados cadastrais, CNAEs (principal marcado), Sócios (só nome e qualificação; "Converter em contato" veio no Módulo 3) e Observações. Sem campos personalizados nem faixas.
 - **"Atualizar pela Receita"** no card Dados cadastrais: reconsulta ignorando o cache, atualiza situação e data e mostra um diálogo com o que mudou (atual × Receita), com "Aplicar alterações" ou "Manter como está"; gera auditoria. Mostra "Receita em DD/MM/AAAA" ao lado.
 - **Aba Histórico** (auditoria legível).
 - Abas **Contatos, Atividades e Oportunidades** e botões "Nova atividade"/"Nova oportunidade" ficam **escondidos** até o módulo de cada uma (nada de "chega no Módulo X").
@@ -112,7 +112,7 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 
 - **Regra das tags (decidida em 12/10/2026):** tag em uso por alguma empresa, **atual ou no histórico de Status** (`empresa_tags_historico`), **não pode ser excluída, só inativada**, para preservar o histórico de conversão (Lead → Cliente). O mesmo vale para excluir um **grupo** de tags com tags em uso. A conferência de uso já está na API de tags (commit 6 do Módulo 2), com teste.
 
-### Módulo 3 — Contatos 🧪 *em teste pelo Ale (os 8 commits estão no ar desde 13/10/2026; o ✅ só vem depois do "testado e aprovado"; roteiro em `docs/roteiro_teste_modulo3.md`)*
+### Módulo 3 — Contatos ✅ *concluído e aprovado pelo Ale (13/10/2026; roteiro em `docs/roteiro_teste_modulo3.md`)*
 Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na decisão, aniversário, consentimento LGPD e **"converter sócio em contato"**. Lista e ficha.
 
 **Ordem de entrega** (cada commit vai para produção, e o Ale testa na tela e responde "aprovado" antes do seguinte):
@@ -131,7 +131,7 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 - ✅ **Commit 5 `290954a` (Vínculos + aba Contatos da empresa):** entregue (as decisões dele estão no bloco "Commit 5" abaixo). O teste que falhava nele (espera de e-mail de 5 s) e o do encerramento gracioso do worker foram tratados pelos commits `test:` de estabilidade (`6ae699c`, `5b40259`: prazo único de 15 s nas esperas e 20 s por teste).
 - ✅ **Commit 6 `a9a0c5c` (Converter sócio em contato):** migração 0019 (`empresa_socios.contato_id`), botão na ficha da empresa e reconciliação dos sócios no "Atualizar pela Receita" (com teste).
 - ✅ **Commit 7 `60bdaa7` (Histórico do contato):** aba Histórico na ficha do contato (`GET /v1/carteira/contatos/{id}/historico`), com testes.
-- ✅ **Commit 8 (Docs e roteiro final):** `docs/roteiro_teste_modulo3.md`. **Os 8 commits estão no ar; falta o teste e a aprovação do Ale.**
+- ✅ **Commit 8 (Docs e roteiro final):** `docs/roteiro_teste_modulo3.md`. **Os 8 commits foram testados e aprovados pelo Ale.**
 - Regra de parada (já cumprida; fica de registro): teste falhando (não reexecutar nem mudar prazo sem consultar), deploy/verify falho, migração destrutiva, variável nova no Coolify, decisão de negócio fora deste documento.
 
 **Decisões aprovadas pelo Ale (13/10/2026), ao aprovar o plano com as propostas:**
