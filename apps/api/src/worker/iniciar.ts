@@ -14,6 +14,7 @@ import {
 import { manipuladoresPadrao } from './outbox/manipuladores.js'
 import { RelayDoOutbox } from './outbox/relay.js'
 import { EnviadorSmtp } from '../email/enviador.js'
+import { ReceitaService, provedoresPadrao } from '../receita/receita.service.js'
 import { chavesDe } from '../seguranca/cifra.js'
 import {
   limparDadosDoJobFalho,
@@ -79,7 +80,10 @@ export async function iniciarWorker(deps: {
     banco,
     filas,
     log,
-    manipuladores: manipuladoresPadrao(config, enviador),
+    manipuladores: manipuladoresPadrao(config, enviador, {
+      banco,
+      servico: new ReceitaService(banco, provedoresPadrao(config)),
+    }),
   })
   filas.consumir(
     FILAS.outbox,

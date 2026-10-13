@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 
-import { sql } from '@leadtogo/db'
+import { type Conexao, sql } from '@leadtogo/db'
 
 import type { Configuracao } from '../../configuracao/configuracao.js'
 import { hashDoToken } from '../../convites/token.js'
@@ -8,6 +8,9 @@ import type { EnviadorSmtp } from '../../email/enviador.js'
 import { emailConvite } from '../../email/modelos.js'
 import { FILAS } from '../filas.js'
 import type { JobDeNotificacao } from '../processadores.js'
+import type { ReceitaService } from '../../receita/receita.service.js'
+import { EVENTO_VERIFICAR_SITUACAO } from '../../carteira/situacao-evento.js'
+import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
 
 /** Id do job de um evento: o BullMQ descarta repetição enquanto o job existir. */
@@ -20,6 +23,8 @@ export const jobIdDoEvento = (eventoId: string) => `evento-${eventoId}`
 export function manipuladoresPadrao(
   config: Configuracao,
   enviador: EnviadorSmtp,
+  /** Banco e consulta da Receita: habilitam a reconsulta da situação das empresas salvas sem verificar */
+  receita?: { banco: Conexao; servico: ReceitaService },
 ): Record<string, ManipuladorDeEvento> {
   const manipuladores: Record<string, ManipuladorDeEvento> = {}
 
@@ -79,6 +84,10 @@ export function manipuladoresPadrao(
         { ...dados, tenantId: evento.tenantId, eventoId: evento.id } satisfies JobDeNotificacao,
         { jobId: jobIdDoEvento(evento.id) },
       )
+  }
+
+  if (receita) {
+    manipuladores[EVENTO_VERIFICAR_SITUACAO] = manipuladorDaSituacao(receita.banco, receita.servico)
   }
 
   if (config.NODE_ENV !== 'production') {
