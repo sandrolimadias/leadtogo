@@ -115,6 +115,8 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       ok({ doisFatoresExigido: p as 'admin' | 'admin_gestor' | 'todos' }),
     ),
     contatos: {
+      listar: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 25 })),
+      opcoes: vi.fn(async () => ok({ cargos: [] })),
       criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       detalhar: vi.fn(async () => falha('contato_nao_encontrado', 'Contato não encontrado.', 404)),
       alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),

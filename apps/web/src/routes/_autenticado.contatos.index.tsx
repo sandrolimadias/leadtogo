@@ -1,27 +1,9 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Plus, Users } from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
 
-import { PaginaVazia } from '@/casca/partes'
-import { Button } from '@/components/ui/button'
+import { lerBusca } from '@/telas/contatos/busca'
+import { ListaDeContatos } from '@/telas/contatos/lista'
 
 export const Route = createFileRoute('/_autenticado/contatos/')({
-  component: function Contatos() {
-    const navegar = useNavigate()
-    return (
-      <PaginaVazia
-        titulo="Contatos"
-        icone={Users}
-        descricao="A lista de contatos está em construção. Já dá para cadastrar e editar contatos."
-        acao={
-          <Button
-            variant="primary"
-            icon={Plus}
-            onClick={() => void navegar({ to: '/contatos/novo' })}
-          >
-            Novo contato
-          </Button>
-        }
-      />
-    )
-  },
+  validateSearch: lerBusca,
+  component: ListaDeContatos,
 })

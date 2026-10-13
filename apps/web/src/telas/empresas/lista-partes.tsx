@@ -177,7 +177,7 @@ export function TabelaDeEmpresas({
   )
 }
 
-function AcaoDoCartao({
+export function AcaoDoCartao({
   icone,
   rotulo,
   cor,

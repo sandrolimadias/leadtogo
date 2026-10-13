@@ -1,4 +1,10 @@
 import {
+  type ConsultaDeContatos,
+  consultaDeContatosSchema,
+  type ListaDeContatos,
+  listaDeContatosSchema,
+  type OpcoesDaListaDeContatos,
+  opcoesDaListaDeContatosSchema,
   type AlterarContato,
   alterarContatoSchema,
   type Contato,
@@ -16,6 +22,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
@@ -23,6 +30,7 @@ import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { ContatosService } from './contatos.service.js'
+import { ListaDeContatosService } from './lista-contatos.service.js'
 
 const CARTEIRA =
   'Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404.'
@@ -31,7 +39,35 @@ const CARTEIRA =
 @ApiTags('Carteira: contatos')
 @Controller('carteira/contatos')
 export class ContatosController {
-  constructor(private readonly servico: ContatosService) {}
+  constructor(
+    private readonly servico: ContatosService,
+    private readonly lista: ListaDeContatosService,
+  ) {}
+
+  @Documenta({
+    resumo: 'Lista de contatos',
+    descricao: `${CARTEIRA} Busca por nome (sem acento), e-mail ou telefone (pedaço, com ou sem máscara). Os filtros \`empresaId\`, \`cargo\` e \`tagId\` (tag da empresa) valem juntos para o mesmo vínculo ativo; \`papelDecisaoId\` filtra a pessoa. Cada item traz só as empresas que o usuário vê, o telefone principal (E.164), o e-mail principal e se pediu para não ser contatado. Ordem por nome (padrão) ou data de cadastro, paginada.`,
+    consulta: consultaDeContatosSchema,
+    resposta: listaDeContatosSchema,
+    erros: [400, 401, 403],
+  })
+  @Get()
+  listar(
+    @Query(new ZodPipe(consultaDeContatosSchema)) consulta: ConsultaDeContatos,
+  ): Promise<ListaDeContatos> {
+    return this.lista.listar(consulta)
+  }
+
+  @Documenta({
+    resumo: 'Opções dos filtros da lista de contatos',
+    descricao: `${CARTEIRA} Os cargos que existem nos vínculos ativos que o usuário vê.`,
+    resposta: opcoesDaListaDeContatosSchema,
+    erros: [401, 403],
+  })
+  @Get('opcoes')
+  opcoes(): Promise<OpcoesDaListaDeContatos> {
+    return this.lista.opcoes()
+  }
 
   @Documenta({
     resumo: 'Cadastrar contato',

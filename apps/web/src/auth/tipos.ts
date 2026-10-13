@@ -11,10 +11,12 @@ import type {
   EmpresaCarteira,
   EmpresaCriada,
   HistoricoDaEmpresa,
+  ListaDeContatos,
   ListaDeEmpresas,
   Me,
   MembroDaEquipe,
   OpcoesDaLista,
+  OpcoesDaListaDeContatos,
   PapelDecisao,
   Preferencias,
   PreferenciasPatch,
@@ -54,6 +56,7 @@ import type {
   CriarTagGrupoEntrada,
   CriarTipoAtividadeEntrada,
   ConsultaDaListaEntrada,
+  ConsultaDeContatosEntrada,
   CriarContatoEntrada,
   CriarEmpresaCarteiraEntrada,
   ConfiguracaoDaCarteiraPatch,
@@ -153,6 +156,10 @@ export interface ServicosDaCarteira {
 export interface ServicosDeContatos {
   /** Cadastra o contato. 409 `contato_duplicado` (com `dados.existentes`): reenvie com `ignorarDuplicado` */
   criar: (dados: CriarContatoEntrada) => Promise<Resultado<Contato>>
+  /** A lista da carteira, com busca, filtros e paginação */
+  listar: (consulta: ConsultaDeContatosEntrada) => Promise<Resultado<ListaDeContatos>>
+  /** Os cargos que existem nos vínculos que o usuário vê (filtro da lista) */
+  opcoes: () => Promise<Resultado<OpcoesDaListaDeContatos>>
   /** A ficha. 404 `contato_nao_encontrado` (inexistente, excluído ou fora da carteira) */
   detalhar: (id: string) => Promise<Resultado<Contato>>
   /** Edita a pessoa (os vínculos com empresas têm operações próprias) */

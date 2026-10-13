@@ -71,7 +71,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Lista de contatos
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Busca por nome (sem acento), e-mail ou telefone (pedaço, com ou sem máscara). Os filtros `empresaId`, `cargo` e `tagId` (tag da empresa) valem juntos para o mesmo vínculo ativo; `papelDecisaoId` filtra a pessoa. Cada item traz só as empresas que o usuário vê, o telefone principal (E.164), o e-mail principal e se pediu para não ser contatado. Ordem por nome (padrão) ou data de cadastro, paginada.
+         */
+        get: operations["ContatosController_listar"];
         put?: never;
         /**
          * Cadastrar contato
@@ -110,6 +114,26 @@ export interface paths {
          * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Só o que vier muda; `telefones` e `emails`, se vierem, substituem a lista toda. Mudar `aceitaWhatsapp` ou `aceitaEmail` atualiza a data e a origem do consentimento. Telefone ou e-mail novo que já é de outro contato: 409 `contato_duplicado` (reenvie com `ignorarDuplicado`). Os vínculos com empresas têm rotas próprias. Registra na auditoria o antes e o depois.
          */
         patch: operations["ContatosController_alterar"];
+        trace?: never;
+    };
+    "/v1/carteira/contatos/opcoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Opções dos filtros da lista de contatos
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Os cargos que existem nos vínculos ativos que o usuário vê.
+         */
+        get: operations["ContatosController_opcoes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/carteira/empresas": {
@@ -1955,6 +1979,29 @@ export interface components {
             pagina: number;
             porPagina: number;
         };
+        ItemDaListaDeContatos: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            papelDecisao: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            empresas: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cargo: string | null;
+                principal: boolean;
+                ativo: boolean;
+            }[];
+            telefone: string | null;
+            temWhatsapp: boolean;
+            email: string | null;
+            naoQuerContato: boolean;
+            editavel: boolean;
+        };
         ItemDaListaDeEmpresas: {
             /** Format: uuid */
             id: string;
@@ -1989,6 +2036,12 @@ export interface components {
             proximaAtividadeEm: string | null;
             situacaoNaoVerificada: boolean;
             editavel: boolean;
+        };
+        ListaDeContatos: {
+            itens: components["schemas"]["ItemDaListaDeContatos"][];
+            total: number;
+            pagina: number;
+            porPagina: number;
         };
         ListaDeEmpresas: {
             itens: components["schemas"]["ItemDaListaDeEmpresas"][];
@@ -2059,6 +2112,9 @@ export interface components {
                 uf: string;
             }[];
             diasAlertaDeContato: number;
+        };
+        OpcoesDaListaDeContatos: {
+            cargos: string[];
         };
         OpcoesDeAcesso: {
             loginGoogle: boolean;
@@ -2323,6 +2379,63 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ContatosController_listar: {
+        parameters: {
+            query?: {
+                busca?: string;
+                empresaId?: string;
+                cargo?: string;
+                papelDecisaoId?: string;
+                tagId?: string;
+                ordem?: "nome" | "criado_em";
+                sentido?: "asc" | "desc";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeContatos"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2604,6 +2717,44 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ContatosController_opcoes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcoesDaListaDeContatos"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

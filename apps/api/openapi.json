@@ -118,6 +118,143 @@
       }
     },
     "/v1/carteira/contatos": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Busca por nome (sem acento), e-mail ou telefone (pedaço, com ou sem máscara). Os filtros `empresaId`, `cargo` e `tagId` (tag da empresa) valem juntos para o mesmo vínculo ativo; `papelDecisaoId` filtra a pessoa. Cada item traz só as empresas que o usuário vê, o telefone principal (E.164), o e-mail principal e se pediu para não ser contatado. Ordem por nome (padrão) ou data de cadastro, paginada.",
+        "operationId": "ContatosController_listar",
+        "parameters": [
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "empresaId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cargo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "papelDecisaoId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tagId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ordem",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "nome",
+              "type": "string",
+              "enum": ["nome", "criado_em"]
+            }
+          },
+          {
+            "name": "sentido",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "asc",
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeContatos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lista de contatos",
+        "tags": ["Carteira: contatos"]
+      },
       "post": {
         "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. O vendedor informa a empresa (`vinculo`, só empresa da carteira dele; 400 `empresa_obrigatoria`); gestor e admin podem criar sem empresa. Telefones viram E.164 e e-mails ficam em minúsculas, cada lista com um principal. Já existe contato com o mesmo e-mail ou telefone: 409 `contato_duplicado` com `dados.existentes` (id e nome só dos que o usuário vê), e a pessoa escolhe abrir o existente ou reenviar com `ignorarDuplicado: true`. Falso em `aceitaWhatsapp` ou `aceitaEmail` registra o consentimento (data e origem \"manual\"). Registra na auditoria.",
         "operationId": "ContatosController_criar",
@@ -444,6 +581,47 @@
           }
         },
         "summary": "Excluir contato",
+        "tags": ["Carteira: contatos"]
+      }
+    },
+    "/v1/carteira/contatos/opcoes": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Os cargos que existem nos vínculos ativos que o usuário vê.",
+        "operationId": "ContatosController_opcoes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcoesDaListaDeContatos"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Opções dos filtros da lista de contatos",
         "tags": ["Carteira: contatos"]
       }
     },
@@ -9055,6 +9233,89 @@
         "required": ["itens", "total", "pagina", "porPagina"],
         "additionalProperties": false
       },
+      "ItemDaListaDeContatos": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "papelDecisao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "empresas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "cargo": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "principal": {
+                  "type": "boolean"
+                },
+                "ativo": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "nome", "cargo", "principal", "ativo"],
+              "additionalProperties": false
+            }
+          },
+          "telefone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "temWhatsapp": {
+            "type": "boolean"
+          },
+          "email": {
+            "nullable": true,
+            "type": "string"
+          },
+          "naoQuerContato": {
+            "type": "boolean"
+          },
+          "editavel": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "papelDecisao",
+          "empresas",
+          "telefone",
+          "temWhatsapp",
+          "email",
+          "naoQuerContato",
+          "editavel"
+        ],
+        "additionalProperties": false
+      },
       "ItemDaListaDeEmpresas": {
         "type": "object",
         "properties": {
@@ -9178,6 +9439,34 @@
           "situacaoNaoVerificada",
           "editavel"
         ],
+        "additionalProperties": false
+      },
+      "ListaDeContatos": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDaListaDeContatos"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina"],
         "additionalProperties": false
       },
       "ListaDeEmpresas": {
@@ -9429,6 +9718,19 @@
           }
         },
         "required": ["vendedores", "unicoMembro", "cidades", "diasAlertaDeContato"],
+        "additionalProperties": false
+      },
+      "OpcoesDaListaDeContatos": {
+        "type": "object",
+        "properties": {
+          "cargos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["cargos"],
         "additionalProperties": false
       },
       "OpcoesDeAcesso": {

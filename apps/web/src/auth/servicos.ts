@@ -248,6 +248,11 @@ export const servicosReais: ServicosDeAcesso = {
     ),
 
   contatos: {
+    listar: (consulta) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/carteira/contatos', { params: { query: consulta as never } })),
+      ),
+    opcoes: () => protegido(async () => daApi(await api.GET('/v1/carteira/contatos/opcoes'))),
     criar: (dados) =>
       protegido(async () =>
         daApi(await api.POST('/v1/carteira/contatos', { body: dados as never })),

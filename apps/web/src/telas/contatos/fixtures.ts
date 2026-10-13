@@ -1,4 +1,9 @@
-import type { Contato, ItemDaLista, PapelDecisao } from '@leadtogo/api-client'
+import type {
+  Contato,
+  ItemDaLista,
+  ItemDaListaDeContatos,
+  PapelDecisao,
+} from '@leadtogo/api-client'
 
 import { meDeAdmin } from '@/testes/servicos-falsos'
 
@@ -91,6 +96,22 @@ export const itemDeEmpresa = (n: number, extra: Partial<ItemDaLista> = {}): Item
   ultimoContatoEm: null,
   proximaAtividadeEm: null,
   situacaoNaoVerificada: false,
+  editavel: true,
+  ...extra,
+})
+
+export const itemDeContato = (
+  n: number,
+  extra: Partial<ItemDaListaDeContatos> = {},
+): ItemDaListaDeContatos => ({
+  id: id(100 + n),
+  nome: `Contato ${n}`,
+  papelDecisao: { id: id(1), nome: 'Decisor' },
+  empresas: [{ id: id(200), nome: 'Usidantec', cargo: 'Diretor', principal: true, ativo: true }],
+  telefone: '+5527998472210',
+  temWhatsapp: true,
+  email: `contato${n}@exemplo.com.br`,
+  naoQuerContato: false,
   editavel: true,
   ...extra,
 })

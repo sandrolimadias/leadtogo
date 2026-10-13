@@ -167,3 +167,79 @@ export const contatoExistenteSchema = z
   })
   .meta({ id: 'ContatoExistente' })
 export type ContatoExistente = z.infer<typeof contatoExistenteSchema>
+
+// ---- Lista de contatos (GET /v1/carteira/contatos) ----
+
+export const ORDENS_DA_LISTA_DE_CONTATOS = ['nome', 'criado_em'] as const
+
+const textoDeBusca = z
+  .string()
+  .trim()
+  .max(100)
+  .transform((v) => (v === '' ? undefined : v))
+  .optional()
+
+/**
+ * Consulta da lista. Tudo opcional; os filtros se somam. `empresaId`, `cargo` e `tagId` olham só os
+ * vínculos **ativos** (o cargo é do vínculo; a tag é da empresa do vínculo).
+ */
+export const consultaDeContatosSchema = z
+  .object({
+    /** Nome (sem acento nem diferença de caixa), e-mail ou telefone (qualquer pedaço dos dígitos) */
+    busca: textoDeBusca,
+    empresaId: z.uuid().optional(),
+    cargo: textoDeBusca,
+    papelDecisaoId: z.uuid().optional(),
+    tagId: z.uuid().optional(),
+    ordem: z.enum(ORDENS_DA_LISTA_DE_CONTATOS).default('nome'),
+    sentido: z.enum(['asc', 'desc']).default('asc'),
+    pagina: z.coerce.number().int().min(1).default(1),
+    porPagina: z.coerce.number().int().min(1).max(100).default(25),
+  })
+  .strict()
+export type ConsultaDeContatos = z.output<typeof consultaDeContatosSchema>
+export type ConsultaDeContatosEntrada = z.input<typeof consultaDeContatosSchema>
+
+export const itemDaListaDeContatosSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    papelDecisao: z.object({ id: z.uuid(), nome: z.string() }).nullable(),
+    /** Só as empresas que o usuário vê; as ativas primeiro, o principal antes */
+    empresas: z.array(
+      z.object({
+        id: z.uuid(),
+        nome: z.string(),
+        cargo: z.string().nullable(),
+        principal: z.boolean(),
+        ativo: z.boolean(),
+      }),
+    ),
+    /** Telefone principal em E.164 (Ligar e WhatsApp); nulo se o contato não tem telefone */
+    telefone: z.string().nullable(),
+    /** Algum telefone do contato é do tipo WhatsApp */
+    temWhatsapp: z.boolean(),
+    email: z.string().nullable(),
+    /** Pediu para não receber contato (consentimento desligado para WhatsApp e e-mail) */
+    naoQuerContato: z.boolean(),
+    /** O usuário pode editar o contato (o vendedor só edita o ligado a empresa dele) */
+    editavel: z.boolean(),
+  })
+  .meta({ id: 'ItemDaListaDeContatos' })
+export type ItemDaListaDeContatos = z.infer<typeof itemDaListaDeContatosSchema>
+
+export const listaDeContatosSchema = z
+  .object({
+    itens: z.array(itemDaListaDeContatosSchema),
+    total: z.number().int(),
+    pagina: z.number().int(),
+    porPagina: z.number().int(),
+  })
+  .meta({ id: 'ListaDeContatos' })
+export type ListaDeContatos = z.infer<typeof listaDeContatosSchema>
+
+/** Opções dos filtros: os cargos que existem nos vínculos ativos que o usuário vê. */
+export const opcoesDaListaDeContatosSchema = z
+  .object({ cargos: z.array(z.string()) })
+  .meta({ id: 'OpcoesDaListaDeContatos' })
+export type OpcoesDaListaDeContatos = z.infer<typeof opcoesDaListaDeContatosSchema>

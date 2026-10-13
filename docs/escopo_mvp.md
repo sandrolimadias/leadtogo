@@ -144,7 +144,13 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
   - **Consentimento:** só vai no corpo quando a pessoa mexe na chave; mudar o consentimento grava data e origem "manual".
   - **Aniversário** valida dia e mês reais (29/02 vale, 31/02 não). **LinkedIn** só aceita endereço do próprio LinkedIn.
   - **Vínculo e exclusão de empresa:** ao excluir uma empresa, todos os vínculos dela ficam **inativos** (e deixam de ser o principal), mantendo o histórico; o vendedor deixa de ver o contato que só tinha essa empresa, e admin e gestor continuam vendo.
-  - **Até a ficha existir (commit 4)**, depois de criar o contato e no "Abrir contato" do aviso de duplicado a tela leva para a **edição** do contato; a lista (`/contatos`) é um aviso com o botão "Novo contato" até o commit 3.
+  - **Até a ficha existir (commit 4)**, depois de criar o contato e no "Abrir contato" do aviso de duplicado a tela leva para a **edição** do contato; a lista (`/contatos`) existe desde o commit 3.
+- *Commit 3 (Lista de contatos):*
+  - **Colunas:** Contato (nome, papel na decisão e selo "Não quer contato") · Empresas (estrela no principal; vínculo inativo aparece riscado, com "(inativo)") · Cargo (um por empresa, na mesma linha) · Telefone (principal, com o ícone de WhatsApp se algum telefone for desse tipo) · E-mail (principal). **Sem "Última interação"** (Módulo 5) e **sem "Importar planilha"** (Módulo 4); o botão só aparece quando a importação existir.
+  - **Busca:** nome (sem acento nem caixa), e-mail (pedaço) e telefone (pedaço dos dígitos, com ou sem máscara). Ordem por nome, 25 por página.
+  - **Filtros:** Empresa, Cargo, Papel na decisão e Tag da empresa, todos na URL. **Empresa, cargo e tag valem para o mesmo vínculo ativo** ("Diretor na Usidantec"); o vínculo inativo não entra nesses filtros, mas o contato continua na lista. O cargo é comparado pelo texto inteiro, sem diferença de acento ou caixa, e a lista de cargos vem dos vínculos ativos que o usuário vê. O vendedor não descobre a carteira dos outros pelo filtro de empresa.
+  - **Filtro de Empresa:** lista as **100 primeiras empresas da carteira, por nome**; uma empresa fora delas continua funcionando quando chega pela URL (o nome é buscado). Na ficha da empresa (commit 5) a aba Contatos mostra os contatos dela sem esse limite.
+  - **Celular:** cartões com Ligar, WhatsApp e E-mail; filtros atrás do botão "Filtros · N". "Não quer contato" só **avisa**: Ligar e WhatsApp continuam ativos (decisão aprovada).
 
 ### Módulo 4 — Importação de planilha (Excel/CSV)
 *Decidido pelo Ale em 12/10/2026; **substitui** a descrição anterior. Vem depois dos Módulos 1 a 3. Detalhes de regra em `funcionalidades.md` (seção 3, "Importação por planilha").*
