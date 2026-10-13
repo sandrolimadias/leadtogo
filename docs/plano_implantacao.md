@@ -736,7 +736,7 @@ Reúne num só lugar o que ficou registrado em outros documentos. Nada aqui bloq
 
 ### 6.4 Pós-MVP do SaaS (`configuracao_tecnologia.md`, seção 17)
 
-- [ ] Imagens `linux/amd64` além de `arm64`, com runner nativo (commit de CI logo depois do Módulo 1).
+- [ ] Imagens `linux/amd64` além de `arm64`, com runner nativo, **só nas versões numeradas** (release com tag), quando o primeiro release for preparado.
 - [ ] Módulo isolado de limites de plano (`PlanoService`), antes do primeiro cliente externo com plano.
 - [ ] Cadastro e cobrança self-service.
 - [ ] Painel administrativo.

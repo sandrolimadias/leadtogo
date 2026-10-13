@@ -144,7 +144,7 @@ O roteiro de implantação no Coolify (DNS, segredos, GHCR, banco, recursos, tok
 
 ## 6. Imagens Docker
 
-> **Imagem `amd64` (decidida em 12/10/2026, ainda não feita):** por causa do modelo comercial (SaaS, com on-premise possível; ver `configuracao_tecnologia.md`, seção 17), as imagens passam a ser publicadas **também para `linux/amd64`**, além de `linux/arm64`. Cada arquitetura é construída em **runner nativo** (`ubuntu-24.04` e `ubuntu-24.04-arm`, sem QEMU) e as duas viram um manifesto multi-arquitetura no GHCR. Entra como **commit de CI separado, logo depois do Módulo 1**.
+> **Imagem `amd64` (decidida em 13/10/2026, ainda não feita):** por causa do modelo comercial (SaaS, com on-premise possível; ver `configuracao_tecnologia.md`, seção 17), as imagens ganham também `linux/amd64`, mas **só nas versões numeradas** (release com tag), geradas nessa hora e **não a cada push**. Cada arquitetura é construída em **runner nativo** (`ubuntu-24.04` e `ubuntu-24.04-arm`, sem QEMU) e as duas viram um manifesto multi-arquitetura no GHCR. O deploy contínuo da `main` (arm64) segue como está. Entra como **commit de CI separado, quando o primeiro release com tag for preparado**.
 
 > **A VPS é ARM64.** As imagens do Leadtogo são publicadas para `linux/arm64`. No GitHub Actions, o build usa QEMU (emulação), que é mais lento; se o tempo incomodar, o job de build já usa o runner ARM nativo (`ubuntu-24.04-arm`), sem QEMU; se o plano deixar de permitir, volte ao QEMU (`docker/setup-qemu-action`). Localmente (WSL, amd64), o Docker builda para a arquitetura da máquina; o teste em ARM64 é `pnpm imagens:testar --arm64` (emulação do Docker Desktop).
 
