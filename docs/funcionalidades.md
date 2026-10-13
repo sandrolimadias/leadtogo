@@ -1,7 +1,8 @@
 # CRM Alessandro — Funcionalidades (Fase 1)
 
 > Documento de definições funcionais do projeto.
-> Status: **Aprovado (v1.5)** · Data: 06/10/2026
+> Status: **Aprovado (v1.7)** · Data: 13/10/2026
+> v1.7: **Módulo 2 (Empresas)**: decisões do Ale em 13/10/2026 sobre a lista, o cadastro, a ficha e o bloqueio de empresa não ativa (ver as seções "Decisões de 13/10/2026" abaixo; valem sobre o protótipo)
 > v1.1: incluídas as integrações WhatsApp (Evolution API) e n8n
 > v1.2: incluídos Tarefas (Kanban do vendedor), E-mail (registro, envio e rastreamento), Agendas Google/Microsoft e Central de notificações
 > v1.5: **revisão pelo protótipo** (Claude Design, `docs/prototipo/`): navegação, filtros salvos, colunas da lista, diálogo de fechamento, formulário de atividade e indicadores do Dashboard
@@ -137,8 +138,15 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 **Detalhes definidos no protótipo (v1.5)**
 - **Filtros salvos padrão** (chips no topo): Todas · Minha carteira · Sem visita há 90 dias · Nunca visitadas · **Sem próxima atividade**, cada um com contagem.
 - **Barra de filtros:** busca (nome, CNPJ, cidade, sem acento) + Status, Visitação, Vendedor, Cidade, Última visita (últimos 30 dias / sem visita há 60 / há 90 / nunca). "Limpar filtros" aparece com qualquer filtro ativo.
-- **Colunas:** Empresa (nome + CNPJ) · Tags (até 3 + "+N") · Cidade · Vendedor · Última visita (alerta a partir de 90 dias ou nunca) · Último contato (alerta a partir de 60 dias) · **Próxima atividade** (ou "Sem próxima atividade" em destaque) · **Em aberto** (R$ e nº de oportunidades).
 - **Aplicar tag em massa** respeita grupos de seleção única (aplicar um Status substitui o atual).
+
+**Decisões de 13/10/2026 (v1.7): lista (valem sobre o protótipo)**
+- **Colunas:** Empresa (nome + CNPJ) · **Tags (todas, sem "+N", quebrando linha)** · Cidade · Última visita (alerta a partir de 90 dias ou nunca) · Último contato (alerta a partir de 60 dias, ou o que a empresa configurou) · **Próxima atividade** (ou "Sem próxima atividade" em destaque). **Sem a coluna Vendedor.** A coluna "Em aberto" fica **oculta até o Módulo 6** (Oportunidades).
+- **Chips:** os três últimos (*Sem visita há 90 dias*, *Nunca visitadas*, *Sem próxima atividade*) e as contagens consideram **por padrão só Status Cliente e Prospect**, com a opção **"Incluir leads"**; *Todas* mostra tudo.
+- O filtro **Vendedor** e o chip **Minha carteira** ficam **ocultos** quando a empresa tem um único membro ativo.
+- Filtros e busca ficam **na URL**. A busca encontra por pedaço do nome, razão social, documento (com ou sem máscara) e cidade, sem acento.
+- Ações em massa: **Aplicar tag** (única ação desta fase; Trocar vendedor e Exportar ficam para depois). Só no desktop e no tablet; marca só o que o usuário edita.
+- Celular: cartões com **Ligar, WhatsApp e Rota**; "Importar planilha" só aparece com o Módulo 4.
 
 ### Tela Empresa (detalhe)
 - Cabeçalho: nome, tags, responsável, última visita/contato e ações rápidas (nova atividade, nova oportunidade, ligar, WhatsApp).
@@ -154,6 +162,20 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 - Faixa de resumo: Vendedor · Vertical · Última visita · Último contato · Próxima atividade.
 - No celular: botões grandes **Ligar · WhatsApp · Rota · Atividade**.
 - Aba **Histórico** mostra o log de auditoria; ações automáticas aparecem como "Sistema".
+
+**Decisões de 13/10/2026 (v1.7): ficha (valem sobre o protótipo)**
+- **Cabeçalho:** nome, Matriz/Filial, situação na Receita, razão social, CNPJ, tags + **Editar tags**, **Ligar** e **WhatsApp** (telefone principal da empresa) e **Mais ações** (Editar, Excluir). **Vendedor** some da faixa de resumo quando a empresa tem um membro só.
+- **Abas visíveis agora: Resumo e Histórico.** Contatos, Atividades e Oportunidades (e os botões "Nova atividade" e "Nova oportunidade") ficam **escondidos até o módulo de cada um** existir. Última visita, último contato e próxima atividade aparecem como "Nunca"/"—" até o Módulo 5.
+- **Resumo:** *Dados cadastrais*, *CNAEs* (principal marcado), *Sócios* (só nome e qualificação; "Converter em contato" entra no Módulo 3) e *Observações*. **Sem campos personalizados e sem faixas de funcionários e faturamento** (fora do MVP).
+- **Atualizar pela Receita** (card Dados cadastrais, ao lado de "Receita em dd/mm/aaaa"): reconsulta ignorando o cache, atualiza a situação e a data e abre um diálogo com **o que mudou (atual × Receita)**, com **Aplicar alterações** ou **Manter como está**; fica na auditoria. Telefones da Receita se somam aos da equipe. Empresa que deixou de ser ativa **continua na carteira**, com o aviso de situação.
+- **Editar** usa a mesma tela do cadastro, **sem o passo da Receita e sem o documento**. **Excluir** é só de administrador e gestor, é lógico e **não há lixeira** por enquanto (pendência pós-MVP).
+- A aba **Histórico** traz a auditoria **em português** (com nomes no lugar de ids) e as tags que o sistema aplicou ou tirou sozinho.
+
+**Cadastro: decisões de 13/10/2026 (v1.7)**
+- Três passos: **Documento** (CNPJ, CPF ou sem documento, com consulta à Receita), **Conferir dados da Receita** (editáveis) e **Carteira** (Vendedor, Vertical, Status padrão Lead, Website, Observações).
+- **Empresa não ativa na Receita** (baixada, inapta, suspensa, nula) **não pode ser cadastrada**: com o bloqueio ligado (padrão; Configurações → Carteira) a tela mostra a situação e o motivo e desabilita Salvar, e a API recusa (409 `empresa_nao_ativa`). Com a Receita fora do ar, a empresa é salva com o selo **"situação não verificada"** e o sistema reconsulta de hora em hora (até 24 vezes), avisando o vendedor se ela não estiver ativa. CPF e "sem documento" não são afetados. O mesmo bloqueio vale na importação (Módulo 4).
+- **Duplicado:** o CNPJ repetido na carteira mostra "Esta empresa já está no CRM" com **Abrir ficha**; o vendedor que não vê aquela empresa só fica sabendo que é de outro vendedor, sem nome.
+- Matriz e filial se ligam pela raiz do CNPJ, nos dois sentidos, ao salvar.
 
 ### Recursos extras
 - **Importação por planilha** (Excel/CSV): mapeamento de colunas, prévia, validação e relatório de erros. Importa empresas e contatos.

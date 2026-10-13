@@ -421,6 +421,14 @@ Regra (trigger ou serviço): em grupo de **seleção única**, a nova tag **subs
 ### 6.6 `empresa_tags_historico`
 `id, tenant_id, empresa_id, tag_id, acao (adicionada/removida), em, por, automatica`. Base para relatórios como "quantos Leads viraram Clientes no trimestre" e "tempo médio Lead → Cliente".
 
+> **Implementação (Módulo 2, API e telas):**
+> - **Documento imutável:** depois do cadastro, o `documento` (CNPJ/CPF) não muda por nenhuma rota; a unicidade vale entre as empresas **não excluídas** do tenant, então o documento de uma empresa excluída pode ser cadastrado de novo. Excluir uma **matriz** zera o `matriz_id` das filiais; cadastrar a matriz depois liga as filiais soltas.
+> - **Sócios e situação vêm da Receita, nunca do cliente:** a API consulta a Receita por conta própria ao cadastrar e ao "Atualizar pela Receita". A situação é lida de `receita_consultas` (a empresa só guarda `receita_atualizado_em` e `situacao_nao_verificada`). CNAE que a Receita traz e a tabela não tem entra por `app_registrar_cnae`, com a descrição da própria Receita.
+> - **Tags:** `empresa_tags` e `empresa_tags_historico` são gravadas juntas (Status inicial no cadastro, "Editar tags" na ficha e tags em massa na lista). Tags de grupo automático (Visitação) só o sistema aplica. **Excluir tag, grupo de tags ou vertical já usados** (inclusive por empresa excluída e no histórico de Status) dá 409: só inativar.
+> - **Telefones:** substituídos como conjunto a cada edição (delete e insert); exatamente um `principal`.
+> - **Auditoria da empresa:** ações `criar`, `alterar`, `alterar_tags`, `consultar_receita`, `atualizar_receita` e `excluir` (entidade `empresa`), lidas em português pela aba Histórico.
+> - **Configurações da carteira:** `bloquear_empresa_nao_ativa` e `vendedor_ve_todas_empresas` têm tela (Configurações → Carteira) e API (`/v1/configuracoes/carteira`); a mudança vai para a auditoria (entidade `configuracao_da_carteira`).
+
 ---
 
 ## 7. Contatos 🏢
