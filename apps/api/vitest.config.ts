@@ -12,5 +12,9 @@ export default defineConfig({
     setupFiles: ['./src/testes/setup-env.ts'],
     // Os arquivos compartilham o banco e o Valkey de teste: em sequência, o resultado é determinístico
     fileParallelism: false,
+    // Cada teste de integração monta tenant, usuários (hash de senha) e faz dezenas de idas ao Postgres:
+    // ~1 s em máquina normal, 3 a 5 s quando o runner/WSL está lento. Os 5 s padrão não deixavam folga.
+    testTimeout: 20_000,
+    hookTimeout: 30_000,
   },
 })
