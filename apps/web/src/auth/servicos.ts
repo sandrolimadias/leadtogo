@@ -292,6 +292,14 @@ export const servicosReais: ServicosDeAcesso = {
           }),
         ),
       ),
+    historico: (id, pagina) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/contatos/{id}/historico', {
+            params: { path: { id }, query: { pagina, porPagina: 20 } },
+          }),
+        ),
+      ),
     converterSocio: (empresaId, socioId) =>
       protegido(async () =>
         daApi(

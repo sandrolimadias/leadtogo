@@ -5,6 +5,7 @@ import { AtualizarPelaReceitaService } from './atualizar-receita.service.js'
 import { ConverterSocioService } from './converter-socio.service.js'
 import { ContatosController } from './contatos.controller.js'
 import { ContatosService } from './contatos.service.js'
+import { HistoricoDoContatoService } from './historico-contato.service.js'
 import { ListaDeContatosService } from './lista-contatos.service.js'
 import { VinculosDoContatoService } from './vinculos-do-contato.service.js'
 import { EmpresasDaCarteiraController } from './empresas.controller.js'
@@ -25,6 +26,7 @@ import { ListaDeEmpresasService } from './lista.service.js'
     ListaDeContatosService,
     VinculosDoContatoService,
     ConverterSocioService,
+    HistoricoDoContatoService,
   ],
 })
 export class CarteiraModule {}

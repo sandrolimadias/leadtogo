@@ -130,7 +130,8 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 - ✅ **Commits `test:` de estabilidade, no ar:** `322c009` prazo maior nos 2 testes de convite · `cb83473` Valkey de teste zerado a cada execução e prazo padrão de 20 s por teste na API (a suíte da API passou de ~300 s para ~560 s sem causa achada: máquina/WSL mais lenta, sem código novo lento) · `6ae699c` prazo padrão de 15 s no `aguardarMensagem` (não há limpeza concorrente do Mailpit: arquivos rodam em sequência).
 - ✅ **Commit 5 (Vínculos + aba Contatos da empresa):** entregue em `feat: vínculos do contato e aba Contatos da empresa` (as decisões dele estão no bloco "Commit 5" abaixo). O teste que falhava nele (espera de e-mail de 5 s) e o do encerramento gracioso do worker foram tratados pelos commits `test:` de estabilidade (`6ae699c`, `5b40259`: prazo único de 15 s nas esperas e 20 s por teste).
 - ✅ **Commit 6 (Converter sócio em contato):** migração 0019 (`empresa_socios.contato_id`), botão na ficha da empresa e reconciliação dos sócios no "Atualizar pela Receita" (com teste).
-- ⏳ **Faltam:** 7 histórico legível do contato · 8 docs finais, `docs/roteiro_teste_modulo3.md` e o relatório (roteiro, o que ficou de fora, decisões aprovadas × minhas, commits com hashes). Depois, parar e aguardar o teste do Ale.
+- ✅ **Commit 7 (Histórico do contato):** aba Histórico na ficha do contato (`GET /v1/carteira/contatos/{id}/historico`), com testes.
+- ⏳ **Faltam:** 8 docs finais, `docs/roteiro_teste_modulo3.md` e o relatório (roteiro, o que ficou de fora, decisões aprovadas × minhas, commits com hashes). Depois, parar e aguardar o teste do Ale.
 - Regra de parada: teste falhando (não reexecutar nem mudar prazo sem consultar), deploy/verify falho, migração destrutiva, variável nova no Coolify, decisão de negócio fora deste documento.
 
 **Decisões aprovadas pelo Ale (13/10/2026), ao aprovar o plano com as propostas:**
@@ -174,6 +175,10 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 - *Commit 6 (Converter sócio em contato):*
   - **Reconciliação pelo nome:** o "Atualizar pela Receita" compara o nome do sócio sem acento nem caixa; o sócio existente é atualizado no lugar (e mantém o contato), o novo entra e o que saiu da Receita é removido, **menos o sócio já convertido**, que fica (sócios são somados, como diz `docs/modelagem_banco.md`).
   - **Quem converte:** quem edita a empresa (o vendedor, só a da carteira dele); empresa que o usuário não vê responde 404. Não há como desfazer a conversão: o contato se inativa pelo vínculo, como qualquer outro.
+- *Commit 7 (Histórico do contato):*
+  - **Fonte:** a auditoria do contato (`entidade = 'contato'`), no mesmo formato do histórico da empresa (quem, quando, o que mudou, nomes no lugar de ids). Títulos: Contato cadastrado · Criado a partir de sócio · Dados alterados · Consentimento alterado (quando só mudaram as chaves de WhatsApp e e-mail) · Vinculado a *empresa* · Vínculo com *empresa* alterado, inativado ou reativado · Contato excluído.
+  - **Quem vê:** quem vê o contato vê o histórico dele, **menos as linhas que citam empresa que o usuário não vê** (o vendedor não descobre a carteira dos outros; o total da paginação também não as conta). Contato que o usuário não vê responde 404.
+  - **Abas da ficha do contato:** Resumo e Histórico. Atividades e Oportunidades entram nos Módulos 5 e 6 (decisão aprovada).
 
 ### Módulo 4 — Importação de planilha (Excel/CSV)
 *Decidido pelo Ale em 12/10/2026; **substitui** a descrição anterior. Vem depois dos Módulos 1 a 3. Detalhes de regra em `funcionalidades.md` (seção 3, "Importação por planilha").*

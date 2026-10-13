@@ -23,11 +23,13 @@ import { Switch } from '@/components/ui/checkbox'
 import { Avatar, Badge } from '@/components/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { Menu } from '@/components/ui/menu'
+import { ConteudoDaAba, Tabs } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
 import { dataEHora } from '@/telas/empresas/formatos'
 import { LinkDeIcone } from '@/telas/empresas/ficha'
+import { HistoricoAba } from '@/telas/empresas/ficha-historico'
 import { Cartao } from '@/telas/empresas/ficha-resumo'
 
 import { EmpresasVinculadas } from './ficha-vinculos'
@@ -35,6 +37,11 @@ import { telefoneParaTela } from './formatos'
 import { rotaDeEdicaoDoContato } from './rotas'
 
 const rota = getRouteApi('/_autenticado/contatos/$contatoId')
+
+const ABAS = [
+  { value: 'resumo', label: 'Resumo' },
+  { value: 'historico', label: 'Histórico' },
+]
 
 const MESES = [
   'janeiro',
@@ -194,6 +201,7 @@ export function FichaDoContato() {
   const celular = useDispositivo() === 'celular'
   const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data
   const vendedor = me?.empresas.find((e) => e.ativa)?.papel === 'vendedor'
+  const [aba, setAba] = useState('resumo')
   const [salvandoConsentimento, setSalvandoConsentimento] = useState(false)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
@@ -436,19 +444,40 @@ export function FichaDoContato() {
         ) : null}
       </header>
 
-      <main className="grid w-full max-w-[1400px] grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start gap-4 p-6 max-lg:grid-cols-1 max-md:p-4">
-        <div className="flex min-w-0 flex-col gap-4">
-          <EmpresasVinculadas contato={c} vendedor={vendedor} />
-          <DadosDaPessoa contato={c} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-4">
-          <ConsentimentoDoContato
-            contato={c}
-            salvando={salvandoConsentimento}
-            aoMudar={(naoQuer) => void mudarConsentimento(naoQuer)}
-          />
-        </div>
-      </main>
+      <Tabs
+        label="Seções do contato"
+        items={ABAS}
+        value={aba}
+        onChange={setAba}
+        className="flex flex-col [&>[role=tablist]]:bg-surface [&>[role=tablist]]:px-6 max-md:[&>[role=tablist]]:px-4"
+      >
+        <main className="w-full max-w-[1400px] p-6 max-md:p-4">
+          <ConteudoDaAba
+            value="resumo"
+            className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start gap-4 max-lg:grid-cols-1"
+          >
+            <div className="flex min-w-0 flex-col gap-4">
+              <EmpresasVinculadas contato={c} vendedor={vendedor} />
+              <DadosDaPessoa contato={c} />
+            </div>
+            <div className="flex min-w-0 flex-col gap-4">
+              <ConsentimentoDoContato
+                contato={c}
+                salvando={salvandoConsentimento}
+                aoMudar={(naoQuer) => void mudarConsentimento(naoQuer)}
+              />
+            </div>
+          </ConteudoDaAba>
+          <ConteudoDaAba value="historico">
+            <HistoricoAba
+              chave={['contatos', 'historico', c.id]}
+              buscar={(pagina) => servicos.contatos.historico(c.id, pagina)}
+              rotulo="Histórico do contato"
+              descricaoVazia="As alterações do contato vão aparecendo aqui."
+            />
+          </ConteudoDaAba>
+        </main>
+      </Tabs>
 
       <DialogoDeConfirmacao
         aberto={confirmandoExclusao}

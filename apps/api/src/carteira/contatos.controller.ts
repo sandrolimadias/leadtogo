@@ -1,5 +1,9 @@
 import {
   type ConsultaDeContatos,
+  type ConsultaDoHistorico,
+  consultaDoHistoricoSchema,
+  type HistoricoDaEmpresa,
+  historicoDaEmpresaSchema,
   consultaDeContatosSchema,
   type ListaDeContatos,
   listaDeContatosSchema,
@@ -34,6 +38,7 @@ import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { ContatosService } from './contatos.service.js'
+import { HistoricoDoContatoService } from './historico-contato.service.js'
 import { ListaDeContatosService } from './lista-contatos.service.js'
 import { VinculosDoContatoService } from './vinculos-do-contato.service.js'
 
@@ -48,6 +53,7 @@ export class ContatosController {
     private readonly servico: ContatosService,
     private readonly lista: ListaDeContatosService,
     private readonly vinculos: VinculosDoContatoService,
+    private readonly historico: HistoricoDoContatoService,
   ) {}
 
   @Documenta({
@@ -146,6 +152,21 @@ export class ContatosController {
     @Body(new ZodPipe(alterarVinculoSchema)) dados: AlterarVinculo,
   ): Promise<Contato> {
     return this.vinculos.alterar(id, empresaId, dados)
+  }
+
+  @Documenta({
+    resumo: 'Histórico do contato',
+    descricao: `${CARTEIRA} A aba Histórico da ficha: a auditoria do contato em português (quem, quando, o que mudou, com nomes no lugar de ids): cadastro, dados e consentimento alterados, vínculos criados, alterados, inativados e reativados. Linhas que citam empresa que o usuário não vê ficam de fora. Mesmo formato do histórico da empresa; do mais recente para o mais antigo, paginado.`,
+    consulta: consultaDoHistoricoSchema,
+    resposta: historicoDaEmpresaSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Get(':id/historico')
+  historicoDoContato(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query(new ZodPipe(consultaDoHistoricoSchema)) consulta: ConsultaDoHistorico,
+  ): Promise<HistoricoDaEmpresa> {
+    return this.historico.listar(id, consulta)
   }
 
   @Documenta({

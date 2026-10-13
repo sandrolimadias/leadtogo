@@ -584,6 +584,108 @@
         "tags": ["Carteira: contatos"]
       }
     },
+    "/v1/carteira/contatos/{id}/historico": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. A aba Histórico da ficha: a auditoria do contato em português (quem, quando, o que mudou, com nomes no lugar de ids): cadastro, dados e consentimento alterados, vínculos criados, alterados, inativados e reativados. Linhas que citam empresa que o usuário não vê ficam de fora. Mesmo formato do histórico da empresa; do mais recente para o mais antigo, paginado.",
+        "operationId": "ContatosController_historicoDoContato",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricoDaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Histórico do contato",
+        "tags": ["Carteira: contatos"]
+      }
+    },
     "/v1/carteira/contatos/{id}/vinculos": {
       "post": {
         "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Liga o contato a outra empresa **da carteira do usuário** (o vendedor só vincula a empresa dele; 403 nas demais) com o cargo daquela empresa. Vínculo inativo com a mesma empresa é reativado. `principal: true` tira o selo do contato principal anterior. Já vinculado e ativo: 409 `vinculo_ja_existe`. Registra na auditoria. Devolve o contato.",

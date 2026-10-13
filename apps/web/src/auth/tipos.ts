@@ -179,6 +179,8 @@ export interface ServicosDeContatos {
   ) => Promise<Resultado<Contato>>
   /** Converte o sócio da empresa em contato (vínculo com cargo = qualificação). 409 `socio_ja_convertido` */
   converterSocio: (empresaId: string, socioId: string) => Promise<Resultado<Contato>>
+  /** Aba Histórico do contato: auditoria legível, do mais recente ao mais antigo */
+  historico: (id: string, pagina: number) => Promise<Resultado<HistoricoDaEmpresa>>
   /** Os contatos de uma empresa (aba Contatos da ficha): ativos primeiro, depois os inativos */
   daEmpresa: (empresaId: string) => Promise<Resultado<ContatoDaEmpresa[]>>
 }

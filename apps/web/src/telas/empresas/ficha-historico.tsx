@@ -1,4 +1,4 @@
-import type { EntradaDoHistorico } from '@leadtogo/api-client'
+import type { EntradaDoHistorico, HistoricoDaEmpresa } from '@leadtogo/api-client'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import {
   Bot,
@@ -7,12 +7,14 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  ShieldCheck,
   Tags,
   Trash2,
   UserRoundCog,
 } from 'lucide-react'
 
 import { useServicos } from '@/auth/contexto'
+import type { Resultado } from '@/auth/tipos'
 import { Button } from '@/components/ui/button'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 
@@ -20,6 +22,10 @@ import { dataEHora } from './formatos'
 
 const ICONES: Record<string, LucideIcon> = {
   'Empresa cadastrada': Plus,
+  'Contato cadastrado': Plus,
+  'Criado a partir de sócio': Plus,
+  'Consentimento alterado': ShieldCheck,
+  'Contato excluído': Trash2,
   'Dados alterados': Pencil,
   'Carteira transferida': UserRoundCog,
   'Tags alteradas': Tags,
@@ -68,15 +74,27 @@ function Entrada({ e }: { e: EntradaDoHistorico }) {
   )
 }
 
-/** Aba Histórico: a auditoria da empresa em português; "Carregar mais" traz as páginas antigas. */
-export function HistoricoDaEmpresaAba({ empresaId }: { empresaId: string }) {
-  const servicos = useServicos()
+/**
+ * Aba Histórico das fichas (empresa e contato): a auditoria em português; "Carregar mais" traz as páginas
+ * antigas. Quem usa diz de onde vêm as páginas e o texto de cada situação.
+ */
+export function HistoricoAba({
+  chave,
+  buscar,
+  rotulo,
+  descricaoVazia,
+}: {
+  chave: readonly unknown[]
+  buscar: (pagina: number) => Promise<Resultado<HistoricoDaEmpresa>>
+  rotulo: string
+  descricaoVazia: string
+}) {
   const consulta = useInfiniteQuery({
-    queryKey: ['carteira', 'historico', empresaId],
+    queryKey: chave,
     retry: false,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
-      const r = await servicos.carteira.historico(empresaId, pageParam)
+      const r = await buscar(pageParam)
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -109,16 +127,12 @@ export function HistoricoDaEmpresaAba({ empresaId }: { empresaId: string }) {
   const itens = consulta.data.pages.flatMap((p) => p.itens)
   if (itens.length === 0) {
     return (
-      <EmptyState
-        icon={History}
-        title="Nada no histórico ainda"
-        description="As alterações da empresa vão aparecendo aqui."
-      />
+      <EmptyState icon={History} title="Nada no histórico ainda" description={descricaoVazia} />
     )
   }
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-4">
-      <ul className="m-0 list-none p-0" aria-label="Histórico da empresa">
+      <ul className="m-0 list-none p-0" aria-label={rotulo}>
         {itens.map((e) => (
           <Entrada key={e.id} e={e} />
         ))}
@@ -134,5 +148,18 @@ export function HistoricoDaEmpresaAba({ empresaId }: { empresaId: string }) {
         </div>
       ) : null}
     </div>
+  )
+}
+
+/** Aba Histórico da ficha da empresa. */
+export function HistoricoDaEmpresaAba({ empresaId }: { empresaId: string }) {
+  const servicos = useServicos()
+  return (
+    <HistoricoAba
+      chave={['carteira', 'historico', empresaId]}
+      buscar={(pagina) => servicos.carteira.historico(empresaId, pagina)}
+      rotulo="Histórico da empresa"
+      descricaoVazia="As alterações da empresa vão aparecendo aqui."
+    />
   )
 }

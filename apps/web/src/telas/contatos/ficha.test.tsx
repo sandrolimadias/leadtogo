@@ -17,6 +17,9 @@ function servicos(
     detalhar: vi.fn(async (_id: string) => ok(dados)),
     alterar: vi.fn(async (_id: string, _corpo: Record<string, unknown>) => ok(dados)),
     excluir: vi.fn(async (_id: string) => ok(undefined)),
+    historico: vi.fn(async (_id: string, _pagina: number) =>
+      ok({ itens: [], total: 0, pagina: 1, porPagina: 20 }),
+    ),
     ...extra,
   }
   return {
@@ -24,6 +27,7 @@ function servicos(
     contatos: contatos as typeof contatos & {
       alterar: ReturnType<typeof vi.fn>
       excluir: ReturnType<typeof vi.fn>
+      historico: ReturnType<typeof vi.fn>
     },
   }
 }
@@ -279,5 +283,88 @@ describe('Ficha do contato', () => {
     expect(screen.queryByRole('button', { name: 'Editar' })).toBeNull() // no celular, só pelo menu
     await userEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
     expect(screen.getByRole('menuitem', { name: 'Editar' })).toBeInTheDocument()
+  })
+
+  describe('aba Histórico', () => {
+    const entrada = (n: number, titulo: string, extra: Record<string, unknown> = {}) => ({
+      id: `a${n}`,
+      em: '2026-10-13T15:30:00.000Z',
+      por: { id: id(900), nome: 'Alessandro Dias' },
+      automatica: false,
+      titulo,
+      mudancas: [],
+      ...extra,
+    })
+    const abrirHistorico = async (x: ReturnType<typeof servicos>) => {
+      await abrir(x)
+      expect(screen.getByRole('tab', { name: 'Resumo' })).toHaveAttribute('aria-selected', 'true')
+      await userEvent.click(screen.getByRole('tab', { name: 'Histórico' }))
+    }
+
+    it('mostra o que mudou em português, com quem fez e quando', async () => {
+      const x = servicos(contato(), 'admin', {
+        historico: vi.fn(async () =>
+          ok({
+            itens: [
+              entrada(2, 'Vinculado a Beta', {
+                mudancas: [{ campo: 'cargo', rotulo: 'Cargo', de: null, para: 'Contador' }],
+              }),
+              entrada(1, 'Dados alterados', {
+                mudancas: [
+                  { campo: 'nome', rotulo: 'Nome', de: 'Rogério', para: 'Rogério Bindaco' },
+                ],
+              }),
+            ],
+            total: 2,
+            pagina: 1,
+            porPagina: 20,
+          }),
+        ),
+      })
+      await abrirHistorico(x)
+      const lista = await screen.findByRole('list', { name: 'Histórico do contato' })
+      expect(within(lista).getByText('Vinculado a Beta')).toBeInTheDocument()
+      expect(within(lista).getByText('Contador')).toBeInTheDocument()
+      expect(within(lista).getByText('Rogério Bindaco')).toBeInTheDocument()
+      expect(within(lista).getAllByText(/Alessandro Dias/)).toHaveLength(2)
+      expect(x.contatos.historico).toHaveBeenCalledWith(id(100), 1)
+    })
+
+    it('sem registros: convida com o estado vazio', async () => {
+      await abrirHistorico(servicos())
+      expect(await screen.findByText('Nada no histórico ainda')).toBeInTheDocument()
+      expect(screen.getByText('As alterações do contato vão aparecendo aqui.')).toBeInTheDocument()
+    })
+
+    it('"Carregar mais" traz a página seguinte', async () => {
+      const historico = vi
+        .fn()
+        .mockResolvedValueOnce(
+          ok({ itens: [entrada(2, 'Dados alterados')], total: 2, pagina: 1, porPagina: 1 }),
+        )
+        .mockResolvedValueOnce(
+          ok({ itens: [entrada(1, 'Contato cadastrado')], total: 2, pagina: 2, porPagina: 1 }),
+        )
+      await abrirHistorico(servicos(contato(), 'admin', { historico }))
+      expect(await screen.findByText('Dados alterados')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Carregar mais' }))
+      expect(await screen.findByText('Contato cadastrado')).toBeInTheDocument()
+      expect(historico).toHaveBeenLastCalledWith(id(100), 2)
+      expect(screen.queryByRole('button', { name: 'Carregar mais' })).toBeNull()
+    })
+
+    it('erro ao carregar: mostra o motivo e "Tentar de novo" busca outra vez', async () => {
+      const historico = vi
+        .fn()
+        .mockResolvedValueOnce(falha('x', 'Sem conexão.', 0))
+        .mockResolvedValueOnce(
+          ok({ itens: [entrada(1, 'Contato cadastrado')], total: 1, pagina: 1, porPagina: 20 }),
+        )
+      await abrirHistorico(servicos(contato(), 'admin', { historico }))
+      expect(await screen.findByText('Não foi possível carregar o histórico')).toBeInTheDocument()
+      expect(screen.getByText('Sem conexão.')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+      expect(await screen.findByText('Contato cadastrado')).toBeInTheDocument()
+    })
   })
 })

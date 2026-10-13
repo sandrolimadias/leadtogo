@@ -228,7 +228,7 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 
 ### Tela Contatos
 - Lista com busca (nome, telefone, e-mail), filtro por empresa, cargo e tags da empresa.
-- Detalhe do contato: dados, **empresas vinculadas**, atividades e oportunidades em que participa.
+- Detalhe do contato: dados, **empresas vinculadas**, atividades e oportunidades em que participa (as duas últimas entram nos Módulos 5 e 6). Aba **Histórico** com a auditoria do contato em português; as linhas que citam empresa que o usuário não vê ficam de fora.
 - Ações rápidas: ligar, WhatsApp, e-mail.
 - Detecção de duplicados por e-mail ou telefone.
 
