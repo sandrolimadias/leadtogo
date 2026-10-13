@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { Checkbox } from '@/components/ui/checkbox'
 import { Tag } from '@/components/ui/exibicao'
 import type { CorDeTag } from '@/components/ui/cores'
 import { cn } from '@/lib/cn'
@@ -69,16 +70,34 @@ export function TabelaDeEmpresas({
   itens,
   diasDeAlertaDoContato,
   aoAbrir,
+  selecionadas,
+  aoAlternar,
+  aoAlternarTodas,
 }: {
   itens: ItemDaLista[]
   diasDeAlertaDoContato: number
   aoAbrir: (id: string) => void
+  /** Ids marcados para a ação em massa */
+  selecionadas: ReadonlySet<string>
+  aoAlternar: (id: string) => void
+  aoAlternarTodas: () => void
 }) {
+  // Só se marca o que a pessoa pode editar (o vendedor, as empresas dele)
+  const editaveis = itens.filter((e) => e.editavel)
+  const todasMarcadas = editaveis.length > 0 && editaveis.every((e) => selecionadas.has(e.id))
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-surface">
       <table className="w-full border-collapse text-sm leading-5">
         <thead className="bg-surface-sunken">
           <tr>
+            <th scope="col" className={cn(cabecalho, 'w-10 pr-0')}>
+              <Checkbox
+                aria-label="Selecionar todas"
+                checked={todasMarcadas}
+                disabled={editaveis.length === 0}
+                onChange={aoAlternarTodas}
+              />
+            </th>
             <th scope="col" className={cabecalho}>
               Empresa
             </th>
@@ -103,9 +122,23 @@ export function TabelaDeEmpresas({
           {itens.map((e) => (
             <tr
               key={e.id}
-              className="cursor-pointer hover:bg-surface-hover"
+              className={cn(
+                'cursor-pointer hover:bg-surface-hover',
+                selecionadas.has(e.id) && 'bg-surface-selected',
+              )}
               onClick={() => aoAbrir(e.id)}
             >
+              <td
+                className="w-10 border-b border-border py-2 pr-0 pl-3"
+                onClick={(ev) => ev.stopPropagation()}
+              >
+                <Checkbox
+                  aria-label={`Selecionar ${e.nome}`}
+                  checked={selecionadas.has(e.id)}
+                  disabled={!e.editavel}
+                  onChange={() => aoAlternar(e.id)}
+                />
+              </td>
               <td className="min-w-40 border-b border-border px-3 py-2">
                 <button
                   type="button"

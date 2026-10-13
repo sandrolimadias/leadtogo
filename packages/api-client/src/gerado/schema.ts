@@ -236,6 +236,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/carteira/empresas/tags-em-massa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aplicar uma tag a várias empresas
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Aplica UMA tag a até 200 empresas de uma vez. Tag de grupo de seleção única (Status) substitui a que a empresa já tinha no grupo. Só mexe nas empresas que o usuário pode editar (o vendedor, só nas dele): as outras ficam como estavam e entram em `ignoradas`. Tag de grupo automático (Visitação) é 400 `tag_automatica`; inativa, 400 `tag_inativa`. Cada empresa muda no histórico de tags e na auditoria.
+         */
+        post: operations["EmpresasDaCarteiraController_aplicarTagEmMassa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/configuracoes/carteira": {
         parameters: {
             query?: never;
@@ -1256,6 +1276,11 @@ export interface components {
         AplicarDaReceitaEntrada: {
             campos?: ("razaoSocial" | "nomeFantasia" | "mei" | "dataInicioAtividades" | "porteCodigo" | "regimeTributario" | "endereco" | "cnaes" | "telefones" | "socios")[];
         };
+        AplicarTagEmMassaEntrada: {
+            empresaIds: string[];
+            /** Format: uuid */
+            tagId: string;
+        };
         CnaesDaEmpresaEntrada: {
             principal: number | null;
             secundarios: number[];
@@ -1872,6 +1897,11 @@ export interface components {
             /** Format: uuid */
             membroId: string;
             verificacaoEmailPendente: boolean;
+        };
+        ResultadoDaTagEmMassa: {
+            aplicadas: number;
+            semMudanca: number;
+            ignoradas: number;
         };
         Saude: {
             /** @enum {string} */
@@ -2831,6 +2861,75 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_aplicarTagEmMassa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AplicarTagEmMassaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoDaTagEmMassa"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

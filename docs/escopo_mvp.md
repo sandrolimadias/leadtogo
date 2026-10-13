@@ -87,6 +87,9 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - Só CNPJ (409 `sem_cnpj`) e só quem edita a empresa. As duas fontes fora do ar, ou só cache vencido: 503, e nada muda. Empresa que deixou de ser ativa continua na carteira.
 - Telefones da Receita **só se somam** aos da equipe; sócios vêm sempre da Receita. A auditoria guarda a consulta e, ao aplicar, o antes e o depois ("Atualizado pela Receita" no Histórico).
 
+**Tags em massa** (`POST /v1/carteira/empresas/tags-em-massa`, commit 12)
+- Na lista (desktop e tablet), marcar empresas mostra a barra "N selecionadas · Aplicar tag · Limpar seleção". Aplica **uma tag** a até 200 empresas; tag de grupo de seleção única (**Status**) **substitui** a que a empresa tinha. Só mexe no que o usuário edita (o vendedor, nas dele); as outras ficam como estavam e o aviso conta quantas. Tags de grupo automático (Visitação) não se aplicam à mão. A seleção vale só para a página e os filtros que se vê. No celular não há seleção em massa. "Trocar vendedor" e "Exportar" do protótipo não entram nesta fase.
+
 **Detalhes da API da lista** (`GET /v1/carteira/empresas`, `/contagens` e `/opcoes`, commit 5)
 - "Cliente e Prospect" dos chips é pelas **chaves do sistema** das tags (`cliente`, `prospect`), que sobrevivem a renomear. "Incluir leads" traz os demais Status.
 - Filtro `tags`: a empresa precisa ter **todas** as tags pedidas (ex.: um Status e uma Visitação). Última visita "sem visita há 60/90 dias" **inclui quem nunca foi visitado**.

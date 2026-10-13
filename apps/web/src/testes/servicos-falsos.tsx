@@ -163,6 +163,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       definirTags: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       excluir: vi.fn(async () => ok(undefined)),
+      aplicarTagEmMassa: vi.fn(async () => ok({ aplicadas: 0, semMudanca: 0, ignoradas: 0 })),
     },
     cadastros: {
       verticais: {

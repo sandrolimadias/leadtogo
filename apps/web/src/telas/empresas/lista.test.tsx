@@ -93,6 +93,36 @@ const grupos: TagGrupo[] = [
       },
     ],
   },
+  {
+    id: id(3),
+    nome: 'Interesse',
+    selecao: 'multipla' as const,
+    obrigatorio: false,
+    sistema: false,
+    automatico: false,
+    ativo: true,
+    ordem: 2,
+    tags: [
+      {
+        id: id(31),
+        tagGrupoId: id(3),
+        nome: 'Retrofit',
+        cor: 'blue',
+        ativo: true,
+        ordem: 0,
+        chaveSistema: null,
+      },
+      {
+        id: id(32),
+        tagGrupoId: id(3),
+        nome: 'Monitoramento',
+        cor: 'indigo',
+        ativo: false,
+        ordem: 1,
+        chaveSistema: null,
+      },
+    ],
+  },
 ]
 
 const item = (n: number, extra: Partial<ItemDaLista> = {}): ItemDaLista => ({
@@ -162,6 +192,9 @@ function servicos(
     ),
     contagens: vi.fn(async () => ok(extra.contagens ?? contagens)),
     opcoes: vi.fn(async () => ok(extra.opcoes ?? opcoes())),
+    aplicarTagEmMassa: vi.fn(async (_ids: string[], _tagId: string): Promise<unknown> =>
+      ok({ aplicadas: 2, semMudanca: 0, ignoradas: 0 }),
+    ),
   }
   const s = servicosFalsos({
     me: async () => me(extra.papel),
@@ -194,6 +227,7 @@ describe('Empresas: a lista', () => {
       .getAllByRole('columnheader')
       .map((c) => c.textContent)
     expect(colunas).toEqual([
+      '', // a coluna de seleção
       'Empresa',
       'Tags',
       'Cidade',
@@ -470,5 +504,124 @@ describe('Empresas: no celular', () => {
     expect(screen.queryByRole('combobox', { name: 'Status' })).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Filtros · 1' }))
     expect(screen.getByRole('combobox', { name: 'Status' })).toHaveValue(id(13))
+  })
+})
+
+describe('Empresas: ações em massa', () => {
+  const marcar = async (nome: string) =>
+    userEvent.click(await screen.findByRole('checkbox', { name: `Selecionar ${nome}` }))
+
+  it('sem ninguém marcado não há barra; marcar mostra quantas e "Limpar seleção" desmarca', async () => {
+    const s = servicos()
+    await abrir(s)
+    await screen.findByRole('table')
+    expect(screen.queryByRole('region', { name: 'Ações em massa' })).toBeNull()
+    await marcar('Empresa 1')
+    const barra = await screen.findByRole('region', { name: 'Ações em massa' })
+    expect(within(barra).getByText('1 selecionada')).toBeInTheDocument()
+    await marcar('Empresa 2')
+    expect(within(barra).getByText('2 selecionadas')).toBeInTheDocument()
+    await userEvent.click(within(barra).getByRole('button', { name: 'Limpar seleção' }))
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Ações em massa' })).toBeNull())
+    expect(screen.getByRole('checkbox', { name: 'Selecionar Empresa 1' })).not.toBeChecked()
+  })
+
+  it('"Selecionar todas" marca só o que a pessoa edita; a empresa de outro vendedor fica desativada', async () => {
+    const s = servicos(lista([item(1), item(2, { editavel: false }), item(3)]))
+    await abrir(s)
+    await screen.findByRole('table')
+    expect(screen.getByRole('checkbox', { name: 'Selecionar Empresa 2' })).toBeDisabled()
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Selecionar todas' }))
+    const barra = await screen.findByRole('region', { name: 'Ações em massa' })
+    expect(within(barra).getByText('2 selecionadas')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Selecionar Empresa 2' })).not.toBeChecked()
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Selecionar todas' }))
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Ações em massa' })).toBeNull())
+  })
+
+  it('marcar a caixa não abre a ficha', async () => {
+    const s = servicos()
+    const { historico } = await abrir(s)
+    await marcar('Empresa 1')
+    expect(historico.location.pathname).toBe('/empresas')
+  })
+
+  it('o menu "Aplicar tag" traz Status (substitui a atual) e Interesse, só as ativas, e nada da Visitação', async () => {
+    const s = servicos()
+    await abrir(s)
+    await marcar('Empresa 1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Aplicar tag' }))
+    const menu = await screen.findByRole('menu')
+    expect(within(menu).getByText('Status (substitui a atual)')).toBeInTheDocument()
+    expect(within(menu).getByText('Interesse')).toBeInTheDocument()
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((i) => i.textContent),
+    ).toEqual(['Lead', 'Prospect', 'Cliente', 'Retrofit'])
+    expect(within(menu).queryByText('Visitação')).toBeNull()
+  })
+
+  it('aplicar manda os ids marcados e a tag, avisa o resultado, limpa a seleção e refaz a lista', async () => {
+    const s = servicos()
+    await abrir(s)
+    await marcar('Empresa 1')
+    await marcar('Empresa 2')
+    await userEvent.click(await screen.findByRole('button', { name: 'Aplicar tag' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Cliente' }))
+    await waitFor(() =>
+      expect(s.carteira.aplicarTagEmMassa).toHaveBeenCalledWith(
+        expect.arrayContaining([id(101), id(102)]),
+        id(13),
+      ),
+    )
+    expect(await screen.findByText('Tag Cliente aplicada a 2 empresas')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Ações em massa' })).toBeNull())
+    await waitFor(() => expect(s.carteira.listar.mock.calls.length).toBeGreaterThan(1))
+  })
+
+  it('o aviso conta as que já tinham a tag e as que ficaram de fora', async () => {
+    const s = servicos()
+    s.carteira.aplicarTagEmMassa.mockResolvedValueOnce(
+      ok({ aplicadas: 1, semMudanca: 1, ignoradas: 2 }),
+    )
+    await abrir(s)
+    await marcar('Empresa 1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Aplicar tag' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Retrofit' }))
+    expect(await screen.findByText('Tag Retrofit aplicada a 1 empresa')).toBeInTheDocument()
+    expect(
+      screen.getByText('1 já tinha a tag; 2 não foram alteradas (fora da sua carteira).'),
+    ).toBeInTheDocument()
+  })
+
+  it('erro ao aplicar: avisa o motivo e mantém a seleção', async () => {
+    const s = servicos()
+    s.carteira.aplicarTagEmMassa.mockResolvedValueOnce(falha('x', 'Servidor fora do ar.', 503))
+    await abrir(s)
+    await marcar('Empresa 1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Aplicar tag' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Cliente' }))
+    expect(await screen.findByText('Não foi possível aplicar a tag')).toBeInTheDocument()
+    expect(screen.getByText('Servidor fora do ar.')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Selecionar Empresa 1' })).toBeChecked()
+  })
+
+  it('mudar um filtro ou a busca começa sem ninguém marcado', async () => {
+    const s = servicos()
+    await abrir(s)
+    await marcar('Empresa 1')
+    await screen.findByRole('region', { name: 'Ações em massa' })
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Última visita' }), '90')
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Ações em massa' })).toBeNull())
+  })
+
+  it('no celular não há seleção em massa', async () => {
+    largura(390)
+    const s = servicos()
+    renderizar(s.s, '/empresas')
+    await screen.findByRole('article', { name: 'Empresa 1' })
+    expect(screen.queryByRole('checkbox', { name: /Selecionar/ })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Ações em massa' })).toBeNull()
   })
 })

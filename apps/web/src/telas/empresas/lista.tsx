@@ -1,6 +1,11 @@
 import type { ListaDeEmpresas, TagGrupo } from '@leadtogo/api-client'
 import { CHIPS_DA_LISTA, type ChipDaLista } from '@leadtogo/shared'
-import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { Building2, Check, Filter, Plus, Search, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -11,10 +16,12 @@ import { Button, IconButton } from '@/components/ui/button'
 import { Select, TextField } from '@/components/ui/campos'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
+import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 
 import { type BuscaDaLista, consultaDaLista, lerBusca, temFiltroAtivo } from './busca'
 import { contagemDeEmpresas } from './formatos'
+import { BarraDeAcoesEmMassa } from './acoes-em-massa'
 import { CartoesDeEmpresas, TabelaDeEmpresas } from './lista-partes'
 
 const rota = getRouteApi('/_autenticado/empresas/')
@@ -48,6 +55,7 @@ function gruposDosFiltros(grupos: TagGrupo[] | undefined) {
 /** Empresas: a carteira, com busca, chips, filtros na URL, tabela (desktop e tablet) e cartões (celular). */
 export function ListaDeEmpresas() {
   const servicos = useServicos()
+  const queryClient = useQueryClient()
   const dispositivo = useDispositivo()
   const celular = dispositivo === 'celular'
   // O roteador junta a URL crua com o que `validateSearch` devolveu: valor inválido ainda aparece. Limpa de novo.
@@ -58,6 +66,11 @@ export function ListaDeEmpresas() {
   const [texto, setTexto] = useState(busca.busca ?? '')
   const enviado = useRef(busca.busca ?? '')
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
+  const [marcadas, setMarcadas] = useState<{ chave: string; ids: ReadonlySet<string> }>({
+    chave: '',
+    ids: new Set(),
+  })
+  const [aplicando, setAplicando] = useState(false)
 
   const mudar = (patch: Partial<BuscaDaLista>, voltarParaAPrimeira = true) =>
     void navegar({
@@ -151,6 +164,49 @@ export function ListaDeEmpresas() {
       },
       replace: true,
     })
+  }
+
+  // A seleção vale para a página que se vê: outra busca, filtro ou página começa sem ninguém marcado
+  const chaveDaPagina = JSON.stringify(busca)
+  const selecionadas: ReadonlySet<string> =
+    marcadas.chave === chaveDaPagina ? marcadas.ids : new Set()
+  const selecionar = (ids: ReadonlySet<string>) => setMarcadas({ chave: chaveDaPagina, ids })
+
+  const alternar = (id: string) => {
+    const novo = new Set(selecionadas)
+    if (!novo.delete(id)) novo.add(id)
+    selecionar(novo)
+  }
+  const editaveisDaPagina = (lista.data?.itens ?? []).filter((e) => e.editavel).map((e) => e.id)
+  const alternarTodas = () =>
+    selecionar(
+      editaveisDaPagina.every((id) => selecionadas.has(id))
+        ? new Set()
+        : new Set(editaveisDaPagina),
+    )
+  const aplicarTag = async (tagId: string, nome: string) => {
+    setAplicando(true)
+    const r = await servicos.carteira.aplicarTagEmMassa([...selecionadas], tagId)
+    setAplicando(false)
+    if (!r.ok) {
+      toast.error('Não foi possível aplicar a tag', { description: r.erro.mensagem })
+      return
+    }
+    const { aplicadas, semMudanca, ignoradas } = r.dados
+    const partes = [
+      semMudanca > 0 ? `${semMudanca} já ${semMudanca === 1 ? 'tinha' : 'tinham'} a tag` : null,
+      ignoradas > 0
+        ? `${ignoradas} ${ignoradas === 1 ? 'não foi alterada' : 'não foram alteradas'} (fora da sua carteira)`
+        : null,
+    ].filter(Boolean)
+    toast.success(
+      aplicadas === 1
+        ? `Tag ${nome} aplicada a 1 empresa`
+        : `Tag ${nome} aplicada a ${aplicadas} empresas`,
+      partes.length > 0 ? { description: `${partes.join('; ')}.` } : {},
+    )
+    selecionar(new Set())
+    await queryClient.invalidateQueries({ queryKey: ['carteira'] })
   }
 
   const total = lista.data?.total
@@ -332,8 +388,21 @@ export function ListaDeEmpresas() {
         ) : null}
       </div>
 
+      {!celular && selecionadas.size > 0 ? (
+        <BarraDeAcoesEmMassa
+          quantidade={selecionadas.size}
+          grupos={tags.data ?? []}
+          ocupado={aplicando}
+          aoAplicar={(tagId, nome) => void aplicarTag(tagId, nome)}
+          aoLimpar={() => selecionar(new Set())}
+        />
+      ) : null}
+
       <Conteudo
         lista={lista}
+        selecionadas={selecionadas}
+        aoAlternar={alternar}
+        aoAlternarTodas={alternarTodas}
         celular={celular}
         diasDeAlertaDoContato={opcoes.data?.diasAlertaDeContato ?? 60}
         vazioDaCarteira={!comFiltro && chip === 'todas'}
@@ -351,6 +420,9 @@ export function ListaDeEmpresas() {
 
 function Conteudo({
   lista,
+  selecionadas,
+  aoAlternar,
+  aoAlternarTodas,
   celular,
   diasDeAlertaDoContato,
   vazioDaCarteira,
@@ -360,6 +432,9 @@ function Conteudo({
   aoMudarDePagina,
 }: {
   lista: UseQueryResult<ListaDeEmpresas, Error>
+  selecionadas: ReadonlySet<string>
+  aoAlternar: (id: string) => void
+  aoAlternarTodas: () => void
   celular: boolean
   diasDeAlertaDoContato: number
   vazioDaCarteira: boolean
@@ -430,6 +505,9 @@ function Conteudo({
           itens={itens}
           diasDeAlertaDoContato={diasDeAlertaDoContato}
           aoAbrir={aoAbrir}
+          selecionadas={selecionadas}
+          aoAlternar={aoAlternar}
+          aoAlternarTodas={aoAlternarTodas}
         />
       )}
       {paginas > 1 ? (

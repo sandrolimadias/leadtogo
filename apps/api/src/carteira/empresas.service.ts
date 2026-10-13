@@ -1,11 +1,13 @@
 import { and, eq, inArray, isNull, ne, schema, sql } from '@leadtogo/db'
 import {
   type AlterarEmpresaCarteira,
+  type AplicarTagEmMassa,
   type CnaesEntrada,
   type CriarEmpresaCarteira,
   type DadosDaReceita,
   type EmpresaCarteira,
   matrizOuFilialDoCnpj,
+  type ResultadoDaTagEmMassa,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
@@ -38,6 +40,7 @@ const {
   empresaTelefones,
   empresaCnaes,
   empresaSocios,
+  empresaTags,
   membros,
   verticais,
   municipios,
@@ -326,6 +329,79 @@ export class EmpresasDaCarteiraService {
       })
     }
     return this.detalhar(id)
+  }
+
+  /**
+   * Aplica uma tag a várias empresas de uma vez (lista → "Aplicar tag"). Tag de grupo de seleção única
+   * (Status) substitui a que a empresa tinha no grupo. Só mexe nas empresas que o usuário pode editar;
+   * as outras ficam como estavam e entram na contagem de `ignoradas`.
+   */
+  async aplicarTagEmMassa(dados: AplicarTagEmMassa): Promise<ResultadoDaTagEmMassa> {
+    const db = this.ctx.db()
+    const escopo = await escopoDaCarteira(this.ctx)
+    const catalogo = await catalogoDeTags(db)
+    const tag = catalogo.get(dados.tagId)
+    if (!tag) throw invalido('tagId', 'tag_invalida', 'Tag inexistente.')
+    if (tag.automatico) {
+      throw invalido('tagId', 'tag_automatica', `A tag "${tag.nome}" é aplicada pelo sistema.`)
+    }
+    if (!tag.ativo) throw invalido('tagId', 'tag_inativa', `A tag "${tag.nome}" está inativa.`)
+
+    const ids = [...new Set(dados.empresaIds)]
+    const linhas = await db
+      .select({ id: empresas.id, vendedorId: empresas.vendedorId })
+      .from(empresas)
+      .where(and(inArray(empresas.id, ids), isNull(empresas.excluidoEm)))
+    const editaveis = linhas.filter(
+      (l) => podeVer(escopo, l.vendedorId) && podeEditar(escopo, l.vendedorId),
+    )
+    const resultado: ResultadoDaTagEmMassa = {
+      aplicadas: 0,
+      semMudanca: 0,
+      ignoradas: ids.length - editaveis.length,
+    }
+    if (editaveis.length === 0) return resultado
+
+    // Tags atuais de todas de uma vez
+    const atuaisDeTodas = await db
+      .select({ empresaId: empresaTags.empresaId, tagId: empresaTags.tagId })
+      .from(empresaTags)
+      .where(
+        inArray(
+          empresaTags.empresaId,
+          editaveis.map((l) => l.id),
+        ),
+      )
+    for (const { id } of editaveis) {
+      const atuais = new Set(atuaisDeTodas.filter((a) => a.empresaId === id).map((a) => a.tagId))
+      if (atuais.has(tag.id)) {
+        resultado.semMudanca += 1
+        continue
+      }
+      // Seleção única: sai a tag que a empresa tinha no grupo; senão, a nova se soma às outras
+      const pedidas = [...atuais].filter(
+        (t) => tag.selecao !== 'unica' || catalogo.get(t)?.grupoId !== tag.grupoId,
+      )
+      pedidas.push(tag.id)
+      const finais = conferirTagsDaEmpresa(catalogo, atuais, pedidas)
+      const { adicionadas, removidas } = await gravarDiferencaDeTags(
+        db,
+        this.ctx.tenantId,
+        id,
+        atuais,
+        finais,
+        escopo.membroId,
+      )
+      const nomes = (lista: string[]) => lista.map((t) => catalogo.get(t)?.nome ?? t)
+      await this.auditoria.registrar({
+        entidade: 'empresa',
+        entidadeId: id,
+        acao: 'alterar_tags',
+        alteracoes: { adicionadas: nomes(adicionadas), removidas: nomes(removidas), emMassa: true },
+      })
+      resultado.aplicadas += 1
+    }
+    return resultado
   }
 
   /** Exclusão lógica (sem lixeira no MVP). Só admin e gestor. */

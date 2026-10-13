@@ -3,6 +3,8 @@ import {
   alterarEmpresaCarteiraSchema,
   type AplicarDaReceita,
   aplicarDaReceitaSchema,
+  type AplicarTagEmMassa,
+  aplicarTagEmMassaSchema,
   type ConsultaDaLista,
   type ConsultaDaReceitaDaEmpresa,
   consultaDaReceitaDaEmpresaSchema,
@@ -24,6 +26,8 @@ import {
   listaDeEmpresasSchema,
   type OpcoesDaLista,
   opcoesDaListaSchema,
+  type ResultadoDaTagEmMassa,
+  resultadoDaTagEmMassaSchema,
 } from '@leadtogo/shared'
 import {
   Body,
@@ -115,6 +119,23 @@ export class EmpresasDaCarteiraController {
     @Body(new ZodPipe(criarEmpresaCarteiraSchema)) dados: CriarEmpresaCarteira,
   ): Promise<EmpresaCarteira> {
     return this.servico.criar(dados)
+  }
+
+  @Documenta({
+    resumo: 'Aplicar uma tag a várias empresas',
+    descricao: `${CARTEIRA} Aplica UMA tag a até 200 empresas de uma vez. Tag de grupo de seleção única (Status) substitui a que a empresa já tinha no grupo. Só mexe nas empresas que o usuário pode editar (o vendedor, só nas dele): as outras ficam como estavam e entram em \`ignoradas\`. Tag de grupo automático (Visitação) é 400 \`tag_automatica\`; inativa, 400 \`tag_inativa\`. Cada empresa muda no histórico de tags e na auditoria.`,
+    corpo: aplicarTagEmMassaSchema,
+    resposta: resultadoDaTagEmMassaSchema,
+    status: 200,
+    erros: [400, 401, 403, 409, 429],
+  })
+  @Post('tags-em-massa')
+  @HttpCode(200)
+  @Limite({ nome: 'carteira-tags-em-massa', max: 30, janelaS: 60 })
+  aplicarTagEmMassa(
+    @Body(new ZodPipe(aplicarTagEmMassaSchema)) dados: AplicarTagEmMassa,
+  ): Promise<ResultadoDaTagEmMassa> {
+    return this.servico.aplicarTagEmMassa(dados)
   }
 
   @Documenta({

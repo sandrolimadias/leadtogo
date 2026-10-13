@@ -1147,6 +1147,87 @@
         "tags": ["Carteira: empresas"]
       }
     },
+    "/v1/carteira/empresas/tags-em-massa": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Aplica UMA tag a até 200 empresas de uma vez. Tag de grupo de seleção única (Status) substitui a que a empresa já tinha no grupo. Só mexe nas empresas que o usuário pode editar (o vendedor, só nas dele): as outras ficam como estavam e entram em `ignoradas`. Tag de grupo automático (Visitação) é 400 `tag_automatica`; inativa, 400 `tag_inativa`. Cada empresa muda no histórico de tags e na auditoria.",
+        "operationId": "EmpresasDaCarteiraController_aplicarTagEmMassa",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AplicarTagEmMassaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDaTagEmMassa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Aplicar uma tag a várias empresas",
+        "tags": ["Carteira: empresas"]
+      }
+    },
     "/v1/configuracoes/carteira": {
       "get": {
         "description": "Qualquer membro da empresa ativa. `bloquearEmpresaNaoAtiva` (padrão ligado): não cadastra CNPJ que a Receita não dê como ativo (409 `empresa_nao_ativa`), só em cadastro novo. `vendedorVeTodasEmpresas` (padrão desligado): o vendedor vê as empresas de todos os vendedores, mas edita só a própria.",
@@ -6188,6 +6269,26 @@
         },
         "additionalProperties": false
       },
+      "AplicarTagEmMassaEntrada": {
+        "type": "object",
+        "properties": {
+          "empresaIds": {
+            "minItems": 1,
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tagId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["empresaIds", "tagId"],
+        "additionalProperties": false
+      },
       "CnaesDaEmpresaEntrada": {
         "type": "object",
         "properties": {
@@ -8401,6 +8502,28 @@
           }
         },
         "required": ["usuarioId", "contaId", "tenantId", "membroId", "verificacaoEmailPendente"],
+        "additionalProperties": false
+      },
+      "ResultadoDaTagEmMassa": {
+        "type": "object",
+        "properties": {
+          "aplicadas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "semMudanca": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ignoradas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["aplicadas", "semMudanca", "ignoradas"],
         "additionalProperties": false
       },
       "Saude": {

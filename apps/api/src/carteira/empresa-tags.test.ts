@@ -303,3 +303,125 @@ describe('excluir só o que nunca foi usado: tags, grupos e verticais', () => {
     ).toBe(204)
   })
 })
+
+describe('POST /v1/carteira/empresas/tags-em-massa', () => {
+  const EM_MASSA = '/v1/carteira/empresas/tags-em-massa'
+  const aplicar = (cookie: string | undefined, empresaIds: string[], tagId: string) =>
+    chamar('post', cookie, EM_MASSA, { empresaIds, tagId })
+  const ficha = async (cookie: string, id: string) =>
+    empresaDe(await chamar('get', cookie, `/v1/carteira/empresas/${id}`))
+
+  it('o Status substitui o atual em todas; cada uma entra no histórico e na auditoria', async () => {
+    const { d, tag } = await cenario()
+    const [a, b, c] = [
+      await criar(d.cookie, 'Alfa Ltda'),
+      await criar(d.cookie, 'Beta Ltda'),
+      await criar(d.cookie, 'Gama Ltda'),
+    ]
+    const r = await aplicar(d.cookie, [a.id, b.id, c.id], tag('Cliente').id)
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    expect(r.body).toEqual({ aplicadas: 3, semMudanca: 0, ignoradas: 0 })
+    for (const e of [a, b, c]) {
+      expect((await ficha(d.cookie, e.id)).tags.map((t) => t.nome)).toEqual(['Cliente'])
+      const h = await historico(d.tenantId, e.id)
+      expect(
+        h
+          .filter((x) => x.nome === 'Lead')
+          .map((x) => x.acao)
+          .sort(),
+      ).toEqual(['adicionada', 'removida'])
+      expect(h.filter((x) => x.nome === 'Cliente').map((x) => x.acao)).toEqual(['adicionada'])
+    }
+    const reg = (await auditoriaDe(d.tenantId)).filter((x) => x.acao === 'alterar_tags')
+    expect(reg).toHaveLength(3)
+    expect(reg[0]?.alteracoes).toMatchObject({
+      adicionadas: ['Cliente'],
+      removidas: ['Lead'],
+      emMassa: true,
+    })
+  })
+
+  it('tag de seleção múltipla soma às que a empresa já tem; quem já tinha a tag não muda', async () => {
+    const { d, tag, monitoramento } = await cenario()
+    const a = await criar(d.cookie, 'Alfa Ltda')
+    const b = await criar(d.cookie, 'Beta Ltda')
+    await definir(d.cookie, b.id, [tag('Lead').id, monitoramento.id])
+    const r = await aplicar(d.cookie, [a.id, b.id], monitoramento.id)
+    expect(r.body).toEqual({ aplicadas: 1, semMudanca: 1, ignoradas: 0 })
+    expect((await ficha(d.cookie, a.id)).tags.map((t) => t.nome).sort()).toEqual([
+      'Lead',
+      'Monitoramento',
+    ])
+  })
+
+  it('só mexe no que o usuário pode editar: o vendedor, nas dele; as outras são "ignoradas"', async () => {
+    const { d, ana, bia, tag } = await cenario()
+    const daAna = await criar(ana.cookie, 'Da Ana')
+    const daBia = await criar(bia.cookie, 'Da Bia')
+    const r = await aplicar(ana.cookie, [daAna.id, daBia.id], tag('Prospect').id)
+    expect(r.body).toEqual({ aplicadas: 1, semMudanca: 0, ignoradas: 1 })
+    expect((await ficha(d.cookie, daBia.id)).tags.map((t) => t.nome)).toEqual(['Lead'])
+
+    // vendo tudo, ainda não edita a dos outros
+    await noTenant(
+      d.tenantId,
+      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+    )
+    const r2 = await aplicar(ana.cookie, [daBia.id], tag('Cliente').id)
+    expect(r2.body).toEqual({ aplicadas: 0, semMudanca: 0, ignoradas: 1 })
+  })
+
+  it('empresa excluída, inexistente ou de outra empresa do grupo é ignorada', async () => {
+    const { d, tag } = await cenario()
+    const a = await criar(d.cookie, 'Alfa Ltda')
+    const excluida = await criar(d.cookie, 'Excluída Ltda')
+    await chamar('delete', d.cookie, `/v1/carteira/empresas/${excluida.id}`)
+    const outro = await novoDono(app)
+    const deFora = await criar(outro.cookie, 'De fora Ltda')
+    const r = await aplicar(
+      d.cookie,
+      [a.id, excluida.id, deFora.id, '0199a000-0000-7000-8000-000000000001'],
+      tag('Cliente').id,
+    )
+    expect(r.body).toEqual({ aplicadas: 1, semMudanca: 0, ignoradas: 3 })
+    expect((await ficha(outro.cookie, deFora.id)).tags.map((t) => t.nome)).toEqual(['Lead'])
+  })
+
+  it('tag de grupo automático, inativa ou inexistente é 400 e nada muda', async () => {
+    const { d, tag, monitoramento } = await cenario()
+    const a = await criar(d.cookie, 'Alfa Ltda')
+    const automatica = await aplicar(d.cookie, [a.id], tag('Visitada').id)
+    expect(automatica.status).toBe(400)
+    expect(erroDe(automatica)).toBe('tag_automatica')
+    await chamar('patch', d.cookie, `/v1/configuracoes/tags/${monitoramento.id}`, { ativo: false })
+    expect(erroDe(await aplicar(d.cookie, [a.id], monitoramento.id))).toBe('tag_inativa')
+    expect(erroDe(await aplicar(d.cookie, [a.id], '0199a000-0000-7000-8000-000000000001'))).toBe(
+      'tag_invalida',
+    )
+    expect((await ficha(d.cookie, a.id)).tags.map((t) => t.nome)).toEqual(['Lead'])
+  })
+
+  it('corpo inválido (vazio, mais de 200, não-UUID, campo extra) é 400; sem sessão 401', async () => {
+    const { d, tag } = await cenario()
+    expect(
+      (await aplicar(undefined, ['0199a000-0000-7000-8000-000000000001'], tag('Cliente').id))
+        .status,
+    ).toBe(401)
+    const muitos = Array.from(
+      { length: 201 },
+      (_, i) => `0199a000-0000-7000-8000-${String(i).padStart(12, '0')}`,
+    )
+    for (const corpo of [
+      { empresaIds: [], tagId: tag('Cliente').id },
+      { empresaIds: muitos, tagId: tag('Cliente').id },
+      { empresaIds: ['abc'], tagId: tag('Cliente').id },
+      { empresaIds: [muitos[0]], tagId: tag('Cliente').id, extra: 1 },
+      { empresaIds: [muitos[0]] },
+    ]) {
+      expect(
+        (await chamar('post', d.cookie, EM_MASSA, corpo)).status,
+        JSON.stringify(corpo).slice(0, 60),
+      ).toBe(400)
+    }
+  })
+})

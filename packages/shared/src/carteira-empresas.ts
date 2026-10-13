@@ -266,3 +266,31 @@ export const definirTagsDaEmpresaSchema = z
   .strict()
   .meta({ id: 'DefinirTagsDaEmpresaEntrada' })
 export type DefinirTagsDaEmpresa = z.output<typeof definirTagsDaEmpresaSchema>
+
+/** Até quantas empresas uma ação em massa aceita de uma vez. */
+export const MAX_EMPRESAS_EM_MASSA = 200
+
+/**
+ * POST /v1/carteira/empresas/tags-em-massa: aplica UMA tag a várias empresas. Tag de grupo de seleção
+ * única (o Status) substitui a que a empresa já tinha no grupo.
+ */
+export const aplicarTagEmMassaSchema = z
+  .object({
+    empresaIds: z.array(z.uuid()).min(1).max(MAX_EMPRESAS_EM_MASSA),
+    tagId: z.uuid(),
+  })
+  .strict()
+  .meta({ id: 'AplicarTagEmMassaEntrada' })
+export type AplicarTagEmMassa = z.output<typeof aplicarTagEmMassaSchema>
+
+export const resultadoDaTagEmMassaSchema = z
+  .object({
+    /** Empresas que mudaram de tag */
+    aplicadas: z.number().int(),
+    /** Já tinham a tag: nada a fazer */
+    semMudanca: z.number().int(),
+    /** Não existem, são de outro vendedor ou o usuário não pode editá-las: ficaram como estavam */
+    ignoradas: z.number().int(),
+  })
+  .meta({ id: 'ResultadoDaTagEmMassa' })
+export type ResultadoDaTagEmMassa = z.infer<typeof resultadoDaTagEmMassaSchema>

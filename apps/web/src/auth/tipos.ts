@@ -16,6 +16,7 @@ import type {
   OpcoesDaLista,
   Preferencias,
   PreferenciasPatch,
+  ResultadoDaTagEmMassa,
   Funil,
   Motivo,
   Origem,
@@ -135,6 +136,11 @@ export interface ServicosDaCarteira {
   alterar: (id: string, dados: AlterarEmpresaCarteiraEntrada) => Promise<Resultado<EmpresaCarteira>>
   /** Exclusão lógica (só administrador e gestor), sem lixeira por enquanto */
   excluir: (id: string) => Promise<Resultado>
+  /** Aplica UMA tag a várias empresas; Status substitui o atual. Só mexe no que a pessoa edita */
+  aplicarTagEmMassa: (
+    empresaIds: string[],
+    tagId: string,
+  ) => Promise<Resultado<ResultadoDaTagEmMassa>>
 }
 
 /**

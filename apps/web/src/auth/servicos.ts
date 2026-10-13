@@ -495,5 +495,11 @@ export const servicosReais: ServicosDeAcesso = {
       protegido(async () =>
         semCorpo(await api.DELETE('/v1/carteira/empresas/{id}', { params: { path: { id } } })),
       ),
+    aplicarTagEmMassa: (empresaIds, tagId) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/empresas/tags-em-massa', { body: { empresaIds, tagId } }),
+        ),
+      ),
   },
 }
