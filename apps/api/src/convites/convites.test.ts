@@ -87,10 +87,19 @@ async function adminPronto() {
   return d
 }
 /** Convida e devolve o token tirado do e-mail (único jeito de obtê-lo, como na vida real). */
+/**
+ * O e-mail do convite passa por tudo de verdade: API → outbox → relay (200 ms) → fila → worker → SMTP do
+ * Mailpit local (nenhum serviço de fora). Num runner do CI lento a corrida inteira passa de 5 s sem que
+ * nada esteja errado; a espera pelo e-mail fica longa (só dura isso se ele não chegar).
+ */
+const PRAZO_DO_EMAIL_MS = 15_000
+/** Prazo do teste que espera esse e-mail: o do e-mail mais o preparo (conta, login, 2FA) e as conferências. */
+const PRAZO_DO_TESTE_COM_EMAIL_MS = 25_000
+
 async function convidarEPegarToken(cookie: string, email: string, papel = 'vendedor') {
   const r = await convidar(cookie, { email, papel })
   expect(r.status, JSON.stringify(r.body)).toBe(201)
-  const mensagem = await aguardarMensagem(email)
+  const mensagem = await aguardarMensagem(email, PRAZO_DO_EMAIL_MS)
   const token = new URL(primeiroLink(mensagem)).searchParams.get('token') ?? ''
   expect(token).toHaveLength(43)
   return { token, convite: r.body as ConviteCriado, mensagem }
@@ -113,51 +122,59 @@ const linhaDoConvite = async (id: string, tenantId: string) =>
   })
 
 describe('POST /v1/convites (administrador)', () => {
-  it('cria o convite, manda o e-mail em pt-BR e NUNCA devolve nem grava o token', async () => {
-    const d = await adminPronto()
-    const email = emailUnico('convidado')
-    const { token, convite, mensagem } = await convidarEPegarToken(d.cookie, email, 'gestor')
-    expect(convite).toMatchObject({
-      email,
-      papel: 'gestor',
-      situacao: 'pendente',
-      emailEnviado: true,
-    })
-    expect(JSON.stringify(convite)).not.toContain(token)
-    expect(mensagem.Subject).toMatch(/^Convite para a .+ no Leadtogo$/)
-    expect(mensagem.Text).toContain('Dono de Teste convidou você')
-    expect(mensagem.Text).toContain('como gestor')
-    expect(mensagem.Text).toContain('7 dias')
-    const linha = await linhaDoConvite(convite.id, d.tenantId)
-    expect(linha?.token_hash).toBe(hash(token)) // só o hash
-    expect(linha?.token_hash).not.toBe(token)
-    expect(linha?.convidado_por).toBeTruthy()
-    // validade de 7 dias
-    const dias = ((linha?.expira_em.getTime() ?? 0) - Date.now()) / 86_400_000
-    expect(dias).toBeGreaterThan(6.9)
-    expect(dias).toBeLessThanOrEqual(7)
-  })
+  it(
+    'cria o convite, manda o e-mail em pt-BR e NUNCA devolve nem grava o token',
+    { timeout: PRAZO_DO_TESTE_COM_EMAIL_MS },
+    async () => {
+      const d = await adminPronto()
+      const email = emailUnico('convidado')
+      const { token, convite, mensagem } = await convidarEPegarToken(d.cookie, email, 'gestor')
+      expect(convite).toMatchObject({
+        email,
+        papel: 'gestor',
+        situacao: 'pendente',
+        emailEnviado: true,
+      })
+      expect(JSON.stringify(convite)).not.toContain(token)
+      expect(mensagem.Subject).toMatch(/^Convite para a .+ no Leadtogo$/)
+      expect(mensagem.Text).toContain('Dono de Teste convidou você')
+      expect(mensagem.Text).toContain('como gestor')
+      expect(mensagem.Text).toContain('7 dias')
+      const linha = await linhaDoConvite(convite.id, d.tenantId)
+      expect(linha?.token_hash).toBe(hash(token)) // só o hash
+      expect(linha?.token_hash).not.toBe(token)
+      expect(linha?.convidado_por).toBeTruthy()
+      // validade de 7 dias
+      const dias = ((linha?.expira_em.getTime() ?? 0) - Date.now()) / 86_400_000
+      expect(dias).toBeGreaterThan(6.9)
+      expect(dias).toBeLessThanOrEqual(7)
+    },
+  )
 
-  it('só administradores da empresa convidam, listam e cancelam (gestor e vendedor: 403)', async () => {
-    const d = await adminPronto()
-    const { convite } = await convidarEPegarToken(d.cookie, emailUnico('x'))
-    for (const papel of ['gestor', 'vendedor'] as const) {
-      const u = await usuarioSimples(app)
-      await vincular(d.tenantId, u.id, papel)
-      await ativar(u.id, d.tenantId)
-      for (const r of [
-        await convidar(u.cookie, { email: emailUnico('y'), papel: 'vendedor' }),
-        await com(http().get('/v1/convites'), u.cookie),
-        await com(
-          http().delete(`/v1/convites/${convite.id}`).set('Origin', ORIGEM_DO_FRONT),
-          u.cookie,
-        ),
-      ]) {
-        expect(r.status, papel).toBe(403)
-        expect(erroDe(r).erro).toBe('acesso_negado')
+  it(
+    'só administradores da empresa convidam, listam e cancelam (gestor e vendedor: 403)',
+    { timeout: PRAZO_DO_TESTE_COM_EMAIL_MS },
+    async () => {
+      const d = await adminPronto()
+      const { convite } = await convidarEPegarToken(d.cookie, emailUnico('x'))
+      for (const papel of ['gestor', 'vendedor'] as const) {
+        const u = await usuarioSimples(app)
+        await vincular(d.tenantId, u.id, papel)
+        await ativar(u.id, d.tenantId)
+        for (const r of [
+          await convidar(u.cookie, { email: emailUnico('y'), papel: 'vendedor' }),
+          await com(http().get('/v1/convites'), u.cookie),
+          await com(
+            http().delete(`/v1/convites/${convite.id}`).set('Origin', ORIGEM_DO_FRONT),
+            u.cookie,
+          ),
+        ]) {
+          expect(r.status, papel).toBe(403)
+          expect(erroDe(r).erro).toBe('acesso_negado')
+        }
       }
-    }
-  })
+    },
+  )
 
   it('valida a entrada (400) e exige sessão (401)', async () => {
     const d = await adminPronto()
