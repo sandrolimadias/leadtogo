@@ -408,4 +408,24 @@ export const servicosReais: ServicosDeAcesso = {
         ),
       ),
   },
+
+  carteira: {
+    listar: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/empresas', {
+            params: { query: consulta as never },
+          }),
+        ),
+      ),
+    contagens: (incluirLeads) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/empresas/contagens', {
+            params: { query: { incluirLeads: incluirLeads ? 'true' : 'false' } },
+          }),
+        ),
+      ),
+    opcoes: () => protegido(async () => daApi(await api.GET('/v1/carteira/empresas/opcoes'))),
+  },
 }

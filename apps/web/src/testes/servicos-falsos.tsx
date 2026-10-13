@@ -136,6 +136,15 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       excluirTag: vi.fn(async () => ok(undefined)),
       reordenarTags: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
+    carteira: {
+      listar: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 25 })),
+      contagens: vi.fn(async () =>
+        ok({ todas: 0, minha: 0, semVisita90: 0, nuncaVisitadas: 0, semProximaAtividade: 0 }),
+      ),
+      opcoes: vi.fn(async () =>
+        ok({ vendedores: [], unicoMembro: true, cidades: [], diasAlertaDeContato: 60 }),
+      ),
+    },
     cadastros: {
       verticais: {
         listar: vi.fn(async () => ok([])),

@@ -1,14 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Building2 } from 'lucide-react'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-import { PaginaVazia } from '@/casca/partes'
-
+// Empresas: a lista (/empresas), o cadastro (/empresas/nova) e a ficha (/empresas/:id).
 export const Route = createFileRoute('/_autenticado/empresas')({
-  component: () => (
-    <PaginaVazia
-      titulo="Empresas"
-      icone={Building2}
-      descricao="Em breve: a carteira de empresas, com consulta à Receita."
-    />
-  ),
+  component: Outlet,
 })

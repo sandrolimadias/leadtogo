@@ -29,6 +29,16 @@ export type Motivo = Esquemas['Motivo']
 export type TipoAtividade = Esquemas['TipoAtividade']
 export type Funil = Esquemas['Funil']
 export type FunilFase = Esquemas['FunilFase']
+export type EmpresaCarteira = Esquemas['EmpresaDaCarteira']
+export type ListaDeEmpresas = Esquemas['ListaDeEmpresas']
+export type ItemDaLista = Esquemas['ItemDaListaDeEmpresas']
+export type ContagensDaLista = Esquemas['ContagensDaLista']
+export type OpcoesDaLista = Esquemas['OpcoesDaLista']
+export type HistoricoDaEmpresa = Esquemas['HistoricoDaEmpresa']
+export type EntradaDoHistorico = Esquemas['EntradaDoHistoricoDaEmpresa']
+export type ConsultaReceita = Esquemas['ConsultaReceita']
+export type DadosDaReceita = Esquemas['DadosDaReceita']
+export type ConsultaDaReceitaDaEmpresa = Esquemas['ConsultaDaReceitaDaEmpresa']
 
 /**
  * Cliente tipado da API, gerado do OpenAPI (`pnpm --filter @leadtogo/api-client generate`).

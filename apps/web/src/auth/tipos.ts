@@ -1,11 +1,14 @@
 import type {
+  ContagensDaLista,
   ConviteAceito,
   ConviteConsulta,
   ConviteCriado,
   ConviteResumo,
   EmpresaCriada,
+  ListaDeEmpresas,
   Me,
   MembroDaEquipe,
+  OpcoesDaLista,
   Preferencias,
   PreferenciasPatch,
   Funil,
@@ -38,6 +41,7 @@ import type {
   CriarTagEntrada,
   CriarTagGrupoEntrada,
   CriarTipoAtividadeEntrada,
+  ConsultaDaListaEntrada,
   CriarVerticalEntrada,
   PoliticaDoisFatores,
   PrimeiroAcessoEntrada,
@@ -93,6 +97,16 @@ export interface ServicosDeTags {
   excluirTag: (id: string) => Promise<Resultado>
   /** Os ids de TODAS as tags do grupo, na ordem nova */
   reordenarTags: (grupoId: string, ids: string[]) => Promise<Resultado<TagGrupo>>
+}
+
+/** Carteira de empresas (Módulo 2): lista, cadastro, ficha. Segue a regra de carteira da API. */
+export interface ServicosDaCarteira {
+  /** A página da lista, já com busca, chip e filtros aplicados */
+  listar: (consulta: ConsultaDaListaEntrada) => Promise<Resultado<ListaDeEmpresas>>
+  /** Contagem de cada chip; `incluirLeads` vale para os três últimos */
+  contagens: (incluirLeads: boolean) => Promise<Resultado<ContagensDaLista>>
+  /** Equipe, cidades e dias de alerta, para os filtros */
+  opcoes: () => Promise<Resultado<OpcoesDaLista>>
 }
 
 /**
@@ -177,4 +191,7 @@ export interface ServicosDeAcesso {
   tags: ServicosDeTags
   cadastros: ServicosDeCadastros
   funis: ServicosDeFunis
+
+  // Carteira de empresas (Módulo 2)
+  carteira: ServicosDaCarteira
 }
