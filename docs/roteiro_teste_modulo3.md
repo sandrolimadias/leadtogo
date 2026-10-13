@@ -48,7 +48,7 @@
 ## 5. Lista de contatos (`/contatos`)
 1. Colunas: **Contato** (nome, papel, selo), **Empresas** (estrela no principal; vínculo inativo riscado com "(inativo)"), **Cargo**, **Telefone** (com o ícone de WhatsApp quando há) e **E-mail**. Não há "Última interação" nem "Importar planilha" (vêm em outros módulos).
 2. Busca por **nome** (sem acento nem maiúscula), por **pedaço do e-mail** e por **pedaço do telefone**, com ou sem máscara.
-3. Filtros **Empresa, Cargo, Papel na decisão e Tag da empresa**; eles ficam na URL (recarregue a página e continuam). Empresa, cargo e tag valem **para o mesmo vínculo ativo**: "Diretor na Empresa X" não traz quem é Diretor só na Y.
+3. Filtros **Empresa, Cargo, Papel na decisão e Tag da empresa**. O de **Empresa** é um campo com busca: abra, digite parte do nome ou do CNPJ e escolha (o X limpa); eles ficam na URL (recarregue a página e continuam). Empresa, cargo e tag valem **para o mesmo vínculo ativo**: "Diretor na Empresa X" não traz quem é Diretor só na Y.
 4. Um contato com vínculo **inativo** continua na lista, mas não aparece nos filtros de empresa, cargo e tag.
 5. Sem resultado: mensagem de "nenhum contato com esses filtros". Mais de 25 contatos: pagina de 25 em 25.
 

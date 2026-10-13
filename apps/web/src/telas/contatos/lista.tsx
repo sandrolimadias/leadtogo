@@ -18,6 +18,7 @@ import {
   quantosFiltros,
   temFiltroAtivo,
 } from './busca'
+import { FiltroDeEmpresa } from './filtro-de-empresa'
 import { CartoesDeContatos, TabelaDeContatos } from './lista-partes'
 import { rotaDoContato } from './rotas'
 
@@ -25,8 +26,6 @@ const rota = getRouteApi('/_autenticado/contatos/')
 
 const POR_PAGINA = 25
 const ESPERA_DA_BUSCA_MS = 300
-/** O filtro de empresa é uma lista; mostra as primeiras empresas da carteira, por nome. */
-const EMPRESAS_NO_FILTRO = 100
 
 const contagemDeContatos = (n: number): string => `${n} ${n === 1 ? 'contato' : 'contatos'}`
 
@@ -86,27 +85,6 @@ export function ListaDeContatos() {
       return r.dados
     },
   })
-  const empresas = useQuery({
-    queryKey: ['contatos', 'filtro-de-empresas'],
-    retry: false,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const r = await servicos.carteira.listar({ porPagina: EMPRESAS_NO_FILTRO, ordem: 'nome' })
-      if (!r.ok) throw new Error(r.erro.mensagem)
-      return r.dados.itens.map((e) => ({ id: e.id, nome: e.nome }))
-    },
-  })
-  // A empresa da URL pode ficar fora das primeiras: busca o nome dela para o filtro não aparecer vazio
-  const empresaDaUrl = busca.empresa
-  const nomeDaEmpresaDaUrl = useQuery({
-    queryKey: ['contatos', 'empresa-do-filtro', empresaDaUrl],
-    enabled: Boolean(empresaDaUrl) && !(empresas.data ?? []).some((e) => e.id === empresaDaUrl),
-    retry: false,
-    queryFn: async () => {
-      const r = await servicos.carteira.detalhar(empresaDaUrl as string)
-      return r.ok ? { id: r.dados.id, nome: r.dados.nomeFantasia ?? r.dados.razaoSocial } : null
-    },
-  })
   const papeis = useQuery({
     queryKey: ['cadastros', 'papeis-decisao'],
     retry: false,
@@ -145,9 +123,6 @@ export function ListaDeContatos() {
     void navegarNaLista({ search: {}, replace: true })
   }
 
-  const opcoesDeEmpresa = [...(empresas.data ?? [])]
-  const daUrl = nomeDaEmpresaDaUrl.data
-  if (daUrl && !opcoesDeEmpresa.some((e) => e.id === daUrl.id)) opcoesDeEmpresa.push(daUrl)
   const cargos = [...(opcoes.data?.cargos ?? [])]
   if (busca.cargo && !cargos.some((c) => c.toLowerCase() === busca.cargo?.toLowerCase())) {
     cargos.push(busca.cargo)
@@ -169,13 +144,7 @@ export function ListaDeContatos() {
       className={cn('grid min-w-0 flex-[3] gap-2', celular ? 'w-full grid-cols-2' : 'grid-cols-4')}
       style={celular ? undefined : { minWidth: 4 * 200 + 3 * 8 }}
     >
-      <Select
-        aria-label="Empresa"
-        placeholder="Empresa: todas"
-        options={opcoesDeEmpresa.map((e) => ({ value: e.id, label: e.nome }))}
-        value={busca.empresa ?? ''}
-        onChange={(e) => mudar({ empresa: e.target.value || undefined })}
-      />
+      <FiltroDeEmpresa valor={busca.empresa} aoMudar={(empresa) => mudar({ empresa })} />
       <Select
         aria-label="Cargo"
         placeholder="Cargo: todos"

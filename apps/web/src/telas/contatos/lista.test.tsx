@@ -61,27 +61,23 @@ function servicos(
     listar,
     opcoes: vi.fn(async () => ok({ cargos: ['Compras', 'Diretor'] })),
   }
+  const empresas = vi.fn(async (consulta: Record<string, unknown>) => {
+    const todas = [itemDeEmpresa(1, { nome: 'Usidantec' }), itemDeEmpresa(2, { nome: 'Beta' })]
+    const termo = typeof consulta['busca'] === 'string' ? consulta['busca'].toLowerCase() : ''
+    const itens = termo ? todas.filter((e) => e.nome.toLowerCase().includes(termo)) : todas
+    return ok({ itens, total: itens.length, pagina: 1, porPagina: 8 })
+  })
   const s = servicosFalsos({
     me: async () => meComPapel(papel),
     contatos: contatos,
-    carteira: {
-      ...base.carteira,
-      listar: vi.fn(async () =>
-        ok({
-          itens: [itemDeEmpresa(1, { nome: 'Usidantec' }), itemDeEmpresa(2, { nome: 'Beta' })],
-          total: 2,
-          pagina: 1,
-          porPagina: 100,
-        }),
-      ),
-    },
+    carteira: { ...base.carteira, listar: empresas },
     tags: { ...base.tags, listar: vi.fn(async () => ok(grupos)) },
     cadastros: {
       ...base.cadastros,
       papeisDecisao: { ...base.cadastros.papeisDecisao, listar: vi.fn(async () => ok(papeis)) },
     },
   })
-  return { s, listar }
+  return { s, listar, empresas }
 }
 
 const abrir = async (x: ReturnType<typeof servicos>, rota = '/contatos') => {
@@ -169,7 +165,8 @@ describe('Contatos: a lista', () => {
     const x = servicos()
     const { historico } = await abrir(x)
     await screen.findByRole('table')
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Empresa' }), id(201))
+    await userEvent.click(screen.getByRole('button', { name: 'Empresa' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Usidantec/ }))
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cargo' }), 'Compras')
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Papel na decisão' }), id(2))
     const tag = screen.getByRole('combobox', { name: 'Tag da empresa' })
@@ -219,7 +216,58 @@ describe('Contatos: a lista', () => {
     expect(screen.queryByRole('button', { name: 'Limpar filtros' })).toBeNull()
   })
 
-  it('a empresa da URL fora das primeiras 100 ainda aparece com o nome no filtro', async () => {
+  it('Empresa: busca no servidor pelo que se digita (nome ou CNPJ) e mostra só os resultados', async () => {
+    const x = servicos()
+    await abrir(x)
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Empresa' }))
+    const lista = await screen.findByRole('list', { name: 'Empresas encontradas' })
+    expect(within(lista).getAllByRole('button')).toHaveLength(2)
+    expect(x.empresas).toHaveBeenLastCalledWith({ porPagina: 8, ordem: 'nome' })
+
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar empresa' }), 'usid')
+    await waitFor(() =>
+      expect(x.empresas).toHaveBeenLastCalledWith({ busca: 'usid', porPagina: 8, ordem: 'nome' }),
+    )
+    await waitFor(() => expect(within(lista).getAllByRole('button')).toHaveLength(1))
+    expect(within(lista).getByText('Usidantec')).toBeInTheDocument()
+  })
+
+  it('Empresa: busca sem resultado avisa, e o aviso de "mais empresas" aparece quando há mais que a página', async () => {
+    const x = servicos()
+    x.empresas.mockImplementation(async (consulta) =>
+      consulta['busca']
+        ? ok({ itens: [], total: 0, pagina: 1, porPagina: 8 })
+        : ok({
+            itens: [itemDeEmpresa(1, { nome: 'Usidantec' })],
+            total: 5000,
+            pagina: 1,
+            porPagina: 8,
+          }),
+    )
+    await abrir(x)
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Empresa' }))
+    expect(await screen.findByText(/Mais 4999 empresas/)).toBeInTheDocument()
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar empresa' }), 'zzz')
+    expect(await screen.findByText('Nenhuma empresa com esse nome ou CNPJ.')).toBeInTheDocument()
+  })
+
+  it('Empresa: "Todas as empresas" e o X limpam o filtro', async () => {
+    const x = servicos()
+    const { historico } = await abrir(x)
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Empresa' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Beta/ }))
+    await waitFor(() => expect(historico.location.search).toContain(`empresa=${id(202)}`))
+    expect(screen.getByRole('button', { name: 'Empresa' })).toHaveTextContent('Beta')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Limpar o filtro de empresa' }))
+    await waitFor(() => expect(historico.location.search).not.toContain('empresa'))
+    expect(screen.getByRole('button', { name: 'Empresa' })).toHaveTextContent('Empresa: todas')
+  })
+
+  it('a empresa da URL aparece com o nome no filtro, mesmo fora dos resultados da busca', async () => {
     const x = servicos()
     const base = x.s.carteira
     x.s.carteira = {
@@ -231,11 +279,9 @@ describe('Contatos: a lista', () => {
     await abrir(x, `/contatos?empresa=${id(299)}`)
     await screen.findByRole('table')
     await waitFor(() =>
-      expect(screen.getByRole('combobox', { name: 'Empresa' })).toHaveValue(id(299)),
+      expect(screen.getByRole('button', { name: 'Empresa' })).toHaveTextContent('Remota'),
     )
-    expect(
-      within(screen.getByRole('combobox', { name: 'Empresa' })).getByText('Remota'),
-    ).toBeInTheDocument()
+    expect(x.empresas).not.toHaveBeenCalled() // o campo só busca quando é aberto
   })
 
   it('paginação: Anterior e Próxima mudam a página na URL', async () => {
