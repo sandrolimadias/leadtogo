@@ -37,8 +37,8 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 | 6 (Oportunidades) | funis, fases, motivos, origens, soluções | Idem. **Fases passam a poder ser inativadas** (a coluna `ativo` já existe; a API e a tela do Módulo 1 não oferecem, porque a fase só era excluível). A regra "fase com oportunidades **ativas** exige mover antes" continua valendo para tirar a fase de uso |
 
 
-### Módulo 2 — Empresas 🧪 *em teste (13/10/2026)*
-*Plano aprovado pelo Ale em 13/10/2026, com execução autônoma do módulo inteiro. **Todos os commits estão no ar; falta o teste do Ale**, com o roteiro de [`roteiro_teste_modulo2.md`](roteiro_teste_modulo2.md), que também lista o que ficou de fora e por quê. Só vira ✅ quando o Ale testar.*
+### Módulo 2 — Empresas ✅ *concluído e aprovado pelo Ale (13/10/2026)*
+*Plano aprovado pelo Ale em 13/10/2026, com execução autônoma do módulo inteiro. **Testado e aprovado pelo Ale em 13/10/2026: todos os itens do roteiro passaram** ([`roteiro_teste_modulo2.md`](roteiro_teste_modulo2.md), que também lista o que ficou de fora e por quê).*
 
 **Cadastro e API**
 - Cadastro por **CNPJ, CPF ou sem documento**. Rotas em `/v1/carteira/empresas` (não colidem com `/v1/empresas`, as empresas do grupo) e `/v1/receita`.
