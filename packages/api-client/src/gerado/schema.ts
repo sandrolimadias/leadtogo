@@ -71,7 +71,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Lista de empresas da carteira
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Busca sem acento (nome, razão social, CNPJ/CPF com ou sem máscara, cidade), filtros (`tags`: a empresa precisa ter todas; vendedor, cidade, última visita), chips fixos e paginação. Os chips "sem visita há 90 dias", "nunca visitadas" e "sem próxima atividade" consideram só Status Cliente e Prospect, salvo `incluirLeads=true`. Cada item traz todas as tags, o telefone principal (Ligar/WhatsApp) e o endereço para a rota.
+         */
+        get: operations["EmpresasDaCarteiraController_listar"];
         put?: never;
         /**
          * Cadastrar empresa na carteira
@@ -110,6 +114,46 @@ export interface paths {
          * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Só o que vier muda; o documento e o Status não se alteram aqui. `endereco`, `telefones` e `cnaes`, se vierem, substituem o conjunto todo. Passar a carteira para outro vendedor (`vendedorId`) é só de gestor e administrador. Registra na auditoria o que mudou.
          */
         patch: operations["EmpresasDaCarteiraController_alterar"];
+        trace?: never;
+    };
+    "/v1/carteira/empresas/contagens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contagem dos chips da lista
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Quantas empresas cada chip mostra, só entre as que o usuário vê.
+         */
+        get: operations["EmpresasDaCarteiraController_contagens"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/empresas/opcoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Opções dos filtros da lista
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Equipe ativa, cidades das empresas visíveis e se há um único membro (o front esconde o filtro Vendedor e o chip "Minha carteira"). Traz também os dias sem contato que a empresa configurou para o alerta.
+         */
+        get: operations["EmpresasDaCarteiraController_opcoes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/configuracoes/funis": {
@@ -1128,6 +1172,13 @@ export interface components {
             expirada: boolean;
             cadastroBloqueado: boolean;
         };
+        ContagensDaLista: {
+            todas: number;
+            minha: number;
+            semVisita90: number;
+            nuncaVisitadas: number;
+            semProximaAtividade: number;
+        };
         ConviteAceito: {
             /** Format: uuid */
             tenantId: string;
@@ -1502,6 +1553,47 @@ export interface components {
             diasAlertaParada: number | null;
             ordem: number;
         };
+        ItemDaListaDeEmpresas: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            razaoSocial: string;
+            /** @enum {string} */
+            tipoDocumento: "cnpj" | "cpf" | "nenhum";
+            documento: string | null;
+            /** @enum {string|null} */
+            matrizFilial: "matriz" | "filial" | null;
+            vendedor: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            cidade: {
+                nome: string;
+                uf: string;
+            } | null;
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cor: string;
+                /** Format: uuid */
+                tagGrupoId: string;
+            }[];
+            telefone: string | null;
+            enderecoParaRota: string | null;
+            ultimaVisitaEm: string | null;
+            ultimoContatoEm: string | null;
+            proximaAtividadeEm: string | null;
+            situacaoNaoVerificada: boolean;
+            editavel: boolean;
+        };
+        ListaDeEmpresas: {
+            itens: components["schemas"]["ItemDaListaDeEmpresas"][];
+            total: number;
+            pagina: number;
+            porPagina: number;
+        };
         MembroDaEquipe: {
             /** Format: uuid */
             id: string;
@@ -1551,6 +1643,20 @@ export interface components {
         };
         NovaOrdemEntrada: {
             ids: string[];
+        };
+        OpcoesDaLista: {
+            vendedores: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            }[];
+            unicoMembro: boolean;
+            cidades: {
+                codigoIbge: number;
+                nome: string;
+                uf: string;
+            }[];
+            diasAlertaDeContato: number;
         };
         OpcoesDeAcesso: {
             loginGoogle: boolean;
@@ -1797,6 +1903,74 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_listar: {
+        parameters: {
+            query?: {
+                busca?: string;
+                chip?: "todas" | "minha" | "sem_visita_90" | "nunca_visitadas" | "sem_proxima_atividade";
+                incluirLeads?: "true" | "false";
+                tags?: string;
+                vendedorId?: string;
+                municipio?: number;
+                ultimaVisita?: "30" | "60" | "90" | "nunca";
+                ordem?: "nome" | "ultima_visita" | "ultimo_contato" | "proxima_atividade" | "criado_em";
+                sentido?: "asc" | "desc";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeEmpresas"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2069,6 +2243,111 @@ export interface operations {
             };
             /** @description Não encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_contagens: {
+        parameters: {
+            query?: {
+                incluirLeads?: "true" | "false";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContagensDaLista"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_opcoes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcoesDaLista"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

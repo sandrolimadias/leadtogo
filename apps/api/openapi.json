@@ -118,6 +118,181 @@
       }
     },
     "/v1/carteira/empresas": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Busca sem acento (nome, razão social, CNPJ/CPF com ou sem máscara, cidade), filtros (`tags`: a empresa precisa ter todas; vendedor, cidade, última visita), chips fixos e paginação. Os chips \"sem visita há 90 dias\", \"nunca visitadas\" e \"sem próxima atividade\" consideram só Status Cliente e Prospect, salvo `incluirLeads=true`. Cada item traz todas as tags, o telefone principal (Ligar/WhatsApp) e o endereço para a rota.",
+        "operationId": "EmpresasDaCarteiraController_listar",
+        "parameters": [
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "chip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "todas",
+              "type": "string",
+              "enum": [
+                "todas",
+                "minha",
+                "sem_visita_90",
+                "nunca_visitadas",
+                "sem_proxima_atividade"
+              ]
+            }
+          },
+          {
+            "name": "incluirLeads",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "tags",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36}){0,19}$"
+            }
+          },
+          {
+            "name": "vendedorId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "municipio",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "ultimaVisita",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["30", "60", "90", "nunca"]
+            }
+          },
+          {
+            "name": "ordem",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "nome",
+              "type": "string",
+              "enum": ["nome", "ultima_visita", "ultimo_contato", "proxima_atividade", "criado_em"]
+            }
+          },
+          {
+            "name": "sentido",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "asc",
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeEmpresas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lista de empresas da carteira",
+        "tags": ["Carteira: empresas"]
+      },
       "post": {
         "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Cadastro por CNPJ, CPF ou sem documento. Para CNPJ a API consulta a Receita (cache de 30 dias): empresa baixada, inapta, suspensa ou nula é recusada com 409 `empresa_nao_ativa` quando o bloqueio da empresa está ligado (padrão). Com a Receita fora do ar, salva com `situacaoNaoVerificada` e o sistema reconsulta depois, avisando o vendedor se a empresa não estiver ativa. Documento repetido: 409 `empresa_ja_cadastrada` com `dados.existente` (id e nome só se o usuário vê aquela empresa). O vendedor cadastra só na própria carteira; o Status inicial é Lead. Sócios e a situação vêm da Receita, nunca do cliente. Registra na auditoria.",
         "operationId": "EmpresasDaCarteiraController_criar",
@@ -444,6 +619,129 @@
           }
         },
         "summary": "Excluir empresa",
+        "tags": ["Carteira: empresas"]
+      }
+    },
+    "/v1/carteira/empresas/contagens": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Quantas empresas cada chip mostra, só entre as que o usuário vê.",
+        "operationId": "EmpresasDaCarteiraController_contagens",
+        "parameters": [
+          {
+            "name": "incluirLeads",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContagensDaLista"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Contagem dos chips da lista",
+        "tags": ["Carteira: empresas"]
+      }
+    },
+    "/v1/carteira/empresas/opcoes": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Equipe ativa, cidades das empresas visíveis e se há um único membro (o front esconde o filtro Vendedor e o chip \"Minha carteira\"). Traz também os dias sem contato que a empresa configurou para o alerta.",
+        "operationId": "EmpresasDaCarteiraController_opcoes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcoesDaLista"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Opções dos filtros da lista",
         "tags": ["Carteira: empresas"]
       }
     },
@@ -5424,6 +5722,38 @@
         "required": ["dados", "fonte", "consultadoEm", "doCache", "expirada", "cadastroBloqueado"],
         "additionalProperties": false
       },
+      "ContagensDaLista": {
+        "type": "object",
+        "properties": {
+          "todas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "minha": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "semVisita90": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "nuncaVisitadas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "semProximaAtividade": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["todas", "minha", "semVisita90", "nuncaVisitadas", "semProximaAtividade"],
+        "additionalProperties": false
+      },
       "ConviteAceito": {
         "type": "object",
         "properties": {
@@ -6780,6 +7110,159 @@
         ],
         "additionalProperties": false
       },
+      "ItemDaListaDeEmpresas": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "razaoSocial": {
+            "type": "string"
+          },
+          "tipoDocumento": {
+            "type": "string",
+            "enum": ["cnpj", "cpf", "nenhum"]
+          },
+          "documento": {
+            "nullable": true,
+            "type": "string"
+          },
+          "matrizFilial": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["matriz", "filial"]
+          },
+          "vendedor": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "cidade": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "nome": {
+                "type": "string"
+              },
+              "uf": {
+                "type": "string"
+              }
+            },
+            "required": ["nome", "uf"],
+            "additionalProperties": false
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "cor": {
+                  "type": "string"
+                },
+                "tagGrupoId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["id", "nome", "cor", "tagGrupoId"],
+              "additionalProperties": false
+            }
+          },
+          "telefone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "enderecoParaRota": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ultimaVisitaEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ultimoContatoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "proximaAtividadeEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "situacaoNaoVerificada": {
+            "type": "boolean"
+          },
+          "editavel": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "razaoSocial",
+          "tipoDocumento",
+          "documento",
+          "matrizFilial",
+          "vendedor",
+          "cidade",
+          "tags",
+          "telefone",
+          "enderecoParaRota",
+          "ultimaVisitaEm",
+          "ultimoContatoEm",
+          "proximaAtividadeEm",
+          "situacaoNaoVerificada",
+          "editavel"
+        ],
+        "additionalProperties": false
+      },
+      "ListaDeEmpresas": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDaListaDeEmpresas"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina"],
+        "additionalProperties": false
+      },
       "MembroDaEquipe": {
         "type": "object",
         "properties": {
@@ -6948,6 +7431,59 @@
           }
         },
         "required": ["ids"],
+        "additionalProperties": false
+      },
+      "OpcoesDaLista": {
+        "type": "object",
+        "properties": {
+          "vendedores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome"],
+              "additionalProperties": false
+            }
+          },
+          "unicoMembro": {
+            "type": "boolean"
+          },
+          "cidades": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigoIbge": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "uf": {
+                  "type": "string"
+                }
+              },
+              "required": ["codigoIbge", "nome", "uf"],
+              "additionalProperties": false
+            }
+          },
+          "diasAlertaDeContato": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["vendedores", "unicoMembro", "cidades", "diasAlertaDeContato"],
         "additionalProperties": false
       },
       "OpcoesDeAcesso": {

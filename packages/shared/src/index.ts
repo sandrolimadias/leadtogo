@@ -2,6 +2,7 @@
 // Cada domínio ganha seu arquivo (ex.: `empresas.ts`) e é reexportado aqui.
 export * from './cadastros.js'
 export * from './carteira-empresas.js'
+export * from './carteira-lista.js'
 export * from './cnpj.js'
 export * from './convites.js'
 export * from './cpf.js'

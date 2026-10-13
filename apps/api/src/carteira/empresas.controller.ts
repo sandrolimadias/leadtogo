@@ -1,10 +1,19 @@
 import {
   type AlterarEmpresaCarteira,
   alterarEmpresaCarteiraSchema,
+  type ConsultaDaLista,
+  consultaDaListaSchema,
+  consultaDeContagensSchema,
+  type ContagensDaLista,
+  contagensDaListaSchema,
   type CriarEmpresaCarteira,
   criarEmpresaCarteiraSchema,
   type EmpresaCarteira,
   empresaCarteiraSchema,
+  type ListaDeEmpresas,
+  listaDeEmpresasSchema,
+  type OpcoesDaLista,
+  opcoesDaListaSchema,
 } from '@leadtogo/shared'
 import {
   Body,
@@ -16,6 +25,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
@@ -23,6 +33,7 @@ import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { EmpresasDaCarteiraService } from './empresas.service.js'
+import { ListaDeEmpresasService } from './lista.service.js'
 
 const CARTEIRA =
   'Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404.'
@@ -31,7 +42,49 @@ const CARTEIRA =
 @ApiTags('Carteira: empresas')
 @Controller('carteira/empresas')
 export class EmpresasDaCarteiraController {
-  constructor(private readonly servico: EmpresasDaCarteiraService) {}
+  constructor(
+    private readonly servico: EmpresasDaCarteiraService,
+    private readonly lista: ListaDeEmpresasService,
+  ) {}
+
+  @Documenta({
+    resumo: 'Lista de empresas da carteira',
+    descricao: `${CARTEIRA} Busca sem acento (nome, razão social, CNPJ/CPF com ou sem máscara, cidade), filtros (\`tags\`: a empresa precisa ter todas; vendedor, cidade, última visita), chips fixos e paginação. Os chips "sem visita há 90 dias", "nunca visitadas" e "sem próxima atividade" consideram só Status Cliente e Prospect, salvo \`incluirLeads=true\`. Cada item traz todas as tags, o telefone principal (Ligar/WhatsApp) e o endereço para a rota.`,
+    consulta: consultaDaListaSchema,
+    resposta: listaDeEmpresasSchema,
+    erros: [400, 401, 403, 409],
+  })
+  @Get()
+  listar(
+    @Query(new ZodPipe(consultaDaListaSchema)) consulta: ConsultaDaLista,
+  ): Promise<ListaDeEmpresas> {
+    return this.lista.listar(consulta)
+  }
+
+  @Documenta({
+    resumo: 'Contagem dos chips da lista',
+    descricao: `${CARTEIRA} Quantas empresas cada chip mostra, só entre as que o usuário vê.`,
+    consulta: consultaDeContagensSchema,
+    resposta: contagensDaListaSchema,
+    erros: [400, 401, 403, 409],
+  })
+  @Get('contagens')
+  contagens(
+    @Query(new ZodPipe(consultaDeContagensSchema)) consulta: { incluirLeads: 'true' | 'false' },
+  ): Promise<ContagensDaLista> {
+    return this.lista.contagens(consulta.incluirLeads === 'true')
+  }
+
+  @Documenta({
+    resumo: 'Opções dos filtros da lista',
+    descricao: `${CARTEIRA} Equipe ativa, cidades das empresas visíveis e se há um único membro (o front esconde o filtro Vendedor e o chip "Minha carteira"). Traz também os dias sem contato que a empresa configurou para o alerta.`,
+    resposta: opcoesDaListaSchema,
+    erros: [401, 403, 409],
+  })
+  @Get('opcoes')
+  opcoes(): Promise<OpcoesDaLista> {
+    return this.lista.opcoes()
+  }
 
   @Documenta({
     resumo: 'Cadastrar empresa na carteira',

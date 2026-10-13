@@ -72,6 +72,12 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - **Colunas:** Empresa (nome + CNPJ), Tags (**todas**, sem "+N", quebrando linha), Cidade, Última visita, Último contato, Próxima atividade. **Sem a coluna Vendedor.** A coluna "Em aberto" fica oculta até o Módulo 6. Alertas: visita a partir de 90 dias, contato a partir de 60.
 - **Celular:** cards com Ligar, WhatsApp e Rota. **Aplicar tag em massa**, respeitando grupos de seleção única.
 
+**Detalhes da API da lista** (`GET /v1/carteira/empresas`, `/contagens` e `/opcoes`, commit 5)
+- "Cliente e Prospect" dos chips é pelas **chaves do sistema** das tags (`cliente`, `prospect`), que sobrevivem a renomear. "Incluir leads" traz os demais Status.
+- Filtro `tags`: a empresa precisa ter **todas** as tags pedidas (ex.: um Status e uma Visitação). Última visita "sem visita há 60/90 dias" **inclui quem nunca foi visitado**.
+- A busca por documento aceita pedaço, com ou sem máscara. A ordenação padrão é por nome sem acento; por última visita, quem nunca foi visitado vem primeiro.
+- `/opcoes` entrega equipe, cidades das empresas visíveis, `unicoMembro` (esconde o filtro Vendedor e o chip "Minha carteira") e os dias de alerta de contato da empresa.
+
 **Nova empresa `/empresas/nova`** (3 passos do protótipo)
 - **Documento** (CNPJ, CPF ou sem documento) com consulta e os estados: aguardando, encontrada, já cadastrada, não ativa (bloqueada), falha, CNPJ inválido.
 - **Conferir dados da Receita** (editáveis). Sem faixas de funcionários e faturamento (fora do MVP).
