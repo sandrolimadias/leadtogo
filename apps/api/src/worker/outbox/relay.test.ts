@@ -11,6 +11,7 @@ import { processadorDeTeste } from '../processadores.js'
 import { WorkerFilas } from '../worker-filas.service.js'
 import { jobIdDoEvento, manipuladoresPadrao } from './manipuladores.js'
 import { esperaProgressivaMs, RelayDoOutbox } from './relay.js'
+import { esperarAte } from '../../testes/espera.js'
 
 const log = pino({ level: 'silent' })
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
@@ -92,14 +93,6 @@ const linha = (id: string, tenantId: string) =>
       }
     )
   })
-const esperarAte = async (condicao: () => Promise<boolean>, ms = 10_000) => {
-  const limite = Date.now() + ms
-  while (Date.now() < limite) {
-    if (await condicao()) return
-    await new Promise((r) => setTimeout(r, 50))
-  }
-  throw new Error('condição não atingida')
-}
 const contagem = async (chave: string) => Number((await valkey.get(`${chave}:n`)) ?? 0)
 
 describe('relay do outbox (Postgres e Valkey reais, sem BYPASSRLS)', () => {

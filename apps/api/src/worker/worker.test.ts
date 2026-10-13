@@ -8,6 +8,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { configuracaoDeTeste } from '../testes/app-teste.js'
 import { compilarApi, subirWorker, type WorkerFilho } from '../testes/processo-worker.js'
 import { criarFila, FILAS, RETENCAO } from './filas.js'
+import { esperarAte } from '../testes/espera.js'
 
 const raiz = fileURLToPath(new URL('../..', import.meta.url))
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
@@ -47,14 +48,6 @@ function fila() {
   )
   filas.push(q)
   return q
-}
-const esperarAte = async (condicao: () => Promise<boolean>, ms = 10_000) => {
-  const limite = Date.now() + ms
-  while (Date.now() < limite) {
-    if (await condicao()) return
-    await new Promise((r) => setTimeout(r, 50))
-  }
-  throw new Error('condição não atingida')
 }
 
 describe('worker: processo e healthcheck', () => {
@@ -122,7 +115,7 @@ describe('worker: encerramento gracioso (SIGTERM)', () => {
     expect(saida.codigo).toBe(0)
     expect(saida.emMs).toBeGreaterThan(1000) // esperou o job, não saiu na hora
     expect(await valkey.get(chave)).toBe(job.id) // o job terminou e gravou
-    expect(await job.getState()).toBe('completed')
+    await esperarAte(async () => (await job.getState()) === 'completed') // o estado vem logo depois do efeito
     expect(w.saida()).toContain('"noPrazo":true')
   }, 40_000)
 
@@ -159,8 +152,8 @@ describe('worker: encerramento gracioso (SIGTERM)', () => {
     // o lock expira (3 s) e o job parado volta para a fila: o segundo worker o conclui
     const w2 = await worker({ WORKER_ENCERRAMENTO_S: '20' })
     await w2.aguardarPronto()
-    await esperarAte(async () => (await valkey.get(chave)) !== null, 20_000)
-    await esperarAte(async () => (await job.getState()) === 'completed', 20_000) // o estado vem logo depois do efeito
+    await esperarAte(async () => (await valkey.get(chave)) !== null)
+    await esperarAte(async () => (await job.getState()) === 'completed') // o estado vem logo depois do efeito
   }, 60_000)
 })
 

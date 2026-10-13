@@ -11,6 +11,7 @@ import { processadorDeNotificacao } from '../processadores.js'
 import { WorkerFilas } from '../worker-filas.service.js'
 import { jobIdDoEvento, manipuladoresPadrao } from './manipuladores.js'
 import { RelayDoOutbox } from './relay.js'
+import { esperarAte } from '../../testes/espera.js'
 
 const log = pino({ level: 'silent' })
 const banco = criarConexao(process.env['DATABASE_URL'] ?? '', { max: 4 })
@@ -37,15 +38,6 @@ afterAll(async () => {
   await banco.cliente.end({ timeout: 5 })
   await dono.end()
 })
-
-const esperarAte = async (condicao: () => Promise<boolean>, ms = 10_000) => {
-  const limite = Date.now() + ms
-  while (Date.now() < limite) {
-    if (await condicao()) return
-    await new Promise((r) => setTimeout(r, 50))
-  }
-  throw new Error('condição não atingida')
-}
 
 describe('notificacao.criar (consumidor idempotente: id da notificação = id do evento)', () => {
   it('cria a notificação no tenant do evento; reenfileirar o mesmo evento depois de concluído e removido não cria uma segunda', async () => {

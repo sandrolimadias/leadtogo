@@ -11,6 +11,7 @@ import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import { FILAS } from '../worker/filas.js'
 import { EmailService, type JobDeEmail } from './email.service.js'
 import { emailRedefinirSenha } from './modelos.js'
+import { esperarAte } from '../testes/espera.js'
 
 const valkey = new Redis(process.env['REDIS_URL'] ?? '', { maxRetriesPerRequest: 1 })
 const limpar: (() => Promise<unknown>)[] = []
@@ -39,14 +40,6 @@ async function cenario(troca: Record<string, string> = {}, comWorker = true) {
     limpar.push(() => w.parar())
   }
   return { servico, fila, config }
-}
-const esperarAte = async (condicao: () => Promise<boolean>, ms = 10_000) => {
-  const limite = Date.now() + ms
-  while (Date.now() < limite) {
-    if (await condicao()) return
-    await new Promise((r) => setTimeout(r, 50))
-  }
-  throw new Error('condição não atingida')
 }
 
 describe('TOKEN_ENCRYPTION_KEY (configuração)', () => {

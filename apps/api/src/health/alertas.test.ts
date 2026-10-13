@@ -13,6 +13,7 @@ import { FILAS } from '../worker/filas.js'
 import { dono, empresaDeOutraConta } from '../testes/mundo.js'
 import { tokenConfere } from './alertas.controller.js'
 import { FILAS_MONITORADAS, type RelatorioAlertas } from './alertas.service.js'
+import { esperarAte } from '../testes/espera.js'
 
 // Serviços reais do `pnpm dev:up`: Postgres (leadtogo_api_test) e Valkey (db 1).
 const TOKEN = 'token-de-teste-com-pelo-menos-32-caracteres-ok'
@@ -163,10 +164,7 @@ describe('GET /health/alertas: situação', () => {
     )
     try {
       await fila.add('x', {}, { attempts: 1 })
-      const limite = Date.now() + 10_000
-      while ((await fila.getFailedCount()) === 0 && Date.now() < limite) {
-        await new Promise((r) => setTimeout(r, 50))
-      }
+      await esperarAte(async () => (await fila.getFailedCount()) > 0)
       const r = await consultar()
       expect(r.status).toBe(503)
       expect(r.body.jobs_falhos['email']).toBe(1)

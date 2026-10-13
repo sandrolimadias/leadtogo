@@ -2,6 +2,9 @@
  * Lê o que a API enviou, pela API HTTP do Mailpit (docker compose, porta 8025).
  * Os testes de recuperação de senha, verificação de e-mail e convites usam isto.
  */
+
+import { PRAZO_ESPERA_MS } from './espera.js'
+
 const base = () => process.env['MAILPIT_URL'] ?? 'http://localhost:8025'
 
 export interface MensagemResumo {
@@ -38,7 +41,10 @@ export async function mensagensPara(email: string): Promise<MensagemResumo[]> {
  * pelo outbox, pela fila e pelo worker antes do SMTP: com a máquina ou o runner lentos isso passa de 5 s
  * (sem nenhuma limpeza concorrente: os arquivos rodam em sequência e a caixa só é limpa antes do envio).
  */
-export async function aguardarMensagem(email: string, ms = 15_000): Promise<MensagemCompleta> {
+export async function aguardarMensagem(
+  email: string,
+  ms = PRAZO_ESPERA_MS,
+): Promise<MensagemCompleta> {
   const limite = Date.now() + ms
   while (Date.now() < limite) {
     const [mensagem] = await mensagensPara(email)

@@ -92,14 +92,13 @@ async function adminPronto() {
  * Mailpit local (nenhum serviço de fora). Num runner do CI lento a corrida inteira passa de 5 s sem que
  * nada esteja errado; a espera pelo e-mail fica longa (só dura isso se ele não chegar).
  */
-const PRAZO_DO_EMAIL_MS = 15_000
 /** Prazo do teste que espera esse e-mail: o do e-mail mais o preparo (conta, login, 2FA) e as conferências. */
 const PRAZO_DO_TESTE_COM_EMAIL_MS = 25_000
 
 async function convidarEPegarToken(cookie: string, email: string, papel = 'vendedor') {
   const r = await convidar(cookie, { email, papel })
   expect(r.status, JSON.stringify(r.body)).toBe(201)
-  const mensagem = await aguardarMensagem(email, PRAZO_DO_EMAIL_MS)
+  const mensagem = await aguardarMensagem(email)
   const token = new URL(primeiroLink(mensagem)).searchParams.get('token') ?? ''
   expect(token).toHaveLength(43)
   return { token, convite: r.body as ConviteCriado, mensagem }

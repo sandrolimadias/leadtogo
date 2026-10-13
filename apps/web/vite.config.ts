@@ -123,5 +123,8 @@ export default defineConfig(({ command }) => ({
     // Menos arquivos de teste ao mesmo tempo: os fluxos (roteador + Radix) são pesados e ficavam lentos
     // quando a máquina está ocupada
     maxWorkers: 2,
+    // Cabe a espera de 15 s do `findBy*`/`waitFor` (setup.ts); o mesmo tempo limite por teste da API
+    testTimeout: 20_000,
+    hookTimeout: 30_000,
   },
 }))

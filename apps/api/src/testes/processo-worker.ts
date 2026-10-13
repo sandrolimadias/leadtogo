@@ -3,6 +3,8 @@ import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
 import { fileURLToPath } from 'node:url'
 
+import { PRAZO_ESPERA_MS } from './espera.js'
+
 const raiz = fileURLToPath(new URL('../..', import.meta.url))
 
 /** Compila a API (o teste exercita o `dist/worker.js` de verdade, o que vai para a imagem). */
@@ -52,7 +54,7 @@ export async function subirWorker(extra: Record<string, string> = {}): Promise<W
   processo.stdout?.on('data', (p) => (saida += String(p)))
   processo.stderr?.on('data', (p) => (saida += String(p)))
   const inicio = () => Date.now()
-  const pronto = async (ms = 15_000) => {
+  const pronto = async (ms = PRAZO_ESPERA_MS) => {
     const limite = Date.now() + ms
     while (Date.now() < limite) {
       if (processo.exitCode !== null)
