@@ -17,14 +17,10 @@ afterAll(async () => {
   await dono.end()
 })
 
-// Estes testes fazem centenas de chamadas do mesmo IP: o limite global (300/min) não é o assunto aqui
 let app: INestApplication<Server>
 beforeEach(async () => {
   await limparLimitesAuth(valkey)
-  app = await criarAppComRotas(
-    [],
-    configuracaoDeTeste({ TRUST_PROXY: '1', RATE_LIMIT_MAX: '100000' }),
-  )
+  app = await criarAppComRotas([], configuracaoDeTeste({ TRUST_PROXY: '1' }))
 })
 afterEach(() => app.close())
 

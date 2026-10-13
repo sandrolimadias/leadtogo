@@ -7,9 +7,19 @@ import { AppModule, type OpcoesApp } from '../app.module.js'
 import { configurarApp } from '../app.js'
 import { carregarConfiguracao, type Configuracao } from '../configuracao/configuracao.js'
 
-/** Configuração dos testes: serviços de teste, com trocas pontuais. */
+/**
+ * Configuração dos testes: serviços de teste, com trocas pontuais. O limite GLOBAL de requisições
+ * (300 por minuto por IP em produção) fica muito alto aqui: os arquivos rodam em sequência e dividem o
+ * mesmo contador no Valkey, então o que um consome tirava a vez do seguinte (429 intermitente). Quem
+ * testa o limitador passa o próprio `RATE_LIMIT_MAX` (rate-limit/limite.test.ts).
+ */
 export function configuracaoDeTeste(troca: Record<string, string> = {}): Configuracao {
-  return carregarConfiguracao({ ...process.env, LOG_LEVEL: 'silent', ...troca })
+  return carregarConfiguracao({
+    ...process.env,
+    LOG_LEVEL: 'silent',
+    RATE_LIMIT_MAX: '100000',
+    ...troca,
+  })
 }
 
 /**

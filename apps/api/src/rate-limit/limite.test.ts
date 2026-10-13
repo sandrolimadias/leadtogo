@@ -3,7 +3,7 @@ import type { Server } from 'node:http'
 import { Controller, Get, type INestApplication } from '@nestjs/common'
 import { Redis } from 'ioredis'
 import request from 'supertest'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { RespostaDeErro } from '../http/filtro-excecoes.js'
 import { Publica } from '../acesso/acesso.decorators.js'
@@ -47,7 +47,8 @@ async function subir(troca: Record<string, string>) {
   return app.getHttpServer()
 }
 
-beforeAll(limparLimites)
+// Contador zerado antes de cada teste: não depende do que outros arquivos consumiram
+beforeEach(limparLimites)
 afterEach(async () => {
   await app?.close()
   app = undefined
