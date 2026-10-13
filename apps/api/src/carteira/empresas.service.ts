@@ -39,6 +39,7 @@ const {
   empresas,
   empresaTelefones,
   empresaCnaes,
+  empresaContatos,
   empresaSocios,
   empresaTags,
   membros,
@@ -414,6 +415,11 @@ export class EmpresasDaCarteiraService {
       .update(empresas)
       .set({ excluidoEm: new Date(), atualizadoPor: escopo.membroId })
       .where(eq(empresas.id, id))
+    // Os contatos dessa empresa saem dela: o vínculo fica inativo (e deixa de ser o principal), mantendo o histórico
+    await db
+      .update(empresaContatos)
+      .set({ ativo: false, principal: false })
+      .where(eq(empresaContatos.empresaId, id))
     // As filiais deixam de apontar para uma matriz que saiu da carteira
     if (atual.matrizFilial === 'matriz') {
       await db.update(empresas).set({ matrizId: null }).where(eq(empresas.matrizId, id))

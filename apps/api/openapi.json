@@ -117,6 +117,336 @@
         "security": []
       }
     },
+    "/v1/carteira/contatos": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. O vendedor informa a empresa (`vinculo`, só empresa da carteira dele; 400 `empresa_obrigatoria`); gestor e admin podem criar sem empresa. Telefones viram E.164 e e-mails ficam em minúsculas, cada lista com um principal. Já existe contato com o mesmo e-mail ou telefone: 409 `contato_duplicado` com `dados.existentes` (id e nome só dos que o usuário vê), e a pessoa escolhe abrir o existente ou reenviar com `ignorarDuplicado: true`. Falso em `aceitaWhatsapp` ou `aceitaEmail` registra o consentimento (data e origem \"manual\"). Registra na auditoria.",
+        "operationId": "ContatosController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarContatoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar contato",
+        "tags": ["Carteira: contatos"]
+      }
+    },
+    "/v1/carteira/contatos/{id}": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Traz a pessoa, telefones, e-mails, o consentimento e os vínculos com as empresas que o usuário vê (os outros não aparecem).",
+        "operationId": "ContatosController_detalhar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ficha do contato",
+        "tags": ["Carteira: contatos"]
+      },
+      "patch": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Só o que vier muda; `telefones` e `emails`, se vierem, substituem a lista toda. Mudar `aceitaWhatsapp` ou `aceitaEmail` atualiza a data e a origem do consentimento. Telefone ou e-mail novo que já é de outro contato: 409 `contato_duplicado` (reenvie com `ignorarDuplicado`). Os vínculos com empresas têm rotas próprias. Registra na auditoria o antes e o depois.",
+        "operationId": "ContatosController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarContatoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar contato",
+        "tags": ["Carteira: contatos"]
+      },
+      "delete": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Exclusão lógica (sem lixeira no MVP), só de gestor e administrador. O caminho comum para quem saiu da empresa é inativar o vínculo. Registra na auditoria.",
+        "operationId": "ContatosController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir contato",
+        "tags": ["Carteira: contatos"]
+      }
+    },
     "/v1/carteira/empresas": {
       "get": {
         "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Busca sem acento (nome, razão social, CNPJ/CPF com ou sem máscara, cidade), filtros (`tags`: a empresa precisa ter todas; vendedor, cidade, última visita), chips fixos e paginação. Os chips \"sem visita há 90 dias\", \"nunca visitadas\" e \"sem próxima atividade\" consideram só Status Cliente e Prospect, salvo `incluirLeads=true`. Cada item traz todas as tags, o telefone principal (Ligar/WhatsApp) e o endereço para a rota.",
@@ -6321,6 +6651,63 @@
         ],
         "additionalProperties": false
       },
+      "AlterarContatoEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "papelDecisaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "aniversario": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AniversarioDoContato"
+              }
+            ]
+          },
+          "linkedinUrl": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 300
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "telefones": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TelefoneDaEmpresaEntrada"
+            }
+          },
+          "emails": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmailDoContatoEntrada"
+            }
+          },
+          "aceitaWhatsapp": {
+            "type": "boolean"
+          },
+          "aceitaEmail": {
+            "type": "boolean"
+          },
+          "ignorarDuplicado": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarEmpresaDaCarteiraEntrada": {
         "type": "object",
         "properties": {
@@ -6637,6 +7024,23 @@
         },
         "additionalProperties": false
       },
+      "AniversarioDoContato": {
+        "type": "object",
+        "properties": {
+          "dia": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          },
+          "mes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          }
+        },
+        "required": ["dia", "mes"],
+        "additionalProperties": false
+      },
       "AplicarDaReceitaEntrada": {
         "type": "object",
         "properties": {
@@ -6894,6 +7298,212 @@
         "required": ["todas", "minha", "semVisita90", "nuncaVisitadas", "semProximaAtividade"],
         "additionalProperties": false
       },
+      "Contato": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "papelDecisao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "aniversario": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "dia": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "mes": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["dia", "mes"],
+            "additionalProperties": false
+          },
+          "linkedinUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "aceitaWhatsapp": {
+            "type": "boolean"
+          },
+          "aceitaEmail": {
+            "type": "boolean"
+          },
+          "consentimentoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "consentimentoOrigem": {
+            "nullable": true,
+            "type": "string"
+          },
+          "telefones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "numero": {
+                  "type": "string"
+                },
+                "e164": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                },
+                "descricao": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "numero", "e164", "tipo", "descricao", "principal"],
+              "additionalProperties": false
+            }
+          },
+          "emails": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["pessoal", "trabalho"]
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "email", "tipo", "principal"],
+              "additionalProperties": false
+            }
+          },
+          "vinculos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "empresa": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "nome"],
+                  "additionalProperties": false
+                },
+                "cargo": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "principal": {
+                  "type": "boolean"
+                },
+                "ativo": {
+                  "type": "boolean"
+                },
+                "desde": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "ate": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "required": ["id", "empresa", "cargo", "principal", "ativo", "desde", "ate"],
+              "additionalProperties": false
+            }
+          },
+          "criadoEm": {
+            "type": "string"
+          },
+          "atualizadoEm": {
+            "type": "string"
+          },
+          "permissoes": {
+            "type": "object",
+            "properties": {
+              "editar": {
+                "type": "boolean"
+              },
+              "excluir": {
+                "type": "boolean"
+              }
+            },
+            "required": ["editar", "excluir"],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "papelDecisao",
+          "aniversario",
+          "linkedinUrl",
+          "observacoes",
+          "aceitaWhatsapp",
+          "aceitaEmail",
+          "consentimentoEm",
+          "consentimentoOrigem",
+          "telefones",
+          "emails",
+          "vinculos",
+          "criadoEm",
+          "atualizadoEm",
+          "permissoes"
+        ],
+        "additionalProperties": false
+      },
       "ConviteAceito": {
         "type": "object",
         "properties": {
@@ -7028,6 +7638,71 @@
           "purple",
           "pink"
         ]
+      },
+      "CriarContatoEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "papelDecisaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "aniversario": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AniversarioDoContato"
+              }
+            ]
+          },
+          "linkedinUrl": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 300
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "telefones": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TelefoneDaEmpresaEntrada"
+            }
+          },
+          "emails": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmailDoContatoEntrada"
+            }
+          },
+          "aceitaWhatsapp": {
+            "type": "boolean"
+          },
+          "aceitaEmail": {
+            "type": "boolean"
+          },
+          "ignorarDuplicado": {
+            "type": "boolean"
+          },
+          "vinculo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VinculoInicialDoContato"
+              }
+            ]
+          }
+        },
+        "required": ["nome"],
+        "additionalProperties": false
       },
       "CriarConviteEntrada": {
         "type": "object",
@@ -7630,6 +8305,23 @@
           }
         },
         "required": ["tagIds"],
+        "additionalProperties": false
+      },
+      "EmailDoContatoEntrada": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": ["pessoal", "trabalho"]
+          },
+          "principal": {
+            "type": "boolean"
+          }
+        },
+        "required": ["email"],
         "additionalProperties": false
       },
       "EmpresaAtivaEntrada": {
@@ -9229,6 +9921,25 @@
           }
         },
         "required": ["id", "nome", "cor", "ativo", "ordem"],
+        "additionalProperties": false
+      },
+      "VinculoInicialDoContato": {
+        "type": "object",
+        "properties": {
+          "empresaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 100
+          },
+          "principal": {
+            "type": "boolean"
+          }
+        },
+        "required": ["empresaId"],
         "additionalProperties": false
       }
     }

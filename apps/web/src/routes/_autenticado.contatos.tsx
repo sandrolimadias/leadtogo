@@ -1,14 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Users } from 'lucide-react'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-import { PaginaVazia } from '@/casca/partes'
-
+// Contatos: a lista (/contatos), o cadastro (/contatos/novo) e a edição (/contatos/:id/editar).
 export const Route = createFileRoute('/_autenticado/contatos')({
-  component: () => (
-    <PaginaVazia
-      titulo="Contatos"
-      icone={Users}
-      descricao="Em breve: os contatos de cada empresa."
-    />
-  ),
+  component: Outlet,
 })

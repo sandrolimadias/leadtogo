@@ -136,6 +136,16 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 - **Excluir contato:** exclusão lógica só de gestor e administrador, sem lixeira; o caminho comum é inativar o vínculo.
 - **Fora do Módulo 3:** campos personalizados do contato, mesclar duplicados, importar planilha de contatos (Módulo 4), bloqueio efetivo de envio por consentimento, identificar contato pelo WhatsApp, alerta de aniversário e foto do contato.
 
+**Decisões tomadas na implementação do Módulo 3** (dentro do plano aprovado; o Ale vê o resultado na tela de cada commit):
+- *Commit 2 (Novo e Editar contato):*
+  - **Vendedor precisa escolher a empresa** ao criar contato (só empresa da carteira dele): sem empresa vinculada ele não veria o contato. Gestor e administrador podem criar sem empresa e vincular depois.
+  - **O que se vê na ficha:** o vendedor só vê os vínculos com empresas que ele vê; os outros não aparecem.
+  - **Duplicado:** o aviso compara e-mail (sem diferença de caixa) e telefone (E.164) com qualquer contato da empresa; na edição só conta o e-mail ou telefone **novo**. Contato de carteira que o usuário não vê entra no aviso **sem nome e sem "Abrir contato"**.
+  - **Consentimento:** só vai no corpo quando a pessoa mexe na chave; mudar o consentimento grava data e origem "manual".
+  - **Aniversário** valida dia e mês reais (29/02 vale, 31/02 não). **LinkedIn** só aceita endereço do próprio LinkedIn.
+  - **Vínculo e exclusão de empresa:** ao excluir uma empresa, todos os vínculos dela ficam **inativos** (e deixam de ser o principal), mantendo o histórico; o vendedor deixa de ver o contato que só tinha essa empresa, e admin e gestor continuam vendo.
+  - **Até a ficha existir (commit 4)**, depois de criar o contato e no "Abrir contato" do aviso de duplicado a tela leva para a **edição** do contato; a lista (`/contatos`) é um aviso com o botão "Novo contato" até o commit 3.
+
 ### Módulo 4 — Importação de planilha (Excel/CSV)
 *Decidido pelo Ale em 12/10/2026; **substitui** a descrição anterior. Vem depois dos Módulos 1 a 3. Detalhes de regra em `funcionalidades.md` (seção 3, "Importação por planilha").*
 

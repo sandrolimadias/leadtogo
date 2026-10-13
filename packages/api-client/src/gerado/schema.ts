@@ -64,6 +64,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/carteira/contatos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cadastrar contato
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. O vendedor informa a empresa (`vinculo`, só empresa da carteira dele; 400 `empresa_obrigatoria`); gestor e admin podem criar sem empresa. Telefones viram E.164 e e-mails ficam em minúsculas, cada lista com um principal. Já existe contato com o mesmo e-mail ou telefone: 409 `contato_duplicado` com `dados.existentes` (id e nome só dos que o usuário vê), e a pessoa escolhe abrir o existente ou reenviar com `ignorarDuplicado: true`. Falso em `aceitaWhatsapp` ou `aceitaEmail` registra o consentimento (data e origem "manual"). Registra na auditoria.
+         */
+        post: operations["ContatosController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/contatos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ficha do contato
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Traz a pessoa, telefones, e-mails, o consentimento e os vínculos com as empresas que o usuário vê (os outros não aparecem).
+         */
+        get: operations["ContatosController_detalhar"];
+        put?: never;
+        post?: never;
+        /**
+         * Excluir contato
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Exclusão lógica (sem lixeira no MVP), só de gestor e administrador. O caminho comum para quem saiu da empresa é inativar o vínculo. Registra na auditoria.
+         */
+        delete: operations["ContatosController_excluir"];
+        options?: never;
+        head?: never;
+        /**
+         * Editar contato
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Só o que vier muda; `telefones` e `emails`, se vierem, substituem a lista toda. Mudar `aceitaWhatsapp` ou `aceitaEmail` atualiza a data e a origem do consentimento. Telefone ou e-mail novo que já é de outro contato: 409 `contato_duplicado` (reenvie com `ignorarDuplicado`). Os vínculos com empresas têm rotas próprias. Registra na auditoria o antes e o depois.
+         */
+        patch: operations["ContatosController_alterar"];
+        trace?: never;
+    };
     "/v1/carteira/empresas": {
         parameters: {
             query?: never;
@@ -1263,6 +1311,19 @@ export interface components {
             jobs_falhos_total: number;
             limite_jobs_falhos: number;
         };
+        AlterarContatoEntrada: {
+            nome?: string;
+            /** Format: uuid */
+            papelDecisaoId?: string | null;
+            aniversario?: components["schemas"]["AniversarioDoContato"] | null;
+            linkedinUrl?: string | null;
+            observacoes?: string | null;
+            telefones?: components["schemas"]["TelefoneDaEmpresaEntrada"][];
+            emails?: components["schemas"]["EmailDoContatoEntrada"][];
+            aceitaWhatsapp?: boolean;
+            aceitaEmail?: boolean;
+            ignorarDuplicado?: boolean;
+        };
         AlterarEmpresaDaCarteiraEntrada: {
             razaoSocial?: string;
             nomeFantasia?: string | null;
@@ -1345,6 +1406,10 @@ export interface components {
             cor?: components["schemas"]["CorDeTag"];
             ativo?: boolean;
         };
+        AniversarioDoContato: {
+            dia: number;
+            mes: number;
+        };
         AplicarDaReceitaEntrada: {
             campos?: ("razaoSocial" | "nomeFantasia" | "mei" | "dataInicioAtividades" | "porteCodigo" | "regimeTributario" | "endereco" | "cnaes" | "telefones" | "socios")[];
         };
@@ -1409,6 +1474,64 @@ export interface components {
             nuncaVisitadas: number;
             semProximaAtividade: number;
         };
+        Contato: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            papelDecisao: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            aniversario: {
+                dia: number;
+                mes: number;
+            } | null;
+            linkedinUrl: string | null;
+            observacoes: string | null;
+            aceitaWhatsapp: boolean;
+            aceitaEmail: boolean;
+            consentimentoEm: string | null;
+            consentimentoOrigem: string | null;
+            telefones: {
+                /** Format: uuid */
+                id: string;
+                numero: string;
+                e164: string;
+                /** @enum {string} */
+                tipo: "fixo" | "celular" | "whatsapp" | "outro";
+                descricao: string | null;
+                principal: boolean;
+            }[];
+            emails: {
+                /** Format: uuid */
+                id: string;
+                email: string;
+                /** @enum {string} */
+                tipo: "pessoal" | "trabalho";
+                principal: boolean;
+            }[];
+            vinculos: {
+                /** Format: uuid */
+                id: string;
+                empresa: {
+                    /** Format: uuid */
+                    id: string;
+                    nome: string;
+                };
+                cargo: string | null;
+                principal: boolean;
+                ativo: boolean;
+                desde: string | null;
+                ate: string | null;
+            }[];
+            criadoEm: string;
+            atualizadoEm: string;
+            permissoes: {
+                editar: boolean;
+                excluir: boolean;
+            };
+        };
         ConviteAceito: {
             /** Format: uuid */
             tenantId: string;
@@ -1459,6 +1582,20 @@ export interface components {
         };
         /** @enum {string} */
         CorDeTag: "gray" | "red" | "orange" | "amber" | "green" | "teal" | "blue" | "indigo" | "purple" | "pink";
+        CriarContatoEntrada: {
+            nome: string;
+            /** Format: uuid */
+            papelDecisaoId?: string | null;
+            aniversario?: components["schemas"]["AniversarioDoContato"] | null;
+            linkedinUrl?: string | null;
+            observacoes?: string | null;
+            telefones?: components["schemas"]["TelefoneDaEmpresaEntrada"][];
+            emails?: components["schemas"]["EmailDoContatoEntrada"][];
+            aceitaWhatsapp?: boolean;
+            aceitaEmail?: boolean;
+            ignorarDuplicado?: boolean;
+            vinculo?: components["schemas"]["VinculoInicialDoContato"];
+        };
         CriarConviteEntrada: {
             email: string;
             /** @enum {string} */
@@ -1612,6 +1749,12 @@ export interface components {
         };
         DefinirTagsDaEmpresaEntrada: {
             tagIds: string[];
+        };
+        EmailDoContatoEntrada: {
+            email: string;
+            /** @enum {string} */
+            tipo?: "pessoal" | "trabalho";
+            principal?: boolean;
         };
         EmpresaAtivaEntrada: {
             /** Format: uuid */
@@ -2069,6 +2212,12 @@ export interface components {
             ativo: boolean;
             ordem: number;
         };
+        VinculoInicialDoContato: {
+            /** Format: uuid */
+            empresaId: string;
+            cargo?: string | null;
+            principal?: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -2174,6 +2323,287 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ContatosController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarContatoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contato"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ContatosController_detalhar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contato"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ContatosController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ContatosController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarContatoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contato"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

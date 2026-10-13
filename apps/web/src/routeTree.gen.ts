@@ -40,10 +40,13 @@ import { Route as AutenticadoConfiguracoesTagsRouteImport } from './routes/_aute
 import { Route as AutenticadoConfiguracoesTiposDeAtividadeRouteImport } from './routes/_autenticado.configuracoes.tipos-de-atividade'
 import { Route as AutenticadoConfiguracoesUsuariosRouteImport } from './routes/_autenticado.configuracoes.usuarios'
 import { Route as AutenticadoConfiguracoesVerticaisESolucoesRouteImport } from './routes/_autenticado.configuracoes.verticais-e-solucoes'
+import { Route as AutenticadoContatosIndexRouteImport } from './routes/_autenticado.contatos.index'
+import { Route as AutenticadoContatosNovoRouteImport } from './routes/_autenticado.contatos.novo'
 import { Route as AutenticadoEmpresasIndexRouteImport } from './routes/_autenticado.empresas.index'
 import { Route as AutenticadoEmpresasEmpresaIdRouteImport } from './routes/_autenticado.empresas.$empresaId'
 import { Route as AutenticadoEmpresasNovaRouteImport } from './routes/_autenticado.empresas.nova'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
+import { Route as AutenticadoContatosContatoIdEditarRouteImport } from './routes/_autenticado.contatos.$contatoId_.editar'
 import { Route as AutenticadoEmpresasEmpresaIdEditarRouteImport } from './routes/_autenticado.empresas.$empresaId_.editar'
 
 const AcessoRoute = AcessoRouteImport.update({
@@ -211,6 +214,17 @@ const AutenticadoConfiguracoesVerticaisESolucoesRoute =
     path: '/verticais-e-solucoes',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
+const AutenticadoContatosIndexRoute =
+  AutenticadoContatosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AutenticadoContatosRoute,
+  } as any)
+const AutenticadoContatosNovoRoute = AutenticadoContatosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AutenticadoContatosRoute,
+} as any)
 const AutenticadoEmpresasIndexRoute =
   AutenticadoEmpresasIndexRouteImport.update({
     id: '/',
@@ -234,6 +248,12 @@ const AutenticadoPerfilSegurancaRoute =
     path: '/perfil/seguranca',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoContatosContatoIdEditarRoute =
+  AutenticadoContatosContatoIdEditarRouteImport.update({
+    id: '/$contatoId_/editar',
+    path: '/$contatoId/editar',
+    getParentRoute: () => AutenticadoContatosRoute,
+  } as any)
 const AutenticadoEmpresasEmpresaIdEditarRoute =
   AutenticadoEmpresasEmpresaIdEditarRouteImport.update({
     id: '/$empresaId_/editar',
@@ -254,7 +274,7 @@ export interface FileRoutesByFullPath {
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/configuracoes': typeof AutenticadoConfiguracoesRouteWithChildren
   '/consolidado': typeof AutenticadoConsolidadoRoute
-  '/contatos': typeof AutenticadoContatosRoute
+  '/contatos': typeof AutenticadoContatosRouteWithChildren
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/empresas': typeof AutenticadoEmpresasRouteWithChildren
   '/oportunidades': typeof AutenticadoOportunidadesRoute
@@ -270,11 +290,14 @@ export interface FileRoutesByFullPath {
   '/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
   '/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/configuracoes/verticais-e-solucoes': typeof AutenticadoConfiguracoesVerticaisESolucoesRoute
+  '/contatos/novo': typeof AutenticadoContatosNovoRoute
   '/empresas/$empresaId': typeof AutenticadoEmpresasEmpresaIdRoute
   '/empresas/nova': typeof AutenticadoEmpresasNovaRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
+  '/contatos/': typeof AutenticadoContatosIndexRoute
   '/empresas/': typeof AutenticadoEmpresasIndexRoute
+  '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
 export interface FileRoutesByTo {
@@ -289,7 +312,6 @@ export interface FileRoutesByTo {
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/consolidado': typeof AutenticadoConsolidadoRoute
-  '/contatos': typeof AutenticadoContatosRoute
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/oportunidades': typeof AutenticadoOportunidadesRoute
   '/prospeccao': typeof AutenticadoProspeccaoRoute
@@ -304,11 +326,14 @@ export interface FileRoutesByTo {
   '/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
   '/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/configuracoes/verticais-e-solucoes': typeof AutenticadoConfiguracoesVerticaisESolucoesRoute
+  '/contatos/novo': typeof AutenticadoContatosNovoRoute
   '/empresas/$empresaId': typeof AutenticadoEmpresasEmpresaIdRoute
   '/empresas/nova': typeof AutenticadoEmpresasNovaRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/configuracoes': typeof AutenticadoConfiguracoesIndexRoute
+  '/contatos': typeof AutenticadoContatosIndexRoute
   '/empresas': typeof AutenticadoEmpresasIndexRoute
+  '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
 export interface FileRoutesById {
@@ -326,7 +351,7 @@ export interface FileRoutesById {
   '/_acesso/verificar-email': typeof AcessoVerificarEmailRoute
   '/_autenticado/configuracoes': typeof AutenticadoConfiguracoesRouteWithChildren
   '/_autenticado/consolidado': typeof AutenticadoConsolidadoRoute
-  '/_autenticado/contatos': typeof AutenticadoContatosRoute
+  '/_autenticado/contatos': typeof AutenticadoContatosRouteWithChildren
   '/_autenticado/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/_autenticado/empresas': typeof AutenticadoEmpresasRouteWithChildren
   '/_autenticado/oportunidades': typeof AutenticadoOportunidadesRoute
@@ -343,11 +368,14 @@ export interface FileRoutesById {
   '/_autenticado/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
   '/_autenticado/configuracoes/usuarios': typeof AutenticadoConfiguracoesUsuariosRoute
   '/_autenticado/configuracoes/verticais-e-solucoes': typeof AutenticadoConfiguracoesVerticaisESolucoesRoute
+  '/_autenticado/contatos/novo': typeof AutenticadoContatosNovoRoute
   '/_autenticado/empresas/$empresaId': typeof AutenticadoEmpresasEmpresaIdRoute
   '/_autenticado/empresas/nova': typeof AutenticadoEmpresasNovaRoute
   '/_autenticado/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/_autenticado/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
+  '/_autenticado/contatos/': typeof AutenticadoContatosIndexRoute
   '/_autenticado/empresas/': typeof AutenticadoEmpresasIndexRoute
+  '/_autenticado/contatos/$contatoId_/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/_autenticado/empresas/$empresaId_/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
 export interface FileRouteTypes {
@@ -381,11 +409,14 @@ export interface FileRouteTypes {
     | '/configuracoes/tipos-de-atividade'
     | '/configuracoes/usuarios'
     | '/configuracoes/verticais-e-solucoes'
+    | '/contatos/novo'
     | '/empresas/$empresaId'
     | '/empresas/nova'
     | '/perfil/seguranca'
     | '/configuracoes/'
+    | '/contatos/'
     | '/empresas/'
+    | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -400,7 +431,6 @@ export interface FileRouteTypes {
     | '/verificacao'
     | '/verificar-email'
     | '/consolidado'
-    | '/contatos'
     | '/criar-empresa'
     | '/oportunidades'
     | '/prospeccao'
@@ -415,11 +445,14 @@ export interface FileRouteTypes {
     | '/configuracoes/tipos-de-atividade'
     | '/configuracoes/usuarios'
     | '/configuracoes/verticais-e-solucoes'
+    | '/contatos/novo'
     | '/empresas/$empresaId'
     | '/empresas/nova'
     | '/perfil/seguranca'
     | '/configuracoes'
+    | '/contatos'
     | '/empresas'
+    | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
   id:
     | '__root__'
@@ -453,11 +486,14 @@ export interface FileRouteTypes {
     | '/_autenticado/configuracoes/tipos-de-atividade'
     | '/_autenticado/configuracoes/usuarios'
     | '/_autenticado/configuracoes/verticais-e-solucoes'
+    | '/_autenticado/contatos/novo'
     | '/_autenticado/empresas/$empresaId'
     | '/_autenticado/empresas/nova'
     | '/_autenticado/perfil/seguranca'
     | '/_autenticado/configuracoes/'
+    | '/_autenticado/contatos/'
     | '/_autenticado/empresas/'
+    | '/_autenticado/contatos/$contatoId_/editar'
     | '/_autenticado/empresas/$empresaId_/editar'
   fileRoutesById: FileRoutesById
 }
@@ -686,6 +722,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoConfiguracoesVerticaisESolucoesRouteImport
       parentRoute: typeof AutenticadoConfiguracoesRoute
     }
+    '/_autenticado/contatos/': {
+      id: '/_autenticado/contatos/'
+      path: '/'
+      fullPath: '/contatos/'
+      preLoaderRoute: typeof AutenticadoContatosIndexRouteImport
+      parentRoute: typeof AutenticadoContatosRoute
+    }
+    '/_autenticado/contatos/novo': {
+      id: '/_autenticado/contatos/novo'
+      path: '/novo'
+      fullPath: '/contatos/novo'
+      preLoaderRoute: typeof AutenticadoContatosNovoRouteImport
+      parentRoute: typeof AutenticadoContatosRoute
+    }
     '/_autenticado/empresas/': {
       id: '/_autenticado/empresas/'
       path: '/'
@@ -713,6 +763,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/perfil/seguranca'
       preLoaderRoute: typeof AutenticadoPerfilSegurancaRouteImport
       parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/contatos/$contatoId_/editar': {
+      id: '/_autenticado/contatos/$contatoId_/editar'
+      path: '/$contatoId/editar'
+      fullPath: '/contatos/$contatoId/editar'
+      preLoaderRoute: typeof AutenticadoContatosContatoIdEditarRouteImport
+      parentRoute: typeof AutenticadoContatosRoute
     }
     '/_autenticado/empresas/$empresaId_/editar': {
       id: '/_autenticado/empresas/$empresaId_/editar'
@@ -790,6 +847,22 @@ const AutenticadoConfiguracoesRouteWithChildren =
     AutenticadoConfiguracoesRouteChildren,
   )
 
+interface AutenticadoContatosRouteChildren {
+  AutenticadoContatosNovoRoute: typeof AutenticadoContatosNovoRoute
+  AutenticadoContatosIndexRoute: typeof AutenticadoContatosIndexRoute
+  AutenticadoContatosContatoIdEditarRoute: typeof AutenticadoContatosContatoIdEditarRoute
+}
+
+const AutenticadoContatosRouteChildren: AutenticadoContatosRouteChildren = {
+  AutenticadoContatosNovoRoute: AutenticadoContatosNovoRoute,
+  AutenticadoContatosIndexRoute: AutenticadoContatosIndexRoute,
+  AutenticadoContatosContatoIdEditarRoute:
+    AutenticadoContatosContatoIdEditarRoute,
+}
+
+const AutenticadoContatosRouteWithChildren =
+  AutenticadoContatosRoute._addFileChildren(AutenticadoContatosRouteChildren)
+
 interface AutenticadoEmpresasRouteChildren {
   AutenticadoEmpresasEmpresaIdRoute: typeof AutenticadoEmpresasEmpresaIdRoute
   AutenticadoEmpresasNovaRoute: typeof AutenticadoEmpresasNovaRoute
@@ -811,7 +884,7 @@ const AutenticadoEmpresasRouteWithChildren =
 interface AutenticadoRouteChildren {
   AutenticadoConfiguracoesRoute: typeof AutenticadoConfiguracoesRouteWithChildren
   AutenticadoConsolidadoRoute: typeof AutenticadoConsolidadoRoute
-  AutenticadoContatosRoute: typeof AutenticadoContatosRoute
+  AutenticadoContatosRoute: typeof AutenticadoContatosRouteWithChildren
   AutenticadoCriarEmpresaRoute: typeof AutenticadoCriarEmpresaRoute
   AutenticadoEmpresasRoute: typeof AutenticadoEmpresasRouteWithChildren
   AutenticadoOportunidadesRoute: typeof AutenticadoOportunidadesRoute
@@ -824,7 +897,7 @@ interface AutenticadoRouteChildren {
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoConfiguracoesRoute: AutenticadoConfiguracoesRouteWithChildren,
   AutenticadoConsolidadoRoute: AutenticadoConsolidadoRoute,
-  AutenticadoContatosRoute: AutenticadoContatosRoute,
+  AutenticadoContatosRoute: AutenticadoContatosRouteWithChildren,
   AutenticadoCriarEmpresaRoute: AutenticadoCriarEmpresaRoute,
   AutenticadoEmpresasRoute: AutenticadoEmpresasRouteWithChildren,
   AutenticadoOportunidadesRoute: AutenticadoOportunidadesRoute,

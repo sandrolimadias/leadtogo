@@ -247,6 +247,26 @@ export const servicosReais: ServicosDeAcesso = {
       ),
     ),
 
+  contatos: {
+    criar: (dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/carteira/contatos', { body: dados as never })),
+      ),
+    detalhar: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/carteira/contatos/{id}', { params: { path: { id } } })),
+      ),
+    alterar: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/carteira/contatos/{id}', {
+            params: { path: { id } },
+            body: dados as never,
+          }),
+        ),
+      ),
+  },
+
   configuracaoDaCarteira: () =>
     protegido(async () => daApi(await api.GET('/v1/configuracoes/carteira'))),
   alterarConfiguracaoDaCarteira: (patch) =>

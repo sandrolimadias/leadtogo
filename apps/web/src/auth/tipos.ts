@@ -1,5 +1,6 @@
 import type {
   ConfiguracaoDaCarteira,
+  Contato,
   ConsultaDaReceitaDaEmpresa,
   ConsultaReceita,
   ContagensDaLista,
@@ -28,6 +29,7 @@ import type {
   Vertical,
 } from '@leadtogo/api-client'
 import type {
+  AlterarContatoEntrada,
   AlterarEmpresaCarteiraEntrada,
   AlterarFaseEntrada,
   AlterarFunilEntrada,
@@ -52,6 +54,7 @@ import type {
   CriarTagGrupoEntrada,
   CriarTipoAtividadeEntrada,
   ConsultaDaListaEntrada,
+  CriarContatoEntrada,
   CriarEmpresaCarteiraEntrada,
   ConfiguracaoDaCarteiraPatch,
   CriarVerticalEntrada,
@@ -144,6 +147,16 @@ export interface ServicosDaCarteira {
     empresaIds: string[],
     tagId: string,
   ) => Promise<Resultado<ResultadoDaTagEmMassa>>
+}
+
+/** Contatos (Módulo 3): as pessoas, ligadas às empresas da carteira. Segue a regra de carteira da API. */
+export interface ServicosDeContatos {
+  /** Cadastra o contato. 409 `contato_duplicado` (com `dados.existentes`): reenvie com `ignorarDuplicado` */
+  criar: (dados: CriarContatoEntrada) => Promise<Resultado<Contato>>
+  /** A ficha. 404 `contato_nao_encontrado` (inexistente, excluído ou fora da carteira) */
+  detalhar: (id: string) => Promise<Resultado<Contato>>
+  /** Edita a pessoa (os vínculos com empresas têm operações próprias) */
+  alterar: (id: string, dados: AlterarContatoEntrada) => Promise<Resultado<Contato>>
 }
 
 /**
@@ -242,4 +255,7 @@ export interface ServicosDeAcesso {
 
   // Carteira de empresas (Módulo 2)
   carteira: ServicosDaCarteira
+
+  // Contatos (Módulo 3)
+  contatos: ServicosDeContatos
 }
