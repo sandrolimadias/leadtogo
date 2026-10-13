@@ -1,6 +1,6 @@
 import type { ContatoExistente } from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { Check, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
@@ -29,17 +29,41 @@ import {
 } from './formulario'
 import { rotaDoContato } from './rotas'
 
+const rota = getRouteApi('/_autenticado/contatos/novo')
+
 /** Novo contato: a pessoa, os telefones e e-mails, o consentimento e (opcional) a primeira empresa. */
 export function NovoContato() {
   const servicos = useServicos()
   const navegar = useNavigate()
   const queryClient = useQueryClient()
   const celular = useDispositivo() === 'celular'
-  const [f, setF] = useState<FormularioDeContato>(formularioVazio())
+  const empresaDaUrl = rota.useSearch({ select: (s) => s.empresa })
+  const [dados, setF] = useState<FormularioDeContato>(() => ({
+    ...formularioVazio(),
+    ...(empresaDaUrl ? { empresaId: empresaDaUrl } : {}),
+  }))
   const [erros, setErros] = useState<Record<string, string>>({})
   const [salvando, setSalvando] = useState(false)
   const [erroAoSalvar, setErroAoSalvar] = useState<string>()
   const [duplicados, setDuplicados] = useState<ContatoExistente[] | null>(null)
+  // A empresa que veio na URL: busca o nome dela; se não existe ou não é do usuário, o cadastro segue sem empresa
+  const empresaDaUrlNoForm = dados.empresaId !== '' && dados.empresaNome === ''
+  const nomeDaEmpresaDaUrl = useQuery({
+    queryKey: ['contatos', 'empresa-do-cadastro', dados.empresaId],
+    enabled: empresaDaUrlNoForm,
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.carteira.detalhar(dados.empresaId)
+      return r.ok && r.dados.permissoes.editar
+        ? (r.dados.nomeFantasia ?? r.dados.razaoSocial)
+        : null
+    },
+  })
+  const f: FormularioDeContato = empresaDaUrlNoForm
+    ? nomeDaEmpresaDaUrl.data === null
+      ? { ...dados, empresaId: '' }
+      : { ...dados, empresaNome: nomeDaEmpresaDaUrl.data ?? 'Carregando…' }
+    : dados
   const mudar = (patch: Partial<FormularioDeContato>) => {
     setF((atual) => ({ ...atual, ...patch }))
     setDuplicados(null)

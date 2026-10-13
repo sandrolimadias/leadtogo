@@ -101,6 +101,26 @@ export const alterarContatoSchema = z
 export type AlterarContatoEntrada = z.input<typeof alterarContatoSchema>
 export type AlterarContato = z.output<typeof alterarContatoSchema>
 
+/** POST /v1/carteira/contatos/{id}/vinculos: liga o contato a outra empresa (reativa o vínculo inativo, se houver). */
+export const vincularContatoSchema = z
+  .object({ empresaId: z.uuid(), cargo: texto(100), principal: z.boolean().optional() })
+  .strict()
+  .meta({ id: 'VincularContatoEntrada' })
+export type VincularContatoEntrada = z.input<typeof vincularContatoSchema>
+export type VincularContato = z.output<typeof vincularContatoSchema>
+
+/**
+ * PATCH /v1/carteira/contatos/{id}/vinculos/{empresaId}: só o que vier muda. `ativo: false` é o caminho
+ * comum quando a pessoa sai da empresa (mantém o histórico e tira o selo de principal).
+ */
+export const alterarVinculoSchema = z
+  .object({ cargo: texto(100), principal: z.boolean().optional(), ativo: z.boolean().optional() })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, 'informe ao menos um campo')
+  .meta({ id: 'AlterarVinculoEntrada' })
+export type AlterarVinculoEntrada = z.input<typeof alterarVinculoSchema>
+export type AlterarVinculo = z.output<typeof alterarVinculoSchema>
+
 // ---- saída ----
 
 export const telefoneDoContatoSchema = z.object({
@@ -127,6 +147,8 @@ export const vinculoDoContatoSchema = z.object({
   ativo: z.boolean(),
   desde: z.string().nullable(),
   ate: z.string().nullable(),
+  /** O usuário edita a empresa deste vínculo (cargo, principal, inativar): o vendedor só a própria carteira */
+  editavel: z.boolean(),
 })
 
 export const contatoSchema = z
@@ -243,3 +265,20 @@ export const opcoesDaListaDeContatosSchema = z
   .object({ cargos: z.array(z.string()) })
   .meta({ id: 'OpcoesDaListaDeContatos' })
 export type OpcoesDaListaDeContatos = z.infer<typeof opcoesDaListaDeContatosSchema>
+
+/** Um contato na aba Contatos da empresa (um vínculo, ativo ou não). */
+export const contatoDaEmpresaSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    papelDecisao: z.object({ id: z.uuid(), nome: z.string() }).nullable(),
+    cargo: z.string().nullable(),
+    principal: z.boolean(),
+    ativo: z.boolean(),
+    telefone: z.string().nullable(),
+    temWhatsapp: z.boolean(),
+    email: z.string().nullable(),
+    naoQuerContato: z.boolean(),
+  })
+  .meta({ id: 'ContatoDaEmpresa' })
+export type ContatoDaEmpresa = z.infer<typeof contatoDaEmpresaSchema>

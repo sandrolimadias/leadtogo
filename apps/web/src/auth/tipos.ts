@@ -11,6 +11,7 @@ import type {
   EmpresaCarteira,
   EmpresaCriada,
   HistoricoDaEmpresa,
+  ContatoDaEmpresa,
   ListaDeContatos,
   ListaDeEmpresas,
   Me,
@@ -32,6 +33,8 @@ import type {
 } from '@leadtogo/api-client'
 import type {
   AlterarContatoEntrada,
+  AlterarVinculoEntrada,
+  VincularContatoEntrada,
   AlterarEmpresaCarteiraEntrada,
   AlterarFaseEntrada,
   AlterarFunilEntrada,
@@ -166,6 +169,16 @@ export interface ServicosDeContatos {
   alterar: (id: string, dados: AlterarContatoEntrada) => Promise<Resultado<Contato>>
   /** Exclusão lógica, só de gestor e administrador (o vendedor recebe 403) */
   excluir: (id: string) => Promise<Resultado>
+  /** Liga o contato a outra empresa da carteira (reativa o vínculo inativo). 409 `vinculo_ja_existe` */
+  vincular: (id: string, dados: VincularContatoEntrada) => Promise<Resultado<Contato>>
+  /** Cargo, contato principal e inativar/reativar o vínculo com uma empresa */
+  alterarVinculo: (
+    id: string,
+    empresaId: string,
+    dados: AlterarVinculoEntrada,
+  ) => Promise<Resultado<Contato>>
+  /** Os contatos de uma empresa (aba Contatos da ficha): ativos primeiro, depois os inativos */
+  daEmpresa: (empresaId: string) => Promise<Resultado<ContatoDaEmpresa[]>>
 }
 
 /**

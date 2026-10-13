@@ -240,6 +240,44 @@ describe('Novo contato', () => {
     expect(nome()).toHaveValue('Ana')
   })
 
+  it('?empresa=<id> (da aba Contatos da empresa) já vem com a empresa escolhida e o nome dela', async () => {
+    const x = servicos()
+    const base = x.s.carteira
+    const detalhar = vi.fn(async () =>
+      ok({
+        id: id(201),
+        razaoSocial: 'Usidantec Ltda',
+        nomeFantasia: 'Usidantec',
+        permissoes: { editar: true, excluir: true, transferir: true },
+      } as never),
+    )
+    x.s.carteira = { ...base, detalhar }
+    renderizar(x.s, `/contatos/novo?empresa=${id(201)}`)
+    await screen.findByRole('heading', { name: 'Novo contato' })
+    expect(await screen.findByText('Usidantec')).toBeInTheDocument()
+    await userEvent.type(nome(), 'Ana')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Cargo nesta empresa' }), 'Compradora')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar contato' }))
+    await waitFor(() => expect(x.contatos.criar).toHaveBeenCalled())
+    expect(corpo(x)['vinculo']).toMatchObject({ empresaId: id(201), cargo: 'Compradora' })
+  })
+
+  it('?empresa=<id> de empresa que o usuário não edita: o cadastro segue sem empresa', async () => {
+    const x = servicos()
+    const base = x.s.carteira
+    x.s.carteira = {
+      ...base,
+      detalhar: vi.fn(async () => falha('empresa_nao_encontrada', 'Empresa não encontrada.', 404)),
+    }
+    renderizar(x.s, `/contatos/novo?empresa=${id(201)}`)
+    await screen.findByRole('heading', { name: 'Novo contato' })
+    expect(await screen.findByLabelText(/Empresa \(opcional\)/)).toBeInTheDocument()
+    await userEvent.type(nome(), 'Ana')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar contato' }))
+    await waitFor(() => expect(x.contatos.criar).toHaveBeenCalled())
+    expect(corpo(x)['vinculo']).toBeUndefined()
+  })
+
   it('Cancelar volta para a lista de contatos', async () => {
     const { historico } = await abrir(servicos())
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))

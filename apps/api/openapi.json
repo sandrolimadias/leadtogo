@@ -584,6 +584,204 @@
         "tags": ["Carteira: contatos"]
       }
     },
+    "/v1/carteira/contatos/{id}/vinculos": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Liga o contato a outra empresa **da carteira do usuário** (o vendedor só vincula a empresa dele; 403 nas demais) com o cargo daquela empresa. Vínculo inativo com a mesma empresa é reativado. `principal: true` tira o selo do contato principal anterior. Já vinculado e ativo: 409 `vinculo_ja_existe`. Registra na auditoria. Devolve o contato.",
+        "operationId": "ContatosController_vincular",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VincularContatoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Vincular o contato a uma empresa",
+        "tags": ["Carteira: contatos"]
+      }
+    },
+    "/v1/carteira/contatos/{id}/vinculos/{empresaId}": {
+      "patch": {
+        "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Muda o cargo, o contato principal da empresa (um só: marcar este tira o selo do anterior) e a situação do vínculo. `ativo: false` é o caminho comum quando a pessoa sai da empresa: o histórico fica, o selo de principal sai e o vínculo deixa de contar nos filtros da lista. Só vínculo ativo pode ser o principal (400 `vinculo_inativo`). Exige editar a empresa do vínculo (o vendedor, só a própria carteira). Vínculo com empresa que o usuário não vê é 404. Devolve o contato (quem inativou o último vínculo ainda o recebe, mas deixa de vê-lo na lista).",
+        "operationId": "ContatosController_alterarVinculo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "empresaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarVinculoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar o vínculo do contato com uma empresa",
+        "tags": ["Carteira: contatos"]
+      }
+    },
     "/v1/carteira/contatos/opcoes": {
       "get": {
         "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Os cargos que existem nos vínculos ativos que o usuário vê.",
@@ -1127,6 +1325,89 @@
           }
         },
         "summary": "Excluir empresa",
+        "tags": ["Carteira: empresas"]
+      }
+    },
+    "/v1/carteira/empresas/{id}/contatos": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. A aba Contatos da ficha: todos os vínculos da empresa (os ativos primeiro, o principal antes), com cargo, papel na decisão, telefone e e-mail principais e o selo \"Não quer contato\". Contato excluído não aparece.",
+        "operationId": "EmpresasDaCarteiraController_contatosDaEmpresa",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContatoDaEmpresa"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Contatos da empresa",
         "tags": ["Carteira: empresas"]
       }
     },
@@ -7202,6 +7483,23 @@
         },
         "additionalProperties": false
       },
+      "AlterarVinculoEntrada": {
+        "type": "object",
+        "properties": {
+          "cargo": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 100
+          },
+          "principal": {
+            "type": "boolean"
+          },
+          "ativo": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "AniversarioDoContato": {
         "type": "object",
         "properties": {
@@ -7636,9 +7934,21 @@
                 "ate": {
                   "nullable": true,
                   "type": "string"
+                },
+                "editavel": {
+                  "type": "boolean"
                 }
               },
-              "required": ["id", "empresa", "cargo", "principal", "ativo", "desde", "ate"],
+              "required": [
+                "id",
+                "empresa",
+                "cargo",
+                "principal",
+                "ativo",
+                "desde",
+                "ate",
+                "editavel"
+              ],
               "additionalProperties": false
             }
           },
@@ -7679,6 +7989,70 @@
           "criadoEm",
           "atualizadoEm",
           "permissoes"
+        ],
+        "additionalProperties": false
+      },
+      "ContatoDaEmpresa": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "papelDecisao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "principal": {
+            "type": "boolean"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "telefone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "temWhatsapp": {
+            "type": "boolean"
+          },
+          "email": {
+            "nullable": true,
+            "type": "string"
+          },
+          "naoQuerContato": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "papelDecisao",
+          "cargo",
+          "principal",
+          "ativo",
+          "telefone",
+          "temWhatsapp",
+          "email",
+          "naoQuerContato"
         ],
         "additionalProperties": false
       },
@@ -10223,6 +10597,25 @@
           }
         },
         "required": ["id", "nome", "cor", "ativo", "ordem"],
+        "additionalProperties": false
+      },
+      "VincularContatoEntrada": {
+        "type": "object",
+        "properties": {
+          "empresaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 100
+          },
+          "principal": {
+            "type": "boolean"
+          }
+        },
+        "required": ["empresaId"],
         "additionalProperties": false
       },
       "VinculoInicialDoContato": {

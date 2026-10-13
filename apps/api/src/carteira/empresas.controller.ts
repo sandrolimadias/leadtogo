@@ -1,4 +1,6 @@
 import {
+  type ContatoDaEmpresa,
+  contatoDaEmpresaSchema,
   type AlterarEmpresaCarteira,
   alterarEmpresaCarteiraSchema,
   type AplicarDaReceita,
@@ -43,6 +45,7 @@ import {
   Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
+import { z } from 'zod'
 
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
@@ -51,6 +54,7 @@ import { AtualizarPelaReceitaService } from './atualizar-receita.service.js'
 import { EmpresasDaCarteiraService } from './empresas.service.js'
 import { HistoricoDaEmpresaService } from './historico.service.js'
 import { ListaDeEmpresasService } from './lista.service.js'
+import { VinculosDoContatoService } from './vinculos-do-contato.service.js'
 
 const CARTEIRA =
   'Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404.'
@@ -64,6 +68,7 @@ export class EmpresasDaCarteiraController {
     private readonly lista: ListaDeEmpresasService,
     private readonly historico: HistoricoDaEmpresaService,
     private readonly atualizacaoDaReceita: AtualizarPelaReceitaService,
+    private readonly vinculos: VinculosDoContatoService,
   ) {}
 
   @Documenta({
@@ -162,6 +167,17 @@ export class EmpresasDaCarteiraController {
     @Query(new ZodPipe(consultaDoHistoricoSchema)) consulta: ConsultaDoHistorico,
   ): Promise<HistoricoDaEmpresa> {
     return this.historico.listar(id, consulta)
+  }
+
+  @Documenta({
+    resumo: 'Contatos da empresa',
+    descricao: `${CARTEIRA} A aba Contatos da ficha: todos os vínculos da empresa (os ativos primeiro, o principal antes), com cargo, papel na decisão, telefone e e-mail principais e o selo "Não quer contato". Contato excluído não aparece.`,
+    resposta: z.array(contatoDaEmpresaSchema),
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Get(':id/contatos')
+  contatosDaEmpresa(@Param('id', new ParseUUIDPipe()) id: string): Promise<ContatoDaEmpresa[]> {
+    return this.vinculos.daEmpresa(id)
   }
 
   @Documenta({

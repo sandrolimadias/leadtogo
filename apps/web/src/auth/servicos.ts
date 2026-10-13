@@ -274,6 +274,32 @@ export const servicosReais: ServicosDeAcesso = {
       protegido(async () =>
         semCorpo(await api.DELETE('/v1/carteira/contatos/{id}', { params: { path: { id } } })),
       ),
+    vincular: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/contatos/{id}/vinculos', {
+            params: { path: { id } },
+            body: dados as never,
+          }),
+        ),
+      ),
+    alterarVinculo: (id, empresaId, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/carteira/contatos/{id}/vinculos/{empresaId}', {
+            params: { path: { id, empresaId } },
+            body: dados as never,
+          }),
+        ),
+      ),
+    daEmpresa: (empresaId) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/empresas/{id}/contatos', {
+            params: { path: { id: empresaId } },
+          }),
+        ),
+      ),
   },
 
   configuracaoDaCarteira: () =>

@@ -116,6 +116,46 @@ export interface paths {
         patch: operations["ContatosController_alterar"];
         trace?: never;
     };
+    "/v1/carteira/contatos/{id}/vinculos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vincular o contato a uma empresa
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Liga o contato a outra empresa **da carteira do usuário** (o vendedor só vincula a empresa dele; 403 nas demais) com o cargo daquela empresa. Vínculo inativo com a mesma empresa é reativado. `principal: true` tira o selo do contato principal anterior. Já vinculado e ativo: 409 `vinculo_ja_existe`. Registra na auditoria. Devolve o contato.
+         */
+        post: operations["ContatosController_vincular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/contatos/{id}/vinculos/{empresaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Alterar o vínculo do contato com uma empresa
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Muda o cargo, o contato principal da empresa (um só: marcar este tira o selo do anterior) e a situação do vínculo. `ativo: false` é o caminho comum quando a pessoa sai da empresa: o histórico fica, o selo de principal sai e o vínculo deixa de contar nos filtros da lista. Só vínculo ativo pode ser o principal (400 `vinculo_inativo`). Exige editar a empresa do vínculo (o vendedor, só a própria carteira). Vínculo com empresa que o usuário não vê é 404. Devolve o contato (quem inativou o último vínculo ainda o recebe, mas deixa de vê-lo na lista).
+         */
+        patch: operations["ContatosController_alterarVinculo"];
+        trace?: never;
+    };
     "/v1/carteira/contatos/opcoes": {
         parameters: {
             query?: never;
@@ -186,6 +226,26 @@ export interface paths {
          * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Só o que vier muda; o documento e o Status não se alteram aqui. `endereco`, `telefones` e `cnaes`, se vierem, substituem o conjunto todo. Passar a carteira para outro vendedor (`vendedorId`) é só de gestor e administrador. Registra na auditoria o que mudou.
          */
         patch: operations["EmpresasDaCarteiraController_alterar"];
+        trace?: never;
+    };
+    "/v1/carteira/empresas/{id}/contatos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contatos da empresa
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. A aba Contatos da ficha: todos os vínculos da empresa (os ativos primeiro, o principal antes), com cargo, papel na decisão, telefone e e-mail principais e o selo "Não quer contato". Contato excluído não aparece.
+         */
+        get: operations["EmpresasDaCarteiraController_contatosDaEmpresa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/carteira/empresas/{id}/historico": {
@@ -1430,6 +1490,11 @@ export interface components {
             cor?: components["schemas"]["CorDeTag"];
             ativo?: boolean;
         };
+        AlterarVinculoEntrada: {
+            cargo?: string | null;
+            principal?: boolean;
+            ativo?: boolean;
+        };
         AniversarioDoContato: {
             dia: number;
             mes: number;
@@ -1548,6 +1613,7 @@ export interface components {
                 ativo: boolean;
                 desde: string | null;
                 ate: string | null;
+                editavel: boolean;
             }[];
             criadoEm: string;
             atualizadoEm: string;
@@ -1555,6 +1621,23 @@ export interface components {
                 editar: boolean;
                 excluir: boolean;
             };
+        };
+        ContatoDaEmpresa: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            papelDecisao: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            cargo: string | null;
+            principal: boolean;
+            ativo: boolean;
+            telefone: string | null;
+            temWhatsapp: boolean;
+            email: string | null;
+            naoQuerContato: boolean;
         };
         ConviteAceito: {
             /** Format: uuid */
@@ -2268,6 +2351,12 @@ export interface components {
             ativo: boolean;
             ordem: number;
         };
+        VincularContatoEntrada: {
+            /** Format: uuid */
+            empresaId: string;
+            cargo?: string | null;
+            principal?: boolean;
+        };
         VinculoInicialDoContato: {
             /** Format: uuid */
             empresaId: string;
@@ -2726,6 +2815,158 @@ export interface operations {
             };
         };
     };
+    ContatosController_vincular: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VincularContatoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contato"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ContatosController_alterarVinculo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                empresaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarVinculoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contato"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     ContatosController_opcoes: {
         parameters: {
             query?: never;
@@ -3064,6 +3305,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmpresaDaCarteira"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_contatosDaEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContatoDaEmpresa"][];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */

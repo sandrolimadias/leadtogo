@@ -32,13 +32,19 @@ import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
 import { dataCurta, diasDesde, linkDeRota, tempoRelativo } from './formatos'
 import { ComparacaoComAReceita } from './ficha-receita'
 import { EditarTags } from './ficha-tags'
+import { useContatosDaEmpresa } from './contatos-da-empresa'
+import { ContatosDaEmpresaAba } from './ficha-contatos'
 import { HistoricoDaEmpresaAba } from './ficha-historico'
 import { Cartao, CnaesDaEmpresa, DadosCadastrais, SociosDaEmpresa } from './ficha-resumo'
 
 const rota = getRouteApi('/_autenticado/empresas/$empresaId')
 
-const ABAS = [
+const abasDaEmpresa = (contatosAtivos: number | undefined) => [
   { value: 'resumo', label: 'Resumo' },
+  {
+    value: 'contatos',
+    label: contatosAtivos === undefined ? 'Contatos' : `Contatos (${contatosAtivos})`,
+  },
   { value: 'historico', label: 'Histórico' },
 ]
 
@@ -146,6 +152,7 @@ export function FichaDaEmpresa() {
     },
   }).data
 
+  const contatosDaEmpresa = useContatosDaEmpresa(empresaId).data
   const atualizar = () => queryClient.invalidateQueries({ queryKey: ['carteira'] })
   const voltar = () => void navegar({ to: '/empresas' })
 
@@ -455,7 +462,7 @@ export function FichaDaEmpresa() {
 
       <Tabs
         label="Seções da empresa"
-        items={ABAS}
+        items={abasDaEmpresa(contatosDaEmpresa?.filter((c) => c.ativo).length)}
         value={aba}
         onChange={setAba}
         className="flex flex-col [&>[role=tablist]]:bg-surface [&>[role=tablist]]:px-6 max-md:[&>[role=tablist]]:px-4"
@@ -517,6 +524,13 @@ export function FichaDaEmpresa() {
                 )}
               </Cartao>
             </div>
+          </ConteudoDaAba>
+          <ConteudoDaAba value="contatos">
+            <ContatosDaEmpresaAba
+              empresaId={e.id}
+              nomeDaEmpresa={e.nome}
+              podeEditar={e.permissoes.editar}
+            />
           </ConteudoDaAba>
           <ConteudoDaAba value="historico">
             <HistoricoDaEmpresaAba empresaId={e.id} />

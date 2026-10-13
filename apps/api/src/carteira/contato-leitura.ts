@@ -7,7 +7,7 @@ import {
   condicaoDeVisibilidadeDoContato,
   podeExcluirContato,
 } from './regras-de-contato.js'
-import { condicaoDeVisibilidade, type EscopoDaCarteira } from './regras-de-carteira.js'
+import { condicaoDeVisibilidade, type EscopoDaCarteira, podeEditar } from './regras-de-carteira.js'
 
 const { contatos, contatoEmails, contatoTelefones, empresaContatos, empresas, papeisDecisao } =
   schema
@@ -21,6 +21,8 @@ export async function lerContato(
   tx: Transacao,
   escopo: EscopoDaCarteira,
   id: string,
+  /** Quem acabou de inativar o último vínculo ainda recebe o contato na resposta, mesmo sem vê-lo mais */
+  semChecarVisibilidade = false,
 ): Promise<Contato | null> {
   const [c] = await tx
     .select({ c: contatos, papelNome: papeisDecisao.nome })
@@ -30,7 +32,7 @@ export async function lerContato(
       and(
         eq(contatos.id, id),
         isNull(contatos.excluidoEm),
-        condicaoDeVisibilidadeDoContato(escopo),
+        semChecarVisibilidade ? undefined : condicaoDeVisibilidadeDoContato(escopo),
       ),
     )
   if (!c) return null
@@ -53,6 +55,7 @@ export async function lerContato(
         v: empresaContatos,
         razaoSocial: empresas.razaoSocial,
         nomeFantasia: empresas.nomeFantasia,
+        vendedorId: empresas.vendedorId,
       })
       .from(empresaContatos)
       .innerJoin(empresas, eq(empresas.id, empresaContatos.empresaId))
@@ -96,7 +99,7 @@ export async function lerContato(
       principal: t.principal,
     })),
     emails: emails.map((e) => ({ id: e.id, email: e.email, tipo: e.tipo, principal: e.principal })),
-    vinculos: vinculos.map(({ v, razaoSocial, nomeFantasia }) => ({
+    vinculos: vinculos.map(({ v, razaoSocial, nomeFantasia, vendedorId }) => ({
       id: v.id,
       empresa: { id: v.empresaId, nome: nomeDe({ razaoSocial, nomeFantasia }) },
       cargo: v.cargo,
@@ -104,6 +107,7 @@ export async function lerContato(
       ativo: v.ativo,
       desde: v.desde,
       ate: v.ate,
+      editavel: podeEditar(escopo, vendedorId),
     })),
     criadoEm: r.criadoEm.toISOString(),
     atualizadoEm: r.atualizadoEm.toISOString(),

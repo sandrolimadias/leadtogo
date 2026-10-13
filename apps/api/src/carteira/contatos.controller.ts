@@ -6,6 +6,10 @@ import {
   type OpcoesDaListaDeContatos,
   opcoesDaListaDeContatosSchema,
   type AlterarContato,
+  type AlterarVinculo,
+  alterarVinculoSchema,
+  type VincularContato,
+  vincularContatoSchema,
   alterarContatoSchema,
   type Contato,
   contatoSchema,
@@ -31,6 +35,7 @@ import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { ContatosService } from './contatos.service.js'
 import { ListaDeContatosService } from './lista-contatos.service.js'
+import { VinculosDoContatoService } from './vinculos-do-contato.service.js'
 
 const CARTEIRA =
   'Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404.'
@@ -42,6 +47,7 @@ export class ContatosController {
   constructor(
     private readonly servico: ContatosService,
     private readonly lista: ListaDeContatosService,
+    private readonly vinculos: VinculosDoContatoService,
   ) {}
 
   @Documenta({
@@ -107,6 +113,39 @@ export class ContatosController {
     @Body(new ZodPipe(alterarContatoSchema)) dados: AlterarContato,
   ): Promise<Contato> {
     return this.servico.alterar(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Vincular o contato a uma empresa',
+    descricao: `${CARTEIRA} Liga o contato a outra empresa **da carteira do usuário** (o vendedor só vincula a empresa dele; 403 nas demais) com o cargo daquela empresa. Vínculo inativo com a mesma empresa é reativado. \`principal: true\` tira o selo do contato principal anterior. Já vinculado e ativo: 409 \`vinculo_ja_existe\`. Registra na auditoria. Devolve o contato.`,
+    corpo: vincularContatoSchema,
+    resposta: contatoSchema,
+    status: 201,
+    erros: [400, 401, 403, 404, 409, 429],
+  })
+  @Post(':id/vinculos')
+  @Limite({ nome: 'carteira-contatos-vincular', max: 60, janelaS: 60 })
+  vincular(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(vincularContatoSchema)) dados: VincularContato,
+  ): Promise<Contato> {
+    return this.vinculos.vincular(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Alterar o vínculo do contato com uma empresa',
+    descricao: `${CARTEIRA} Muda o cargo, o contato principal da empresa (um só: marcar este tira o selo do anterior) e a situação do vínculo. \`ativo: false\` é o caminho comum quando a pessoa sai da empresa: o histórico fica, o selo de principal sai e o vínculo deixa de contar nos filtros da lista. Só vínculo ativo pode ser o principal (400 \`vinculo_inativo\`). Exige editar a empresa do vínculo (o vendedor, só a própria carteira). Vínculo com empresa que o usuário não vê é 404. Devolve o contato (quem inativou o último vínculo ainda o recebe, mas deixa de vê-lo na lista).`,
+    corpo: alterarVinculoSchema,
+    resposta: contatoSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Patch(':id/vinculos/:empresaId')
+  alterarVinculo(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('empresaId', new ParseUUIDPipe()) empresaId: string,
+    @Body(new ZodPipe(alterarVinculoSchema)) dados: AlterarVinculo,
+  ): Promise<Contato> {
+    return this.vinculos.alterar(id, empresaId, dados)
   }
 
   @Documenta({

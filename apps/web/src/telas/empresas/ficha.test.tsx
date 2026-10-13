@@ -293,7 +293,12 @@ describe('Ficha da empresa: cabeçalho', () => {
 
   it('o que é dos módulos seguintes fica escondido: abas, botões e "chega no Módulo X"', async () => {
     await abrir(servicos())
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Resumo', 'Histórico'])
+    // Contatos já existe (Módulo 3); Atividades e Oportunidades esperam os Módulos 5 e 6
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+      'Resumo',
+      'Contatos (0)',
+      'Histórico',
+    ])
     for (const nome of ['Nova atividade', 'Nova oportunidade', 'Vincular contato']) {
       expect(screen.queryByRole('button', { name: nome })).toBeNull()
     }
@@ -796,5 +801,177 @@ describe('Ficha da empresa: Mais ações (editar e excluir)', () => {
       await within(dialogo).findByText('Só gestor e administrador excluem empresas.'),
     ).toBeInTheDocument()
     expect(h.location.pathname).toBe(`/empresas/${id(100)}`)
+  })
+})
+
+describe('Ficha da empresa: aba Contatos', () => {
+  const doCadastro = (n: number, extra: Record<string, unknown> = {}) => ({
+    id: id(300 + n),
+    nome: `Contato ${n}`,
+    papelDecisao: null,
+    cargo: `Cargo ${n}`,
+    principal: false,
+    ativo: true,
+    telefone: '+5527998472210',
+    temWhatsapp: true,
+    email: `contato${n}@exemplo.com.br`,
+    naoQuerContato: false,
+    ...extra,
+  })
+
+  function comContatos(lista: ReturnType<typeof doCadastro>[], dados = empresa()) {
+    const x = servicos({}, dados)
+    const base = x.s.contatos
+    const daEmpresa = vi.fn(async (_id: string) => ok(lista))
+    const listar = vi.fn(async (_c: Record<string, unknown>) =>
+      ok({
+        itens: [
+          {
+            id: id(900),
+            nome: 'Ana Existente',
+            papelDecisao: null,
+            empresas: [{ id: id(201), nome: 'Outra', cargo: null, principal: false, ativo: true }],
+            telefone: null,
+            temWhatsapp: false,
+            email: null,
+            naoQuerContato: false,
+            editavel: true,
+          },
+          {
+            id: id(301),
+            nome: 'Contato 1',
+            papelDecisao: null,
+            empresas: [],
+            telefone: null,
+            temWhatsapp: false,
+            email: null,
+            naoQuerContato: false,
+            editavel: true,
+          },
+        ],
+        total: 2,
+        pagina: 1,
+        porPagina: 8,
+      }),
+    )
+    const vincular = vi.fn(async (_id: string, _corpo: Record<string, unknown>) =>
+      falha('indisponivel', 'Não configurado.', 500),
+    )
+    x.s.contatos = { ...base, daEmpresa, listar, vincular }
+    return { ...x, daEmpresa, listar, vincular }
+  }
+  const abrirAba = async (x: ReturnType<typeof comContatos>) => {
+    const r = await abrir(x)
+    await userEvent.click(await screen.findByRole('tab', { name: /^Contatos/ }))
+    return r
+  }
+
+  it('a aba mostra o número de contatos ativos e os cartões: cargo, selos, telefone, e-mail e ações', async () => {
+    const x = comContatos([
+      doCadastro(1, { principal: true, papelDecisao: { id: id(1), nome: 'Decisor' } }),
+      doCadastro(2, { naoQuerContato: true, telefone: null, email: null, temWhatsapp: false }),
+      doCadastro(3, { ativo: false }),
+    ])
+    await abrirAba(x)
+    expect(screen.getByRole('tab', { name: 'Contatos (2)' })).toBeInTheDocument()
+    expect(await screen.findByText('2 contatos ativos e 1 inativo')).toBeInTheDocument()
+    const itens = screen
+      .getAllByRole('listitem')
+      .filter((li) => li.textContent?.includes('Contato '))
+    const um = itens.find((li) => within(li).queryByText('Contato 1')) as HTMLElement
+    expect(within(um).getByText('Principal')).toBeInTheDocument()
+    expect(within(um).getByText('Decisor')).toBeInTheDocument()
+    expect(within(um).getByText('Cargo 1')).toBeInTheDocument()
+    expect(within(um).getByText('(27) 99847-2210')).toBeInTheDocument()
+    expect(within(um).getByText('contato1@exemplo.com.br')).toBeInTheDocument()
+    expect(within(um).getByRole('link', { name: 'Ligar para Contato 1' })).toHaveAttribute(
+      'href',
+      'tel:+5527998472210',
+    )
+    expect(within(um).getByRole('link', { name: 'WhatsApp de Contato 1' })).toHaveAttribute(
+      'href',
+      'https://wa.me/5527998472210',
+    )
+    expect(within(um).getByRole('link', { name: 'E-mail de Contato 1' })).toHaveAttribute(
+      'href',
+      'mailto:contato1@exemplo.com.br',
+    )
+    const dois = itens.find((li) => within(li).queryByText('Contato 2')) as HTMLElement
+    expect(within(dois).getByText('Não quer contato')).toBeInTheDocument()
+    expect(within(dois).getByRole('link', { name: 'Ligar para Contato 2' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+    const tres = itens.find((li) => within(li).queryByText('Contato 3')) as HTMLElement
+    expect(within(tres).getByText('Inativo')).toBeInTheDocument()
+  })
+
+  it('clicar no nome abre a ficha do contato', async () => {
+    const x = comContatos([doCadastro(1)])
+    const { historico } = await abrirAba(x)
+    await userEvent.click(await screen.findByRole('link', { name: 'Contato 1' }))
+    await waitFor(() => expect(historico.location.pathname).toBe(`/contatos/${id(301)}`))
+  })
+
+  it('empresa sem contatos: convida a cadastrar', async () => {
+    const x = comContatos([])
+    await abrirAba(x)
+    expect(
+      await screen.findByRole('heading', { name: 'Nenhum contato nesta empresa' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Contatos (0)' })).toBeInTheDocument()
+  })
+
+  it('"Novo contato" abre o cadastro já com esta empresa', async () => {
+    const x = comContatos([])
+    const { historico } = await abrirAba(x)
+    await userEvent.click(await screen.findByRole('button', { name: 'Novo contato' }))
+    await waitFor(() => expect(historico.location.pathname).toBe('/contatos/novo'))
+    expect(historico.location.search).toContain(`empresa=${id(100)}`)
+  })
+
+  it('"Vincular contato": acha um contato que não está na empresa, pede o cargo e vincula', async () => {
+    const x = comContatos([doCadastro(1)])
+    x.vincular.mockResolvedValue(ok({}) as never)
+    await abrirAba(x)
+    await userEvent.click(await screen.findByRole('button', { name: 'Vincular contato' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Vincular contato' })
+    await userEvent.type(within(dialogo).getByRole('textbox', { name: 'Contato' }), 'ana')
+    const lista = await within(dialogo).findByRole('list', { name: 'Contatos encontrados' })
+    // o Contato 1 já está na empresa: só sobra a Ana
+    expect(within(lista).getAllByRole('listitem')).toHaveLength(1)
+    await userEvent.click(within(lista).getByRole('button', { name: /Ana Existente/ }))
+    await userEvent.type(
+      within(dialogo).getByRole('textbox', { name: 'Cargo nesta empresa' }),
+      'Compradora',
+    )
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Vincular' }))
+    await waitFor(() =>
+      expect(x.vincular).toHaveBeenCalledWith(id(900), { empresaId: id(100), cargo: 'Compradora' }),
+    )
+    expect(await screen.findByText('Contato vinculado')).toBeInTheDocument()
+    expect(x.listar.mock.calls.at(-1)?.[0]).toMatchObject({ busca: 'ana', porPagina: 8 })
+  })
+
+  it('quem não edita a empresa vê os contatos, mas sem "Novo contato" nem "Vincular contato"', async () => {
+    const x = comContatos(
+      [doCadastro(1)],
+      empresa({ permissoes: { editar: false, excluir: false, transferir: false } }),
+    )
+    await abrirAba(x)
+    expect(await screen.findByText('Contato 1')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Novo contato' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Vincular contato' })).toBeNull()
+  })
+
+  it('erro ao carregar mostra o motivo e "Tentar de novo" recarrega', async () => {
+    const x = comContatos([doCadastro(1)])
+    // a ficha e a aba abrem a mesma consulta: a primeira e a de ao montar a aba falham
+    x.daEmpresa.mockResolvedValueOnce(falha('x', 'Sem conexão.', 0))
+    x.daEmpresa.mockResolvedValueOnce(falha('x', 'Sem conexão.', 0))
+    await abrirAba(x)
+    expect(await screen.findByText('Sem conexão.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+    expect(await screen.findByText('Contato 1')).toBeInTheDocument()
   })
 })

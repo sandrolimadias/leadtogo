@@ -16,6 +16,7 @@ import {
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { chaveDoMe } from '@/auth/guardas'
 import { useDispositivo } from '@/casca/dispositivo'
 import { Button, IconButton } from '@/components/ui/button'
 import { Switch } from '@/components/ui/checkbox'
@@ -29,6 +30,7 @@ import { dataEHora } from '@/telas/empresas/formatos'
 import { LinkDeIcone } from '@/telas/empresas/ficha'
 import { Cartao } from '@/telas/empresas/ficha-resumo'
 
+import { EmpresasVinculadas } from './ficha-vinculos'
 import { telefoneParaTela } from './formatos'
 import { rotaDeEdicaoDoContato } from './rotas'
 
@@ -63,52 +65,6 @@ function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode
       <dt className="text-xs font-medium text-ink-muted">{rotulo}</dt>
       <dd className="m-0 [overflow-wrap:anywhere]">{children}</dd>
     </div>
-  )
-}
-
-/** As empresas a que o contato está ligado (só as que o usuário vê): o cargo é de cada vínculo. */
-function EmpresasVinculadas({ contato }: { contato: Contato }) {
-  return (
-    <Cartao titulo="Empresas vinculadas" semMargem>
-      {contato.vinculos.length === 0 ? (
-        <p className="m-0 px-4 py-4 text-sm text-ink-muted">Este contato ainda não tem empresa.</p>
-      ) : (
-        <ul className="m-0 flex list-none flex-col p-0">
-          {contato.vinculos.map((v) => (
-            <li
-              key={v.id}
-              className={cn(
-                'flex flex-wrap items-center gap-3 border-b border-border px-4 py-3',
-                !v.ativo && 'bg-surface-sunken',
-              )}
-            >
-              <div className="flex min-w-44 flex-1 flex-col gap-0.5">
-                <Link
-                  to="/empresas/$empresaId"
-                  params={{ empresaId: v.empresa.id }}
-                  className={cn('font-semibold', !v.ativo && 'text-ink-muted')}
-                >
-                  {v.empresa.nome}
-                </Link>
-                <span className="text-[13px] text-ink-muted">
-                  {v.cargo ?? 'Sem cargo informado'}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {v.principal ? <Badge>Principal</Badge> : null}
-                <Badge tone={v.ativo ? 'success' : 'neutral'}>
-                  {v.ativo ? 'Ativo' : 'Inativo'}
-                </Badge>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="m-0 px-4 py-2.5 text-[13px] text-ink-muted">
-        O cargo é de cada vínculo. Ao sair de uma empresa, o vínculo fica inativo e o histórico
-        continua.
-      </p>
-    </Cartao>
   )
 }
 
@@ -236,6 +192,8 @@ export function FichaDoContato() {
   const queryClient = useQueryClient()
   const navegar = useNavigate()
   const celular = useDispositivo() === 'celular'
+  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data
+  const vendedor = me?.empresas.find((e) => e.ativa)?.papel === 'vendedor'
   const [salvandoConsentimento, setSalvandoConsentimento] = useState(false)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
@@ -480,7 +438,7 @@ export function FichaDoContato() {
 
       <main className="grid w-full max-w-[1400px] grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start gap-4 p-6 max-lg:grid-cols-1 max-md:p-4">
         <div className="flex min-w-0 flex-col gap-4">
-          <EmpresasVinculadas contato={c} />
+          <EmpresasVinculadas contato={c} vendedor={vendedor} />
           <DadosDaPessoa contato={c} />
         </div>
         <div className="flex min-w-0 flex-col gap-4">
