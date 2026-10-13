@@ -17,6 +17,7 @@ const { contaId, tenantId, membroAdminId, emailAdmin } = DEMONSTRACAO
 async function limpar() {
   await comTenant(owner, tenantId, async (tx) => {
     for (const tabela of [
+      'papeis_decisao',
       'motivos',
       'origens',
       'funil_fases',

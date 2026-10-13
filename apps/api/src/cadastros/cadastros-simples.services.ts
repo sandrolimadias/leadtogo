@@ -2,16 +2,19 @@ import { schema, sql } from '@leadtogo/db'
 import type {
   AlterarMotivoEntrada,
   AlterarOrigemEntrada,
+  AlterarPapelDecisaoEntrada,
   AlterarSolucaoEntrada,
   AlterarTipoAtividadeEntrada,
   AlterarVerticalEntrada,
   CriarMotivoEntrada,
   CriarOrigemEntrada,
+  CriarPapelDecisaoEntrada,
   CriarSolucaoEntrada,
   CriarTipoAtividadeEntrada,
   CriarVerticalEntrada,
   Motivo,
   Origem,
+  PapelDecisao,
   Solucao,
   TipoAtividade,
   Vertical,
@@ -23,7 +26,7 @@ import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { CadastroSimplesService } from './cadastro-simples.service.js'
 
-const { motivos, origens, solucoes, tiposAtividade, verticais } = schema
+const { motivos, origens, papeisDecisao, solucoes, tiposAtividade, verticais } = schema
 
 @Injectable()
 export class VerticaisService extends CadastroSimplesService<
@@ -218,6 +221,40 @@ export class TiposAtividadeService extends CadastroSimplesService<
       },
       conferirExclusao: (l) => {
         if (l.chaveSistema === 'tarefa') throw tarefa('não pode ser excluído')
+      },
+    })
+  }
+}
+
+@Injectable()
+export class PapeisDecisaoService extends CadastroSimplesService<
+  typeof papeisDecisao.$inferSelect,
+  PapelDecisao,
+  CriarPapelDecisaoEntrada,
+  AlterarPapelDecisaoEntrada
+> {
+  constructor(ctx: ContextoTenantService, auditoria: AuditoriaService) {
+    super(ctx, auditoria, {
+      entidade: 'papel_decisao',
+      rotulo: 'Papel na decisão',
+      tabela: papeisDecisao,
+      paraDto: (l) => ({ id: l.id, nome: l.nome, ativo: l.ativo, ordem: l.ordem }),
+      valoresCriar: (d) => ({ nome: d.nome }),
+      valoresAlterar: (d) => ({ nome: d.nome, ativo: d.ativo }),
+      // Excluir só o que nunca foi usado: papel de algum contato (mesmo excluído) só se inativa
+      conferirExclusao: async (l) => {
+        const [uso] = await ctx
+          .db()
+          .execute<{ usada: boolean }>(
+            sql`SELECT EXISTS (SELECT 1 FROM contatos WHERE papel_decisao_id = ${l.id}) AS usada`,
+          )
+        if (uso?.usada) {
+          throw new ErroApi(
+            'papel_em_uso',
+            `O papel "${l.nome}" já foi usado por contatos: não dá para excluir, só inativar.`,
+            409,
+          )
+        }
       },
     })
   }

@@ -5,6 +5,7 @@ import {
   Compass,
   Factory,
   Funnel,
+  Scale,
   ShieldCheck,
   Tags,
   Users,
@@ -20,6 +21,7 @@ const SECOES = [
   { para: '/configuracoes/funis', titulo: 'Funis e fases', icone: Funnel },
   { para: '/configuracoes/origens-e-motivos', titulo: 'Origens e motivos', icone: Compass },
   { para: '/configuracoes/verticais-e-solucoes', titulo: 'Verticais e soluções', icone: Factory },
+  { para: '/configuracoes/papeis-na-decisao', titulo: 'Papéis na decisão', icone: Scale },
   { para: '/configuracoes/carteira', titulo: 'Carteira', icone: Building2 },
   { para: '/configuracoes/seguranca', titulo: 'Segurança', icone: ShieldCheck },
 ] as const

@@ -200,6 +200,23 @@ export const alterarOrigemSchema = z
   .meta({ id: 'AlterarOrigemEntrada' })
 export type AlterarOrigemEntrada = z.infer<typeof alterarOrigemSchema>
 
+export const papelDecisaoSchema = z
+  .object({ id: z.uuid(), nome: z.string(), ativo: z.boolean(), ordem: z.number().int() })
+  .meta({ id: 'PapelNaDecisao' })
+export type PapelDecisao = z.infer<typeof papelDecisaoSchema>
+export const criarPapelDecisaoSchema = z
+  .object({ nome: nomeDeCadastroSchema })
+  .strict()
+  .meta({ id: 'CriarPapelNaDecisaoEntrada' })
+export type CriarPapelDecisaoEntrada = z.infer<typeof criarPapelDecisaoSchema>
+export const alterarPapelDecisaoSchema = z
+  .object({ nome: nomeDeCadastroSchema, ativo: z.boolean() })
+  .partial()
+  .strict()
+  .refine(algumCampo, MENSAGEM_ALGUM_CAMPO)
+  .meta({ id: 'AlterarPapelNaDecisaoEntrada' })
+export type AlterarPapelDecisaoEntrada = z.infer<typeof alterarPapelDecisaoSchema>
+
 /** Status de fechamento em que um motivo pode valer (Conquistado não pede motivo). */
 export const STATUS_COM_MOTIVO = ['perdido', 'cancelado', 'suspenso'] as const
 export const statusComMotivoSchema = z.enum(STATUS_COM_MOTIVO)

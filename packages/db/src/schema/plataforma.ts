@@ -123,6 +123,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   preferencias: jsonb().notNull().default({}),
   /** Quando os cadastros padrão (tags, tipos, funil...) foram criados; preenchido, nunca mais se recria */
   padroesCriadosEm: timestamp({ withTimezone: true }),
+  /** Quando os papéis na decisão padrão foram criados (Módulo 3); preenchido, nunca mais se recria */
+  papeisDecisaoCriadosEm: timestamp({ withTimezone: true }),
   ...carimbos(),
 })
 

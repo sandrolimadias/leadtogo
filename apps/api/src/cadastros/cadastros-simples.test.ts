@@ -66,6 +66,14 @@ const CADASTROS: Cadastro[] = [
     invalidos: [{ nome: 'X', descricao: 'x'.repeat(501) }],
   },
   {
+    rota: 'papeis-decisao',
+    entidade: 'papel_decisao',
+    padroes: 5,
+    novo: {},
+    muda: {},
+    invalidos: [{ nome: 'X', cor: 'teal' }],
+  },
+  {
     rota: 'origens',
     entidade: 'origem',
     padroes: 5,
@@ -355,5 +363,34 @@ describe('regras de cada cadastro', () => {
     expect(com.body).toMatchObject({ descricao: 'Linha de sensores' })
     const sem = await chamar('patch', d.cookie, `solucoes/${s.id}`, { descricao: null })
     expect(sem.body).toMatchObject({ descricao: null })
+  })
+})
+
+describe('papéis na decisão: excluir só o que nunca foi usado', () => {
+  it('papel de um contato (mesmo excluído) só se inativa; o nunca usado exclui', async () => {
+    const d = await novoDono(app)
+    const papeis = await listar(d.cookie, 'papeis-decisao')
+    expect(papeis.map((p) => p.nome)).toEqual([
+      'Decisor',
+      'Influenciador',
+      'Usuário',
+      'Financeiro',
+      'Técnico',
+    ])
+    const [decisor, influenciador] = papeis as [Item, Item]
+    await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${d.tenantId}, true)`
+      await tx`INSERT INTO contatos (id, tenant_id, nome, papel_decisao_id, excluido_em)
+        VALUES (gen_random_uuid(), ${d.tenantId}, 'Fulano', ${decisor.id}, now())`
+    })
+    const r = await chamar('delete', d.cookie, `papeis-decisao/${decisor.id}`)
+    expect(r.status).toBe(409)
+    expect(erroDe(r)).toBe('papel_em_uso')
+    expect(
+      (await chamar('patch', d.cookie, `papeis-decisao/${decisor.id}`, { ativo: false })).status,
+    ).toBe(200)
+    expect((await chamar('delete', d.cookie, `papeis-decisao/${influenciador.id}`)).status).toBe(
+      204,
+    )
   })
 })

@@ -173,6 +173,13 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         excluir: vi.fn(async () => ok(undefined)),
         reordenar: vi.fn(async () => ok([])),
       },
+      papeisDecisao: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        reordenar: vi.fn(async () => ok([])),
+      },
       solucoes: {
         listar: vi.fn(async () => ok([])),
         criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),

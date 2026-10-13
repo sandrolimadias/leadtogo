@@ -1,4 +1,11 @@
-import type { Motivo, Origem, Solucao, TipoAtividade, Vertical } from '@leadtogo/api-client'
+import type {
+  Motivo,
+  Origem,
+  PapelDecisao,
+  Solucao,
+  TipoAtividade,
+  Vertical,
+} from '@leadtogo/api-client'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -58,7 +65,12 @@ describe('Configurações: menu e acesso das telas de cadastros', () => {
   it('o menu interno traz as telas novas', async () => {
     renderizar(servicosCom({}), '/configuracoes/tags')
     const menu = await screen.findByRole('navigation', { name: 'Configurações' })
-    for (const nome of [/Tipos de atividade/, /Origens e motivos/, /Verticais e soluções/]) {
+    for (const nome of [
+      /Tipos de atividade/,
+      /Origens e motivos/,
+      /Verticais e soluções/,
+      /Papéis na decisão/,
+    ]) {
       expect(within(menu).getByRole('link', { name: nome })).toBeInTheDocument()
     }
   })
@@ -67,6 +79,7 @@ describe('Configurações: menu e acesso das telas de cadastros', () => {
     '/configuracoes/tipos-de-atividade',
     '/configuracoes/origens-e-motivos',
     '/configuracoes/verticais-e-solucoes',
+    '/configuracoes/papeis-na-decisao',
   ])('gestor e vendedor voltam para o início ao abrir %s', async (rota) => {
     for (const papel of ['gestor', 'vendedor'] as const) {
       const { historico, unmount } = renderizar(
@@ -494,5 +507,68 @@ describe('Tipos de atividade', () => {
     const dialogo = await screen.findByRole('dialog', { name: 'Excluir tipo Ligação?' })
     await userEvent.click(within(dialogo).getByRole('button', { name: 'Excluir' }))
     expect(await within(dialogo).findByRole('alert')).toHaveTextContent('O tipo está em uso.')
+  })
+})
+
+describe('Papéis na decisão', () => {
+  const papeis = (): PapelDecisao[] => [
+    { id: id(1), nome: 'Decisor', ativo: true, ordem: 0 },
+    { id: id(2), nome: 'Influenciador', ativo: true, ordem: 1 },
+    { id: id(3), nome: 'Patrocinador', ativo: false, ordem: 2 },
+  ]
+  const abrir = async (p: Cadastro) => {
+    renderizar(servicosCom({ papeisDecisao: p }), '/configuracoes/papeis-na-decisao')
+    return secao('Papéis na decisão')
+  }
+
+  it('lista os papéis, com "Inativo" no inativado, e o menu aponta para a tela', async () => {
+    const regiao = await abrir(cadastro(papeis()))
+    expect(linha(regiao, 'Decisor')).toBeInTheDocument()
+    expect(within(linha(regiao, 'Patrocinador')).getByText('Inativo')).toBeInTheDocument()
+    const menu = screen.getByRole('navigation', { name: 'Configurações' })
+    expect(within(menu).getByRole('link', { name: /Papéis na decisão/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
+  it('cria um papel só com o nome', async () => {
+    const p = cadastro(papeis())
+    const regiao = await abrir(p)
+    await userEvent.click(await within(regiao).findByRole('button', { name: 'Novo papel' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Novo papel' })
+    await userEvent.type(within(dialogo).getByLabelText(/Nome/), 'Comprador')
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Criar' }))
+    await waitFor(() => expect(p.criar).toHaveBeenCalledWith({ nome: 'Comprador' }))
+    expect(await screen.findByText('Papel criado')).toBeInTheDocument()
+  })
+
+  it('papel já usado por contatos não se exclui: o aviso da API aparece no diálogo', async () => {
+    const excluir = vi
+      .fn()
+      .mockResolvedValue(
+        falha('papel_em_uso', 'O papel "Decisor" já foi usado por contatos: só inativar.', 409),
+      )
+    const regiao = await abrir(cadastro(papeis(), { excluir }))
+    await userEvent.click(
+      await within(regiao).findByRole('button', { name: 'Excluir papel Decisor' }),
+    )
+    const dialogo = await screen.findByRole('dialog', { name: 'Excluir papel Decisor?' })
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Excluir' }))
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent('só inativar')
+  })
+
+  it('inativa pelo diálogo de edição', async () => {
+    const p = cadastro(papeis())
+    const regiao = await abrir(p)
+    await userEvent.click(
+      await within(regiao).findByRole('button', { name: 'Editar papel Decisor' }),
+    )
+    const dialogo = await screen.findByRole('dialog')
+    await userEvent.click(within(dialogo).getByRole('switch', { name: 'Ativo' }))
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() =>
+      expect(p.alterar).toHaveBeenCalledWith(id(1), { nome: 'Decisor', ativo: false }),
+    )
   })
 })

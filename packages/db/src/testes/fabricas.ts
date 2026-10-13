@@ -284,3 +284,59 @@ export async function prepararTenants(owner: Sql, ids: string[]): Promise<void> 
     )
   }
 }
+
+// Contatos (Módulo 3)
+fabricas['papeis_decisao'] = cadastroSimples('papeis_decisao')
+
+async function contatoPai(owner: Sql, tenantId: string): Promise<string> {
+  return comTenant(owner, tenantId, async (tx) => {
+    const id = novoId()
+    await tx`INSERT INTO contatos (id, tenant_id, nome) VALUES (${id}, ${tenantId}, 'Contato de teste')`
+    return id
+  })
+}
+
+fabricas['contatos'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO contatos (id, tenant_id, nome) VALUES (${id}, ${tenantId}, ${`Contato ${id}`})`
+    return id
+  },
+})
+
+fabricas['empresa_contatos'] = definirFabrica<{ empresaId: string; contatoId: string }>({
+  colunaAlteravel: 'cargo',
+  // Os pais: uma empresa (com vendedor) e um contato do tenant
+  preparar: async (owner, tenantId) => ({
+    empresaId: await empresaPai(owner, tenantId),
+    contatoId: await contatoPai(owner, tenantId),
+  }),
+  criar: async (tx, tenantId, { empresaId, contatoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO empresa_contatos (id, tenant_id, empresa_id, contato_id) VALUES (${id}, ${tenantId}, ${empresaId}, ${contatoId})`
+    return id
+  },
+})
+
+fabricas['contato_telefones'] = definirFabrica<string>({
+  colunaAlteravel: 'numero',
+  preparar: contatoPai,
+  criar: async (tx, tenantId, contatoId) => {
+    const id = novoId()
+    await tx`
+      INSERT INTO contato_telefones (id, tenant_id, contato_id, numero, numero_e164)
+      VALUES (${id}, ${tenantId}, ${contatoId}, '2730643021', '+552730643021')`
+    return id
+  },
+})
+
+fabricas['contato_emails'] = definirFabrica<string>({
+  colunaAlteravel: 'tipo',
+  preparar: contatoPai,
+  criar: async (tx, tenantId, contatoId) => {
+    const id = novoId()
+    await tx`INSERT INTO contato_emails (id, tenant_id, contato_id, email) VALUES (${id}, ${tenantId}, ${contatoId}, ${`c-${id}@exemplo.com`})`
+    return id
+  },
+})

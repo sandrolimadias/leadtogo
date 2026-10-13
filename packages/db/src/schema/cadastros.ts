@@ -93,6 +93,11 @@ export const origens = pgTable(
   ],
 )
 
+/** Papel do contato na decisão de compra (Decisor, Influenciador...). Cadastrável por empresa. */
+export const papeisDecisao = pgTable('papeis_decisao', base(), (t) => [
+  nomeUnico('papeis_decisao', t),
+])
+
 export const motivos = pgTable(
   'motivos',
   {

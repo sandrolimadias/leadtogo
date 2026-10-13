@@ -14,6 +14,7 @@ import type {
   Me,
   MembroDaEquipe,
   OpcoesDaLista,
+  PapelDecisao,
   Preferencias,
   PreferenciasPatch,
   ResultadoDaTagEmMassa,
@@ -33,6 +34,7 @@ import type {
   AlterarMembroEntrada,
   AlterarMotivoEntrada,
   AlterarOrigemEntrada,
+  AlterarPapelDecisaoEntrada,
   AlterarSolucaoEntrada,
   AlterarTagEntrada,
   AlterarTagGrupoEntrada,
@@ -44,6 +46,7 @@ import type {
   CriarFunilEntrada,
   CriarMotivoEntrada,
   CriarOrigemEntrada,
+  CriarPapelDecisaoEntrada,
   CriarSolucaoEntrada,
   CriarTagEntrada,
   CriarTagGrupoEntrada,
@@ -161,6 +164,11 @@ export interface ServicosDeCadastros {
   verticais: ServicosDeCadastro<Vertical, CriarVerticalEntrada, AlterarVerticalEntrada>
   solucoes: ServicosDeCadastro<Solucao, CriarSolucaoEntrada, AlterarSolucaoEntrada>
   origens: ServicosDeCadastro<Origem, CriarOrigemEntrada, AlterarOrigemEntrada>
+  papeisDecisao: ServicosDeCadastro<
+    PapelDecisao,
+    CriarPapelDecisaoEntrada,
+    AlterarPapelDecisaoEntrada
+  >
   motivos: ServicosDeCadastro<Motivo, CriarMotivoEntrada, AlterarMotivoEntrada>
   tiposAtividade: ServicosDeCadastro<
     TipoAtividade,

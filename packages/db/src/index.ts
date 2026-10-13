@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
 import * as schema from './schema/index.js'
-import { criarPadroesDoTenant } from './padroes.js'
+import { criarPadroesDoTenant, criarPapeisDoTenant } from './padroes.js'
 import { semearReferencias } from './seeds/referencias.js'
 import type { Db } from './seeds/upsert.js'
 
@@ -36,7 +36,8 @@ export async function semearReferenciasPorUrl(url: string): Promise<Record<strin
  * com a URL do `leadtogo_owner`. Roda a cada start da API, logo depois das migrações: é o backfill das
  * empresas que já existiam e uma rede de segurança para as novas. Uma transação por empresa; se uma
  * falhar, as outras seguem e a falha é devolvida em `falhas` (a marca fica vazia e o próximo start
- * tenta de novo). Idempotente: empresa com a marca preenchida nunca é tocada.
+ * tenta de novo). Idempotente: empresa com a marca preenchida nunca é tocada. Faz o mesmo, com marca
+ * própria (`papeis_decisao_criados_em`), para os papéis na decisão.
  */
 export async function criarPadroesPendentesPorUrl(
   url: string,
@@ -60,6 +61,20 @@ export async function criarPadroesPendentesPorUrl(
         falhas.push({ tenantId, erro: e instanceof Error ? e.message : String(e) })
       }
     }
+    // Empresas que já existiam antes dos papéis na decisão (Módulo 3) também precisam deles
+    const semPapeis = await cliente<
+      { tenant_id: string }[]
+    >`SELECT tenant_id FROM app_tenants_sem_papeis()`
+    for (const { tenant_id: tenantId } of semPapeis) {
+      try {
+        await db.transaction(async (tx) => {
+          await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)
+          await criarPapeisDoTenant(tx, tenantId)
+        })
+      } catch (e) {
+        falhas.push({ tenantId, erro: e instanceof Error ? e.message : String(e) })
+      }
+    }
     return { criados, falhas }
   } finally {
     await cliente.end()
@@ -72,5 +87,5 @@ export { aplicarMigracoes, pastaMigracoes } from './migrar.js'
 // A mesma instância do drizzle-orm que o `db` usa: quem monta consultas com `sql` fora deste
 // pacote (a API) importa daqui, para os tipos casarem (o pnpm pode ter mais de uma cópia).
 export { and, asc, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm'
-export { criarPadroesDoTenant }
+export { criarPadroesDoTenant, criarPapeisDoTenant }
 export type { Db }

@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common'
 import {
   MotivosService,
   OrigensService,
+  PapeisDecisaoService,
   SolucoesService,
   TiposAtividadeService,
   VerticaisService,
@@ -11,6 +12,7 @@ import { FunisController } from './funis.controller.js'
 import { FunisService } from './funis.service.js'
 import { MotivosController } from './motivos.controller.js'
 import { OrigensController } from './origens.controller.js'
+import { PapeisDecisaoController } from './papeis-decisao.controller.js'
 import { SolucoesController } from './solucoes.controller.js'
 import { TagsController } from './tags.controller.js'
 import { TagsService } from './tags.service.js'
@@ -23,6 +25,7 @@ import { VerticaisController } from './verticais.controller.js'
     TagsController,
     TiposAtividadeController,
     VerticaisController,
+    PapeisDecisaoController,
     SolucoesController,
     OrigensController,
     MotivosController,
@@ -32,6 +35,7 @@ import { VerticaisController } from './verticais.controller.js'
     TagsService,
     TiposAtividadeService,
     VerticaisService,
+    PapeisDecisaoService,
     SolucoesService,
     OrigensService,
     MotivosService,

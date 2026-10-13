@@ -254,6 +254,7 @@ export const servicosReais: ServicosDeAcesso = {
 
   cadastros: {
     verticais: cadastroReal('verticais'),
+    papeisDecisao: cadastroReal('papeis-decisao'),
     solucoes: cadastroReal('solucoes'),
     origens: cadastroReal('origens'),
     motivos: cadastroReal('motivos'),

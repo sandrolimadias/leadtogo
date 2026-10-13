@@ -447,6 +447,8 @@ Regra (trigger ou serviço): em grupo de **seleção única**, a nova tag **subs
 | campos_extras | jsonb | |
 | criado_em, atualizado_em, excluido_em… | | |
 
+> **Implementação (Módulo 3, migração 0018, só expansão):** criadas `papeis_decisao` (cadastro auxiliar com nome único por empresa), `contatos`, `empresa_contatos`, `contato_telefones` e `contato_emails`, todas com RLS forçado e fábrica no teste de isolamento. Diferenças do desenho abaixo: `campos_extras` (campos personalizados) **não existe** no MVP; `aniversario_dia/mes` andam juntos (os dois ou nenhum, dia 1–31 e mês 1–12); `empresa_contatos` tem no máximo **um principal por empresa** e o principal precisa estar ativo; o e-mail do contato é `citext`, único por contato (o mesmo e-mail em dois contatos é permitido: o duplicado é só **aviso**). Os cinco papéis na decisão padrão (Decisor, Influenciador, Usuário, Financeiro, Técnico) nascem com a empresa (`criarPapeisDoTenant`) e, para as que já existiam, no start da API, com marca própria `tenant_configuracoes.papeis_decisao_criados_em` (função `app_tenants_sem_papeis()`, mesmo padrão da 0016). Papel já usado por algum contato (mesmo excluído) só se inativa (409 `papel_em_uso`).
+
 ### 7.2 `empresa_contatos` — vínculo N:N
 | Coluna | Tipo | Observação |
 |---|---|---|

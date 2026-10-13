@@ -6,6 +6,7 @@ import {
   funis,
   motivos,
   origens,
+  papeisDecisao,
   tagGrupos,
   tags,
   tenantConfiguracoes,
@@ -85,6 +86,42 @@ const MOTIVOS: Record<'perdido' | 'cancelado' | 'suspenso', string[]> = {
   ],
 }
 const DIAS_ALERTA_PARADA = 14
+
+/** Papéis na decisão que toda empresa começa tendo (Módulo 3). */
+const PAPEIS_DE_DECISAO = ['Decisor', 'Influenciador', 'Usuário', 'Financeiro', 'Técnico']
+
+/**
+ * Cria, UMA ÚNICA VEZ por empresa, os papéis na decisão padrão. Marca própria
+ * (`tenant_configuracoes.papeis_decisao_criados_em`), à parte dos demais padrões, porque os papéis
+ * chegaram depois (Módulo 3) e as empresas que já existiam também precisam deles. Devolve `true` se criou.
+ */
+export async function criarPapeisDoTenant(
+  tx: Tx,
+  tenantId: string,
+  membroId: string | null = null,
+): Promise<boolean> {
+  const reservado = await tx
+    .update(tenantConfiguracoes)
+    .set({ papeisDecisaoCriadosEm: new Date() })
+    .where(
+      and(
+        eq(tenantConfiguracoes.tenantId, tenantId),
+        isNull(tenantConfiguracoes.papeisDecisaoCriadosEm),
+      ),
+    )
+    .returning({ tenantId: tenantConfiguracoes.tenantId })
+  if (reservado.length === 0) return false
+  await tx.insert(papeisDecisao).values(
+    PAPEIS_DE_DECISAO.map((nome, ordem) => ({
+      tenantId,
+      nome,
+      ordem,
+      criadoPor: membroId,
+      atualizadoPor: membroId,
+    })),
+  )
+  return true
+}
 
 /**
  * Cria, UMA ÚNICA VEZ por empresa, os cadastros padrão (tags Status e Visitação, tipos de atividade,
@@ -197,5 +234,6 @@ export async function criarPadroesDoTenant(
         MOTIVOS[status].map((nome) => ({ ...autoria, nome, aplicaA: [status], ordem: ordem++ })),
       ),
     )
+  await criarPapeisDoTenant(tx, tenantId, membroId)
   return true
 }
