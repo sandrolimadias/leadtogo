@@ -1,7 +1,11 @@
 import {
   type AlterarEmpresaCarteira,
   alterarEmpresaCarteiraSchema,
+  type AplicarDaReceita,
+  aplicarDaReceitaSchema,
   type ConsultaDaLista,
+  type ConsultaDaReceitaDaEmpresa,
+  consultaDaReceitaDaEmpresaSchema,
   type ConsultaDoHistorico,
   consultaDoHistoricoSchema,
   consultaDaListaSchema,
@@ -39,6 +43,7 @@ import { ApiTags } from '@nestjs/swagger'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
+import { AtualizarPelaReceitaService } from './atualizar-receita.service.js'
 import { EmpresasDaCarteiraService } from './empresas.service.js'
 import { HistoricoDaEmpresaService } from './historico.service.js'
 import { ListaDeEmpresasService } from './lista.service.js'
@@ -54,6 +59,7 @@ export class EmpresasDaCarteiraController {
     private readonly servico: EmpresasDaCarteiraService,
     private readonly lista: ListaDeEmpresasService,
     private readonly historico: HistoricoDaEmpresaService,
+    private readonly atualizacaoDaReceita: AtualizarPelaReceitaService,
   ) {}
 
   @Documenta({
@@ -165,6 +171,40 @@ export class EmpresasDaCarteiraController {
     @Body(new ZodPipe(definirTagsDaEmpresaSchema)) dados: DefinirTagsDaEmpresa,
   ): Promise<EmpresaCarteira> {
     return this.servico.definirTags(id, dados.tagIds)
+  }
+
+  @Documenta({
+    resumo: 'Atualizar pela Receita: consultar',
+    descricao: `${CARTEIRA} Só empresa com CNPJ (409 \`sem_cnpj\`) e só quem pode editá-la. Reconsulta a Receita ignorando o cache, grava a data da consulta (e tira o selo "situação não verificada") e devolve a situação atual e o que difere do cadastro (\`mudancas\`, atual × Receita). Nada do cadastro muda ainda: é o passo 2 (\`aplicar\`) que aplica. Empresa que deixou de ser ativa continua na carteira. As duas fontes fora do ar: 503 \`receita_indisponivel\`. Registra na auditoria.`,
+    resposta: consultaDaReceitaDaEmpresaSchema,
+    status: 200,
+    erros: [400, 401, 403, 404, 409, 429, 503],
+  })
+  @Post(':id/receita/consultar')
+  @HttpCode(200)
+  @Limite({ nome: 'carteira-empresa-receita', max: 20, janelaS: 60 })
+  consultarReceita(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ConsultaDaReceitaDaEmpresa> {
+    return this.atualizacaoDaReceita.consultar(id)
+  }
+
+  @Documenta({
+    resumo: 'Atualizar pela Receita: aplicar alterações',
+    descricao: `${CARTEIRA} Aplica ao cadastro o que a última consulta apontou: tudo, ou só os \`campos\` pedidos. Telefones da Receita só se somam aos da equipe; sócios vêm sempre da Receita. "Manter como está" é não chamar esta rota. Registra na auditoria o antes e o depois.`,
+    corpo: aplicarDaReceitaSchema,
+    resposta: empresaCarteiraSchema,
+    status: 200,
+    erros: [400, 401, 403, 404, 409, 429, 503],
+  })
+  @Post(':id/receita/aplicar')
+  @HttpCode(200)
+  @Limite({ nome: 'carteira-empresa-receita', max: 20, janelaS: 60 })
+  aplicarReceita(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(aplicarDaReceitaSchema)) dados: AplicarDaReceita,
+  ): Promise<EmpresaCarteira> {
+    return this.atualizacaoDaReceita.aplicar(id, dados)
   }
 
   @Documenta({

@@ -353,7 +353,7 @@ export class EmpresasDaCarteiraService {
   // ---- apoio ----
 
   /** A empresa que o usuário vê, ou 404 (não revela as que ele não vê). */
-  private async carregar(db: Transacao, escopo: EscopoDaCarteira, id: string) {
+  async carregar(db: Transacao, escopo: EscopoDaCarteira, id: string) {
     const [linha] = await db
       .select()
       .from(empresas)
@@ -472,7 +472,7 @@ export class EmpresasDaCarteiraService {
    * CNAEs que o usuário informou. Os que não estão na tabela de referência entram só se a Receita os
    * trouxe nesta consulta (a descrição vem dela, nunca do cliente), pela função `app_registrar_cnae`.
    */
-  private async resolverCnaes(
+  async resolverCnaes(
     db: Transacao,
     entrada: CnaesEntrada,
     daReceita: DadosDaReceita | null,
@@ -505,7 +505,7 @@ export class EmpresasDaCarteiraService {
     return codigos.map((codigo) => ({ codigo, principal: codigo === entrada.principal }))
   }
 
-  private async gravarTelefones(
+  async gravarTelefones(
     db: Transacao,
     tenantId: string,
     empresaId: string,
@@ -522,11 +522,12 @@ export class EmpresasDaCarteiraService {
         tipo: t.tipo,
         descricao: t.descricao,
         principal: t.principal,
+        origem: t.origem ?? 'manual',
       })),
     )
   }
 
-  private async gravarCnaes(
+  async gravarCnaes(
     db: Transacao,
     tenantId: string,
     empresaId: string,
@@ -542,7 +543,7 @@ export class EmpresasDaCarteiraService {
   }
 
   /** Sócios vêm sempre da Receita (nome e qualificação; nunca o CPF). */
-  private async gravarSocios(
+  async gravarSocios(
     db: Transacao,
     tenantId: string,
     empresaId: string,

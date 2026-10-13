@@ -30,7 +30,10 @@ const nomeDe = (e: { nomeFantasia: string | null; razaoSocial: string }): string
   e.nomeFantasia ?? e.razaoSocial
 
 /** A situação da última consulta guardada na Receita (nunca é um campo da empresa). */
-async function situacaoDaReceita(tx: Transacao, cnpj: string): Promise<EmpresaCarteira['receita']> {
+export async function situacaoDaReceita(
+  tx: Transacao,
+  cnpj: string,
+): Promise<EmpresaCarteira['receita']> {
   const [linha] = await tx.execute<{ dados: unknown; consultado_em: Date | string }>(
     sql`SELECT dados, consultado_em FROM receita_consultas WHERE cnpj = ${cnpj}`,
   )

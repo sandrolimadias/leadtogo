@@ -724,6 +724,216 @@
         "tags": ["Carteira: empresas"]
       }
     },
+    "/v1/carteira/empresas/{id}/receita/aplicar": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Aplica ao cadastro o que a última consulta apontou: tudo, ou só os `campos` pedidos. Telefones da Receita só se somam aos da equipe; sócios vêm sempre da Receita. \"Manter como está\" é não chamar esta rota. Registra na auditoria o antes e o depois.",
+        "operationId": "EmpresasDaCarteiraController_aplicarReceita",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AplicarDaReceitaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaDaCarteira"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Atualizar pela Receita: aplicar alterações",
+        "tags": ["Carteira: empresas"]
+      }
+    },
+    "/v1/carteira/empresas/{id}/receita/consultar": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Só empresa com CNPJ (409 `sem_cnpj`) e só quem pode editá-la. Reconsulta a Receita ignorando o cache, grava a data da consulta (e tira o selo \"situação não verificada\") e devolve a situação atual e o que difere do cadastro (`mudancas`, atual × Receita). Nada do cadastro muda ainda: é o passo 2 (`aplicar`) que aplica. Empresa que deixou de ser ativa continua na carteira. As duas fontes fora do ar: 503 `receita_indisponivel`. Registra na auditoria.",
+        "operationId": "EmpresasDaCarteiraController_consultarReceita",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaDaReceitaDaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Atualizar pela Receita: consultar",
+        "tags": ["Carteira: empresas"]
+      }
+    },
     "/v1/carteira/empresas/{id}/tags": {
       "put": {
         "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Substitui as tags dos grupos manuais (Status, Interesse...): grupo de seleção única aceita uma tag (400 `grupo_selecao_unica`), grupo obrigatório exige uma (400 `grupo_obrigatorio`), tag inativa não se aplica de novo (400 `tag_inativa`). As tags de grupo automático (Visitação) são do sistema (400 `tag_automatica` se pedidas à mão) e continuam como estão. Cada tag que entra ou sai vai para o histórico de tags (base da conversão Lead → Cliente) e para a auditoria.",
@@ -5833,6 +6043,31 @@
         },
         "additionalProperties": false
       },
+      "AplicarDaReceitaEntrada": {
+        "type": "object",
+        "properties": {
+          "campos": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "razaoSocial",
+                "nomeFantasia",
+                "mei",
+                "dataInicioAtividades",
+                "porteCodigo",
+                "regimeTributario",
+                "endereco",
+                "cnaes",
+                "telefones",
+                "socios"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "CnaesDaEmpresaEntrada": {
         "type": "object",
         "properties": {
@@ -5875,6 +6110,80 @@
           }
         },
         "required": ["doisFatoresExigido"],
+        "additionalProperties": false
+      },
+      "ConsultaDaReceitaDaEmpresa": {
+        "type": "object",
+        "properties": {
+          "consultadoEm": {
+            "type": "string"
+          },
+          "fonte": {
+            "type": "string"
+          },
+          "situacao": {
+            "type": "object",
+            "properties": {
+              "descricao": {
+                "type": "string"
+              },
+              "motivo": {
+                "nullable": true,
+                "type": "string"
+              },
+              "ativa": {
+                "type": "boolean"
+              },
+              "desde": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["descricao", "motivo", "ativa", "desde"],
+            "additionalProperties": false
+          },
+          "situacaoAnterior": {
+            "nullable": true,
+            "type": "string"
+          },
+          "mudancas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "chave": {
+                  "type": "string",
+                  "enum": [
+                    "razaoSocial",
+                    "nomeFantasia",
+                    "mei",
+                    "dataInicioAtividades",
+                    "porteCodigo",
+                    "regimeTributario",
+                    "endereco",
+                    "cnaes",
+                    "telefones",
+                    "socios"
+                  ]
+                },
+                "rotulo": {
+                  "type": "string"
+                },
+                "atual": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "receita": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "required": ["chave", "rotulo", "atual", "receita"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["consultadoEm", "fonte", "situacao", "situacaoAnterior", "mudancas"],
         "additionalProperties": false
       },
       "ConsultarConviteEntrada": {

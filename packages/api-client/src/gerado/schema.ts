@@ -136,6 +136,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/carteira/empresas/{id}/receita/aplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Atualizar pela Receita: aplicar alterações
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Aplica ao cadastro o que a última consulta apontou: tudo, ou só os `campos` pedidos. Telefones da Receita só se somam aos da equipe; sócios vêm sempre da Receita. "Manter como está" é não chamar esta rota. Registra na auditoria o antes e o depois.
+         */
+        post: operations["EmpresasDaCarteiraController_aplicarReceita"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/empresas/{id}/receita/consultar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Atualizar pela Receita: consultar
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Só empresa com CNPJ (409 `sem_cnpj`) e só quem pode editá-la. Reconsulta a Receita ignorando o cache, grava a data da consulta (e tira o selo "situação não verificada") e devolve a situação atual e o que difere do cadastro (`mudancas`, atual × Receita). Nada do cadastro muda ainda: é o passo 2 (`aplicar`) que aplica. Empresa que deixou de ser ativa continua na carteira. As duas fontes fora do ar: 503 `receita_indisponivel`. Registra na auditoria.
+         */
+        post: operations["EmpresasDaCarteiraController_consultarReceita"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/carteira/empresas/{id}/tags": {
         parameters: {
             query?: never;
@@ -1189,6 +1229,9 @@ export interface components {
             cor?: components["schemas"]["CorDeTag"];
             ativo?: boolean;
         };
+        AplicarDaReceitaEntrada: {
+            campos?: ("razaoSocial" | "nomeFantasia" | "mei" | "dataInicioAtividades" | "porteCodigo" | "regimeTributario" | "endereco" | "cnaes" | "telefones" | "socios")[];
+        };
         CnaesDaEmpresaEntrada: {
             principal: number | null;
             secundarios: number[];
@@ -1200,6 +1243,24 @@ export interface components {
         ConfiguracaoDeSegurancaEntrada: {
             /** @enum {string} */
             doisFatoresExigido: "admin" | "admin_gestor" | "todos";
+        };
+        ConsultaDaReceitaDaEmpresa: {
+            consultadoEm: string;
+            fonte: string;
+            situacao: {
+                descricao: string;
+                motivo: string | null;
+                ativa: boolean;
+                desde: string | null;
+            };
+            situacaoAnterior: string | null;
+            mudancas: {
+                /** @enum {string} */
+                chave: "razaoSocial" | "nomeFantasia" | "mei" | "dataInicioAtividades" | "porteCodigo" | "regimeTributario" | "endereco" | "cnaes" | "telefones" | "socios";
+                rotulo: string;
+                atual: string | null;
+                receita: string | null;
+            }[];
         };
         ConsultarConviteEntrada: {
             token: string;
@@ -2388,6 +2449,180 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_aplicarReceita: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AplicarDaReceitaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpresaDaCarteira"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EmpresasDaCarteiraController_consultarReceita: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultaDaReceitaDaEmpresa"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

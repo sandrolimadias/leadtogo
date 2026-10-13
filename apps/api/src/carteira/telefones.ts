@@ -7,6 +7,8 @@ export interface TelefoneParaGravar {
   tipo: 'fixo' | 'celular' | 'whatsapp' | 'outro'
   descricao: string | null
   principal: boolean
+  /** De onde veio o número (padrão: digitado à mão) */
+  origem?: 'manual' | 'receita' | 'importacao'
 }
 
 /**

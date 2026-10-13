@@ -79,6 +79,11 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 **Histórico da empresa** (`GET /v1/carteira/empresas/{id}/historico`, commit 7)
 - A aba Histórico mostra a **auditoria em português** (quem, quando, o que mudou, com nomes no lugar de ids: vendedor, vertical, cidade, porte) e as **tags que o sistema aplicou ou tirou sozinho** ("Sistema"). Do mais recente ao mais antigo, paginado; segue a regra de carteira (404 para a empresa que o usuário não vê). Passar a carteira para outro vendedor aparece como "Carteira transferida".
 
+**Atualizar pela Receita** (API, `POST /v1/carteira/empresas/{id}/receita/consultar` e `/aplicar`; entrou como commit próprio entre o 7 e o 8)
+- Dois passos: **consultar** reconsulta ignorando o cache, grava a data e tira o selo "situação não verificada", e devolve a situação e o que difere (atual × Receita); **aplicar** grava tudo (ou só os `campos` pedidos). "Manter como está" é não aplicar.
+- Só CNPJ (409 `sem_cnpj`) e só quem edita a empresa. As duas fontes fora do ar, ou só cache vencido: 503, e nada muda. Empresa que deixou de ser ativa continua na carteira.
+- Telefones da Receita **só se somam** aos da equipe; sócios vêm sempre da Receita. A auditoria guarda a consulta e, ao aplicar, o antes e o depois ("Atualizado pela Receita" no Histórico).
+
 **Detalhes da API da lista** (`GET /v1/carteira/empresas`, `/contagens` e `/opcoes`, commit 5)
 - "Cliente e Prospect" dos chips é pelas **chaves do sistema** das tags (`cliente`, `prospect`), que sobrevivem a renomear. "Incluir leads" traz os demais Status.
 - Filtro `tags`: a empresa precisa ter **todas** as tags pedidas (ex.: um Status e uma Visitação). Última visita "sem visita há 60/90 dias" **inclui quem nunca foi visitado**.

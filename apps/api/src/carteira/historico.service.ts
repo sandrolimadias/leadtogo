@@ -50,6 +50,8 @@ const ROTULOS: Record<string, string> = {
   paisCodigo: 'País',
   telefones: 'Telefones',
   cnaes: 'CNAEs',
+  endereco: 'Endereço',
+  socios: 'Sócios',
 }
 
 const ROTULOS_DO_CADASTRO: Record<string, string> = {
@@ -257,7 +259,26 @@ export class HistoricoDaEmpresaService {
         }
         return { ...base, titulo: 'Empresa cadastrada', mudancas }
       }
-      case 'alterar': {
+      case 'consultar_receita': {
+        const { de, para } = registro(alteracoes['situacao'])
+        const mudou = de !== para
+        return {
+          ...base,
+          titulo: 'Consulta à Receita',
+          mudancas: mudou
+            ? [
+                {
+                  campo: 'situacao',
+                  rotulo: 'Situação na Receita',
+                  de: valor('situacao', de),
+                  para: valor('situacao', para),
+                },
+              ]
+            : [],
+        }
+      }
+      case 'alterar':
+      case 'atualizar_receita': {
         const mudancas = Object.entries(alteracoes).map(([campo, v]): Mudanca => {
           const { de, para } = registro(v)
           return {
@@ -268,11 +289,13 @@ export class HistoricoDaEmpresaService {
           }
         })
         const soVendedor = mudancas.length === 1 && mudancas[0]?.campo === 'vendedorId'
-        return {
-          ...base,
-          titulo: soVendedor ? 'Carteira transferida' : 'Dados alterados',
-          mudancas,
-        }
+        const titulo =
+          l.acao === 'atualizar_receita'
+            ? 'Atualizado pela Receita'
+            : soVendedor
+              ? 'Carteira transferida'
+              : 'Dados alterados'
+        return { ...base, titulo, mudancas }
       }
       case 'alterar_tags': {
         const lista = (v: unknown) =>
