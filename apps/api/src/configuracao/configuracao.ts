@@ -110,6 +110,14 @@ const esquema = z
     /** Falhas finais de jobs nas últimas 24 h a partir das quais o /health/alertas responde 503 */
     ALERTAS_LIMITE_JOBS_FALHOS: z.coerce.number().int().min(1).default(1),
 
+    // Consulta de CNPJ (docs/configuracao_tecnologia.md, seção 17). Padrões servem para produção;
+    // apontar `MINHA_RECEITA_URL` para uma instância própria da Minha Receita não exige mudar código.
+    MINHA_RECEITA_URL: url(['http:', 'https:']).default('https://minhareceita.org'),
+    /** Segunda tentativa (a BrasilAPI repassa a Minha Receita: ver a limitação no ReceitaService) */
+    BRASILAPI_URL: url(['http:', 'https:']).default('https://brasilapi.com.br/api/cnpj/v1'),
+    /** Prazo de cada consulta à Receita, em milissegundos */
+    RECEITA_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
+
     // Arquivos (Garage / S3)
     S3_ENDPOINT: url(['http:', 'https:']),
     S3_REGION: z.string().min(1).default('garage'),

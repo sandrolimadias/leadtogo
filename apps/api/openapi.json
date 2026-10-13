@@ -4441,6 +4441,116 @@
         "security": []
       }
     },
+    "/v1/receita/cnpj/{cnpj}": {
+      "get": {
+        "description": "Qualquer membro da empresa ativa. Devolve os dados da Receita já no formato do sistema (sem o CPF dos sócios) e a situação cadastral. Vale o cache de 30 dias; `forcar=true` ignora o cache. Se a Minha Receita falhar (rede, tempo esgotado, 429 ou 5xx), tenta a BrasilAPI (que repassa a Minha Receita: cobre falha de rede ou hospedagem, não da base). Com as duas fora do ar, usa o cache vencido (`expirada: true`) ou responde 503 `receita_indisponivel`. `cnpj_invalido` (400) e `cnpj_nao_encontrado` (404) são definitivos. `cadastroBloqueado` indica que o bloqueio de empresa não ativa (Configurações) vai recusar o cadastro.",
+        "operationId": "ReceitaController_consultar",
+        "parameters": [
+          {
+            "name": "cnpj",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "forcar",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaReceita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Consultar um CNPJ na Receita",
+        "tags": ["Receita"]
+      }
+    },
     "/v1/sessao/empresa-ativa": {
       "post": {
         "description": "Define a empresa ativa DESTA sessão. Só vale para empresa em que o usuário é membro ativo e que está em teste ou ativa; uma empresa alheia e uma inexistente dão o mesmo 403 (`empresa_nao_permitida`). Quem ainda não ativou o 2FA também pode trocar: a regra é aplicada na empresa que ficar ativa (nas rotas dela vem `2fa_obrigatorio` se ela o exige).",
@@ -4856,6 +4966,31 @@
         "required": ["token"],
         "additionalProperties": false
       },
+      "ConsultaReceita": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "$ref": "#/components/schemas/DadosDaReceita"
+          },
+          "fonte": {
+            "type": "string"
+          },
+          "consultadoEm": {
+            "type": "string"
+          },
+          "doCache": {
+            "type": "boolean"
+          },
+          "expirada": {
+            "type": "boolean"
+          },
+          "cadastroBloqueado": {
+            "type": "boolean"
+          }
+        },
+        "required": ["dados", "fonte", "consultadoEm", "doCache", "expirada", "cadastroBloqueado"],
+        "additionalProperties": false
+      },
       "ConviteAceito": {
         "type": "object",
         "properties": {
@@ -5240,6 +5375,237 @@
           }
         },
         "required": ["nome"],
+        "additionalProperties": false
+      },
+      "DadosDaReceita": {
+        "type": "object",
+        "properties": {
+          "cnpj": {
+            "type": "string"
+          },
+          "razaoSocial": {
+            "type": "string"
+          },
+          "nomeFantasia": {
+            "nullable": true,
+            "type": "string"
+          },
+          "matrizFilial": {
+            "type": "string",
+            "enum": ["matriz", "filial"]
+          },
+          "situacao": {
+            "type": "object",
+            "properties": {
+              "codigo": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "descricao": {
+                "type": "string"
+              },
+              "motivo": {
+                "nullable": true,
+                "type": "string"
+              },
+              "desde": {
+                "nullable": true,
+                "type": "string"
+              },
+              "ativa": {
+                "type": "boolean"
+              }
+            },
+            "required": ["codigo", "descricao", "motivo", "desde", "ativa"],
+            "additionalProperties": false
+          },
+          "mei": {
+            "type": "boolean"
+          },
+          "regimeTributario": {
+            "type": "string",
+            "enum": [
+              "mei",
+              "simples_nacional",
+              "lucro_presumido",
+              "lucro_real",
+              "imune_isenta",
+              "nao_informado"
+            ]
+          },
+          "porteCodigo": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "dataInicioAtividades": {
+            "nullable": true,
+            "type": "string"
+          },
+          "endereco": {
+            "type": "object",
+            "properties": {
+              "cep": {
+                "nullable": true,
+                "type": "string"
+              },
+              "tipoLogradouro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "logradouro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "numero": {
+                "nullable": true,
+                "type": "string"
+              },
+              "complemento": {
+                "nullable": true,
+                "type": "string"
+              },
+              "bairro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "municipioCodigoIbge": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "municipioNome": {
+                "nullable": true,
+                "type": "string"
+              },
+              "uf": {
+                "nullable": true,
+                "type": "string"
+              },
+              "paisCodigo": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "cep",
+              "tipoLogradouro",
+              "logradouro",
+              "numero",
+              "complemento",
+              "bairro",
+              "municipioCodigoIbge",
+              "municipioNome",
+              "uf",
+              "paisCodigo"
+            ],
+            "additionalProperties": false
+          },
+          "telefones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string"
+                },
+                "e164": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "outro"]
+                }
+              },
+              "required": ["numero", "e164", "tipo"],
+              "additionalProperties": false
+            }
+          },
+          "cnaes": {
+            "type": "object",
+            "properties": {
+              "principal": {
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "descricao": {
+                    "type": "string"
+                  }
+                },
+                "required": ["codigo", "descricao"],
+                "additionalProperties": false
+              },
+              "secundarios": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "codigo": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "descricao": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["codigo", "descricao"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["principal", "secundarios"],
+            "additionalProperties": false
+          },
+          "socios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nome": {
+                  "type": "string"
+                },
+                "qualificacaoCodigo": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "qualificacaoTexto": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "required": ["nome", "qualificacaoCodigo", "qualificacaoTexto"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "cnpj",
+          "razaoSocial",
+          "nomeFantasia",
+          "matrizFilial",
+          "situacao",
+          "mei",
+          "regimeTributario",
+          "porteCodigo",
+          "dataInicioAtividades",
+          "endereco",
+          "telefones",
+          "cnaes",
+          "socios"
+        ],
         "additionalProperties": false
       },
       "EmpresaAtivaEntrada": {

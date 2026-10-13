@@ -920,6 +920,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/receita/cnpj/{cnpj}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consultar um CNPJ na Receita
+         * @description Qualquer membro da empresa ativa. Devolve os dados da Receita já no formato do sistema (sem o CPF dos sócios) e a situação cadastral. Vale o cache de 30 dias; `forcar=true` ignora o cache. Se a Minha Receita falhar (rede, tempo esgotado, 429 ou 5xx), tenta a BrasilAPI (que repassa a Minha Receita: cobre falha de rede ou hospedagem, não da base). Com as duas fora do ar, usa o cache vencido (`expirada: true`) ou responde 503 `receita_indisponivel`. `cnpj_invalido` (400) e `cnpj_nao_encontrado` (404) são definitivos. `cadastroBloqueado` indica que o bloqueio de empresa não ativa (Configurações) vai recusar o cadastro.
+         */
+        get: operations["ReceitaController_consultar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sessao/empresa-ativa": {
         parameters: {
             query?: never;
@@ -1028,6 +1048,14 @@ export interface components {
         };
         ConsultarConviteEntrada: {
             token: string;
+        };
+        ConsultaReceita: {
+            dados: components["schemas"]["DadosDaReceita"];
+            fonte: string;
+            consultadoEm: string;
+            doCache: boolean;
+            expirada: boolean;
+            cadastroBloqueado: boolean;
         };
         ConviteAceito: {
             /** Format: uuid */
@@ -1150,6 +1178,58 @@ export interface components {
             nome: string;
             /** @default gray */
             cor: components["schemas"]["CorDeTag"];
+        };
+        DadosDaReceita: {
+            cnpj: string;
+            razaoSocial: string;
+            nomeFantasia: string | null;
+            /** @enum {string} */
+            matrizFilial: "matriz" | "filial";
+            situacao: {
+                codigo: number;
+                descricao: string;
+                motivo: string | null;
+                desde: string | null;
+                ativa: boolean;
+            };
+            mei: boolean;
+            /** @enum {string} */
+            regimeTributario: "mei" | "simples_nacional" | "lucro_presumido" | "lucro_real" | "imune_isenta" | "nao_informado";
+            porteCodigo: number | null;
+            dataInicioAtividades: string | null;
+            endereco: {
+                cep: string | null;
+                tipoLogradouro: string | null;
+                logradouro: string | null;
+                numero: string | null;
+                complemento: string | null;
+                bairro: string | null;
+                municipioCodigoIbge: number | null;
+                municipioNome: string | null;
+                uf: string | null;
+                paisCodigo: number | null;
+            };
+            telefones: {
+                numero: string;
+                e164: string;
+                /** @enum {string} */
+                tipo: "fixo" | "celular" | "outro";
+            }[];
+            cnaes: {
+                principal: {
+                    codigo: number;
+                    descricao: string;
+                } | null;
+                secundarios: {
+                    codigo: number;
+                    descricao: string;
+                }[];
+            };
+            socios: {
+                nome: string;
+                qualificacaoCodigo: number | null;
+                qualificacaoTexto: string | null;
+            }[];
         };
         EmpresaAtivaEntrada: {
             /** Format: uuid */
@@ -5096,6 +5176,93 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ReceitaController_consultar: {
+        parameters: {
+            query?: {
+                forcar?: "true" | "false";
+            };
+            header?: never;
+            path: {
+                cnpj: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultaReceita"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -257,3 +257,20 @@ export function normalizarRespostaDaReceita(origem: unknown): DadosDaReceita {
     socios,
   }
 }
+
+/** GET /v1/receita/cnpj/{cnpj}. */
+export const consultaReceitaSchema = z
+  .object({
+    dados: dadosDaReceitaSchema,
+    /** `minhareceita` ou `brasilapi` */
+    fonte: z.string(),
+    consultadoEm: z.string(),
+    /** Veio do cache (consulta feita há menos de 30 dias) */
+    doCache: z.boolean(),
+    /** Veio do cache VENCIDO, porque as duas fontes estavam fora do ar: a situação pode estar desatualizada */
+    expirada: z.boolean(),
+    /** O bloqueio de empresa não ativa está ligado nesta empresa e a situação não é ativa: o cadastro será recusado */
+    cadastroBloqueado: z.boolean(),
+  })
+  .meta({ id: 'ConsultaReceita' })
+export type ConsultaReceita = z.infer<typeof consultaReceitaSchema>

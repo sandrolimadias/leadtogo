@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module.js'
 import { CadastrosModule } from './cadastros/cadastros.module.js'
 import { ConfiguracoesModule } from './configuracoes/configuracoes.module.js'
 import { MeModule } from './me/me.module.js'
+import { ReceitaModule } from './receita/receita.module.js'
 import { PrimeiroAcessoModule } from './primeiro-acesso/primeiro-acesso.module.js'
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
 import { ConvitesModule } from './convites/convites.module.js'
@@ -53,6 +54,7 @@ export class AppModule {
         ConvitesModule,
         EmpresasModule,
         PrimeiroAcessoModule,
+        ReceitaModule,
         HealthModule,
       ],
     }

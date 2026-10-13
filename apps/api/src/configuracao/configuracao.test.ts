@@ -51,6 +51,28 @@ describe('configuração validada por Zod', () => {
     ).toEqual(['RATE_LIMIT_MAX', 'TRUST_PROXY'])
   })
 
+  it('consulta de CNPJ: padrões de produção e validação', () => {
+    expect(carregarConfiguracao(valida)).toMatchObject({
+      MINHA_RECEITA_URL: 'https://minhareceita.org',
+      BRASILAPI_URL: 'https://brasilapi.com.br/api/cnpj/v1',
+      RECEITA_TIMEOUT_MS: 8000,
+    })
+    const c = carregarConfiguracao({
+      ...valida,
+      MINHA_RECEITA_URL: 'http://receita.interna:8080',
+      RECEITA_TIMEOUT_MS: '2000',
+    })
+    expect(c).toMatchObject({
+      MINHA_RECEITA_URL: 'http://receita.interna:8080',
+      RECEITA_TIMEOUT_MS: 2000,
+    })
+    expect(
+      falha({ ...valida, MINHA_RECEITA_URL: 'ftp://x', RECEITA_TIMEOUT_MS: '10' })
+        .problemas.map((p) => p.variavel)
+        .sort(),
+    ).toEqual(['MINHA_RECEITA_URL', 'RECEITA_TIMEOUT_MS'])
+  })
+
   it('variável opcional vazia vale como não definida (como no .env.example)', () => {
     const c = carregarConfiguracao({
       ...valida,

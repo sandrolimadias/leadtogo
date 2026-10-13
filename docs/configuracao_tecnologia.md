@@ -348,6 +348,14 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 
 ---
 
+### 11.4 Consulta de CNPJ (Minha Receita)
+
+- **Fluxo** (`apps/api/src/receita/`): valida o CNPJ (alfanumérico) → lê o cache `receita_consultas` (validade de 30 dias) → consulta a **Minha Receita** (`GET {MINHA_RECEITA_URL}/{cnpj}`, prazo de 8 s) → em falha de rede, tempo esgotado, 429 ou 5xx, tenta a **BrasilAPI** (`BRASILAPI_URL`) → grava o JSON no cache com a fonte. **400** (CNPJ recusado) e **404** (CNPJ inexistente) são definitivos e não vão para a alternativa. Com as duas fontes fora do ar, usa o cache vencido (a resposta avisa `expirada`) ou responde 503 `receita_indisponivel`. Consultas iguais ao mesmo tempo viram uma só chamada; a rota limita 20 consultas por minuto por IP.
+- **Limitação da alternativa:** a **BrasilAPI não é independente**: o serviço de CNPJ dela só repassa `https://minhareceita.org/{cnpj}` (conferido no código dela, `services/cnpj.js`, em 13/10/2026). Ela cobre falha de rede ou de hospedagem da Minha Receita, **não** uma queda da base dela. Mesmo assim fica como segunda tentativa, por passar por outra infraestrutura e outro cache.
+- **A alternativa de verdade** será a **instância própria da Minha Receita** (código aberto, com a base completa da Receita; ver `escopo_mvp.md`, Prospecção). Quando existir, basta apontar `MINHA_RECEITA_URL` para ela, sem mudar código; a Minha Receita pública e a BrasilAPI podem ficar como reserva.
+- **Sem garantia de serviço:** a Minha Receita pública não publica limite de uso nem SLA. Por isso o cache, o limite por IP e, na importação (Módulo 4), a fila com intervalo configurável entre consultas.
+- **Variáveis** (todas opcionais, com padrão de produção; ver `.env.example`): `MINHA_RECEITA_URL`, `BRASILAPI_URL` e `RECEITA_TIMEOUT_MS`.
+
 ## 12. Fluxo de desenvolvimento e deploy
 
 ### Ambientes
