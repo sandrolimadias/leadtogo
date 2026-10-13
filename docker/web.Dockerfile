@@ -7,7 +7,7 @@
 # GlitchTip e NUNCA chegam à imagem final (o token também não fica em nenhuma camada).
 
 # ---- 1. build: roda na arquitetura de quem constrói; o resultado (HTML/JS/CSS) é o mesmo para qualquer destino
-FROM --platform=$BUILDPLATFORM node:24-alpine AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine AS build
 WORKDIR /repo
 RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
