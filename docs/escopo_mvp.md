@@ -125,6 +125,13 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 7. **Histórico** legível do contato.
 8. Docs e roteiro final.
 
+**Andamento do Módulo 3 (atualizado em 13/10/2026; o Ale aprovou seguir do commit 2 ao 8 sem validar um por um, só parando em erro):**
+- ✅ **No ar (esteira verde até o verify):** 1 `0cc6359` migração 0018 e Papéis na decisão · 2 `35ddb9a` Novo e Editar contato · 3 `cc60754` lista de contatos · 4 `89051fa` ficha do contato.
+- ✅ **Commits `test:` de estabilidade, no ar:** `322c009` prazo maior nos 2 testes de convite · `cb83473` Valkey de teste zerado a cada execução e prazo padrão de 20 s por teste na API (a suíte da API passou de ~300 s para ~560 s sem causa achada: máquina/WSL mais lenta, sem código novo lento) · `6ae699c` prazo padrão de 15 s no `aguardarMensagem` (não há limpeza concorrente do Mailpit: arquivos rodam em sequência).
+- 🚧 **Commit 5 (Vínculos + aba Contatos da empresa): pronto e com o gate passado, mas SEM commit.** Está guardado em `git stash` (`stash@{0}`, "WIP on main: 89051fa"): é só dar `git stash pop`, rodar `pnpm lint && pnpm typecheck && pnpm test`, commitar (`feat: vínculos do contato e aba Contatos da empresa`) e dar push. As decisões dele já estão no bloco "Commit 5" abaixo. O único teste que falhou nele (espera de e-mail de 5 s) foi tratado pelo `6ae699c`.
+- ⏳ **Faltam:** 6 converter sócio em contato (vínculo preservado no "Atualizar pela Receita", com teste) · 7 histórico legível do contato · 8 docs finais, `docs/roteiro_teste_modulo3.md` e o relatório (roteiro, o que ficou de fora, decisões aprovadas × minhas, commits com hashes). Depois, parar e aguardar o teste do Ale.
+- Regra de parada: teste falhando (não reexecutar nem mudar prazo sem consultar), deploy/verify falho, migração destrutiva, variável nova no Coolify, decisão de negócio fora deste documento.
+
 **Decisões aprovadas pelo Ale (13/10/2026), ao aprovar o plano com as propostas:**
 - **Fora até os Módulos 5 e 6:** "Última interação", abas Atividades e Oportunidades do contato e o botão "Nova atividade" (a coluna "Última interação" da lista também).
 - **Papéis na decisão:** cinco padrões por empresa (Decisor, Influenciador, Usuário, Financeiro, Técnico), editáveis só pelo administrador, com a regra "só se exclui o que nunca foi usado".
