@@ -144,6 +144,8 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       opcoes: vi.fn(async () =>
         ok({ vendedores: [], unicoMembro: true, cidades: [], diasAlertaDeContato: 60 }),
       ),
+      consultarCnpj: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
     cadastros: {
       verticais: {

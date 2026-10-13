@@ -40,7 +40,7 @@ function daApi<T>(r: { data?: T; error?: ErroDaApi; response: Response }): Resul
     ok: false,
     erro: traduzirErro(
       r.response.status,
-      r.error ? { erro: r.error.erro, mensagem: r.error.mensagem } : null,
+      r.error ? { erro: r.error.erro, mensagem: r.error.mensagem, dados: r.error.dados } : null,
     ),
   }
 }
@@ -427,5 +427,17 @@ export const servicosReais: ServicosDeAcesso = {
         ),
       ),
     opcoes: () => protegido(async () => daApi(await api.GET('/v1/carteira/empresas/opcoes'))),
+    consultarCnpj: (cnpj) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/receita/cnpj/{cnpj}', {
+            params: { path: { cnpj }, query: { forcar: 'false' } },
+          }),
+        ),
+      ),
+    criar: (dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/carteira/empresas', { body: dados as never })),
+      ),
   },
 }

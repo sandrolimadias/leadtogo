@@ -48,6 +48,7 @@ interface CorpoDeErro {
   message?: string
   erro?: string
   mensagem?: string
+  dados?: Record<string, unknown> | undefined
 }
 
 /** Traduz a resposta de erro de qualquer das duas origens num erro de acesso em pt-BR. */
@@ -57,7 +58,14 @@ export function traduzirErro(status: number, corpo?: CorpoDeErro | null): ErroDe
   if (conhecida) return { codigo, mensagem: conhecida, status }
   if (status === 429) return { codigo: 'limite_de_tentativas', mensagem: LIMITE, status }
   // mensagens da API já são pt-BR e dizem o que fazer; as do Better Auth são em inglês e não passam
-  if (corpo?.mensagem && corpo.erro) return { codigo, mensagem: corpo.mensagem, status }
+  if (corpo?.mensagem && corpo.erro) {
+    return {
+      codigo,
+      mensagem: corpo.mensagem,
+      status,
+      ...(corpo.dados ? { dados: corpo.dados } : {}),
+    }
+  }
   return { codigo, mensagem: GENERICA, status }
 }
 

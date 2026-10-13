@@ -1,9 +1,11 @@
 import type {
+  ConsultaReceita,
   ContagensDaLista,
   ConviteAceito,
   ConviteConsulta,
   ConviteCriado,
   ConviteResumo,
+  EmpresaCarteira,
   EmpresaCriada,
   ListaDeEmpresas,
   Me,
@@ -42,6 +44,7 @@ import type {
   CriarTagGrupoEntrada,
   CriarTipoAtividadeEntrada,
   ConsultaDaListaEntrada,
+  CriarEmpresaCarteiraEntrada,
   CriarVerticalEntrada,
   PoliticaDoisFatores,
   PrimeiroAcessoEntrada,
@@ -54,6 +57,8 @@ export interface ErroDeAcesso {
   codigo: string
   mensagem: string
   status: number
+  /** Dados extras que a API manda em alguns erros (ex.: a empresa que já existe, no 409 de duplicado) */
+  dados?: Record<string, unknown>
 }
 
 export type Resultado<T = void> = { ok: true; dados: T } | { ok: false; erro: ErroDeAcesso }
@@ -107,6 +112,10 @@ export interface ServicosDaCarteira {
   contagens: (incluirLeads: boolean) => Promise<Resultado<ContagensDaLista>>
   /** Equipe, cidades e dias de alerta, para os filtros */
   opcoes: () => Promise<Resultado<OpcoesDaLista>>
+  /** Consulta o CNPJ na Receita (cache de 30 dias). 404 `cnpj_nao_encontrado`, 503 `receita_indisponivel` */
+  consultarCnpj: (cnpj: string) => Promise<Resultado<ConsultaReceita>>
+  /** Cadastra a empresa. 409 `empresa_nao_ativa` / `empresa_ja_cadastrada` (com `dados.existente`) */
+  criar: (dados: CriarEmpresaCarteiraEntrada) => Promise<Resultado<EmpresaCarteira>>
 }
 
 /**
