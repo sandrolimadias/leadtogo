@@ -79,7 +79,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 ### Regras
 - Trocar uma tag de grupo de seleção única **substitui** a anterior, e a mudança fica no histórico. Assim é possível medir quantos leads viraram clientes e quando.
 - **Proteções do sistema (v1.6, Módulo 1):** os grupos **Status** e **Visitação** só podem ser renomeados (a seleção e o "obrigatório" não mudam, e não se inativam nem excluem); Visitação é **automático**, então não aceita tags novas. As tags `lead`, `cliente`, `visitada` e `contactada` são usadas pelas regras (importação, "empresa vira Cliente", controle de visitadas e contactadas): podem ser renomeadas e recoloridas, mas **não inativadas nem excluídas**. **Prospect** e **Inativo** não têm regra e podem ser inativadas ou excluídas.
-- **Tag em uso não se exclui (v1.6):** uma tag aplicada a alguma empresa, **agora ou no histórico de Status**, só pode ser **inativada**; a exclusão fica para tags que nunca foram usadas. Isso preserva o histórico de conversão (quantos Leads viraram Clientes e quando). Vale também para o grupo que contém tags em uso.
+- **Tag em uso não se exclui (v1.6):** uma tag aplicada a alguma empresa, **agora ou no histórico de Status**, só pode ser **inativada**; a exclusão fica para tags que nunca foram usadas (caso particular da regra geral da seção 11). Isso preserva o histórico de conversão (quantos Leads viraram Clientes e quando). Vale também para o grupo que contém tags em uso.
 - Filtros por tag em todas as listas (combinação **E / OU**).
 - **Automação opcional (configurável):** ao ganhar uma oportunidade, mudar o Status da empresa para *Cliente*.
 
@@ -300,7 +300,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 - **Suspenso** tem o campo "**Retomar em**", que cria uma atividade de retomada.
 - Reabrir (voltar para Ativo) é permitido, com registro no histórico.
 - **Funil padrão (v1.6):** há **sempre exatamente um**. Tornar outro funil o padrão troca o anterior; o padrão não pode ser inativado nem excluído. Um funil nasce com ao menos uma etapa e a **última etapa** de um funil não pode ser excluída. A etapa tem nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (vazio = sem alerta); etapas são só excluídas, não inativadas.
-- **Excluir etapa (v1.6):** com oportunidades **ativas** na etapa, é preciso **movê-las antes**. Havendo só oportunidades **fechadas** (Conquistado, Perdido, Cancelado ou Suspenso), a etapa pode ser excluída (exclusão lógica), e o histórico de fases e a **"fase em que parou"** continuam mostrando o nome dela.
+- **Excluir etapa (v1.6):** com oportunidades **ativas** na etapa, é preciso **movê-las antes**. Uma etapa que **já teve** oportunidades (mesmo só fechadas) **só se inativa**; só a que **nunca foi usada** pode ser excluída (regra geral da seção 11). O histórico de fases e a **"fase em que parou"** continuam mostrando o nome dela.
 - **Histórico de etapas:** cada mudança de etapa é registrada (data, usuário, de → para). Isso permite calcular tempo médio por etapa e conversão.
 
 ---
@@ -531,6 +531,8 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 | Preferências do tenant | Admin (visão de carteira, validade das tags de visitação, automação de status, dias de "sem contato") |
 | Segurança | Admin (**política de 2FA** da empresa: administradores, administradores e gestores, ou todos; ver "Segurança e acesso") |
 | E-mail (SMTP próprio) 🔮 | Admin (servidor de envio da empresa; ver abaixo). **Funcionalidade futura, ainda não implementada** |
+
+**Regra de exclusão (v1.6, decidida em 13/10/2026), para todos os cadastros acima** (tags e grupos de tags, tipos de atividade, funis e etapas, origens, motivos, soluções, verticais): **só se exclui o que nunca foi usado; o que já foi usado só se inativa**. Assim nenhum histórico perde o nome do que usou (conversão Lead → Cliente, "fase em que parou", motivo de perda, origem, tipo de atividade). Item inativo some das escolhas novas e continua aparecendo no que já o usa. Os itens protegidos do sistema (seções 2, 5 e 6) não se excluem nem se inativam, mesmo sem uso.
 
 ### Configurações → E-mail (SMTP próprio da empresa) 🔮
 

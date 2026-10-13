@@ -18,7 +18,7 @@ No início, **só o Ale usa o sistema: um usuário, administrador**. Os papéis 
 
 Cada módulo vai para produção **sozinho** (commits pequenos na `main`, com testes, conforme o `CLAUDE.md`). O módulo seguinte só começa com o anterior no ar.
 
-### Módulo 1 — Configurações base ✅ *entregue em 12/10/2026*
+### Módulo 1 — Configurações base ✅ *concluído e testado em produção pelo Ale (13/10/2026)*
 Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, verticais, funil e etapas, origens, motivos e soluções. Os **valores padrão são criados por tenant** (empresas novas e as que já existem) e há **telas simples de edição** em Configurações.
 
 **O que foi entregue** (9 tabelas, API e telas; detalhes em `modelagem_banco.md`, seções 3.2 e 5):
@@ -28,16 +28,13 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - **O que o sistema protege:** grupos Status e Visitação (só renomear); tags `lead`, `cliente`, `visitada` e `contactada` (renomear e recolorir, sem inativar nem excluir); origem **Importação** e tipo **Tarefa** (idem; a Tarefa fica sempre com empresa opcional e sem contar como visita ou contato); o **funil padrão** (sempre exatamente um, garantido também por índice único no banco) e a **última fase** de um funil.
 - **Faixas de funcionários e de faturamento** ficaram fora do MVP (ver seção 3).
 
-**O que o Módulo 1 deixa para os próximos** (as verificações de uso entram junto da tabela que passa a usar o cadastro, cada uma com teste):
+**Regra de exclusão de todos os cadastros** (decidida em 13/10/2026; registrada em `funcionalidades.md`, seção 11): **só se exclui o que nunca foi usado; o que já foi usado só se inativa**, para preservar o histórico. Vale para tags, grupos de tags, tipos de atividade, origens, motivos, soluções, verticais, funis e fases. A API do Módulo 1 ainda **não confere o uso**, porque ainda não há onde usar; cada verificação entra, **com teste**, junto da tabela que passa a usar o cadastro:
 
-| Módulo | Verificação pendente |
-|---|---|
-| 2 (Empresas) | Tag em uso por alguma empresa, **agora ou no histórico de Status**, só se inativa (regra acima). O mesmo para o grupo de tags |
-| 5 (Atividades) | Tipo de atividade com atividades registradas |
-| 6 (Oportunidades) | Fase com oportunidades **ativas** exige mover antes; só com fechadas, pode excluir. O mesmo para o funil (regra acima). Motivo, origem e solução usados por oportunidades |
-| 2 (Empresas) | Vertical em uso por alguma empresa |
-
-*A sugestão para motivo, origem, solução, vertical e tipo de atividade em uso é a mesma das tags (só inativar, para não perder histórico); o Ale ainda não decidiu.*
+| Módulo | Passa a usar | Verificação pendente |
+|---|---|---|
+| 2 (Empresas) | tags e grupos de tags (`empresa_tags` e o histórico de Status), verticais | Excluir só se nunca usado, **nem no histórico de Status**; usado, só inativar |
+| 5 (Atividades) | tipos de atividade | Idem |
+| 6 (Oportunidades) | funis, fases, motivos, origens, soluções | Idem. **Fases passam a poder ser inativadas** (a coluna `ativo` já existe; a API e a tela do Módulo 1 não oferecem, porque a fase só era excluível). A regra "fase com oportunidades **ativas** exige mover antes" continua valendo para tirar a fase de uso |
 
 
 ### Módulo 2 — Empresas
@@ -69,7 +66,7 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
   - **CNAE principal dentro de uma lista** (com a opção de aceitar também nos CNAEs secundários);
   - **ação para quem não passa:** *pular e listar no relatório* (padrão) ou *importar com a tag "Fora do perfil"*.
 - Na importação se escolhe **um perfil ou "Sem regras"**. As regras são aplicadas **depois da consulta à Receita**. O **Relatório** oferece **"importar mesmo assim"** para os fora do perfil.
-- A **lista de CNAEs do Ale** (`cnaes_interesse.md`: 133 códigos, dos quais **15 não existem** na tabela `cnaes` e aguardam a decisão dele) **vira o primeiro perfil dele**, não um padrão do sistema.
+- A **lista de CNAEs do Ale** (`cnaes_interesse.md`: **126 códigos**, todos existentes na tabela `cnaes`) **vira o primeiro perfil dele**, não um padrão do sistema.
 - **Lista de CNAEs do perfil:** aceita códigos **colados** com **6 ou 7 dígitos** (completa o zero à esquerda) e **com ou sem pontuação** (`0710-3/01`, `0710301`, `710301`), e **mostra os inválidos antes de salvar**.
 - **Lote nomeado, filtrável e desfazível.** **Status** e as demais escolhas ficam no passo **Carteira** (*Cliente* para a carteira, *Lead* para leads; origem **"Importação"**). Os alertas de "sem contato/visita" valem, por padrão, **só para Cliente e Prospect**.
 - **Deduplicação por CNPJ dentro do tenant.**
@@ -80,7 +77,7 @@ Formulário **Registrar atividade** (protótipo), situação, resultado, importa
 
 ### Módulo 6 — Oportunidades
 **Kanban por funil**, arrastar entre fases, **diálogo de fechamento** (Conquistado/Perdido/Cancelado/Suspenso, motivo, *retomar em*, empresa vira Cliente), **valores digitados** (único, mensal, total), probabilidade sugerida pela etapa, histórico de fases e lista simples.
-- **Regra de exclusão de fase (decidida em 12/10/2026):** fase com oportunidades **ativas** só pode ser excluída depois de **mover** essas oportunidades; com **só oportunidades fechadas**, pode ser excluída (exclusão lógica), mantendo o histórico de fases e a "fase em que parou". O mesmo vale para excluir um **funil**. A API de funis (Módulo 1) ainda não confere isso, porque ainda não há oportunidades: a verificação entra junto com a tabela `oportunidades`, com teste.
+- **Regra de fase e funil (12/10 e 13/10/2026):** fase com oportunidades **ativas** só sai de uso depois de **mover** essas oportunidades. Com a regra geral de 13/10/2026 (só se exclui o que nunca foi usado), uma fase que **já teve** oportunidades, mesmo só fechadas, **só se inativa**: a decisão de 12/10 de poder excluí-la quando só há fechadas fica **substituída**, e o histórico de fases e a "fase em que parou" seguem intactos. O mesmo vale para o **funil**. A API de funis (Módulo 1) ainda não confere isso, porque ainda não há oportunidades: a verificação entra junto com a tabela `oportunidades`, com teste.
 
 ### Módulo 7 — Dashboard
 Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase, previsão do mês, conquistadas × perdidas, carteira por status e sem contato há 60 dias. **Só a visão "Minha".**
