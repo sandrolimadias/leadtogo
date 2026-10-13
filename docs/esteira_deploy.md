@@ -78,7 +78,7 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 ### 3.2 Configuração no GitHub
 - Repositório **privado**.
 - **Secret scanning** e **push protection** ligados, para bloquear o push de senhas e tokens por engano.
-- **Dependabot** para npm, GitHub Actions, Docker e Docker Compose (semanal, agrupado; sem major de PostGIS e Garage).
+- **Dependabot** para npm, GitHub Actions, Docker e Docker Compose (semanal): **minor e patch juntos num PR por ecossistema; cada major num PR separado**, que se decide à mão (o TypeScript 7, por exemplo, quebra o typescript-eslint e o openapi-typescript). O Better Auth e os pacotes `@better-auth/*` têm grupo próprio, porque andam na mesma versão. Sem major de PostGIS e Garage.
 - Proteção da `main`: **não usar** "exigir PR" (por causa do push direto); bloquear apenas *force push* e exclusão da branch.
 
 ---

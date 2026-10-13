@@ -1,5 +1,8 @@
 # Atualização semanal de dependências (ver docs/esteira_deploy.md, seção 3.2).
-# Um PR agrupado por ecossistema, para não gerar dezenas de PRs avulsos.
+# Minor e patch de cada ecossistema vêm juntos num PR só; cada major vem num PR separado, porque major
+# pode quebrar o build (ex.: TypeScript 7 não funciona com o typescript-eslint nem com o openapi-typescript)
+# e precisa ser decidido à mão. Dependência fora de um grupo vira um PR próprio, e é isso que acontece com
+# o major (o grupo só aceita `minor` e `patch`).
 # Os Dockerfiles e os compose (docker/) usam as imagens oficiais (node:24-alpine, caddy:2-alpine) com a
 # versão escrita no próprio FROM/image, para o Dependabot enxergar e propor as atualizações de segurança.
 # Major de PostGIS e Garage fica fora: exige migração de dados, feita à mão.
@@ -13,8 +16,13 @@ updates:
     commit-message:
       prefix: 'chore(deps)'
     groups:
-      npm:
+      # O Better Auth e os pacotes dele andam juntos (versões fixas e iguais): atualizam no mesmo PR
+      better-auth:
+        patterns: ['better-auth', '@better-auth/*']
+        update-types: ['minor', 'patch']
+      npm-minor-patch:
         patterns: ['*']
+        update-types: ['minor', 'patch']
 
   - package-ecosystem: github-actions
     directory: /
@@ -24,8 +32,9 @@ updates:
     commit-message:
       prefix: 'ci(deps)'
     groups:
-      github-actions:
+      github-actions-minor-patch:
         patterns: ['*']
+        update-types: ['minor', 'patch']
 
   - package-ecosystem: docker
     directory: /docker
@@ -35,8 +44,9 @@ updates:
     commit-message:
       prefix: 'chore(deps)'
     groups:
-      docker:
+      docker-minor-patch:
         patterns: ['*']
+        update-types: ['minor', 'patch']
     ignore:
       - dependency-name: imresamu/postgis
         update-types: ['version-update:semver-major']
@@ -51,8 +61,9 @@ updates:
     commit-message:
       prefix: 'chore(deps)'
     groups:
-      docker-compose:
+      docker-compose-minor-patch:
         patterns: ['*']
+        update-types: ['minor', 'patch']
     ignore:
       - dependency-name: imresamu/postgis
         update-types: ['version-update:semver-major']
