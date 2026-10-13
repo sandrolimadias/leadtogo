@@ -112,7 +112,7 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 
 - **Regra das tags (decidida em 12/10/2026):** tag em uso por alguma empresa, **atual ou no histórico de Status** (`empresa_tags_historico`), **não pode ser excluída, só inativada**, para preservar o histórico de conversão (Lead → Cliente). O mesmo vale para excluir um **grupo** de tags com tags em uso. A conferência de uso já está na API de tags (commit 6 do Módulo 2), com teste.
 
-### Módulo 3 — Contatos 🚧 *em desenvolvimento (plano aprovado em 13/10/2026; entrega commit a commit, cada um com API + tela e validação do Ale antes do seguinte)*
+### Módulo 3 — Contatos 🧪 *em teste pelo Ale (os 8 commits estão no ar desde 13/10/2026; o ✅ só vem depois do "testado e aprovado"; roteiro em `docs/roteiro_teste_modulo3.md`)*
 Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na decisão, aniversário, consentimento LGPD e **"converter sócio em contato"**. Lista e ficha.
 
 **Ordem de entrega** (cada commit vai para produção, e o Ale testa na tela e responde "aprovado" antes do seguinte):
@@ -128,11 +128,11 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 **Andamento do Módulo 3 (atualizado em 13/10/2026; o Ale aprovou seguir do commit 2 ao 8 sem validar um por um, só parando em erro):**
 - ✅ **No ar (esteira verde até o verify):** 1 `0cc6359` migração 0018 e Papéis na decisão · 2 `35ddb9a` Novo e Editar contato · 3 `cc60754` lista de contatos · 4 `89051fa` ficha do contato.
 - ✅ **Commits `test:` de estabilidade, no ar:** `322c009` prazo maior nos 2 testes de convite · `cb83473` Valkey de teste zerado a cada execução e prazo padrão de 20 s por teste na API (a suíte da API passou de ~300 s para ~560 s sem causa achada: máquina/WSL mais lenta, sem código novo lento) · `6ae699c` prazo padrão de 15 s no `aguardarMensagem` (não há limpeza concorrente do Mailpit: arquivos rodam em sequência).
-- ✅ **Commit 5 (Vínculos + aba Contatos da empresa):** entregue em `feat: vínculos do contato e aba Contatos da empresa` (as decisões dele estão no bloco "Commit 5" abaixo). O teste que falhava nele (espera de e-mail de 5 s) e o do encerramento gracioso do worker foram tratados pelos commits `test:` de estabilidade (`6ae699c`, `5b40259`: prazo único de 15 s nas esperas e 20 s por teste).
-- ✅ **Commit 6 (Converter sócio em contato):** migração 0019 (`empresa_socios.contato_id`), botão na ficha da empresa e reconciliação dos sócios no "Atualizar pela Receita" (com teste).
-- ✅ **Commit 7 (Histórico do contato):** aba Histórico na ficha do contato (`GET /v1/carteira/contatos/{id}/historico`), com testes.
-- ⏳ **Faltam:** 8 docs finais, `docs/roteiro_teste_modulo3.md` e o relatório (roteiro, o que ficou de fora, decisões aprovadas × minhas, commits com hashes). Depois, parar e aguardar o teste do Ale.
-- Regra de parada: teste falhando (não reexecutar nem mudar prazo sem consultar), deploy/verify falho, migração destrutiva, variável nova no Coolify, decisão de negócio fora deste documento.
+- ✅ **Commit 5 `290954a` (Vínculos + aba Contatos da empresa):** entregue (as decisões dele estão no bloco "Commit 5" abaixo). O teste que falhava nele (espera de e-mail de 5 s) e o do encerramento gracioso do worker foram tratados pelos commits `test:` de estabilidade (`6ae699c`, `5b40259`: prazo único de 15 s nas esperas e 20 s por teste).
+- ✅ **Commit 6 `a9a0c5c` (Converter sócio em contato):** migração 0019 (`empresa_socios.contato_id`), botão na ficha da empresa e reconciliação dos sócios no "Atualizar pela Receita" (com teste).
+- ✅ **Commit 7 `60bdaa7` (Histórico do contato):** aba Histórico na ficha do contato (`GET /v1/carteira/contatos/{id}/historico`), com testes.
+- ✅ **Commit 8 (Docs e roteiro final):** `docs/roteiro_teste_modulo3.md`. **Os 8 commits estão no ar; falta o teste e a aprovação do Ale.**
+- Regra de parada (já cumprida; fica de registro): teste falhando (não reexecutar nem mudar prazo sem consultar), deploy/verify falho, migração destrutiva, variável nova no Coolify, decisão de negócio fora deste documento.
 
 **Decisões aprovadas pelo Ale (13/10/2026), ao aprovar o plano com as propostas:**
 - **Fora até os Módulos 5 e 6:** "Última interação", abas Atividades e Oportunidades do contato e o botão "Nova atividade" (a coluna "Última interação" da lista também).
@@ -161,7 +161,7 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
   - **Filtro de Empresa:** lista as **100 primeiras empresas da carteira, por nome**; uma empresa fora delas continua funcionando quando chega pela URL (o nome é buscado). Na ficha da empresa (commit 5) a aba Contatos mostra os contatos dela sem esse limite.
   - **Celular:** cartões com Ligar, WhatsApp e E-mail; filtros atrás do botão "Filtros · N". "Não quer contato" só **avisa**: Ligar e WhatsApp continuam ativos (decisão aprovada).
 - *Commit 4 (Ficha do contato):*
-  - **Cabeçalho:** nome, papel na decisão, selo "Não quer contato", linha "cargo · empresa" do vínculo ativo principal ("Sem empresa vinculada" ou "Sem vínculo ativo" quando for o caso) e as ações Ligar, WhatsApp, E-mail (usam o telefone e o e-mail principais), Editar e "Mais ações" (Excluir contato só para gestor e administrador, com confirmação). Sem "Nova atividade" e sem as abas Atividades e Oportunidades até os Módulos 5 e 6; sem abas por enquanto (o Histórico entra no commit 7).
+  - **Cabeçalho:** nome, papel na decisão, selo "Não quer contato", linha "cargo · empresa" do vínculo ativo principal ("Sem empresa vinculada" ou "Sem vínculo ativo" quando for o caso) e as ações Ligar, WhatsApp, E-mail (usam o telefone e o e-mail principais), Editar e "Mais ações" (Excluir contato só para gestor e administrador, com confirmação). Sem "Nova atividade" e sem as abas Atividades e Oportunidades até os Módulos 5 e 6; as abas Resumo e Histórico (o Histórico veio no commit 7).
   - **Empresas vinculadas:** só leitura neste commit (nome com link para a ficha da empresa, cargo, "Principal", Ativo ou Inativo). **Vincular, trocar o principal e inativar chegam no commit 5.**
   - **Consentimento:** a chave "Pediu para não receber contato" **grava na hora** (sem passar pela edição), para quem pode editar o contato. Base legal exibida: "Legítimo interesse" (padrão do sistema; ver `docs/lgpd.md`, seção 3.1). Origem e data aparecem depois da primeira mudança.
   - **Depois de criar ou editar** o contato, a tela vai para a ficha (e "Abrir contato" do aviso de duplicado também).
