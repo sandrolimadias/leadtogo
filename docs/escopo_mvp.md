@@ -112,8 +112,29 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 
 - **Regra das tags (decidida em 12/10/2026):** tag em uso por alguma empresa, **atual ou no histórico de Status** (`empresa_tags_historico`), **não pode ser excluída, só inativada**, para preservar o histórico de conversão (Lead → Cliente). O mesmo vale para excluir um **grupo** de tags com tags em uso. A conferência de uso já está na API de tags (commit 6 do Módulo 2), com teste.
 
-### Módulo 3 — Contatos
+### Módulo 3 — Contatos 🚧 *em desenvolvimento (plano aprovado em 13/10/2026; entrega commit a commit, cada um com API + tela e validação do Ale antes do seguinte)*
 Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na decisão, aniversário, consentimento LGPD e **"converter sócio em contato"**. Lista e ficha.
+
+**Ordem de entrega** (cada commit vai para produção, e o Ale testa na tela e responde "aprovado" antes do seguinte):
+1. Migração 0018 (tabelas, RLS, isolamento) + Configurações → **Papéis na decisão** ✅ *no ar*.
+2. Contato: schemas, API de CRUD (telefones, e-mails, consentimento, aviso de duplicado) + telas **Novo e Editar contato**.
+3. **Lista de contatos** (`/contatos`): API com busca e filtros + tela (cartões no celular).
+4. **Ficha do contato**: cabeçalho, Empresas vinculadas, Dados da pessoa, Consentimento.
+5. **Vínculos**: vincular a outra empresa, cargo, principal, inativar + aba **Contatos** na ficha da empresa.
+6. **Converter sócio em contato**, com o vínculo preservado no "Atualizar pela Receita".
+7. **Histórico** legível do contato.
+8. Docs e roteiro final.
+
+**Decisões aprovadas pelo Ale (13/10/2026), ao aprovar o plano com as propostas:**
+- **Fora até os Módulos 5 e 6:** "Última interação", abas Atividades e Oportunidades do contato e o botão "Nova atividade" (a coluna "Última interação" da lista também).
+- **Papéis na decisão:** cinco padrões por empresa (Decisor, Influenciador, Usuário, Financeiro, Técnico), editáveis só pelo administrador, com a regra "só se exclui o que nunca foi usado".
+- **Quem vê o contato:** o vendedor vê contatos ligados a empresas da carteira dele (ou de todas, com "Vendedores podem ver todas as empresas"); o contato sem nenhuma empresa vinculada ativa só é visível a gestor e administrador; o vendedor edita o contato que tem vínculo com empresa dele.
+- **Consentimento:** "Pediu para não receber contato" desliga `aceita_whatsapp` e `aceita_email`, grava data e origem "manual" e mostra o selo "Não quer contato"; **não bloqueia** Ligar e WhatsApp (o bloqueio de envio fica para as fases de e-mail e WhatsApp).
+- **Duplicados** (e-mail ou telefone igual): só avisa, com "Abrir contato"; **sem mesclar**.
+- **Converter sócio:** cria o contato com o nome do sócio e o vínculo na empresa com cargo = qualificação, sem telefone nem e-mail; o sócio fica marcado como "Contato" e não converte duas vezes.
+- **Principal:** um contato principal por empresa; marcar outro tira o selo do anterior.
+- **Excluir contato:** exclusão lógica só de gestor e administrador, sem lixeira; o caminho comum é inativar o vínculo.
+- **Fora do Módulo 3:** campos personalizados do contato, mesclar duplicados, importar planilha de contatos (Módulo 4), bloqueio efetivo de envio por consentimento, identificar contato pelo WhatsApp, alerta de aniversário e foto do contato.
 
 ### Módulo 4 — Importação de planilha (Excel/CSV)
 *Decidido pelo Ale em 12/10/2026; **substitui** a descrição anterior. Vem depois dos Módulos 1 a 3. Detalhes de regra em `funcionalidades.md` (seção 3, "Importação por planilha").*
