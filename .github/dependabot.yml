@@ -23,6 +23,10 @@ updates:
       npm-minor-patch:
         patterns: ['*']
         update-types: ['minor', 'patch']
+    ignore:
+      # O @better-auth/core exige better-call exatamente na 1.4.0 (peer fixo): qualquer outra versão quebra o
+      # peer. Tire daqui quando o better-auth liberar uma versão que aceite a nova.
+      - dependency-name: better-call
 
   - package-ecosystem: github-actions
     directory: /
