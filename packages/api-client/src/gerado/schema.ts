@@ -1252,6 +1252,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/importacao/perfis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar perfis de importação
+         * @description Qualquer membro da empresa ativa. Por nome; sem `incluirInativos=true`, esconde os inativados. Perfis excluídos nunca aparecem.
+         */
+        get: operations["PerfisDeImportacaoController_listar"];
+        put?: never;
+        /**
+         * Criar perfil de importação
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os perfis (409 `nome_duplicado`). CNAE que não existe na tabela: 400 `cnaes_invalidos`.
+         */
+        post: operations["PerfisDeImportacaoController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/importacao/perfis/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Excluir perfil de importação
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre. Só se exclui o que nunca foi usado: perfil de algum lote dá 409 `perfil_em_uso`: só inativar.
+         */
+        delete: operations["PerfisDeImportacaoController_excluir"];
+        options?: never;
+        head?: never;
+        /**
+         * Alterar perfil de importação
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. As importações já feitas guardam a cópia das regras.
+         */
+        patch: operations["PerfisDeImportacaoController_alterar"];
+        trace?: never;
+    };
+    "/v1/importacao/perfis/cnaes/conferir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Conferir uma lista de CNAEs colada
+         * @description Qualquer membro da empresa ativa. Lê códigos de 6 ou 7 dígitos, com ou sem pontuação, separados por espaço, vírgula, ponto e vírgula ou linha. Devolve os que existem na tabela de CNAEs (com a descrição), os inválidos (com o motivo) e quantas repetições foram ignoradas. Não grava nada.
+         */
+        post: operations["PerfisDeImportacaoController_conferirCnaes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -1497,6 +1565,19 @@ export interface components {
             nome?: string;
             ativo?: boolean;
         };
+        AlterarPerfilDeImportacaoEntrada: {
+            nome?: string;
+            exigeSituacaoAtiva?: boolean;
+            /** @enum {string} */
+            estabelecimento?: "ambas" | "matriz" | "filial";
+            excluirMei?: boolean;
+            /** @description Códigos de CNAE de 7 dígitos aceitos (vazio: qualquer CNAE) */
+            cnaes?: number[];
+            aceitarCnaeSecundario?: boolean;
+            /** @enum {string} */
+            acaoForaDoPerfil?: "pular" | "importar_com_tag";
+            ativo?: boolean;
+        };
         AlterarSolucaoEntrada: {
             nome?: string;
             cor?: components["schemas"]["CorDeTag"];
@@ -1547,9 +1628,23 @@ export interface components {
             /** Format: uuid */
             tagId: string;
         };
+        CnaesConferidos: {
+            validos: {
+                codigo: number;
+                descricao: string;
+            }[];
+            invalidos: {
+                texto: string;
+                motivo: string;
+            }[];
+            repetidos: number;
+        };
         CnaesDaEmpresaEntrada: {
             principal: number | null;
             secundarios: number[];
+        };
+        ConferirCnaesEntrada: {
+            texto: string;
         };
         ConfiguracaoDaCarteira: {
             bloquearEmpresaNaoAtiva: boolean;
@@ -1801,6 +1896,30 @@ export interface components {
         };
         CriarPapelNaDecisaoEntrada: {
             nome: string;
+        };
+        CriarPerfilDeImportacaoEntrada: {
+            nome: string;
+            /** @default true */
+            exigeSituacaoAtiva: boolean;
+            /**
+             * @default ambas
+             * @enum {string}
+             */
+            estabelecimento: "ambas" | "matriz" | "filial";
+            /** @default false */
+            excluirMei: boolean;
+            /**
+             * @description Códigos de CNAE de 7 dígitos aceitos (vazio: qualquer CNAE)
+             * @default []
+             */
+            cnaes: number[];
+            /** @default false */
+            aceitarCnaeSecundario: boolean;
+            /**
+             * @default pular
+             * @enum {string}
+             */
+            acaoForaDoPerfil: "pular" | "importar_com_tag";
         };
         CriarSolucaoEntrada: {
             nome: string;
@@ -2258,6 +2377,21 @@ export interface components {
             nome: string;
             ativo: boolean;
             ordem: number;
+        };
+        PerfilDeImportacao: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            exigeSituacaoAtiva: boolean;
+            /** @enum {string} */
+            estabelecimento: "ambas" | "matriz" | "filial";
+            excluirMei: boolean;
+            /** @description Códigos de CNAE de 7 dígitos aceitos (vazio: qualquer CNAE) */
+            cnaes: number[];
+            aceitarCnaeSecundario: boolean;
+            /** @enum {string} */
+            acaoForaDoPerfil: "pular" | "importar_com_tag";
+            ativo: boolean;
         };
         Preferencias: {
             /** @enum {string} */
@@ -7760,6 +7894,320 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PerfisDeImportacaoController_listar: {
+        parameters: {
+            query?: {
+                incluirInativos?: "true" | "false";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilDeImportacao"][];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PerfisDeImportacaoController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarPerfilDeImportacaoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PerfisDeImportacaoController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PerfisDeImportacaoController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarPerfilDeImportacaoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PerfisDeImportacaoController_conferirCnaes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConferirCnaesEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CnaesConferidos"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

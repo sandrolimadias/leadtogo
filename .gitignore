@@ -44,3 +44,6 @@ apps/web/test-results/
 apps/web/playwright-report/
 apps/web/dist-pwa/
 apps/web/dist-lh/
+
+# Configuração pessoal do Claude Code
+.claude/settings.local.json

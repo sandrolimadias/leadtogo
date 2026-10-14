@@ -6620,6 +6620,382 @@
         "tags": ["Empresas do grupo"]
       }
     },
+    "/v1/importacao/perfis": {
+      "get": {
+        "description": "Qualquer membro da empresa ativa. Por nome; sem `incluirInativos=true`, esconde os inativados. Perfis excluídos nunca aparecem.",
+        "operationId": "PerfisDeImportacaoController_listar",
+        "parameters": [
+          {
+            "name": "incluirInativos",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PerfilDeImportacao"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar perfis de importação",
+        "tags": ["Importação: perfis de regras"]
+      },
+      "post": {
+        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os perfis (409 `nome_duplicado`). CNAE que não existe na tabela: 400 `cnaes_invalidos`.",
+        "operationId": "PerfisDeImportacaoController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarPerfilDeImportacaoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDeImportacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar perfil de importação",
+        "tags": ["Importação: perfis de regras"]
+      }
+    },
+    "/v1/importacao/perfis/{id}": {
+      "patch": {
+        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. As importações já feitas guardam a cópia das regras.",
+        "operationId": "PerfisDeImportacaoController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarPerfilDeImportacaoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDeImportacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar perfil de importação",
+        "tags": ["Importação: perfis de regras"]
+      },
+      "delete": {
+        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre. Só se exclui o que nunca foi usado: perfil de algum lote dá 409 `perfil_em_uso`: só inativar.",
+        "operationId": "PerfisDeImportacaoController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir perfil de importação",
+        "tags": ["Importação: perfis de regras"]
+      }
+    },
+    "/v1/importacao/perfis/cnaes/conferir": {
+      "post": {
+        "description": "Qualquer membro da empresa ativa. Lê códigos de 6 ou 7 dígitos, com ou sem pontuação, separados por espaço, vírgula, ponto e vírgula ou linha. Devolve os que existem na tabela de CNAEs (com a descrição), os inválidos (com o motivo) e quantas repetições foram ignoradas. Não grava nada.",
+        "operationId": "PerfisDeImportacaoController_conferirCnaes",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConferirCnaesEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CnaesConferidos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Conferir uma lista de CNAEs colada",
+        "tags": ["Importação: perfis de regras"]
+      }
+    },
     "/v1/me": {
       "get": {
         "description": "Usuário, empresas em que é membro (com o papel em cada uma), empresa ativa e se falta ativar o 2FA (`doisFatoresPendente`: a regra da empresa ativa) ou se ele é obrigatório (`doisFatoresObrigatorio`: não pode desativar). Não exige empresa ativa e fica aberto a quem ainda não ativou o 2FA.",
@@ -7558,6 +7934,47 @@
         },
         "additionalProperties": false
       },
+      "AlterarPerfilDeImportacaoEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "exigeSituacaoAtiva": {
+            "type": "boolean"
+          },
+          "estabelecimento": {
+            "type": "string",
+            "enum": ["ambas", "matriz", "filial"]
+          },
+          "excluirMei": {
+            "type": "boolean"
+          },
+          "cnaes": {
+            "maxItems": 1500,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1000000,
+              "maximum": 9999999
+            },
+            "description": "Códigos de CNAE de 7 dígitos aceitos (vazio: qualquer CNAE)"
+          },
+          "aceitarCnaeSecundario": {
+            "type": "boolean"
+          },
+          "acaoForaDoPerfil": {
+            "type": "string",
+            "enum": ["pular", "importar_com_tag"]
+          },
+          "ativo": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarSolucaoEntrada": {
         "type": "object",
         "properties": {
@@ -7762,6 +8179,52 @@
         "required": ["empresaIds", "tagId"],
         "additionalProperties": false
       },
+      "CnaesConferidos": {
+        "type": "object",
+        "properties": {
+          "validos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigo": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "descricao": {
+                  "type": "string"
+                }
+              },
+              "required": ["codigo", "descricao"],
+              "additionalProperties": false
+            }
+          },
+          "invalidos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "texto": {
+                  "type": "string"
+                },
+                "motivo": {
+                  "type": "string"
+                }
+              },
+              "required": ["texto", "motivo"],
+              "additionalProperties": false
+            }
+          },
+          "repetidos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["validos", "invalidos", "repetidos"],
+        "additionalProperties": false
+      },
       "CnaesDaEmpresaEntrada": {
         "type": "object",
         "properties": {
@@ -7782,6 +8245,17 @@
           }
         },
         "required": ["principal", "secundarios"],
+        "additionalProperties": false
+      },
+      "ConferirCnaesEntrada": {
+        "type": "object",
+        "properties": {
+          "texto": {
+            "type": "string",
+            "maxLength": 200000
+          }
+        },
+        "required": ["texto"],
         "additionalProperties": false
       },
       "ConfiguracaoDaCarteira": {
@@ -8681,6 +9155,51 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 80
+          }
+        },
+        "required": ["nome"],
+        "additionalProperties": false
+      },
+      "CriarPerfilDeImportacaoEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "exigeSituacaoAtiva": {
+            "default": true,
+            "type": "boolean"
+          },
+          "estabelecimento": {
+            "default": "ambas",
+            "type": "string",
+            "enum": ["ambas", "matriz", "filial"]
+          },
+          "excluirMei": {
+            "default": false,
+            "type": "boolean"
+          },
+          "cnaes": {
+            "default": [],
+            "maxItems": 1500,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1000000,
+              "maximum": 9999999
+            },
+            "description": "Códigos de CNAE de 7 dígitos aceitos (vazio: qualquer CNAE)"
+          },
+          "aceitarCnaeSecundario": {
+            "default": false,
+            "type": "boolean"
+          },
+          "acaoForaDoPerfil": {
+            "default": "pular",
+            "type": "string",
+            "enum": ["pular", "importar_com_tag"]
           }
         },
         "required": ["nome"],
@@ -10368,6 +10887,60 @@
           }
         },
         "required": ["id", "nome", "ativo", "ordem"],
+        "additionalProperties": false
+      },
+      "PerfilDeImportacao": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "exigeSituacaoAtiva": {
+            "type": "boolean"
+          },
+          "estabelecimento": {
+            "type": "string",
+            "enum": ["ambas", "matriz", "filial"]
+          },
+          "excluirMei": {
+            "type": "boolean"
+          },
+          "cnaes": {
+            "maxItems": 1500,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1000000,
+              "maximum": 9999999
+            },
+            "description": "Códigos de CNAE de 7 dígitos aceitos (vazio: qualquer CNAE)"
+          },
+          "aceitarCnaeSecundario": {
+            "type": "boolean"
+          },
+          "acaoForaDoPerfil": {
+            "type": "string",
+            "enum": ["pular", "importar_com_tag"]
+          },
+          "ativo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "exigeSituacaoAtiva",
+          "estabelecimento",
+          "excluirMei",
+          "cnaes",
+          "aceitarCnaeSecundario",
+          "acaoForaDoPerfil",
+          "ativo"
+        ],
         "additionalProperties": false
       },
       "Preferencias": {
