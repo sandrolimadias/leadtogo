@@ -340,3 +340,40 @@ fabricas['contato_emails'] = definirFabrica<string>({
     return id
   },
 })
+
+// Importação de planilha (Módulo 4)
+fabricas['importacao_perfis'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO importacao_perfis (id, tenant_id, nome) VALUES (${id}, ${tenantId}, ${`Perfil ${id}`})`
+    return id
+  },
+})
+
+async function importacaoPai(owner: Sql, tenantId: string): Promise<string> {
+  return comTenant(owner, tenantId, async (tx) => {
+    const id = novoId()
+    await tx`INSERT INTO importacoes (id, tenant_id, nome, nome_arquivo) VALUES (${id}, ${tenantId}, 'Lote de teste', 'carteira.xlsx')`
+    return id
+  })
+}
+
+fabricas['importacoes'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO importacoes (id, tenant_id, nome, nome_arquivo) VALUES (${id}, ${tenantId}, ${`Lote ${id}`}, 'carteira.xlsx')`
+    return id
+  },
+})
+
+fabricas['importacao_linhas'] = definirFabrica<string>({
+  colunaAlteravel: 'motivo',
+  preparar: importacaoPai,
+  criar: async (tx, tenantId, importacaoId) => {
+    const id = novoId()
+    await tx`INSERT INTO importacao_linhas (id, tenant_id, importacao_id, numero, dados) VALUES (${id}, ${tenantId}, ${importacaoId}, 1, '{"CNPJ":"00000000000191"}'::jsonb)`
+    return id
+  },
+})

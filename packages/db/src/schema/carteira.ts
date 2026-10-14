@@ -87,6 +87,8 @@ export const empresas = pgTable(
     /** Nulo = Brasil; preenchido só para estabelecimento no exterior (código de país da Receita) */
     paisCodigo: smallint().references(() => paises.codigo),
     observacoes: text(),
+    /** Lote de importação que criou a empresa (FK só no SQL da migração; ver importacao.ts) */
+    importacaoId: uuid(),
     origemCadastro: origemCadastro().notNull().default('manual'),
     /** Última sincronização com a Receita */
     receitaAtualizadoEm: timestamp({ withTimezone: true }),
@@ -110,6 +112,7 @@ export const empresas = pgTable(
     index('empresas_municipio_idx').on(t.tenantId, t.municipioCodigo),
     index('empresas_vertical_idx').on(t.tenantId, t.verticalId),
     index('empresas_raiz_idx').on(t.tenantId, t.cnpjRaiz),
+    index('empresas_importacao_idx').on(t.tenantId, t.importacaoId),
     index('empresas_ultima_visita_idx').on(t.tenantId, t.ultimaVisitaEm),
     index('empresas_ultimo_contato_idx').on(t.tenantId, t.ultimoContatoEm),
   ],

@@ -626,6 +626,12 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | `preferencias_notificacao` | membro_id, tipo_evento, canais text[] | Usuário escolhe o que recebe |
 | `filtros_salvos` | id, tenant_id, membro_id, tela, nome, filtros jsonb, compartilhado | Filtros salvos |
 | `importacoes` | id, tenant_id, tipo, arquivo_id, mapeamento jsonb, situacao, totais jsonb, erros jsonb | Importação de planilhas |
+
+> **Implementação (Módulo 4, migração 0020, só expansão):** a linha `importacoes` acima foi desdobrada em três tabelas, todas com RLS forçado e fábrica no teste de isolamento:
+> - `importacao_perfis`: regras por empresa (`exige_situacao_ativa`, `estabelecimento` ambas/matriz/filial, `excluir_mei`, `cnaes integer[]` e `aceitar_cnae_secundario`, `acao_fora_do_perfil` pular/importar_com_tag, `ativo`), nome único por empresa sem diferença de caixa, com as colunas padrão e soft delete.
+> - `importacoes`: o lote (tipo empresas/contatos, nome, `arquivo_id` → `arquivos`, `fonte_dados` planilha/receita/completar, `perfil_id` e `regras` jsonb com a **cópia das regras usadas**, `mapeamento` jsonb, `intervalo_ms` entre 500 e 60.000 com padrão 3.000, as escolhas do passo Carteira `vendedor_id`/`status_tag_id`/`origem_id`/`vertical_id`, `situacao`, `total_linhas`, `totais` jsonb e as datas de início, conclusão e desfazer). Não há coluna `erros`: os erros ficam por linha.
+> - `importacao_linhas`: uma por linha da planilha (`numero` único no lote, `dados` jsonb como veio, `documento`, `resultado`, `motivo`, `empresa_id`). É o que filtra o relatório e o que permite desfazer o lote.
+> - `empresas.importacao_id` (nula; índice `(tenant_id, importacao_id)`) guarda o lote que criou a empresa. A FK está só no SQL da migração, pelo mesmo motivo de `empresa_socios.contato_id` (ciclo de módulos no Drizzle).
 | `auditoria` | id bigint, tenant_id, entidade, entidade_id, acao, alteracoes jsonb (antes/depois), membro_id, origem (app/api/integracao/sistema), ip, em | Log de alterações (**particionado por mês**) |
 | `eventos_outbox` | id, tenant_id, tipo, entidade_id, payload jsonb, criado_em, processado_em, falhou_em, tratado_em, tratado_por, tratamento (+ controle do relay, ver abaixo) | Fila de eventos (webhooks n8n, notificações) |
 

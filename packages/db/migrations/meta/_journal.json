@@ -141,6 +141,13 @@
       "when": 1791914411590,
       "tag": "0019_socio_contato",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792007419907,
+      "tag": "0020_importacao",
+      "breakpoints": true
     }
   ]
 }
