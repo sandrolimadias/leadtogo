@@ -332,6 +332,53 @@ export const servicosReais: ServicosDeAcesso = {
     tiposAtividade: cadastroReal('tipos-atividade'),
   },
 
+  importacao: {
+    perfis: {
+      listar: () =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/importacao/perfis', {
+              params: { query: { incluirInativos: 'true' } },
+            }),
+          ),
+        ),
+      criar: (dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/importacao/perfis', {
+              // o cliente gerado trata o que tem padrão como obrigatório: os padrões vão explícitos
+              body: {
+                nome: dados.nome,
+                exigeSituacaoAtiva: dados.exigeSituacaoAtiva ?? true,
+                estabelecimento: dados.estabelecimento ?? 'ambas',
+                excluirMei: dados.excluirMei ?? false,
+                cnaes: dados.cnaes ?? [],
+                aceitarCnaeSecundario: dados.aceitarCnaeSecundario ?? false,
+                acaoForaDoPerfil: dados.acaoForaDoPerfil ?? 'pular',
+              },
+            }),
+          ),
+        ),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/importacao/perfis/{id}', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/importacao/perfis/{id}', { params: { path: { id } } })),
+        ),
+      conferirCnaes: (texto) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/importacao/perfis/cnaes/conferir', { body: { texto } })),
+        ),
+    },
+  },
+
   funis: {
     listar: () =>
       protegido(async () =>

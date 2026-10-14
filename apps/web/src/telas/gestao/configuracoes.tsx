@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   Compass,
   Factory,
+  FileSpreadsheet,
   Funnel,
   Scale,
   ShieldCheck,
@@ -23,6 +24,7 @@ const SECOES = [
   { para: '/configuracoes/verticais-e-solucoes', titulo: 'Verticais e soluções', icone: Factory },
   { para: '/configuracoes/papeis-na-decisao', titulo: 'Papéis na decisão', icone: Scale },
   { para: '/configuracoes/carteira', titulo: 'Carteira', icone: Building2 },
+  { para: '/configuracoes/importacao', titulo: 'Importação', icone: FileSpreadsheet },
   { para: '/configuracoes/seguranca', titulo: 'Segurança', icone: ShieldCheck },
 ] as const
 

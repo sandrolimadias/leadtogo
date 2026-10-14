@@ -109,6 +109,53 @@ describe('cadastros simples: método, caminho e corpo de cada rota', () => {
   })
 })
 
+describe('importação: perfis de regras', () => {
+  it('cada operação usa a rota certa', async () => {
+    const p = servicosReais.importacao.perfis
+    await p.listar()
+    await p.criar({ nome: 'P' })
+    await p.alterar(ID, { ativo: false })
+    await p.excluir(ID)
+    await p.conferirCnaes('0710-3/01')
+    expect(chamadas).toEqual([
+      {
+        metodo: 'GET',
+        caminho: '/v1/importacao/perfis',
+        consulta: '?incluirInativos=true',
+        corpo: undefined,
+      },
+      {
+        metodo: 'POST',
+        caminho: '/v1/importacao/perfis',
+        consulta: '',
+        // os padrões vão explícitos (o cliente gerado trata o que tem padrão como obrigatório)
+        corpo: {
+          nome: 'P',
+          exigeSituacaoAtiva: true,
+          estabelecimento: 'ambas',
+          excluirMei: false,
+          cnaes: [],
+          aceitarCnaeSecundario: false,
+          acaoForaDoPerfil: 'pular',
+        },
+      },
+      {
+        metodo: 'PATCH',
+        caminho: `/v1/importacao/perfis/${ID}`,
+        consulta: '',
+        corpo: { ativo: false },
+      },
+      { metodo: 'DELETE', caminho: `/v1/importacao/perfis/${ID}`, consulta: '', corpo: undefined },
+      {
+        metodo: 'POST',
+        caminho: '/v1/importacao/perfis/cnaes/conferir',
+        consulta: '',
+        corpo: { texto: '0710-3/01' },
+      },
+    ])
+  })
+})
+
 describe('tags: método, caminho e corpo', () => {
   it('cada operação usa a rota certa', async () => {
     const t = servicosReais.tags

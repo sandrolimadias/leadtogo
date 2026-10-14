@@ -179,6 +179,15 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       excluir: vi.fn(async () => ok(undefined)),
       aplicarTagEmMassa: vi.fn(async () => ok({ aplicadas: 0, semMudanca: 0, ignoradas: 0 })),
     },
+    importacao: {
+      perfis: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        conferirCnaes: vi.fn(async () => ok({ validos: [], invalidos: [], repetidos: 0 })),
+      },
+    },
     cadastros: {
       verticais: {
         listar: vi.fn(async () => ok([])),

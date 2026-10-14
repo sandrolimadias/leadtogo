@@ -33,6 +33,7 @@ import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
 import { Route as AutenticadoConfiguracoesIndexRouteImport } from './routes/_autenticado.configuracoes.index'
 import { Route as AutenticadoConfiguracoesCarteiraRouteImport } from './routes/_autenticado.configuracoes.carteira'
 import { Route as AutenticadoConfiguracoesFunisRouteImport } from './routes/_autenticado.configuracoes.funis'
+import { Route as AutenticadoConfiguracoesImportacaoRouteImport } from './routes/_autenticado.configuracoes.importacao'
 import { Route as AutenticadoConfiguracoesOrigensEMotivosRouteImport } from './routes/_autenticado.configuracoes.origens-e-motivos'
 import { Route as AutenticadoConfiguracoesPapeisNaDecisaoRouteImport } from './routes/_autenticado.configuracoes.papeis-na-decisao'
 import { Route as AutenticadoConfiguracoesSegurancaRouteImport } from './routes/_autenticado.configuracoes.seguranca'
@@ -173,6 +174,12 @@ const AutenticadoConfiguracoesFunisRoute =
     path: '/funis',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
+const AutenticadoConfiguracoesImportacaoRoute =
+  AutenticadoConfiguracoesImportacaoRouteImport.update({
+    id: '/importacao',
+    path: '/importacao',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
 const AutenticadoConfiguracoesOrigensEMotivosRoute =
   AutenticadoConfiguracoesOrigensEMotivosRouteImport.update({
     id: '/origens-e-motivos',
@@ -290,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
+  '/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
@@ -327,6 +335,7 @@ export interface FileRoutesByTo {
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
+  '/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
@@ -370,6 +379,7 @@ export interface FileRoutesById {
   '/_autenticado/': typeof AutenticadoIndexRoute
   '/_autenticado/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/_autenticado/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
+  '/_autenticado/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
   '/_autenticado/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/_autenticado/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/_autenticado/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
@@ -412,6 +422,7 @@ export interface FileRouteTypes {
     | '/dev/catalogo'
     | '/configuracoes/carteira'
     | '/configuracoes/funis'
+    | '/configuracoes/importacao'
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/papeis-na-decisao'
     | '/configuracoes/seguranca'
@@ -449,6 +460,7 @@ export interface FileRouteTypes {
     | '/dev/catalogo'
     | '/configuracoes/carteira'
     | '/configuracoes/funis'
+    | '/configuracoes/importacao'
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/papeis-na-decisao'
     | '/configuracoes/seguranca'
@@ -491,6 +503,7 @@ export interface FileRouteTypes {
     | '/_autenticado/'
     | '/_autenticado/configuracoes/carteira'
     | '/_autenticado/configuracoes/funis'
+    | '/_autenticado/configuracoes/importacao'
     | '/_autenticado/configuracoes/origens-e-motivos'
     | '/_autenticado/configuracoes/papeis-na-decisao'
     | '/_autenticado/configuracoes/seguranca'
@@ -686,6 +699,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoConfiguracoesFunisRouteImport
       parentRoute: typeof AutenticadoConfiguracoesRoute
     }
+    '/_autenticado/configuracoes/importacao': {
+      id: '/_autenticado/configuracoes/importacao'
+      path: '/importacao'
+      fullPath: '/configuracoes/importacao'
+      preLoaderRoute: typeof AutenticadoConfiguracoesImportacaoRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
     '/_autenticado/configuracoes/origens-e-motivos': {
       id: '/_autenticado/configuracoes/origens-e-motivos'
       path: '/origens-e-motivos'
@@ -831,6 +851,7 @@ const AcessoRouteWithChildren =
 interface AutenticadoConfiguracoesRouteChildren {
   AutenticadoConfiguracoesCarteiraRoute: typeof AutenticadoConfiguracoesCarteiraRoute
   AutenticadoConfiguracoesFunisRoute: typeof AutenticadoConfiguracoesFunisRoute
+  AutenticadoConfiguracoesImportacaoRoute: typeof AutenticadoConfiguracoesImportacaoRoute
   AutenticadoConfiguracoesOrigensEMotivosRoute: typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   AutenticadoConfiguracoesPapeisNaDecisaoRoute: typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   AutenticadoConfiguracoesSegurancaRoute: typeof AutenticadoConfiguracoesSegurancaRoute
@@ -846,6 +867,8 @@ const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildr
     AutenticadoConfiguracoesCarteiraRoute:
       AutenticadoConfiguracoesCarteiraRoute,
     AutenticadoConfiguracoesFunisRoute: AutenticadoConfiguracoesFunisRoute,
+    AutenticadoConfiguracoesImportacaoRoute:
+      AutenticadoConfiguracoesImportacaoRoute,
     AutenticadoConfiguracoesOrigensEMotivosRoute:
       AutenticadoConfiguracoesOrigensEMotivosRoute,
     AutenticadoConfiguracoesPapeisNaDecisaoRoute:

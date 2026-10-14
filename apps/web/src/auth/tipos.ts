@@ -1,4 +1,5 @@
 import type {
+  CnaesConferidos,
   ConfiguracaoDaCarteira,
   Contato,
   ConsultaDaReceitaDaEmpresa,
@@ -19,6 +20,7 @@ import type {
   OpcoesDaLista,
   OpcoesDaListaDeContatos,
   PapelDecisao,
+  PerfilDeImportacao,
   Preferencias,
   PreferenciasPatch,
   ResultadoDaTagEmMassa,
@@ -64,6 +66,8 @@ import type {
   CriarEmpresaCarteiraEntrada,
   ConfiguracaoDaCarteiraPatch,
   CriarVerticalEntrada,
+  CriarPerfilDeImportacaoEntrada,
+  AlterarPerfilDeImportacaoEntrada,
   PoliticaDoisFatores,
   PrimeiroAcessoEntrada,
   PrimeiroAcessoResultado,
@@ -199,6 +203,26 @@ export interface ServicosDeCadastro<Item, Criar, Alterar> {
   reordenar: (ids: string[]) => Promise<Resultado<Item[]>>
 }
 
+/** Importação de planilha (Módulo 4). Os perfis de regras são da empresa; só o administrador escreve. */
+export interface ServicosDeImportacao {
+  perfis: {
+    /** Todos, inclusive os inativos (a tela os mostra com a palavra "Inativo") */
+    listar: () => Promise<Resultado<PerfilDeImportacao[]>>
+    /** Só o nome é obrigatório: o que falta recebe o padrão (situação ativa, matriz e filiais, qualquer CNAE...) */
+    criar: (
+      dados: Pick<CriarPerfilDeImportacaoEntrada, 'nome'> & Partial<CriarPerfilDeImportacaoEntrada>,
+    ) => Promise<Resultado<PerfilDeImportacao>>
+    alterar: (
+      id: string,
+      dados: AlterarPerfilDeImportacaoEntrada,
+    ) => Promise<Resultado<PerfilDeImportacao>>
+    /** 409 `perfil_em_uso`: perfil de algum lote só se inativa */
+    excluir: (id: string) => Promise<Resultado>
+    /** Confere a lista colada na tabela de CNAEs, sem gravar nada */
+    conferirCnaes: (texto: string) => Promise<Resultado<CnaesConferidos>>
+  }
+}
+
 export interface ServicosDeCadastros {
   verticais: ServicosDeCadastro<Vertical, CriarVerticalEntrada, AlterarVerticalEntrada>
   solucoes: ServicosDeCadastro<Solucao, CriarSolucaoEntrada, AlterarSolucaoEntrada>
@@ -284,4 +308,7 @@ export interface ServicosDeAcesso {
 
   // Contatos (Módulo 3)
   contatos: ServicosDeContatos
+
+  // Importação de planilha (Módulo 4)
+  importacao: ServicosDeImportacao
 }
