@@ -1252,6 +1252,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/importacao/lotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enviar a planilha de uma importação
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). O arquivo (.xlsx ou CSV, até 10 MB e 10.000 linhas) vai nos bytes do corpo, com `Content-Type: application/octet-stream`; o nome do arquivo vai em `arquivo` na consulta. Lê os títulos e as linhas, guarda o original e cria o lote em rascunho. Erros de leitura: 400 `arquivo_vazio`, `sem_cabecalho`, `colunas_repetidas`, `arquivo_invalido`; 413 `limite_de_linhas` e `arquivo_grande_demais`; 415 `formato_nao_suportado`.
+         */
+        post: operations["LotesDeImportacaoController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/importacao/lotes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver um lote de importação
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Lote de outra empresa: 404 `importacao_nao_encontrada`.
+         */
+        get: operations["LotesDeImportacaoController_detalhar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/importacao/modelo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Baixar a planilha modelo
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um .xlsx só com os títulos das colunas que a importação de empresas reconhece, e uma aba com as instruções.
+         */
+        get: operations["LotesDeImportacaoController_modelo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/importacao/perfis": {
         parameters: {
             query?: never;
@@ -2292,6 +2352,22 @@ export interface components {
             total: number;
             pagina: number;
             porPagina: number;
+        };
+        LoteDeImportacao: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            /** @enum {string} */
+            tipo: "empresas" | "contatos";
+            nomeArquivo: string;
+            /** @enum {string} */
+            situacao: "rascunho" | "pronta" | "em_andamento" | "concluida" | "falhou" | "cancelada" | "desfeita";
+            totalLinhas: number;
+            colunas: string[];
+            amostra: {
+                [key: string]: string;
+            }[];
+            criadoEm: string;
         };
         MembroDaEquipe: {
             /** Format: uuid */
@@ -7894,6 +7970,182 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_criar: {
+        parameters: {
+            query: {
+                arquivo: string;
+                nome?: string;
+                tipo?: "empresas";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_detalhar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_modelo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

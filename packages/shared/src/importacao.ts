@@ -129,3 +129,66 @@ export const cnaesConferidosSchema = z
   })
   .meta({ id: 'CnaesConferidos' })
 export type CnaesConferidos = z.infer<typeof cnaesConferidosSchema>
+
+// ---- Lotes de importação (upload da planilha) ----
+
+/** O arquivo da planilha: até 10 MB e 10.000 linhas (o limite do mockup, 5.000, não vale: escopo_mvp.md). */
+export const LIMITE_BYTES_DA_IMPORTACAO = 10 * 1024 * 1024
+export const LIMITE_LINHAS_DA_IMPORTACAO = 10_000
+/** Quantas linhas do arquivo a resposta do upload mostra para conferir o mapeamento. */
+export const LINHAS_DE_AMOSTRA = 5
+
+/** Os campos da empresa que uma coluna da planilha pode preencher (também as colunas do modelo). */
+export const CAMPOS_DA_EMPRESA_NA_IMPORTACAO = [
+  { chave: 'documento', rotulo: 'CNPJ' },
+  { chave: 'razaoSocial', rotulo: 'Razão social' },
+  { chave: 'nomeFantasia', rotulo: 'Nome fantasia' },
+  { chave: 'telefone', rotulo: 'Telefone' },
+  { chave: 'website', rotulo: 'Site' },
+  { chave: 'cep', rotulo: 'CEP' },
+  { chave: 'logradouro', rotulo: 'Logradouro' },
+  { chave: 'numero', rotulo: 'Número' },
+  { chave: 'complemento', rotulo: 'Complemento' },
+  { chave: 'bairro', rotulo: 'Bairro' },
+  { chave: 'municipio', rotulo: 'Município' },
+  { chave: 'uf', rotulo: 'UF' },
+  { chave: 'observacoes', rotulo: 'Observações' },
+] as const
+
+export const situacaoDaImportacaoSchema = z.enum([
+  'rascunho',
+  'pronta',
+  'em_andamento',
+  'concluida',
+  'falhou',
+  'cancelada',
+  'desfeita',
+])
+export type SituacaoDaImportacao = z.infer<typeof situacaoDaImportacaoSchema>
+
+export const loteDeImportacaoSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    tipo: z.enum(['empresas', 'contatos']),
+    nomeArquivo: z.string(),
+    situacao: situacaoDaImportacaoSchema,
+    totalLinhas: z.number().int(),
+    /** Os títulos da primeira linha do arquivo, na ordem */
+    colunas: z.array(z.string()),
+    /** As primeiras linhas, por coluna, para conferir o mapeamento */
+    amostra: z.array(z.record(z.string(), z.string())),
+    criadoEm: z.string(),
+  })
+  .meta({ id: 'LoteDeImportacao' })
+export type LoteDeImportacao = z.infer<typeof loteDeImportacaoSchema>
+
+/** O arquivo vai no corpo (bytes); o resto, na consulta. */
+export const consultaDoEnvioSchema = z
+  .object({
+    arquivo: z.string().trim().min(1).max(255),
+    nome: z.string().trim().min(1).max(120).optional(),
+    tipo: z.enum(['empresas']).default('empresas'),
+  })
+  .strict()
+export type ConsultaDoEnvio = z.infer<typeof consultaDoEnvioSchema>

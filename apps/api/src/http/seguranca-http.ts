@@ -8,6 +8,10 @@ import { ErroApi } from './erro-api.js'
 /** Limite do corpo JSON (as importações de planilha usam upload, não JSON). */
 const LIMITE_JSON = '1mb'
 
+/** O upload da planilha: bytes no corpo (`application/octet-stream`), até o limite do arquivo (10 MB). */
+const ROTA_DO_UPLOAD = '/v1/importacao/lotes'
+const LIMITE_DO_UPLOAD = '10mb'
+
 /**
  * Rotas cujo corpo NÃO pode ser lido pelo parser do Nest: o Better Auth lê o corpo ele mesmo
  * (se o parser consumir o stream antes, a requisição trava ou chega vazia).
@@ -60,6 +64,7 @@ export function aplicarSegurancaHttp(app: INestApplication, config: Configuracao
   })
 
   const json = express.json({ limit: LIMITE_JSON })
+  const bytes = express.raw({ type: 'application/octet-stream', limit: LIMITE_DO_UPLOAD })
   app.use((req: Request, res: Response, proximo: NextFunction) => {
     if (
       ROTAS_COM_CORPO_PROPRIO.some(
@@ -67,6 +72,11 @@ export function aplicarSegurancaHttp(app: INestApplication, config: Configuracao
       )
     ) {
       return proximo()
+    }
+    if (req.method === 'POST' && req.path === ROTA_DO_UPLOAD) {
+      return bytes(req, res, (erro?: unknown) =>
+        erro ? proximo(traduzirErroDeParser(erro)) : proximo(),
+      )
     }
     return json(req, res, (erro?: unknown) =>
       erro ? proximo(traduzirErroDeParser(erro)) : proximo(),
