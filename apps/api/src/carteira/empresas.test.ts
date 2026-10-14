@@ -205,6 +205,30 @@ describe('POST /v1/carteira/empresas: cadastro por CNPJ', () => {
     expect(hist).toEqual({ acao: 'adicionada', por: adminId })
   })
 
+  it('a tag Lead é a do sistema pela chave, não pelo nome: renomeada, a empresa nova continua recebendo-a', async () => {
+    const { d } = await cenario()
+    const grupos = (
+      await request(app.getHttpServer())
+        .get('/v1/configuracoes/tag-grupos')
+        .set('Origin', ORIGEM_DO_FRONT)
+        .set('Cookie', d.cookie)
+    ).body as TagGrupo[]
+    const lead = grupos.flatMap((g) => g.tags).find((t) => t.chaveSistema === 'lead')
+    expect(lead?.nome).toBe('Lead')
+    const renomear = await request(app.getHttpServer())
+      .patch(`/v1/configuracoes/tags/${lead?.id}`)
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', d.cookie)
+      .send({ nome: 'Semente' })
+    expect(renomear.status).toBe(200)
+
+    const cnpj = cnpjNovo()
+    receitaTem(cnpj)
+    const r = await chamar('post', d.cookie, '', porCnpj(cnpj))
+    expect(r.status).toBe(201)
+    expect(empresaDe(r).tags.map((t) => t.nome)).toEqual(['Semente'])
+  })
+
   it('aceita CNPJ com máscara; recusa dígito errado sem chamar a Receita', async () => {
     const { d } = await cenario()
     const cnpj = cnpjNovo()

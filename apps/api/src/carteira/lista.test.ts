@@ -242,6 +242,25 @@ describe('chips e contagens', () => {
     return { ...c, A, B, C, D, E }
   }
 
+  it('Cliente e Prospect valem pela chave do sistema: renomear "Cliente" para "Associado" não muda os chips', async () => {
+    const { d } = await carteira()
+    const status = await statusDe(d.cookie)
+    const renomear = await request(app.getHttpServer())
+      .patch(`/v1/configuracoes/tags/${status.cliente}`)
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', d.cookie)
+      .send({ nome: 'Associado' })
+    expect(renomear.status).toBe(200)
+    const contagens = (await chamar('get', d.cookie, '/contagens')).body as ContagensDaLista
+    expect(contagens).toEqual({
+      todas: 5,
+      minha: 5,
+      semVisita90: 1,
+      nuncaVisitadas: 1,
+      semProximaAtividade: 2,
+    })
+  })
+
   it('contagens: os três últimos chips só consideram Cliente e Prospect, salvo "incluir leads"', async () => {
     const { d } = await carteira()
     const contar = async (extra = '') =>

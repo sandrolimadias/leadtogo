@@ -11,16 +11,22 @@ import { useDispositivo } from './casca/dispositivo'
 import { Toaster } from './components/ui/toaster'
 import { TooltipProvider } from './components/ui/tooltip'
 
-/** `servicos` e `historico` só mudam nos testes (serviços de mentira e histórico em memória). */
+/** `servicos`, `historico` e `aoCriarRoteador` só mudam nos testes (serviços de mentira, histórico em memória e acompanhamento do roteador). */
 export function App({
   servicos = servicosReais,
   historico,
+  aoCriarRoteador,
 }: {
   servicos?: ServicosDeAcesso
   historico?: Parameters<typeof criarRoteador>[2]
+  aoCriarRoteador?: (roteador: ReturnType<typeof criarRoteador>) => void
 }) {
   const [queryClient] = useState(criarQueryClient)
-  const [roteador] = useState(() => criarRoteador(queryClient, servicos, historico))
+  const [roteador] = useState(() => {
+    const novo = criarRoteador(queryClient, servicos, historico)
+    aoCriarRoteador?.(novo)
+    return novo
+  })
   return (
     <QueryClientProvider client={queryClient}>
       <ServicosProvider servicos={servicos}>

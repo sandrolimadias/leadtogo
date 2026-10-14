@@ -5,6 +5,7 @@ import { vi } from 'vitest'
 
 import { App } from '@/App'
 import type { ErroDeAcesso, Resultado, ServicosDeAcesso } from '@/auth/tipos'
+import { registrarRoteador } from './roteadores'
 
 export const ok = <T,>(dados: T): Resultado<T> => ({ ok: true, dados })
 export const falha = (codigo: string, mensagem: string, status = 400): Resultado<never> => ({
@@ -233,6 +234,8 @@ export function renderizar(
   rota: string,
 ): ReturnType<typeof render> & { historico: RouterHistory } {
   const historico = createMemoryHistory({ initialEntries: [rota] })
-  const r = render(<App servicos={servicos} historico={historico} />)
+  const r = render(
+    <App servicos={servicos} historico={historico} aoCriarRoteador={registrarRoteador} />,
+  )
   return { ...r, historico }
 }

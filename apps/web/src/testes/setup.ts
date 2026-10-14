@@ -3,7 +3,13 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { afterEach } from 'vitest'
 
-afterEach(() => cleanup())
+import { aguardarRoteadores } from './roteadores'
+
+// Antes de desmontar, cada teste espera a navegação pendente do roteador terminar
+afterEach(async () => {
+  await aguardarRoteadores()
+  cleanup()
+})
 
 // O app inteiro (roteador, guardas, telas) monta a cada teste; com a máquina ocupada (CI de 2 vCPUs,
 // vários testes em paralelo) o 1 s padrão de `findBy*`/`waitFor` estoura sem haver erro nenhum.
