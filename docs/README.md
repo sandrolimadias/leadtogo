@@ -7,6 +7,7 @@
 | [modelagem_banco.md](modelagem_banco.md) | Tabelas, colunas, índices, RLS e multiempresa |
 | [design_system.md](design_system.md) | Resumo das decisões visuais |
 | [design-system/](design-system/LEIA-ME.md) | Tokens, componentes de referência, catálogo, fontes e ícones |
+| [seguranca_dependencias.md](seguranca_dependencias.md) | Vulnerabilidades de dependências conhecidas e não corrigidas, com a avaliação do risco e quando rever |
 | [esteira_deploy.md](esteira_deploy.md) | Git, CI/CD, Coolify, migrações e rollback |
 | [runbook_e13.md](runbook_e13.md) | Roteiro do primeiro deploy no Coolify (DNS, segredos, GHCR, banco, recursos, deploy automático, checklist e rollback) |
 | [escopo_mvp.md](escopo_mvp.md) | Recorte do MVP: módulos em ordem, trilha técnica e o que fica de fora |
