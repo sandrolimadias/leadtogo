@@ -6721,6 +6721,88 @@
         },
         "summary": "Enviar a planilha de uma importação",
         "tags": ["Importação: lotes"]
+      },
+      "get": {
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Do lote mais novo para o mais antigo, com a contagem por resultado de cada um.",
+        "operationId": "LotesDeImportacaoController_listar",
+        "parameters": [
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeLotesDeImportacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar as importações",
+        "tags": ["Importação: lotes"]
       }
     },
     "/v1/importacao/lotes/{id}": {
@@ -7051,6 +7133,96 @@
         "tags": ["Importação: lotes"]
       }
     },
+    "/v1/importacao/lotes/{id}/importar-fora-do-perfil": {
+      "post": {
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote concluído (409 `importacao_nao_concluida`). As linhas fora do perfil (todas, ou as de `linhaIds`) voltam a pendentes e o worker as cadastra com a tag \"Fora do perfil\". O bloqueio de empresa não ativa continua valendo. Sem linhas assim: 409 `sem_linhas_fora_do_perfil`.",
+        "operationId": "LotesDeImportacaoController_importarForaDoPerfil",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportarForaDoPerfilEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoteDeImportacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Importar mesmo assim (as linhas fora do perfil)",
+        "tags": ["Importação: lotes"]
+      }
+    },
     "/v1/importacao/lotes/{id}/iniciar": {
       "post": {
         "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). O lote precisa estar `pronta` (veja `pendencias`); também retoma um lote que `falhou` ou foi `cancelada`, fazendo só as linhas pendentes. A execução roda no worker, uma linha por vez, com o intervalo escolhido entre consultas à Receita. Lote incompleto: 409 `importacao_incompleta`; já em andamento: 409 `importacao_em_andamento`; encerrado: 409 `importacao_encerrada`.",
@@ -7131,6 +7303,126 @@
         "tags": ["Importação: lotes"]
       }
     },
+    "/v1/importacao/lotes/{id}/linhas": {
+      "get": {
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Uma página de linhas com o resultado e o motivo de cada uma; `resultado` filtra (criada, fora_do_perfil, pulada_sem_cnpj, pulada_duplicada, pulada_nao_ativa, erro...).",
+        "operationId": "LotesDeImportacaoController_linhas",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resultado",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pendente",
+                "criada",
+                "criada_fora_do_perfil",
+                "fora_do_perfil",
+                "pulada_sem_cnpj",
+                "pulada_duplicada",
+                "pulada_nao_ativa",
+                "erro"
+              ]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinhasDaImportacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ver as linhas de uma importação (relatório)",
+        "tags": ["Importação: lotes"]
+      }
+    },
     "/v1/importacao/lotes/{id}/previa": {
       "get": {
         "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Mostra o que a importação vai fazer, sem consultar a Receita nem gravar nada: linhas sem CNPJ válido, CNPJs repetidos na planilha, CNPJs que já estão na carteira, quantas consultas à Receita serão de verdade (fora do cache de 30 dias) e o tempo estimado com o intervalo escolhido. Sem a coluna do CNPJ mapeada: 409 `mapeamento_incompleto`.",
@@ -7208,6 +7500,97 @@
           }
         },
         "summary": "Ver a prévia de um lote",
+        "tags": ["Importação: lotes"]
+      }
+    },
+    "/v1/importacao/lotes/{id}/problemas.csv": {
+      "get": {
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um CSV (`;`, UTF-8 com BOM) com linha, resultado, motivo e as colunas originais das linhas que não entraram na carteira, para corrigir a planilha e importar de novo. `resultado` restringe a um tipo.",
+        "operationId": "LotesDeImportacaoController_problemas",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resultado",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pendente",
+                "criada",
+                "criada_fora_do_perfil",
+                "fora_do_perfil",
+                "pulada_sem_cnpj",
+                "pulada_duplicada",
+                "pulada_nao_ativa",
+                "erro"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Baixar o que não entrou (CSV)",
         "tags": ["Importação: lotes"]
       }
     },
@@ -11074,6 +11457,21 @@
         "required": ["itens", "total", "pagina", "porPagina"],
         "additionalProperties": false
       },
+      "ImportarForaDoPerfilEntrada": {
+        "type": "object",
+        "properties": {
+          "linhaIds": {
+            "minItems": 1,
+            "maxItems": 10000,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "ItemDaListaDeContatos": {
         "type": "object",
         "properties": {
@@ -11282,6 +11680,93 @@
         ],
         "additionalProperties": false
       },
+      "LinhasDaImportacao": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "numero": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "resultado": {
+                  "type": "string",
+                  "enum": [
+                    "pendente",
+                    "criada",
+                    "criada_fora_do_perfil",
+                    "fora_do_perfil",
+                    "pulada_sem_cnpj",
+                    "pulada_duplicada",
+                    "pulada_nao_ativa",
+                    "erro"
+                  ]
+                },
+                "motivo": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "empresaId": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "empresaNome": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "dados": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "numero",
+                "resultado",
+                "motivo",
+                "empresaId",
+                "empresaNome",
+                "dados"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "colunas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina", "colunas"],
+        "additionalProperties": false
+      },
       "ListaDeContatos": {
         "type": "object",
         "properties": {
@@ -11317,6 +11802,106 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ItemDaListaDeEmpresas"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina"],
+        "additionalProperties": false
+      },
+      "ListaDeLotesDeImportacao": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["empresas", "contatos"]
+                },
+                "nomeArquivo": {
+                  "type": "string"
+                },
+                "situacao": {
+                  "type": "string",
+                  "enum": [
+                    "rascunho",
+                    "pronta",
+                    "em_andamento",
+                    "concluida",
+                    "falhou",
+                    "cancelada",
+                    "desfeita"
+                  ]
+                },
+                "totalLinhas": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "totais": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "criadoPor": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "criadoEm": {
+                  "type": "string"
+                },
+                "concluidoEm": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "nome",
+                "tipo",
+                "nomeArquivo",
+                "situacao",
+                "totalLinhas",
+                "totais",
+                "criadoPor",
+                "criadoEm",
+                "concluidoEm"
+              ],
+              "additionalProperties": false
             }
           },
           "total": {

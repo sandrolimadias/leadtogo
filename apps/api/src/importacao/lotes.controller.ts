@@ -3,6 +3,18 @@ import {
   alterarLoteSchema,
   type AndamentoDaImportacao,
   andamentoDaImportacaoSchema,
+  type ConsultaDasLinhas,
+  consultaDasLinhasSchema,
+  type ConsultaDosLotes,
+  consultaDosLotesSchema,
+  type ImportarForaDoPerfil,
+  importarForaDoPerfilSchema,
+  type ListaDeLinhas,
+  listaDeLinhasSchema,
+  type ListaDeLotes,
+  listaDeLotesSchema,
+  type ResultadoDaLinha,
+  resultadoDaLinhaSchema,
   CAMPOS_DA_EMPRESA_NA_IMPORTACAO,
   type ConsultaDoEnvio,
   consultaDoEnvioSchema,
@@ -26,6 +38,7 @@ import {
   StreamableFile,
 } from '@nestjs/common'
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger'
+import { z } from 'zod'
 import type { Request } from 'express'
 import ExcelJS from 'exceljs'
 
@@ -36,6 +49,7 @@ import { ZodPipe } from '../http/zod.pipe.js'
 import { ExecucaoDaImportacaoService } from './execucao.service.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
 import { PreviaDaImportacaoService } from './previa.service.js'
+import { RelatorioDaImportacaoService } from './relatorio.service.js'
 
 /** Quem importa: administrador e gestor (ver `LotesDeImportacaoService`). */
 const QUEM = 'Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor).'
@@ -47,6 +61,7 @@ export class LotesDeImportacaoController {
     private readonly servico: LotesDeImportacaoService,
     private readonly previa: PreviaDaImportacaoService,
     private readonly execucao: ExecucaoDaImportacaoService,
+    private readonly relatorio: RelatorioDaImportacaoService,
     private readonly ctx: ContextoTenantService,
   ) {}
 
@@ -150,6 +165,77 @@ export class LotesDeImportacaoController {
   @Get('lotes/:id/andamento')
   andamento(@Param('id', new ParseUUIDPipe()) id: string): Promise<AndamentoDaImportacao> {
     return this.execucao.andamento(id)
+  }
+
+  @Documenta({
+    resumo: 'Listar as importações',
+    descricao:
+      QUEM + ' Do lote mais novo para o mais antigo, com a contagem por resultado de cada um.',
+    consulta: consultaDosLotesSchema,
+    resposta: listaDeLotesSchema,
+    erros: [400, 401, 403, 409],
+  })
+  @Get('lotes')
+  listar(
+    @Query(new ZodPipe(consultaDosLotesSchema)) consulta: ConsultaDosLotes,
+  ): Promise<ListaDeLotes> {
+    return this.relatorio.listarLotes(consulta)
+  }
+
+  @Documenta({
+    resumo: 'Ver as linhas de uma importação (relatório)',
+    descricao:
+      QUEM +
+      ' Uma página de linhas com o resultado e o motivo de cada uma; `resultado` filtra (criada, fora_do_perfil, pulada_sem_cnpj, pulada_duplicada, pulada_nao_ativa, erro...).',
+    consulta: consultaDasLinhasSchema,
+    resposta: listaDeLinhasSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Get('lotes/:id/linhas')
+  linhas(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query(new ZodPipe(consultaDasLinhasSchema)) consulta: ConsultaDasLinhas,
+  ): Promise<ListaDeLinhas> {
+    return this.relatorio.linhas(id, consulta)
+  }
+
+  @Documenta({
+    resumo: 'Baixar o que não entrou (CSV)',
+    descricao:
+      QUEM +
+      ' Um CSV (`;`, UTF-8 com BOM) com linha, resultado, motivo e as colunas originais das linhas que não entraram na carteira, para corrigir a planilha e importar de novo. `resultado` restringe a um tipo.',
+    consulta: z.object({ resultado: resultadoDaLinhaSchema.optional() }).strict(),
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Get('lotes/:id/problemas.csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="importacao-problemas.csv"')
+  async problemas(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query(new ZodPipe(z.object({ resultado: resultadoDaLinhaSchema.optional() }).strict()))
+    consulta: { resultado?: ResultadoDaLinha },
+  ): Promise<StreamableFile> {
+    return new StreamableFile(
+      Buffer.from(await this.relatorio.csvDosProblemas(id, consulta.resultado)),
+    )
+  }
+
+  @Documenta({
+    resumo: 'Importar mesmo assim (as linhas fora do perfil)',
+    descricao:
+      QUEM +
+      ' Só num lote concluído (409 `importacao_nao_concluida`). As linhas fora do perfil (todas, ou as de `linhaIds`) voltam a pendentes e o worker as cadastra com a tag "Fora do perfil". O bloqueio de empresa não ativa continua valendo. Sem linhas assim: 409 `sem_linhas_fora_do_perfil`.',
+    corpo: importarForaDoPerfilSchema,
+    resposta: loteDeImportacaoSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Post('lotes/:id/importar-fora-do-perfil')
+  @HttpCode(200)
+  importarForaDoPerfil(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(importarForaDoPerfilSchema)) dados: ImportarForaDoPerfil,
+  ): Promise<LoteDeImportacao> {
+    return this.relatorio.importarForaDoPerfil(id, dados.linhaIds)
   }
 
   @Documenta({

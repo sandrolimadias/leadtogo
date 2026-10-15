@@ -4,6 +4,7 @@ import { ExecucaoDaImportacaoService } from './execucao.service.js'
 import { LotesDeImportacaoController } from './lotes.controller.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
 import { PreviaDaImportacaoService } from './previa.service.js'
+import { RelatorioDaImportacaoService } from './relatorio.service.js'
 import { PerfisDeImportacaoController } from './perfis.controller.js'
 import { PerfisDeImportacaoService } from './perfis.service.js'
 
@@ -15,6 +16,7 @@ import { PerfisDeImportacaoService } from './perfis.service.js'
     LotesDeImportacaoService,
     PreviaDaImportacaoService,
     ExecucaoDaImportacaoService,
+    RelatorioDaImportacaoService,
   ],
 })
 export class ImportacaoModule {}

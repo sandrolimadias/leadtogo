@@ -5,6 +5,7 @@ import {
   criarEmpresaCarteiraSchema,
   decidirPelaReceita,
   documentoDaPlanilha,
+  MOTIVO_IMPORTAR_MESMO_ASSIM,
   type RegrasDeImportacao,
   type ResultadoDaLinha,
 } from '@leadtogo/shared'
@@ -358,6 +359,7 @@ export class ExecutorDaImportacao {
           numero: importacaoLinhas.numero,
           dados: importacaoLinhas.dados,
           documento: importacaoLinhas.documento,
+          motivo: importacaoLinhas.motivo,
         })
         .from(importacaoLinhas)
         .where(
@@ -372,7 +374,14 @@ export class ExecutorDaImportacao {
   private async processarLinha(p: {
     tenantId: string
     lote: Lote
-    linha: { id: string; numero: number; dados: unknown; documento: string | null }
+    linha: {
+      id: string
+      numero: number
+      dados: unknown
+      documento: string | null
+      /** Em linha pendente, `MOTIVO_IMPORTAR_MESMO_ASSIM` quando veio de "Importar mesmo assim" */
+      motivo: string | null
+    }
     regras: RegrasDeImportacao | null
     consultaAReceita: boolean
     bloquearNaoAtiva: boolean
@@ -429,6 +438,10 @@ export class ExecutorDaImportacao {
           motivo: decisao.motivo,
         })
         return { semReceita: false }
+      }
+      if (decisao.tipo === 'fora_do_perfil' && linha.motivo === MOTIVO_IMPORTAR_MESMO_ASSIM) {
+        // "Importar mesmo assim": entra com a tag "Fora do perfil" (o bloqueio de não ativa já valeu acima)
+        return this.cadastrar(p, consulta, decisao.motivos)
       }
       if (decisao.tipo === 'fora_do_perfil') {
         await this.gravar(tenantId, linha.id, {

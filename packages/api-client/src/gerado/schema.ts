@@ -1259,7 +1259,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Listar as importações
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Do lote mais novo para o mais antigo, com a contagem por resultado de cada um.
+         */
+        get: operations["LotesDeImportacaoController_listar"];
         put?: never;
         /**
          * Enviar a planilha de uma importação
@@ -1336,6 +1340,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/importacao/lotes/{id}/importar-fora-do-perfil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Importar mesmo assim (as linhas fora do perfil)
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote concluído (409 `importacao_nao_concluida`). As linhas fora do perfil (todas, ou as de `linhaIds`) voltam a pendentes e o worker as cadastra com a tag "Fora do perfil". O bloqueio de empresa não ativa continua valendo. Sem linhas assim: 409 `sem_linhas_fora_do_perfil`.
+         */
+        post: operations["LotesDeImportacaoController_importarForaDoPerfil"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/importacao/lotes/{id}/iniciar": {
         parameters: {
             query?: never;
@@ -1356,6 +1380,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/importacao/lotes/{id}/linhas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver as linhas de uma importação (relatório)
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Uma página de linhas com o resultado e o motivo de cada uma; `resultado` filtra (criada, fora_do_perfil, pulada_sem_cnpj, pulada_duplicada, pulada_nao_ativa, erro...).
+         */
+        get: operations["LotesDeImportacaoController_linhas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/importacao/lotes/{id}/previa": {
         parameters: {
             query?: never;
@@ -1368,6 +1412,26 @@ export interface paths {
          * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Mostra o que a importação vai fazer, sem consultar a Receita nem gravar nada: linhas sem CNPJ válido, CNPJs repetidos na planilha, CNPJs que já estão na carteira, quantas consultas à Receita serão de verdade (fora do cache de 30 dias) e o tempo estimado com o intervalo escolhido. Sem a coluna do CNPJ mapeada: 409 `mapeamento_incompleto`.
          */
         get: operations["LotesDeImportacaoController_verPrevia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/importacao/lotes/{id}/problemas.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Baixar o que não entrou (CSV)
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um CSV (`;`, UTF-8 com BOM) com linha, resultado, motivo e as colunas originais das linhas que não entraram na carteira, para corrigir a planilha e importar de novo. `resultado` restringe a um tipo.
+         */
+        get: operations["LotesDeImportacaoController_problemas"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2398,6 +2462,9 @@ export interface components {
             pagina: number;
             porPagina: number;
         };
+        ImportarForaDoPerfilEntrada: {
+            linhaIds?: string[];
+        };
         ItemDaListaDeContatos: {
             /** Format: uuid */
             id: string;
@@ -2456,6 +2523,26 @@ export interface components {
             situacaoNaoVerificada: boolean;
             editavel: boolean;
         };
+        LinhasDaImportacao: {
+            itens: {
+                /** Format: uuid */
+                id: string;
+                numero: number;
+                /** @enum {string} */
+                resultado: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro";
+                motivo: string | null;
+                /** Format: uuid */
+                empresaId: string | null;
+                empresaNome: string | null;
+                dados: {
+                    [key: string]: string;
+                };
+            }[];
+            total: number;
+            pagina: number;
+            porPagina: number;
+            colunas: string[];
+        };
         ListaDeContatos: {
             itens: components["schemas"]["ItemDaListaDeContatos"][];
             total: number;
@@ -2464,6 +2551,28 @@ export interface components {
         };
         ListaDeEmpresas: {
             itens: components["schemas"]["ItemDaListaDeEmpresas"][];
+            total: number;
+            pagina: number;
+            porPagina: number;
+        };
+        ListaDeLotesDeImportacao: {
+            itens: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                /** @enum {string} */
+                tipo: "empresas" | "contatos";
+                nomeArquivo: string;
+                /** @enum {string} */
+                situacao: "rascunho" | "pronta" | "em_andamento" | "concluida" | "falhou" | "cancelada" | "desfeita";
+                totalLinhas: number;
+                totais: {
+                    [key: string]: number | string;
+                };
+                criadoPor: string | null;
+                criadoEm: string;
+                concluidoEm: string | null;
+            }[];
             total: number;
             pagina: number;
             porPagina: number;
@@ -8128,6 +8237,65 @@ export interface operations {
             };
         };
     };
+    LotesDeImportacaoController_listar: {
+        parameters: {
+            query?: {
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeLotesDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     LotesDeImportacaoController_criar: {
         parameters: {
             query: {
@@ -8464,6 +8632,77 @@ export interface operations {
             };
         };
     };
+    LotesDeImportacaoController_importarForaDoPerfil: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportarForaDoPerfilEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     LotesDeImportacaoController_iniciar: {
         parameters: {
             query?: never;
@@ -8482,6 +8721,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoteDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_linhas: {
+        parameters: {
+            query?: {
+                resultado?: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinhasDaImportacao"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
@@ -8550,6 +8860,73 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PreviaDaImportacao"];
                 };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_problemas: {
+        parameters: {
+            query?: {
+                resultado?: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
             400: {

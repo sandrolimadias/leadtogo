@@ -312,3 +312,84 @@ export type AndamentoDaImportacao = z.infer<typeof andamentoDaImportacaoSchema>
 /** A tag que a ação "importar com a tag" aplica; vive no grupo de sistema `importacao`. */
 export const CHAVE_DO_GRUPO_DE_IMPORTACAO = 'importacao'
 export const CHAVE_DA_TAG_FORA_DO_PERFIL = 'fora_do_perfil'
+
+// ---- Relatório e lista de lotes ----
+
+export const consultaDasLinhasSchema = z
+  .object({
+    resultado: resultadoDaLinhaSchema.optional(),
+    pagina: z.coerce.number().int().min(1).default(1),
+    porPagina: z.coerce.number().int().min(1).max(200).default(50),
+  })
+  .strict()
+export type ConsultaDasLinhas = z.infer<typeof consultaDasLinhasSchema>
+
+export const linhaDoRelatorioSchema = z.object({
+  id: z.uuid(),
+  numero: z.number().int(),
+  resultado: resultadoDaLinhaSchema,
+  motivo: z.string().nullable(),
+  /** A empresa criada (ou, nas repetidas, a que já estava na carteira) */
+  empresaId: z.uuid().nullable(),
+  empresaNome: z.string().nullable(),
+  /** A linha como veio da planilha, por título de coluna */
+  dados: z.record(z.string(), z.string()),
+})
+
+export const listaDeLinhasSchema = z
+  .object({
+    itens: z.array(linhaDoRelatorioSchema),
+    total: z.number().int(),
+    pagina: z.number().int(),
+    porPagina: z.number().int(),
+    /** As colunas da planilha, na ordem (para montar a tabela) */
+    colunas: z.array(z.string()),
+  })
+  .meta({ id: 'LinhasDaImportacao' })
+export type ListaDeLinhas = z.infer<typeof listaDeLinhasSchema>
+
+/**
+ * Marca, no `motivo` de uma linha que voltou a `pendente`, que ela veio de "Importar mesmo assim": o
+ * executor a cadastra com a tag "Fora do perfil" mesmo que o perfil a recuse de novo. Fica na linha (no
+ * banco) e não no job, para sobreviver a retomada, varredura e troca de worker.
+ */
+export const MOTIVO_IMPORTAR_MESMO_ASSIM = 'importar_mesmo_assim'
+
+/** "Importar mesmo assim": sem `linhaIds`, todas as linhas fora do perfil. */
+export const importarForaDoPerfilSchema = z
+  .object({ linhaIds: z.array(z.uuid()).min(1).max(LIMITE_LINHAS_DA_IMPORTACAO).optional() })
+  .strict()
+  .meta({ id: 'ImportarForaDoPerfilEntrada' })
+export type ImportarForaDoPerfil = z.infer<typeof importarForaDoPerfilSchema>
+
+export const resumoDoLoteSchema = z.object({
+  id: z.uuid(),
+  nome: z.string(),
+  tipo: z.enum(['empresas', 'contatos']),
+  nomeArquivo: z.string(),
+  situacao: situacaoDaImportacaoSchema,
+  totalLinhas: z.number().int(),
+  /** Contagem por resultado (preenchida enquanto executa e ao terminar) */
+  totais: z.record(z.string(), z.union([z.number().int(), z.string()])),
+  criadoPor: z.string().nullable(),
+  criadoEm: z.string(),
+  concluidoEm: z.string().nullable(),
+})
+
+export const listaDeLotesSchema = z
+  .object({
+    itens: z.array(resumoDoLoteSchema),
+    total: z.number().int(),
+    pagina: z.number().int(),
+    porPagina: z.number().int(),
+  })
+  .meta({ id: 'ListaDeLotesDeImportacao' })
+export type ListaDeLotes = z.infer<typeof listaDeLotesSchema>
+
+export const consultaDosLotesSchema = z
+  .object({
+    pagina: z.coerce.number().int().min(1).default(1),
+    porPagina: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict()
+export type ConsultaDosLotes = z.infer<typeof consultaDosLotesSchema>
