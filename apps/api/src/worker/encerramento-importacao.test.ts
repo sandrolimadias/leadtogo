@@ -220,12 +220,10 @@ describe('worker: SIGTERM com dois consumidores ativos (e-mail/teste e importaç
     await iniciarWorker()
     await esperarAte(async () => (await situacao()) === 'concluida', 90_000)
     expect((await empresasDoLote()).map((e) => e.documento).sort()).toEqual([...cnpjs].sort())
-    const porCnpj = new Map<string, number>()
-    for (const caminho of receita.chamadas) porCnpj.set(caminho, (porCnpj.get(caminho) ?? 0) + 1)
-    expect([...porCnpj.values()].every((n) => n === 1)).toBe(true)
-    // Primeiro os caminhos que não são de CNPJ do lote: se aparecer algum, o erro mostra qual
-    expect([...porCnpj.keys()].filter((k) => !cnpjs.some((c) => k.includes(c)))).toEqual([])
-    expect(porCnpj.size).toBe(LINHAS)
+    // Só conta os CNPJs do lote: o worker consome o outbox do banco inteiro e pode consultar também um
+    // CNPJ de fora (evento que sobrou de outro teste), o que não diz nada sobre esta importação
+    const consultasDoLote = cnpjs.map((c) => receita.chamadas.filter((k) => k.includes(c)).length)
+    expect(consultasDoLote).toEqual(Array.from({ length: LINHAS }, () => 1))
   }, 150_000)
 })
 

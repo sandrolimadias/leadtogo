@@ -105,6 +105,13 @@ function relayCom(provedor: ProvedorDeReceita) {
     }),
   })
 }
+/**
+ * Quantas consultas o relay fez para este CNPJ. O relay reserva eventos do banco inteiro: um evento de
+ * reconsulta que sobrou de outro teste também passa pelo provedor, e isso não diz nada sobre este cenário.
+ */
+const consultasDe = (provedor: { mock: { mock: { calls: unknown[][] } } }, cnpj: string) =>
+  provedor.mock.mock.calls.filter(([c]) => c === cnpj).length
+
 const respondendo = (fn: (cnpj: string) => unknown) => {
   const mock = vi.fn(async (cnpj: string) => await fn(cnpj))
   return { nome: 'falso', consultar: mock, mock } satisfies ProvedorDeReceita & {
@@ -120,7 +127,7 @@ describe('empresa.verificar_situacao', () => {
     expect((await c.empresa())?.['nv']).toBe(false)
     expect((await c.empresa())?.['em']).toBeTruthy()
     expect(await c.notificacoes()).toHaveLength(0)
-    expect(provedor.mock).toHaveBeenCalledTimes(1) // ignora o cache: consulta de verdade
+    expect(consultasDe(provedor, c.cnpj)).toBe(1) // ignora o cache: consulta de verdade
     expect((await c.eventos())[0]?.['processado_em']).toBeTruthy()
   })
 
@@ -186,7 +193,7 @@ describe('empresa.verificar_situacao', () => {
     // O evento adiado não é entregue antes da hora: um novo ciclo não faz nada
     const provedor = respondendo((cnpj) => respostaDaReceita(cnpj))
     await relayCom(provedor).rodarCiclo()
-    expect(provedor.mock).not.toHaveBeenCalled()
+    expect(consultasDe(provedor, c.cnpj)).toBe(0)
   })
 
   it('depois da 24ª tentativa desiste: avisa que não foi possível verificar e não agenda mais', async () => {
@@ -208,7 +215,7 @@ describe('empresa.verificar_situacao', () => {
       const c = await cenario(opcoes)
       const provedor = respondendo((cnpj) => respostaDaReceita(cnpj))
       await relayCom(provedor).rodarCiclo()
-      expect(provedor.mock, JSON.stringify(opcoes)).not.toHaveBeenCalled()
+      expect(consultasDe(provedor, c.cnpj), JSON.stringify(opcoes)).toBe(0)
       expect(await c.notificacoes()).toHaveLength(0)
       expect((await c.eventos())[0]?.['processado_em']).toBeTruthy()
     }
