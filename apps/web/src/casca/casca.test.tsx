@@ -1,9 +1,12 @@
 import type { Me, Preferencias, PreferenciasPatch } from '@leadtogo/api-client'
-import { screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { meDeAdmin, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
+
+import { VersaoDoApp } from './partes'
 
 const empresa = (
   id: string,
@@ -52,6 +55,7 @@ function servicosDaCasca(inicial: Me, extra = {}) {
     menuRecolhido: false,
     visaoDashboard: 'minha',
     filtroPadrao: {},
+    porPagina: {},
   }
   return servicosFalsos({
     me: async () => atual,
@@ -128,6 +132,7 @@ describe('casca no desktop', () => {
           menuRecolhido: true,
           visaoDashboard: 'minha',
           filtroPadrao: {},
+          porPagina: {},
         }),
       }),
       '/',
@@ -181,6 +186,79 @@ describe('casca no desktop', () => {
     renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
     await userEvent.click(await screen.findByRole('button', { name: 'Notificações' }))
     expect(await screen.findByText('Nenhuma notificação')).toBeInTheDocument()
+  })
+})
+
+describe('a página nunca rola: só a área central', () => {
+  const rola = (el: HTMLElement) => {
+    expect(el.className).toContain('overflow-y-auto')
+    expect(el.className).toContain('overflow-x-hidden')
+    expect(el.className).toContain('min-h-0')
+  }
+
+  it('desktop: casca na altura da janela sem rolar, menu e barra do topo fixos, só #conteudo rola', async () => {
+    const { container } = renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
+    const nav = await screen.findByRole('navigation', { name: 'Principal' })
+    const raiz = container.firstElementChild as HTMLElement
+    expect(raiz.className).toContain('h-dvh')
+    expect(raiz.className).toContain('overflow-hidden')
+    // o menu lateral não é o que rola a página, e não estoura na horizontal
+    expect(nav.className).toContain('overflow-x-hidden')
+    // a barra do topo fica fora da área que rola
+    const conteudo = document.getElementById('conteudo') as HTMLElement
+    rola(conteudo)
+    expect(conteudo.contains(screen.getByRole('button', { name: 'Registrar atividade' }))).toBe(
+      false,
+    )
+    expect(conteudo.contains(nav)).toBe(false)
+  })
+
+  it('celular: cabeçalho e barra inferior fixos, só #conteudo rola (sem rolagem dupla)', async () => {
+    largura(390)
+    const { container } = renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
+    const barra = await screen.findByRole('navigation', { name: 'Navegação do celular' })
+    const raiz = container.firstElementChild as HTMLElement
+    expect(raiz.className).toContain('h-dvh')
+    expect(raiz.className).toContain('overflow-hidden')
+    const conteudo = document.getElementById('conteudo') as HTMLElement
+    rola(conteudo)
+    // a barra inferior acompanha o fluxo (não fica solta sobre o conteúdo) e fica fora da rolagem
+    expect(barra.className).not.toContain('fixed')
+    expect(conteudo.contains(barra)).toBe(false)
+    expect(conteudo.contains(screen.getByRole('button', { name: 'Abrir perfil' }))).toBe(false)
+  })
+})
+
+describe('versão do app no rodapé', () => {
+  const HASH = '44b9373c70095834775436d11e0826153b6ffc24'
+
+  it('mostra só os 7 primeiros caracteres e o hash completo na dica (ao focar)', async () => {
+    render(
+      <TooltipProvider>
+        <VersaoDoApp versao={HASH} />
+      </TooltipProvider>,
+    )
+    const texto = screen.getByText('Leadtogo · versão 44b9373')
+    expect(texto).toBeInTheDocument()
+    expect(screen.queryByText(new RegExp(HASH))).toBeNull()
+    expect(texto.className).toContain('truncate')
+    texto.focus()
+    expect((await screen.findAllByText(HASH)).length).toBeGreaterThan(0)
+  })
+
+  it('"dev" (sem hash) aparece inteiro', () => {
+    render(
+      <TooltipProvider>
+        <VersaoDoApp versao="dev" />
+      </TooltipProvider>,
+    )
+    expect(screen.getByText('Leadtogo · versão dev')).toBeInTheDocument()
+  })
+
+  it('o rodapé do menu lateral usa a versão curta', async () => {
+    renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
+    await screen.findByRole('navigation', { name: 'Principal' })
+    expect(screen.getByText(/^Leadtogo · versão /)).toBeInTheDocument()
   })
 })
 

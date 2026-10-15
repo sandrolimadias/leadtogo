@@ -12,6 +12,7 @@ import { Avatar } from '@/components/ui/exibicao'
 import { EmptyState } from '@/components/ui/feedback'
 import { Icon } from '@/components/ui/icone'
 import { SegmentedControl } from '@/components/ui/segmented-control'
+import { Tooltip } from '@/components/ui/tooltip'
 import { Sheet } from '@/components/ui/dialog'
 import { cn } from '@/lib/cn'
 
@@ -26,6 +27,30 @@ import {
 import { avisarEmBreve, nomeDaEmpresa } from './utilidades'
 
 type Tema = 'claro' | 'escuro' | 'sistema'
+
+/**
+ * A versão do app no rodapé do menu: só os 7 primeiros caracteres do hash do commit (o hash inteiro estoura
+ * a largura do menu), com o valor completo na dica. Em desenvolvimento, `dev`.
+ */
+export function VersaoDoApp({
+  className,
+  versao = VERSAO_DO_APP,
+}: {
+  className?: string
+  versao?: string
+}) {
+  const curta = versao.slice(0, 7)
+  return (
+    <Tooltip label={versao}>
+      <p
+        tabIndex={0}
+        className={cn('m-0 min-w-0 truncate text-[11px] leading-4 text-ink-subtle', className)}
+      >
+        Leadtogo · versão {curta}
+      </p>
+    </Tooltip>
+  )
+}
 
 /** Primeiro item da tabulação: leva o foco direto ao conteúdo, sem passar por todo o menu. */
 export function PularParaOConteudo() {
@@ -145,7 +170,7 @@ export function BarraInferior({
   return (
     <nav
       aria-label="Navegação do celular"
-      className="fixed inset-x-0 bottom-0 z-[100] grid h-[68px] grid-cols-5 border-t border-border bg-surface pb-[max(8px,env(safe-area-inset-bottom))]"
+      className="relative z-[100] grid h-[68px] flex-none grid-cols-5 border-t border-border bg-surface pb-[max(8px,env(safe-area-inset-bottom))]"
     >
       {itens.map((t) => (
         <Link
@@ -287,9 +312,7 @@ export function FolhaDePerfil({
           <Icon icon={LogOut} size={18} />
           Sair
         </button>
-        <p className="m-0 pt-2 text-center text-[12px] text-ink-subtle">
-          Leadtogo · versão {VERSAO_DO_APP}
-        </p>
+        <VersaoDoApp className="pt-2 text-center text-[12px]" />
       </div>
     </Sheet>
   )

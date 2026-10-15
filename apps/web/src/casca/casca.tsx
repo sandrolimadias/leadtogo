@@ -14,7 +14,7 @@ import { cn } from '@/lib/cn'
 
 import { Logo } from '@/components/acesso/logo'
 import { useDispositivo } from './dispositivo'
-import { VERSAO_DO_APP, useTrocarEmpresa } from './empresas'
+import { useTrocarEmpresa } from './empresas'
 import { ROTULO_DO_PAPEL, TELAS, estaAtiva, telaVisivel, tituloDoCaminho } from './navegacao'
 import {
   BarraInferior,
@@ -22,6 +22,7 @@ import {
   CabecalhoDoCelular,
   FolhaDePerfil,
   PularParaOConteudo,
+  VersaoDoApp,
 } from './partes'
 import { usePreferencias } from './preferencias'
 import { SeletorDeEmpresa } from './seletor-de-empresa'
@@ -57,14 +58,18 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
 
   if (dispositivo === 'celular') {
     return (
-      <div data-density="touch" className="flex min-h-dvh flex-col bg-bg text-ink">
+      <div data-density="touch" className="flex h-dvh flex-col overflow-hidden bg-bg text-ink">
         <PularParaOConteudo />
         <CabecalhoDoCelular
           titulo={tituloDoCaminho(caminho)}
           me={me}
           aoAbrirPerfil={() => setPerfilAberto(true)}
         />
-        <div id="conteudo" tabIndex={-1} className="min-w-0 flex-1 pb-[84px] outline-none">
+        <div
+          id="conteudo"
+          tabIndex={-1}
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto outline-none"
+        >
           {children}
         </div>
         <BarraInferior caminho={caminho} aoAbrirPerfil={() => setPerfilAberto(true)} />
@@ -178,22 +183,18 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
           }
         />
       </div>
-      {recolhido ? null : (
-        <p className="m-0 px-2.5 text-[11px] leading-4 text-ink-subtle">
-          Leadtogo · versão {VERSAO_DO_APP}
-        </p>
-      )}
+      {recolhido ? null : <VersaoDoApp className="px-2.5" />}
     </div>
   )
 
   return (
     <div
       data-density={dispositivo === 'tablet' ? 'touch' : undefined}
-      className="flex h-dvh bg-bg text-ink"
+      className="flex h-dvh overflow-hidden bg-bg text-ink"
     >
       <PularParaOConteudo />
       <AppNav
-        className="h-full flex-none overflow-y-auto"
+        className="h-full flex-none overflow-x-hidden overflow-y-auto"
         recolhido={recolhido}
         espacoso
         marca={<Logo tamanho={24} />}
@@ -219,9 +220,13 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
         }
         rodape={rodape}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <BarraSuperior />
-        <div id="conteudo" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">
+        <div
+          id="conteudo"
+          tabIndex={-1}
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto outline-none"
+        >
           {children}
         </div>
       </div>
