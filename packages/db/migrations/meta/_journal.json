@@ -155,6 +155,13 @@
       "when": 1792057905751,
       "tag": "0021_importacao_blocos",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792059371131,
+      "tag": "0022_importacoes_paradas",
+      "breakpoints": true
     }
   ]
 }

@@ -119,3 +119,53 @@ describe('importacoes e importacao_linhas', () => {
     ).rejects.toThrow(/empresas_importacao_id_importacoes_id_fk/)
   })
 })
+
+describe('app_importacoes_paradas() (varredura de lote parado)', () => {
+  const MIN = (n: number) => `now() - interval '${n} minutes'`
+  const FUTURO = (n: number) => `now() + interval '${n} minutes'`
+
+  async function lote(
+    tenantId: string,
+    o: { situacao?: string; ultimo?: string; proxima?: string; pendente?: boolean },
+  ) {
+    const id = await criarLote(tenantId)
+    await comTenant(app, tenantId, async (tx) => {
+      await tx.unsafe(
+        `UPDATE importacoes SET situacao = '${o.situacao ?? 'em_andamento'}',
+           iniciado_em = ${MIN(30)},
+           ultimo_progresso_em = ${o.ultimo ?? 'NULL'},
+           proxima_consulta_em = ${o.proxima ?? 'NULL'} WHERE id = '${id}'`,
+      )
+      await tx`INSERT INTO importacao_linhas (id, tenant_id, importacao_id, numero, dados, resultado)
+               VALUES (${novoId()}, ${tenantId}, ${id}, 1, '{}'::jsonb, ${o.pendente === false ? 'criada' : 'pendente'})`
+    })
+    return id
+  }
+  const paradas = async () =>
+    (await app<{ id: string; tenant_id: string }[]>`SELECT * FROM app_importacoes_paradas(2)`).map(
+      (r) => r.id,
+    )
+
+  it('devolve só o lote em andamento, com linha pendente, sem progresso nem espera há mais de 2 min', async () => {
+    const t = await novoTenant()
+    const parado = await lote(t, { ultimo: MIN(5) })
+    const semProgressoNenhum = await lote(t, {}) // iniciado há 30 min, nunca andou
+    const andando = await lote(t, { ultimo: MIN(1) })
+    const esperaDeProposito = await lote(t, { ultimo: MIN(10), proxima: FUTURO(1) })
+    const esperaRecente = await lote(t, { ultimo: MIN(10), proxima: MIN(1) })
+    const esperaVelha = await lote(t, { ultimo: MIN(10), proxima: MIN(3) })
+    const semPendente = await lote(t, { ultimo: MIN(5), pendente: false })
+    const concluido = await lote(t, { ultimo: MIN(5), situacao: 'concluida' })
+    const achados = await paradas()
+    for (const id of [parado, semProgressoNenhum, esperaVelha]) expect(achados).toContain(id)
+    for (const id of [andando, esperaDeProposito, esperaRecente, semPendente, concluido]) {
+      expect(achados).not.toContain(id)
+    }
+  })
+
+  it('as tabelas continuam fechadas para o leadtogo_app fora da função', async () => {
+    const t = await novoTenant()
+    const id = await lote(t, { ultimo: MIN(5) })
+    expect(await app`SELECT id FROM importacoes WHERE id = ${id}`).toHaveLength(0)
+  })
+})
