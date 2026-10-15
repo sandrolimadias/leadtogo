@@ -2,7 +2,7 @@ import type { LoteDeImportacao } from '@leadtogo/api-client'
 import { ROTULO_DO_RESULTADO, type ResultadoDaLinha } from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, Download, RotateCw } from 'lucide-react'
+import { ArrowRight, Download, RotateCw, Undo2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -13,8 +13,9 @@ import { Alert, Skeleton } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 import { useEnvio } from '@/telas/acesso/comum'
+import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
 
-import { formatarDuracao, PASSO } from './comum'
+import { formatarDataHora, formatarDuracao, PASSO } from './comum'
 import { Pagina } from './pagina'
 import type { PropsDoPasso } from './passos'
 
@@ -142,6 +143,9 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
   const [pagina, setPagina] = useState(1)
   const [escolhidas, setEscolhidas] = useState<Set<string>>(new Set())
   const [erro, setErro] = useState<string>()
+  const [agora] = useState(() => Date.now())
+  const [desfazendo, setDesfazendo] = useState(false)
+  const [erroAoDesfazer, setErroAoDesfazer] = useState<string>()
 
   const linhas = useQuery({
     queryKey: ['importacao', 'linhas', lote.id, filtro, pagina, lote.situacao],
@@ -206,6 +210,22 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
       await queryClient.invalidateQueries({ queryKey: ['importacao', 'linhas', lote.id] })
       aoAlterar(r.dados)
     })
+
+  const desfazer = () =>
+    executar(async () => {
+      setErroAoDesfazer(undefined)
+      const r = await servicos.importacao.lotes.desfazer(lote.id)
+      if (!r.ok) {
+        setErroAoDesfazer(r.erro.mensagem)
+        return
+      }
+      setDesfazendo(false)
+      toast.success('Importação desfeita')
+      await queryClient.invalidateQueries({ queryKey: ['importacao', 'linhas', lote.id] })
+      aoAlterar(r.dados)
+    })
+  const podeDesfazer =
+    concluida && lote.desfazerAte !== null && Date.parse(lote.desfazerAte) > agora
 
   const retomar = () =>
     executar(async () => {
@@ -437,6 +457,36 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
         </section>
       ) : null}
       {erro ? <Alert tone="danger">{erro}</Alert> : null}
+      {podeDesfazer && lote.desfazerAte ? (
+        <section
+          aria-label="Desfazer a importação"
+          className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4"
+        >
+          <h2 className="m-0 text-[15px] leading-5 font-semibold">Desfazer a importação</h2>
+          <p className="m-0 text-[13px] text-ink-muted">
+            Disponível até {formatarDataHora(lote.desfazerAte)}. Tira da carteira só as empresas que
+            este lote criou; as que já estavam lá não são tocadas.
+          </p>
+          <div>
+            <Button variant="danger-ghost" icon={Undo2} onClick={() => setDesfazendo(true)}>
+              Desfazer importação
+            </Button>
+          </div>
+        </section>
+      ) : null}
+      <DialogoDeConfirmacao
+        aberto={desfazendo}
+        titulo="Desfazer esta importação?"
+        descricao={`As empresas criadas por "${lote.nome}" saem da carteira. As que já existiam antes não mudam. O relatório continua disponível.`}
+        rotuloDoBotao="Desfazer importação"
+        erro={erroAoDesfazer}
+        enviando={enviando}
+        aoConfirmar={() => void desfazer()}
+        aoFechar={() => {
+          setDesfazendo(false)
+          setErroAoDesfazer(undefined)
+        }}
+      />
       <span className="text-[13px] text-ink-muted">Arquivo {lote.nomeArquivo}</span>
     </Pagina>
   )

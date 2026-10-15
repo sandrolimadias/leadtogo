@@ -48,6 +48,7 @@ import { Route as AutenticadoContatosNovoRouteImport } from './routes/_autentica
 import { Route as AutenticadoEmpresasIndexRouteImport } from './routes/_autenticado.empresas.index'
 import { Route as AutenticadoEmpresasEmpresaIdRouteImport } from './routes/_autenticado.empresas.$empresaId'
 import { Route as AutenticadoEmpresasNovaRouteImport } from './routes/_autenticado.empresas.nova'
+import { Route as AutenticadoImportacaoIndexRouteImport } from './routes/_autenticado.importacao.index'
 import { Route as AutenticadoImportacaoLoteIdRouteImport } from './routes/_autenticado.importacao.$loteId'
 import { Route as AutenticadoImportacaoNovaRouteImport } from './routes/_autenticado.importacao.nova'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
@@ -264,6 +265,12 @@ const AutenticadoEmpresasNovaRoute = AutenticadoEmpresasNovaRouteImport.update({
   path: '/nova',
   getParentRoute: () => AutenticadoEmpresasRoute,
 } as any)
+const AutenticadoImportacaoIndexRoute =
+  AutenticadoImportacaoIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AutenticadoImportacaoRoute,
+  } as any)
 const AutenticadoImportacaoLoteIdRoute =
   AutenticadoImportacaoLoteIdRouteImport.update({
     id: '/$loteId',
@@ -336,6 +343,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
   '/contatos/': typeof AutenticadoContatosIndexRoute
   '/empresas/': typeof AutenticadoEmpresasIndexRoute
+  '/importacao/': typeof AutenticadoImportacaoIndexRoute
   '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -352,7 +360,6 @@ export interface FileRoutesByTo {
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/consolidado': typeof AutenticadoConsolidadoRoute
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
-  '/importacao': typeof AutenticadoImportacaoRouteWithChildren
   '/oportunidades': typeof AutenticadoOportunidadesRoute
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/tarefas': typeof AutenticadoTarefasRoute
@@ -377,6 +384,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AutenticadoConfiguracoesIndexRoute
   '/contatos': typeof AutenticadoContatosIndexRoute
   '/empresas': typeof AutenticadoEmpresasIndexRoute
+  '/importacao': typeof AutenticadoImportacaoIndexRoute
   '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -424,6 +432,7 @@ export interface FileRoutesById {
   '/_autenticado/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
   '/_autenticado/contatos/': typeof AutenticadoContatosIndexRoute
   '/_autenticado/empresas/': typeof AutenticadoEmpresasIndexRoute
+  '/_autenticado/importacao/': typeof AutenticadoImportacaoIndexRoute
   '/_autenticado/contatos/$contatoId_/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/_autenticado/empresas/$empresaId_/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -470,6 +479,7 @@ export interface FileRouteTypes {
     | '/configuracoes/'
     | '/contatos/'
     | '/empresas/'
+    | '/importacao/'
     | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
   fileRoutesByTo: FileRoutesByTo
@@ -486,7 +496,6 @@ export interface FileRouteTypes {
     | '/verificar-email'
     | '/consolidado'
     | '/criar-empresa'
-    | '/importacao'
     | '/oportunidades'
     | '/prospeccao'
     | '/tarefas'
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/contatos'
     | '/empresas'
+    | '/importacao'
     | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
   id:
@@ -557,6 +567,7 @@ export interface FileRouteTypes {
     | '/_autenticado/configuracoes/'
     | '/_autenticado/contatos/'
     | '/_autenticado/empresas/'
+    | '/_autenticado/importacao/'
     | '/_autenticado/contatos/$contatoId_/editar'
     | '/_autenticado/empresas/$empresaId_/editar'
   fileRoutesById: FileRoutesById
@@ -842,6 +853,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoEmpresasNovaRouteImport
       parentRoute: typeof AutenticadoEmpresasRoute
     }
+    '/_autenticado/importacao/': {
+      id: '/_autenticado/importacao/'
+      path: '/'
+      fullPath: '/importacao/'
+      preLoaderRoute: typeof AutenticadoImportacaoIndexRouteImport
+      parentRoute: typeof AutenticadoImportacaoRoute
+    }
     '/_autenticado/importacao/$loteId': {
       id: '/_autenticado/importacao/$loteId'
       path: '/$loteId'
@@ -988,11 +1006,13 @@ const AutenticadoEmpresasRouteWithChildren =
 interface AutenticadoImportacaoRouteChildren {
   AutenticadoImportacaoLoteIdRoute: typeof AutenticadoImportacaoLoteIdRoute
   AutenticadoImportacaoNovaRoute: typeof AutenticadoImportacaoNovaRoute
+  AutenticadoImportacaoIndexRoute: typeof AutenticadoImportacaoIndexRoute
 }
 
 const AutenticadoImportacaoRouteChildren: AutenticadoImportacaoRouteChildren = {
   AutenticadoImportacaoLoteIdRoute: AutenticadoImportacaoLoteIdRoute,
   AutenticadoImportacaoNovaRoute: AutenticadoImportacaoNovaRoute,
+  AutenticadoImportacaoIndexRoute: AutenticadoImportacaoIndexRoute,
 }
 
 const AutenticadoImportacaoRouteWithChildren =

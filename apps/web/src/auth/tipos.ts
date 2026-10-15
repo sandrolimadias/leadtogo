@@ -244,6 +244,8 @@ export interface ServicosDeImportacao {
       id: string,
       consulta?: { resultado?: string; pagina?: number },
     ) => Promise<Resultado<LinhasDaImportacao>>
+    /** Tira da carteira as empresas que o lote criou (concluído, até 24 h depois) */
+    desfazer: (id: string) => Promise<Resultado<LoteDeImportacao>>
     /** "Importar mesmo assim": sem `linhaIds`, todas as linhas fora do perfil */
     importarForaDoPerfil: (id: string, linhaIds?: string[]) => Promise<Resultado<LoteDeImportacao>>
   }

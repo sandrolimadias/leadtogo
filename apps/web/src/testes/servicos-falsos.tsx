@@ -199,6 +199,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         linhas: vi.fn(async () =>
           ok({ itens: [], total: 0, pagina: 1, porPagina: 50, colunas: [] }),
         ),
+        desfazer: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
         importarForaDoPerfil: vi.fn(async () =>
           falha('indisponivel', 'Não configurado no teste.', 500),
         ),

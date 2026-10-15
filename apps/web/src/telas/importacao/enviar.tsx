@@ -1,5 +1,5 @@
 import { LIMITE_BYTES_DA_IMPORTACAO, LIMITE_LINHAS_DA_IMPORTACAO } from '@leadtogo/shared'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Download, FileSpreadsheet, Info, Upload, X } from 'lucide-react'
 import { type DragEvent, useRef, useState } from 'react'
 
@@ -155,6 +155,9 @@ export function EnviarPlanilha() {
           </Alert>
         ) : null}
 
+        <Link to="/importacao" className="w-fit text-[13px] font-semibold text-brand">
+          Ver as importações anteriores
+        </Link>
         <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-muted">
           <Info size={14} strokeWidth={1.75} aria-hidden="true" />
           <span className="min-w-52 flex-1">

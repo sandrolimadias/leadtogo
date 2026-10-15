@@ -439,6 +439,10 @@ export const servicosReais: ServicosDeAcesso = {
             }),
           ),
         ),
+      desfazer: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/importacao/lotes/{id}/desfazer', { params: { path: { id } } })),
+        ),
       importarForaDoPerfil: (id, linhaIds) =>
         protegido(async () =>
           daApi(

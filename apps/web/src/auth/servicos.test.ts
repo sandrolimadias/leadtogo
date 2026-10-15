@@ -169,6 +169,7 @@ describe('importação: lotes', () => {
     await l.linhas(ID, { resultado: 'fora_do_perfil', pagina: 3 })
     await l.importarForaDoPerfil(ID, [ID])
     await l.importarForaDoPerfil(ID)
+    await l.desfazer(ID)
     expect(chamadas.map((c) => `${c.metodo} ${c.caminho}${c.consulta}`)).toEqual([
       'GET /v1/importacao/lotes?pagina=2&porPagina=20',
       `GET /v1/importacao/lotes/${ID}`,
@@ -180,6 +181,7 @@ describe('importação: lotes', () => {
       `GET /v1/importacao/lotes/${ID}/linhas?pagina=3&porPagina=50&resultado=fora_do_perfil`,
       `POST /v1/importacao/lotes/${ID}/importar-fora-do-perfil`,
       `POST /v1/importacao/lotes/${ID}/importar-fora-do-perfil`,
+      `POST /v1/importacao/lotes/${ID}/desfazer`,
     ])
     expect(chamadas[2]?.corpo).toEqual({ fonteDados: 'receita', campos: { documento: 'CNPJ' } })
     expect(chamadas[8]?.corpo).toEqual({ linhaIds: [ID] })

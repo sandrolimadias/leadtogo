@@ -1,3 +1,4 @@
+import type { ListaDeLotesDeImportacao } from '@leadtogo/api-client'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
@@ -53,6 +54,11 @@ export function formatarDuracao(segundos: number): string {
   return resto ? `${h} h ${resto} min` : `${h} h`
 }
 
+/** "15/10/2026 10:42", na hora de quem está olhando. */
+export function formatarDataHora(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+}
+
 /** Tamanho de arquivo em KB ou MB, com vírgula. */
 export function formatarTamanho(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -77,4 +83,30 @@ export function usePrevia(id: string) {
       return r.dados
     },
   })
+}
+
+type LoteDaLista = ListaDeLotesDeImportacao['itens'][number]
+
+const n = (totais: LoteDaLista['totais'], chave: string) => {
+  const v = totais[chave]
+  return typeof v === 'number' ? v : 0
+}
+
+/** "30 importadas · 3 puladas · 1 com erro": o que cada lote fez, em uma linha. */
+export function resumoDoLote(l: LoteDaLista): string {
+  const importadas = n(l.totais, 'criada') + n(l.totais, 'criada_fora_do_perfil')
+  const puladas =
+    n(l.totais, 'pulada_sem_cnpj') +
+    n(l.totais, 'pulada_duplicada') +
+    n(l.totais, 'pulada_nao_ativa')
+  const partes = [
+    `${l.totalLinhas.toLocaleString('pt-BR')} linhas`,
+    ...(importadas > 0 ? [`${importadas.toLocaleString('pt-BR')} importadas`] : []),
+    ...(n(l.totais, 'fora_do_perfil') > 0
+      ? [`${n(l.totais, 'fora_do_perfil')} fora do perfil`]
+      : []),
+    ...(puladas > 0 ? [`${puladas.toLocaleString('pt-BR')} puladas`] : []),
+    ...(n(l.totais, 'erro') > 0 ? [`${n(l.totais, 'erro')} com erro`] : []),
+  ]
+  return partes.join(' · ')
 }

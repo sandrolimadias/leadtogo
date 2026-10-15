@@ -91,6 +91,8 @@ const lote = (extra: Partial<LoteDeImportacao> = {}): LoteDeImportacao => ({
   verticalId: null,
   pendencias: ['Escolha o vendedor.'],
   criadoEm: '2026-10-15T12:00:00.000Z',
+  concluidoEm: null,
+  desfazerAte: null,
   ...extra,
 })
 
@@ -570,6 +572,63 @@ describe('Importar planilha: andamento e relatório', () => {
       await screen.findByRole('button', { name: 'Importar mesmo assim (todas as 6)' }),
     )
     await waitFor(() => expect(importarForaDoPerfil).toHaveBeenCalledWith(LOTE, undefined))
+  })
+
+  const emUmDia = () => new Date(Date.now() + 23 * 3_600_000).toISOString()
+
+  it('relatório: desfaz a importação (com confirmação) dentro das 24 horas', async () => {
+    const desfazer = vi.fn(async () =>
+      ok(lote({ situacao: 'desfeita', concluidoEm: null, desfazerAte: null })),
+    )
+    abrir(
+      concluido({
+        lote: { concluidoEm: '2026-10-15T12:00:00.000Z', desfazerAte: emUmDia() },
+        lotes: { desfazer },
+      }),
+    )
+    const secao = await screen.findByRole('region', { name: 'Desfazer a importação' })
+    expect(within(secao).getByText(/Disponível até/)).toBeInTheDocument()
+    await userEvent.click(within(secao).getByRole('button', { name: 'Desfazer importação' }))
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText('Desfazer esta importação?')).toBeInTheDocument()
+    expect(desfazer).not.toHaveBeenCalled()
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Desfazer importação' }))
+    await waitFor(() => expect(desfazer).toHaveBeenCalledWith(LOTE))
+    expect(await screen.findByText('Importação desfeita', { selector: 'span' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Desfazer a importação' })).toBeNull()
+  })
+
+  it('relatório: o erro do desfazer (ex.: prazo vencido) aparece no diálogo e nada muda', async () => {
+    const desfazer = vi.fn(async () =>
+      falha('prazo_de_desfazer_vencido', 'O prazo de 24 horas para desfazer já passou.', 409),
+    )
+    abrir(
+      concluido({
+        lote: { concluidoEm: '2026-10-15T12:00:00.000Z', desfazerAte: emUmDia() },
+        lotes: { desfazer },
+      }),
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Desfazer importação' }))
+    const dialogo = await screen.findByRole('dialog')
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Desfazer importação' }))
+    expect(
+      await within(dialogo).findByText('O prazo de 24 horas para desfazer já passou.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Importação concluída')).toBeInTheDocument()
+  })
+
+  it('relatório: depois das 24 horas não oferece desfazer', async () => {
+    abrir(
+      concluido({
+        lote: {
+          concluidoEm: '2026-10-13T12:00:00.000Z',
+          desfazerAte: new Date(Date.now() - 3_600_000).toISOString(),
+        },
+      }),
+    )
+    await screen.findByText('Importação concluída')
+    expect(screen.queryByRole('region', { name: 'Desfazer a importação' })).toBeNull()
   })
 
   it('lote que parou: o relatório oferece Retomar, que reinicia só as pendentes', async () => {
