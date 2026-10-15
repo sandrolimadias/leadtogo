@@ -143,7 +143,7 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 - **Converter sócio:** cria o contato com o nome do sócio e o vínculo na empresa com cargo = qualificação, sem telefone nem e-mail; o sócio fica marcado como "Contato" e não converte duas vezes.
 - **Principal:** um contato principal por empresa; marcar outro tira o selo do anterior.
 - **Excluir contato:** exclusão lógica só de gestor e administrador, sem lixeira; o caminho comum é inativar o vínculo.
-- **Fora do Módulo 3:** campos personalizados do contato, mesclar duplicados, importar planilha de contatos (Módulo 4b), bloqueio efetivo de envio por consentimento, identificar contato pelo WhatsApp, alerta de aniversário e foto do contato.
+- **Fora do Módulo 3:** campos personalizados do contato, mesclar duplicados, importar planilha de contatos (pós-MVP), bloqueio efetivo de envio por consentimento, identificar contato pelo WhatsApp, alerta de aniversário e foto do contato.
 
 **Decisões tomadas na implementação do Módulo 3** (dentro do plano aprovado; o Ale vê o resultado na tela de cada commit):
 - *Commit 2 (Novo e Editar contato):*
@@ -180,7 +180,7 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
   - **Quem vê:** quem vê o contato vê o histórico dele, **menos as linhas que citam empresa que o usuário não vê** (o vendedor não descobre a carteira dos outros; o total da paginação também não as conta). Contato que o usuário não vê responde 404.
   - **Abas da ficha do contato:** Resumo e Histórico. Atividades e Oportunidades entram nos Módulos 5 e 6 (decisão aprovada).
 
-### Módulo 4 — Importação de planilha (Excel/CSV) 🧪 *em teste pelo Ale (roteiro em `docs/roteiro_teste_modulo4.md`)*
+### Módulo 4 — Importação de planilha (Excel/CSV) ✅ *concluído e aprovado pelo Ale (15/10/2026; roteiro em `docs/roteiro_teste_modulo4.md`)*
 *Decidido pelo Ale em 12/10/2026; **substitui** a descrição anterior. Vem depois dos Módulos 1 a 3. Detalhes de regra em `funcionalidades.md` (seção 3, "Importação por planilha").*
 
 - **Tela igual ao mockup** do Claude Design (`prototipo/Importar.dc.html`), com os passos **Enviar arquivo · Mapear colunas · Regras** (novo) **· Prévia · Carteira · Importar · Relatório**, alternância **Empresas / Contatos**, Excel e CSV e o botão **"Baixar modelo"**.
@@ -189,7 +189,7 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
   - **Usar os dados da planilha**;
   - **Buscar tudo na Receita** (basta a coluna CNPJ);
   - **Completar com a Receita só os campos vazios**.
-- **Consulta à Minha Receita:** um CNPJ por vez, **no worker**, com intervalo **configurável (padrão 3 s)**, *retry* em 429 e 5xx e cache em `receita_consultas`. **Progresso visível** na tela.
+- **Consulta à Minha Receita:** um CNPJ por vez, **no worker**, com intervalo **fixo de 3 s** (decidido pelo Ale em 15/10/2026, depois do teste: a tela e a API não oferecem nem aceitam outro valor; a coluna `importacoes.intervalo_ms`, padrão 3000, é um ajuste interno só por SQL e pelos testes), *retry* em 429 e 5xx e cache em `receita_consultas`. **Progresso visível** na tela.
 - **Regras de importação, em perfis nomeados por empresa (tenant).** Nada fixo no código: o produto será vendido. Um perfil define:
   - **situação ativa** (liga/desliga);
   - **matriz, filial ou ambas**;
@@ -209,12 +209,9 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
   - **Relatório** (`GET /v1/importacao/lotes/:id/linhas`, filtro por resultado e página de 50): cada linha com o resultado, o motivo em português e o nome da empresa criada. **CSV do que não entrou** (`problemas.csv`: `;`, UTF-8 com BOM, texto que começa com `=`, `+`, `-` ou `@` vira texto para não virar fórmula no Excel), para corrigir e reimportar. Lista de lotes em `/importacao` (`GET /v1/importacao/lotes`).
   - **Importar mesmo assim** (`POST .../importar-fora-do-perfil`): só em lote `concluida`; as linhas escolhidas (ou todas as fora do perfil) voltam a `pendente` e o worker as cadastra com a tag "Fora do perfil". O bloqueio de empresa não ativa continua valendo. **A decisão fica na linha** (`importacao_linhas.motivo = 'importar_mesmo_assim'` enquanto pendente), no banco, e não no evento nem no job: sobrevive a retomada, varredura e troca de worker, e dispensa coluna nova.
   - **Desfazer** (`POST .../desfazer`; **regras decididas pelo Ale em 15/10/2026**): vale para lote `concluida` **e** `cancelada`, **até 7 dias** depois de terminar (a conclusão; no cancelado, a última linha resolvida). **O prazo mora numa constante só, `DIAS_PARA_DESFAZER`, em `packages/shared/src/importacao.ts`**: mudar o número muda a API, as telas e as mensagens. Tira da carteira, por exclusão lógica **como a manual** (vínculos de contato inativos e filiais soltas da matriz), **só as empresas que o lote criou e que ninguém alterou depois**. **Ficam** (e o resultado avisa quantas e quais, com "Ficou na carteira" no relatório) as que tiveram **qualquer registro de auditoria além da criação** (editar, tags, atualizar pela Receita) ou que têm **contato vinculado**; a que já estava na carteira antes nunca é tocada. O lote vira `desfeita`, as linhas e o relatório ficam, e um lote desfeito não volta nem aceita "importar mesmo assim". Passado o prazo: 409 `prazo_de_desfazer_vencido`. **Quando existirem atividades e oportunidades (Módulos 5 e 6), elas também contam como "alteração" e a checagem entra, com teste, junto delas** (mesma regra da tabela de exclusão de cadastros do Módulo 1). Risco conhecido: um cancelamento seguido de desfazer no mesmo instante pode deixar passar a empresa da linha que já estava em gravação (janela de milissegundos).
-  - **Telas** (`/importacao/nova`, `/importacao/:id`, `/importacao`): os passos Enviar arquivo · Mapear colunas · Regras · Prévia · Carteira · Importar · Relatório, o assistente segue a situação do lote ao abrir o link de novo e só administrador e gestor entram. Botão "Importar planilha" na lista de Empresas. **Fora do Módulo 4:** atualizar a empresa que já existe, duplicado por nome ou telefone, relatório completo em Excel e notificação de conclusão (tabela em `roteiro_teste_modulo4.md`). **A importação de contatos por planilha não foi descartada: é o Módulo 4b, depois do teste das empresas pelo Ale.**
+  - **Telas** (`/importacao/nova`, `/importacao/:id`, `/importacao`): os passos Enviar arquivo · Mapear colunas · Regras · Prévia · Carteira · Importar · Relatório, o assistente segue a situação do lote ao abrir o link de novo e só administrador e gestor entram. Botão "Importar planilha" na lista de Empresas. **Fora do Módulo 4:** atualizar a empresa que já existe, duplicado por nome ou telefone, relatório completo em Excel e notificação de conclusão (tabela em `roteiro_teste_modulo4.md`). **Importação de contatos por planilha (antes chamada Módulo 4b): foi para o pós-MVP** (decidido pelo Ale em 15/10/2026, depois do teste das empresas); o reaproveitamento do assistente fica registrado na tabela "Fora do MVP".
 - **Deduplicação por CNPJ dentro do tenant.**
 - Os **perfis serão reaproveitados na Prospecção**.
-
-### Módulo 4b — Importação de contatos por planilha
-*Decidido pelo Ale em 15/10/2026: **não foi descartada**, fica **depois do teste do Módulo 4 (empresas)**.* Reaproveita o assistente do Módulo 4 (enviar, mapear, regras, prévia, carteira, importar, relatório e desfazer) com a alternância **Empresas / Contatos** do protótipo, ligando cada contato à empresa pelo CNPJ ou pelo nome. O desenho (colunas, dedupe por e-mail e telefone, vínculo e cargo) é plano a aprovar antes de codar.
 
 ### Módulo 5 — Atividades
 Formulário **Registrar atividade** (protótipo), situação, resultado, importante/urgente, **efeito na carteira** (tags Visitada/Contactada, última visita e último contato), **"Registrar e agendar próxima"**, atrasadas e linha do tempo na ficha.
@@ -257,6 +254,7 @@ Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase,
 | Offline | Complexidade alta; o PWA exige conexão no MVP |
 | Atualização campo a campo pela Receita e rotina mensal | A consulta inicial e o enriquecimento da importação cobrem o MVP |
 | Faixas de funcionários e de faturamento (cadastros e campos na empresa) | Decidido em 12/10/2026: não entram no MVP; a empresa não tem esses campos até uma fase posterior (`faixas_*` ficam só na modelagem) |
+| Importação de contatos por planilha (ex-Módulo 4b) | Decidido em 15/10/2026, depois do teste do Módulo 4: o contato entra pela ficha e pela conversão de sócio. Quando vier, reaproveita o assistente do Módulo 4 (enviar, mapear, prévia, carteira, importar, relatório e desfazer), ligando o contato à empresa pelo CNPJ ou pelo nome; o envio recusa `tipo` diferente de empresas até lá |
 | Detecção de duplicados por similaridade | O MVP deduplica só por CNPJ |
 | Exportação | O Ale tem a planilha de origem; sai com a exportação de dados por tenant (LGPD) |
 | Integrações (WhatsApp, e-mail, agendas, n8n) | Fases 4 a 7 de `funcionalidades.md` |
