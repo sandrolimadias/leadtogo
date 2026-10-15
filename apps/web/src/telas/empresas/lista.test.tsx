@@ -236,7 +236,20 @@ describe('Empresas: a lista', () => {
       'Próxima atividade',
     ])
     expect(screen.getByRole('button', { name: 'Nova empresa' })).toBeInTheDocument()
+    // administrador e gestor importam planilha; o vendedor não vê o botão
+    expect(screen.getByRole('button', { name: 'Importar planilha' })).toBeInTheDocument()
+  })
+
+  it('o vendedor não vê "Importar planilha" e quem importa vai para o envio da planilha', async () => {
+    const vendedor = servicos(undefined, { papel: 'vendedor' })
+    const { unmount } = await abrir(vendedor)
+    await screen.findByRole('table')
     expect(screen.queryByRole('button', { name: /Importar/ })).toBeNull()
+    unmount()
+
+    const { historico } = await abrir(servicos(undefined, { papel: 'gestor' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Importar planilha' }))
+    await waitFor(() => expect(historico.location.pathname).toBe('/importacao/nova'))
   })
 
   it('cada linha traz nome, CNPJ com máscara, TODAS as tags (sem "+N") e a cidade', async () => {

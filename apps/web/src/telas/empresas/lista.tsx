@@ -7,10 +7,11 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { Building2, Check, Filter, Plus, Search, X } from 'lucide-react'
+import { Building2, Check, Filter, Plus, Search, Upload, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { chaveDoMe } from '@/auth/guardas'
 import { useDispositivo } from '@/casca/dispositivo'
 import { Button, IconButton } from '@/components/ui/button'
 import { Select, TextField } from '@/components/ui/campos'
@@ -146,6 +147,13 @@ export function ListaDeEmpresas() {
       return r.dados
     },
   })
+
+  // Importar planilha é de administrador e gestor
+  const papel = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data?.empresas.find(
+    (e) => e.ativa,
+  )?.papel
+  const quemImporta = papel === 'admin' || papel === 'gestor'
+  const importar = () => void navegar({ to: '/importacao/nova' })
 
   const unicoMembro = opcoes.data?.unicoMembro ?? false
   const filtros = gruposDosFiltros(tags.data)
@@ -313,9 +321,16 @@ export function ListaDeEmpresas() {
           </span>
         </div>
         {celular ? null : (
-          <Button variant="primary" icon={Plus} onClick={nova}>
-            Nova empresa
-          </Button>
+          <>
+            {quemImporta ? (
+              <Button icon={Upload} onClick={importar}>
+                Importar planilha
+              </Button>
+            ) : null}
+            <Button variant="primary" icon={Plus} onClick={nova}>
+              Nova empresa
+            </Button>
+          </>
         )}
       </div>
 
