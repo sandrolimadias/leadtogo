@@ -199,7 +199,8 @@ export class ExecutorDaImportacao {
       }
       const linha = await this.proximaLinha(tenantId, lote.id)
       if (!linha) break
-      if (feitas >= limites.linhas || Date.now() - inicio >= limites.duracaoMs) {
+      // Todo bloco processa ao menos uma linha (senão, com a máquina carregada, só reagendaria o seguinte)
+      if (feitas > 0 && (feitas >= limites.linhas || Date.now() - inicio >= limites.duracaoMs)) {
         await this.gravarTotais(tenantId, lote.id)
         return fim('continua')
       }
