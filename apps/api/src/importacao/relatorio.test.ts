@@ -277,6 +277,31 @@ describe('GET /v1/importacao/lotes (lista)', () => {
 })
 
 describe('relatório: linhas, CSV e importar mesmo assim', () => {
+  it('o tamanho de página vai de 1 a 100 (25 por padrão): 101 é recusado', async () => {
+    const { d, lote } = await lotePronto()
+    expect(
+      (await chamar('get', d.cookie, `/v1/importacao/lotes/${lote.id}/linhas`)).body,
+    ).toMatchObject({
+      porPagina: 25,
+    })
+    for (const ok of [1, 25, 50, 100]) {
+      const r = await chamar(
+        'get',
+        d.cookie,
+        `/v1/importacao/lotes/${lote.id}/linhas?porPagina=${ok}`,
+      )
+      expect(r.status, `porPagina=${ok}`).toBe(200)
+    }
+    for (const ruim of [0, 101, 200]) {
+      const r = await chamar(
+        'get',
+        d.cookie,
+        `/v1/importacao/lotes/${lote.id}/linhas?porPagina=${ruim}`,
+      )
+      expect(r.status, `porPagina=${ruim}`).toBe(400)
+    }
+  })
+
   it('lista as linhas com o resultado, filtra por resultado e pagina; a empresa criada vem com o nome', async () => {
     const { d, lote, receita, a } = await lotePronto()
     await iniciar(d, lote.id)
@@ -286,7 +311,7 @@ describe('relatório: linhas, CSV e importar mesmo assim', () => {
     expect(todas).toMatchObject({
       total: 6,
       pagina: 1,
-      porPagina: 50,
+      porPagina: 25,
       colunas: ['CNPJ', 'Razão social', 'Telefone', 'Cidade', 'UF'],
     })
     expect(todas.itens.map((l) => l.resultado)).toEqual([

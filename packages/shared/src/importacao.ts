@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { nomeDeCadastroSchema } from './cadastros.js'
+import { porPaginaSchema } from './paginacao.js'
 
 // Importação de planilha (docs/escopo_mvp.md, Módulo 4): perfis de regras por empresa.
 
@@ -330,7 +331,7 @@ export const consultaDasLinhasSchema = z
   .object({
     resultado: resultadoDaLinhaSchema.optional(),
     pagina: z.coerce.number().int().min(1).default(1),
-    porPagina: z.coerce.number().int().min(1).max(200).default(50),
+    porPagina: porPaginaSchema(),
   })
   .strict()
 export type ConsultaDasLinhas = z.infer<typeof consultaDasLinhasSchema>
@@ -402,7 +403,7 @@ export type ListaDeLotes = z.infer<typeof listaDeLotesSchema>
 export const consultaDosLotesSchema = z
   .object({
     pagina: z.coerce.number().int().min(1).default(1),
-    porPagina: z.coerce.number().int().min(1).max(100).default(20),
+    porPagina: porPaginaSchema(),
   })
   .strict()
 export type ConsultaDosLotes = z.infer<typeof consultaDosLotesSchema>

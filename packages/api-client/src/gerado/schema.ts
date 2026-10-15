@@ -2747,6 +2747,9 @@ export interface components {
             filtroPadrao: {
                 [key: string]: string;
             };
+            porPagina: {
+                [key: string]: 25 | 50 | 100;
+            };
         };
         PreferenciasPatch: {
             /** @enum {string|null} */
@@ -2756,6 +2759,9 @@ export interface components {
             visaoDashboard?: "minha" | "equipe" | null;
             filtroPadrao?: {
                 [key: string]: string | null;
+            };
+            porPagina?: {
+                [key: string]: (25 | 50 | 100) | null;
             };
         };
         PreviaDaImportacao: {

@@ -53,5 +53,6 @@ function somenteForaDoPadrao(prefs: Preferencias): Partial<Preferencias> {
   if (prefs.menuRecolhido) saida.menuRecolhido = true
   if (prefs.visaoDashboard !== 'minha') saida.visaoDashboard = prefs.visaoDashboard
   if (Object.keys(prefs.filtroPadrao).length > 0) saida.filtroPadrao = prefs.filtroPadrao
+  if (Object.keys(prefs.porPagina).length > 0) saida.porPagina = prefs.porPagina
   return saida
 }

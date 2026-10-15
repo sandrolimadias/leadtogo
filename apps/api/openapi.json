@@ -6742,7 +6742,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "default": 20,
+              "default": 25,
               "type": "integer",
               "minimum": 1,
               "maximum": 100
@@ -7430,10 +7430,10 @@
             "required": false,
             "in": "query",
             "schema": {
-              "default": 50,
+              "default": 25,
               "type": "integer",
               "minimum": 1,
-              "maximum": 200
+              "maximum": 100
             }
           }
         ],
@@ -12522,9 +12522,28 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "porPagina": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "enum": [25]
+                },
+                {
+                  "type": "number",
+                  "enum": [50]
+                },
+                {
+                  "type": "number",
+                  "enum": [100]
+                }
+              ]
+            }
           }
         },
-        "required": ["tema", "menuRecolhido", "visaoDashboard", "filtroPadrao"],
+        "required": ["tema", "menuRecolhido", "visaoDashboard", "filtroPadrao", "porPagina"],
         "additionalProperties": false
       },
       "PreferenciasPatch": {
@@ -12550,6 +12569,26 @@
               "nullable": true,
               "type": "string",
               "format": "uuid"
+            }
+          },
+          "porPagina": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "anyOf": [
+                {
+                  "type": "number",
+                  "enum": [25]
+                },
+                {
+                  "type": "number",
+                  "enum": [50]
+                },
+                {
+                  "type": "number",
+                  "enum": [100]
+                }
+              ]
             }
           }
         },

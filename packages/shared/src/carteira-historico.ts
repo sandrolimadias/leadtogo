@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { porPaginaSchema } from './paginacao.js'
 
 // Aba Histórico da ficha da empresa (GET /v1/carteira/empresas/{id}/historico): a auditoria em
 // português, com nomes no lugar de ids, e as tags que o sistema aplicou ou tirou sozinho.
@@ -6,7 +7,7 @@ import { z } from 'zod'
 export const consultaDoHistoricoSchema = z
   .object({
     pagina: z.coerce.number().int().min(1).default(1),
-    porPagina: z.coerce.number().int().min(1).max(100).default(20),
+    porPagina: porPaginaSchema(20),
   })
   .strict()
 export type ConsultaDoHistorico = z.output<typeof consultaDoHistoricoSchema>

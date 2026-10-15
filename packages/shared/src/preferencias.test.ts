@@ -82,4 +82,43 @@ describe('preferências do membro', () => {
     expect(guardado.filtroPadrao).toBeUndefined() // sem filtros, a chave some
     expect(aplicarPatch({ tema: 'claro' }, {})).toEqual({ tema: 'claro' })
   })
+
+  it('porPagina: lê só 25, 50 e 100 das tabelas conhecidas e descarta o resto', () => {
+    expect(
+      lerPreferencias({ porPagina: { empresas: 50, contatos: 100, importacoes: 30, outra: 25 } })
+        .porPagina,
+    ).toEqual({ empresas: 50, contatos: 100 })
+    expect(lerPreferencias({ porPagina: 'lixo' }).porPagina).toEqual({})
+    expect(lerPreferencias({ porPagina: { empresas: '50' } }).porPagina).toEqual({})
+  })
+
+  it('porPagina no patch: aceita 25, 50, 100 e null; recusa outro tamanho e tabela desconhecida', () => {
+    for (const bom of [
+      { empresas: 25 },
+      { contatos: 50 },
+      { importacoes: 100 },
+      { empresas: null },
+    ]) {
+      expect(
+        preferenciasPatchSchema.safeParse({ porPagina: bom }).success,
+        JSON.stringify(bom),
+      ).toBe(true)
+    }
+    for (const ruim of [{ empresas: 10 }, { empresas: 101 }, { empresas: 0 }, { outra: 25 }]) {
+      expect(
+        preferenciasPatchSchema.safeParse({ porPagina: ruim }).success,
+        JSON.stringify(ruim),
+      ).toBe(false)
+    }
+  })
+
+  it('porPagina no patch mescla por tabela e remove com null (volta ao padrão)', () => {
+    let guardado = aplicarPatch({}, { porPagina: { empresas: 50 } })
+    guardado = aplicarPatch(guardado, { porPagina: { contatos: 100 } })
+    expect(guardado.porPagina).toEqual({ empresas: 50, contatos: 100 })
+    guardado = aplicarPatch(guardado, { porPagina: { empresas: null } })
+    expect(guardado.porPagina).toEqual({ contatos: 100 })
+    guardado = aplicarPatch(guardado, { porPagina: { contatos: null } })
+    expect(guardado).toEqual({})
+  })
 })

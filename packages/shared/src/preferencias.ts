@@ -1,5 +1,12 @@
 import { z } from 'zod'
 
+import {
+  TABELAS_PAGINADAS,
+  type TabelaPaginada,
+  tamanhoDePaginaSchema,
+  type TamanhoDePagina,
+} from './paginacao.js'
+
 // Preferências de interface do membro (docs/modelagem_banco.md, seção 3.4: `membros.preferencias`):
 // tema, menu recolhido, visão do Dashboard e filtro salvo padrão. São por membro, ou seja, por
 // usuário em cada empresa. O schema é FECHADO: só estas chaves são aceitas e guardadas.
@@ -16,6 +23,8 @@ export const preferenciasSchema = z
     visaoDashboard: z.enum(VISOES_DASHBOARD),
     /** Id do filtro salvo (`filtros_salvos`) que abre por padrão em cada tela; ausente = nenhum */
     filtroPadrao: z.partialRecord(z.enum(TELAS_COM_FILTRO), z.uuid()),
+    /** Quantas linhas por página em cada tabela de dados (25, 50 ou 100); ausente = 25 */
+    porPagina: z.partialRecord(z.enum(TABELAS_PAGINADAS), tamanhoDePaginaSchema),
   })
   .strict()
   .meta({ id: 'Preferencias' })
@@ -28,6 +37,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   menuRecolhido: false,
   visaoDashboard: 'minha',
   filtroPadrao: {},
+  porPagina: {},
 }
 
 /**
@@ -40,6 +50,8 @@ export const preferenciasPatchSchema = z
     menuRecolhido: z.boolean().nullable(),
     visaoDashboard: z.enum(VISOES_DASHBOARD).nullable(),
     filtroPadrao: z.partialRecord(z.enum(TELAS_COM_FILTRO), z.uuid().nullable()),
+    /** `null` volta a tabela ao padrão (25) */
+    porPagina: z.partialRecord(z.enum(TABELAS_PAGINADAS), tamanhoDePaginaSchema.nullable()),
   })
   .partial()
   .strict()
@@ -69,6 +81,15 @@ export function aplicarPatch(
     if (Object.keys(filtros).length === 0) delete novo.filtroPadrao
     else novo.filtroPadrao = filtros
   }
+  if (patch.porPagina) {
+    const tamanhos: Partial<Record<TabelaPaginada, TamanhoDePagina>> = { ...guardado.porPagina }
+    for (const [tabela, tamanho] of Object.entries(patch.porPagina)) {
+      if (tamanho === null || tamanho === undefined) delete tamanhos[tabela as TabelaPaginada]
+      else tamanhos[tabela as TabelaPaginada] = tamanho
+    }
+    if (Object.keys(tamanhos).length === 0) delete novo.porPagina
+    else novo.porPagina = tamanhos
+  }
   return novo
 }
 
@@ -97,5 +118,19 @@ export function lerPreferencias(guardado: unknown): Preferencias {
       if (id.success) filtros[tela] = id.data
     }
   }
-  return { ...PREFERENCIAS_PADRAO, ...lidas, filtroPadrao: filtros }
+  const tamanhos: Preferencias['porPagina'] = {}
+  const brutoDePagina = objeto['porPagina']
+  if (
+    brutoDePagina !== null &&
+    typeof brutoDePagina === 'object' &&
+    !Array.isArray(brutoDePagina)
+  ) {
+    for (const tabela of TABELAS_PAGINADAS) {
+      const tamanho = tamanhoDePaginaSchema.safeParse(
+        (brutoDePagina as Record<string, unknown>)[tabela],
+      )
+      if (tamanho.success) tamanhos[tabela] = tamanho.data
+    }
+  }
+  return { ...PREFERENCIAS_PADRAO, ...lidas, filtroPadrao: filtros, porPagina: tamanhos }
 }

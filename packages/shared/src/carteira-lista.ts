@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { tipoDocumentoSchema } from './carteira-empresas.js'
+import { porPaginaSchema } from './paginacao.js'
 
 // Lista de empresas da carteira (GET /v1/carteira/empresas): consulta, itens, contagens dos chips e
 // opções dos filtros. Especificação: docs/prototipo/README.md (tela 2) e docs/escopo_mvp.md (Módulo 2).
@@ -64,7 +65,7 @@ export const consultaDaListaSchema = z
     ordem: z.enum(ORDENS_DA_LISTA).default('nome'),
     sentido: z.enum(['asc', 'desc']).default('asc'),
     pagina: z.coerce.number().int().min(1).default(1),
-    porPagina: z.coerce.number().int().min(1).max(100).default(25),
+    porPagina: porPaginaSchema(),
   })
   .strict()
 export type ConsultaDaLista = z.output<typeof consultaDaListaSchema>

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { telefoneEntradaSchema, tipoTelefoneSchema } from './carteira-empresas.js'
+import { porPaginaSchema } from './paginacao.js'
 
 // Contato (a pessoa) e seus vínculos com as empresas da carteira: /v1/carteira/contatos.
 // O cargo e o contato principal pertencem ao VÍNCULO com cada empresa, não à pessoa.
@@ -216,7 +217,7 @@ export const consultaDeContatosSchema = z
     ordem: z.enum(ORDENS_DA_LISTA_DE_CONTATOS).default('nome'),
     sentido: z.enum(['asc', 'desc']).default('asc'),
     pagina: z.coerce.number().int().min(1).default(1),
-    porPagina: z.coerce.number().int().min(1).max(100).default(25),
+    porPagina: porPaginaSchema(),
   })
   .strict()
 export type ConsultaDeContatos = z.output<typeof consultaDeContatosSchema>

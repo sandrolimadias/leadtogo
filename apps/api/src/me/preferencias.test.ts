@@ -67,6 +67,7 @@ describe('GET /v1/me/preferencias', () => {
       menuRecolhido: false,
       visaoDashboard: 'minha',
       filtroPadrao: {},
+      porPagina: {},
     })
   })
 
@@ -82,6 +83,7 @@ describe('GET /v1/me/preferencias', () => {
       menuRecolhido: false,
       visaoDashboard: 'minha',
       filtroPadrao: {},
+      porPagina: {},
     })
   })
 })
@@ -97,17 +99,20 @@ describe('PATCH /v1/me/preferencias', () => {
       menuRecolhido: true,
       visaoDashboard: 'minha',
       filtroPadrao: {},
+      porPagina: {},
     })
 
     const segundo = await alterar(d.cookie, {
       visaoDashboard: 'equipe',
       filtroPadrao: { empresas: F1 },
+      porPagina: {},
     })
     expect(prefs(segundo)).toEqual({
       tema: 'escuro',
       menuRecolhido: true,
       visaoDashboard: 'equipe',
       filtroPadrao: { empresas: F1 },
+      porPagina: {},
     })
     const terceiro = await alterar(d.cookie, { filtroPadrao: { contatos: F2 } })
     expect(prefs(terceiro).filtroPadrao).toEqual({ empresas: F1, contatos: F2 }) // mescla por tela
@@ -121,6 +126,7 @@ describe('PATCH /v1/me/preferencias', () => {
       tema: 'escuro',
       menuRecolhido: true,
       filtroPadrao: { empresas: F1, contatos: F2 },
+      porPagina: {},
     })
     const r = await alterar(d.cookie, { tema: null, filtroPadrao: { empresas: null } })
     expect(prefs(r)).toEqual({
@@ -128,6 +134,7 @@ describe('PATCH /v1/me/preferencias', () => {
       menuRecolhido: true,
       visaoDashboard: 'minha',
       filtroPadrao: { contatos: F2 },
+      porPagina: {},
     })
     expect((await guardadoNoBanco(d.usuarioId, d.tenantId))?.preferencias).toEqual({
       menuRecolhido: true,
@@ -146,6 +153,23 @@ describe('PATCH /v1/me/preferencias', () => {
     expect(linha?.atualizado_por).not.toBeNull()
   })
 
+  it('porPagina: guarda por tabela (vale em qualquer aparelho), mescla e volta ao padrão com null', async () => {
+    const d = await novoDono(app)
+    await ativar(d.usuarioId, d.tenantId)
+    const primeiro = await alterar(d.cookie, { porPagina: { empresas: 50 } })
+    expect(primeiro.status).toBe(200)
+    expect(prefs(primeiro).porPagina).toEqual({ empresas: 50 })
+    const segundo = await alterar(d.cookie, { porPagina: { contatos: 100 } })
+    expect(prefs(segundo).porPagina).toEqual({ empresas: 50, contatos: 100 })
+    // outra sessão do mesmo usuário lê o mesmo
+    expect(prefs(await ver(d.cookie)).porPagina).toEqual({ empresas: 50, contatos: 100 })
+    expect((await guardadoNoBanco(d.usuarioId, d.tenantId))?.preferencias).toEqual({
+      porPagina: { empresas: 50, contatos: 100 },
+    })
+    const volta = await alterar(d.cookie, { porPagina: { empresas: null } })
+    expect(prefs(volta).porPagina).toEqual({ contatos: 100 })
+  })
+
   it('entrada inválida: 400 validacao_invalida, e nada é gravado', async () => {
     const d = await novoDono(app)
     await ativar(d.usuarioId, d.tenantId)
@@ -155,6 +179,9 @@ describe('PATCH /v1/me/preferencias', () => {
       { visaoDashboard: 'todos' },
       { filtroPadrao: { desconhecida: F1 } },
       { filtroPadrao: { empresas: 'abc' } },
+      { porPagina: { empresas: 10 } }, // só 25, 50 ou 100
+      { porPagina: { empresas: 101 } },
+      { porPagina: { tabela_inexistente: 25 } },
       { papel: 'admin' }, // chave que o cliente não pode mandar
       { tenantId: d.tenantId },
       [],
@@ -220,6 +247,7 @@ describe('PATCH /v1/me/preferencias', () => {
       menuRecolhido: true,
       visaoDashboard: 'equipe',
       filtroPadrao: { empresas: F1 },
+      porPagina: {},
     })
   })
 })
