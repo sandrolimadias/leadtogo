@@ -64,6 +64,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/carteira/atividades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista de atividades
+         * @description Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Abas `agendadas` (abertas que ainda não passaram), `atrasadas` (abertas com a data passada; a de dia inteiro só atrasa depois do dia, no fuso da empresa) e `realizadas`; sem aba, a linha do tempo (as abertas primeiro, depois o histórico, com as canceladas). Filtros por empresa, contato, tipo, responsável, `minhas` e busca (título, empresa ou contato). Traz a contagem de cada aba com os mesmos filtros.
+         */
+        get: operations["AtividadesController_listar"];
+        put?: never;
+        /**
+         * Registrar atividade
+         * @description Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Situação `realizada` (padrão: já aconteceu, `resultado` obrigatório e `dataInicio` é quando aconteceu, sem passar de 5 minutos no futuro: 400 `atividade_no_futuro`) ou `pendente` (agendar). A empresa é obrigatória, exceto no tipo Tarefa (400 `empresa_obrigatoria`); o contato precisa ser da empresa (400 `contato_invalido`); sem `responsavelId`, é o próprio usuário, e o vendedor só atribui a si (403). `diaInteiro` vale a meia-noite do dia no fuso da empresa. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo. Registra na auditoria.
+         */
+        post: operations["AtividadesController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/atividades/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Atividade
+         * @description Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404.
+         */
+        get: operations["AtividadesController_detalhar"];
+        put?: never;
+        post?: never;
+        /**
+         * Excluir atividade
+         * @description Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Exclusão lógica, sem lixeira. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo.
+         */
+        delete: operations["AtividadesController_excluir"];
+        options?: never;
+        head?: never;
+        /**
+         * Editar atividade
+         * @description Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Só o que vier muda. Numa realizada, `dataInicio` é a data em que aconteceu (não passa de 5 minutos no futuro) e o resultado não pode ficar vazio; atividade cancelada não se edita (409 `atividade_cancelada`). Trocar de empresa sem informar o contato tira o contato. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo. Registra na auditoria o antes e o depois.
+         */
+        patch: operations["AtividadesController_alterar"];
+        trace?: never;
+    };
+    "/v1/carteira/atividades/{id}/cancelar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancelar atividade
+         * @description Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Vale para aberta e para realizada (a realizada deixa de contar como visita ou contato; o resultado fica guardado). Já cancelada: 409. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo.
+         */
+        post: operations["AtividadesController_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/atividades/{id}/concluir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Concluir atividade
+         * @description Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Só atividade aberta (409 `atividade_nao_aberta`). `resultado` obrigatório; `realizadaEm` é opcional (padrão: agora) e não passa de 5 minutos no futuro. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo.
+         */
+        post: operations["AtividadesController_concluir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/carteira/contatos": {
         parameters: {
             query?: never;
@@ -1351,7 +1443,7 @@ export interface paths {
         put?: never;
         /**
          * Desfazer a importação
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida` ou `cancelada`, até 7 dias depois de terminar (`desfazerAte`; o prazo é `DIAS_PARA_DESFAZER`). Saem da carteira (exclusão lógica, como a manual) as empresas que o lote criou e que ninguém alterou depois; ficam as que tiveram qualquer alteração (editar, tags, Receita) ou têm contato vinculado, e a contagem vem em `desfeito` (`removidas` e `mantidas`). As que já estavam na carteira antes não são tocadas, e o relatório continua. Fora de um lote concluído ou cancelado: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida` ou `cancelada`, até 7 dias depois de terminar (`desfazerAte`; o prazo é `DIAS_PARA_DESFAZER`). Saem da carteira (exclusão lógica, como a manual) as empresas que o lote criou e que ninguém alterou depois; ficam as que tiveram qualquer alteração (editar, tags, Receita), têm contato vinculado ou têm atividade registrada, e a contagem vem em `desfeito` (`removidas` e `mantidas`). As que já estavam na carteira antes não são tocadas, e o relatório continua. Fora de um lote concluído ou cancelado: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.
          */
         post: operations["LotesDeImportacaoController_desfazer"];
         delete?: never;
@@ -1731,6 +1823,26 @@ export interface components {
             jobs_falhos_total: number;
             limite_jobs_falhos: number;
         };
+        AlterarAtividadeEntrada: {
+            /** Format: uuid */
+            tipoAtividadeId?: string;
+            titulo?: string;
+            /** Format: uuid */
+            empresaId?: string | null;
+            /** Format: uuid */
+            contatoId?: string | null;
+            /** Format: uuid */
+            responsavelId?: string;
+            /** Format: date-time */
+            dataInicio?: string;
+            /** Format: date-time */
+            dataFim?: string | null;
+            diaInteiro?: boolean;
+            resultado?: string | null;
+            importante?: boolean;
+            urgente?: boolean;
+            observacoes?: string | null;
+        };
         AlterarContatoEntrada: {
             nome?: string;
             /** Format: uuid */
@@ -1886,6 +1998,50 @@ export interface components {
             /** Format: uuid */
             tagId: string;
         };
+        Atividade: {
+            /** Format: uuid */
+            id: string;
+            tipo: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                icone: string;
+                cor: components["schemas"]["CorDeTag"];
+                /** @enum {string} */
+                contaComo: "visita" | "contato" | "nenhum";
+            };
+            titulo: string;
+            empresa: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            contato: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            responsavel: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            dataInicio: string;
+            dataFim: string | null;
+            diaInteiro: boolean;
+            /** @enum {string} */
+            situacao: "pendente" | "em_execucao" | "realizada" | "cancelada";
+            atrasada: boolean;
+            realizadaEm: string | null;
+            resultado: string | null;
+            importante: boolean;
+            urgente: boolean;
+            observacoes: string | null;
+            /** @enum {string} */
+            origem: "manual" | "whatsapp" | "email" | "agenda" | "api" | "recorrencia";
+            criadaEm: string;
+            editavel: boolean;
+        };
         CnaesConferidos: {
             validos: {
                 codigo: number;
@@ -1900,6 +2056,11 @@ export interface components {
         CnaesDaEmpresaEntrada: {
             principal: number | null;
             secundarios: number[];
+        };
+        ConcluirAtividadeEntrada: {
+            resultado: string;
+            /** Format: date-time */
+            realizadaEm?: string;
         };
         ConferirCnaesEntrada: {
             texto: string;
@@ -2082,6 +2243,34 @@ export interface components {
         };
         /** @enum {string} */
         CorDeTag: "gray" | "red" | "orange" | "amber" | "green" | "teal" | "blue" | "indigo" | "purple" | "pink";
+        CriarAtividadeEntrada: {
+            /** Format: uuid */
+            tipoAtividadeId: string;
+            titulo: string;
+            /** Format: uuid */
+            empresaId?: string | null;
+            /** Format: uuid */
+            contatoId?: string | null;
+            /** Format: uuid */
+            responsavelId?: string;
+            /** Format: date-time */
+            dataInicio: string;
+            /** Format: date-time */
+            dataFim?: string | null;
+            /** @default false */
+            diaInteiro: boolean;
+            /**
+             * @default realizada
+             * @enum {string}
+             */
+            situacao: "pendente" | "realizada";
+            resultado?: string | null;
+            /** @default false */
+            importante: boolean;
+            /** @default false */
+            urgente: boolean;
+            observacoes?: string | null;
+        };
         CriarContatoEntrada: {
             nome: string;
             /** Format: uuid */
@@ -2563,6 +2752,17 @@ export interface components {
             porPagina: number;
             colunas: string[];
         };
+        ListaDeAtividades: {
+            itens: components["schemas"]["Atividade"][];
+            total: number;
+            pagina: number;
+            porPagina: number;
+            contagens: {
+                agendadas: number;
+                atrasadas: number;
+                realizadas: number;
+            };
+        };
         ListaDeContatos: {
             itens: components["schemas"]["ItemDaListaDeContatos"][];
             total: number;
@@ -3009,6 +3209,455 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AtividadesController_listar: {
+        parameters: {
+            query?: {
+                aba?: "agendadas" | "atrasadas" | "realizadas";
+                empresaId?: string;
+                contatoId?: string;
+                tipoAtividadeId?: string;
+                responsavelId?: string;
+                minhas?: "true" | "false";
+                busca?: string;
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeAtividades"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AtividadesController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarAtividadeEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Atividade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AtividadesController_detalhar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Atividade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AtividadesController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AtividadesController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarAtividadeEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Atividade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AtividadesController_cancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Atividade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AtividadesController_concluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConcluirAtividadeEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Atividade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -124,9 +124,11 @@ export class ExecucaoDaImportacaoService {
           // ninguém mexeu depois: nenhum registro de auditoria além da criação...
           sql`NOT EXISTS (SELECT 1 FROM auditoria a WHERE a.entidade = 'empresa'
                 AND a.entidade_id = ${empresas.id} AND a.acao <> 'criar')`,
-          // ...e nenhum contato vinculado
+          // ...nenhum contato vinculado...
           sql`NOT EXISTS (SELECT 1 FROM empresa_contatos ec
                 WHERE ec.empresa_id = ${empresas.id} AND ec.ativo)`,
+          // ...e nenhuma atividade (mesmo a já excluída: alguém trabalhou nesta empresa)
+          sql`NOT EXISTS (SELECT 1 FROM atividades at WHERE at.empresa_id = ${empresas.id})`,
         ),
       )
       .returning({ id: empresas.id })

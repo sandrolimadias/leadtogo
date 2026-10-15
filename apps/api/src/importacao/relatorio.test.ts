@@ -626,6 +626,38 @@ describe('desfazer o lote', () => {
     expect(depois.desfeito).toEqual({ removidas: 1, mantidas: 2 })
   })
 
+  it('a empresa com atividade registrada (mesmo excluída depois) fica na carteira', async () => {
+    const [a, b] = [cnpjNovo(), cnpjNovo()]
+    const { d, membroId, lote } = await cenario({
+      linhas: [
+        [a, 'Alfa', '', '', ''],
+        [b, 'Beta', '', '', ''],
+      ],
+    })
+    await iniciar(d, lote.id)
+    expect(await executar(new ReceitaFalsa(), d.tenantId, lote.id)).toBe('concluida')
+    const ids = (await linhasDe(d.tenantId, lote.id)).map((l) => l.empresa_id ?? '')
+    const [ea, eb] = [ids[0] ?? '', ids[1] ?? '']
+    await noTenant(d.tenantId, async (tx) => {
+      // Alfa: uma atividade aberta; Beta: uma atividade que já foi excluída
+      await tx`
+        INSERT INTO atividades (id, tenant_id, tipo_atividade_id, titulo, empresa_id, responsavel_id, data_inicio, excluido_em)
+        SELECT gen_random_uuid(), ${d.tenantId}, t.id, 'Visita', ${ea}, ${membroId}, now(), NULL
+        FROM tipos_atividade t WHERE t.chave_sistema = 'visita' AND t.tenant_id = ${d.tenantId}`
+      await tx`
+        INSERT INTO atividades (id, tenant_id, tipo_atividade_id, titulo, empresa_id, responsavel_id, data_inicio, excluido_em)
+        SELECT gen_random_uuid(), ${d.tenantId}, t.id, 'Visita apagada', ${eb}, ${membroId}, now(), now()
+        FROM tipos_atividade t WHERE t.chave_sistema = 'visita' AND t.tenant_id = ${d.tenantId}`
+    })
+    const r = await desfazer(d.cookie, lote.id)
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    expect((r.body as LoteDeImportacao).desfeito).toEqual({ removidas: 0, mantidas: 2 })
+    expect((await empresasDoLote(d.tenantId, lote.id)).map((e) => e.removida)).toEqual([
+      false,
+      false,
+    ])
+  })
+
   it('também desfaz o lote cancelado (prazo contado da última linha resolvida)', async () => {
     const [a, b] = [cnpjNovo(), cnpjNovo()]
     const { d, lote } = await cenario({

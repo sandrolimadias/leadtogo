@@ -117,6 +117,612 @@
         "security": []
       }
     },
+    "/v1/carteira/atividades": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Abas `agendadas` (abertas que ainda não passaram), `atrasadas` (abertas com a data passada; a de dia inteiro só atrasa depois do dia, no fuso da empresa) e `realizadas`; sem aba, a linha do tempo (as abertas primeiro, depois o histórico, com as canceladas). Filtros por empresa, contato, tipo, responsável, `minhas` e busca (título, empresa ou contato). Traz a contagem de cada aba com os mesmos filtros.",
+        "operationId": "AtividadesController_listar",
+        "parameters": [
+          {
+            "name": "aba",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["agendadas", "atrasadas", "realizadas"]
+            }
+          },
+          {
+            "name": "empresaId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "contatoId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tipoAtividadeId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "responsavelId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "minhas",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeAtividades"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lista de atividades",
+        "tags": ["Carteira: atividades"]
+      },
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Situação `realizada` (padrão: já aconteceu, `resultado` obrigatório e `dataInicio` é quando aconteceu, sem passar de 5 minutos no futuro: 400 `atividade_no_futuro`) ou `pendente` (agendar). A empresa é obrigatória, exceto no tipo Tarefa (400 `empresa_obrigatoria`); o contato precisa ser da empresa (400 `contato_invalido`); sem `responsavelId`, é o próprio usuário, e o vendedor só atribui a si (403). `diaInteiro` vale a meia-noite do dia no fuso da empresa. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo. Registra na auditoria.",
+        "operationId": "AtividadesController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarAtividadeEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Atividade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Registrar atividade",
+        "tags": ["Carteira: atividades"]
+      }
+    },
+    "/v1/carteira/atividades/{id}": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404.",
+        "operationId": "AtividadesController_detalhar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Atividade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Atividade",
+        "tags": ["Carteira: atividades"]
+      },
+      "patch": {
+        "description": "Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Só o que vier muda. Numa realizada, `dataInicio` é a data em que aconteceu (não passa de 5 minutos no futuro) e o resultado não pode ficar vazio; atividade cancelada não se edita (409 `atividade_cancelada`). Trocar de empresa sem informar o contato tira o contato. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo. Registra na auditoria o antes e o depois.",
+        "operationId": "AtividadesController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarAtividadeEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Atividade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar atividade",
+        "tags": ["Carteira: atividades"]
+      },
+      "delete": {
+        "description": "Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Exclusão lógica, sem lixeira. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo.",
+        "operationId": "AtividadesController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir atividade",
+        "tags": ["Carteira: atividades"]
+      }
+    },
+    "/v1/carteira/atividades/{id}/cancelar": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Vale para aberta e para realizada (a realizada deixa de contar como visita ou contato; o resultado fica guardado). Já cancelada: 409. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo.",
+        "operationId": "AtividadesController_cancelar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Atividade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cancelar atividade",
+        "tags": ["Carteira: atividades"]
+      }
+    },
+    "/v1/carteira/atividades/{id}/concluir": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Só atividade aberta (409 `atividade_nao_aberta`). `resultado` obrigatório; `realizadaEm` é opcional (padrão: agora) e não passa de 5 minutos no futuro. Toda mudança recalcula na empresa a última visita, o último contato (a visita também conta como contato), a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo.",
+        "operationId": "AtividadesController_concluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcluirAtividadeEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Atividade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Concluir atividade",
+        "tags": ["Carteira: atividades"]
+      }
+    },
     "/v1/carteira/contatos": {
       "get": {
         "description": "Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Busca por nome (sem acento), e-mail ou telefone (pedaço, com ou sem máscara). Os filtros `empresaId`, `cargo` e `tagId` (tag da empresa) valem juntos para o mesmo vínculo ativo; `papelDecisaoId` filtra a pessoa. Cada item traz só as empresas que o usuário vê, o telefone principal (E.164), o e-mail principal e se pediu para não ser contatado. Ordem por nome (padrão) ou data de cadastro, paginada.",
@@ -7135,7 +7741,7 @@
     },
     "/v1/importacao/lotes/{id}/desfazer": {
       "post": {
-        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida` ou `cancelada`, até 7 dias depois de terminar (`desfazerAte`; o prazo é `DIAS_PARA_DESFAZER`). Saem da carteira (exclusão lógica, como a manual) as empresas que o lote criou e que ninguém alterou depois; ficam as que tiveram qualquer alteração (editar, tags, Receita) ou têm contato vinculado, e a contagem vem em `desfeito` (`removidas` e `mantidas`). As que já estavam na carteira antes não são tocadas, e o relatório continua. Fora de um lote concluído ou cancelado: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.",
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida` ou `cancelada`, até 7 dias depois de terminar (`desfazerAte`; o prazo é `DIAS_PARA_DESFAZER`). Saem da carteira (exclusão lógica, como a manual) as empresas que o lote criou e que ninguém alterou depois; ficam as que tiveram qualquer alteração (editar, tags, Receita), têm contato vinculado ou têm atividade registrada, e a contagem vem em `desfeito` (`removidas` e `mantidas`). As que já estavam na carteira antes não são tocadas, e o relatório continua. Fora de um lote concluído ou cancelado: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.",
         "operationId": "LotesDeImportacaoController_desfazer",
         "parameters": [
           {
@@ -8784,6 +9390,63 @@
         ],
         "additionalProperties": false
       },
+      "AlterarAtividadeEntrada": {
+        "type": "object",
+        "properties": {
+          "tipoAtividadeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "empresaId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "contatoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataFim": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "diaInteiro": {
+            "type": "boolean"
+          },
+          "resultado": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "importante": {
+            "type": "boolean"
+          },
+          "urgente": {
+            "type": "boolean"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarContatoEntrada": {
         "type": "object",
         "properties": {
@@ -9380,6 +10043,153 @@
         "required": ["empresaIds", "tagId"],
         "additionalProperties": false
       },
+      "Atividade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "icone": {
+                "type": "string"
+              },
+              "cor": {
+                "$ref": "#/components/schemas/CorDeTag"
+              },
+              "contaComo": {
+                "type": "string",
+                "enum": ["visita", "contato", "nenhum"]
+              }
+            },
+            "required": ["id", "nome", "icone", "cor", "contaComo"],
+            "additionalProperties": false
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "empresa": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "contato": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "dataInicio": {
+            "type": "string"
+          },
+          "dataFim": {
+            "nullable": true,
+            "type": "string"
+          },
+          "diaInteiro": {
+            "type": "boolean"
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["pendente", "em_execucao", "realizada", "cancelada"]
+          },
+          "atrasada": {
+            "type": "boolean"
+          },
+          "realizadaEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "resultado": {
+            "nullable": true,
+            "type": "string"
+          },
+          "importante": {
+            "type": "boolean"
+          },
+          "urgente": {
+            "type": "boolean"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "origem": {
+            "type": "string",
+            "enum": ["manual", "whatsapp", "email", "agenda", "api", "recorrencia"]
+          },
+          "criadaEm": {
+            "type": "string"
+          },
+          "editavel": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "titulo",
+          "empresa",
+          "contato",
+          "responsavel",
+          "dataInicio",
+          "dataFim",
+          "diaInteiro",
+          "situacao",
+          "atrasada",
+          "realizadaEm",
+          "resultado",
+          "importante",
+          "urgente",
+          "observacoes",
+          "origem",
+          "criadaEm",
+          "editavel"
+        ],
+        "additionalProperties": false
+      },
       "CnaesConferidos": {
         "type": "object",
         "properties": {
@@ -9446,6 +10256,22 @@
           }
         },
         "required": ["principal", "secundarios"],
+        "additionalProperties": false
+      },
+      "ConcluirAtividadeEntrada": {
+        "type": "object",
+        "properties": {
+          "resultado": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "realizadaEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["resultado"],
         "additionalProperties": false
       },
       "ConferirCnaesEntrada": {
@@ -10065,6 +10891,72 @@
           "purple",
           "pink"
         ]
+      },
+      "CriarAtividadeEntrada": {
+        "type": "object",
+        "properties": {
+          "tipoAtividadeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "empresaId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "contatoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataFim": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "diaInteiro": {
+            "default": false,
+            "type": "boolean"
+          },
+          "situacao": {
+            "default": "realizada",
+            "type": "string",
+            "enum": ["pendente", "realizada"]
+          },
+          "resultado": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "importante": {
+            "default": false,
+            "type": "boolean"
+          },
+          "urgente": {
+            "default": false,
+            "type": "boolean"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "required": ["tipoAtividadeId", "titulo", "dataInicio"],
+        "additionalProperties": false
       },
       "CriarContatoEntrada": {
         "type": "object",
@@ -11845,6 +12737,56 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina", "colunas"],
+        "additionalProperties": false
+      },
+      "ListaDeAtividades": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Atividade"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "contagens": {
+            "type": "object",
+            "properties": {
+              "agendadas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "atrasadas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "realizadas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["agendadas", "atrasadas", "realizadas"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina", "contagens"],
         "additionalProperties": false
       },
       "ListaDeContatos": {
