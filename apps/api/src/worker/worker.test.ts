@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
-import { Queue } from 'bullmq'
+import { type Job, Queue } from 'bullmq'
 import { Redis } from 'ioredis'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
@@ -30,6 +30,27 @@ afterEach(async () => {
     await q.close()
   }
 })
+
+/**
+ * Espera o job ficar `completed`. Se não ficar, a falha diz o que aconteceu (estado final, motivo se
+ * falhou e a saída do worker), em vez de só "condição não atingida": um job `failed` ou "travado"
+ * nunca vira `completed`, e nenhum prazo resolve isso.
+ */
+async function esperarConcluido(job: Job, q: Queue, w?: WorkerFilho) {
+  let estado = ''
+  try {
+    await esperarAte(async () => {
+      estado = await job.getState()
+      return estado === 'completed'
+    })
+  } catch {
+    const atual = await q.getJob(job.id ?? '')
+    throw new Error(
+      `o job ${job.id} ficou "${estado}" (motivo: ${atual?.failedReason ?? 'nenhum'}; tentativas: ${atual?.attemptsMade})` +
+        (w ? `\nsaída do worker:\n${w.saida()}` : ''),
+    )
+  }
+}
 
 function novoPrefixo() {
   n += 1
@@ -115,7 +136,7 @@ describe('worker: encerramento gracioso (SIGTERM)', () => {
     expect(saida.codigo).toBe(0)
     expect(saida.emMs).toBeGreaterThan(1000) // esperou o job, não saiu na hora
     expect(await valkey.get(chave)).toBe(job.id) // o job terminou e gravou
-    await esperarAte(async () => (await job.getState()) === 'completed') // o estado vem logo depois do efeito
+    await esperarConcluido(job, q, w) // o estado vem logo depois do efeito
     expect(w.saida()).toContain('"noPrazo":true')
   }, 40_000)
 
@@ -153,7 +174,7 @@ describe('worker: encerramento gracioso (SIGTERM)', () => {
     const w2 = await worker({ WORKER_ENCERRAMENTO_S: '20' })
     await w2.aguardarPronto()
     await esperarAte(async () => (await valkey.get(chave)) !== null)
-    await esperarAte(async () => (await job.getState()) === 'completed') // o estado vem logo depois do efeito
+    await esperarConcluido(job, q, w2) // o estado vem logo depois do efeito
   }, 60_000)
 })
 

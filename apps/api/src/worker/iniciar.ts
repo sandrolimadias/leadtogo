@@ -1,6 +1,7 @@
 import type { Server } from 'node:http'
 
 import type { Conexao } from '@leadtogo/db'
+import { DelayedError } from 'bullmq'
 import type { Redis } from 'ioredis'
 import type { Logger } from 'pino'
 
@@ -79,12 +80,25 @@ export async function iniciarWorker(deps: {
   // 2 s; só UM worker pega cada ciclo, então vários workers juntos não duplicam o trabalho
   const receita = new ReceitaService(banco, provedoresPadrao(config))
   // Importação de planilha: uma por vez no processo (a Receita não tem SLA e o intervalo é por consulta)
-  const executor = new ExecutorDaImportacao({ banco, receita, log })
+  const executor = new ExecutorDaImportacao({
+    banco,
+    receita,
+    log,
+    // SIGTERM: para antes da próxima linha, em vez de segurar o deploy até o prazo
+    deveParar: () => filas.estaEncerrando,
+  })
   filas.consumir(
     FILAS.importacao,
-    async (job) => {
+    async (job, token) => {
       const { tenantId, importacaoId } = job.data as { tenantId: string; importacaoId: string }
-      return executor.executar(tenantId, importacaoId)
+      const desfecho = await executor.executar(tenantId, importacaoId)
+      if (desfecho === 'interrompida') {
+        // O worker está saindo: devolve o job à fila (sem gastar tentativa nem esperar o lock vencer)
+        // para o próximo worker retomar das linhas pendentes
+        await job.moveToDelayed(Date.now() + 2000, token)
+        throw new DelayedError()
+      }
+      return desfecho
     },
     { concorrencia: 1 },
   )

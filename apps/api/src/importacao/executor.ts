@@ -32,9 +32,12 @@ export interface DepsDoExecutor {
   log: { info: (o: object, m: string) => void; warn: (o: object, m: string) => void }
   /** Dorme; os testes trocam por uma versão sem espera */
   esperar?: (ms: number) => Promise<void>
+  /** O processo está encerrando (SIGTERM): para antes da próxima linha, sem perder nada */
+  deveParar?: () => boolean
 }
 
-export type DesfechoDaExecucao = 'concluida' | 'cancelada' | 'falhou' | 'ignorada'
+/** `interrompida`: o worker está encerrando; o lote segue em andamento e o job volta para a fila */
+export type DesfechoDaExecucao = 'concluida' | 'cancelada' | 'falhou' | 'ignorada' | 'interrompida'
 
 interface Resultado {
   resultado: ResultadoDaLinha
@@ -44,7 +47,16 @@ interface Resultado {
 
 type Lote = typeof importacoes.$inferSelect
 
-const dormir = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+/** Dorme em passos curtos, para um SIGTERM não esperar a espera inteira (até 60 s). */
+const dormirAte = (ms: number, deveParar?: () => boolean): Promise<void> =>
+  new Promise((resolver) => {
+    const fim = Date.now() + ms
+    const passo = () => {
+      if (Date.now() >= fim || deveParar?.()) return resolver()
+      setTimeout(passo, Math.min(250, fim - Date.now()))
+    }
+    passo()
+  })
 
 /**
  * Executa um lote de importação de empresas, uma linha por vez:
@@ -60,7 +72,7 @@ export class ExecutorDaImportacao {
   private readonly esperar: (ms: number) => Promise<void>
 
   constructor(private readonly deps: DepsDoExecutor) {
-    this.esperar = deps.esperar ?? dormir
+    this.esperar = deps.esperar ?? ((ms) => dormirAte(ms, deps.deveParar))
   }
 
   private noTenant<T>(tenantId: string, fn: (tx: Transacao) => Promise<T>): Promise<T> {
@@ -139,6 +151,10 @@ export class ExecutorDaImportacao {
         await this.gravarTotais(tenantId, lote.id)
         return 'cancelada'
       }
+      if (this.deps.deveParar?.()) {
+        await this.gravarTotais(tenantId, lote.id)
+        return 'interrompida'
+      }
       const linha = await this.proximaLinha(tenantId, lote.id)
       if (!linha) break
 
@@ -156,6 +172,10 @@ export class ExecutorDaImportacao {
           usuarioId: importador.usuarioId ?? '',
         },
       })
+      if (r.interrompida) {
+        await this.gravarTotais(tenantId, lote.id)
+        return 'interrompida'
+      }
       seguidasSemReceita = r.semReceita ? seguidasSemReceita + 1 : 0
       if (++desdeOsTotais >= A_CADA) {
         desdeOsTotais = 0
@@ -272,7 +292,7 @@ export class ExecutorDaImportacao {
     bloquearNaoAtiva: boolean
     campos: Record<string, string>
     importador: { id: string; papel: PapelMembro; usuarioId: string }
-  }): Promise<{ semReceita: boolean }> {
+  }): Promise<{ semReceita: boolean; interrompida?: boolean }> {
     const { tenantId, lote, linha } = p
     const documento = linha.documento as string
 
@@ -294,6 +314,7 @@ export class ExecutorDaImportacao {
 
     if (p.consultaAReceita) {
       const c = await this.consultar(documento, lote.intervaloMs)
+      if ('interrompida' in c) return { semReceita: false, interrompida: true }
       if ('resultado' in c) {
         await this.gravar(tenantId, linha.id, c.resultado)
         return { semReceita: c.semReceita }
@@ -327,7 +348,11 @@ export class ExecutorDaImportacao {
   private async consultar(
     documento: string,
     intervaloMs: number,
-  ): Promise<{ consulta: ConsultaDeCnpj } | { resultado: Resultado; semReceita: boolean }> {
+  ): Promise<
+    | { consulta: ConsultaDeCnpj }
+    | { resultado: Resultado; semReceita: boolean }
+    | { interrompida: true }
+  > {
     for (let tentativa = 0; ; tentativa++) {
       try {
         const consulta = await this.deps.receita.consultar(documento)
@@ -360,6 +385,7 @@ export class ExecutorDaImportacao {
           'Receita fora do ar na importação; nova tentativa',
         )
         await this.esperar(espera)
+        if (this.deps.deveParar?.()) return { interrompida: true }
       }
     }
   }

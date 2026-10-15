@@ -52,10 +52,21 @@ const sair = (sinal: string) => {
     'encerrando: terminando os jobs em andamento',
   )
   void (async () => {
-    const noPrazo = await worker.encerrar()
-    await app.close()
+    // Sempre sai, mesmo se algo falhar no meio: um worker preso no encerramento trava o deploy
+    let noPrazo = false
+    let saida = 0
+    try {
+      noPrazo = await worker.encerrar()
+      await app.close()
+    } catch (erro) {
+      saida = 1
+      log.error(
+        { erro: erro instanceof Error ? erro.message : String(erro) },
+        'erro ao encerrar o worker',
+      )
+    }
     log.info({ noPrazo }, 'worker encerrado')
-    process.exit(0)
+    process.exit(saida)
   })()
 }
 process.on('SIGTERM', () => sair('SIGTERM'))

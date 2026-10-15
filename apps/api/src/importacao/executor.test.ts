@@ -97,6 +97,20 @@ const noTenant = <T>(tenantId: string, fn: (tx: typeof dono) => Promise<T>) =>
     return fn(tx as unknown as typeof dono)
   }) as Promise<T>
 
+/**
+ * Os testes executam o lote chamando o executor direto. O evento que o "Iniciar" grava no outbox
+ * serve a outro processo (o relay de um worker): se ficasse pendente, o worker de OUTRO teste, rodando
+ * em paralelo, o pegaria e executaria este lote (inclusive consultando a Receita de verdade).
+ * Por isso o evento é dado como entregue logo depois de gerado.
+ */
+const descartarEventos = (tenantId: string) =>
+  noTenant(
+    tenantId,
+    (tx) =>
+      tx`UPDATE eventos_outbox SET processado_em = now()
+         WHERE tipo = 'importacao.executar' AND processado_em IS NULL`,
+  )
+
 const chamar = (metodo: 'get' | 'post' | 'patch', cookie: string, url: string, corpo?: unknown) => {
   const r = request(app.getHttpServer())
     [metodo](url)
@@ -165,8 +179,11 @@ async function cenario(opcoes: {
   return { d, membroId, lote, tag }
 }
 
-const iniciar = (cookie: string, id: string) =>
-  chamar('post', cookie, `/v1/importacao/lotes/${id}/iniciar`)
+const iniciar = async (d: { cookie: string; tenantId: string }, id: string) => {
+  const r = await chamar('post', d.cookie, `/v1/importacao/lotes/${id}/iniciar`)
+  await descartarEventos(d.tenantId)
+  return r
+}
 
 const linhasDe = (tenantId: string, loteId: string) =>
   noTenant(
@@ -189,11 +206,12 @@ const situacaoDe = async (tenantId: string, loteId: string) =>
     )
   )[0]?.situacao
 
-function executor(receita: ReceitaFalsa, esperas: number[] = []) {
+function executor(receita: ReceitaFalsa, esperas: number[] = [], deveParar?: () => boolean) {
   return new ExecutorDaImportacao({
     banco,
     receita,
     log,
+    ...(deveParar ? { deveParar } : {}),
     esperar: (ms) => {
       esperas.push(ms)
       return Promise.resolve()
@@ -221,7 +239,7 @@ describe('ExecutorDaImportacao: o caminho completo', () => {
       INSERT INTO empresas (id, tenant_id, tipo_documento, documento, razao_social, vendedor_id)
       VALUES (gen_random_uuid(), ${d.tenantId}, 'cnpj', ${ja}, 'Empresa existente', ${membroId})`,
     )
-    expect((await iniciar(d.cookie, lote.id)).status).toBe(200)
+    expect((await iniciar(d, lote.id)).status).toBe(200)
 
     const receita = new ReceitaFalsa()
     const esperas: number[] = []
@@ -308,7 +326,7 @@ describe('ExecutorDaImportacao: o caminho completo', () => {
         [cnpjNovo(), 'B', '', '', ''],
       ],
     })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const receita = new ReceitaFalsa()
     receita.doCache = true
     const esperas: number[] = []
@@ -327,7 +345,7 @@ describe('ExecutorDaImportacao: perfil e bloqueio de empresa não ativa', () => 
       ],
       perfil: { exigeSituacaoAtiva: false, acaoForaDoPerfil: 'importar_com_tag' },
     })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const receita = new ReceitaFalsa()
     receita.respostas.set(inativa, () => baixada(inativa))
     await executor(receita).executar(d.tenantId, lote.id)
@@ -347,7 +365,7 @@ describe('ExecutorDaImportacao: perfil e bloqueio de empresa não ativa', () => 
       perfil: { exigeSituacaoAtiva: false },
       bloquear: false,
     })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const receita = new ReceitaFalsa()
     receita.respostas.set(inativa, () => baixada(inativa))
     await executor(receita).executar(d.tenantId, lote.id)
@@ -367,7 +385,7 @@ describe('ExecutorDaImportacao: perfil e bloqueio de empresa não ativa', () => 
         ],
         perfil: { cnaes: [CNAE_DO_PERFIL], acaoForaDoPerfil: acao },
       })
-      await iniciar(d.cookie, lote.id)
+      await iniciar(d, lote.id)
       await executor(new ReceitaFalsa()).executar(d.tenantId, lote.id) // o CNAE principal é 2539001: fora da lista
       expect(await resultados(d.tenantId, lote.id)).toEqual([esperado, esperado])
       const motivo = (await linhasDe(d.tenantId, lote.id))[0]?.motivo ?? ''
@@ -400,7 +418,7 @@ describe('ExecutorDaImportacao: Receita com problema', () => {
         [b, 'B', '', '', ''],
       ],
     })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const receita = new ReceitaFalsa()
     receita.respostas.set(a, () => new ErroApi('cnpj_nao_encontrado', 'não existe', 404))
     expect(await executor(receita).executar(d.tenantId, lote.id)).toBe('concluida')
@@ -411,7 +429,7 @@ describe('ExecutorDaImportacao: Receita com problema', () => {
   it('fora do ar: tenta de novo com as esperas combinadas e, voltando, a linha entra', async () => {
     const a = cnpjNovo()
     const { d, lote } = await cenario({ linhas: [[a, 'A', '', '', '']] })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const receita = new ReceitaFalsa()
     receita.respostas.set(a, (tentativa) => (tentativa < 3 ? indisponivel() : respostaDaReceita(a)))
     const esperas: number[] = []
@@ -423,7 +441,7 @@ describe('ExecutorDaImportacao: Receita com problema', () => {
   it('fora do ar por muito tempo: a linha vira erro, e 3 linhas seguidas param o lote (falhou); retomar faz só as pendentes', async () => {
     const cnpjs = [cnpjNovo(), cnpjNovo(), cnpjNovo(), cnpjNovo()]
     const { d, lote } = await cenario({ linhas: cnpjs.map((c, i) => [c, `E${i}`, '', '', '']) })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const receita = new ReceitaFalsa()
     for (const c of cnpjs.slice(0, LIMITE_DE_FALHAS_SEGUIDAS))
       receita.respostas.set(c, () => indisponivel())
@@ -441,7 +459,7 @@ describe('ExecutorDaImportacao: Receita com problema', () => {
     expect(aviso?.titulo).toBe('Importação "teste" parou')
 
     // a Receita volta: retomar faz só a linha pendente (as com erro ficam no relatório)
-    expect((await iniciar(d.cookie, lote.id)).status).toBe(200)
+    expect((await iniciar(d, lote.id)).status).toBe(200)
     const volta = new ReceitaFalsa()
     expect(await executor(volta).executar(d.tenantId, lote.id)).toBe('concluida')
     expect(volta.chamadas).toEqual([cnpjs[3]])
@@ -453,7 +471,7 @@ describe('ExecutorDaImportacao: cancelar e retomar', () => {
   it('cancelar para antes da próxima linha; retomar termina o que faltava sem repetir', async () => {
     const cnpjs = [cnpjNovo(), cnpjNovo(), cnpjNovo()]
     const { d, lote } = await cenario({ linhas: cnpjs.map((c, i) => [c, `E${i}`, '', '', '']) })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const receita = new ReceitaFalsa()
     // o usuário cancela no meio da segunda consulta
     receita.aoConsultar = async (cnpj) => {
@@ -466,11 +484,79 @@ describe('ExecutorDaImportacao: cancelar e retomar', () => {
     expect(await resultados(d.tenantId, lote.id)).toEqual(['criada', 'criada', 'pendente'])
     expect(await situacaoDe(d.tenantId, lote.id)).toBe('cancelada')
 
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const resto = new ReceitaFalsa()
     expect(await executor(resto).executar(d.tenantId, lote.id)).toBe('concluida')
     expect(resto.chamadas).toEqual([cnpjs[2]])
     expect(await resultados(d.tenantId, lote.id)).toEqual(['criada', 'criada', 'criada'])
+  })
+})
+
+describe('ExecutorDaImportacao: o worker está encerrando (SIGTERM)', () => {
+  it('para antes da próxima linha, deixa o lote em andamento e retomar termina sem repetir nenhuma', async () => {
+    const cnpjs = [cnpjNovo(), cnpjNovo(), cnpjNovo(), cnpjNovo()]
+    const { d, lote } = await cenario({ linhas: cnpjs.map((c, i) => [c, `E${i}`, '', '', '']) })
+    await iniciar(d, lote.id)
+    let parar = false
+    const receita = new ReceitaFalsa()
+    // o SIGTERM chega durante a consulta da segunda linha: ela termina; a terceira nem começa
+    receita.aoConsultar = (cnpj) => {
+      if (cnpj === cnpjs[1]) parar = true
+    }
+    expect(await executor(receita, [], () => parar).executar(d.tenantId, lote.id)).toBe(
+      'interrompida',
+    )
+    expect(await resultados(d.tenantId, lote.id)).toEqual([
+      'criada',
+      'criada',
+      'pendente',
+      'pendente',
+    ])
+    expect(await situacaoDe(d.tenantId, lote.id)).toBe('em_andamento') // quem retoma é o próximo worker
+    const [parcial] = await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx<
+          { totais: Record<string, number> }[]
+        >`SELECT totais FROM importacoes WHERE id = ${lote.id}`,
+    )
+    expect(parcial?.totais).toMatchObject({ criada: 2, pendente: 2 })
+
+    // o próximo worker pega o job de volta: faz só as pendentes, uma vez cada
+    const resto = new ReceitaFalsa()
+    expect(await executor(resto).executar(d.tenantId, lote.id)).toBe('concluida')
+    expect(resto.chamadas).toEqual([cnpjs[2], cnpjs[3]])
+    expect(receita.chamadas).toEqual([cnpjs[0], cnpjs[1]])
+    const empresas = await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx<
+          { documento: string }[]
+        >`SELECT documento FROM empresas WHERE importacao_id = ${lote.id}`,
+    )
+    expect(empresas.map((e) => e.documento).sort()).toEqual([...cnpjs].sort()) // nenhuma repetida
+  })
+
+  it('Receita fora do ar e SIGTERM durante a espera: sai sem gravar erro na linha, que fica pendente', async () => {
+    const a = cnpjNovo()
+    const { d, lote } = await cenario({ linhas: [[a, 'A', '', '', '']] })
+    await iniciar(d, lote.id)
+    let parar = false
+    const receita = new ReceitaFalsa()
+    receita.respostas.set(a, () => indisponivel())
+    const ex = new ExecutorDaImportacao({
+      banco,
+      receita,
+      log,
+      deveParar: () => parar,
+      esperar: () => {
+        parar = true // o SIGTERM chega enquanto espera para tentar de novo
+        return Promise.resolve()
+      },
+    })
+    expect(await ex.executar(d.tenantId, lote.id)).toBe('interrompida')
+    expect(await resultados(d.tenantId, lote.id)).toEqual(['pendente'])
+    expect(receita.chamadas).toEqual([a]) // não tentou de novo depois do aviso
   })
 })
 
@@ -482,7 +568,7 @@ describe('ExecutorDaImportacao: os dados da planilha', () => {
       fonte: 'planilha',
       bloquear: false,
     })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     const receita = new ReceitaFalsa()
     expect(await executor(receita).executar(d.tenantId, lote.id)).toBe('concluida')
     expect(receita.chamadas).toEqual([])
@@ -514,7 +600,7 @@ describe('ExecutorDaImportacao: os dados da planilha', () => {
   it('"completar": a planilha manda e a Receita preenche o que está vazio; sem razão social e fonte "planilha" a linha dá erro', async () => {
     const [a, b] = [cnpjNovo(), cnpjNovo()]
     const completar = await cenario({ linhas: [[a, '', '', '', '']], fonte: 'completar' })
-    await iniciar(completar.d.cookie, completar.lote.id)
+    await iniciar(completar.d, completar.lote.id)
     await executor(new ReceitaFalsa()).executar(completar.d.tenantId, completar.lote.id)
     const [e] = await noTenant(
       completar.d.tenantId,
@@ -524,7 +610,7 @@ describe('ExecutorDaImportacao: os dados da planilha', () => {
     expect(e?.razao).toBe('METALURGICA EXEMPLO LTDA')
 
     const semNome = await cenario({ linhas: [[b, '', '', '', '']], fonte: 'planilha' })
-    await iniciar(semNome.d.cookie, semNome.lote.id)
+    await iniciar(semNome.d, semNome.lote.id)
     await executor(new ReceitaFalsa()).executar(semNome.d.tenantId, semNome.lote.id)
     expect(await resultados(semNome.d.tenantId, semNome.lote.id)).toEqual(['erro'])
     expect((await linhasDe(semNome.d.tenantId, semNome.lote.id))[0]?.motivo).toContain(
@@ -534,7 +620,7 @@ describe('ExecutorDaImportacao: os dados da planilha', () => {
 
   it('quem iniciou a importação deixou de poder importar: o lote falha sem tocar na carteira', async () => {
     const { d, lote } = await cenario({ linhas: [[cnpjNovo(), 'A', '', '', '']] })
-    await iniciar(d.cookie, lote.id)
+    await iniciar(d, lote.id)
     await noTenant(
       d.tenantId,
       (tx) => tx`UPDATE membros SET ativo = false WHERE usuario_id = ${d.usuarioId}`,

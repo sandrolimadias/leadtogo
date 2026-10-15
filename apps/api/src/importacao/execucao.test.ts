@@ -28,7 +28,12 @@ beforeEach(async () => {
   await limparLimitesAuth(valkey)
   app = await criarAppComRotas([], configuracaoDeTeste({ TRUST_PROXY: '1' }))
 })
-afterEach(() => app.close())
+/** O evento do "Iniciar" serve a um relay de worker; se ficasse pendente, o worker de OUTRO teste (em paralelo) executaria este lote. Os testes só conferem que ele foi gravado. */
+const tenants: string[] = []
+afterEach(async () => {
+  await Promise.all(tenants.splice(0).map(descartar))
+  await app.close()
+})
 
 const chamar = (
   metodo: 'get' | 'post' | 'patch',
@@ -52,6 +57,7 @@ const noTenant = <T>(tenantId: string, fn: (tx: typeof dono) => Promise<T>) =>
 /** Lote enviado; `completo` faz as escolhas que o deixam pronta. */
 async function cenario(completo = true) {
   const d = await novoDono(app)
+  tenants.push(d.tenantId)
   const vendedor = await usuarioSimples(app)
   await vincular(d.tenantId, vendedor.id, 'vendedor')
   await ativar(vendedor.id, d.tenantId)
@@ -81,8 +87,18 @@ async function cenario(completo = true) {
   return { d, vendedor, lote }
 }
 
-const iniciar = (cookie: string | undefined, id: string) =>
-  chamar('post', cookie, `/v1/importacao/lotes/${id}/iniciar`)
+const descartar = (t: string) =>
+  noTenant(
+    t,
+    (tx) =>
+      tx`UPDATE eventos_outbox SET processado_em = now() WHERE tipo = 'importacao.executar' AND processado_em IS NULL`,
+  )
+const iniciar = async (cookie: string | undefined, id: string) => {
+  const r = await chamar('post', cookie, `/v1/importacao/lotes/${id}/iniciar`)
+  // já entregue: nenhum relay de outro teste pega este evento (os testes só conferem que foi gravado)
+  await Promise.all(tenants.map(descartar))
+  return r
+}
 const cancelar = (cookie: string | undefined, id: string) =>
   chamar('post', cookie, `/v1/importacao/lotes/${id}/cancelar`)
 const eventos = (tenantId: string, id: string) =>

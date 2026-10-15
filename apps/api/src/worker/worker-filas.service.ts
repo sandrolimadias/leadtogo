@@ -6,7 +6,8 @@ import type { Configuracao } from '../configuracao/configuracao.js'
 import { reportarErro } from '../observabilidade/erros.js'
 import { type NomeDaFila, criarConexaoDeFila, opcoesDeFila, opcoesDeWorker } from './filas.js'
 
-export type Processador = (job: Job) => Promise<unknown>
+/** `token` é o do lock do job: o BullMQ o exige para mover o job de estado (ex.: para `delayed`). */
+export type Processador = (job: Job, token?: string) => Promise<unknown>
 
 /**
  * Filas e workers do processo worker. Cada fila tem a sua conexão, e `encerrar` para de pegar
@@ -76,14 +77,18 @@ export class WorkerFilas {
   }
 
   /**
-   * Para de pegar jobs novos e espera os em andamento por até `prazoMs`. Devolve `true` se tudo
-   * terminou no prazo. Se o prazo estourar, NÃO espera mais (o `close()` do BullMQ reaproveita a
-   * mesma promessa e esperaria o job inteiro): desconecta e devolve `false`; o job que sobrou perde
-   * o lock (`FILA_LOCK_MS`) e volta para a fila, onde outro worker o conclui.
+   * Encerramento gracioso, nesta ordem:
+   *  1. para de pegar jobs novos e avisa os consumidores de longa duração (`estaEncerrando`);
+   *  2. espera o job ativo de CADA consumidor terminar e ser marcado (o `close()` do BullMQ só
+   *     resolve depois do `moveToCompleted`); a falha de um consumidor não impede os outros;
+   *  3. só então fecha as filas e desconecta o Valkey.
+   * Devolve `true` se tudo terminou no prazo. Se o prazo estourar, NÃO espera mais (o `close()` do
+   * BullMQ reaproveita a mesma promessa e esperaria o job inteiro): desconecta e devolve `false`; o
+   * job que sobrou perde o lock (`FILA_LOCK_MS`) e volta para a fila, onde outro worker o conclui.
    */
   async encerrar(prazoMs: number): Promise<boolean> {
     this.encerrando = true
-    const fechamentos = Promise.all([...this.workers.values()].map((w) => w.close()))
+    const fechamentos = Promise.allSettled([...this.workers.values()].map((w) => w.close()))
     let timer: NodeJS.Timeout | undefined
     const limite = new Promise<'prazo'>((resolver) => {
       timer = setTimeout(() => resolver('prazo'), prazoMs)
@@ -98,6 +103,14 @@ export class WorkerFilas {
       for (const c of this.conexoes) c.disconnect()
       void fechamentos.catch(() => undefined)
       return false
+    }
+    for (const r of await fechamentos) {
+      if (r.status === 'rejected') {
+        this.log.error(
+          { erro: String((r.reason as Error)?.message ?? r.reason) },
+          'falha ao fechar um consumidor',
+        )
+      }
     }
     await Promise.allSettled([...this.filas.values()].map((f) => f.close()))
     for (const c of this.conexoes) c.disconnect()
