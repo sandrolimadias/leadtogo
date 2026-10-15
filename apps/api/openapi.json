@@ -7133,6 +7133,86 @@
         "tags": ["Importação: lotes"]
       }
     },
+    "/v1/importacao/lotes/{id}/desfazer": {
+      "post": {
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida`, até 24 horas depois da conclusão (`desfazerAte`). As empresas que o lote criou saem da carteira (exclusão lógica, como a manual); as que já estavam lá não são tocadas, e o relatório continua. Fora de um lote concluído: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.",
+        "operationId": "LotesDeImportacaoController_desfazer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoteDeImportacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Desfazer a importação",
+        "tags": ["Importação: lotes"]
+      }
+    },
     "/v1/importacao/lotes/{id}/importar-fora-do-perfil": {
       "post": {
         "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote concluído (409 `importacao_nao_concluida`). As linhas fora do perfil (todas, ou as de `linhaIds`) voltam a pendentes e o worker as cadastra com a tag \"Fora do perfil\". O bloqueio de empresa não ativa continua valendo. Sem linhas assim: 409 `sem_linhas_fora_do_perfil`.",
@@ -12026,6 +12106,14 @@
           },
           "criadoEm": {
             "type": "string"
+          },
+          "concluidoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "desfazerAte": {
+            "nullable": true,
+            "type": "string"
           }
         },
         "required": [
@@ -12047,7 +12135,9 @@
           "origemId",
           "verticalId",
           "pendencias",
-          "criadoEm"
+          "criadoEm",
+          "concluidoEm",
+          "desfazerAte"
         ],
         "additionalProperties": false
       },

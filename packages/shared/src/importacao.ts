@@ -197,9 +197,15 @@ export const loteDeImportacaoSchema = z
     /** O que falta para o lote ficar pronta; vazio = pronta (`situacao`) */
     pendencias: z.array(z.string()),
     criadoEm: z.string(),
+    concluidoEm: z.string().nullable(),
+    /** Até quando dá para desfazer (a conclusão + 24 h); nulo se o lote não está concluído */
+    desfazerAte: z.string().nullable(),
   })
   .meta({ id: 'LoteDeImportacao' })
 export type LoteDeImportacao = z.infer<typeof loteDeImportacaoSchema>
+
+/** Quanto tempo depois de concluído o lote ainda pode ser desfeito (docs/escopo_mvp.md, Módulo 4). */
+export const HORAS_PARA_DESFAZER = 24
 
 /** Intervalo mínimo e máximo entre consultas à Receita (padrão 3 s). */
 export const INTERVALO_MINIMO_MS = 500

@@ -1,5 +1,9 @@
-import { and, eq, inArray, schema, sql } from '@leadtogo/db'
-import type { AndamentoDaImportacao, LoteDeImportacao } from '@leadtogo/shared'
+import { and, eq, inArray, isNull, schema, sql } from '@leadtogo/db'
+import {
+  type AndamentoDaImportacao,
+  HORAS_PARA_DESFAZER,
+  type LoteDeImportacao,
+} from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
@@ -8,7 +12,7 @@ import { ErroApi } from '../http/erro-api.js'
 import { agendarExecucao } from './evento.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
 
-const { importacaoLinhas, importacoes } = schema
+const { empresaContatos, empresas, importacaoLinhas, importacoes } = schema
 
 /** Iniciar, retomar, cancelar e acompanhar a execução de um lote (quem executa é o worker). */
 @Injectable()
@@ -69,6 +73,63 @@ export class ExecucaoDaImportacaoService {
       )
     }
     await this.auditoria.registrar({ entidade: 'importacao', entidadeId: id, acao: 'cancelar' })
+    return this.lotes.detalhar(id)
+  }
+
+  /**
+   * Desfaz o lote: as empresas que ELE criou saem da carteira (exclusão lógica, como a manual: os
+   * vínculos de contato ficam inativos e as filiais soltam a matriz). Só num lote `concluida`, até 24 h
+   * depois da conclusão; as linhas e o relatório ficam como estão. Empresa que já existia na carteira
+   * nunca é tocada (a importação não altera quem já estava lá). Dois cliques juntos não duplicam: só um
+   * UPDATE acerta a situação.
+   */
+  async desfazer(id: string): Promise<LoteDeImportacao> {
+    this.exigirQuemImporta()
+    const db = this.ctx.db()
+    const lote = await this.lotes.detalhar(id) // 404 se não existe
+    if (lote.situacao !== 'concluida' || !lote.desfazerAte) {
+      throw new ErroApi(
+        'importacao_nao_desfazivel',
+        'Só dá para desfazer uma importação concluída.',
+        409,
+      )
+    }
+    if (new Date(lote.desfazerAte).getTime() < Date.now()) {
+      throw new ErroApi(
+        'prazo_de_desfazer_vencido',
+        `O prazo de ${HORAS_PARA_DESFAZER} horas para desfazer esta importação já passou. Exclua as empresas pela carteira.`,
+        409,
+      )
+    }
+    const [mudou] = await db
+      .update(importacoes)
+      .set({ situacao: 'desfeita', desfeitaEm: sql`now()`, atualizadoPor: this.ctx.membro.id })
+      .where(and(eq(importacoes.id, id), eq(importacoes.situacao, 'concluida')))
+      .returning({ id: importacoes.id })
+    if (!mudou) {
+      throw new ErroApi(
+        'importacao_nao_desfazivel',
+        'Só dá para desfazer uma importação concluída.',
+        409,
+      )
+    }
+    const doLote = sql`(SELECT id FROM empresas WHERE importacao_id = ${id})`
+    const removidas = await db
+      .update(empresas)
+      .set({ excluidoEm: new Date(), atualizadoPor: this.ctx.membro.id })
+      .where(and(eq(empresas.importacaoId, id), isNull(empresas.excluidoEm)))
+      .returning({ id: empresas.id })
+    await db
+      .update(empresaContatos)
+      .set({ ativo: false, principal: false })
+      .where(inArray(empresaContatos.empresaId, doLote))
+    await db.update(empresas).set({ matrizId: null }).where(inArray(empresas.matrizId, doLote))
+    await this.auditoria.registrar({
+      entidade: 'importacao',
+      entidadeId: id,
+      acao: 'desfazer',
+      alteracoes: { empresasRemovidas: removidas.length },
+    })
     return this.lotes.detalhar(id)
   }
 

@@ -155,6 +155,20 @@ export class LotesDeImportacaoController {
   }
 
   @Documenta({
+    resumo: 'Desfazer a importação',
+    descricao:
+      QUEM +
+      ' Só num lote `concluida`, até 24 horas depois da conclusão (`desfazerAte`). As empresas que o lote criou saem da carteira (exclusão lógica, como a manual); as que já estavam lá não são tocadas, e o relatório continua. Fora de um lote concluído: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.',
+    resposta: loteDeImportacaoSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Post('lotes/:id/desfazer')
+  @HttpCode(200)
+  desfazer(@Param('id', new ParseUUIDPipe()) id: string): Promise<LoteDeImportacao> {
+    return this.execucao.desfazer(id)
+  }
+
+  @Documenta({
     resumo: 'Acompanhar a importação',
     descricao:
       QUEM +

@@ -4,6 +4,7 @@ import {
   type AlterarLoteEntrada,
   type ConsultaDoEnvio,
   type FonteDosDados,
+  HORAS_PARA_DESFAZER,
   LINHAS_DE_AMOSTRA,
   type LoteDeImportacao,
   type RegrasDeImportacao,
@@ -394,6 +395,11 @@ export class LotesDeImportacaoService {
       verticalId: lote.verticalId,
       pendencias: pendenciasDe(lote, colunas, campos),
       criadoEm: lote.criadoEm.toISOString(),
+      concluidoEm: lote.concluidoEm?.toISOString() ?? null,
+      desfazerAte:
+        lote.situacao === 'concluida' && lote.concluidoEm
+          ? new Date(lote.concluidoEm.getTime() + HORAS_PARA_DESFAZER * 3_600_000).toISOString()
+          : null,
     }
   }
 }

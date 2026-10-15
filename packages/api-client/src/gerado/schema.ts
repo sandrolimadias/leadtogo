@@ -1340,6 +1340,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/importacao/lotes/{id}/desfazer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Desfazer a importação
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida`, até 24 horas depois da conclusão (`desfazerAte`). As empresas que o lote criou saem da carteira (exclusão lógica, como a manual); as que já estavam lá não são tocadas, e o relatório continua. Fora de um lote concluído: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.
+         */
+        post: operations["LotesDeImportacaoController_desfazer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/importacao/lotes/{id}/importar-fora-do-perfil": {
         parameters: {
             query?: never;
@@ -2612,6 +2632,8 @@ export interface components {
             verticalId: string | null;
             pendencias: string[];
             criadoEm: string;
+            concluidoEm: string | null;
+            desfazerAte: string | null;
         };
         MembroDaEquipe: {
             /** Format: uuid */
@@ -8566,6 +8588,73 @@ export interface operations {
         };
     };
     LotesDeImportacaoController_cancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_desfazer: {
         parameters: {
             query?: never;
             header?: never;
