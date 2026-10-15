@@ -68,6 +68,17 @@ describe('importacoes e importacao_linhas', () => {
     await expect(criarLote(tenantId, 500)).resolves.toBeTruthy()
   })
 
+  it('o lote nasce sem espera nem progresso registrados (colunas dos blocos)', async () => {
+    const tenantId = await novoTenant()
+    const id = await criarLote(tenantId)
+    const [l] = await comTenant(
+      app,
+      tenantId,
+      (tx) => tx`SELECT proxima_consulta_em, ultimo_progresso_em FROM importacoes WHERE id = ${id}`,
+    )
+    expect(l).toEqual({ proxima_consulta_em: null, ultimo_progresso_em: null })
+  })
+
   it('o número da linha é único no lote, mas o mesmo número vale em outro lote', async () => {
     const tenantId = await novoTenant()
     const [a, b] = [await criarLote(tenantId), await criarLote(tenantId)]

@@ -122,6 +122,10 @@ export const importacoes = pgTable(
     verticalId: uuid().references(() => verticais.id),
     situacao: situacaoImportacao().notNull().default('rascunho'),
     totalLinhas: integer().notNull().default(0),
+    /** Não consultar a Receita antes disso (intervalo ou espera por 429); vale entre blocos e workers */
+    proximaConsultaEm: timestamp({ withTimezone: true }),
+    /** Última vez que uma linha foi resolvida (a varredura usa para achar lote parado) */
+    ultimoProgressoEm: timestamp({ withTimezone: true }),
     /** Contagem por resultado, para o relatório */
     totais: jsonb()
       .notNull()
