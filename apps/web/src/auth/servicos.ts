@@ -377,6 +377,78 @@ export const servicosReais: ServicosDeAcesso = {
           daApi(await api.POST('/v1/importacao/perfis/cnaes/conferir', { body: { texto } })),
         ),
     },
+    lotes: {
+      listar: (pagina = 1) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/importacao/lotes', {
+              params: { query: { pagina, porPagina: 20 } },
+            }),
+          ),
+        ),
+      enviar: (arquivo, nome) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/importacao/lotes', {
+              params: { query: { arquivo: arquivo.name, ...(nome ? { nome } : {}) } },
+              // os bytes vão no corpo, sem serialização (o servidor lê o arquivo como octet-stream)
+              body: arquivo as unknown as string,
+              bodySerializer: (corpo) => corpo as BodyInit,
+              headers: { 'Content-Type': 'application/octet-stream' },
+            }),
+          ),
+        ),
+      detalhar: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/importacao/lotes/{id}', { params: { path: { id } } })),
+        ),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/importacao/lotes/{id}', { params: { path: { id } }, body: dados }),
+          ),
+        ),
+      previa: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/importacao/lotes/{id}/previa', { params: { path: { id } } })),
+        ),
+      iniciar: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/importacao/lotes/{id}/iniciar', { params: { path: { id } } })),
+        ),
+      cancelar: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/importacao/lotes/{id}/cancelar', { params: { path: { id } } })),
+        ),
+      andamento: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/importacao/lotes/{id}/andamento', { params: { path: { id } } })),
+        ),
+      linhas: (id, consulta) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/importacao/lotes/{id}/linhas', {
+              params: {
+                path: { id },
+                query: {
+                  pagina: consulta?.pagina ?? 1,
+                  porPagina: 50,
+                  ...(consulta?.resultado ? { resultado: consulta.resultado as never } : {}),
+                },
+              },
+            }),
+          ),
+        ),
+      importarForaDoPerfil: (id, linhaIds) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/importacao/lotes/{id}/importar-fora-do-perfil', {
+              params: { path: { id } },
+              body: linhaIds ? { linhaIds } : {},
+            }),
+          ),
+        ),
+    },
   },
 
   funis: {

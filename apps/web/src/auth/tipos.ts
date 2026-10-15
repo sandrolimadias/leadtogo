@@ -1,4 +1,5 @@
 import type {
+  AndamentoDaImportacao,
   CnaesConferidos,
   ConfiguracaoDaCarteira,
   Contato,
@@ -14,13 +15,17 @@ import type {
   HistoricoDaEmpresa,
   ContatoDaEmpresa,
   ListaDeContatos,
+  LinhasDaImportacao,
   ListaDeEmpresas,
+  ListaDeLotesDeImportacao,
+  LoteDeImportacao,
   Me,
   MembroDaEquipe,
   OpcoesDaLista,
   OpcoesDaListaDeContatos,
   PapelDecisao,
   PerfilDeImportacao,
+  PreviaDaImportacao,
   Preferencias,
   PreferenciasPatch,
   ResultadoDaTagEmMassa,
@@ -40,6 +45,7 @@ import type {
   AlterarEmpresaCarteiraEntrada,
   AlterarFaseEntrada,
   AlterarFunilEntrada,
+  AlterarLoteEntrada,
   AlterarMembroEntrada,
   AlterarMotivoEntrada,
   AlterarOrigemEntrada,
@@ -220,6 +226,26 @@ export interface ServicosDeImportacao {
     excluir: (id: string) => Promise<Resultado>
     /** Confere a lista colada na tabela de CNAEs, sem gravar nada */
     conferirCnaes: (texto: string) => Promise<Resultado<CnaesConferidos>>
+  }
+  /** Os lotes (uma planilha enviada, do envio ao relatório). Só administrador e gestor. */
+  lotes: {
+    /** Do mais novo para o mais antigo */
+    listar: (pagina?: number) => Promise<Resultado<ListaDeLotesDeImportacao>>
+    /** Envia o arquivo (.xlsx ou CSV) e cria o lote em rascunho */
+    enviar: (arquivo: File, nome?: string) => Promise<Resultado<LoteDeImportacao>>
+    detalhar: (id: string) => Promise<Resultado<LoteDeImportacao>>
+    alterar: (id: string, dados: AlterarLoteEntrada) => Promise<Resultado<LoteDeImportacao>>
+    previa: (id: string) => Promise<Resultado<PreviaDaImportacao>>
+    /** Inicia (ou retoma) a execução no worker */
+    iniciar: (id: string) => Promise<Resultado<LoteDeImportacao>>
+    cancelar: (id: string) => Promise<Resultado<LoteDeImportacao>>
+    andamento: (id: string) => Promise<Resultado<AndamentoDaImportacao>>
+    linhas: (
+      id: string,
+      consulta?: { resultado?: string; pagina?: number },
+    ) => Promise<Resultado<LinhasDaImportacao>>
+    /** "Importar mesmo assim": sem `linhaIds`, todas as linhas fora do perfil */
+    importarForaDoPerfil: (id: string, linhaIds?: string[]) => Promise<Resultado<LoteDeImportacao>>
   }
 }
 

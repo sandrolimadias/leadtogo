@@ -18,6 +18,7 @@ import { Switch } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/exibicao'
 import { Alert, EmptyState } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
+import { ACOES, ESTABELECIMENTOS, resumoDoPerfil } from './rotulos-do-perfil'
 import { focarCampo, useEnvio } from '@/telas/acesso/comum'
 import {
   CabecalhoDeSecao,
@@ -25,32 +26,6 @@ import {
   DialogoDeConfirmacao,
   Janela,
 } from '@/telas/cadastros/base'
-
-const ESTABELECIMENTOS: { value: EstabelecimentoDoPerfil; label: string }[] = [
-  { value: 'ambas', label: 'Matriz e filiais' },
-  { value: 'matriz', label: 'Só matriz' },
-  { value: 'filial', label: 'Só filiais' },
-]
-const ACOES: { value: AcaoForaDoPerfil; label: string }[] = [
-  { value: 'pular', label: 'Pular e listar no relatório' },
-  { value: 'importar_com_tag', label: 'Importar com a tag "Fora do perfil"' },
-]
-const rotuloDe = <T extends string>(lista: { value: T; label: string }[], valor: T) =>
-  lista.find((o) => o.value === valor)?.label ?? valor
-
-/** Um resumo em uma linha das regras do perfil. */
-function resumoDoPerfil(p: PerfilDeImportacao): string {
-  const partes = [
-    p.exigeSituacaoAtiva ? 'Situação ativa' : 'Qualquer situação',
-    rotuloDe(ESTABELECIMENTOS, p.estabelecimento),
-    p.excluirMei ? 'Sem MEI' : 'Com MEI',
-    p.cnaes.length === 0
-      ? 'Qualquer CNAE'
-      : `${p.cnaes.length} ${p.cnaes.length === 1 ? 'CNAE' : 'CNAEs'}${p.aceitarCnaeSecundario ? ' (também nos secundários)' : ''}`,
-    rotuloDe(ACOES, p.acaoForaDoPerfil),
-  ]
-  return partes.join(' · ')
-}
 
 type Janelas =
   | { tipo: 'form'; perfil: PerfilDeImportacao | null }

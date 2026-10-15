@@ -50,7 +50,10 @@ function servicos(perfis: PerfilDeImportacao[], extra: Record<string, unknown> =
   }
   return {
     p,
-    s: servicosFalsos({ me: async () => meComPapel('admin'), importacao: { perfis: p } }),
+    s: servicosFalsos({
+      me: async () => meComPapel('admin'),
+      importacao: { ...base.importacao, perfis: p },
+    }),
   }
 }
 

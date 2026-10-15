@@ -156,6 +156,67 @@ describe('importação: perfis de regras', () => {
   })
 })
 
+describe('importação: lotes', () => {
+  it('cada operação usa a rota certa', async () => {
+    const l = servicosReais.importacao.lotes
+    await l.listar(2)
+    await l.detalhar(ID)
+    await l.alterar(ID, { fonteDados: 'receita', campos: { documento: 'CNPJ' } })
+    await l.previa(ID)
+    await l.iniciar(ID)
+    await l.cancelar(ID)
+    await l.andamento(ID)
+    await l.linhas(ID, { resultado: 'fora_do_perfil', pagina: 3 })
+    await l.importarForaDoPerfil(ID, [ID])
+    await l.importarForaDoPerfil(ID)
+    expect(chamadas.map((c) => `${c.metodo} ${c.caminho}${c.consulta}`)).toEqual([
+      'GET /v1/importacao/lotes?pagina=2&porPagina=20',
+      `GET /v1/importacao/lotes/${ID}`,
+      `PATCH /v1/importacao/lotes/${ID}`,
+      `GET /v1/importacao/lotes/${ID}/previa`,
+      `POST /v1/importacao/lotes/${ID}/iniciar`,
+      `POST /v1/importacao/lotes/${ID}/cancelar`,
+      `GET /v1/importacao/lotes/${ID}/andamento`,
+      `GET /v1/importacao/lotes/${ID}/linhas?pagina=3&porPagina=50&resultado=fora_do_perfil`,
+      `POST /v1/importacao/lotes/${ID}/importar-fora-do-perfil`,
+      `POST /v1/importacao/lotes/${ID}/importar-fora-do-perfil`,
+    ])
+    expect(chamadas[2]?.corpo).toEqual({ fonteDados: 'receita', campos: { documento: 'CNPJ' } })
+    expect(chamadas[8]?.corpo).toEqual({ linhaIds: [ID] })
+    expect(chamadas[9]?.corpo).toEqual({})
+  })
+
+  it('o envio manda o arquivo como bytes (octet-stream), com o nome do arquivo na consulta', async () => {
+    const vistas: { metodo: string; url: string; tipo: string | null; tamanho: number }[] = []
+    globalThis.fetch = vi.fn(async (entrada: RequestInfo | URL, init?: RequestInit) => {
+      const req = entrada instanceof Request ? entrada : new Request(entrada, init)
+      vistas.push({
+        metodo: req.method,
+        url:
+          new URL(req.url, 'http://localhost').pathname +
+          new URL(req.url, 'http://localhost').search,
+        tipo: req.headers.get('content-type'),
+        tamanho: (await req.clone().arrayBuffer()).byteLength,
+      })
+      return new Response(JSON.stringify({ id: ID }), {
+        status: 201,
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+    const arquivo = new File(['CNPJ;Empresa\n1;A'], 'clientes serra.csv')
+    const r = await servicosReais.importacao.lotes.enviar(arquivo, 'Serra 2026')
+    expect(r.ok).toBe(true)
+    expect(vistas).toEqual([
+      {
+        metodo: 'POST',
+        url: '/v1/importacao/lotes?arquivo=clientes%20serra.csv&nome=Serra%202026',
+        tipo: 'application/octet-stream',
+        tamanho: arquivo.size,
+      },
+    ])
+  })
+})
+
 describe('tags: método, caminho e corpo', () => {
   it('cada operação usa a rota certa', async () => {
     const t = servicosReais.tags

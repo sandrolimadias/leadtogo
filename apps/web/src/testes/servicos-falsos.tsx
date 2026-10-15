@@ -187,6 +187,22 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         excluir: vi.fn(async () => ok(undefined)),
         conferirCnaes: vi.fn(async () => ok({ validos: [], invalidos: [], repetidos: 0 })),
       },
+      lotes: {
+        listar: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 20 })),
+        enviar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        detalhar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        previa: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        iniciar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        cancelar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        andamento: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        linhas: vi.fn(async () =>
+          ok({ itens: [], total: 0, pagina: 1, porPagina: 50, colunas: [] }),
+        ),
+        importarForaDoPerfil: vi.fn(async () =>
+          falha('indisponivel', 'Não configurado no teste.', 500),
+        ),
+      },
     },
     cadastros: {
       verticais: {
