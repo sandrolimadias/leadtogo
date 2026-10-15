@@ -214,7 +214,11 @@ jobs:
   deploy:
     # Desligado até a E13: ligue a variável do repositório DEPLOY_ENABLED=true (Settings → Variables).
     needs: [escopo, build]
-    if: needs.escopo.outputs.codigo == 'true' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    # `!cancelled()` + resultado do build: o `success()` implícito pula o job se QUALQUER ancestral foi pulado
+    # (test e security ficam "skipped" no push, no modo temporário), e o deploy nunca rodaria
+    if: >-
+      !cancelled() && needs.build.result == 'success' && needs.escopo.outputs.codigo == 'true'
+      && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     concurrency:
@@ -237,7 +241,8 @@ jobs:
   verify:
     # Teste de fumaça pelo caminho do usuário e pelo da integração
     needs: [escopo, deploy]
-    if: needs.escopo.outputs.codigo == 'true' && needs.deploy.result == 'success'
+    if: >-
+      !cancelled() && needs.escopo.outputs.codigo == 'true' && needs.deploy.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -276,7 +281,8 @@ jobs:
     # Apaga versões antigas no GHCR. Nunca toca em `latest`, na versão em produção nem na atual
     # (scripts/limpar-ghcr.sh). Falha aqui não derruba o pipeline.
     needs: [escopo, verify]
-    if: needs.verify.result == 'success'
+    if: >-
+      !cancelled() && needs.verify.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     continue-on-error: true
