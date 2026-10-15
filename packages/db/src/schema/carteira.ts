@@ -94,7 +94,7 @@ export const empresas = pgTable(
     receitaAtualizadoEm: timestamp({ withTimezone: true }),
     /** Salva sem poder consultar a Receita (as duas fontes fora do ar): o worker reconsulta depois */
     situacaoNaoVerificada: boolean().notNull().default(false),
-    // Calculados pelas atividades (Módulo 5); `proxima_atividade_id` ganha a FK quando `atividades` existir
+    // Calculados pelas atividades (Módulo 5); a FK de `proxima_atividade_id` está só no SQL da migração 0023 (importar `atividades` aqui faria um ciclo)
     ultimaVisitaEm: timestamp({ withTimezone: true }),
     ultimoContatoEm: timestamp({ withTimezone: true }),
     proximaAtividadeId: uuid(),

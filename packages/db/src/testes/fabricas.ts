@@ -377,3 +377,22 @@ fabricas['importacao_linhas'] = definirFabrica<string>({
     return id
   },
 })
+
+// Atividades (Módulo 5)
+fabricas['atividades'] = definirFabrica<{ tipoId: string; membroId: string }>({
+  colunaAlteravel: 'titulo',
+  // Os pais: um tipo de atividade e um membro (responsável) do tenant
+  preparar: async (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const tipoId = novoId()
+      const membroId = novoId()
+      await tx`INSERT INTO tipos_atividade (id, tenant_id, nome, icone) VALUES (${tipoId}, ${tenantId}, 'Tipo de teste', 'phone')`
+      await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${membroId}, ${tenantId}, 'Responsável de teste')`
+      return { tipoId, membroId }
+    }),
+  criar: async (tx, tenantId, { tipoId, membroId }) => {
+    const id = novoId()
+    await tx`INSERT INTO atividades (id, tenant_id, tipo_atividade_id, titulo, responsavel_id, data_inicio) VALUES (${id}, ${tenantId}, ${tipoId}, 'Atividade de teste', ${membroId}, now())`
+    return id
+  },
+})

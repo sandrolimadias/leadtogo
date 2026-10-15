@@ -162,6 +162,13 @@
       "when": 1792059371131,
       "tag": "0022_importacoes_paradas",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792107496087,
+      "tag": "0023_atividades",
+      "breakpoints": true
     }
   ]
 }

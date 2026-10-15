@@ -121,6 +121,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   doisFatoresExigido: politicaDoisFatores().notNull().default('admin'),
   whatsappModoImportacao: modoImportacaoWhatsapp().notNull().default('desligado'),
   preferencias: jsonb().notNull().default({}),
+  /** Fuso da empresa (IANA): "hoje", "atrasada", "dia inteiro" e os dias das atividades valem nele, nunca em UTC */
+  fusoHorario: text().notNull().default('America/Sao_Paulo'),
   /** Quando os cadastros padrão (tags, tipos, funil...) foram criados; preenchido, nunca mais se recria */
   padroesCriadosEm: timestamp({ withTimezone: true }),
   /** Quando os papéis na decisão padrão foram criados (Módulo 3); preenchido, nunca mais se recria */

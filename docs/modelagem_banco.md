@@ -372,7 +372,7 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 > - **Fora do MVP (entram depois, por expansão):** `faixa_funcionarios_id`, `faixa_faturamento_id`, `numero_funcionarios`, `campos_extras` e a geolocalização (`localizacao`, `geo_*`).
 > - `pais_codigo` é **nulo para o Brasil** e só se preenche para estabelecimento no exterior (código de país da Receita). Sem o padrão 105, a empresa brasileira não depende de a tabela `paises` estar carregada.
 > - `situacao_nao_verificada boolean`: a empresa foi salva sem poder consultar a Receita (as duas fontes fora do ar); o worker reconsulta depois. A **situação cadastral** em si continua sendo lida de `receita_consultas`, não de um campo da empresa.
-> - `proxima_atividade_id` é só `uuid` por enquanto; a FK para `atividades` entra no Módulo 5. `cnpj_raiz` é coluna **gerada** (só para CNPJ).
+> - `proxima_atividade_id` é só `uuid` por enquanto; a FK para `atividades` entrou no Módulo 5 (migração 0023). `cnpj_raiz` é coluna **gerada** (só para CNPJ).
 > - `empresa_socios.qualificacao_texto` guarda a qualificação como veio da Receita (para o código que ainda não está em `qualificacoes_socio`); `contato_id` entra no Módulo 3.
 > - **Busca:** índices trigram em `lower(f_unaccent(razao_social))`, `lower(f_unaccent(nome_fantasia))` e `documento`.
 > - **`app_registrar_cnae(codigo, descricao)`** (`SECURITY DEFINER`, só o `leadtogo_app` executa): grava um CNAE que a Receita trouxe e ainda não está em `cnaes`, derivando divisão, grupo, classe e seção do próprio código (conferido contra as 1.332 subclasses existentes). O app continua sem `INSERT` direto na tabela.
@@ -495,6 +495,13 @@ Regra (trigger ou serviço): em grupo de **seleção única**, a nova tag **subs
 
 - **Atrasada** = `situacao IN (pendente, em_execucao) AND data_inicio < agora()` (calculado, não gravado).
 - **Índices:** `(tenant_id, responsavel_id, situacao, data_inicio)`, `(tenant_id, empresa_id, data_inicio DESC)`, `(tenant_id, oportunidade_id)`, único `(tenant_id, origem, id_externo)` parcial.
+
+> **Implementação (Módulo 5, migração 0023):** criada só `atividades`; lembretes, recorrência, participantes, checklist e etiquetas ficam fora do MVP. Diferenças em relação à tabela acima:
+> - **Um contato por atividade** (`contato_id`, decisão do Ale); a tabela N:N `atividade_contatos` fica para depois. **Sem `oportunidade_id`** (entra com a tabela `oportunidades`, Módulo 6), sem `data_fim` na tela (a coluna existe), **sem `id_externo`, `recorrencia_*` e check-in** (adiados pelo Ale). `origem` entra com padrão `manual` (enum com os valores do desenho).
+> - **`realizada_em` é quando aconteceu** (alimenta última visita e último contato); `data_inicio` é a data agendada. Ao registrar algo que já foi feito as duas são iguais. CHECKs: `realizada` ⇔ `realizada_em` preenchida; realizada exige `resultado` não vazio. A regra "realizada não pode ter data no futuro (tolerância de 5 minutos)" é da API.
+> - **Dia inteiro:** `data_inicio` é a meia-noite do dia **no fuso da empresa**. O fuso é `tenant_configuracoes.fuso_horario` (IANA, padrão `America/Sao_Paulo`); "hoje", "atrasada" e os agrupamentos por dia são calculados nele, nunca em UTC.
+> - `empresas.proxima_atividade_id` ganhou a FK para `atividades` (só no SQL da migração). Como toda FK, ela não passa pelo RLS: a API só grava ali atividade da própria empresa.
+> - Fora o RLS (`aplicar_rls_tenant`), a tabela tem `excluido_em`, `criado_por` e `atualizado_por` como as demais; exclusão lógica.
 
 ### 8.2 `atividade_lembretes` — **Notificar em**
 `id, tenant_id, atividade_id, notificar_em timestamptz, canal enum(app/push/email/whatsapp), enviado_em`. Uma atividade pode ter vários lembretes (ex.: 1 dia antes e 30 min antes). O *worker* lê os pendentes e cria a notificação.
