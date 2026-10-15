@@ -10,6 +10,7 @@ import { FILAS } from '../filas.js'
 import type { JobDeNotificacao } from '../processadores.js'
 import type { ReceitaService } from '../../receita/receita.service.js'
 import { EVENTO_VERIFICAR_SITUACAO } from '../../carteira/situacao-evento.js'
+import { EVENTO_EXECUTAR_IMPORTACAO } from '../../importacao/evento.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
 
@@ -84,6 +85,21 @@ export function manipuladoresPadrao(
         { ...dados, tenantId: evento.tenantId, eventoId: evento.id } satisfies JobDeNotificacao,
         { jobId: jobIdDoEvento(evento.id) },
       )
+  }
+
+  /**
+   * Importação de planilha: o "Iniciar" grava o evento junto do estado do lote; só depois do commit o
+   * relay entrega e este manipulador enfileira a execução (o worker nunca lê o lote antes de ele existir
+   * como em andamento). Um job por vez na fila: a Receita não tem SLA.
+   */
+  manipuladores[EVENTO_EXECUTAR_IMPORTACAO] = async (evento, { filas }) => {
+    const { importacaoId } = evento.payload as { importacaoId: string }
+    await filas.fila(FILAS.importacao).add(
+      'executar',
+      { tenantId: evento.tenantId, importacaoId },
+      // Um erro inesperado volta ao trabalho de onde parou (a execução só mexe nas linhas pendentes)
+      { jobId: jobIdDoEvento(evento.id), attempts: 3, backoff: { type: 'fixed', delay: 30_000 } },
+    )
   }
 
   if (receita) {

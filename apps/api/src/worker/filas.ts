@@ -13,6 +13,8 @@ export const FILAS = {
   email: 'email',
   /** Ciclos do relay do outbox (agendados a cada 2 s) */
   outbox: 'outbox',
+  /** Execução das importações de planilha, uma por vez (a Receita não tem SLA): consulta, regras e cadastro */
+  importacao: 'importacao',
   /** Só existe fora de produção: os testes do worker (encerramento, retenção) usam. */
   teste: 'teste',
 } as const

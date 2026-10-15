@@ -76,6 +76,20 @@ const ENDERECO_NULO = {
   paisCodigo: null,
 } as const
 
+/** O que a importação em lote muda no cadastro de uma empresa (o cadastro manual não usa). */
+export interface OpcoesDeCriacao {
+  /** Lote que criou a empresa: liga a linha ao lote para filtrar e desfazer */
+  importacaoId?: string
+  origemCadastro?: 'importacao'
+  /**
+   * A consulta à Receita que o chamador já fez (não consulta de novo), ou `'nenhuma'` quando a
+   * importação não consulta (sem regras, sem bloqueio e com os dados da planilha).
+   */
+  consulta?: ConsultaDeCnpj | 'nenhuma'
+  /** Tags a juntar ao Status (ex.: "Fora do perfil") */
+  tagsExtras?: string[]
+}
+
 /** Empresas da carteira (cliente, prospect, lead): cadastro, ficha, edição e exclusão. */
 @Injectable()
 export class EmpresasDaCarteiraService {
@@ -92,7 +106,7 @@ export class EmpresasDaCarteiraService {
     return empresa
   }
 
-  async criar(dados: CriarEmpresaCarteira): Promise<EmpresaCarteira> {
+  async criar(dados: CriarEmpresaCarteira, opcoes: OpcoesDeCriacao = {}): Promise<EmpresaCarteira> {
     const db = this.ctx.db()
     const tenantId = this.ctx.tenantId
     const escopo = await escopoDaCarteira(this.ctx)
@@ -111,12 +125,17 @@ export class EmpresasDaCarteiraService {
     // CNPJ: a situação na Receita decide se o cadastro vale (bloqueio) e se fica com o selo
     let consulta: ConsultaDeCnpj | null = null
     let naoVerificada = false
-    if (dados.tipoDocumento === 'cnpj' && documento) {
-      try {
-        consulta = await this.receita.consultar(documento)
-      } catch (erro) {
-        if (erro instanceof ErroApi && erro.codigo === 'receita_indisponivel') naoVerificada = true
-        else throw erro
+    if (dados.tipoDocumento === 'cnpj' && documento && opcoes.consulta !== 'nenhuma') {
+      if (opcoes.consulta) {
+        consulta = opcoes.consulta
+      } else {
+        try {
+          consulta = await this.receita.consultar(documento)
+        } catch (erro) {
+          if (erro instanceof ErroApi && erro.codigo === 'receita_indisponivel') {
+            naoVerificada = true
+          } else throw erro
+        }
       }
       if (consulta) {
         const { situacao } = consulta.dados
@@ -162,7 +181,8 @@ export class EmpresasDaCarteiraService {
           website: dados.website ?? null,
           observacoes: dados.observacoes ?? null,
           ...endereco,
-          origemCadastro: consulta ? 'receita' : 'manual',
+          origemCadastro: opcoes.origemCadastro ?? (consulta ? 'receita' : 'manual'),
+          importacaoId: opcoes.importacaoId ?? null,
           receitaAtualizadoEm: consulta && !consulta.expirada ? consulta.consultadoEm : null,
           situacaoNaoVerificada: naoVerificada,
           criadoPor: escopo.membroId,
@@ -182,7 +202,14 @@ export class EmpresasDaCarteiraService {
     await this.gravarTelefones(db, tenantId, id, telefones)
     await this.gravarCnaes(db, tenantId, id, cnaesParaGravar)
     if (consulta) await this.gravarSocios(db, tenantId, id, consulta.dados)
-    await gravarDiferencaDeTags(db, tenantId, id, new Set(), new Set([status]), escopo.membroId)
+    await gravarDiferencaDeTags(
+      db,
+      tenantId,
+      id,
+      new Set(),
+      new Set([status, ...(opcoes.tagsExtras ?? [])]),
+      escopo.membroId,
+    )
     if (matrizFilial && documento) await this.ligarMatrizEFiliais(db, id, matrizFilial, documento)
     if (naoVerificada) {
       // Receita fora do ar: o worker reconsulta de hora em hora (até 24 vezes) e avisa o vendedor
@@ -198,7 +225,8 @@ export class EmpresasDaCarteiraService {
         tipoDocumento: dados.tipoDocumento,
         documento,
         vendedorId,
-        origemCadastro: consulta ? 'receita' : 'manual',
+        origemCadastro: opcoes.origemCadastro ?? (consulta ? 'receita' : 'manual'),
+        ...(opcoes.importacaoId ? { importacaoId: opcoes.importacaoId } : {}),
         situacaoNaoVerificada: naoVerificada,
       },
     })

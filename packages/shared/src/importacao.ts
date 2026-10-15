@@ -266,3 +266,49 @@ export type PreviaDaImportacao = z.infer<typeof previaDaImportacaoSchema>
 
 /** Quantas linhas com problema a prévia lista. */
 export const PROBLEMAS_NA_PREVIA = 20
+
+// ---- Execução ----
+
+export const resultadoDaLinhaSchema = z.enum([
+  'pendente',
+  'criada',
+  'criada_fora_do_perfil',
+  'fora_do_perfil',
+  'pulada_sem_cnpj',
+  'pulada_duplicada',
+  'pulada_nao_ativa',
+  'erro',
+])
+export type ResultadoDaLinha = z.infer<typeof resultadoDaLinhaSchema>
+
+/** Texto de cada resultado, como o relatório mostra. */
+export const ROTULO_DO_RESULTADO: Record<ResultadoDaLinha, string> = {
+  pendente: 'Aguardando',
+  criada: 'Importada',
+  criada_fora_do_perfil: 'Importada com a tag "Fora do perfil"',
+  fora_do_perfil: 'Fora do perfil',
+  pulada_sem_cnpj: 'Pulada: sem CNPJ válido',
+  pulada_duplicada: 'Pulada: CNPJ repetido ou já na carteira',
+  pulada_nao_ativa: 'Pulada: empresa não ativa na Receita',
+  erro: 'Erro',
+}
+
+export const andamentoDaImportacaoSchema = z
+  .object({
+    situacao: situacaoDaImportacaoSchema,
+    totalLinhas: z.number().int(),
+    /** Linhas que já têm resultado (todas menos as pendentes) */
+    processadas: z.number().int(),
+    /** Quantas linhas há em cada resultado (só os que têm alguma) */
+    porResultado: z.record(z.string(), z.number().int()),
+    /** No máximo: as pendentes × o intervalo (as que estão no cache não esperam) */
+    estimativaRestanteSegundos: z.number().int(),
+    iniciadoEm: z.string().nullable(),
+    concluidoEm: z.string().nullable(),
+  })
+  .meta({ id: 'AndamentoDaImportacao' })
+export type AndamentoDaImportacao = z.infer<typeof andamentoDaImportacaoSchema>
+
+/** A tag que a ação "importar com a tag" aplica; vive no grupo de sistema `importacao`. */
+export const CHAVE_DO_GRUPO_DE_IMPORTACAO = 'importacao'
+export const CHAVE_DA_TAG_FORA_DO_PERFIL = 'fora_do_perfil'

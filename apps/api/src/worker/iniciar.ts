@@ -13,6 +13,7 @@ import {
 } from './manutencao.js'
 import { manipuladoresPadrao } from './outbox/manipuladores.js'
 import { RelayDoOutbox } from './outbox/relay.js'
+import { ExecutorDaImportacao } from '../importacao/executor.js'
 import { EnviadorSmtp } from '../email/enviador.js'
 import { ReceitaService, provedoresPadrao } from '../receita/receita.service.js'
 import { chavesDe } from '../seguranca/cifra.js'
@@ -76,13 +77,25 @@ export async function iniciarWorker(deps: {
 
   // Relay do outbox: um agendador do BullMQ (`upsertJobScheduler`, idempotente) gera um ciclo a cada
   // 2 s; só UM worker pega cada ciclo, então vários workers juntos não duplicam o trabalho
+  const receita = new ReceitaService(banco, provedoresPadrao(config))
+  // Importação de planilha: uma por vez no processo (a Receita não tem SLA e o intervalo é por consulta)
+  const executor = new ExecutorDaImportacao({ banco, receita, log })
+  filas.consumir(
+    FILAS.importacao,
+    async (job) => {
+      const { tenantId, importacaoId } = job.data as { tenantId: string; importacaoId: string }
+      return executor.executar(tenantId, importacaoId)
+    },
+    { concorrencia: 1 },
+  )
+
   const relay = new RelayDoOutbox({
     banco,
     filas,
     log,
     manipuladores: manipuladoresPadrao(config, enviador, {
       banco,
-      servico: new ReceitaService(banco, provedoresPadrao(config)),
+      servico: receita,
     }),
   })
   filas.consumir(

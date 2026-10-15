@@ -1,6 +1,8 @@
 import {
   type AlterarLoteEntrada,
   alterarLoteSchema,
+  type AndamentoDaImportacao,
+  andamentoDaImportacaoSchema,
   CAMPOS_DA_EMPRESA_NA_IMPORTACAO,
   type ConsultaDoEnvio,
   consultaDoEnvioSchema,
@@ -31,6 +33,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ZodPipe } from '../http/zod.pipe.js'
+import { ExecucaoDaImportacaoService } from './execucao.service.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
 import { PreviaDaImportacaoService } from './previa.service.js'
 
@@ -43,6 +46,7 @@ export class LotesDeImportacaoController {
   constructor(
     private readonly servico: LotesDeImportacaoService,
     private readonly previa: PreviaDaImportacaoService,
+    private readonly execucao: ExecucaoDaImportacaoService,
     private readonly ctx: ContextoTenantService,
   ) {}
 
@@ -105,6 +109,47 @@ export class LotesDeImportacaoController {
   @Get('lotes/:id/previa')
   verPrevia(@Param('id', new ParseUUIDPipe()) id: string): Promise<PreviaDaImportacao> {
     return this.previa.calcular(id)
+  }
+
+  @Documenta({
+    resumo: 'Iniciar (ou retomar) a importação',
+    descricao:
+      QUEM +
+      ' O lote precisa estar `pronta` (veja `pendencias`); também retoma um lote que `falhou` ou foi `cancelada`, fazendo só as linhas pendentes. A execução roda no worker, uma linha por vez, com o intervalo escolhido entre consultas à Receita. Lote incompleto: 409 `importacao_incompleta`; já em andamento: 409 `importacao_em_andamento`; encerrado: 409 `importacao_encerrada`.',
+    resposta: loteDeImportacaoSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Post('lotes/:id/iniciar')
+  @HttpCode(200)
+  iniciar(@Param('id', new ParseUUIDPipe()) id: string): Promise<LoteDeImportacao> {
+    return this.execucao.iniciar(id)
+  }
+
+  @Documenta({
+    resumo: 'Cancelar a importação em andamento',
+    descricao:
+      QUEM +
+      ' O worker para antes da próxima linha; o que já foi importado fica (use desfazer para tirar). Dá para retomar com `iniciar`. Fora de andamento: 409 `importacao_nao_cancelavel`.',
+    resposta: loteDeImportacaoSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Post('lotes/:id/cancelar')
+  @HttpCode(200)
+  cancelar(@Param('id', new ParseUUIDPipe()) id: string): Promise<LoteDeImportacao> {
+    return this.execucao.cancelar(id)
+  }
+
+  @Documenta({
+    resumo: 'Acompanhar a importação',
+    descricao:
+      QUEM +
+      ' Situação, quantas linhas já têm resultado e quantas há em cada resultado. Para a barra de progresso (consulta repetida a cada poucos segundos).',
+    resposta: andamentoDaImportacaoSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Get('lotes/:id/andamento')
+  andamento(@Param('id', new ParseUUIDPipe()) id: string): Promise<AndamentoDaImportacao> {
+    return this.execucao.andamento(id)
   }
 
   @Documenta({
