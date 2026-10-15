@@ -2,13 +2,14 @@ import type { Conexao } from '@leadtogo/db'
 import type { Job } from 'bullmq'
 import type { Logger } from 'pino'
 
+import { varrerImportacoesParadas } from '../importacao/varredura.js'
 import { FILAS } from './filas.js'
 import type { WorkerFilas } from './worker-filas.service.js'
 
 /** Tarefa agendada: o `id` do agendador do BullMQ é único, então reexecutar o registro não duplica nada. */
 export interface Agendador {
   id: string
-  tarefa: 'particoes' | 'limpar-convites' | 'limpar-outbox' | (string & {})
+  tarefa: 'particoes' | 'limpar-convites' | 'limpar-outbox' | 'varrer-importacoes' | (string & {})
   /** Cron (UTC) ou intervalo em ms (só os testes usam intervalo) */
   quando: { pattern: string } | { every: number }
 }
@@ -23,6 +24,8 @@ export const AGENDADORES: readonly Agendador[] = [
   // Todo dia: convites cancelados/vencidos há mais de 30 dias e eventos entregues há mais de 14
   { id: 'limpeza-convites', tarefa: 'limpar-convites', quando: { pattern: '0 4 * * *' } },
   { id: 'limpeza-outbox', tarefa: 'limpar-outbox', quando: { pattern: '15 4 * * *' } },
+  // A cada minuto: reenfileira o lote de importação em andamento que parou de andar
+  { id: 'varredura-importacoes', tarefa: 'varrer-importacoes', quando: { every: 60_000 } },
 ]
 
 const TAMANHO_DO_LOTE = 500
@@ -67,7 +70,7 @@ async function emLotes(
   return total
 }
 
-export function processadorDeManutencao(banco: Conexao, log: Logger) {
+export function processadorDeManutencao(banco: Conexao, log: Logger, filas?: WorkerFilas) {
   return async (job: Job): Promise<{ tarefa: string; resultado: number }> => {
     let resultado: number
     switch (job.name) {
@@ -83,6 +86,10 @@ export function processadorDeManutencao(banco: Conexao, log: Logger) {
         break
       case 'limpar-outbox':
         resultado = await emLotes(banco, 'app_limpar_outbox')
+        break
+      case 'varrer-importacoes':
+        if (!filas) throw new Error('varredura de importações sem acesso às filas')
+        resultado = await varrerImportacoesParadas({ banco, fila: filas.fila(FILAS.importacao) })
         break
       default:
         throw new Error(`tarefa de manutenção desconhecida: ${job.name}`)

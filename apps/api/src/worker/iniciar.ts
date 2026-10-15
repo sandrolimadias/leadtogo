@@ -72,7 +72,7 @@ export async function iniciarWorker(deps: {
   filas.consumir(FILAS.notificacoes, processadorDeNotificacao(banco))
 
   // Manutenção agendada (partições da auditoria e limpezas), via funções SECURITY DEFINER do banco
-  filas.consumir(FILAS.manutencao, processadorDeManutencao(banco, log), { concorrencia: 1 })
+  filas.consumir(FILAS.manutencao, processadorDeManutencao(banco, log, filas), { concorrencia: 1 })
   await registrarAgendadores(filas)
   await garantirParticoesNaPartida(filas)
 

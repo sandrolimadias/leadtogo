@@ -205,7 +205,7 @@ describe('fila: retenção e descarte de duplicados', () => {
 })
 
 describe('manutenção agendada com dois workers de verdade', () => {
-  it('dois processos juntos deixam um só agendador de cada tarefa e um só job de partições na partida', async () => {
+  it('dois processos juntos deixam um só agendador de cada tarefa e um só job de cada na partida', async () => {
     novoPrefixo()
     const [w1, w2] = [await worker(), await worker()]
     await Promise.all([w1.aguardarPronto(), w2.aguardarPronto()])
@@ -216,10 +216,13 @@ describe('manutenção agendada com dois workers de verdade', () => {
         'auditoria-particoes',
         'limpeza-convites',
         'limpeza-outbox',
+        'varredura-importacoes',
       ])
-      await esperarAte(async () => (await q.getJobCounts('completed'))['completed'] === 1)
+      // Os agendadores por cron esperam a hora; o de intervalo (varredura de importações) roda já na partida
+      await esperarAte(async () => (await q.getJobCounts('completed'))['completed'] === 2)
       const concluidos = await q.getJobs(['completed'])
-      expect(concluidos.map((j) => j.name)).toEqual(['particoes']) // só UMA execução, mesmo com dois workers
+      // só UMA execução de cada, mesmo com dois workers
+      expect(concluidos.map((j) => j.name).sort()).toEqual(['particoes', 'varrer-importacoes'])
     } finally {
       await q.obliterate({ force: true }).catch(() => undefined)
       await q.close()
