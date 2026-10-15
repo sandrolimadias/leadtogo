@@ -18,6 +18,8 @@ export const TABELAS_PAGINADAS = [
   'contatos',
   'importacoes',
   'importacao_linhas',
+  'atividades',
+  'atividades_ficha',
 ] as const
 export type TabelaPaginada = (typeof TABELAS_PAGINADAS)[number]
 
