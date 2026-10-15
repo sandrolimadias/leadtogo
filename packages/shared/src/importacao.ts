@@ -198,14 +198,19 @@ export const loteDeImportacaoSchema = z
     pendencias: z.array(z.string()),
     criadoEm: z.string(),
     concluidoEm: z.string().nullable(),
-    /** Até quando dá para desfazer (a conclusão + 24 h); nulo se o lote não está concluído */
+    /** Até quando dá para desfazer (o fim do lote + `DIAS_PARA_DESFAZER`); nulo se não dá mais ou não cabe */
     desfazerAte: z.string().nullable(),
+    /** O que o desfazer fez; nulo se o lote não foi desfeito */
+    desfeito: z.object({ removidas: z.number().int(), mantidas: z.number().int() }).nullable(),
   })
   .meta({ id: 'LoteDeImportacao' })
 export type LoteDeImportacao = z.infer<typeof loteDeImportacaoSchema>
 
-/** Quanto tempo depois de concluído o lote ainda pode ser desfeito (docs/escopo_mvp.md, Módulo 4). */
-export const HORAS_PARA_DESFAZER = 24
+/**
+ * Quantos dias depois de concluído (ou cancelado) o lote ainda pode ser desfeito. O ÚNICO lugar onde
+ * o prazo mora: mudar aqui muda a API, as telas e as mensagens (docs/escopo_mvp.md, Módulo 4).
+ */
+export const DIAS_PARA_DESFAZER = 7
 
 /** Intervalo mínimo e máximo entre consultas à Receita (padrão 3 s). */
 export const INTERVALO_MINIMO_MS = 500
@@ -338,6 +343,8 @@ export const linhaDoRelatorioSchema = z.object({
   /** A empresa criada (ou, nas repetidas, a que já estava na carteira) */
   empresaId: z.uuid().nullable(),
   empresaNome: z.string().nullable(),
+  /** A empresa continua na carteira (`false` = saiu, por exemplo no desfazer); nulo se a linha não tem empresa */
+  empresaNaCarteira: z.boolean().nullable(),
   /** A linha como veio da planilha, por título de coluna */
   dados: z.record(z.string(), z.string()),
 })

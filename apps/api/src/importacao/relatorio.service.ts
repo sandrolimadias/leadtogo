@@ -101,6 +101,10 @@ export class RelatorioDaImportacaoService {
         empresaNome: sql<
           string | null
         >`coalesce(${empresas.nomeFantasia}, ${empresas.razaoSocial})`,
+        // `false` quando a empresa saiu da carteira (desfazer); nulo quando a linha não tem empresa
+        empresaNaCarteira: sql<
+          boolean | null
+        >`${empresas.id} IS NOT NULL AND ${empresas.excluidoEm} IS NULL`,
       })
       .from(importacaoLinhas)
       .leftJoin(empresas, eq(empresas.id, importacaoLinhas.empresaId))

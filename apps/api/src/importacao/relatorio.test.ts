@@ -3,6 +3,7 @@ import type { Server } from 'node:http'
 import { criarConexao } from '@leadtogo/db'
 import {
   completarCnpj,
+  DIAS_PARA_DESFAZER,
   type ListaDeLinhas,
   type ListaDeLotes,
   MOTIVO_IMPORTAR_MESMO_ASSIM,
@@ -109,7 +110,12 @@ const descartarEventos = (tenantId: string) =>
          WHERE tipo = 'importacao.executar' AND processado_em IS NULL`,
   )
 
-const chamar = (metodo: 'get' | 'post' | 'patch', cookie: string, url: string, corpo?: unknown) => {
+const chamar = (
+  metodo: 'get' | 'post' | 'patch' | 'put',
+  cookie: string,
+  url: string,
+  corpo?: unknown,
+) => {
   const r = request(app.getHttpServer())
     [metodo](url)
     .set('Origin', ORIGEM_DO_FRONT)
@@ -470,8 +476,10 @@ describe('desfazer o lote', () => {
         SELECT documento, excluido_em IS NOT NULL AS removida
         FROM empresas WHERE importacao_id = ${loteId} ORDER BY documento`,
     )
+  const desfazer = (cookie: string, id: string) =>
+    chamar('post', cookie, `/v1/importacao/lotes/${id}/desfazer`)
 
-  it('tira só o que o lote criou (a empresa que já estava na carteira fica), uma vez só, e o relatório continua', async () => {
+  it('tira o que o lote criou, só o que ninguém alterou; a que já estava na carteira fica; uma vez só', async () => {
     const [a, b, ja] = [cnpjNovo(), cnpjNovo(), cnpjNovo()]
     const { d, membroId, lote } = await cenario({
       linhas: [
@@ -492,13 +500,19 @@ describe('desfazer o lote', () => {
     const antes = (await chamar('get', d.cookie, `/v1/importacao/lotes/${lote.id}`))
       .body as LoteDeImportacao
     expect(antes.situacao).toBe('concluida')
+    // o prazo vem de uma constante só (DIAS_PARA_DESFAZER), contada da conclusão
     expect(Date.parse(antes.desfazerAte ?? '') - Date.parse(antes.concluidoEm ?? '')).toBe(
-      24 * 3_600_000,
+      DIAS_PARA_DESFAZER * 86_400_000,
     )
+    expect(antes.desfeito).toBeNull()
 
-    const r = await chamar('post', d.cookie, `/v1/importacao/lotes/${lote.id}/desfazer`)
+    const r = await desfazer(d.cookie, lote.id)
     expect(r.status, JSON.stringify(r.body)).toBe(200)
-    expect(r.body).toMatchObject({ situacao: 'desfeita', desfazerAte: null })
+    expect(r.body).toMatchObject({
+      situacao: 'desfeita',
+      desfazerAte: null,
+      desfeito: { removidas: 2, mantidas: 0 },
+    })
     expect(await empresasDoLote(d.tenantId, lote.id)).toEqual(
       [a, b].sort().map((documento) => ({ documento, removida: true })),
     )
@@ -510,12 +524,16 @@ describe('desfazer o lote', () => {
     )
     expect(existente).toEqual([{ removida: false }])
 
-    // o relatório continua: as linhas e o resultado de cada uma
+    // o relatório continua: as linhas, o resultado de cada uma e se a empresa saiu da carteira
     const linhas = await linhasApi(d.cookie, lote.id)
-    expect(linhas.itens.map((l) => l.resultado)).toEqual(['criada', 'criada', 'pulada_duplicada'])
+    expect(linhas.itens.map((l) => [l.resultado, l.empresaNaCarteira])).toEqual([
+      ['criada', false],
+      ['criada', false],
+      ['pulada_duplicada', true],
+    ])
 
     // dois cliques: o segundo já encontra o lote desfeito; e "importar mesmo assim" também não vale mais
-    const de2 = await chamar('post', d.cookie, `/v1/importacao/lotes/${lote.id}/desfazer`)
+    const de2 = await desfazer(d.cookie, lote.id)
     expect([de2.status, (de2.body as { erro: string }).erro]).toEqual([
       409,
       'importacao_nao_desfazivel',
@@ -529,10 +547,94 @@ describe('desfazer o lote', () => {
     expect(mesmoAssim.status).toBe(409)
   })
 
-  it('só desfaz o lote concluído e só dentro das 24 horas', async () => {
+  it('a empresa que alguém alterou depois, ou que tem contato vinculado, fica na carteira e é contada', async () => {
+    const [a, b, c] = [cnpjNovo(), cnpjNovo(), cnpjNovo()]
+    const { d, membroId, lote, tag } = await cenario({
+      linhas: [
+        [a, 'Alfa', '', '', ''],
+        [b, 'Beta', '', '', ''],
+        [c, 'Gama', '', '', ''],
+      ],
+    })
+    await iniciar(d, lote.id)
+    expect(await executar(new ReceitaFalsa(), d.tenantId, lote.id)).toBe('concluida')
+    const ids = (await linhasDe(d.tenantId, lote.id)).map((l) => l.empresa_id ?? '')
+    const ea = ids[0] ?? ''
+    const eb = ids[1] ?? ''
+
+    // Alfa: alguém mudou o Status (tags) depois da importação
+    const mudou = await chamar('put', d.cookie, `/v1/carteira/empresas/${ea}/tags`, {
+      tagIds: [tag('lead')],
+    })
+    expect(mudou.status, JSON.stringify(mudou.body)).toBe(200)
+    // Beta: alguém vinculou um contato
+    await noTenant(d.tenantId, async (tx) => {
+      const [contato] = await tx<{ id: string }[]>`
+        INSERT INTO contatos (id, tenant_id, nome) VALUES (gen_random_uuid(), ${d.tenantId}, 'Contato de teste')
+        RETURNING id`
+      await tx`
+        INSERT INTO empresa_contatos (id, tenant_id, empresa_id, contato_id, ativo)
+        VALUES (gen_random_uuid(), ${d.tenantId}, ${eb}, ${(contato as { id: string }).id}, true)`
+    })
+    void membroId
+
+    const r = await desfazer(d.cookie, lote.id)
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    expect((r.body as LoteDeImportacao).desfeito).toEqual({ removidas: 1, mantidas: 2 })
+    expect(await empresasDoLote(d.tenantId, lote.id)).toEqual(
+      [
+        { documento: a, removida: false },
+        { documento: b, removida: false },
+        { documento: c, removida: true },
+      ].sort((x, y) => x.documento.localeCompare(y.documento)),
+    )
+    // o relatório avisa quais ficaram
+    const linhas = await linhasApi(d.cookie, lote.id)
+    expect(linhas.itens.map((l) => l.empresaNaCarteira)).toEqual([true, true, false])
+    // e o lote guarda a contagem (a lista de lotes e o relatório mostram depois)
+    const depois = (await chamar('get', d.cookie, `/v1/importacao/lotes/${lote.id}`))
+      .body as LoteDeImportacao
+    expect(depois.desfeito).toEqual({ removidas: 1, mantidas: 2 })
+  })
+
+  it('também desfaz o lote cancelado (prazo contado da última linha resolvida)', async () => {
+    const [a, b] = [cnpjNovo(), cnpjNovo()]
+    const { d, lote } = await cenario({
+      linhas: [
+        [a, 'Alfa', '', '', ''],
+        [b, 'Beta', '', '', ''],
+      ],
+    })
+    await iniciar(d, lote.id)
+    const receita = new ReceitaFalsa()
+    // cancela no meio: depois da primeira consulta
+    receita.aoConsultar = async () => {
+      if (receita.chamadas.length === 1) {
+        const c = await chamar('post', d.cookie, `/v1/importacao/lotes/${lote.id}/cancelar`)
+        expect(c.status, JSON.stringify(c.body)).toBe(200)
+      }
+    }
+    expect(await executar(receita, d.tenantId, lote.id)).toBe('cancelada')
+    const feitas = (await resultados(d.tenantId, lote.id)).filter((x) => x !== 'pendente').length
+    expect(feitas).toBeGreaterThanOrEqual(1)
+
+    const antes = (await chamar('get', d.cookie, `/v1/importacao/lotes/${lote.id}`))
+      .body as LoteDeImportacao
+    expect(antes.situacao).toBe('cancelada')
+    expect(antes.desfazerAte).not.toBeNull()
+    const r = await desfazer(d.cookie, lote.id)
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    expect(r.body).toMatchObject({
+      situacao: 'desfeita',
+      desfeito: { removidas: feitas, mantidas: 0 },
+    })
+    expect((await empresasDoLote(d.tenantId, lote.id)).every((e) => e.removida)).toBe(true)
+  })
+
+  it('só desfaz o lote concluído ou cancelado e só dentro do prazo', async () => {
     const { d, lote } = await cenario({ linhas: [[cnpjNovo(), 'Alfa', '', '', '']] })
     // ainda não executou: nada a desfazer
-    const cedo = await chamar('post', d.cookie, `/v1/importacao/lotes/${lote.id}/desfazer`)
+    const cedo = await desfazer(d.cookie, lote.id)
     expect([cedo.status, (cedo.body as { erro: string }).erro]).toEqual([
       409,
       'importacao_nao_desfazivel',
@@ -540,17 +642,24 @@ describe('desfazer o lote', () => {
 
     await iniciar(d, lote.id)
     expect(await executar(new ReceitaFalsa(), d.tenantId, lote.id)).toBe('concluida')
+    // um dia antes do prazo ainda vale; um dia depois, não
     await noTenant(
       d.tenantId,
       (tx) =>
-        tx`UPDATE importacoes SET concluido_em = now() - interval '25 hours' WHERE id = ${lote.id}`,
+        tx`UPDATE importacoes SET concluido_em = now() - make_interval(days => ${DIAS_PARA_DESFAZER + 1}) WHERE id = ${lote.id}`,
     )
-    const tarde = await chamar('post', d.cookie, `/v1/importacao/lotes/${lote.id}/desfazer`)
+    const tarde = await desfazer(d.cookie, lote.id)
     expect([tarde.status, (tarde.body as { erro: string }).erro]).toEqual([
       409,
       'prazo_de_desfazer_vencido',
     ])
-    // nada foi removido
     expect((await empresasDoLote(d.tenantId, lote.id)).map((e) => e.removida)).toEqual([false])
+
+    await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx`UPDATE importacoes SET concluido_em = now() - make_interval(days => ${DIAS_PARA_DESFAZER - 1}) WHERE id = ${lote.id}`,
+    )
+    expect((await desfazer(d.cookie, lote.id)).status).toBe(200)
   })
 })

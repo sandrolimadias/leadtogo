@@ -93,6 +93,7 @@ const lote = (extra: Partial<LoteDeImportacao> = {}): LoteDeImportacao => ({
   criadoEm: '2026-10-15T12:00:00.000Z',
   concluidoEm: null,
   desfazerAte: null,
+  desfeito: null,
   ...extra,
 })
 
@@ -494,6 +495,7 @@ describe('Importar planilha: andamento e relatório', () => {
     motivo,
     empresaId: null,
     empresaNome: resultado === 'criada' ? `Empresa ${n}` : null,
+    empresaNaCarteira: resultado === 'criada' ? true : null,
     dados: { CNPJ: `000${n}`, Empresa: `Empresa ${n}`, Cidade: 'Vitória' },
   })
   const concluido = (extra: Parameters<typeof servicos>[0] = {}) =>
@@ -574,20 +576,28 @@ describe('Importar planilha: andamento e relatório', () => {
     await waitFor(() => expect(importarForaDoPerfil).toHaveBeenCalledWith(LOTE, undefined))
   })
 
-  const emUmDia = () => new Date(Date.now() + 23 * 3_600_000).toISOString()
+  const noPrazo = () => new Date(Date.now() + 6 * 86_400_000).toISOString()
 
-  it('relatório: desfaz a importação (com confirmação) dentro das 24 horas', async () => {
+  it('relatório: desfaz a importação (com confirmação) dentro do prazo de 7 dias', async () => {
     const desfazer = vi.fn(async () =>
-      ok(lote({ situacao: 'desfeita', concluidoEm: null, desfazerAte: null })),
+      ok(
+        lote({
+          situacao: 'desfeita',
+          concluidoEm: null,
+          desfazerAte: null,
+          desfeito: { removidas: 28, mantidas: 2 },
+        }),
+      ),
     )
     abrir(
       concluido({
-        lote: { concluidoEm: '2026-10-15T12:00:00.000Z', desfazerAte: emUmDia() },
+        lote: { concluidoEm: '2026-10-15T12:00:00.000Z', desfazerAte: noPrazo() },
         lotes: { desfazer },
       }),
     )
     const secao = await screen.findByRole('region', { name: 'Desfazer a importação' })
     expect(within(secao).getByText(/Disponível até/)).toBeInTheDocument()
+    expect(within(secao).getByText(/7 dias depois de terminar/)).toBeInTheDocument()
     await userEvent.click(within(secao).getByRole('button', { name: 'Desfazer importação' }))
 
     const dialogo = await screen.findByRole('dialog')
@@ -596,16 +606,18 @@ describe('Importar planilha: andamento e relatório', () => {
     await userEvent.click(within(dialogo).getByRole('button', { name: 'Desfazer importação' }))
     await waitFor(() => expect(desfazer).toHaveBeenCalledWith(LOTE))
     expect(await screen.findByText('Importação desfeita', { selector: 'span' })).toBeInTheDocument()
+    expect(screen.getByText(/28 empresas saíram da carteira/)).toBeInTheDocument()
+    expect(screen.getByText(/2 ficaram porque alguém alterou depois/)).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Desfazer a importação' })).toBeNull()
   })
 
   it('relatório: o erro do desfazer (ex.: prazo vencido) aparece no diálogo e nada muda', async () => {
     const desfazer = vi.fn(async () =>
-      falha('prazo_de_desfazer_vencido', 'O prazo de 24 horas para desfazer já passou.', 409),
+      falha('prazo_de_desfazer_vencido', 'O prazo de 7 dias para desfazer já passou.', 409),
     )
     abrir(
       concluido({
-        lote: { concluidoEm: '2026-10-15T12:00:00.000Z', desfazerAte: emUmDia() },
+        lote: { concluidoEm: '2026-10-15T12:00:00.000Z', desfazerAte: noPrazo() },
         lotes: { desfazer },
       }),
     )
@@ -613,12 +625,12 @@ describe('Importar planilha: andamento e relatório', () => {
     const dialogo = await screen.findByRole('dialog')
     await userEvent.click(within(dialogo).getByRole('button', { name: 'Desfazer importação' }))
     expect(
-      await within(dialogo).findByText('O prazo de 24 horas para desfazer já passou.'),
+      await within(dialogo).findByText('O prazo de 7 dias para desfazer já passou.'),
     ).toBeInTheDocument()
     expect(screen.getByText('Importação concluída')).toBeInTheDocument()
   })
 
-  it('relatório: depois das 24 horas não oferece desfazer', async () => {
+  it('relatório: depois do prazo não oferece desfazer', async () => {
     abrir(
       concluido({
         lote: {
@@ -628,6 +640,43 @@ describe('Importar planilha: andamento e relatório', () => {
       }),
     )
     await screen.findByText('Importação concluída')
+    expect(screen.queryByRole('region', { name: 'Desfazer a importação' })).toBeNull()
+  })
+
+  it('relatório: o lote cancelado também pode ser desfeito', async () => {
+    abrir(
+      concluido({
+        lote: { situacao: 'cancelada', desfazerAte: noPrazo() },
+      }),
+    )
+    expect(await screen.findByText('Importação cancelada')).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Desfazer a importação' })).toBeInTheDocument()
+  })
+
+  it('relatório de um lote desfeito: marca o que saiu e o que ficou na carteira', async () => {
+    const s = concluido({
+      lote: { situacao: 'desfeita', desfeito: { removidas: 1, mantidas: 1 } },
+      lotes: {
+        linhas: vi.fn(async () =>
+          ok(
+            linhas({
+              itens: [
+                { ...item(0, 'criada'), empresaNaCarteira: false },
+                { ...item(1, 'criada'), empresaNaCarteira: true },
+              ],
+              total: 2,
+            }),
+          ),
+        ),
+      },
+    })
+    abrir(s)
+    expect(await screen.findByText(/1 empresa saiu da carteira/)).toBeInTheDocument()
+    expect(screen.getByText(/1 ficou porque alguém alterou depois/)).toBeInTheDocument()
+    const saiu = await screen.findByRole('listitem', { name: 'Linha 1' })
+    expect(within(saiu).getByText('Removida')).toBeInTheDocument()
+    const ficou = screen.getByRole('listitem', { name: 'Linha 2' })
+    expect(within(ficou).getByText('Ficou na carteira')).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Desfazer a importação' })).toBeNull()
   })
 

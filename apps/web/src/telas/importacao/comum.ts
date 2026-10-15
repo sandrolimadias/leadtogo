@@ -107,6 +107,14 @@ export function resumoDoLote(l: LoteDaLista): string {
       : []),
     ...(puladas > 0 ? [`${puladas.toLocaleString('pt-BR')} puladas`] : []),
     ...(n(l.totais, 'erro') > 0 ? [`${n(l.totais, 'erro')} com erro`] : []),
+    ...(l.situacao === 'desfeita'
+      ? [
+          `${n(l.totais, 'desfeitas').toLocaleString('pt-BR')} removidas`,
+          ...(n(l.totais, 'mantidas') > 0
+            ? [`${n(l.totais, 'mantidas').toLocaleString('pt-BR')} ficaram na carteira`]
+            : []),
+        ]
+      : []),
   ]
   return partes.join(' · ')
 }

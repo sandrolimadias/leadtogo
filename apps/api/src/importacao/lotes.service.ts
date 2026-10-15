@@ -4,7 +4,7 @@ import {
   type AlterarLoteEntrada,
   type ConsultaDoEnvio,
   type FonteDosDados,
-  HORAS_PARA_DESFAZER,
+  DIAS_PARA_DESFAZER,
   LINHAS_DE_AMOSTRA,
   type LoteDeImportacao,
   type RegrasDeImportacao,
@@ -396,12 +396,30 @@ export class LotesDeImportacaoService {
       pendencias: pendenciasDe(lote, colunas, campos),
       criadoEm: lote.criadoEm.toISOString(),
       concluidoEm: lote.concluidoEm?.toISOString() ?? null,
-      desfazerAte:
-        lote.situacao === 'concluida' && lote.concluidoEm
-          ? new Date(lote.concluidoEm.getTime() + HORAS_PARA_DESFAZER * 3_600_000).toISOString()
+      desfazerAte: prazoDeDesfazer(lote)?.toISOString() ?? null,
+      desfeito:
+        lote.situacao === 'desfeita'
+          ? {
+              removidas: Number((lote.totais as Record<string, unknown>)['desfeitas'] ?? 0),
+              mantidas: Number((lote.totais as Record<string, unknown>)['mantidas'] ?? 0),
+            }
           : null,
     }
   }
+}
+
+/**
+ * Até quando o lote pode ser desfeito: só o `concluida` ou o `cancelada`, `DIAS_PARA_DESFAZER` depois de
+ * terminar (a conclusão; no cancelado, a última linha resolvida, que não muda depois).
+ */
+export function prazoDeDesfazer(lote: Lote): Date | null {
+  const fim =
+    lote.situacao === 'concluida'
+      ? lote.concluidoEm
+      : lote.situacao === 'cancelada'
+        ? (lote.ultimoProgressoEm ?? lote.iniciadoEm ?? lote.criadoEm)
+        : null
+  return fim ? new Date(fim.getTime() + DIAS_PARA_DESFAZER * 86_400_000) : null
 }
 
 /** Tira o que veio vazio: coluna `null` ou em branco é "não mapear este campo". */

@@ -101,10 +101,13 @@
 2. A importação **para na linha em curso e continua sozinha** quando o worker novo sobe, em até 1 ou 2 minutos, sem empresa duplicada nem linha perdida. Se o worker cair de vez, a varredura de cada minuto reenfileira o lote.
 
 ## 13. Desfazer a importação
-1. No relatório de um lote **concluído**, a seção **Desfazer a importação** diz até quando vale (**24 horas** depois da conclusão). **Desfazer importação** pede confirmação.
-2. Confirme: o lote vira **Desfeita** (aviso azul), as empresas que **ele criou** saem da carteira (some da lista de Empresas) e **as que já existiam antes não mudam**. O relatório continua.
-3. Os CNPJs desfeitos podem ser importados ou cadastrados de novo.
-4. Depois de desfeito, não há mais Desfazer nem Importar mesmo assim. Um lote com mais de 24 horas não mostra Desfazer (exclua as empresas pela carteira).
+1. No relatório de um lote **concluído ou cancelado**, a seção **Desfazer a importação** diz até quando vale (**7 dias** depois de terminar). **Desfazer importação** pede confirmação e explica o que fica.
+2. **Antes de desfazer**, abra uma das empresas importadas e **altere algo** (mude o Status, ponha uma tag ou edite um campo); em outra, **vincule um contato**. Deixe uma terceira como veio.
+3. Confirme: o lote vira **Desfeita** (aviso azul) e diz **quantas empresas saíram e quantas ficaram**. Saem da carteira (somem da lista de Empresas) as que **ninguém mexeu**. **Ficam** a que você alterou e a que tem contato vinculado, marcadas **"Ficou na carteira"** no relatório (as que saíram aparecem como **"Removida"**).
+4. As empresas que **já existiam antes** da importação (linhas "CNPJ repetido ou já na carteira") **não mudam**.
+5. Faça o mesmo num lote **cancelado** (roteiro 11): o Desfazer aparece também nele.
+6. Os CNPJs removidos podem ser importados ou cadastrados de novo. Depois de desfeito, não há mais Desfazer nem Importar mesmo assim.
+7. Passados os 7 dias, o Desfazer some (a exclusão é a da carteira). O prazo é a constante `DIAS_PARA_DESFAZER` (`packages/shared/src/importacao.ts`), e mudar o número muda tudo.
 
 ## 14. Lista de importações (Importar planilha → Ver as importações anteriores)
 1. Cada lote mostra o **nome**, o **resumo** ("40 linhas · 30 importadas · 3 puladas..."), o arquivo, a data, quem importou e a **situação** (Concluída, Em andamento, Parou, Cancelada, Desfeita...).
@@ -125,13 +128,13 @@
 
 | Item | Motivo |
 |---|---|
-| Importar **contatos** por planilha (a alternância Empresas / Contatos do protótipo) | O escopo do MVP só traz a importação de empresas; o contato vem pela ficha e pela conversão de sócio. O envio recusa `tipo` diferente de empresas |
+| Importar **contatos** por planilha (a alternância Empresas / Contatos do protótipo) | **Não descartado: vira o Módulo 4b**, depois do seu teste das empresas (decidido em 15/10/2026). O envio recusa `tipo` diferente de empresas até lá |
 | **Atualizar** empresa que já está na carteira, e **duplicado por nome ou telefone** | Decidido em 12/10/2026: o MVP deduplica só por CNPJ e **pula** a linha repetida, sem alterar (o protótipo previa "Atualizar / Criar nova") |
 | **Baixar o relatório completo em Excel** | O CSV do que **não entrou** cobre a correção e a reimportação; o relatório inteiro está na tela, filtrável |
 | **Notificação** "importação concluída" | A central de notificações está fora do MVP (o progresso e o relatório ficam na tela) |
 | **Linhas de importação por CPF ou sem documento** | A importação é por CNPJ; CPF, texto e notação científica viram "sem CNPJ válido" (pulada e listada) |
 | **Editar o perfil** de um lote já iniciado | O lote guarda uma **cópia das regras** usadas; mudar o perfil depois não altera lotes antigos |
 | **Retomar do mesmo lote depois de desfeito** | Desfeito é definitivo; para repetir, envie a planilha de novo |
-| **Desfazer depois de 24 horas** | Prazo do protótipo; depois disso, a exclusão é a da carteira (empresa a empresa) |
+| **Desfazer depois de 7 dias**, e **desfazer o que alguém já alterou** | Decidido em 15/10/2026: a empresa alterada depois (ou com contato) fica na carteira e o resultado avisa; passado o prazo, a exclusão é a da carteira (empresa a empresa) |
 | **Aplicar tag em massa** nas empresas de um lote, e **filtrar a lista de Empresas por lote** | A coluna `empresas.importacao_id` já existe e o filtro é uma evolução simples, mas não foi pedido no escopo |
 | **Tela de lotes no celular com ações** (cancelar, desfazer na lista) | As ações ficam no relatório do lote; a lista só mostra e abre |

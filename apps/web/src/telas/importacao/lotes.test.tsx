@@ -43,7 +43,18 @@ const lote = (n: number, extra: Partial<Item> = {}): Item => ({
 function servicos(
   papel: 'admin' | 'gestor' | 'vendedor' = 'admin',
   listar = vi.fn(async (_pagina?: number) =>
-    ok({ itens: [lote(1), lote(2, { situacao: 'desfeita' })], total: 2, pagina: 1, porPagina: 20 }),
+    ok({
+      itens: [
+        lote(1),
+        lote(2, {
+          situacao: 'desfeita',
+          totais: { criada: 30, desfeitas: 28, mantidas: 2 },
+        }),
+      ],
+      total: 2,
+      pagina: 1,
+      porPagina: 20,
+    }),
   ),
 ) {
   const base = servicosFalsos()
@@ -67,9 +78,9 @@ describe('Importações: a lista de lotes', () => {
     expect(within(um).getByText('Concluída')).toBeInTheDocument()
     expect(within(um).getByText(/planilha_1\.xlsx/)).toBeInTheDocument()
     expect(within(um).getByText(/Alessandro Dias/)).toBeInTheDocument()
-    expect(
-      within(within(lista).getByRole('listitem', { name: 'Importação 2' })).getByText('Desfeita'),
-    ).toBeInTheDocument()
+    const dois = within(lista).getByRole('listitem', { name: 'Importação 2' })
+    expect(within(dois).getByText('Desfeita')).toBeInTheDocument()
+    expect(within(dois).getByText(/28 removidas · 2 ficaram na carteira/)).toBeInTheDocument()
   })
 
   it('abre o lote pelo nome e leva ao envio com "Importar planilha"', async () => {

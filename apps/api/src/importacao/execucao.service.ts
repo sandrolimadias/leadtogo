@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, schema, sql } from '@leadtogo/db'
 import {
   type AndamentoDaImportacao,
-  HORAS_PARA_DESFAZER,
+  DIAS_PARA_DESFAZER,
   type LoteDeImportacao,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
@@ -77,58 +77,80 @@ export class ExecucaoDaImportacaoService {
   }
 
   /**
-   * Desfaz o lote: as empresas que ELE criou saem da carteira (exclusão lógica, como a manual: os
-   * vínculos de contato ficam inativos e as filiais soltam a matriz). Só num lote `concluida`, até 24 h
-   * depois da conclusão; as linhas e o relatório ficam como estão. Empresa que já existia na carteira
-   * nunca é tocada (a importação não altera quem já estava lá). Dois cliques juntos não duplicam: só um
-   * UPDATE acerta a situação.
+   * Desfaz o lote (`concluida` ou `cancelada`, até `DIAS_PARA_DESFAZER` dias depois de terminar): as
+   * empresas que ELE criou e que ninguém mexeu depois saem da carteira (exclusão lógica, como a manual:
+   * vínculos de contato inativos e filiais soltas da matriz). Ficam, e são contadas em `desfeito.mantidas`,
+   * as que alguém alterou depois (qualquer registro de auditoria além do `criar`: editar, tags, Receita)
+   * ou que têm contato vinculado; a que já estava na carteira antes nunca é tocada. As linhas e o relatório
+   * ficam. Dois cliques juntos não duplicam: só um UPDATE acerta a situação.
    */
   async desfazer(id: string): Promise<LoteDeImportacao> {
     this.exigirQuemImporta()
     const db = this.ctx.db()
     const lote = await this.lotes.detalhar(id) // 404 se não existe
-    if (lote.situacao !== 'concluida' || !lote.desfazerAte) {
+    if ((lote.situacao !== 'concluida' && lote.situacao !== 'cancelada') || !lote.desfazerAte) {
       throw new ErroApi(
         'importacao_nao_desfazivel',
-        'Só dá para desfazer uma importação concluída.',
+        'Só dá para desfazer uma importação concluída ou cancelada.',
         409,
       )
     }
     if (new Date(lote.desfazerAte).getTime() < Date.now()) {
       throw new ErroApi(
         'prazo_de_desfazer_vencido',
-        `O prazo de ${HORAS_PARA_DESFAZER} horas para desfazer esta importação já passou. Exclua as empresas pela carteira.`,
+        `O prazo de ${DIAS_PARA_DESFAZER} dias para desfazer esta importação já passou. Exclua as empresas pela carteira.`,
         409,
       )
     }
     const [mudou] = await db
       .update(importacoes)
       .set({ situacao: 'desfeita', desfeitaEm: sql`now()`, atualizadoPor: this.ctx.membro.id })
-      .where(and(eq(importacoes.id, id), eq(importacoes.situacao, 'concluida')))
+      .where(and(eq(importacoes.id, id), inArray(importacoes.situacao, ['concluida', 'cancelada'])))
       .returning({ id: importacoes.id })
     if (!mudou) {
       throw new ErroApi(
         'importacao_nao_desfazivel',
-        'Só dá para desfazer uma importação concluída.',
+        'Só dá para desfazer uma importação concluída ou cancelada.',
         409,
       )
     }
-    const doLote = sql`(SELECT id FROM empresas WHERE importacao_id = ${id})`
     const removidas = await db
       .update(empresas)
       .set({ excluidoEm: new Date(), atualizadoPor: this.ctx.membro.id })
-      .where(and(eq(empresas.importacaoId, id), isNull(empresas.excluidoEm)))
+      .where(
+        and(
+          eq(empresas.importacaoId, id),
+          isNull(empresas.excluidoEm),
+          // ninguém mexeu depois: nenhum registro de auditoria além da criação...
+          sql`NOT EXISTS (SELECT 1 FROM auditoria a WHERE a.entidade = 'empresa'
+                AND a.entidade_id = ${empresas.id} AND a.acao <> 'criar')`,
+          // ...e nenhum contato vinculado
+          sql`NOT EXISTS (SELECT 1 FROM empresa_contatos ec
+                WHERE ec.empresa_id = ${empresas.id} AND ec.ativo)`,
+        ),
+      )
       .returning({ id: empresas.id })
+    const [{ mantidas } = { mantidas: 0 }] = await db
+      .select({ mantidas: sql<number>`count(*)::int` })
+      .from(empresas)
+      .where(and(eq(empresas.importacaoId, id), isNull(empresas.excluidoEm)))
+    const saidas = sql`(SELECT id FROM empresas WHERE importacao_id = ${id} AND excluido_em IS NOT NULL)`
     await db
       .update(empresaContatos)
       .set({ ativo: false, principal: false })
-      .where(inArray(empresaContatos.empresaId, doLote))
-    await db.update(empresas).set({ matrizId: null }).where(inArray(empresas.matrizId, doLote))
+      .where(inArray(empresaContatos.empresaId, saidas))
+    await db.update(empresas).set({ matrizId: null }).where(inArray(empresas.matrizId, saidas))
+    await db
+      .update(importacoes)
+      .set({
+        totais: sql`${importacoes.totais} || ${JSON.stringify({ desfeitas: removidas.length, mantidas })}::jsonb`,
+      })
+      .where(eq(importacoes.id, id))
     await this.auditoria.registrar({
       entidade: 'importacao',
       entidadeId: id,
       acao: 'desfazer',
-      alteracoes: { empresasRemovidas: removidas.length },
+      alteracoes: { empresasRemovidas: removidas.length, empresasMantidas: mantidas },
     })
     return this.lotes.detalhar(id)
   }

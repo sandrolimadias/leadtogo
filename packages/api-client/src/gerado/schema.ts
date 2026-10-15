@@ -1351,7 +1351,7 @@ export interface paths {
         put?: never;
         /**
          * Desfazer a importação
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida`, até 24 horas depois da conclusão (`desfazerAte`). As empresas que o lote criou saem da carteira (exclusão lógica, como a manual); as que já estavam lá não são tocadas, e o relatório continua. Fora de um lote concluído: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida` ou `cancelada`, até 7 dias depois de terminar (`desfazerAte`; o prazo é `DIAS_PARA_DESFAZER`). Saem da carteira (exclusão lógica, como a manual) as empresas que o lote criou e que ninguém alterou depois; ficam as que tiveram qualquer alteração (editar, tags, Receita) ou têm contato vinculado, e a contagem vem em `desfeito` (`removidas` e `mantidas`). As que já estavam na carteira antes não são tocadas, e o relatório continua. Fora de um lote concluído ou cancelado: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.
          */
         post: operations["LotesDeImportacaoController_desfazer"];
         delete?: never;
@@ -2554,6 +2554,7 @@ export interface components {
                 /** Format: uuid */
                 empresaId: string | null;
                 empresaNome: string | null;
+                empresaNaCarteira: boolean | null;
                 dados: {
                     [key: string]: string;
                 };
@@ -2634,6 +2635,10 @@ export interface components {
             criadoEm: string;
             concluidoEm: string | null;
             desfazerAte: string | null;
+            desfeito: {
+                removidas: number;
+                mantidas: number;
+            } | null;
         };
         MembroDaEquipe: {
             /** Format: uuid */

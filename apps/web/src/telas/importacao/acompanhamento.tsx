@@ -1,5 +1,5 @@
 import type { LoteDeImportacao } from '@leadtogo/api-client'
-import { ROTULO_DO_RESULTADO, type ResultadoDaLinha } from '@leadtogo/shared'
+import { DIAS_PARA_DESFAZER, ROTULO_DO_RESULTADO, type ResultadoDaLinha } from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, Download, RotateCw, Undo2 } from 'lucide-react'
@@ -224,8 +224,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
       await queryClient.invalidateQueries({ queryKey: ['importacao', 'linhas', lote.id] })
       aoAlterar(r.dados)
     })
-  const podeDesfazer =
-    concluida && lote.desfazerAte !== null && Date.parse(lote.desfazerAte) > agora
+  const podeDesfazer = lote.desfazerAte !== null && Date.parse(lote.desfazerAte) > agora
 
   const retomar = () =>
     executar(async () => {
@@ -274,7 +273,12 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
     ),
     desfeita: (
       <Alert tone="info" title="Importação desfeita">
-        As empresas criadas por este lote foram removidas da carteira.
+        {lote.desfeito
+          ? `${lote.desfeito.removidas.toLocaleString('pt-BR')} ${lote.desfeito.removidas === 1 ? 'empresa saiu' : 'empresas saíram'} da carteira.`
+          : 'As empresas criadas por este lote saíram da carteira.'}
+        {lote.desfeito && lote.desfeito.mantidas > 0
+          ? ` ${lote.desfeito.mantidas.toLocaleString('pt-BR')} ${lote.desfeito.mantidas === 1 ? 'ficou' : 'ficaram'} porque alguém alterou depois da importação ou vinculou um contato; ${lote.desfeito.mantidas === 1 ? 'aparece' : 'aparecem'} marcadas como "Ficou na carteira" na lista abaixo.`
+          : ''}
       </Alert>
     ),
   } as const
@@ -395,10 +399,18 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
                     </span>
                   </div>
                   <div className="flex min-w-0 flex-col gap-0.5">
-                    <span>
+                    <span className="flex flex-wrap gap-1">
                       <Badge tone={TOM_DO_RESULTADO[l.resultado]}>
                         {ROTULO_DO_RESULTADO[l.resultado]}
                       </Badge>
+                      {lote.situacao === 'desfeita' && l.empresaNaCarteira === false ? (
+                        <Badge tone="neutral">Removida</Badge>
+                      ) : null}
+                      {lote.situacao === 'desfeita' &&
+                      l.empresaNaCarteira === true &&
+                      (l.resultado === 'criada' || l.resultado === 'criada_fora_do_perfil') ? (
+                        <Badge tone="warning">Ficou na carteira</Badge>
+                      ) : null}
                     </span>
                     {l.motivo ? (
                       <span className="text-[13px] text-ink-muted">{l.motivo}</span>
@@ -464,8 +476,10 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
         >
           <h2 className="m-0 text-[15px] leading-5 font-semibold">Desfazer a importação</h2>
           <p className="m-0 text-[13px] text-ink-muted">
-            Disponível até {formatarDataHora(lote.desfazerAte)}. Tira da carteira só as empresas que
-            este lote criou; as que já estavam lá não são tocadas.
+            Disponível até {formatarDataHora(lote.desfazerAte)} ({DIAS_PARA_DESFAZER} dias depois de
+            terminar). Tira da carteira as empresas que este lote criou e que ninguém alterou
+            depois; as que alguém editou, marcou com tag ou vinculou a um contato ficam, e o
+            resultado avisa quais. As que já estavam na carteira antes não são tocadas.
           </p>
           <div>
             <Button variant="danger-ghost" icon={Undo2} onClick={() => setDesfazendo(true)}>
@@ -477,7 +491,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
       <DialogoDeConfirmacao
         aberto={desfazendo}
         titulo="Desfazer esta importação?"
-        descricao={`As empresas criadas por "${lote.nome}" saem da carteira. As que já existiam antes não mudam. O relatório continua disponível.`}
+        descricao={`As empresas criadas por "${lote.nome}" saem da carteira, menos as que alguém alterou depois ou que têm contato vinculado (essas ficam e o relatório avisa quais). As que já existiam antes não mudam. O relatório continua disponível.`}
         rotuloDoBotao="Desfazer importação"
         erro={erroAoDesfazer}
         enviando={enviando}
