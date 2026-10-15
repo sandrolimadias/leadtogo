@@ -8,7 +8,9 @@ import { cn } from '@/lib/cn'
 import { AcaoDoCartao } from '../empresas/lista-partes'
 import { telefoneParaTela } from './formatos'
 
-const cabecalho = 'h-9 px-3 text-left text-xs font-semibold text-ink-muted border-b border-border'
+// `sticky`: o cabeçalho das colunas fica no topo da área que rola (docs/design_system.md, "Layout e rolagem")
+const cabecalho =
+  'sticky top-0 z-10 h-9 border-b border-border bg-surface-sunken px-3 text-left text-xs font-semibold text-ink-muted'
 const celula = 'border-b border-border px-3 py-2 align-top'
 
 type Vinculo = ItemDaListaDeContatos['empresas'][number]
@@ -43,7 +45,7 @@ export function TabelaDeContatos({
   aoAbrir: (id: string) => void
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface">
+    <div>
       <table className="w-full border-collapse text-sm leading-5">
         <thead className="bg-surface-sunken">
           <tr>

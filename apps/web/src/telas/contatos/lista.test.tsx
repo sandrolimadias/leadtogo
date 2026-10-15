@@ -401,3 +401,44 @@ describe('Contatos: no celular', () => {
     await waitFor(() => expect(historico.location.pathname).toBe('/contatos/novo'))
   })
 })
+
+describe('Contatos: linhas por página e rolagem', () => {
+  const prefsCom = (porPagina: Record<string, number>) => ({
+    tema: 'sistema' as const,
+    menuRecolhido: false,
+    visaoDashboard: 'minha' as const,
+    filtroPadrao: {},
+    porPagina,
+  })
+
+  it('pede 25 por padrão; com 100 salvo, pede 100; escolher 50 guarda por tabela e volta à página 1', async () => {
+    const padrao = servicos()
+    const primeira = await abrir(padrao)
+    await screen.findByRole('table')
+    expect(ultimaConsulta(padrao)).toMatchObject({ porPagina: 25 })
+
+    primeira.unmount()
+
+    const salvo = servicos(lista())
+    salvo.s.preferencias = vi.fn(async () => prefsCom({ contatos: 100 })) as never
+    const guardar = vi.fn(async () => ok(prefsCom({ contatos: 50 })))
+    salvo.s.alterarPreferencias = guardar as never
+    await abrir(salvo, '/contatos?pagina=2')
+    await screen.findByRole('table')
+    await waitFor(() => expect(ultimaConsulta(salvo)).toMatchObject({ porPagina: 100 }))
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Linhas por página' }), '50')
+    await waitFor(() => expect(guardar).toHaveBeenCalledWith({ porPagina: { contatos: 50 } }))
+    await waitFor(() => expect(ultimaConsulta(salvo)).toMatchObject({ porPagina: 50, pagina: 1 }))
+  })
+
+  it('só as linhas rolam: cabeçalho fixo e paginação fora da área rolável', async () => {
+    await abrir(servicos())
+    const tabela = await screen.findByRole('table')
+    const rolavel = tabela.closest('.overflow-auto')
+    expect(rolavel).not.toBeNull()
+    for (const th of within(tabela).getAllByRole('columnheader')) {
+      expect(th.className).toContain('sticky')
+    }
+    expect(rolavel?.contains(screen.getByRole('navigation', { name: 'Paginação' }))).toBe(false)
+  })
+})

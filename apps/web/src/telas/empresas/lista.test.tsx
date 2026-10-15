@@ -638,3 +638,59 @@ describe('Empresas: ações em massa', () => {
     expect(screen.queryByRole('region', { name: 'Ações em massa' })).toBeNull()
   })
 })
+
+describe('Empresas: linhas por página e rolagem', () => {
+  const prefsCom = (porPagina: Record<string, number>) => ({
+    tema: 'sistema' as const,
+    menuRecolhido: false,
+    visaoDashboard: 'minha' as const,
+    filtroPadrao: {},
+    porPagina,
+  })
+
+  it('pede 25 por padrão; com 50 salvo nas preferências, pede 50', async () => {
+    const padrao = servicos()
+    const primeira = await abrir(padrao)
+    await screen.findByRole('table')
+    expect(ultimaConsulta(padrao)).toMatchObject({ porPagina: 25 })
+
+    primeira.unmount()
+
+    const salvo = servicos()
+    salvo.s.preferencias = vi.fn(async () => prefsCom({ empresas: 50 })) as never
+    await abrir(salvo)
+    await screen.findByRole('table')
+    await waitFor(() => expect(ultimaConsulta(salvo)).toMatchObject({ porPagina: 50 }))
+    // nunca chegou a pedir 25 antes de saber a preferência
+    expect(salvo.carteira.listar.mock.calls.map((c) => c[0]['porPagina'])).toEqual([50])
+  })
+
+  it('escolher 100 guarda nas preferências (por tabela), volta à página 1 e pede 100', async () => {
+    const s = servicos(lista([item(1), item(2)], { total: 120, pagina: 3 }))
+    const guardar = vi.fn(async () => ok(prefsCom({ empresas: 100 })))
+    s.s.alterarPreferencias = guardar as never
+    await abrir(s, '/empresas?pagina=3')
+    await screen.findByRole('table')
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Linhas por página' }),
+      '100',
+    )
+    await waitFor(() => expect(guardar).toHaveBeenCalledWith({ porPagina: { empresas: 100 } }))
+    await waitFor(() => expect(ultimaConsulta(s)).toMatchObject({ porPagina: 100, pagina: 1 }))
+  })
+
+  it('só as linhas rolam: o cabeçalho das colunas é fixo e a paginação fica fora da área rolável', async () => {
+    await abrir(servicos())
+    const tabela = await screen.findByRole('table')
+    const rolavel = tabela.closest('.overflow-auto')
+    expect(rolavel).not.toBeNull()
+    for (const th of within(tabela).getAllByRole('columnheader')) {
+      expect(th.className).toContain('sticky')
+      expect(th.className).toContain('top-0')
+    }
+    const paginacao = screen.getByRole('navigation', { name: 'Paginação' })
+    expect(rolavel?.contains(paginacao)).toBe(false)
+    // a página (main) não rola por si: quem rola é a área da tabela
+    expect(screen.getByRole('main').className).not.toContain('overflow-y-auto')
+  })
+})

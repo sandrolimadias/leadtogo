@@ -8,6 +8,9 @@ import { useEffect, useState } from 'react'
 import { useServicos } from '@/auth/contexto'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Paginacao } from '@/components/ui/paginacao'
+import { AreaDaTabela, CorpoRolavel } from '@/components/ui/pagina'
+import { usePorPagina } from '@/casca/preferencias'
 import { Badge, type TomDoBadge } from '@/components/ui/exibicao'
 import { Alert, Skeleton } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
@@ -147,12 +150,15 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
   const [desfazendo, setDesfazendo] = useState(false)
   const [erroAoDesfazer, setErroAoDesfazer] = useState<string>()
 
+  const tamanho = usePorPagina('importacao_linhas')
   const linhas = useQuery({
-    queryKey: ['importacao', 'linhas', lote.id, filtro, pagina, lote.situacao],
+    queryKey: ['importacao', 'linhas', lote.id, filtro, pagina, tamanho.porPagina, lote.situacao],
     retry: false,
+    enabled: tamanho.pronto,
     queryFn: async () => {
       const r = await servicos.importacao.lotes.linhas(lote.id, {
         pagina,
+        porPagina: tamanho.porPagina,
         ...(filtro ? { resultado: filtro } : {}),
       })
       if (!r.ok) throw new Error(r.erro.mensagem)
@@ -286,6 +292,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
 
   return (
     <Pagina
+      tabela
       titulo="Importar planilha"
       trilha={`Empresas › ${lote.nome}`}
       passo={PASSO.relatorio}
@@ -322,11 +329,8 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
         ))}
       </div>
 
-      <section
-        aria-label="Linhas da importação"
-        className="flex flex-col rounded-lg border border-border bg-surface"
-      >
-        <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
+      <AreaDaTabela>
+        <div className="flex flex-none flex-wrap items-center gap-2 border-b border-border p-3">
           <div
             role="group"
             aria-label="Filtrar por resultado"
@@ -375,79 +379,70 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
           </div>
         ) : (
           <>
-            <ul className="m-0 flex list-none flex-col p-0">
-              {linhas.data.itens.map((l) => (
-                <li
-                  key={l.id}
-                  aria-label={`Linha ${l.numero}`}
-                  className="grid items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 md:grid-cols-[auto_72px_minmax(0,1.2fr)_minmax(0,1.4fr)]"
-                >
-                  {concluida && l.resultado === 'fora_do_perfil' ? (
-                    <Checkbox
-                      aria-label={`Importar a linha ${l.numero}`}
-                      checked={escolhidas.has(l.id)}
-                      onChange={() => alternar(l.id)}
-                    />
-                  ) : (
-                    <span className="max-md:hidden" />
-                  )}
-                  <span className="text-xs text-ink-muted tabular-nums">Linha {l.numero}</span>
-                  <div className="flex min-w-0 flex-col">
-                    <span className="font-semibold">
-                      {l.empresaNome ??
-                        (dadoPrincipal(l.dados, linhas.data.colunas) || 'Sem dados')}
-                    </span>
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <span className="flex flex-wrap gap-1">
-                      <Badge tone={TOM_DO_RESULTADO[l.resultado]}>
-                        {ROTULO_DO_RESULTADO[l.resultado]}
-                      </Badge>
-                      {lote.situacao === 'desfeita' && l.empresaNaCarteira === false ? (
-                        <Badge tone="neutral">Removida</Badge>
+            <CorpoRolavel>
+              <ul className="m-0 flex list-none flex-col p-0">
+                {linhas.data.itens.map((l) => (
+                  <li
+                    key={l.id}
+                    aria-label={`Linha ${l.numero}`}
+                    className="grid items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 md:grid-cols-[auto_72px_minmax(0,1.2fr)_minmax(0,1.4fr)]"
+                  >
+                    {concluida && l.resultado === 'fora_do_perfil' ? (
+                      <Checkbox
+                        aria-label={`Importar a linha ${l.numero}`}
+                        checked={escolhidas.has(l.id)}
+                        onChange={() => alternar(l.id)}
+                      />
+                    ) : (
+                      <span className="max-md:hidden" />
+                    )}
+                    <span className="text-xs text-ink-muted tabular-nums">Linha {l.numero}</span>
+                    <div className="flex min-w-0 flex-col">
+                      <span className="font-semibold">
+                        {l.empresaNome ??
+                          (dadoPrincipal(l.dados, linhas.data.colunas) || 'Sem dados')}
+                      </span>
+                    </div>
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="flex flex-wrap gap-1">
+                        <Badge tone={TOM_DO_RESULTADO[l.resultado]}>
+                          {ROTULO_DO_RESULTADO[l.resultado]}
+                        </Badge>
+                        {lote.situacao === 'desfeita' && l.empresaNaCarteira === false ? (
+                          <Badge tone="neutral">Removida</Badge>
+                        ) : null}
+                        {lote.situacao === 'desfeita' &&
+                        l.empresaNaCarteira === true &&
+                        (l.resultado === 'criada' || l.resultado === 'criada_fora_do_perfil') ? (
+                          <Badge tone="warning">Ficou na carteira</Badge>
+                        ) : null}
+                      </span>
+                      {l.motivo ? (
+                        <span className="text-[13px] text-ink-muted">{l.motivo}</span>
                       ) : null}
-                      {lote.situacao === 'desfeita' &&
-                      l.empresaNaCarteira === true &&
-                      (l.resultado === 'criada' || l.resultado === 'criada_fora_do_perfil') ? (
-                        <Badge tone="warning">Ficou na carteira</Badge>
-                      ) : null}
-                    </span>
-                    {l.motivo ? (
-                      <span className="text-[13px] text-ink-muted">{l.motivo}</span>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-              {linhas.data.itens.length === 0 ? (
-                <li className="p-4 text-[13px] text-ink-muted">
-                  Nenhuma linha com este resultado.
-                </li>
-              ) : null}
-            </ul>
-            {linhas.data.total > linhas.data.porPagina ? (
-              <nav
-                aria-label="Páginas das linhas"
-                className="flex items-center justify-end gap-2 p-3 text-[13px]"
-              >
-                <span className="text-ink-muted">
-                  Página {linhas.data.pagina} de{' '}
-                  {Math.ceil(linhas.data.total / linhas.data.porPagina)}
-                </span>
-                <Button size="sm" disabled={pagina <= 1} onClick={() => setPagina(pagina - 1)}>
-                  Anterior
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={pagina * linhas.data.porPagina >= linhas.data.total}
-                  onClick={() => setPagina(pagina + 1)}
-                >
-                  Próxima
-                </Button>
-              </nav>
-            ) : null}
+                    </div>
+                  </li>
+                ))}
+                {linhas.data.itens.length === 0 ? (
+                  <li className="p-4 text-[13px] text-ink-muted">
+                    Nenhuma linha com este resultado.
+                  </li>
+                ) : null}
+              </ul>
+            </CorpoRolavel>
+            <Paginacao
+              pagina={linhas.data.pagina}
+              porPagina={linhas.data.porPagina}
+              total={linhas.data.total}
+              aoMudarPagina={setPagina}
+              aoMudarPorPagina={(n) => {
+                tamanho.mudar(n)
+                setPagina(1)
+              }}
+            />
           </>
         )}
-      </section>
+      </AreaDaTabela>
 
       {concluida && foraDoPerfil > 0 ? (
         <section

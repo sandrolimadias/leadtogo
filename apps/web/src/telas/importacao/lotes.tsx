@@ -8,6 +8,9 @@ import { useServicos } from '@/auth/contexto'
 import { Button } from '@/components/ui/button'
 import { Badge, type TomDoBadge } from '@/components/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
+import { Paginacao } from '@/components/ui/paginacao'
+import { AreaDaTabela, CorpoRolavel, PaginaDeTabela } from '@/components/ui/pagina'
+import { usePorPagina } from '@/casca/preferencias'
 
 import { formatarDataHora, resumoDoLote, useQuemImporta } from './comum'
 
@@ -29,12 +32,13 @@ export function ListaDeImportacoes() {
   const navegar = useNavigate()
   const { pode } = useQuemImporta()
   const [pagina, setPagina] = useState(1)
+  const tamanho = usePorPagina('importacoes')
   const lotes = useQuery({
-    queryKey: ['importacao', 'lotes', pagina],
+    queryKey: ['importacao', 'lotes', pagina, tamanho.porPagina],
     retry: false,
-    enabled: pode,
+    enabled: pode && tamanho.pronto,
     queryFn: async () => {
-      const r = await servicos.importacao.lotes.listar(pagina)
+      const r = await servicos.importacao.lotes.listar(pagina, tamanho.porPagina)
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -43,7 +47,7 @@ export function ListaDeImportacoes() {
   const nova = () => void navegar({ to: '/importacao/nova' })
 
   return (
-    <main className="flex w-full max-w-[1080px] flex-col gap-4 p-6 max-md:p-4">
+    <PaginaDeTabela className="max-w-[1080px]">
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-[13px] text-ink-muted">Empresas</span>
@@ -84,60 +88,49 @@ export function ListaDeImportacoes() {
           }
         />
       ) : (
-        <>
-          <ul
-            aria-label="Importações"
-            className="m-0 flex list-none flex-col overflow-hidden rounded-lg border border-border bg-surface p-0"
-          >
-            {lotes.data.itens.map((l) => (
-              <li
-                key={l.id}
-                aria-label={l.nome}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-3 last:border-b-0"
-              >
-                <div className="flex min-w-48 flex-1 flex-col gap-0.5">
-                  <Link
-                    to="/importacao/$loteId"
-                    params={{ loteId: l.id }}
-                    className="font-semibold text-ink hover:underline"
-                  >
-                    {l.nome}
-                  </Link>
-                  <span className="text-[13px] text-ink-muted">{resumoDoLote(l)}</span>
-                  <span className="text-xs text-ink-subtle">
-                    {l.nomeArquivo} · {formatarDataHora(l.criadoEm)}
-                    {l.criadoPor ? ` · ${l.criadoPor}` : ''}
-                  </span>
-                  {l.situacao === 'falhou' && typeof l.totais['motivo'] === 'string' ? (
-                    <span className="text-[13px] text-danger">{l.totais['motivo']}</span>
-                  ) : null}
-                </div>
-                <Badge tone={SITUACAO[l.situacao].tom}>{SITUACAO[l.situacao].rotulo}</Badge>
-              </li>
-            ))}
-          </ul>
-          {lotes.data.total > lotes.data.porPagina ? (
-            <nav
-              aria-label="Páginas das importações"
-              className="flex items-center justify-end gap-2 text-[13px]"
-            >
-              <span className="text-ink-muted">
-                Página {lotes.data.pagina} de {Math.ceil(lotes.data.total / lotes.data.porPagina)}
-              </span>
-              <Button size="sm" disabled={pagina <= 1} onClick={() => setPagina(pagina - 1)}>
-                Anterior
-              </Button>
-              <Button
-                size="sm"
-                disabled={pagina * lotes.data.porPagina >= lotes.data.total}
-                onClick={() => setPagina(pagina + 1)}
-              >
-                Próxima
-              </Button>
-            </nav>
-          ) : null}
-        </>
+        <AreaDaTabela>
+          <CorpoRolavel>
+            <ul aria-label="Importações" className="m-0 flex list-none flex-col p-0">
+              {lotes.data.itens.map((l) => (
+                <li
+                  key={l.id}
+                  aria-label={l.nome}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-3 last:border-b-0"
+                >
+                  <div className="flex min-w-48 flex-1 flex-col gap-0.5">
+                    <Link
+                      to="/importacao/$loteId"
+                      params={{ loteId: l.id }}
+                      className="font-semibold text-ink hover:underline"
+                    >
+                      {l.nome}
+                    </Link>
+                    <span className="text-[13px] text-ink-muted">{resumoDoLote(l)}</span>
+                    <span className="text-xs text-ink-subtle">
+                      {l.nomeArquivo} · {formatarDataHora(l.criadoEm)}
+                      {l.criadoPor ? ` · ${l.criadoPor}` : ''}
+                    </span>
+                    {l.situacao === 'falhou' && typeof l.totais['motivo'] === 'string' ? (
+                      <span className="text-[13px] text-danger">{l.totais['motivo']}</span>
+                    ) : null}
+                  </div>
+                  <Badge tone={SITUACAO[l.situacao].tom}>{SITUACAO[l.situacao].rotulo}</Badge>
+                </li>
+              ))}
+            </ul>
+          </CorpoRolavel>
+          <Paginacao
+            pagina={lotes.data.pagina}
+            porPagina={lotes.data.porPagina}
+            total={lotes.data.total}
+            aoMudarPagina={setPagina}
+            aoMudarPorPagina={(n) => {
+              tamanho.mudar(n)
+              setPagina(1)
+            }}
+          />
+        </AreaDaTabela>
       )}
-    </main>
+    </PaginaDeTabela>
   )
 }

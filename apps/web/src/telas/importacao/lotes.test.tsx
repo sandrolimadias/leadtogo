@@ -130,11 +130,44 @@ describe('Importações: a lista de lotes', () => {
     await screen.findByText('Página 1 de 3')
     await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
     await screen.findByText('Página 2 de 3')
-    expect(listar).toHaveBeenLastCalledWith(2)
+    expect(listar).toHaveBeenLastCalledWith(2, 25)
   })
 
   it('o vendedor não vê a lista: volta para o início', async () => {
     const { historico } = renderizar(servicos('vendedor').s, '/importacao')
     await waitFor(() => expect(historico.location.pathname).toBe('/'))
+  })
+  it('linhas por página: lembra o tamanho da tabela, pede ao servidor e volta à página 1', async () => {
+    const listar = vi.fn(async (_pagina?: number, _porPagina?: number) =>
+      ok({ itens: [lote(1)], total: 80, pagina: 1, porPagina: 50 }),
+    )
+    const { s } = servicos('admin', listar)
+    const prefs = (porPagina: Record<string, number>) => ({
+      tema: 'sistema' as const,
+      menuRecolhido: false,
+      visaoDashboard: 'minha' as const,
+      filtroPadrao: {},
+      porPagina,
+    })
+    s.preferencias = vi.fn(async () => prefs({ importacoes: 50 })) as never
+    const guardar = vi.fn(async () => ok(prefs({ importacoes: 100 })))
+    s.alterarPreferencias = guardar as never
+    renderizar(s, '/importacao')
+    await screen.findByRole('list', { name: 'Importações' })
+    expect(listar.mock.calls.map((c) => c[1])).toEqual([50])
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Linhas por página' }),
+      '100',
+    )
+    await waitFor(() => expect(guardar).toHaveBeenCalledWith({ porPagina: { importacoes: 100 } }))
+    await waitFor(() => expect(listar).toHaveBeenLastCalledWith(1, 100))
+  })
+
+  it('a lista rola por dentro e a paginação fica fora da rolagem', async () => {
+    renderizar(servicos().s, '/importacao')
+    const lista = await screen.findByRole('list', { name: 'Importações' })
+    const rolavel = lista.closest('.overflow-auto')
+    expect(rolavel).not.toBeNull()
+    expect(rolavel?.contains(screen.getByRole('navigation', { name: 'Paginação' }))).toBe(false)
   })
 })

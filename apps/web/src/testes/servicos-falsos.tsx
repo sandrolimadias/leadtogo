@@ -42,6 +42,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       menuRecolhido: false,
       visaoDashboard: 'minha' as const,
       filtroPadrao: {},
+      porPagina: {},
     })),
     alterarPreferencias: vi.fn(async () =>
       ok({
@@ -49,6 +50,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         menuRecolhido: false,
         visaoDashboard: 'minha' as const,
         filtroPadrao: {},
+        porPagina: {},
       }),
     ),
     trocarEmpresa: vi.fn(async () => ok(undefined)),

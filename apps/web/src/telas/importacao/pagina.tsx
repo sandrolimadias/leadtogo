@@ -58,16 +58,24 @@ export function Pagina({
   passo,
   children,
   rodape,
+  tabela,
 }: {
   titulo: string
   trilha?: string
   passo: number
   children: React.ReactNode
   rodape?: React.ReactNode
+  /** A tela tem uma tabela ou lista: ocupa a altura da área central e só as linhas rolam */
+  tabela?: boolean
 }) {
   return (
-    <main className="flex min-h-full w-full max-w-[1080px] flex-1 flex-col">
-      <div className="flex flex-1 flex-col gap-4 p-6 max-md:p-4">
+    <main
+      className={cn(
+        'flex w-full max-w-[1080px] flex-1 flex-col',
+        tabela ? 'min-h-0' : 'min-h-full',
+      )}
+    >
+      <div className={cn('flex flex-1 flex-col gap-4 p-6 max-md:p-4', tabela && 'min-h-0')}>
         <div className="flex flex-col gap-1">
           {trilha ? <span className="text-[13px] text-ink-muted">{trilha}</span> : null}
           <h1 className="m-0 text-[30px] leading-9 font-semibold tracking-[-0.015em] max-md:text-[22px] max-md:leading-7">

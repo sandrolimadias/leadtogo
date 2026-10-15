@@ -1,5 +1,5 @@
 import type { ListaDeEmpresas, TagGrupo } from '@leadtogo/api-client'
-import { CHIPS_DA_LISTA, type ChipDaLista } from '@leadtogo/shared'
+import { CHIPS_DA_LISTA, type ChipDaLista, type TamanhoDePagina } from '@leadtogo/shared'
 import {
   keepPreviousData,
   useQuery,
@@ -13,9 +13,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useServicos } from '@/auth/contexto'
 import { chaveDoMe } from '@/auth/guardas'
 import { useDispositivo } from '@/casca/dispositivo'
+import { usePorPagina } from '@/casca/preferencias'
 import { Button, IconButton } from '@/components/ui/button'
 import { Select, TextField } from '@/components/ui/campos'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Paginacao } from '@/components/ui/paginacao'
+import { AreaDaTabela, CorpoRolavel, PaginaDeTabela } from '@/components/ui/pagina'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
@@ -27,7 +30,6 @@ import { CartoesDeEmpresas, TabelaDeEmpresas } from './lista-partes'
 
 const rota = getRouteApi('/_autenticado/empresas/')
 
-const POR_PAGINA = 25
 const ESPERA_DA_BUSCA_MS = 300
 
 const ROTULO_DO_CHIP: Record<ChipDaLista, string> = {
@@ -137,12 +139,15 @@ export function ListaDeEmpresas() {
       return r.dados
     },
   })
+  // Linhas por página: 25, 50 ou 100, lembrado por tabela nas preferências da pessoa
+  const tamanho = usePorPagina('empresas')
   const lista = useQuery({
-    queryKey: ['carteira', 'lista', busca],
+    queryKey: ['carteira', 'lista', busca, tamanho.porPagina],
     retry: false,
+    enabled: tamanho.pronto,
     placeholderData: keepPreviousData,
     queryFn: async () => {
-      const r = await servicos.carteira.listar(consultaDaLista(busca, POR_PAGINA))
+      const r = await servicos.carteira.listar(consultaDaLista(busca, tamanho.porPagina))
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -305,7 +310,7 @@ export function ListaDeEmpresas() {
   )
 
   return (
-    <main className="flex w-full max-w-[1400px] flex-col gap-4 p-6 max-md:p-4">
+    <PaginaDeTabela>
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <h1
@@ -432,8 +437,12 @@ export function ListaDeEmpresas() {
         }}
         aoCriar={nova}
         aoMudarDePagina={(pagina) => mudar({ pagina }, false)}
+        aoMudarPorPagina={(n) => {
+          tamanho.mudar(n)
+          mudar({ pagina: undefined }, false)
+        }}
       />
-    </main>
+    </PaginaDeTabela>
   )
 }
 
@@ -449,6 +458,7 @@ function Conteudo({
   aoLimpar,
   aoCriar,
   aoMudarDePagina,
+  aoMudarPorPagina,
 }: {
   lista: UseQueryResult<ListaDeEmpresas, Error>
   selecionadas: ReadonlySet<string>
@@ -461,6 +471,7 @@ function Conteudo({
   aoLimpar: () => void
   aoCriar: () => void
   aoMudarDePagina: (pagina: number) => void
+  aoMudarPorPagina: (porPagina: TamanhoDePagina) => void
 }) {
   if (lista.isPending) {
     return (
@@ -514,43 +525,34 @@ function Conteudo({
       </div>
     )
   }
-  const paginas = Math.max(1, Math.ceil(total / porPagina))
   return (
-    <div className={cn('flex flex-col gap-3', lista.isPlaceholderData && 'opacity-60')}>
-      {celular ? (
-        <CartoesDeEmpresas itens={itens} aoAbrir={aoAbrir} />
-      ) : (
-        <TabelaDeEmpresas
-          itens={itens}
-          diasDeAlertaDoContato={diasDeAlertaDoContato}
-          aoAbrir={aoAbrir}
-          selecionadas={selecionadas}
-          aoAlternar={aoAlternar}
-          aoAlternarTodas={aoAlternarTodas}
-        />
+    <AreaDaTabela
+      className={cn(
+        'max-md:rounded-none max-md:border-0 max-md:bg-transparent',
+        lista.isPlaceholderData && 'opacity-60',
       )}
-      {paginas > 1 ? (
-        <nav
-          aria-label="Páginas"
-          className="flex items-center justify-between gap-3 text-[13px] text-ink-muted"
-        >
-          <span>
-            Página {pagina} de {paginas}
-          </span>
-          <span className="flex gap-2">
-            <Button size="sm" disabled={pagina <= 1} onClick={() => aoMudarDePagina(pagina - 1)}>
-              Anterior
-            </Button>
-            <Button
-              size="sm"
-              disabled={pagina >= paginas}
-              onClick={() => aoMudarDePagina(pagina + 1)}
-            >
-              Próxima
-            </Button>
-          </span>
-        </nav>
-      ) : null}
-    </div>
+    >
+      <CorpoRolavel>
+        {celular ? (
+          <CartoesDeEmpresas itens={itens} aoAbrir={aoAbrir} />
+        ) : (
+          <TabelaDeEmpresas
+            itens={itens}
+            diasDeAlertaDoContato={diasDeAlertaDoContato}
+            aoAbrir={aoAbrir}
+            selecionadas={selecionadas}
+            aoAlternar={aoAlternar}
+            aoAlternarTodas={aoAlternarTodas}
+          />
+        )}
+      </CorpoRolavel>
+      <Paginacao
+        pagina={pagina}
+        porPagina={porPagina}
+        total={total}
+        aoMudarPagina={aoMudarDePagina}
+        aoMudarPorPagina={aoMudarPorPagina}
+      />
+    </AreaDaTabela>
   )
 }

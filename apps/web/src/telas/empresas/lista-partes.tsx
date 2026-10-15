@@ -63,7 +63,9 @@ function ProximaAtividade({ iso }: { iso: string | null }) {
   )
 }
 
-const cabecalho = 'h-9 px-3 text-left text-xs font-semibold text-ink-muted border-b border-border'
+// `sticky`: o cabeçalho das colunas fica no topo da área que rola (docs/design_system.md, "Layout e rolagem")
+const cabecalho =
+  'sticky top-0 z-10 h-9 border-b border-border bg-surface-sunken px-3 text-left text-xs font-semibold text-ink-muted'
 
 /** Tabela do desktop e do tablet. As células quebram linha: sem rolagem horizontal. */
 export function TabelaDeEmpresas({
@@ -86,7 +88,7 @@ export function TabelaDeEmpresas({
   const editaveis = itens.filter((e) => e.editavel)
   const todasMarcadas = editaveis.length > 0 && editaveis.every((e) => selecionadas.has(e.id))
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface">
+    <div>
       <table className="w-full border-collapse text-sm leading-5">
         <thead className="bg-surface-sunken">
           <tr>

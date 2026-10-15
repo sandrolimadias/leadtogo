@@ -378,11 +378,11 @@ export const servicosReais: ServicosDeAcesso = {
         ),
     },
     lotes: {
-      listar: (pagina = 1) =>
+      listar: (pagina = 1, porPagina = 25) =>
         protegido(async () =>
           daApi(
             await api.GET('/v1/importacao/lotes', {
-              params: { query: { pagina, porPagina: 20 } },
+              params: { query: { pagina, porPagina } },
             }),
           ),
         ),
@@ -432,7 +432,7 @@ export const servicosReais: ServicosDeAcesso = {
                 path: { id },
                 query: {
                   pagina: consulta?.pagina ?? 1,
-                  porPagina: 50,
+                  porPagina: consulta?.porPagina ?? 25,
                   ...(consulta?.resultado ? { resultado: consulta.resultado as never } : {}),
                 },
               },

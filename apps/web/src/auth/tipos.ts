@@ -230,7 +230,7 @@ export interface ServicosDeImportacao {
   /** Os lotes (uma planilha enviada, do envio ao relatório). Só administrador e gestor. */
   lotes: {
     /** Do mais novo para o mais antigo */
-    listar: (pagina?: number) => Promise<Resultado<ListaDeLotesDeImportacao>>
+    listar: (pagina?: number, porPagina?: number) => Promise<Resultado<ListaDeLotesDeImportacao>>
     /** Envia o arquivo (.xlsx ou CSV) e cria o lote em rascunho */
     enviar: (arquivo: File, nome?: string) => Promise<Resultado<LoteDeImportacao>>
     detalhar: (id: string) => Promise<Resultado<LoteDeImportacao>>
@@ -242,7 +242,7 @@ export interface ServicosDeImportacao {
     andamento: (id: string) => Promise<Resultado<AndamentoDaImportacao>>
     linhas: (
       id: string,
-      consulta?: { resultado?: string; pagina?: number },
+      consulta?: { resultado?: string; pagina?: number; porPagina?: number },
     ) => Promise<Resultado<LinhasDaImportacao>>
     /** Tira da carteira as empresas que o lote criou (concluído, até 24 h depois) */
     desfazer: (id: string) => Promise<Resultado<LoteDeImportacao>>

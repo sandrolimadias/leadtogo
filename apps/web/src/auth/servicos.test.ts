@@ -159,26 +159,26 @@ describe('importação: perfis de regras', () => {
 describe('importação: lotes', () => {
   it('cada operação usa a rota certa', async () => {
     const l = servicosReais.importacao.lotes
-    await l.listar(2)
+    await l.listar(2, 50)
     await l.detalhar(ID)
     await l.alterar(ID, { fonteDados: 'receita', campos: { documento: 'CNPJ' } })
     await l.previa(ID)
     await l.iniciar(ID)
     await l.cancelar(ID)
     await l.andamento(ID)
-    await l.linhas(ID, { resultado: 'fora_do_perfil', pagina: 3 })
+    await l.linhas(ID, { resultado: 'fora_do_perfil', pagina: 3, porPagina: 100 })
     await l.importarForaDoPerfil(ID, [ID])
     await l.importarForaDoPerfil(ID)
     await l.desfazer(ID)
     expect(chamadas.map((c) => `${c.metodo} ${c.caminho}${c.consulta}`)).toEqual([
-      'GET /v1/importacao/lotes?pagina=2&porPagina=20',
+      'GET /v1/importacao/lotes?pagina=2&porPagina=50',
       `GET /v1/importacao/lotes/${ID}`,
       `PATCH /v1/importacao/lotes/${ID}`,
       `GET /v1/importacao/lotes/${ID}/previa`,
       `POST /v1/importacao/lotes/${ID}/iniciar`,
       `POST /v1/importacao/lotes/${ID}/cancelar`,
       `GET /v1/importacao/lotes/${ID}/andamento`,
-      `GET /v1/importacao/lotes/${ID}/linhas?pagina=3&porPagina=50&resultado=fora_do_perfil`,
+      `GET /v1/importacao/lotes/${ID}/linhas?pagina=3&porPagina=100&resultado=fora_do_perfil`,
       `POST /v1/importacao/lotes/${ID}/importar-fora-do-perfil`,
       `POST /v1/importacao/lotes/${ID}/importar-fora-do-perfil`,
       `POST /v1/importacao/lotes/${ID}/desfazer`,

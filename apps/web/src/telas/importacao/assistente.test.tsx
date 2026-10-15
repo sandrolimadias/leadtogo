@@ -545,6 +545,36 @@ describe('Importar planilha: andamento e relatório', () => {
     expect(screen.getByRole('link', { name: /Ver empresas importadas/ })).toBeInTheDocument()
   })
 
+  it('relatório: linhas por página lembradas por tabela, e só as linhas rolam', async () => {
+    const guardar = vi.fn(async () =>
+      ok({
+        tema: 'sistema' as const,
+        menuRecolhido: false,
+        visaoDashboard: 'minha' as const,
+        filtroPadrao: {},
+        porPagina: { importacao_linhas: 100 },
+      }),
+    )
+    const s = concluido()
+    s.s.alterarPreferencias = guardar as never
+    abrir(s)
+    const linha = await screen.findByRole('listitem', { name: 'Linha 1' })
+    expect(s.lotes.linhas).toHaveBeenLastCalledWith(LOTE, { pagina: 1, porPagina: 25 })
+    const rolavel = linha.closest('.overflow-auto')
+    expect(rolavel).not.toBeNull()
+    expect(rolavel?.contains(screen.getByRole('navigation', { name: 'Paginação' }))).toBe(false)
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Linhas por página' }),
+      '100',
+    )
+    await waitFor(() =>
+      expect(guardar).toHaveBeenCalledWith({ porPagina: { importacao_linhas: 100 } }),
+    )
+    await waitFor(() =>
+      expect(s.lotes.linhas).toHaveBeenLastCalledWith(LOTE, { pagina: 1, porPagina: 100 }),
+    )
+  })
+
   it('relatório: filtra por resultado e importa mesmo assim só as linhas marcadas (ou todas)', async () => {
     const importarForaDoPerfil = vi.fn(async () => ok(lote({ situacao: 'em_andamento' })))
     const s = concluido({ lotes: { importarForaDoPerfil } })
@@ -553,6 +583,7 @@ describe('Importar planilha: andamento e relatório', () => {
     await waitFor(() =>
       expect(s.lotes.linhas).toHaveBeenLastCalledWith(LOTE, {
         pagina: 1,
+        porPagina: 25,
         resultado: 'fora_do_perfil',
       }),
     )
