@@ -23,7 +23,10 @@ for commit in "${commits[@]}"; do
   pnpm install --frozen-lockfile --prefer-offline
   # Cache do Turborepo compartilhado com a pasta de trabalho (as chaves são por conteúdo)
   export TURBO_CACHE_DIR="$raiz/.turbo/cache"
-  pnpm lint && pnpm typecheck && TURBO_CONCURRENCY=1 pnpm test
+  # Um comando por linha: com `a && b && c` o `set -e` não enxerga a falha de a ou b e o push passaria
+  pnpm lint
+  pnpm typecheck
+  TURBO_CONCURRENCY=1 pnpm test
   limpar
   trap - EXIT
 done
