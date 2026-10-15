@@ -155,6 +155,10 @@ export const CAMPOS_DA_EMPRESA_NA_IMPORTACAO = [
   { chave: 'observacoes', rotulo: 'Observações' },
 ] as const
 
+/** De onde vêm os dados da empresa: a planilha, tudo da Receita ou a planilha completada pela Receita. */
+export const fonteDosDadosSchema = z.enum(['planilha', 'receita', 'completar'])
+export type FonteDosDados = z.infer<typeof fonteDosDadosSchema>
+
 export const situacaoDaImportacaoSchema = z.enum([
   'rascunho',
   'pronta',
@@ -178,10 +182,48 @@ export const loteDeImportacaoSchema = z
     colunas: z.array(z.string()),
     /** As primeiras linhas, por coluna, para conferir o mapeamento */
     amostra: z.array(z.record(z.string(), z.string())),
+    /** Mapeamento escolhido: campo → título da coluna */
+    campos: z.record(z.string(), z.string()),
+    /** O que os títulos das colunas sugerem (para o passo Mapear colunas começar preenchido) */
+    sugestao: z.record(z.string(), z.string()),
+    fonteDados: fonteDosDadosSchema,
+    /** Espera entre duas consultas à Receita, em milissegundos */
+    intervaloMs: z.number().int(),
+    perfilId: z.uuid().nullable(),
+    vendedorId: z.uuid().nullable(),
+    statusTagId: z.uuid().nullable(),
+    origemId: z.uuid().nullable(),
+    verticalId: z.uuid().nullable(),
+    /** O que falta para o lote ficar pronta; vazio = pronta (`situacao`) */
+    pendencias: z.array(z.string()),
     criadoEm: z.string(),
   })
   .meta({ id: 'LoteDeImportacao' })
 export type LoteDeImportacao = z.infer<typeof loteDeImportacaoSchema>
+
+/** Intervalo mínimo e máximo entre consultas à Receita (padrão 3 s). */
+export const INTERVALO_MINIMO_MS = 500
+export const INTERVALO_MAXIMO_MS = 60_000
+
+/** PATCH do lote: só o que veio muda. `campos` troca o mapeamento inteiro. */
+export const alterarLoteSchema = z
+  .object({
+    nome: z.string().trim().min(1).max(120),
+    fonteDados: fonteDosDadosSchema,
+    campos: z.record(z.string(), z.string().nullable()),
+    intervaloMs: z.number().int().min(INTERVALO_MINIMO_MS).max(INTERVALO_MAXIMO_MS),
+    /** Nulo = "Sem regras" */
+    perfilId: z.uuid().nullable(),
+    vendedorId: z.uuid(),
+    statusTagId: z.uuid(),
+    origemId: z.uuid().nullable(),
+    verticalId: z.uuid().nullable(),
+  })
+  .partial()
+  .strict()
+  .refine((d) => Object.keys(d).length > 0, 'informe ao menos um campo')
+  .meta({ id: 'AlterarLoteEntrada' })
+export type AlterarLoteEntrada = z.infer<typeof alterarLoteSchema>
 
 /** O arquivo vai no corpo (bytes); o resto, na consulta. */
 export const consultaDoEnvioSchema = z

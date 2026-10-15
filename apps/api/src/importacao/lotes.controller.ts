@@ -1,4 +1,6 @@
 import {
+  type AlterarLoteEntrada,
+  alterarLoteSchema,
   CAMPOS_DA_EMPRESA_NA_IMPORTACAO,
   type ConsultaDoEnvio,
   consultaDoEnvioSchema,
@@ -6,12 +8,14 @@ import {
   loteDeImportacaoSchema,
 } from '@leadtogo/shared'
 import {
+  Body,
   Controller,
   Get,
   Header,
   HttpCode,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -67,6 +71,23 @@ export class LotesDeImportacaoController {
   @Get('lotes/:id')
   detalhar(@Param('id', new ParseUUIDPipe()) id: string): Promise<LoteDeImportacao> {
     return this.servico.detalhar(id)
+  }
+
+  @Documenta({
+    resumo: 'Alterar as escolhas de um lote',
+    descricao:
+      QUEM +
+      ' Só os campos enviados mudam. `campos` troca o mapeamento inteiro (campo → título da coluna; 400 `mapeamento_invalido` se a coluna não existe ou serve a dois campos). `perfilId` nulo é "Sem regras"; o lote guarda uma cópia das regras do perfil. Vendedor, Status, origem e vertical precisam estar ativos (400 `escolha_invalida`). O lote vira `pronta` quando não falta nada (veja `pendencias`) e volta a `rascunho` se algo deixar de valer. Lote já iniciado: 409 `importacao_nao_editavel`.',
+    corpo: alterarLoteSchema,
+    resposta: loteDeImportacaoSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Patch('lotes/:id')
+  alterar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(alterarLoteSchema)) dados: AlterarLoteEntrada,
+  ): Promise<LoteDeImportacao> {
+    return this.servico.alterar(id, dados)
   }
 
   @Documenta({

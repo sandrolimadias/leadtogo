@@ -1,7 +1,7 @@
 import type { Server } from 'node:http'
 
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import type { LoteDeImportacao } from '@leadtogo/shared'
+import type { LoteDeImportacao, PerfilDeImportacao, TagGrupo } from '@leadtogo/shared'
 import type { INestApplication } from '@nestjs/common'
 import ExcelJS from 'exceljs'
 import { Redis } from 'ioredis'
@@ -276,5 +276,266 @@ describe('GET /v1/importacao/modelo', () => {
     ])
     expect(folha?.rowCount).toBe(1)
     expect(livro.getWorksheet('Como preencher')).toBeTruthy()
+  })
+})
+
+const alterar = (cookie: string | undefined, id: string, corpo: unknown) => {
+  let r = request(app.getHttpServer())
+    .patch(`/v1/importacao/lotes/${id}`)
+    .set('Origin', ORIGEM_DO_FRONT)
+  if (cookie) r = r.set('Cookie', cookie)
+  return r.send(corpo as object)
+}
+
+const noTenant = <T>(tenantId: string, fn: (tx: typeof dono) => Promise<T>) =>
+  dono.begin(async (tx) => {
+    await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+    return fn(tx as unknown as typeof dono)
+  }) as Promise<T>
+
+/** Os ids que o passo Carteira escolhe: o administrador (vendedor), as tags de Status, uma origem e uma vertical. */
+async function escolhas(d: { tenantId: string; usuarioId: string; cookie: string }) {
+  const membroId = await noTenant(d.tenantId, async (tx) => {
+    const [m] = await tx<{ id: string }[]>`SELECT id FROM membros WHERE usuario_id = ${d.usuarioId}`
+    return (m as { id: string }).id
+  })
+  const grupos = (
+    await request(app.getHttpServer())
+      .get('/v1/configuracoes/tag-grupos')
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', d.cookie)
+  ).body as TagGrupo[]
+  const tag = (chave: string) =>
+    (grupos.flatMap((g) => g.tags).find((t) => t.chaveSistema === chave) as { id: string }).id
+  const origens = (
+    await request(app.getHttpServer())
+      .get('/v1/configuracoes/origens')
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', d.cookie)
+  ).body as { id: string }[]
+  const vertical = (
+    await request(app.getHttpServer())
+      .post('/v1/configuracoes/verticais')
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', d.cookie)
+      .send({ nome: 'Indústria' })
+  ).body as { id: string }
+  return {
+    membroId,
+    lead: tag('lead'),
+    cliente: tag('cliente'),
+    visitada: tag('visitada'),
+    origemId: (origens[0] as { id: string }).id,
+    verticalId: vertical.id,
+  }
+}
+
+const perfil = async (cookie: string, nome: string, extra: Record<string, unknown> = {}) =>
+  (
+    await request(app.getHttpServer())
+      .post('/v1/importacao/perfis')
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', cookie)
+      .send({ nome, ...extra })
+  ).body as PerfilDeImportacao
+
+describe('PATCH /v1/importacao/lotes/:id', () => {
+  const CAMPOS = { documento: 'CNPJ', razaoSocial: 'Razão social', municipio: 'Cidade' }
+
+  it('o detalhe já traz a sugestão do mapeamento e o que falta (pendências)', async () => {
+    const { d } = await equipe()
+    const lote = loteDe(await enviar(d.cookie, 'a.csv', CSV))
+    expect(lote.sugestao).toEqual({
+      documento: 'CNPJ',
+      razaoSocial: 'Razão social',
+      municipio: 'Cidade',
+    })
+    expect(lote).toMatchObject({
+      campos: {},
+      fonteDados: 'planilha',
+      intervaloMs: 3000,
+      perfilId: null,
+      situacao: 'rascunho',
+    })
+    expect(lote.pendencias).toEqual([
+      'Indique a coluna do CNPJ.',
+      'Indique a coluna da razão social (ou busque os dados na Receita).',
+      'Escolha o vendedor responsável pelas empresas.',
+      'Escolha o Status das empresas (Cliente ou Lead, por exemplo).',
+    ])
+  })
+
+  it('salva o mapeamento e as escolhas da carteira; com tudo preenchido o lote fica pronta', async () => {
+    const { d } = await equipe()
+    const e = await escolhas(d)
+    const lote = loteDe(await enviar(d.cookie, 'a.csv', CSV))
+    const r = await alterar(d.cookie, lote.id, {
+      nome: 'Carteira de outubro',
+      campos: CAMPOS,
+      intervaloMs: 1500,
+      vendedorId: e.membroId,
+      statusTagId: e.cliente,
+      origemId: e.origemId,
+      verticalId: e.verticalId,
+    })
+    expect(r.status).toBe(200)
+    expect(loteDe(r)).toMatchObject({
+      nome: 'Carteira de outubro',
+      campos: CAMPOS,
+      intervaloMs: 1500,
+      vendedorId: e.membroId,
+      statusTagId: e.cliente,
+      origemId: e.origemId,
+      verticalId: e.verticalId,
+      pendencias: [],
+      situacao: 'pronta',
+    })
+    expect(loteDe(await ver(d.cookie, lote.id))).toEqual(loteDe(r))
+
+    // tirar o CNPJ do mapeamento volta o lote a rascunho
+    const sem = await alterar(d.cookie, lote.id, { campos: { razaoSocial: 'Razão social' } })
+    expect(loteDe(sem)).toMatchObject({
+      situacao: 'rascunho',
+      pendencias: ['Indique a coluna do CNPJ.'],
+    })
+
+    const reg = (await auditoriaDe(d.tenantId)).filter(
+      (x) => x.entidade === 'importacao' && x.acao === 'alterar',
+    )
+    expect(reg).toHaveLength(2)
+    expect(reg[0]?.alteracoes).toMatchObject({ nome: { para: 'Carteira de outubro' } })
+  })
+
+  it('buscar na Receita dispensa a coluna da razão social; coluna em branco ou nula é "não mapear"', async () => {
+    const { d } = await equipe()
+    const e = await escolhas(d)
+    const lote = loteDe(await enviar(d.cookie, 'a.csv', CSV))
+    const r = await alterar(d.cookie, lote.id, {
+      fonteDados: 'receita',
+      campos: { documento: 'CNPJ', razaoSocial: null, municipio: '  ' },
+      vendedorId: e.membroId,
+      statusTagId: e.lead,
+    })
+    expect(loteDe(r)).toMatchObject({
+      fonteDados: 'receita',
+      campos: { documento: 'CNPJ' },
+      situacao: 'pronta',
+    })
+  })
+
+  it('mapeamento errado: coluna que não existe, coluna em dois campos e campo desconhecido (400)', async () => {
+    const { d } = await equipe()
+    const lote = loteDe(await enviar(d.cookie, 'a.csv', CSV))
+    for (const campos of [
+      { documento: 'CNPJ', telefone: 'Celular' },
+      { documento: 'CNPJ', razaoSocial: 'CNPJ' },
+      { documento: 'CNPJ', cor: 'Cidade' },
+    ]) {
+      const r = await alterar(d.cookie, lote.id, { campos })
+      expect([JSON.stringify(campos), r.status, erroDe(r)]).toEqual([
+        JSON.stringify(campos),
+        400,
+        'mapeamento_invalido',
+      ])
+    }
+    expect(loteDe(await ver(d.cookie, lote.id)).campos).toEqual({})
+  })
+
+  it('o perfil vira cópia das regras no lote; "Sem regras" limpa; perfil inativo ou de outra empresa é recusado', async () => {
+    const a = await equipe()
+    const b = await equipe()
+    const p = await perfil(a.d.cookie, 'Metalurgia', {
+      estabelecimento: 'matriz',
+      excluirMei: true,
+    })
+    const lote = loteDe(await enviar(a.d.cookie, 'a.csv', CSV))
+    const r = await alterar(a.d.cookie, lote.id, { perfilId: p.id })
+    expect(loteDe(r).perfilId).toBe(p.id)
+    const regras = async () =>
+      (
+        await noTenant(
+          a.d.tenantId,
+          (tx) => tx<{ regras: unknown }[]>`SELECT regras FROM importacoes WHERE id = ${lote.id}`,
+        )
+      )[0]?.regras
+    expect(await regras()).toEqual({
+      exigeSituacaoAtiva: true,
+      estabelecimento: 'matriz',
+      excluirMei: true,
+      cnaes: [],
+      aceitarCnaeSecundario: false,
+      acaoForaDoPerfil: 'pular',
+    })
+
+    // mexer no perfil depois não muda a cópia que o lote guarda
+    await request(app.getHttpServer())
+      .patch(`/v1/importacao/perfis/${p.id}`)
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', a.d.cookie)
+      .send({ estabelecimento: 'filial' })
+    expect(await regras()).toMatchObject({ estabelecimento: 'matriz' })
+
+    expect(loteDe(await alterar(a.d.cookie, lote.id, { perfilId: null })).perfilId).toBeNull()
+    expect(await regras()).toBeNull()
+
+    await request(app.getHttpServer())
+      .patch(`/v1/importacao/perfis/${p.id}`)
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', a.d.cookie)
+      .send({ ativo: false })
+    for (const perfilId of [p.id, (await perfil(b.d.cookie, 'Da outra empresa')).id]) {
+      const ruim = await alterar(a.d.cookie, lote.id, { perfilId })
+      expect([ruim.status, erroDe(ruim)]).toEqual([400, 'perfil_invalido'])
+    }
+  })
+
+  it('vendedor, Status, origem e vertical precisam existir, estar ativos e ser da empresa (400)', async () => {
+    const a = await equipe()
+    const b = await equipe()
+    const ea = await escolhas(a.d)
+    const eb = await escolhas(b.d)
+    const lote = loteDe(await enviar(a.d.cookie, 'a.csv', CSV))
+    for (const [corpo, campo] of [
+      [{ vendedorId: eb.membroId }, 'vendedorId'],
+      [{ statusTagId: ea.visitada }, 'statusTagId'], // tag de outro grupo (Visitação)
+      [{ statusTagId: eb.cliente }, 'statusTagId'],
+      [{ origemId: eb.origemId }, 'origemId'],
+      [{ verticalId: eb.verticalId }, 'verticalId'],
+    ] as const) {
+      const r = await alterar(a.d.cookie, lote.id, corpo)
+      expect([campo, r.status, erroDe(r)]).toEqual([campo, 400, 'escolha_invalida'])
+    }
+    expect(
+      (await alterar(a.d.cookie, lote.id, { vendedorId: ea.membroId, statusTagId: ea.lead }))
+        .status,
+    ).toBe(200)
+  })
+
+  it('validação do corpo, permissão, outra empresa e lote já iniciado', async () => {
+    const a = await equipe()
+    const b = await equipe()
+    const lote = loteDe(await enviar(a.d.cookie, 'a.csv', CSV))
+    for (const ruim of [
+      {},
+      { intervaloMs: 499 },
+      { intervaloMs: 60_001 },
+      { fonteDados: 'tudo' },
+      { extra: 1 },
+    ]) {
+      expect((await alterar(a.d.cookie, lote.id, ruim)).status, JSON.stringify(ruim)).toBe(400)
+    }
+    expect((await alterar(undefined, lote.id, { nome: 'X' })).status).toBe(401)
+    expect((await alterar(a.vendedor.cookie, lote.id, { nome: 'X' })).status).toBe(403)
+    expect((await alterar(a.gestor.cookie, lote.id, { nome: 'Do gestor' })).status).toBe(200)
+    const alheio = await alterar(b.d.cookie, lote.id, { nome: 'Invasor' })
+    expect([alheio.status, erroDe(alheio)]).toEqual([404, 'importacao_nao_encontrada'])
+    expect((await alterar(a.d.cookie, 'nao-e-uuid', { nome: 'X' })).status).toBe(400)
+
+    await noTenant(
+      a.d.tenantId,
+      (tx) => tx`UPDATE importacoes SET situacao = 'em_andamento' WHERE id = ${lote.id}`,
+    )
+    const iniciado = await alterar(a.d.cookie, lote.id, { nome: 'Tarde demais' })
+    expect([iniciado.status, erroDe(iniciado)]).toEqual([409, 'importacao_nao_editavel'])
   })
 })

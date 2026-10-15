@@ -200,6 +200,10 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 - A **lista de CNAEs do Ale** (`cnaes_interesse.md`: **126 códigos**, todos existentes na tabela `cnaes`) **vira o primeiro perfil dele**, não um padrão do sistema.
 - **Lista de CNAEs do perfil:** aceita códigos **colados** com **6 ou 7 dígitos** (completa o zero à esquerda) e **com ou sem pontuação** (`0710-3/01`, `0710301`, `710301`), e **mostra os inválidos antes de salvar**.
 - **Lote nomeado, filtrável e desfazível.** **Status** e as demais escolhas ficam no passo **Carteira** (*Cliente* para a carteira, *Lead* para leads; origem **"Importação"**). Os alertas de "sem contato/visita" valem, por padrão, **só para Cliente e Prospect**.
+- **Precedência (decidida pelo Ale em 14/10/2026): o bloqueio de empresa não ativa (Configurações → Carteira) vence o perfil.** Com o bloqueio ligado, empresa não ativa na Receita **não entra**, mesmo que o perfil tenha "situação ativa" desligado, mesmo com a ação "importar com a tag Fora do perfil" e mesmo em "Sem regras"; ela aparece no relatório como *pulada: empresa não ativa*, sem a opção "importar mesmo assim". Com o bloqueio desligado, quem decide é o perfil. Implementada em `decidirPelaReceita` (`packages/shared/src/importacao-regras.ts`), com teste.
+- **Perfil sem dados de cliente:** nenhum perfil é criado por seed ou por botão. Quem cria é o administrador, colando os códigos no campo de CNAEs (aceita centenas de uma vez). O lote guarda uma **cópia** das regras usadas.
+- **CNPJ da planilha:** com ou sem pontuação; número de até 13 dígitos (o Excel perde os zeros à esquerda) é completado a 14 antes de conferir os dígitos verificadores; CPF, texto e notação científica são "sem CNPJ válido" (linha pulada e listada). **CNPJ que já existe na carteira:** a linha é pulada e listada, **sem sobrescrever**.
+- **Quem importa:** administrador e gestor (o vendedor não vê o botão e a API recusa com 403). *Decisão do Claude, a confirmar com o Ale.*
 - **Deduplicação por CNPJ dentro do tenant.**
 - Os **perfis serão reaproveitados na Prospecção**.
 

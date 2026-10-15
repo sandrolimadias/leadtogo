@@ -1289,7 +1289,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Alterar as escolhas de um lote
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só os campos enviados mudam. `campos` troca o mapeamento inteiro (campo → título da coluna; 400 `mapeamento_invalido` se a coluna não existe ou serve a dois campos). `perfilId` nulo é "Sem regras"; o lote guarda uma cópia das regras do perfil. Vendedor, Status, origem e vertical precisam estar ativos (400 `escolha_invalida`). O lote vira `pronta` quando não falta nada (veja `pendencias`) e volta a `rascunho` se algo deixar de valer. Lote já iniciado: 409 `importacao_nao_editavel`.
+         */
+        patch: operations["LotesDeImportacaoController_alterar"];
         trace?: never;
     };
     "/v1/importacao/modelo": {
@@ -1606,6 +1610,25 @@ export interface components {
             cor?: components["schemas"]["CorDeTag"];
             probabilidadePadrao?: number;
             diasAlertaParada?: number | null;
+        };
+        AlterarLoteEntrada: {
+            nome?: string;
+            /** @enum {string} */
+            fonteDados?: "planilha" | "receita" | "completar";
+            campos?: {
+                [key: string]: string | null;
+            };
+            intervaloMs?: number;
+            /** Format: uuid */
+            perfilId?: string | null;
+            /** Format: uuid */
+            vendedorId?: string;
+            /** Format: uuid */
+            statusTagId?: string;
+            /** Format: uuid */
+            origemId?: string | null;
+            /** Format: uuid */
+            verticalId?: string | null;
         };
         AlterarMembroEntrada: {
             /** @enum {string} */
@@ -2367,6 +2390,26 @@ export interface components {
             amostra: {
                 [key: string]: string;
             }[];
+            campos: {
+                [key: string]: string;
+            };
+            sugestao: {
+                [key: string]: string;
+            };
+            /** @enum {string} */
+            fonteDados: "planilha" | "receita" | "completar";
+            intervaloMs: number;
+            /** Format: uuid */
+            perfilId: string | null;
+            /** Format: uuid */
+            vendedorId: string | null;
+            /** Format: uuid */
+            statusTagId: string | null;
+            /** Format: uuid */
+            origemId: string | null;
+            /** Format: uuid */
+            verticalId: string | null;
+            pendencias: string[];
             criadoEm: string;
         };
         MembroDaEquipe: {
@@ -8053,6 +8096,77 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarLoteEntrada"];
+            };
+        };
         responses: {
             /** @description Sucesso */
             200: {

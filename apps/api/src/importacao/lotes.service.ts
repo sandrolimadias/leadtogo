@@ -1,17 +1,37 @@
 import { DeleteObjectCommand, PutObjectCommand, type S3Client } from '@aws-sdk/client-s3'
-import { eq, schema } from '@leadtogo/db'
-import { type ConsultaDoEnvio, LINHAS_DE_AMOSTRA, type LoteDeImportacao } from '@leadtogo/shared'
+import { and, eq, isNull, schema } from '@leadtogo/db'
+import {
+  type AlterarLoteEntrada,
+  type ConsultaDoEnvio,
+  type FonteDosDados,
+  LINHAS_DE_AMOSTRA,
+  type LoteDeImportacao,
+  type RegrasDeImportacao,
+  sugerirMapeamento,
+  validarMapeamento,
+} from '@leadtogo/shared'
 import { Inject, Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ARMAZENAMENTO } from '../infra/infra.module.js'
 import { lerPlanilha, type Planilha } from './planilha.js'
 
-const { arquivos, importacoes, importacaoLinhas } = schema
+const {
+  arquivos,
+  importacaoLinhas,
+  importacaoPerfis,
+  importacoes,
+  membros,
+  origens,
+  tagGrupos,
+  tags,
+  verticais,
+} = schema
 type Lote = typeof importacoes.$inferSelect
 
 /** Quantas linhas da planilha vão por INSERT (o postgres.js limita os parâmetros de uma consulta). */
@@ -36,7 +56,21 @@ const semExtensao = (nome: string) => nome.replace(/\.[^./\\]+$/, '').trim() || 
 const chaveDoObjeto = (tenantId: string, arquivoId: string, formato: Planilha['formato']) =>
   `${tenantId}/importacao/${arquivoId}/original.${formato}`
 
-/** Lotes de importação: envio e leitura da planilha, antes do mapeamento. */
+const colunasDe = (lote: Lote): string[] =>
+  (lote.mapeamento as { colunas?: string[] }).colunas ?? []
+const camposDe = (lote: Lote): Record<string, string> =>
+  (lote.mapeamento as { campos?: Record<string, string> }).campos ?? {}
+
+/** O que falta para o lote poder ser importado (vazio = pronta). */
+function pendenciasDe(lote: Lote, colunas: string[], campos: Record<string, string>): string[] {
+  const pendencias = validarMapeamento(campos, colunas, lote.fonteDados).map((e) => e.mensagem)
+  if (!lote.vendedorId) pendencias.push('Escolha o vendedor responsável pelas empresas.')
+  if (!lote.statusTagId)
+    pendencias.push('Escolha o Status das empresas (Cliente ou Lead, por exemplo).')
+  return pendencias
+}
+
+/** Lotes de importação: envio e leitura da planilha, mapeamento e escolhas, antes de importar. */
 @Injectable()
 export class LotesDeImportacaoService {
   constructor(
@@ -141,11 +175,8 @@ export class LotesDeImportacaoService {
   async detalhar(id: string): Promise<LoteDeImportacao> {
     exigirQuemImporta(this.ctx)
     const db = this.ctx.db()
-    const [lote] = await db.select().from(importacoes).where(eq(importacoes.id, id))
-    if (!lote || lote.excluidoEm) {
-      throw new ErroApi('importacao_nao_encontrada', 'Importação não encontrada.', 404)
-    }
-    const colunas = (lote.mapeamento as { colunas?: string[] }).colunas ?? []
+    const lote = await this.achar(id)
+    const colunas = colunasDe(lote)
     const amostra = await db
       .select({ dados: importacaoLinhas.dados })
       .from(importacaoLinhas)
@@ -159,7 +190,188 @@ export class LotesDeImportacaoService {
     )
   }
 
+  /**
+   * Muda o que o usuário escolhe nos passos (mapeamento, fonte dos dados, perfil, intervalo e carteira).
+   * O lote vira `pronta` quando não falta nada e volta a `rascunho` se algo deixar de valer.
+   * Só lote em rascunho ou pronta se altera: depois de importar, o que foi feito fica registrado.
+   */
+  async alterar(id: string, dados: AlterarLoteEntrada): Promise<LoteDeImportacao> {
+    exigirQuemImporta(this.ctx)
+    const db = this.ctx.db()
+    const atual = await this.achar(id)
+    if (atual.situacao !== 'rascunho' && atual.situacao !== 'pronta') {
+      throw new ErroApi(
+        'importacao_nao_editavel',
+        'Esta importação já foi iniciada: não dá mais para mudar as escolhas.',
+        409,
+      )
+    }
+    const colunas = colunasDe(atual)
+    const campos = dados.campos ? limparCampos(dados.campos) : camposDe(atual)
+    const fonteDados: FonteDosDados = dados.fonteDados ?? atual.fonteDados
+    if (dados.campos) {
+      const erros = validarMapeamento(campos, colunas, fonteDados).filter(
+        // o que ainda falta aparece em `pendencias`; aqui só o que está errado no que veio
+        (e) => !e.mensagem.startsWith('Indique a coluna'),
+      )
+      if (erros.length > 0) {
+        throw new ErroApi(
+          'mapeamento_invalido',
+          erros[0]?.mensagem ?? 'Mapeamento inválido.',
+          400,
+          erros.map((e) => ({ campo: e.campo, mensagem: e.mensagem })),
+        )
+      }
+    }
+
+    const valores: Partial<typeof importacoes.$inferInsert> = {}
+    if (dados.nome !== undefined) valores.nome = dados.nome
+    if (dados.fonteDados !== undefined) valores.fonteDados = dados.fonteDados
+    if (dados.intervaloMs !== undefined) valores.intervaloMs = dados.intervaloMs
+    if (dados.campos) valores.mapeamento = { colunas, campos }
+    if (dados.perfilId !== undefined) {
+      valores.perfilId = dados.perfilId
+      valores.regras = dados.perfilId ? await this.regrasDoPerfil(dados.perfilId) : null
+    }
+    if (dados.vendedorId !== undefined) {
+      await this.exigir(
+        db
+          .select({ id: membros.id })
+          .from(membros)
+          .where(
+            and(
+              eq(membros.id, dados.vendedorId),
+              eq(membros.ativo, true),
+              isNull(membros.excluidoEm),
+            ),
+          ),
+        'vendedorId',
+        'Escolha um membro ativo da equipe.',
+      )
+      valores.vendedorId = dados.vendedorId
+    }
+    if (dados.statusTagId !== undefined) {
+      await this.exigir(
+        db
+          .select({ id: tags.id })
+          .from(tags)
+          .innerJoin(tagGrupos, eq(tagGrupos.id, tags.tagGrupoId))
+          .where(
+            and(
+              eq(tags.id, dados.statusTagId),
+              eq(tagGrupos.chaveSistema, 'status'),
+              eq(tags.ativo, true),
+              isNull(tags.excluidoEm),
+            ),
+          ),
+        'statusTagId',
+        'Escolha uma tag ativa do grupo Status.',
+      )
+      valores.statusTagId = dados.statusTagId
+    }
+    if (dados.origemId) {
+      await this.exigir(
+        db
+          .select({ id: origens.id })
+          .from(origens)
+          .where(
+            and(
+              eq(origens.id, dados.origemId),
+              eq(origens.ativo, true),
+              isNull(origens.excluidoEm),
+            ),
+          ),
+        'origemId',
+        'Escolha uma origem ativa.',
+      )
+    }
+    if (dados.origemId !== undefined) valores.origemId = dados.origemId
+    if (dados.verticalId) {
+      await this.exigir(
+        db
+          .select({ id: verticais.id })
+          .from(verticais)
+          .where(
+            and(
+              eq(verticais.id, dados.verticalId),
+              eq(verticais.ativo, true),
+              isNull(verticais.excluidoEm),
+            ),
+          ),
+        'verticalId',
+        'Escolha uma vertical ativa.',
+      )
+    }
+    if (dados.verticalId !== undefined) valores.verticalId = dados.verticalId
+
+    const depois = { ...atual, ...valores }
+    const pronta = pendenciasDe(depois, colunas, camposDe(depois)).length === 0
+    valores.situacao = pronta ? 'pronta' : 'rascunho'
+
+    const mudancas = diferencas(
+      { ...atual, campos: camposDe(atual) },
+      { ...valores, ...(dados.campos ? { campos } : {}), mapeamento: undefined, regras: undefined },
+    )
+    const [lote] = await db
+      .update(importacoes)
+      .set({ ...valores, atualizadoPor: this.ctx.membro.id })
+      .where(eq(importacoes.id, id))
+      .returning()
+    if (!lote) throw new Error('UPDATE de importacao sem retorno')
+    if (Object.keys(mudancas).length > 0) {
+      await this.auditoria.registrar({
+        entidade: 'importacao',
+        entidadeId: id,
+        acao: 'alterar',
+        alteracoes: mudancas,
+      })
+    }
+    return this.detalhar(id)
+  }
+
+  /** Cópia das regras do perfil no momento da escolha: mexer no perfil depois não muda o lote. */
+  private async regrasDoPerfil(perfilId: string): Promise<RegrasDeImportacao> {
+    const [p] = await this.ctx
+      .db()
+      .select()
+      .from(importacaoPerfis)
+      .where(
+        and(
+          eq(importacaoPerfis.id, perfilId),
+          eq(importacaoPerfis.ativo, true),
+          isNull(importacaoPerfis.excluidoEm),
+        ),
+      )
+    if (!p) {
+      throw new ErroApi('perfil_invalido', 'Escolha um perfil ativo ou "Sem regras".', 400, [
+        { campo: 'perfilId', mensagem: 'Escolha um perfil ativo ou "Sem regras".' },
+      ])
+    }
+    return {
+      exigeSituacaoAtiva: p.exigeSituacaoAtiva,
+      estabelecimento: p.estabelecimento,
+      excluirMei: p.excluirMei,
+      cnaes: p.cnaes,
+      aceitarCnaeSecundario: p.aceitarCnaeSecundario,
+      acaoForaDoPerfil: p.acaoForaDoPerfil,
+    }
+  }
+
+  private async exigir(consulta: PromiseLike<unknown[]>, campo: string, mensagem: string) {
+    const [achou] = await consulta
+    if (!achou) throw new ErroApi('escolha_invalida', mensagem, 400, [{ campo, mensagem }])
+  }
+
+  private async achar(id: string): Promise<Lote> {
+    const [lote] = await this.ctx.db().select().from(importacoes).where(eq(importacoes.id, id))
+    if (!lote || lote.excluidoEm) {
+      throw new ErroApi('importacao_nao_encontrada', 'Importação não encontrada.', 404)
+    }
+    return lote
+  }
+
   private paraDto(lote: Lote, colunas: string[], amostra: string[][]): LoteDeImportacao {
+    const campos = camposDe(lote)
     return {
       id: lote.id,
       nome: lote.nome,
@@ -171,7 +383,26 @@ export class LotesDeImportacaoService {
       amostra: amostra.map((valores) =>
         Object.fromEntries(colunas.map((c, i) => [c, valores[i] ?? ''])),
       ),
+      campos,
+      sugestao: sugerirMapeamento(colunas),
+      fonteDados: lote.fonteDados,
+      intervaloMs: lote.intervaloMs,
+      perfilId: lote.perfilId,
+      vendedorId: lote.vendedorId,
+      statusTagId: lote.statusTagId,
+      origemId: lote.origemId,
+      verticalId: lote.verticalId,
+      pendencias: pendenciasDe(lote, colunas, campos),
       criadoEm: lote.criadoEm.toISOString(),
     }
   }
+}
+
+/** Tira o que veio vazio: coluna `null` ou em branco é "não mapear este campo". */
+function limparCampos(campos: Record<string, string | null>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(campos).filter(
+      (e): e is [string, string] => typeof e[1] === 'string' && e[1].trim() !== '',
+    ),
+  )
 }

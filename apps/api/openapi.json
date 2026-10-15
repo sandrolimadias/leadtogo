@@ -6801,6 +6801,94 @@
         },
         "summary": "Ver um lote de importação",
         "tags": ["Importação: lotes"]
+      },
+      "patch": {
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só os campos enviados mudam. `campos` troca o mapeamento inteiro (campo → título da coluna; 400 `mapeamento_invalido` se a coluna não existe ou serve a dois campos). `perfilId` nulo é \"Sem regras\"; o lote guarda uma cópia das regras do perfil. Vendedor, Status, origem e vertical precisam estar ativos (400 `escolha_invalida`). O lote vira `pronta` quando não falta nada (veja `pendencias`) e volta a `rascunho` se algo deixar de valer. Lote já iniciado: 409 `importacao_nao_editavel`.",
+        "operationId": "LotesDeImportacaoController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarLoteEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoteDeImportacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar as escolhas de um lote",
+        "tags": ["Importação: lotes"]
       }
     },
     "/v1/importacao/modelo": {
@@ -8094,6 +8182,56 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 3650
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlterarLoteEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "fonteDados": {
+            "type": "string",
+            "enum": ["planilha", "receita", "completar"]
+          },
+          "campos": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          "intervaloMs": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 60000
+          },
+          "perfilId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendedorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "statusTagId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origemId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "verticalId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false
@@ -10871,6 +11009,58 @@
               }
             }
           },
+          "campos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "sugestao": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "fonteDados": {
+            "type": "string",
+            "enum": ["planilha", "receita", "completar"]
+          },
+          "intervaloMs": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "perfilId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendedorId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "statusTagId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "origemId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "verticalId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "pendencias": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "criadoEm": {
             "type": "string"
           }
@@ -10884,6 +11074,16 @@
           "totalLinhas",
           "colunas",
           "amostra",
+          "campos",
+          "sugestao",
+          "fonteDados",
+          "intervaloMs",
+          "perfilId",
+          "vendedorId",
+          "statusTagId",
+          "origemId",
+          "verticalId",
+          "pendencias",
           "criadoEm"
         ],
         "additionalProperties": false
