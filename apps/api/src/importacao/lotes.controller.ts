@@ -6,6 +6,8 @@ import {
   consultaDoEnvioSchema,
   type LoteDeImportacao,
   loteDeImportacaoSchema,
+  type PreviaDaImportacao,
+  previaDaImportacaoSchema,
 } from '@leadtogo/shared'
 import {
   Body,
@@ -30,6 +32,7 @@ import { Documenta } from '../documentacao/documenta.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
+import { PreviaDaImportacaoService } from './previa.service.js'
 
 /** Quem importa: administrador e gestor (ver `LotesDeImportacaoService`). */
 const QUEM = 'Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor).'
@@ -39,6 +42,7 @@ const QUEM = 'Só administradores e gestores da empresa ativa (403 `acesso_negad
 export class LotesDeImportacaoController {
   constructor(
     private readonly servico: LotesDeImportacaoService,
+    private readonly previa: PreviaDaImportacaoService,
     private readonly ctx: ContextoTenantService,
   ) {}
 
@@ -88,6 +92,19 @@ export class LotesDeImportacaoController {
     @Body(new ZodPipe(alterarLoteSchema)) dados: AlterarLoteEntrada,
   ): Promise<LoteDeImportacao> {
     return this.servico.alterar(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Ver a prévia de um lote',
+    descricao:
+      QUEM +
+      ' Mostra o que a importação vai fazer, sem consultar a Receita nem gravar nada: linhas sem CNPJ válido, CNPJs repetidos na planilha, CNPJs que já estão na carteira, quantas consultas à Receita serão de verdade (fora do cache de 30 dias) e o tempo estimado com o intervalo escolhido. Sem a coluna do CNPJ mapeada: 409 `mapeamento_incompleto`.',
+    resposta: previaDaImportacaoSchema,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Get('lotes/:id/previa')
+  verPrevia(@Param('id', new ParseUUIDPipe()) id: string): Promise<PreviaDaImportacao> {
+    return this.previa.calcular(id)
   }
 
   @Documenta({

@@ -6891,6 +6891,86 @@
         "tags": ["Importação: lotes"]
       }
     },
+    "/v1/importacao/lotes/{id}/previa": {
+      "get": {
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Mostra o que a importação vai fazer, sem consultar a Receita nem gravar nada: linhas sem CNPJ válido, CNPJs repetidos na planilha, CNPJs que já estão na carteira, quantas consultas à Receita serão de verdade (fora do cache de 30 dias) e o tempo estimado com o intervalo escolhido. Sem a coluna do CNPJ mapeada: 409 `mapeamento_incompleto`.",
+        "operationId": "LotesDeImportacaoController_verPrevia",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviaDaImportacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ver a prévia de um lote",
+        "tags": ["Importação: lotes"]
+      }
+    },
     "/v1/importacao/modelo": {
       "get": {
         "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um .xlsx só com os títulos das colunas que a importação de empresas reconhece, e uma aba com as instruções.",
@@ -11487,6 +11567,79 @@
             }
           }
         },
+        "additionalProperties": false
+      },
+      "PreviaDaImportacao": {
+        "type": "object",
+        "properties": {
+          "totalLinhas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "aImportar": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "semCnpjValido": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "repetidasNaPlanilha": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "jaNaCarteira": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "consultaAReceita": {
+            "type": "boolean"
+          },
+          "consultasNecessarias": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "estimativaSegundos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "problemas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "motivo": {
+                  "type": "string"
+                }
+              },
+              "required": ["numero", "motivo"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "totalLinhas",
+          "aImportar",
+          "semCnpjValido",
+          "repetidasNaPlanilha",
+          "jaNaCarteira",
+          "consultaAReceita",
+          "consultasNecessarias",
+          "estimativaSegundos",
+          "problemas"
+        ],
         "additionalProperties": false
       },
       "PrimeiroAcessoEntrada": {

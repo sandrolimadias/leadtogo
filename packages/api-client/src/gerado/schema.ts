@@ -1296,6 +1296,26 @@ export interface paths {
         patch: operations["LotesDeImportacaoController_alterar"];
         trace?: never;
     };
+    "/v1/importacao/lotes/{id}/previa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver a prévia de um lote
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Mostra o que a importação vai fazer, sem consultar a Receita nem gravar nada: linhas sem CNPJ válido, CNPJs repetidos na planilha, CNPJs que já estão na carteira, quantas consultas à Receita serão de verdade (fora do cache de 30 dias) e o tempo estimado com o intervalo escolhido. Sem a coluna do CNPJ mapeada: 409 `mapeamento_incompleto`.
+         */
+        get: operations["LotesDeImportacaoController_verPrevia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/importacao/modelo": {
         parameters: {
             query?: never;
@@ -2531,6 +2551,20 @@ export interface components {
             filtroPadrao?: {
                 [key: string]: string | null;
             };
+        };
+        PreviaDaImportacao: {
+            totalLinhas: number;
+            aImportar: number;
+            semCnpjValido: number;
+            repetidasNaPlanilha: number;
+            jaNaCarteira: number;
+            consultaAReceita: boolean;
+            consultasNecessarias: number;
+            estimativaSegundos: number;
+            problemas: {
+                numero: number;
+                motivo: string;
+            }[];
         };
         PrimeiroAcessoEntrada: {
             nome: string;
@@ -8175,6 +8209,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoteDeImportacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_verPrevia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviaDaImportacao"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */

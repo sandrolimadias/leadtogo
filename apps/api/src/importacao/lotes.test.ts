@@ -1,7 +1,13 @@
 import type { Server } from 'node:http'
 
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import type { LoteDeImportacao, PerfilDeImportacao, TagGrupo } from '@leadtogo/shared'
+import {
+  completarCnpj,
+  type LoteDeImportacao,
+  type PerfilDeImportacao,
+  type PreviaDaImportacao,
+  type TagGrupo,
+} from '@leadtogo/shared'
 import type { INestApplication } from '@nestjs/common'
 import ExcelJS from 'exceljs'
 import { Redis } from 'ioredis'
@@ -537,5 +543,126 @@ describe('PATCH /v1/importacao/lotes/:id', () => {
     )
     const iniciado = await alterar(a.d.cookie, lote.id, { nome: 'Tarde demais' })
     expect([iniciado.status, erroDe(iniciado)]).toEqual([409, 'importacao_nao_editavel'])
+  })
+})
+
+describe('GET /v1/importacao/lotes/:id/previa', () => {
+  const cnpj = (n: number) => completarCnpj(`7${String(n).padStart(7, '0')}0001`)
+  const usados: string[] = []
+  afterAll(async () => {
+    if (usados.length > 0) await dono`DELETE FROM receita_consultas WHERE cnpj = ANY(${usados})`
+  })
+  const previa = (cookie: string | undefined, id: string) => {
+    let r = request(app.getHttpServer())
+      .get(`/v1/importacao/lotes/${id}/previa`)
+      .set('Origin', ORIGEM_DO_FRONT)
+    if (cookie) r = r.set('Cookie', cookie)
+    return r
+  }
+
+  /** Planilha com 8 linhas: 4 boas, 1 repetida, 1 em branco, 1 inválida e 1 que já está na carteira. */
+  async function cenario() {
+    const eq = await equipe()
+    const e = await escolhas(eq.d)
+    const [a, b, c, ja, d1] = [cnpj(1), cnpj(2), cnpj(3), cnpj(4), cnpj(5)]
+    const linhas = [
+      `CNPJ;Razão social`,
+      `${a};Alfa`,
+      `${b};Beta`,
+      `${a};Alfa de novo`, // repetida
+      `;Sem CNPJ`, // em branco
+      `123;CNPJ curto`, // inválido
+      `${ja};Já na carteira`,
+      `${c};Gama`,
+      `${d1};Delta`,
+    ]
+    const lote = loteDe(await enviar(eq.d.cookie, 'p.csv', `${linhas.join('\n')}\n`))
+    await noTenant(eq.d.tenantId, async (tx) => {
+      await tx`INSERT INTO empresas (id, tenant_id, tipo_documento, documento, razao_social, vendedor_id)
+               VALUES (gen_random_uuid(), ${eq.d.tenantId}, 'cnpj', ${ja}, 'Empresa existente', ${e.membroId})`
+    })
+    return { ...eq, e, lote, cnpjs: { a, b, c, ja, d1 } }
+  }
+
+  it('conta o que vale, o que é pulado e lista os problemas por linha', async () => {
+    const { d, lote } = await cenario()
+    const sem = await previa(d.cookie, lote.id)
+    expect([sem.status, erroDe(sem)]).toEqual([409, 'mapeamento_incompleto'])
+
+    await alterar(d.cookie, lote.id, { campos: { documento: 'CNPJ', razaoSocial: 'Razão social' } })
+    const r = await previa(d.cookie, lote.id)
+    expect(r.status).toBe(200)
+    const p = r.body as PreviaDaImportacao
+    expect(p).toMatchObject({
+      totalLinhas: 8,
+      aImportar: 4,
+      semCnpjValido: 2,
+      repetidasNaPlanilha: 1,
+      jaNaCarteira: 1,
+      consultaAReceita: true, // o bloqueio de empresa não ativa vem ligado por padrão
+    })
+    expect(p.problemas).toEqual([
+      { numero: 3, motivo: 'CNPJ repetido (já está na linha 1)' },
+      { numero: 4, motivo: 'CNPJ em branco' },
+      { numero: 5, motivo: 'CNPJ inválido: 123' },
+      { numero: 6, motivo: 'CNPJ já está na carteira (a empresa não será alterada)' },
+    ])
+  })
+
+  it('a estimativa só conta as consultas fora do cache de 30 dias e usa o intervalo escolhido', async () => {
+    const { d, lote, cnpjs } = await cenario()
+    await alterar(d.cookie, lote.id, {
+      campos: { documento: 'CNPJ', razaoSocial: 'Razão social' },
+      intervaloMs: 2000,
+    })
+    expect((await previa(d.cookie, lote.id)).body).toMatchObject({
+      consultasNecessarias: 4,
+      estimativaSegundos: 8,
+    })
+    // duas já estão no cache (uma recente e uma vencida: só a recente poupa a consulta)
+    usados.push(cnpjs.a, cnpjs.b)
+    await dono`INSERT INTO receita_consultas (cnpj, dados, consultado_em, fonte) VALUES (${cnpjs.a}, '{}'::jsonb, now(), 'minhareceita')`
+    await dono`INSERT INTO receita_consultas (cnpj, dados, consultado_em, fonte) VALUES (${cnpjs.b}, '{}'::jsonb, now() - interval '31 days', 'minhareceita')`
+    try {
+      expect((await previa(d.cookie, lote.id)).body).toMatchObject({
+        consultasNecessarias: 3,
+        estimativaSegundos: 6,
+      })
+    } finally {
+      // o cache é global: tira o que este teste pôs, para os outros não verem
+      await dono`DELETE FROM receita_consultas WHERE cnpj = ANY(${[cnpjs.a, cnpjs.b]})`
+    }
+  })
+
+  it('sem perfil, sem bloqueio e com os dados da planilha, não consulta a Receita (estimativa zero)', async () => {
+    const { d, lote } = await cenario()
+    await alterar(d.cookie, lote.id, { campos: { documento: 'CNPJ', razaoSocial: 'Razão social' } })
+    await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx`UPDATE tenant_configuracoes SET bloquear_empresa_nao_ativa = false WHERE tenant_id = ${d.tenantId}`,
+    )
+    expect((await previa(d.cookie, lote.id)).body).toMatchObject({
+      consultaAReceita: false,
+      consultasNecessarias: 0,
+      estimativaSegundos: 0,
+    })
+    // buscar os dados na Receita volta a consultar
+    await alterar(d.cookie, lote.id, { fonteDados: 'receita' })
+    expect((await previa(d.cookie, lote.id)).body).toMatchObject({
+      consultaAReceita: true,
+      consultasNecessarias: 4,
+    })
+  })
+
+  it('permissão e isolamento: vendedor 403, sem sessão 401, outra empresa 404', async () => {
+    const { d, vendedor, lote } = await cenario()
+    const outra = await equipe()
+    await alterar(d.cookie, lote.id, { campos: { documento: 'CNPJ', razaoSocial: 'Razão social' } })
+    expect((await previa(undefined, lote.id)).status).toBe(401)
+    expect((await previa(vendedor.cookie, lote.id)).status).toBe(403)
+    const alheio = await previa(outra.d.cookie, lote.id)
+    expect([alheio.status, erroDe(alheio)]).toEqual([404, 'importacao_nao_encontrada'])
+    expect((await previa(d.cookie, 'nao-e-uuid')).status).toBe(400)
   })
 })

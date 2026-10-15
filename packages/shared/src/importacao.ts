@@ -234,3 +234,35 @@ export const consultaDoEnvioSchema = z
   })
   .strict()
 export type ConsultaDoEnvio = z.infer<typeof consultaDoEnvioSchema>
+
+// ---- Prévia (antes de importar) ----
+
+export const problemaDaPreviaSchema = z.object({
+  numero: z.number().int(),
+  motivo: z.string(),
+})
+
+export const previaDaImportacaoSchema = z
+  .object({
+    totalLinhas: z.number().int(),
+    /** Linhas com CNPJ válido, sem repetição na planilha e que ainda não estão na carteira */
+    aImportar: z.number().int(),
+    semCnpjValido: z.number().int(),
+    /** O mesmo CNPJ já apareceu antes na planilha (vale a primeira linha) */
+    repetidasNaPlanilha: z.number().int(),
+    /** O CNPJ já está na carteira: a linha é pulada e a empresa não é alterada */
+    jaNaCarteira: z.number().int(),
+    /** A importação consulta a Receita (por regra do perfil, bloqueio de empresa não ativa ou fonte dos dados) */
+    consultaAReceita: z.boolean(),
+    /** CNPJs a importar que não estão no cache de 30 dias: cada um é uma consulta de verdade */
+    consultasNecessarias: z.number().int(),
+    /** `consultasNecessarias` × o intervalo escolhido, em segundos */
+    estimativaSegundos: z.number().int(),
+    /** As primeiras linhas com problema, para conferir o arquivo */
+    problemas: z.array(problemaDaPreviaSchema),
+  })
+  .meta({ id: 'PreviaDaImportacao' })
+export type PreviaDaImportacao = z.infer<typeof previaDaImportacaoSchema>
+
+/** Quantas linhas com problema a prévia lista. */
+export const PROBLEMAS_NA_PREVIA = 20
