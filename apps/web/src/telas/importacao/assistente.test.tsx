@@ -83,7 +83,6 @@ const lote = (extra: Partial<LoteDeImportacao> = {}): LoteDeImportacao => ({
   campos: {},
   sugestao: { documento: 'CNPJ', razaoSocial: 'Empresa' },
   fonteDados: 'planilha',
-  intervaloMs: 3000,
   perfilId: null,
   vendedorId: null,
   statusTagId: null,
@@ -320,7 +319,7 @@ describe('Importar planilha: regras, prévia e carteira', () => {
     return s
   }
 
-  it('regras: escolhe o perfil (só os ativos), confere o intervalo e grava', async () => {
+  it('regras: escolhe o perfil (só os ativos) e grava, sem opção de intervalo', async () => {
     const s = comPerfis()
     abrir(s)
     await userEvent.click(await screen.findByRole('button', { name: 'Ver as regras' }))
@@ -330,19 +329,13 @@ describe('Importar planilha: regras, prévia e carteira', () => {
     await userEvent.selectOptions(select, 'Metalmecânica ES')
     expect(within(regiao).getByText(/Só matriz/)).toBeInTheDocument()
 
-    const intervalo = screen.getByLabelText('Intervalo entre consultas (segundos)')
-    await userEvent.clear(intervalo)
-    await userEvent.type(intervalo, '0,1')
-    expect(screen.getByText('Informe um valor entre 0,5 e 60 segundos.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ver a prévia' })).toBeDisabled()
-    await userEvent.clear(intervalo)
-    await userEvent.type(intervalo, '2,5')
+    // o intervalo da Receita é fixo (3 s): não há campo para mudar
+    expect(screen.queryByLabelText(/Intervalo/)).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Ver a prévia' }))
 
     await waitFor(() =>
       expect(s.lotes.alterar).toHaveBeenLastCalledWith(LOTE, {
         perfilId: id(50),
-        intervaloMs: 2500,
       }),
     )
     expect(await screen.findByRole('region', { name: 'Tempo estimado' })).toBeInTheDocument()
@@ -365,6 +358,7 @@ describe('Importar planilha: regras, prévia e carteira', () => {
       '3Sem CNPJ válido',
     ])
     expect(screen.getByText(/31 consultas à Receita/)).toBeInTheDocument()
+    expect(screen.getByText(/uma a cada 3 segundos/)).toBeInTheDocument()
     expect(screen.getByText('2 min')).toBeInTheDocument()
     const problemas = screen.getByRole('region', { name: 'Linhas com problema' })
     expect(within(problemas).getByText('CNPJ inválido')).toBeInTheDocument()

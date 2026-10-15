@@ -359,7 +359,6 @@ describe('PATCH /v1/importacao/lotes/:id', () => {
     expect(lote).toMatchObject({
       campos: {},
       fonteDados: 'planilha',
-      intervaloMs: 3000,
       perfilId: null,
       situacao: 'rascunho',
     })
@@ -378,7 +377,6 @@ describe('PATCH /v1/importacao/lotes/:id', () => {
     const r = await alterar(d.cookie, lote.id, {
       nome: 'Carteira de outubro',
       campos: CAMPOS,
-      intervaloMs: 1500,
       vendedorId: e.membroId,
       statusTagId: e.cliente,
       origemId: e.origemId,
@@ -388,7 +386,6 @@ describe('PATCH /v1/importacao/lotes/:id', () => {
     expect(loteDe(r)).toMatchObject({
       nome: 'Carteira de outubro',
       campos: CAMPOS,
-      intervaloMs: 1500,
       vendedorId: e.membroId,
       statusTagId: e.cliente,
       origemId: e.origemId,
@@ -523,8 +520,9 @@ describe('PATCH /v1/importacao/lotes/:id', () => {
     const lote = loteDe(await enviar(a.d.cookie, 'a.csv', CSV))
     for (const ruim of [
       {},
-      { intervaloMs: 499 },
-      { intervaloMs: 60_001 },
+      // o intervalo da Receita é fixo (3 s): a API recusa o campo, com qualquer valor
+      { intervaloMs: 3000 },
+      { intervaloMs: 1500 },
       { fonteDados: 'tudo' },
       { extra: 1 },
     ]) {
@@ -609,15 +607,14 @@ describe('GET /v1/importacao/lotes/:id/previa', () => {
     ])
   })
 
-  it('a estimativa só conta as consultas fora do cache de 30 dias e usa o intervalo escolhido', async () => {
+  it('a estimativa só conta as consultas fora do cache de 30 dias e usa o intervalo fixo de 3 s', async () => {
     const { d, lote, cnpjs } = await cenario()
     await alterar(d.cookie, lote.id, {
       campos: { documento: 'CNPJ', razaoSocial: 'Razão social' },
-      intervaloMs: 2000,
     })
     expect((await previa(d.cookie, lote.id)).body).toMatchObject({
       consultasNecessarias: 4,
-      estimativaSegundos: 8,
+      estimativaSegundos: 12,
     })
     // duas já estão no cache (uma recente e uma vencida: só a recente poupa a consulta)
     usados.push(cnpjs.a, cnpjs.b)
@@ -626,7 +623,7 @@ describe('GET /v1/importacao/lotes/:id/previa', () => {
     try {
       expect((await previa(d.cookie, lote.id)).body).toMatchObject({
         consultasNecessarias: 3,
-        estimativaSegundos: 6,
+        estimativaSegundos: 9,
       })
     } finally {
       // o cache é global: tira o que este teste pôs, para os outros não verem

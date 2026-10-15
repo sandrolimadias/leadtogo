@@ -228,7 +228,6 @@ export class LotesDeImportacaoService {
     const valores: Partial<typeof importacoes.$inferInsert> = {}
     if (dados.nome !== undefined) valores.nome = dados.nome
     if (dados.fonteDados !== undefined) valores.fonteDados = dados.fonteDados
-    if (dados.intervaloMs !== undefined) valores.intervaloMs = dados.intervaloMs
     if (dados.campos) valores.mapeamento = { colunas, campos }
     if (dados.perfilId !== undefined) {
       valores.perfilId = dados.perfilId
@@ -387,7 +386,6 @@ export class LotesDeImportacaoService {
       campos,
       sugestao: sugerirMapeamento(colunas),
       fonteDados: lote.fonteDados,
-      intervaloMs: lote.intervaloMs,
       perfilId: lote.perfilId,
       vendedorId: lote.vendedorId,
       statusTagId: lote.statusTagId,

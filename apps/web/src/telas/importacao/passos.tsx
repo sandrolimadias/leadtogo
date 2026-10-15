@@ -6,7 +6,7 @@ import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { Button } from '@/components/ui/button'
-import { Select, TextField } from '@/components/ui/campos'
+import { Select } from '@/components/ui/campos'
 import { Badge } from '@/components/ui/exibicao'
 import { Alert, Skeleton } from '@/components/ui/feedback'
 import { cn } from '@/lib/cn'
@@ -261,22 +261,15 @@ export function PassoRegras({ lote, ir, aoAlterar }: PropsDoPasso) {
     },
   })
   const [perfilId, setPerfilId] = useState(lote.perfilId ?? '')
-  const [segundos, setSegundos] = useState(String(lote.intervaloMs / 1000))
   const [erro, setErro] = useState<string>()
 
   const ativos = (perfis.data ?? []).filter((p) => p.ativo || p.id === lote.perfilId)
   const escolhido = ativos.find((p) => p.id === perfilId)
-  const intervaloMs = Math.round(Number(segundos.replace(',', '.')) * 1000)
-  const intervaloInvalido =
-    !Number.isFinite(intervaloMs) || intervaloMs < 500 || intervaloMs > 60_000
 
   const continuar = () =>
     executar(async () => {
       setErro(undefined)
-      const r = await servicos.importacao.lotes.alterar(lote.id, {
-        perfilId: perfilId || null,
-        intervaloMs,
-      })
+      const r = await servicos.importacao.lotes.alterar(lote.id, { perfilId: perfilId || null })
       if (!r.ok) {
         setErro(r.erro.mensagem)
         return
@@ -295,7 +288,7 @@ export function PassoRegras({ lote, ir, aoAlterar }: PropsDoPasso) {
           voltar={() => ir(PASSO.mapear)}
           avancar={() => void continuar()}
           rotulo="Ver a prévia"
-          desabilitado={intervaloInvalido || perfis.isPending}
+          desabilitado={perfis.isPending}
           carregando={enviando}
         />
       }
@@ -332,18 +325,6 @@ export function PassoRegras({ lote, ir, aoAlterar }: PropsDoPasso) {
           Empresa que a Receita mostra como não ativa não entra se o bloqueio estiver ligado em
           Configurações → Carteira, mesmo sem regras ou com a ação &quot;importar com a tag&quot;.
         </Alert>
-      </section>
-
-      <section aria-label="Consulta à Receita" className={cartao}>
-        <h2 className="m-0 text-[15px] leading-5 font-semibold">Consulta à Receita</h2>
-        <TextField
-          label="Intervalo entre consultas (segundos)"
-          hint="A Receita é consultada um CNPJ por vez. O padrão é 3 segundos; vale de 0,5 a 60."
-          inputMode="decimal"
-          value={segundos}
-          error={intervaloInvalido ? 'Informe um valor entre 0,5 e 60 segundos.' : undefined}
-          onChange={(e) => setSegundos(e.target.value)}
-        />
         {erro ? <Alert tone="danger">{erro}</Alert> : null}
       </section>
     </Pagina>
@@ -423,7 +404,7 @@ export function PassoPrevia({ lote, ir }: PropsDoPasso) {
             {p.consultaAReceita ? (
               <p className="m-0 text-[13px] text-ink-muted">
                 {p.consultasNecessarias.toLocaleString('pt-BR')} consultas à Receita (as que já
-                estão no cache de 30 dias não esperam) · cerca de{' '}
+                estão no cache de 30 dias não esperam), uma a cada 3 segundos · cerca de{' '}
                 <strong className="text-ink">{formatarDuracao(p.estimativaSegundos)}</strong>. Você
                 pode sair da tela: a importação continua em segundo plano.
               </p>

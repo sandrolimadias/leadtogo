@@ -167,12 +167,16 @@ async function cenario(opcoes: {
       municipio: 'Cidade',
       uf: 'UF',
     },
-    intervaloMs: 1500,
     perfilId,
     vendedorId: membroId,
     statusTagId: tag(opcoes.status ?? 'cliente'),
   })
   expect(r.status, JSON.stringify(r.body)).toBe(200)
+  // a espera entre consultas é fixa na API (3 s); o teste usa um ajuste interno
+  await noTenant(
+    d.tenantId,
+    (tx) => tx`UPDATE importacoes SET intervalo_ms = 1500 WHERE id = ${lote.id}`,
+  )
   if (opcoes.bloquear === false) {
     await noTenant(
       d.tenantId,

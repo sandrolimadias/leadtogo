@@ -8988,11 +8988,6 @@
               "type": "string"
             }
           },
-          "intervaloMs": {
-            "type": "integer",
-            "minimum": 500,
-            "maximum": 60000
-          },
           "perfilId": {
             "nullable": true,
             "type": "string",
@@ -12073,11 +12068,6 @@
             "type": "string",
             "enum": ["planilha", "receita", "completar"]
           },
-          "intervaloMs": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
           "perfilId": {
             "nullable": true,
             "type": "string",
@@ -12151,7 +12141,6 @@
           "campos",
           "sugestao",
           "fonteDados",
-          "intervaloMs",
           "perfilId",
           "vendedorId",
           "statusTagId",

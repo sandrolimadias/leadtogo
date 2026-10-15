@@ -1782,7 +1782,6 @@ export interface components {
             campos?: {
                 [key: string]: string | null;
             };
-            intervaloMs?: number;
             /** Format: uuid */
             perfilId?: string | null;
             /** Format: uuid */
@@ -2620,7 +2619,6 @@ export interface components {
             };
             /** @enum {string} */
             fonteDados: "planilha" | "receita" | "completar";
-            intervaloMs: number;
             /** Format: uuid */
             perfilId: string | null;
             /** Format: uuid */

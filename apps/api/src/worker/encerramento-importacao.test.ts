@@ -132,11 +132,15 @@ async function prepararImportacao() {
     .send({
       fonteDados: 'receita',
       campos: { documento: 'CNPJ', razaoSocial: 'Razão social' },
-      intervaloMs: 500,
       vendedorId: membroId,
       statusTagId: cliente,
     })
   expect(ajustado.status).toBe(200)
+  // a espera entre consultas é fixa na API (3 s); o teste usa um ajuste interno curto para não levar minutos
+  await noTenant(
+    d.tenantId,
+    (tx) => tx`UPDATE importacoes SET intervalo_ms = 500 WHERE id = ${lote.id}`,
+  )
 
   const processadas = () =>
     noTenant(d.tenantId, async (tx) => {

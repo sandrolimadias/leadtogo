@@ -1,7 +1,7 @@
 # Roteiro de teste: Módulo 4 (Importação de planilha)
 
 > Para o Ale testar em `crm.aledias.com.br` depois do deploy. Cada tela tem os passos e o que deve acontecer. O que não bater, anote a tela, o passo e o que apareceu.
-> **A importação consulta a Receita de verdade** (um CNPJ por vez, com o intervalo escolhido). Use uma planilha **pequena** (10 a 15 linhas) com CNPJs reais de empresas que você aceite ter na empresa de teste. Nada de dados de clientes reais no repositório: a planilha fica só com você.
+> **A importação consulta a Receita de verdade** (um CNPJ por vez, a cada 3 segundos, fixo). Use uma planilha **pequena** (10 a 15 linhas) com CNPJs reais de empresas que você aceite ter na empresa de teste. Nada de dados de clientes reais no repositório: a planilha fica só com você.
 
 ## Resumo dos roteiros
 1. Preparar a planilha de teste e o perfil de regras
@@ -53,7 +53,7 @@
 
 ## 4. Regras
 1. **Perfil de regras**: a lista mostra **Sem regras** e os perfis **ativos**; o resumo do perfil escolhido aparece embaixo.
-2. **Intervalo entre consultas à Receita**: 3 segundos por padrão. Valor fora de 0,5 a 60 mostra o erro e desliga **Ver a prévia**.
+2. **Não há opção de intervalo**: a Receita é consultada **um CNPJ a cada 3 segundos**, fixo (a prévia mostra isso no tempo estimado).
 3. O aviso explica que o **bloqueio de empresa não ativa** (Configurações → Carteira) vence qualquer perfil.
 
 ## 5. Prévia
@@ -93,7 +93,7 @@
 3. Ligue o bloqueio de novo ao terminar.
 
 ## 11. Cancelar e retomar
-1. Inicie uma importação (a planilha de 12 linhas basta, com intervalo de **10 s** para dar tempo) e clique **Cancelar importação**: o relatório mostra o aviso amarelo **Importação cancelada** e as linhas já feitas continuam na carteira.
+1. Inicie uma importação (a planilha de 12 linhas leva uns 40 segundos a 3 s por consulta: dá tempo) e clique **Cancelar importação**: o relatório mostra o aviso amarelo **Importação cancelada** e as linhas já feitas continuam na carteira.
 2. **Retomar** continua só das linhas pendentes: nenhuma empresa é cadastrada duas vezes.
 
 ## 12. Deploy no meio da importação (só se quiser testar)
@@ -128,7 +128,7 @@
 
 | Item | Motivo |
 |---|---|
-| Importar **contatos** por planilha (a alternância Empresas / Contatos do protótipo) | **Não descartado: vira o Módulo 4b**, depois do seu teste das empresas (decidido em 15/10/2026). O envio recusa `tipo` diferente de empresas até lá |
+| Importar **contatos** por planilha (a alternância Empresas / Contatos do protótipo) | **Pós-MVP** (decidido em 15/10/2026, depois do seu teste das empresas). O envio recusa `tipo` diferente de empresas até lá |
 | **Atualizar** empresa que já está na carteira, e **duplicado por nome ou telefone** | Decidido em 12/10/2026: o MVP deduplica só por CNPJ e **pula** a linha repetida, sem alterar (o protótipo previa "Atualizar / Criar nova") |
 | **Baixar o relatório completo em Excel** | O CSV do que **não entrou** cobre a correção e a reimportação; o relatório inteiro está na tela, filtrável |
 | **Notificação** "importação concluída" | A central de notificações está fora do MVP (o progresso e o relatório ficam na tela) |

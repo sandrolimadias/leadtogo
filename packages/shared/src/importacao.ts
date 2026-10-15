@@ -187,8 +187,6 @@ export const loteDeImportacaoSchema = z
     /** O que os títulos das colunas sugerem (para o passo Mapear colunas começar preenchido) */
     sugestao: z.record(z.string(), z.string()),
     fonteDados: fonteDosDadosSchema,
-    /** Espera entre duas consultas à Receita, em milissegundos */
-    intervaloMs: z.number().int(),
     perfilId: z.uuid().nullable(),
     vendedorId: z.uuid().nullable(),
     statusTagId: z.uuid().nullable(),
@@ -212,9 +210,12 @@ export type LoteDeImportacao = z.infer<typeof loteDeImportacaoSchema>
  */
 export const DIAS_PARA_DESFAZER = 7
 
-/** Intervalo mínimo e máximo entre consultas à Receita (padrão 3 s). */
-export const INTERVALO_MINIMO_MS = 500
-export const INTERVALO_MAXIMO_MS = 60_000
+/**
+ * A espera entre duas consultas à Receita é FIXA em 3 s (decidido em 15/10/2026): o cliente não
+ * escolhe nem a API aceita. A coluna `importacoes.intervalo_ms` (padrão 3000) é um ajuste interno,
+ * só por SQL e pelos testes; não aparece na API nem nas telas.
+ */
+export const INTERVALO_DA_RECEITA_MS = 3000
 
 /** PATCH do lote: só o que veio muda. `campos` troca o mapeamento inteiro. */
 export const alterarLoteSchema = z
@@ -222,7 +223,6 @@ export const alterarLoteSchema = z
     nome: z.string().trim().min(1).max(120),
     fonteDados: fonteDosDadosSchema,
     campos: z.record(z.string(), z.string().nullable()),
-    intervaloMs: z.number().int().min(INTERVALO_MINIMO_MS).max(INTERVALO_MAXIMO_MS),
     /** Nulo = "Sem regras" */
     perfilId: z.uuid().nullable(),
     vendedorId: z.uuid(),
