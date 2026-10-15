@@ -1,4 +1,8 @@
-# Atualização semanal de dependências (ver docs/esteira_deploy.md, seção 3.2).
+# Atualização MENSAL de dependências (ver docs/esteira_deploy.md, seção 3.2).
+# TEMPORÁRIO (até o runner próprio do homelab, docs/esteira_deploy.md seção 5.4): era semanal; cada PR do Dependabot
+# gasta minutos de CI. Os alertas e as atualizações de SEGURANÇA não dependem desta agenda: continuam imediatos
+# (Settings → Code security → Dependabot alerts e security updates ligados). Para voltar ao normal, troque
+# `monthly` por `weekly` com `day: monday`.
 # Minor e patch de cada ecossistema vêm juntos num PR só; cada major vem num PR separado, porque major
 # pode quebrar o build (ex.: TypeScript 7 não funciona com o typescript-eslint nem com o openapi-typescript)
 # e precisa ser decidido à mão. Dependência fora de um grupo vira um PR próprio, e é isso que acontece com
@@ -11,8 +15,7 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     commit-message:
       prefix: 'chore(deps)'
     groups:
@@ -31,8 +34,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     commit-message:
       prefix: 'ci(deps)'
     groups:
@@ -43,8 +45,7 @@ updates:
   - package-ecosystem: docker
     directory: /docker
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     commit-message:
       prefix: 'chore(deps)'
     groups:
@@ -60,8 +61,7 @@ updates:
   - package-ecosystem: docker-compose
     directory: /docker
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     commit-message:
       prefix: 'chore(deps)'
     groups:

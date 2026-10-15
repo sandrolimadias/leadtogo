@@ -63,7 +63,7 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 │   └── compose.dev.yml          → Postgres+PostGIS, Valkey e Garage para desenvolvimento
 ├── .github/
 │   ├── workflows/ci-cd.yml      → esteira principal
-│   └── dependabot.yml           → atualização semanal de dependências
+│   └── dependabot.yml           → atualização mensal de dependências (temporário)
 ├── CLAUDE.md                    → instruções permanentes para o Claude Code
 ├── .env.example                 → variáveis necessárias (sem valores reais)
 ├── .gitignore                   → inclui .env, node_modules, dist
@@ -78,7 +78,7 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 ### 3.2 Configuração no GitHub
 - Repositório **privado**.
 - **Secret scanning** e **push protection** ligados, para bloquear o push de senhas e tokens por engano.
-- **Dependabot** para npm, GitHub Actions, Docker e Docker Compose (semanal): **minor e patch juntos num PR por ecossistema; cada major num PR separado**, que se decide à mão (o TypeScript 7, por exemplo, quebra o typescript-eslint e o openapi-typescript). O Better Auth e os pacotes `@better-auth/*` têm grupo próprio, porque andam na mesma versão. Sem major de PostGIS e Garage.
+- **Dependabot** para npm, GitHub Actions, Docker e Docker Compose (**mensal, temporário**; ver 5.4): **minor e patch juntos num PR por ecossistema; cada major num PR separado**, que se decide à mão (o TypeScript 7, por exemplo, quebra o typescript-eslint e o openapi-typescript). O Better Auth e os pacotes `@better-auth/*` têm grupo próprio, porque andam na mesma versão. Sem major de PostGIS e Garage.
 - Proteção da `main`: **não usar** "exigir PR" (por causa do push direto); bloquear apenas *force push* e exclusão da branch.
 
 ---
@@ -99,9 +99,9 @@ CRM ALESSANDRO/                  ← raiz do repositório Git
 ## 5. CI/CD — GitHub Actions (`.github/workflows/ci-cd.yml`)
 
 ### 5.1 Gatilhos
-- `push` na `main` → CI completo + build + deploy.
-- `push` em outras branches (se um dia usar) → só o CI, sem build e sem deploy.
-- `workflow_dispatch` → botão para rodar manualmente (ex.: redeploy).
+- `push` na `main` → **modo temporário (ver 5.4):** escopo, lint, tipos, build, deploy e verify. Testes completos, E2E e segurança só por `workflow_dispatch`.
+- Outras branches **não disparam nada**. Pull request: só o do Dependabot roda (lint e tipos).
+- `workflow_dispatch` → botão para rodar manualmente (**roda também o `test` com E2E e o `security`**; também serve para redeploy).
 - **Push só de documentação** (`*.md`, `docs/**`, exceto `docs/design-system/`, que alimenta o build do web): o job `escopo` classifica e todo o resto é dispensado. A regra mora em `scripts/escopo.sh`, a mesma que o hook `pre-push` usa.
 - **Concorrência:** um pipeline por branch; na `main` um push novo **espera** o anterior terminar (nunca cancela, para não interromper um deploy no meio). O job `deploy` ainda tem o grupo `deploy-prod`, de um por vez.
 - **Actions fixadas por SHA** (`uses: actions/checkout@<sha> # v7.0.1`); o Dependabot de `github-actions` atualiza o SHA e o comentário juntos.
@@ -141,6 +141,27 @@ O roteiro de implantação no Coolify (DNS, segredos, GHCR, banco, recursos, tok
 **Variables** (Settings → Secrets and variables → Actions → *Variables*; não são segredos): `DEPLOY_ENABLED`, `SENTRY_DSN_WEB` (DSN do projeto `leadtogo-web`, vira o build arg `VITE_SENTRY_DSN`; o DSN do navegador é público), `SENTRY_URL` (`https://erros.crm.aledias.com.br`) e `SENTRY_ORG` (slug da organização no GlitchTip). Passo a passo em `runbook_observabilidade.md`.
 
 ---
+
+### 5.4 Modo temporário: pouca cota de minutos (desde 15/10/2026)
+
+> **TEMPORÁRIO.** A cota de minutos do GitHub Actions do mês está curta. Até o Ale instalar um **runner próprio no homelab** (previsto para o fim de semana de 17–18/10/2026), a esteira roda enxuta e o gate completo passa para a máquina de quem envia.
+
+| Item | Agora (temporário) | Normal (para onde voltar) |
+|---|---|---|
+| Gatilhos | `push` só na `main`, `pull_request` só do Dependabot e `workflow_dispatch` | `push` em qualquer branch (CI sem build e sem deploy) e `workflow_dispatch` |
+| Push na `main` | `escopo` → `quality` (lint, formatação, tipos) → `build` → `deploy` → `verify` → `limpeza` | `escopo` → `quality` + `test` (com E2E) + `security` → `build` → `deploy` → `verify` → `limpeza` |
+| `test` (RLS, integração e E2E) e `security` (`pnpm audit`, gitleaks) | Só por `workflow_dispatch` | Em todo push de código |
+| Cancelamento | Na `main` nada é cancelado (um deploy nunca é interrompido); fora da `main` o run novo cancela o antigo | Igual |
+| Cache | pnpm (`setup-node`) e Turborepo (`actions/cache` em `.turbo`) | Igual (fica) |
+| Dependabot | **Mensal** (versões); alertas e atualizações de **segurança** seguem imediatos | Semanal, às segundas |
+| `pre-push` | Gate completo (lint, tipos e testes) **numa cópia limpa do commit que sobe** (`git worktree`, `scripts/pre-push.sh`), em todo push de código. Nunca `--no-verify` | Pode voltar a rodar na pasta de trabalho (opcional), já que o CI faz o gate completo |
+
+**Como voltar ao normal** (quando o runner do homelab estiver pronto), num commit `ci:`:
+1. Em `.github/workflows/ci-cd.yml`, apague os trechos marcados com `TEMPORÁRIO`: o filtro `branches: [main]` do `push`, o `if: ... workflow_dispatch` dos jobs `test` e `security` e a condição do `build` que aceita `test` e `security` "skipped" (volte para `needs.escopo.outputs.codigo == 'true' && github.ref == 'refs/heads/main'`). Aponte `runs-on` dos jobs para o runner do homelab (`runs-on: [self-hosted, ...]`), conferindo antes Node, Docker, o Chromium do Playwright e o PostGIS.
+2. Em `.github/dependabot.yml`, volte `interval: monthly` para `weekly` com `day: monday` nos quatro ecossistemas.
+3. Em `lefthook.yml`, o `pre-push` pode continuar na cópia limpa (recomendado) ou voltar a `pnpm lint && pnpm typecheck && TURBO_CONCURRENCY=1 pnpm test`.
+4. Rode o `workflow_dispatch` uma vez para conferir o ciclo completo e apague esta seção.
+
 
 ## 6. Imagens Docker
 
@@ -330,7 +351,7 @@ pnpm dev:up      # serviços (--wait), bancos e papéis do Postgres e init do Ga
 |---|---|---|
 | `pre-commit` | Prettier e ESLint **só nos arquivos alterados** + verificação de segredos (secretlint) | segundos |
 | `commit-msg` | Valida o padrão Conventional Commits (commitlint) | instantâneo |
-| `pre-push` | `pnpm lint` + `pnpm typecheck` + `pnpm test` (mesmos comandos do CI). **Dispensado** quando o push só tem documentação (`scripts/escopo.sh`, a mesma regra do job `escopo`) | 1–3 min (0 em docs) |
+| `pre-push` | `pnpm lint` + `pnpm typecheck` + `pnpm test` (mesmos comandos do CI), **numa cópia limpa do commit que sobe** (`git worktree`, `scripts/pre-push.sh`; ver 5.4). **Dispensado** quando o push só tem documentação (`scripts/escopo.sh`, a mesma regra do job `escopo`) | 1–3 min (0 em docs) |
 
 > Os hooks são instalados pelo `pnpm install` (script `prepare`). O secretlint aceita apenas as strings de conexão de exemplo em `localhost` (senhas `senha`/`test`), configuradas em `.secretlintrc.json`.
 > O `.lefthook.rc` (apontado por `rc: ./.lefthook.rc` no `lefthook.yml`) acrescenta ao PATH o bin do Node 24 mais recente do nvm (se existir) antes de cada comando dos hooks; assim o commit funciona de qualquer shell (IDE, Claude Code) sem ajustar o PATH. Não renomeie para `.lefthookrc`: o hook gerado pelo lefthook carrega esse nome sozinho com `. .lefthookrc`, que o `sh` (dash) do Ubuntu não encontra, e o commit aborta.

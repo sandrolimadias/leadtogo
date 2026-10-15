@@ -26,11 +26,13 @@ commit-msg:
 pre-push:
   commands:
     verificacao:
+      use_stdin: true
       # Push só de documentação (mesma regra do job `escopo` do CI: scripts/escopo.sh) não roda a suíte
       run: |
         if [ "$(bash scripts/escopo.sh {push_files} </dev/null)" = doc ]; then
           echo "Push só de documentação: lint, tipos e testes dispensados."
         else
-          # Uma tarefa por vez, como no CI: api, db e web juntos disputam CPU no WSL e estouram prazos de teste
-          pnpm lint && pnpm typecheck && TURBO_CONCURRENCY=1 pnpm test
+          # Numa cópia limpa do commit que sobe (git worktree), uma tarefa por vez, como no CI: api, db e web juntos
+          # disputam CPU no WSL e estouram prazos de teste (scripts/pre-push.sh)
+          bash scripts/pre-push.sh
         fi

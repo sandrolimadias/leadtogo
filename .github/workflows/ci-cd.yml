@@ -1,14 +1,24 @@
 # Esteira de CI/CD (docs/esteira_deploy.md, seção 5).
 #   escopo → quality + test(+E2E) + security → build (GHCR, ARM64 nativo) → deploy (Coolify) → verify → limpeza
+#
+# TEMPORÁRIO (docs/esteira_deploy.md, seção 5.4), até o runner próprio do homelab: pouca cota de minutos no mês.
+# Push na main roda só escopo → quality → build → deploy → verify; test (com E2E) e security só por
+# workflow_dispatch. O gate completo roda antes do push, no hook pre-push (numa cópia limpa do commit).
+# Para voltar ao normal, desfaça os trechos marcados com "TEMPORÁRIO".
 # Todas as actions são fixadas por SHA (versão no comentário); o Dependabot de actions atualiza os dois.
 name: ci-cd
 
 on:
+  # TEMPORÁRIO: só a main dispara a esteira (nenhuma outra branch gasta minutos)
   push:
+    branches: [main]
+  # Só os PRs do Dependabot rodam algo (lint e tipos); PR de qualquer outro autor é ignorado
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 # Um pipeline por branch. Na main NUNCA cancela um em andamento (poderia interromper um deploy no meio):
-# o push seguinte espera o anterior terminar.
+# o push seguinte espera o anterior terminar. Fora da main (PR do Dependabot), o run novo cancela o antigo.
 concurrency:
   group: ci-cd-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -20,6 +30,7 @@ jobs:
   # ---------------------------------------------------------------------------
   escopo:
     name: escopo
+    if: github.event_name != 'pull_request' || github.actor == 'dependabot[bot]'
     runs-on: ubuntu-24.04
     outputs:
       codigo: ${{ steps.classificar.outputs.codigo }}
@@ -56,14 +67,21 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Cache do Turborepo
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-${{ github.job }}-
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
 
   # ---------------------------------------------------------------------------
   test:
+    # TEMPORÁRIO: só por workflow_dispatch (o gate de todo push roda no pre-push, na máquina de quem envia)
     needs: escopo
-    if: needs.escopo.outputs.codigo == 'true'
+    if: needs.escopo.outputs.codigo == 'true' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -74,6 +92,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Cache do Turborepo
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-${{ github.job }}-
       # Os mesmos serviços do desenvolvimento (Postgres+PostGIS, Valkey, Garage e Mailpit), preparados pelo
       # mesmo script (bancos e papéis, layout/bucket/chave do Garage). As senhas do .env.example são só de teste.
       - name: Serviços (docker/dev-up.sh)
@@ -108,8 +132,9 @@ jobs:
 
   # ---------------------------------------------------------------------------
   security:
+    # TEMPORÁRIO: só por workflow_dispatch
     needs: escopo
-    if: needs.escopo.outputs.codigo == 'true'
+    if: needs.escopo.outputs.codigo == 'true' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -130,8 +155,14 @@ jobs:
   # ---------------------------------------------------------------------------
   build:
     # Só na main (ou manual): publica no GHCR. Runner ARM nativo, sem QEMU (a VPS é ARM64).
+    # TEMPORÁRIO: test e security ficam "skipped" no push; só "failure" ou "cancelled" nelas bloqueia o build
     needs: [escopo, quality, test, security]
-    if: needs.escopo.outputs.codigo == 'true' && github.ref == 'refs/heads/main'
+    if: >-
+      !cancelled() && needs.escopo.outputs.codigo == 'true' && github.ref == 'refs/heads/main'
+      && github.event_name != 'pull_request'
+      && needs.quality.result == 'success'
+      && contains(fromJSON('["success","skipped"]'), needs.test.result)
+      && contains(fromJSON('["success","skipped"]'), needs.security.result)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     permissions:
