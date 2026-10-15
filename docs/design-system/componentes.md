@@ -187,7 +187,7 @@ Coluna de quadro Kanban, usada no funil (fases) e nas tarefas (colunas customiz�
 
 ### DataTable
 
-Tabela das listas (Empresas, Contatos, Oportunidades em lista): cabeçalho fixo, linhas com hover, seleção para ações em massa.
+Tabela das listas (Empresas, Contatos, Oportunidades em lista): cabeçalho que gruda no topo da área central (sticky), linhas com hover, seleção para ações em massa.
 
 **O consumidor fornece:** `columns` [`{key, label, align?, width?, sorted?, render?}`], `rows` (com `id`), `selectable`, `defaultSelected`, `density="compact"`, `caption` (nome para leitor de tela).
 

@@ -45,12 +45,16 @@
 
 > Os componentes do artifact são a **referência visual e de comportamento**. Na implementação, eles serão recriados em React + Tailwind + shadcn/ui usando os mesmos tokens.
 
-## Layout e rolagem (regra para toda tela, decidida pelo Ale em 15/10/2026)
-**A página nunca rola** (computador, tablet e celular). Ficam fixos o **menu lateral** (no celular, a gaveta continua) e a **barra do topo** (busca, "Registrar atividade", notificações); no celular, o cabeçalho e a barra inferior. **Só a área central (`#conteudo`) rola, por dentro.** Nenhuma tela tem barra de rolagem horizontal na página (o rodapé do menu mostra só os 7 primeiros caracteres da versão, com o valor completo na dica).
-- **Tela sem tabela** (ficha, formulário, Configurações, passos do assistente de importação): a área central rola inteira. Use um `<main>` comum, sem `flex-1`.
-- **Tela com tabela ou lista de dados** (Empresas, Contatos, Importações, linhas do relatório e as próximas): use `PaginaDeTabela` e `AreaDaTabela` (`components/ui/pagina.tsx`). **Título, botões, chips e filtros ficam fixos**; só as **linhas** rolam (`CorpoRolavel`), com o **cabeçalho das colunas fixo** (`sticky top-0` no `<th>`) e a **paginação fixa embaixo**, fora da rolagem. Em janela muito baixa a tabela tem altura mínima (240 px) e a rolagem de reserva passa a ser a da área central: a página continua sem rolar.
-- No celular, a lista vira cartões dentro da mesma área rolável.
-- Estrutura: `html`/`body` sem rolagem no app autenticado; a casca é `h-dvh` com `overflow-hidden`; a área central é uma coluna flex (`min-h-0 flex-1 overflow-y-auto overflow-x-hidden`).
+## Layout e rolagem (regra para toda tela, atual e futura; decidida pelo Ale em 15/10/2026)
+1. **A página (`html`/`body`) nunca rola.** O app ocupa exatamente a janela (`h-dvh`, por causa do celular). A casca é `relative` para que elementos `absolute` (como `sr-only`) não vazem do `overflow-hidden`.
+2. **Ficam fixos** o **menu lateral** (altura toda, com logo e seletor de empresa no topo, itens no meio e usuário e versão presos no rodapé; no celular continua a navegação fixa) e a **barra do topo** (busca, "Registrar atividade", notificações; no celular, cabeçalho e barra inferior).
+3. **Só a área central (`#conteudo`) rola**, com **uma única barra de rolagem**, na borda direita dela. Título, botões, chips, filtros, tabela e paginação rolam juntos.
+   - **Tabelas não têm rolagem vertical própria**: crescem com as linhas (25, 50 ou 100) e quem rola é a área central. O **cabeçalho das colunas** é `sticky top-0` e gruda no topo da área central enquanto a tabela estiver visível.
+   - Para o `sticky` funcionar, nenhum ancestral do `<th>` pode ter `overflow: hidden/auto/scroll`: `AreaDaTabela` usa `overflow-clip`, e `CorpoDaTabela` só rola na **horizontal abaixo de `lg`** (colunas que não cabem; nessa faixa o cabeçalho deixa de grudar). **Nunca** rolagem horizontal na página.
+4. **Conteúdo centralizado**: a casca envolve o conteúdo num contêiner de **no máximo 1440 px**, centralizado, com margens laterais iguais. Abaixo de 1440 px ocupa a largura toda, com o espaçamento lateral dos tokens (`p-6`, `p-4` no celular). As telas **não repetem** `mx-auto` nem largura máxima de 1400/1440; só formulários e passos usam uma largura de leitura menor (560, 980 ou 1080 px), encostada à esquerda do contêiner.
+5. Vale para listas, fichas, formulários, Configurações, importação, Dashboard e as telas futuras: use `PaginaDeTabela`/`AreaDaTabela`/`CorpoDaTabela` (`components/ui/pagina.tsx`) nas listas e um `<main>` comum nas demais.
+- Estrutura: `html`/`body` com `overflow: hidden`; casca `relative h-dvh overflow-hidden`; `#conteudo` com `min-h-0 flex-1 overflow-y-auto overflow-x-hidden` e, dentro, `mx-auto flex min-h-full w-full max-w-[1440px] flex-col`.
+- Teste que protege a regra: `apps/web/e2e/layout.spec.ts` (1920×1080, 1366×768 e 390×844: janela sem rolagem, menu e topo parados, uma única barra, cabeçalho das colunas grudado, 1440 px centralizado).
 
 ## Tabelas e paginação (regra para toda tabela de dados)
 - **Um componente só: `Paginacao`** (`components/ui/paginacao.tsx`), usado por todas as tabelas, inclusive as dos próximos módulos. Mostra "1–25 de 120", **Linhas por página (25, 50 ou 100)**, "Página N de M", Anterior e Próxima.

@@ -12,7 +12,7 @@ import { Button, IconButton } from '@/components/ui/button'
 import { Select, TextField } from '@/components/ui/campos'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { Paginacao } from '@/components/ui/paginacao'
-import { AreaDaTabela, CorpoRolavel, PaginaDeTabela } from '@/components/ui/pagina'
+import { AreaDaTabela, CorpoDaTabela, PaginaDeTabela } from '@/components/ui/pagina'
 import { cn } from '@/lib/cn'
 
 import {
@@ -330,13 +330,13 @@ function Conteudo({
         lista.isPlaceholderData && 'opacity-60',
       )}
     >
-      <CorpoRolavel>
+      <CorpoDaTabela>
         {celular ? (
           <CartoesDeContatos itens={itens} aoAbrir={aoAbrir} />
         ) : (
           <TabelaDeContatos itens={itens} aoAbrir={aoAbrir} />
         )}
-      </CorpoRolavel>
+      </CorpoDaTabela>
       <Paginacao
         pagina={pagina}
         porPagina={porPagina}

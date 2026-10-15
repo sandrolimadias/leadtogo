@@ -159,7 +159,7 @@ export function FichaDaEmpresa() {
 
   if (consulta.isPending) {
     return (
-      <main className="flex w-full max-w-[1400px] flex-col gap-4 p-6 max-md:p-4">
+      <main className="flex w-full flex-col gap-4 p-6 max-md:p-4">
         <div
           role="status"
           aria-label="Carregando a empresa"
@@ -173,7 +173,7 @@ export function FichaDaEmpresa() {
   if (consulta.isError) {
     const naoExiste = (consulta.error as { status?: number }).status === 404
     return (
-      <main className="flex w-full max-w-[1400px] flex-col gap-4 p-6 max-md:p-4">
+      <main className="flex w-full flex-col gap-4 p-6 max-md:p-4">
         <div className="rounded-lg border border-border bg-surface">
           {naoExiste ? (
             <EmptyState

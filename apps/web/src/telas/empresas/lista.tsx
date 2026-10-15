@@ -18,7 +18,7 @@ import { Button, IconButton } from '@/components/ui/button'
 import { Select, TextField } from '@/components/ui/campos'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Paginacao } from '@/components/ui/paginacao'
-import { AreaDaTabela, CorpoRolavel, PaginaDeTabela } from '@/components/ui/pagina'
+import { AreaDaTabela, CorpoDaTabela, PaginaDeTabela } from '@/components/ui/pagina'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
@@ -532,7 +532,7 @@ function Conteudo({
         lista.isPlaceholderData && 'opacity-60',
       )}
     >
-      <CorpoRolavel>
+      <CorpoDaTabela>
         {celular ? (
           <CartoesDeEmpresas itens={itens} aoAbrir={aoAbrir} />
         ) : (
@@ -545,7 +545,7 @@ function Conteudo({
             aoAlternarTodas={aoAlternarTodas}
           />
         )}
-      </CorpoRolavel>
+      </CorpoDaTabela>
       <Paginacao
         pagina={pagina}
         porPagina={porPagina}

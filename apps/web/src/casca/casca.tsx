@@ -58,7 +58,10 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
 
   if (dispositivo === 'celular') {
     return (
-      <div data-density="touch" className="flex h-dvh flex-col overflow-hidden bg-bg text-ink">
+      <div
+        data-density="touch"
+        className="relative flex h-dvh flex-col overflow-hidden bg-bg text-ink"
+      >
         <PularParaOConteudo />
         <CabecalhoDoCelular
           titulo={tituloDoCaminho(caminho)}
@@ -68,9 +71,9 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
         <div
           id="conteudo"
           tabIndex={-1}
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto outline-none"
+          className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto outline-none"
         >
-          {children}
+          <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col">{children}</div>
         </div>
         <BarraInferior caminho={caminho} aoAbrirPerfil={() => setPerfilAberto(true)} />
         <FolhaDePerfil
@@ -190,7 +193,7 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
   return (
     <div
       data-density={dispositivo === 'tablet' ? 'touch' : undefined}
-      className="flex h-dvh overflow-hidden bg-bg text-ink"
+      className="relative flex h-dvh overflow-hidden bg-bg text-ink"
     >
       <PularParaOConteudo />
       <AppNav
@@ -225,9 +228,9 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
         <div
           id="conteudo"
           tabIndex={-1}
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto outline-none"
+          className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto outline-none"
         >
-          {children}
+          <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col">{children}</div>
         </div>
       </div>
     </div>

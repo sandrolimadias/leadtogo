@@ -93,6 +93,14 @@ function largura(px: number) {
 }
 afterEach(() => largura(1280))
 
+/** Sem rolagem vertical própria: nenhum ancestral (até o <main>) vira contêiner de rolagem, senão o `sticky` do cabeçalho não gruda na área central */
+function temRolagemPropria(el: Element): boolean {
+  for (let a = el.parentElement; a && a.tagName !== 'MAIN'; a = a.parentElement) {
+    if (/(^|\s)overflow-(y-)?(auto|scroll|hidden)(\s|$)/.test(a.className)) return true
+  }
+  return false
+}
+
 describe('Contatos: a lista', () => {
   it('mostra o título, a contagem e as colunas (sem "Última interação")', async () => {
     const x = servicos()
@@ -431,14 +439,12 @@ describe('Contatos: linhas por página e rolagem', () => {
     await waitFor(() => expect(ultimaConsulta(salvo)).toMatchObject({ porPagina: 50, pagina: 1 }))
   })
 
-  it('só as linhas rolam: cabeçalho fixo e paginação fora da área rolável', async () => {
+  it('a tabela não rola por dentro: o cabeçalho das colunas gruda no topo da área central', async () => {
     await abrir(servicos())
     const tabela = await screen.findByRole('table')
-    const rolavel = tabela.closest('.overflow-auto')
-    expect(rolavel).not.toBeNull()
+    expect(temRolagemPropria(tabela)).toBe(false)
     for (const th of within(tabela).getAllByRole('columnheader')) {
       expect(th.className).toContain('sticky')
     }
-    expect(rolavel?.contains(screen.getByRole('navigation', { name: 'Paginação' }))).toBe(false)
   })
 })

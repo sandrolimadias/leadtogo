@@ -217,7 +217,7 @@ export function FichaDoContato() {
     },
   })
   const voltar = () => void navegar({ to: '/contatos' })
-  const larguraDaPagina = 'flex w-full max-w-[1400px] flex-col gap-4 p-6 max-md:p-4'
+  const larguraDaPagina = 'flex w-full flex-col gap-4 p-6 max-md:p-4'
 
   if (consulta.isPending) {
     return (
@@ -451,7 +451,7 @@ export function FichaDoContato() {
         onChange={setAba}
         className="flex flex-col [&>[role=tablist]]:bg-surface [&>[role=tablist]]:px-6 max-md:[&>[role=tablist]]:px-4"
       >
-        <main className="w-full max-w-[1400px] p-6 max-md:p-4">
+        <main className="w-full p-6 max-md:p-4">
           <ConteudoDaAba
             value="resumo"
             className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start gap-4 max-lg:grid-cols-1"

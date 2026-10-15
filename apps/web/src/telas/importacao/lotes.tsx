@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge, type TomDoBadge } from '@/components/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { Paginacao } from '@/components/ui/paginacao'
-import { AreaDaTabela, CorpoRolavel, PaginaDeTabela } from '@/components/ui/pagina'
+import { AreaDaTabela, CorpoDaTabela, PaginaDeTabela } from '@/components/ui/pagina'
 import { usePorPagina } from '@/casca/preferencias'
 
 import { formatarDataHora, resumoDoLote, useQuemImporta } from './comum'
@@ -89,7 +89,7 @@ export function ListaDeImportacoes() {
         />
       ) : (
         <AreaDaTabela>
-          <CorpoRolavel>
+          <CorpoDaTabela>
             <ul aria-label="Importações" className="m-0 flex list-none flex-col p-0">
               {lotes.data.itens.map((l) => (
                 <li
@@ -118,7 +118,7 @@ export function ListaDeImportacoes() {
                 </li>
               ))}
             </ul>
-          </CorpoRolavel>
+          </CorpoDaTabela>
           <Paginacao
             pagina={lotes.data.pagina}
             porPagina={lotes.data.porPagina}

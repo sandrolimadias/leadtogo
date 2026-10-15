@@ -4,15 +4,16 @@ import { cn } from '@/lib/cn'
 
 /*
  * Regra de rolagem do app (docs/design_system.md, "Layout e rolagem"): a PÁGINA nunca rola. Ficam fixos o
- * menu lateral e a barra do topo; só a área central (`#conteudo`) rola por dentro.
- *  - Tela SEM tabela (ficha, formulário, Configurações): a área central rola inteira. Use um <main>
- *    comum, sem `flex-1`.
- *  - Tela COM tabela ou lista de dados: use `PaginaDeTabela`. Título, botões, chips e filtros ficam fixos
- *    e só as linhas rolam, com o cabeçalho das colunas fixo: `AreaDaTabela` guarda a tabela
- *    (`CorpoRolavel`) e a `Paginacao`, que fica fora da rolagem.
+ * menu lateral e a barra do topo; só a área central (`#conteudo`, na casca) rola, com uma única barra, e
+ * tudo dentro dela rola junto. A largura máxima (1440 px) e a centralização também são da casca: as telas
+ * não repetem `mx-auto` nem largura máxima de página.
+ *  - Tabelas NÃO têm rolagem vertical própria: crescem com as linhas (25, 50 ou 100) e o cabeçalho das
+ *    colunas usa `sticky top-0`, que gruda no topo da área central.
+ *  - Por isso nenhum ancestral do cabeçalho pode ser um contêiner de rolagem (`overflow: hidden/auto`):
+ *    `AreaDaTabela` usa `overflow-clip` e o `CorpoDaTabela` só rola na horizontal abaixo de `lg`.
  */
 
-/** Página que tem uma tabela ou lista: ocupa a altura toda e entrega o resto à `AreaDaTabela`. */
+/** Página que tem uma tabela ou lista: um <main> comum, que cresce com o conteúdo. */
 export function PaginaDeTabela({
   className,
   children,
@@ -21,27 +22,18 @@ export function PaginaDeTabela({
   children: ReactNode
 }) {
   return (
-    <main
-      className={cn(
-        'flex min-h-0 w-full max-w-[1400px] flex-1 flex-col gap-4 p-6 max-md:p-4',
-        className,
-      )}
-    >
+    <main className={cn('flex w-full flex-1 flex-col gap-4 p-6 max-md:p-4', className)}>
       {children}
     </main>
   )
 }
 
-/**
- * A caixa da tabela: ocupa o que sobra da página. Dentro, o `CorpoRolavel` (as linhas) e, embaixo, a
- * `Paginacao`. Numa janela muito baixa a área tem uma altura mínima, e a rolagem de reserva passa a ser
- * a da área central (a página continua sem rolar).
- */
+/** A caixa da tabela: borda e cantos arredondados, com a tabela e a `Paginacao` dentro. */
 export function AreaDaTabela({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <div
       className={cn(
-        'flex min-h-[240px] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-surface',
+        'flex min-w-0 flex-col overflow-clip rounded-lg border border-border bg-surface',
         className,
       )}
     >
@@ -50,7 +42,17 @@ export function AreaDaTabela({ className, children }: { className?: string; chil
   )
 }
 
-/** Onde as linhas rolam. O cabeçalho das colunas usa `sticky top-0` e fica no topo desta área. */
-export function CorpoRolavel({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('min-h-0 min-w-0 flex-1 overflow-auto', className)}>{children}</div>
+/**
+ * Onde fica a tabela. Sem rolagem vertical. A horizontal só existe abaixo de `lg`, quando as colunas não
+ * cabem (com ela o cabeçalho deixa de grudar, porque o contêiner passa a ser o da rolagem); de `lg` para
+ * cima a tabela cabe e o cabeçalho gruda no topo da área central.
+ */
+export function CorpoDaTabela({
+  className,
+  children,
+}: {
+  className?: string
+  children: ReactNode
+}) {
+  return <div className={cn('min-w-0 max-lg:overflow-x-auto', className)}>{children}</div>
 }

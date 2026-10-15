@@ -172,6 +172,14 @@ function servicos(
 const abrir = (s: ReturnType<typeof servicos>, rota = `/importacao/${LOTE}`) =>
   renderizar(s.s, rota)
 
+/** Sem rolagem vertical própria: nenhum ancestral (até o <main>) vira contêiner de rolagem, senão o `sticky` do cabeçalho não gruda na área central */
+function temRolagemPropria(el: Element): boolean {
+  for (let a = el.parentElement; a && a.tagName !== 'MAIN'; a = a.parentElement) {
+    if (/(^|\s)overflow-(y-)?(auto|scroll|hidden)(\s|$)/.test(a.className)) return true
+  }
+  return false
+}
+
 describe('Importar planilha: enviar o arquivo', () => {
   it('o vendedor não importa: volta para o início', async () => {
     const { historico } = abrir(servicos({ papel: 'vendedor' }), '/importacao/nova')
@@ -545,7 +553,7 @@ describe('Importar planilha: andamento e relatório', () => {
     expect(screen.getByRole('link', { name: /Ver empresas importadas/ })).toBeInTheDocument()
   })
 
-  it('relatório: linhas por página lembradas por tabela, e só as linhas rolam', async () => {
+  it('relatório: linhas por página lembradas por tabela, sem rolagem própria', async () => {
     const guardar = vi.fn(async () =>
       ok({
         tema: 'sistema' as const,
@@ -560,9 +568,7 @@ describe('Importar planilha: andamento e relatório', () => {
     abrir(s)
     const linha = await screen.findByRole('listitem', { name: 'Linha 1' })
     expect(s.lotes.linhas).toHaveBeenLastCalledWith(LOTE, { pagina: 1, porPagina: 25 })
-    const rolavel = linha.closest('.overflow-auto')
-    expect(rolavel).not.toBeNull()
-    expect(rolavel?.contains(screen.getByRole('navigation', { name: 'Paginação' }))).toBe(false)
+    expect(temRolagemPropria(linha)).toBe(false)
     await userEvent.selectOptions(
       screen.getByRole('combobox', { name: 'Linhas por página' }),
       '100',

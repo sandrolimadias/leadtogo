@@ -331,7 +331,7 @@ export function PaginaVazia({
   acao?: ReactNode
 }) {
   return (
-    <main className="flex w-full max-w-[1400px] flex-col gap-5 p-6 max-md:p-4">
+    <main className="flex w-full flex-col gap-5 p-6 max-md:p-4">
       <h1 className="m-0 text-[22px] leading-7 font-semibold max-md:sr-only">{titulo}</h1>
       <div className="rounded-lg border border-border bg-surface">
         <EmptyState

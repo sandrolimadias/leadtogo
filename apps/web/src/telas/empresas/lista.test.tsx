@@ -217,6 +217,14 @@ function largura(px: number) {
 }
 afterEach(() => largura(1280))
 
+/** Sem rolagem vertical própria: nenhum ancestral (até o <main>) vira contêiner de rolagem, senão o `sticky` do cabeçalho não gruda na área central */
+function temRolagemPropria(el: Element): boolean {
+  for (let a = el.parentElement; a && a.tagName !== 'MAIN'; a = a.parentElement) {
+    if (/(^|\s)overflow-(y-)?(auto|scroll|hidden)(\s|$)/.test(a.className)) return true
+  }
+  return false
+}
+
 describe('Empresas: a lista', () => {
   it('mostra o título, a contagem e as colunas decididas (sem Vendedor nem "Em aberto")', async () => {
     const s = servicos()
@@ -679,18 +687,15 @@ describe('Empresas: linhas por página e rolagem', () => {
     await waitFor(() => expect(ultimaConsulta(s)).toMatchObject({ porPagina: 100, pagina: 1 }))
   })
 
-  it('só as linhas rolam: o cabeçalho das colunas é fixo e a paginação fica fora da área rolável', async () => {
+  it('a tabela não rola por dentro: o cabeçalho das colunas gruda no topo da área central', async () => {
     await abrir(servicos())
     const tabela = await screen.findByRole('table')
-    const rolavel = tabela.closest('.overflow-auto')
-    expect(rolavel).not.toBeNull()
+    expect(temRolagemPropria(tabela)).toBe(false)
     for (const th of within(tabela).getAllByRole('columnheader')) {
       expect(th.className).toContain('sticky')
       expect(th.className).toContain('top-0')
     }
-    const paginacao = screen.getByRole('navigation', { name: 'Paginação' })
-    expect(rolavel?.contains(paginacao)).toBe(false)
-    // a página (main) não rola por si: quem rola é a área da tabela
+    // a página (main) também não rola por si: quem rola é a área central da casca
     expect(screen.getByRole('main').className).not.toContain('overflow-y-auto')
   })
 })

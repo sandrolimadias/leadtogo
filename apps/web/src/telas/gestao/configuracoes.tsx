@@ -31,7 +31,7 @@ const SECOES = [
 /** Casca das Configurações da empresa ativa: menu interno (lateral no desktop, em linha no celular) e a seção. */
 export function Configuracoes() {
   return (
-    <main className="flex w-full max-w-[1400px] flex-col gap-5 p-6 max-md:p-4">
+    <main className="flex w-full flex-col gap-5 p-6 max-md:p-4">
       <h1 className="m-0 text-[22px] leading-7 font-semibold max-md:sr-only">Configurações</h1>
       <div className="flex gap-6 max-md:flex-col">
         <nav

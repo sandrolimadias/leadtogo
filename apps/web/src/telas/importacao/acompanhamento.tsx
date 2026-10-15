@@ -9,7 +9,7 @@ import { useServicos } from '@/auth/contexto'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Paginacao } from '@/components/ui/paginacao'
-import { AreaDaTabela, CorpoRolavel } from '@/components/ui/pagina'
+import { AreaDaTabela, CorpoDaTabela } from '@/components/ui/pagina'
 import { usePorPagina } from '@/casca/preferencias'
 import { Badge, type TomDoBadge } from '@/components/ui/exibicao'
 import { Alert, Skeleton } from '@/components/ui/feedback'
@@ -379,7 +379,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
           </div>
         ) : (
           <>
-            <CorpoRolavel>
+            <CorpoDaTabela>
               <ul className="m-0 flex list-none flex-col p-0">
                 {linhas.data.itens.map((l) => (
                   <li
@@ -429,7 +429,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
                   </li>
                 ) : null}
               </ul>
-            </CorpoRolavel>
+            </CorpoDaTabela>
             <Paginacao
               pagina={linhas.data.pagina}
               porPagina={linhas.data.porPagina}

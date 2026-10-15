@@ -67,6 +67,14 @@ function servicos(
   }
 }
 
+/** Sem rolagem vertical própria: nenhum ancestral (até o <main>) vira contêiner de rolagem, senão o `sticky` do cabeçalho não gruda na área central */
+function temRolagemPropria(el: Element): boolean {
+  for (let a = el.parentElement; a && a.tagName !== 'MAIN'; a = a.parentElement) {
+    if (/(^|\s)overflow-(y-)?(auto|scroll|hidden)(\s|$)/.test(a.className)) return true
+  }
+  return false
+}
+
 describe('Importações: a lista de lotes', () => {
   it('mostra cada lote com o resumo do que fez, a situação e quem importou', async () => {
     renderizar(servicos().s, '/importacao')
@@ -163,11 +171,9 @@ describe('Importações: a lista de lotes', () => {
     await waitFor(() => expect(listar).toHaveBeenLastCalledWith(1, 100))
   })
 
-  it('a lista rola por dentro e a paginação fica fora da rolagem', async () => {
+  it('a lista não rola por dentro: cresce com as linhas', async () => {
     renderizar(servicos().s, '/importacao')
     const lista = await screen.findByRole('list', { name: 'Importações' })
-    const rolavel = lista.closest('.overflow-auto')
-    expect(rolavel).not.toBeNull()
-    expect(rolavel?.contains(screen.getByRole('navigation', { name: 'Paginação' }))).toBe(false)
+    expect(temRolagemPropria(lista)).toBe(false)
   })
 })

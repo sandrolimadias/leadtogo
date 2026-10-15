@@ -20,6 +20,12 @@
 }
 
 @layer base {
+  /* A página nunca rola: o app ocupa a janela (h-dvh na casca) e só a área central rola */
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
   html {
     -webkit-text-size-adjust: 100%;
   }
