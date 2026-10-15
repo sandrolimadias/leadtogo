@@ -38,12 +38,25 @@
 - **Exibição:** Badge, Tag, Avatar, StatTile, StatusPill, Tooltip
 - **Atividades:** ActivityIcon, PriorityMarks (Importante/Urgente), ActivityTimeline, TaskCard
 - **Funil:** DealCard (valor total + MRR, alerta de parada, "sem próxima atividade"), KanbanColumn
-- **Dados:** DataTable, Tabs
+- **Dados:** DataTable, Tabs, Paginacao (obrigatória em toda tabela de dados; ver "Tabelas e paginação")
 - **Navegação:** AppNav, TenantSwitcher (multiempresa), Menu
 - **Feedback:** Alert, Toast, EmptyState, Skeleton, Dialog
 - **Exemplo:** TelaFunil (Kanban de oportunidades completo)
 
 > Os componentes do artifact são a **referência visual e de comportamento**. Na implementação, eles serão recriados em React + Tailwind + shadcn/ui usando os mesmos tokens.
+
+## Layout e rolagem (regra para toda tela, decidida pelo Ale em 15/10/2026)
+**A página nunca rola** (computador, tablet e celular). Ficam fixos o **menu lateral** (no celular, a gaveta continua) e a **barra do topo** (busca, "Registrar atividade", notificações); no celular, o cabeçalho e a barra inferior. **Só a área central (`#conteudo`) rola, por dentro.** Nenhuma tela tem barra de rolagem horizontal na página (o rodapé do menu mostra só os 7 primeiros caracteres da versão, com o valor completo na dica).
+- **Tela sem tabela** (ficha, formulário, Configurações, passos do assistente de importação): a área central rola inteira. Use um `<main>` comum, sem `flex-1`.
+- **Tela com tabela ou lista de dados** (Empresas, Contatos, Importações, linhas do relatório e as próximas): use `PaginaDeTabela` e `AreaDaTabela` (`components/ui/pagina.tsx`). **Título, botões, chips e filtros ficam fixos**; só as **linhas** rolam (`CorpoRolavel`), com o **cabeçalho das colunas fixo** (`sticky top-0` no `<th>`) e a **paginação fixa embaixo**, fora da rolagem. Em janela muito baixa a tabela tem altura mínima (240 px) e a rolagem de reserva passa a ser a da área central: a página continua sem rolar.
+- No celular, a lista vira cartões dentro da mesma área rolável.
+- Estrutura: `html`/`body` sem rolagem no app autenticado; a casca é `h-dvh` com `overflow-hidden`; a área central é uma coluna flex (`min-h-0 flex-1 overflow-y-auto overflow-x-hidden`).
+
+## Tabelas e paginação (regra para toda tabela de dados)
+- **Um componente só: `Paginacao`** (`components/ui/paginacao.tsx`), usado por todas as tabelas, inclusive as dos próximos módulos. Mostra "1–25 de 120", **Linhas por página (25, 50 ou 100)**, "Página N de M", Anterior e Próxima.
+- **Padrão 25.** A escolha fica **lembrada por tabela e por usuário**, nas preferências do usuário (`preferencias.porPagina`, guardada na conta e valendo em qualquer aparelho); o hook é `usePorPagina('<tabela>')` (`casca/preferencias.ts`). Mudar o tamanho volta para a página 1. Tabela nova entra em `TABELAS_PAGINADAS` (`packages/shared/src/paginacao.ts`).
+- **A API limita o tamanho de página a 100** (`TAMANHO_MAXIMO_DE_PAGINA`; todo `porPagina` usa o `porPaginaSchema`) e o padrão é 25. A tela só busca depois de as preferências chegarem, para não pedir duas vezes.
+- Listas que carregam "mais" (histórico) não são tabelas de dados paginadas e ficam de fora.
 
 ## Próximos passos
 1. Revisar o design system no artifact e pedir ajustes (cores, fonte, cantos, densidade).
