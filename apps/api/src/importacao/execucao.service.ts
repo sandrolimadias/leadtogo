@@ -33,6 +33,9 @@ export class ExecucaoDaImportacaoService {
         situacao: 'em_andamento',
         iniciadoEm: sql`coalesce(${importacoes.iniciadoEm}, now())`,
         concluidoEm: null,
+        // começa (ou recomeça) sem espera antiga e com o relógio do "parado" zerado
+        proximaConsultaEm: null,
+        ultimoProgressoEm: sql`now()`,
         atualizadoPor: this.ctx.membro.id,
       })
       .where(

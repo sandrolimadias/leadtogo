@@ -57,6 +57,12 @@ beforeEach(async () => {
 afterEach(() => app.close())
 
 let seq = 0
+/** `n` CNPJs diferentes (o gerador repete o dígito final dentro do mesmo milissegundo). */
+const cnpjsNovos = (n: number) => {
+  const lista = new Set<string>()
+  while (lista.size < n) lista.add(cnpjNovo())
+  return [...lista]
+}
 const cnpjNovo = () =>
   completarCnpj(`8${String(Date.now() % 1_000_000).padStart(6, '0')}${++seq % 10}0001`.slice(0, 12))
 
@@ -627,5 +633,203 @@ describe('ExecutorDaImportacao: os dados da planilha', () => {
     )
     expect(await executor(new ReceitaFalsa()).executar(d.tenantId, lote.id)).toBe('falhou')
     expect(await resultados(d.tenantId, lote.id)).toEqual(['pendente'])
+  })
+})
+
+describe('ExecutorDaImportacao: blocos curtos', () => {
+  it('cada bloco faz no máximo o limite de linhas e o lote só conclui no último', async () => {
+    const cnpjs = cnpjsNovos(7)
+    const { d, lote } = await cenario({ linhas: cnpjs.map((c, i) => [c, `E${i}`, '', '', '']) })
+    await iniciar(d, lote.id)
+    const ex = new ExecutorDaImportacao({
+      banco,
+      receita: new ReceitaFalsa(),
+      log,
+      esperar: () => Promise.resolve(),
+      limites: { linhas: 3, duracaoMs: 60_000 },
+    })
+    const feitas = async () =>
+      (await resultados(d.tenantId, lote.id)).filter((r) => r !== 'pendente').length
+    expect((await ex.executarBloco(d.tenantId, lote.id)).desfecho).toBe('continua')
+    expect(await feitas()).toBe(3)
+    expect(await situacaoDe(d.tenantId, lote.id)).toBe('em_andamento')
+    expect((await ex.executarBloco(d.tenantId, lote.id)).desfecho).toBe('continua')
+    expect(await feitas()).toBe(6)
+    expect((await ex.executarBloco(d.tenantId, lote.id)).desfecho).toBe('concluida')
+    expect(await feitas()).toBe(7)
+    expect(await situacaoDe(d.tenantId, lote.id)).toBe('concluida')
+    // cada bloco deixou o lote com progresso registrado (a varredura olha para isso)
+    const [l] = await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx<
+          { ultimo_progresso_em: Date | null }[]
+        >`SELECT ultimo_progresso_em FROM importacoes WHERE id = ${lote.id}`,
+    )
+    expect(l?.ultimo_progresso_em).toBeTruthy()
+  })
+
+  it('Iniciar (e retomar) zera a espera antiga e o relógio do "parado"', async () => {
+    const { d, lote } = await cenario({ linhas: [[cnpjNovo(), 'A', '', '', '']] })
+    await iniciar(d, lote.id)
+    await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx`UPDATE importacoes SET situacao = 'cancelada', proxima_consulta_em = now() + interval '1 hour',
+             ultimo_progresso_em = now() - interval '1 day' WHERE id = ${lote.id}`,
+    )
+    expect((await iniciar(d, lote.id)).status).toBe(200)
+    const [l] = await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx<
+          { proxima: Date | null; recente: boolean }[]
+        >`SELECT proxima_consulta_em AS proxima, ultimo_progresso_em > now() - interval '1 minute' AS recente FROM importacoes WHERE id = ${lote.id}`,
+    )
+    expect(l).toEqual({ proxima: null, recente: true })
+  })
+
+  it('o bloco também acaba pelo tempo: sem tempo sobrando, devolve "continua" depois da primeira linha', async () => {
+    const cnpjs = [cnpjNovo(), cnpjNovo(), cnpjNovo()]
+    const { d, lote } = await cenario({ linhas: cnpjs.map((c, i) => [c, `E${i}`, '', '', '']) })
+    await iniciar(d, lote.id)
+    const ex = new ExecutorDaImportacao({
+      banco,
+      receita: new ReceitaFalsa(),
+      log,
+      esperar: () => new Promise((r) => setTimeout(r, 30)), // cada consulta "gasta" 30 ms
+      limites: { linhas: 25, duracaoMs: 20 },
+    })
+    expect((await ex.executarBloco(d.tenantId, lote.id)).desfecho).toBe('continua')
+    const feitas = (await resultados(d.tenantId, lote.id)).filter((r) => r !== 'pendente')
+    expect(feitas).toHaveLength(1)
+  })
+
+  it('a espera programada por outro executor que não cabe no bloco adia o bloco, sem consultar a Receita', async () => {
+    const { d, lote } = await cenario({ linhas: [[cnpjNovo(), 'A', '', '', '']] })
+    await iniciar(d, lote.id)
+    await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx`UPDATE importacoes SET proxima_consulta_em = now() + interval '40 seconds' WHERE id = ${lote.id}`,
+    )
+    const receita = new ReceitaFalsa()
+    const ex = new ExecutorDaImportacao({
+      banco,
+      receita,
+      log,
+      esperar: () => Promise.resolve(),
+      limites: { linhas: 25, duracaoMs: 10_000 },
+    })
+    const r = await ex.executarBloco(d.tenantId, lote.id)
+    expect(r.desfecho).toBe('continua')
+    expect(r.proximoEmMs).toBeGreaterThan(30_000)
+    expect(r.proximoEmMs).toBeLessThanOrEqual(40_000)
+    expect(receita.chamadas).toEqual([])
+    expect(await resultados(d.tenantId, lote.id)).toEqual(['pendente'])
+  })
+})
+
+describe('ExecutorDaImportacao: lote que espera de propósito não é lote parado', () => {
+  it('Receita fora do ar (429/503): enquanto espera, proxima_consulta_em está no futuro e a varredura não o pega', async () => {
+    const a = cnpjNovo()
+    const { d, lote } = await cenario({ linhas: [[a, 'A', '', '', '']] })
+    await iniciar(d, lote.id)
+    // o lote já está há 10 minutos sem progresso: SEM a espera programada, seria considerado parado
+    await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx`UPDATE importacoes SET ultimo_progresso_em = now() - interval '10 minutes' WHERE id = ${lote.id}`,
+    )
+    const receita = new ReceitaFalsa()
+    receita.respostas.set(a, (tentativa) => (tentativa < 2 ? indisponivel() : respostaDaReceita(a)))
+    const vistos: { esperaFutura: boolean; parado: boolean }[] = []
+    const ex = new ExecutorDaImportacao({
+      banco,
+      receita,
+      log,
+      esperar: async (ms) => {
+        const [l] = await noTenant(
+          d.tenantId,
+          (tx) =>
+            tx<
+              { futura: boolean }[]
+            >`SELECT proxima_consulta_em > now() AS futura FROM importacoes WHERE id = ${lote.id}`,
+        )
+        const paradas = await dono<
+          { id: string }[]
+        >`SELECT id FROM app_importacoes_paradas(2) WHERE id = ${lote.id}`
+        vistos.push({ esperaFutura: l?.futura ?? false, parado: paradas.length > 0 })
+        void ms
+      },
+    })
+    expect(await ex.executar(d.tenantId, lote.id)).toBe('concluida')
+    // a espera de 10 s (Receita fora do ar) e a de 1,5 s (intervalo) foram marcadas ANTES de dormir
+    expect(vistos).toHaveLength(2)
+    expect(vistos.every((v) => v.esperaFutura && !v.parado)).toBe(true)
+  })
+})
+
+describe('ExecutorDaImportacao: dois executores no mesmo lote', () => {
+  it('cada linha sai uma vez só: nenhuma empresa duplicada, nenhuma linha perdida', async () => {
+    const cnpjs = cnpjsNovos(14)
+    const { d, lote } = await cenario({ linhas: cnpjs.map((c, i) => [c, `E${i}`, '', '', '']) })
+    await iniciar(d, lote.id)
+    const devagar = () => {
+      const r = new ReceitaFalsa()
+      // intercala os dois executores de verdade: cada consulta cede a vez
+      r.aoConsultar = () => new Promise((resolver) => setTimeout(resolver, 8))
+      return r
+    }
+    const [r1, r2] = [devagar(), devagar()]
+    const feitos = await Promise.all([
+      executor(r1).executar(d.tenantId, lote.id),
+      executor(r2).executar(d.tenantId, lote.id),
+    ])
+    expect(feitos.every((f) => f === 'concluida' || f === 'ignorada')).toBe(true)
+    expect(await resultados(d.tenantId, lote.id)).toEqual(cnpjs.map(() => 'criada'))
+    const empresas = await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx<
+          { documento: string }[]
+        >`SELECT documento FROM empresas WHERE importacao_id = ${lote.id}`,
+    )
+    expect(empresas.map((e) => e.documento).sort()).toEqual([...cnpjs].sort())
+    // uma só notificação de fim e totais certos
+    const [fim] = await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx<
+          { situacao: string; totais: Record<string, number> }[]
+        >`SELECT situacao::text AS situacao, totais FROM importacoes WHERE id = ${lote.id}`,
+    )
+    expect(fim).toMatchObject({ situacao: 'concluida', totais: { criada: 14 } })
+    const avisos = await noTenant(
+      d.tenantId,
+      (tx) => tx`SELECT id FROM notificacoes WHERE id = ${lote.id}`,
+    )
+    expect(avisos).toHaveLength(1)
+  })
+
+  it('a empresa que este lote já criou (resultado que não chegou a gravar) vale como criada, não como repetida', async () => {
+    const [a, b] = [cnpjNovo(), cnpjNovo()]
+    const { d, membroId, lote } = await cenario({
+      linhas: [
+        [a, 'A', '', '', ''],
+        [b, 'B', '', '', ''],
+      ],
+    })
+    await iniciar(d, lote.id)
+    const empresaId = await noTenant(d.tenantId, async (tx) => {
+      const [e] = await tx<{ id: string }[]>`
+        INSERT INTO empresas (id, tenant_id, tipo_documento, documento, razao_social, vendedor_id, importacao_id)
+        VALUES (gen_random_uuid(), ${d.tenantId}, 'cnpj', ${a}, 'Criada pelo lote', ${membroId}, ${lote.id})
+        RETURNING id`
+      return (e as { id: string }).id
+    })
+    expect(await executor(new ReceitaFalsa()).executar(d.tenantId, lote.id)).toBe('concluida')
+    expect(await resultados(d.tenantId, lote.id)).toEqual(['criada', 'criada'])
+    expect((await linhasDe(d.tenantId, lote.id))[0]?.empresa_id).toBe(empresaId)
   })
 })

@@ -11,6 +11,7 @@ import type { JobDeNotificacao } from '../processadores.js'
 import type { ReceitaService } from '../../receita/receita.service.js'
 import { EVENTO_VERIFICAR_SITUACAO } from '../../carteira/situacao-evento.js'
 import { EVENTO_EXECUTAR_IMPORTACAO } from '../../importacao/evento.js'
+import { enfileirarBloco } from '../../importacao/fila.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
 
@@ -94,12 +95,13 @@ export function manipuladoresPadrao(
    */
   manipuladores[EVENTO_EXECUTAR_IMPORTACAO] = async (evento, { filas }) => {
     const { importacaoId } = evento.payload as { importacaoId: string }
-    await filas.fila(FILAS.importacao).add(
-      'executar',
-      { tenantId: evento.tenantId, importacaoId },
-      // Um erro inesperado volta ao trabalho de onde parou (a execução só mexe nas linhas pendentes)
-      { jobId: jobIdDoEvento(evento.id), attempts: 3, backoff: { type: 'fixed', delay: 30_000 } },
-    )
+    // Primeiro bloco da cadeia; cada bloco agenda o seguinte (id determinístico: reentrega não duplica)
+    await enfileirarBloco(filas.fila(FILAS.importacao), {
+      tenantId: evento.tenantId,
+      importacaoId,
+      raiz: evento.id,
+      bloco: 0,
+    })
   }
 
   if (receita) {

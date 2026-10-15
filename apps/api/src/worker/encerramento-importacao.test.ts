@@ -93,70 +93,91 @@ const fila = (nome: typeof FILAS.teste | typeof FILAS.importacao) => {
   return q
 }
 
-describe('worker: SIGTERM com dois consumidores ativos (e-mail/teste e importação)', () => {
-  it('o job comum termina e é marcado; a importação para na linha e volta para a fila; o próximo worker conclui sem repetir', async () => {
-    prefixo = `leadtogo:fila:imp${Date.now()}`
-    const d = await novoDono(app)
-    const membroId = await noTenant(d.tenantId, async (tx) => {
-      const [m] = await tx<
-        { id: string }[]
-      >`SELECT id FROM membros WHERE usuario_id = ${d.usuarioId}`
-      return (m as { id: string }).id
-    })
-    const grupos = (
-      await request(app.getHttpServer())
-        .get('/v1/configuracoes/tag-grupos')
-        .set('Origin', ORIGEM_DO_FRONT)
-        .set('Cookie', d.cookie)
-    ).body as TagGrupo[]
-    const cliente = (
-      grupos.flatMap((g) => g.tags).find((t) => t.chaveSistema === 'cliente') as { id: string }
-    ).id
-    const base = Date.now() % 100_000
-    const cnpjs = Array.from({ length: LINHAS }, (_, i) =>
-      completarCnpj(
-        `9${String(base).padStart(5, '0')}${String(i).padStart(2, '0')}0001`.slice(0, 12),
-      ),
-    )
-    const csv = `CNPJ;Razão social\n${cnpjs.map((c, i) => `${c};Empresa ${i}`).join('\n')}\n`
-    const lote = (
-      await request(app.getHttpServer())
-        .post('/v1/importacao/lotes?arquivo=deploy.csv')
-        .set('Origin', ORIGEM_DO_FRONT)
-        .set('Cookie', d.cookie)
-        .set('Content-Type', 'application/octet-stream')
-        .send(csv)
-    ).body as LoteDeImportacao
-    const ajustado = await request(app.getHttpServer())
-      .patch(`/v1/importacao/lotes/${lote.id}`)
+/** Empresa nova com uma planilha de 40 CNPJs inventados, pronta para iniciar (Receita falsa, 300 ms por consulta). */
+async function prepararImportacao() {
+  prefixo = `leadtogo:fila:imp${Date.now()}`
+  const d = await novoDono(app)
+  const membroId = await noTenant(d.tenantId, async (tx) => {
+    const [m] = await tx<{ id: string }[]>`SELECT id FROM membros WHERE usuario_id = ${d.usuarioId}`
+    return (m as { id: string }).id
+  })
+  const grupos = (
+    await request(app.getHttpServer())
+      .get('/v1/configuracoes/tag-grupos')
       .set('Origin', ORIGEM_DO_FRONT)
       .set('Cookie', d.cookie)
-      .send({
-        fonteDados: 'receita',
-        campos: { documento: 'CNPJ', razaoSocial: 'Razão social' },
-        intervaloMs: 500,
-        vendedorId: membroId,
-        statusTagId: cliente,
-      })
-    expect(ajustado.status).toBe(200)
+  ).body as TagGrupo[]
+  const cliente = (
+    grupos.flatMap((g) => g.tags).find((t) => t.chaveSistema === 'cliente') as { id: string }
+  ).id
+  const base = Date.now() % 100_000
+  const cnpjs = Array.from({ length: LINHAS }, (_, i) =>
+    completarCnpj(
+      `9${String(base).padStart(5, '0')}${String(i).padStart(2, '0')}0001`.slice(0, 12),
+    ),
+  )
+  const csv = `CNPJ;Razão social\n${cnpjs.map((c, i) => `${c};Empresa ${i}`).join('\n')}\n`
+  const lote = (
+    await request(app.getHttpServer())
+      .post('/v1/importacao/lotes?arquivo=deploy.csv')
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', d.cookie)
+      .set('Content-Type', 'application/octet-stream')
+      .send(csv)
+  ).body as LoteDeImportacao
+  const ajustado = await request(app.getHttpServer())
+    .patch(`/v1/importacao/lotes/${lote.id}`)
+    .set('Origin', ORIGEM_DO_FRONT)
+    .set('Cookie', d.cookie)
+    .send({
+      fonteDados: 'receita',
+      campos: { documento: 'CNPJ', razaoSocial: 'Razão social' },
+      intervaloMs: 500,
+      vendedorId: membroId,
+      statusTagId: cliente,
+    })
+  expect(ajustado.status).toBe(200)
 
+  const processadas = () =>
+    noTenant(d.tenantId, async (tx) => {
+      const [r] = await tx<
+        { n: number }[]
+      >`SELECT count(*)::int AS n FROM importacao_linhas WHERE importacao_id = ${lote.id} AND resultado <> 'pendente'`
+      return r?.n ?? 0
+    })
+  const situacao = async () =>
+    (
+      await noTenant(
+        d.tenantId,
+        (tx) =>
+          tx<{ s: string }[]>`SELECT situacao::text AS s FROM importacoes WHERE id = ${lote.id}`,
+      )
+    )[0]?.s
+  const iniciar = () =>
+    request(app.getHttpServer())
+      .post(`/v1/importacao/lotes/${lote.id}/iniciar`)
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', d.cookie)
+  const empresasDoLote = () =>
+    noTenant(
+      d.tenantId,
+      (tx) =>
+        tx<
+          { documento: string }[]
+        >`SELECT documento FROM empresas WHERE importacao_id = ${lote.id}`,
+    )
+  return { d, lote, cnpjs, processadas, situacao, iniciar, empresasDoLote }
+}
+
+const jobsDoLote = async () =>
+  (await fila(FILAS.importacao).getJobs(['delayed', 'waiting', 'active', 'prioritized'])).length
+
+describe('worker: SIGTERM com dois consumidores ativos (e-mail/teste e importação)', () => {
+  it('o job comum termina e é marcado; o bloco da importação fecha na linha e agenda o próximo; o worker seguinte conclui sem repetir', async () => {
+    const { cnpjs, processadas, situacao, iniciar, empresasDoLote } = await prepararImportacao()
     const w1 = await iniciarWorker()
-    const processadas = () =>
-      noTenant(d.tenantId, async (tx) => {
-        const [r] = await tx<
-          { n: number }[]
-        >`SELECT count(*)::int AS n FROM importacao_linhas WHERE importacao_id = ${lote.id} AND resultado <> 'pendente'`
-        return r?.n ?? 0
-      })
     // "Iniciar": o evento vai ao outbox, o relay do worker o entrega e a importação começa a andar
-    expect(
-      (
-        await request(app.getHttpServer())
-          .post(`/v1/importacao/lotes/${lote.id}/iniciar`)
-          .set('Origin', ORIGEM_DO_FRONT)
-          .set('Cookie', d.cookie)
-      ).status,
-    ).toBe(200)
+    expect((await iniciar()).status).toBe(200)
     await esperarAte(async () => (await processadas()) >= 2, 30_000)
 
     // o segundo consumidor ativo: um job comum de 4 s, em andamento junto da importação
@@ -170,8 +191,8 @@ describe('worker: SIGTERM com dois consumidores ativos (e-mail/teste e importaç
     w1.processo.kill('SIGTERM')
     const saida = await w1.aguardarSaida(25_000)
     expect(saida.codigo).toBe(0)
-    // saiu logo depois de o job comum terminar (4 s) e a importação parar na linha, bem antes do
-    // prazo de 20 s e de a importação inteira (cerca de 30 s)
+    // saiu logo depois de o job comum terminar (4 s) e a importação fechar o bloco na linha, bem antes
+    // do prazo de 20 s e de a importação inteira (cerca de 30 s)
     expect(saida.emMs).toBeLessThan(12_000)
     expect(w1.saida()).toContain('"noPrazo":true')
 
@@ -187,44 +208,55 @@ describe('worker: SIGTERM com dois consumidores ativos (e-mail/teste e importaç
     }
     await esperarAte(async () => (await estado()) === 'completed')
 
-    // a importação parou no meio: lote ainda em andamento, parte das linhas feita, o job devolvido à fila
+    // a importação parou no meio: lote em andamento, parte das linhas feita, e o PRÓXIMO bloco já
+    // agendado na fila (o bloco que parou foi concluído, não ficou "travado")
     const feitas = await processadas()
     expect(feitas).toBeGreaterThanOrEqual(2)
     expect(feitas).toBeLessThan(LINHAS)
-    const situacao = async () =>
-      (
-        await noTenant(
-          d.tenantId,
-          (tx) =>
-            tx<{ s: string }[]>`SELECT situacao::text AS s FROM importacoes WHERE id = ${lote.id}`,
-        )
-      )[0]?.s
     expect(await situacao()).toBe('em_andamento')
-    const jobs = await fila(FILAS.importacao).getJobs([
-      'delayed',
-      'waiting',
-      'active',
-      'completed',
-      'failed',
-    ])
-    expect(jobs).toHaveLength(1)
-    expect(await jobs[0]?.getState()).toBe('delayed') // voltou para a fila, sem gastar tentativa nem esperar o lock vencer
-    expect(jobs[0]?.attemptsMade).toBe(0)
+    expect(await jobsDoLote()).toBe(1)
 
-    // o worker seguinte pega o job de volta e termina: cada CNPJ foi à Receita e à carteira uma vez só
+    // o worker seguinte pega o próximo bloco e termina: cada CNPJ foi à Receita e à carteira uma vez só
     await iniciarWorker()
-    await esperarAte(async () => (await situacao()) === 'concluida', 60_000)
-    const empresas = await noTenant(
-      d.tenantId,
-      (tx) =>
-        tx<
-          { documento: string }[]
-        >`SELECT documento FROM empresas WHERE importacao_id = ${lote.id}`,
-    )
-    expect(empresas.map((e) => e.documento).sort()).toEqual([...cnpjs].sort())
+    await esperarAte(async () => (await situacao()) === 'concluida', 90_000)
+    expect((await empresasDoLote()).map((e) => e.documento).sort()).toEqual([...cnpjs].sort())
     const porCnpj = new Map<string, number>()
     for (const caminho of receita.chamadas) porCnpj.set(caminho, (porCnpj.get(caminho) ?? 0) + 1)
     expect([...porCnpj.values()].every((n) => n === 1)).toBe(true)
     expect(porCnpj.size).toBe(LINHAS)
   }, 150_000)
+})
+
+describe('worker: morte brusca (SIGKILL) no meio da importação', () => {
+  it('sem encerramento gracioso: o outro worker retoma e termina, sem empresa duplicada nem linha perdida', async () => {
+    const { lote, cnpjs, processadas, situacao, iniciar, empresasDoLote, d } =
+      await prepararImportacao()
+    const w1 = await iniciarWorker()
+    expect((await iniciar()).status).toBe(200)
+    await esperarAte(async () => (await processadas()) >= 3, 30_000)
+
+    // sem aviso nenhum: nada de SIGTERM, o processo some com o bloco no meio
+    w1.processo.kill('SIGKILL')
+    await w1.aguardarSaida(10_000)
+    const antes = await processadas()
+    expect(antes).toBeLessThan(LINHAS)
+    expect(await situacao()).toBe('em_andamento')
+
+    // o job do bloco fica "ativo" até o lock vencer (3 s); o BullMQ o devolve e o novo worker continua
+    await iniciarWorker()
+    await esperarAte(async () => (await situacao()) === 'concluida', 120_000)
+
+    const linhas = await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx<
+          { resultado: string }[]
+        >`SELECT resultado::text AS resultado FROM importacao_linhas WHERE importacao_id = ${lote.id}`,
+    )
+    expect(linhas).toHaveLength(LINHAS) // nenhuma linha perdida
+    expect(linhas.every((l) => l.resultado === 'criada')).toBe(true)
+    const empresas = (await empresasDoLote()).map((e) => e.documento)
+    expect(empresas).toHaveLength(LINHAS) // nenhuma empresa duplicada (nem faltando)
+    expect([...empresas].sort()).toEqual([...cnpjs].sort())
+  }, 200_000)
 })

@@ -234,7 +234,7 @@ describe('GET /v1/importacao/lotes/:id/andamento', () => {
 })
 
 describe('o evento chega ao worker', () => {
-  it('o manipulador do outbox enfileira a execução na fila "importacao", com o id do evento como jobId', async () => {
+  it('o manipulador do outbox enfileira o primeiro bloco na fila "importacao", com id determinístico (reentrega do evento não duplica)', async () => {
     const adicionar = vi.fn(() => Promise.resolve(undefined))
     const fila = vi.fn(() => ({ add: adicionar }))
     const filas = { fila } as unknown as WorkerFilas
@@ -255,9 +255,9 @@ describe('o evento chega ao worker', () => {
     )
     expect(fila).toHaveBeenCalledWith(FILAS.importacao)
     expect(adicionar).toHaveBeenCalledWith(
-      'executar',
-      { tenantId: 'tenant-1', importacaoId: 'lote-1' },
-      expect.objectContaining({ jobId: 'evento-evento-1', attempts: 3 }),
+      'bloco',
+      { tenantId: 'tenant-1', importacaoId: 'lote-1', raiz: 'evento-1', bloco: 0 },
+      expect.objectContaining({ jobId: 'imp-lote-1-evento-1-0', attempts: 3 }),
     )
   })
 })

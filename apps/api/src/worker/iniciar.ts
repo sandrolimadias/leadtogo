@@ -1,7 +1,6 @@
 import type { Server } from 'node:http'
 
 import type { Conexao } from '@leadtogo/db'
-import { DelayedError } from 'bullmq'
 import type { Redis } from 'ioredis'
 import type { Logger } from 'pino'
 
@@ -15,6 +14,7 @@ import {
 import { manipuladoresPadrao } from './outbox/manipuladores.js'
 import { RelayDoOutbox } from './outbox/relay.js'
 import { ExecutorDaImportacao } from '../importacao/executor.js'
+import { enfileirarBloco, type JobDeImportacao } from '../importacao/fila.js'
 import { EnviadorSmtp } from '../email/enviador.js'
 import { ReceitaService, provedoresPadrao } from '../receita/receita.service.js'
 import { chavesDe } from '../seguranca/cifra.js'
@@ -84,19 +84,25 @@ export async function iniciarWorker(deps: {
     banco,
     receita,
     log,
-    // SIGTERM: para antes da próxima linha, em vez de segurar o deploy até o prazo
+    // SIGTERM: termina a linha em curso e fecha o bloco, em vez de segurar o deploy até o prazo
     deveParar: () => filas.estaEncerrando,
   })
   filas.consumir(
     FILAS.importacao,
-    async (job, token) => {
-      const { tenantId, importacaoId } = job.data as { tenantId: string; importacaoId: string }
-      const desfecho = await executor.executar(tenantId, importacaoId)
-      if (desfecho === 'interrompida') {
-        // O worker está saindo: devolve o job à fila (sem gastar tentativa nem esperar o lock vencer)
-        // para o próximo worker retomar das linhas pendentes
-        await job.moveToDelayed(Date.now() + 2000, token)
-        throw new DelayedError()
+    async (job) => {
+      const dados = job.data as JobDeImportacao
+      const { desfecho, proximoEmMs } = await executor.executarBloco(
+        dados.tenantId,
+        dados.importacaoId,
+      )
+      // Ainda há linhas: agenda o próximo bloco (no SIGTERM também, o próximo worker o pega). Se este
+      // processo cair antes de agendar, a varredura de lote parado reenfileira.
+      if (desfecho === 'continua' || desfecho === 'interrompida') {
+        await enfileirarBloco(
+          filas.fila(FILAS.importacao),
+          { ...dados, bloco: dados.bloco + 1 },
+          proximoEmMs,
+        )
       }
       return desfecho
     },

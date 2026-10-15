@@ -23,8 +23,15 @@ const { importacaoLinhas, importacoes, membros, tagGrupos, tags } = schema
 export const ESPERAS_DA_RECEITA_MS = [10_000, 30_000, 60_000]
 /** Linhas seguidas com a Receita fora do ar: a importação para (falhou) e pode ser retomada. */
 export const LIMITE_DE_FALHAS_SEGUIDAS = 3
-/** De quantas em quantas linhas os totais do lote são regravados. */
-const A_CADA = 25
+/** Texto do motivo das linhas que falharam por a Receita estar fora do ar (conta as "seguidas" entre blocos). */
+const MOTIVO_SEM_RECEITA = 'A Receita estava fora do ar'
+
+/** Um job faz um bloco: até 25 linhas ou 90 s (o que vier primeiro) e agenda o próximo. */
+export interface LimitesDoBloco {
+  linhas: number
+  duracaoMs: number
+}
+export const LIMITES_DO_BLOCO: LimitesDoBloco = { linhas: 25, duracaoMs: 90_000 }
 
 export interface DepsDoExecutor {
   banco: Conexao
@@ -34,10 +41,22 @@ export interface DepsDoExecutor {
   esperar?: (ms: number) => Promise<void>
   /** O processo está encerrando (SIGTERM): para antes da próxima linha, sem perder nada */
   deveParar?: () => boolean
+  /** Tamanho do bloco (os testes usam blocos pequenos) */
+  limites?: LimitesDoBloco
 }
 
-/** `interrompida`: o worker está encerrando; o lote segue em andamento e o job volta para a fila */
-export type DesfechoDaExecucao = 'concluida' | 'cancelada' | 'falhou' | 'ignorada' | 'interrompida'
+/**
+ * `continua`: o bloco acabou e ainda há linhas (o próximo bloco é agendado); `interrompida`: o worker
+ * está encerrando, o lote segue em andamento e o próximo bloco retoma das pendentes.
+ */
+export type DesfechoDaExecucao =
+  'concluida' | 'cancelada' | 'falhou' | 'ignorada' | 'interrompida' | 'continua'
+
+export interface ResultadoDoBloco {
+  desfecho: DesfechoDaExecucao
+  /** Quanto esperar antes do próximo bloco (a Receita ainda está em espera programada) */
+  proximoEmMs: number
+}
 
 interface Resultado {
   resultado: ResultadoDaLinha
@@ -82,7 +101,30 @@ export class ExecutorDaImportacao {
     })
   }
 
+  /**
+   * O lote inteiro, bloco após bloco, num só processo (sem fila). Os testes e a reexecução manual usam;
+   * em produção quem encadeia os blocos é o worker, um job por bloco.
+   */
   async executar(tenantId: string, importacaoId: string): Promise<DesfechoDaExecucao> {
+    for (;;) {
+      const r = await this.executarBloco(tenantId, importacaoId)
+      if (r.desfecho !== 'continua') return r.desfecho
+      if (r.proximoEmMs > 0) await this.esperar(r.proximoEmMs)
+    }
+  }
+
+  /**
+   * Um bloco: até `limites.linhas` linhas ou `limites.duracaoMs`, o que vier primeiro. Devolve
+   * `continua` quando ainda há linhas pendentes. Tudo o que importa fica no banco (linhas, totais,
+   * `proxima_consulta_em`, `ultimo_progresso_em`), então qualquer worker retoma de onde o outro parou.
+   */
+  async executarBloco(tenantId: string, importacaoId: string): Promise<ResultadoDoBloco> {
+    const inicio = Date.now()
+    const limites = this.deps.limites ?? LIMITES_DO_BLOCO
+    const fim = (desfecho: DesfechoDaExecucao, proximoEmMs = 0): ResultadoDoBloco => ({
+      desfecho,
+      proximoEmMs,
+    })
     const lote = await this.noTenant(tenantId, async (tx) => {
       const [l] = await tx
         .select()
@@ -90,7 +132,7 @@ export class ExecutorDaImportacao {
         .where(sql`${importacoes.id} = ${importacaoId}`)
       return l
     })
-    if (!lote || lote.situacao !== 'em_andamento') return 'ignorada'
+    if (!lote || lote.situacao !== 'em_andamento') return fim('ignorada')
 
     const importador = await this.noTenant(tenantId, async (tx) => {
       const [m] = await tx
@@ -111,7 +153,7 @@ export class ExecutorDaImportacao {
         'falhou',
         'Quem iniciou a importação não pode mais importar.',
       )
-      return 'falhou'
+      return fim('falhou')
     }
 
     const config = await this.noTenant(tenantId, async (tx) => {
@@ -132,13 +174,13 @@ export class ExecutorDaImportacao {
         'falhou',
         'O lote não está completo (CNPJ, vendedor e Status).',
       )
-      return 'falhou'
+      return fim('falhou')
     }
 
     await this.prepararLinhas(tenantId, lote.id, colunaDoCnpj)
 
-    let seguidasSemReceita = 0
-    let desdeOsTotais = 0
+    let seguidasSemReceita = await this.seguidasSemReceitaNoBanco(tenantId, lote.id)
+    let feitas = 0
     for (;;) {
       const atual = await this.noTenant(tenantId, async (tx) => {
         const [l] = await tx
@@ -149,14 +191,18 @@ export class ExecutorDaImportacao {
       })
       if (atual?.situacao !== 'em_andamento') {
         await this.gravarTotais(tenantId, lote.id)
-        return 'cancelada'
+        return fim('cancelada')
       }
       if (this.deps.deveParar?.()) {
         await this.gravarTotais(tenantId, lote.id)
-        return 'interrompida'
+        return fim('interrompida')
       }
       const linha = await this.proximaLinha(tenantId, lote.id)
       if (!linha) break
+      if (feitas >= limites.linhas || Date.now() - inicio >= limites.duracaoMs) {
+        await this.gravarTotais(tenantId, lote.id)
+        return fim('continua')
+      }
 
       const r = await this.processarLinha({
         tenantId,
@@ -171,16 +217,20 @@ export class ExecutorDaImportacao {
           papel: importador.papel,
           usuarioId: importador.usuarioId ?? '',
         },
+        restanteDoBlocoMs: () => limites.duracaoMs - (Date.now() - inicio),
       })
       if (r.interrompida) {
         await this.gravarTotais(tenantId, lote.id)
-        return 'interrompida'
+        return fim('interrompida')
       }
-      seguidasSemReceita = r.semReceita ? seguidasSemReceita + 1 : 0
-      if (++desdeOsTotais >= A_CADA) {
-        desdeOsTotais = 0
+      if (r.adiarMs !== undefined) {
+        // a Receita ainda está em espera programada e não cabe neste bloco: o próximo bloco espera
         await this.gravarTotais(tenantId, lote.id)
+        return fim('continua', r.adiarMs)
       }
+      feitas++
+      await this.registrarProgresso(tenantId, lote.id)
+      seguidasSemReceita = r.semReceita ? seguidasSemReceita + 1 : 0
       if (seguidasSemReceita >= LIMITE_DE_FALHAS_SEGUIDAS) {
         await this.encerrar(
           tenantId,
@@ -188,11 +238,37 @@ export class ExecutorDaImportacao {
           'falhou',
           'A Receita está fora do ar. A importação parou; retome mais tarde (as linhas já feitas ficam).',
         )
-        return 'falhou'
+        return fim('falhou')
       }
     }
     await this.encerrar(tenantId, lote, 'concluida')
-    return 'concluida'
+    return fim('concluida')
+  }
+
+  /** Quantas das últimas linhas feitas, em sequência, falharam por a Receita estar fora do ar. */
+  private async seguidasSemReceitaNoBanco(tenantId: string, loteId: string): Promise<number> {
+    const ultimas = await this.noTenant(tenantId, (tx) =>
+      tx.execute<{ motivo: string | null }>(sql`
+        SELECT motivo FROM importacao_linhas
+        WHERE importacao_id = ${loteId} AND resultado <> 'pendente' AND processada_em IS NOT NULL
+        ORDER BY processada_em DESC, numero DESC LIMIT ${LIMITE_DE_FALHAS_SEGUIDAS}`),
+    )
+    let n = 0
+    for (const u of ultimas) {
+      if (!u.motivo?.startsWith(MOTIVO_SEM_RECEITA)) break
+      n++
+    }
+    return n
+  }
+
+  /** Marca que o lote andou: é o que a varredura olha para saber se está parado. */
+  private registrarProgresso(tenantId: string, loteId: string) {
+    return this.noTenant(tenantId, (tx) =>
+      tx
+        .update(importacoes)
+        .set({ ultimoProgressoEm: new Date() })
+        .where(sql`${importacoes.id} = ${loteId}`),
+    )
   }
 
   /** Lê o CNPJ de cada linha pendente, e marca as sem CNPJ válido e as repetidas na planilha. */
@@ -201,6 +277,13 @@ export class ExecutorDaImportacao {
     loteId: string,
     colunaDoCnpj: string,
   ): Promise<void> {
+    // Depois da primeira vez toda linha pendente já tem CNPJ: os blocos seguintes pulam a leitura inteira
+    const [faltaLer] = await this.noTenant(tenantId, (tx) =>
+      tx.execute<{ n: number }>(sql`
+        SELECT count(*)::int AS n FROM importacao_linhas
+        WHERE importacao_id = ${loteId} AND resultado = 'pendente' AND documento IS NULL`),
+    )
+    if (!faltaLer?.n) return
     const linhas = await this.noTenant(tenantId, (tx) =>
       tx
         .select({
@@ -258,7 +341,9 @@ export class ExecutorDaImportacao {
                 ? { resultado: a.resultado, motivo: a.motivo ?? null, processadaEm: new Date() }
                 : {}),
             })
-            .where(sql`${importacaoLinhas.id} = ${a.id}`)
+            .where(
+              sql`${importacaoLinhas.id} = ${a.id} AND ${importacaoLinhas.resultado} = 'pendente'`,
+            )
         }
       })
     }
@@ -292,28 +377,44 @@ export class ExecutorDaImportacao {
     bloquearNaoAtiva: boolean
     campos: Record<string, string>
     importador: { id: string; papel: PapelMembro; usuarioId: string }
-  }): Promise<{ semReceita: boolean; interrompida?: boolean }> {
+    /** Quanto ainda cabe neste bloco */
+    restanteDoBlocoMs: () => number
+  }): Promise<{ semReceita: boolean; interrompida?: boolean; adiarMs?: number }> {
     const { tenantId, lote, linha } = p
     const documento = linha.documento as string
 
-    // Já está na carteira: pula, sem alterar a empresa
+    // Já está na carteira: pula, sem alterar a empresa. Se foi ESTE lote que a criou (a linha ficou
+    // pendente porque o resultado não chegou a gravar), a linha vale como criada, não como repetida.
     const existente = await this.noTenant(tenantId, async (tx) => {
-      const r = await tx.execute<{ id: string }>(
-        sql`SELECT id FROM empresas WHERE documento = ${documento} AND excluido_em IS NULL LIMIT 1`,
+      const r = await tx.execute<{ id: string; importacao_id: string | null }>(
+        sql`SELECT id, importacao_id FROM empresas WHERE documento = ${documento} AND excluido_em IS NULL LIMIT 1`,
       )
       return r[0]
     })
     if (existente) {
-      await this.gravar(tenantId, linha.id, {
-        resultado: 'pulada_duplicada',
-        motivo: 'CNPJ já está na carteira; a empresa não foi alterada.',
-        empresaId: existente.id,
-      })
+      await this.gravar(
+        tenantId,
+        linha.id,
+        existente.importacao_id === lote.id
+          ? { resultado: 'criada', empresaId: existente.id }
+          : {
+              resultado: 'pulada_duplicada',
+              motivo: 'CNPJ já está na carteira; a empresa não foi alterada.',
+              empresaId: existente.id,
+            },
+      )
       return { semReceita: false }
     }
 
     if (p.consultaAReceita) {
-      const c = await this.consultar(documento, lote.intervaloMs)
+      // Outro bloco ou worker consultou há pouco: espera o que falta do intervalo (fora do bloco, se não couber)
+      const espera = await this.esperaProgramada(tenantId, lote.id)
+      if (espera > 0) {
+        if (espera > p.restanteDoBlocoMs()) return { semReceita: false, adiarMs: espera }
+        await this.esperar(espera)
+        if (this.deps.deveParar?.()) return { semReceita: false, interrompida: true }
+      }
+      const c = await this.consultar(tenantId, lote.id, documento, lote.intervaloMs)
       if ('interrompida' in c) return { semReceita: false, interrompida: true }
       if ('resultado' in c) {
         await this.gravar(tenantId, linha.id, c.resultado)
@@ -346,6 +447,8 @@ export class ExecutorDaImportacao {
 
   /** Consulta a Receita com espera entre consultas de verdade e novas tentativas quando está fora do ar. */
   private async consultar(
+    tenantId: string,
+    loteId: string,
     documento: string,
     intervaloMs: number,
   ): Promise<
@@ -357,7 +460,7 @@ export class ExecutorDaImportacao {
       try {
         const consulta = await this.deps.receita.consultar(documento)
         // Só consulta de verdade (fora do cache) obriga a esperar antes da próxima
-        if (!consulta.doCache) await this.esperar(intervaloMs)
+        if (!consulta.doCache) await this.aguardar(tenantId, loteId, intervaloMs)
         return { consulta }
       } catch (erro) {
         if (!(erro instanceof ErroApi)) throw erro
@@ -384,10 +487,41 @@ export class ExecutorDaImportacao {
           { tentativa: tentativa + 1 },
           'Receita fora do ar na importação; nova tentativa',
         )
-        await this.esperar(espera)
+        await this.aguardar(tenantId, loteId, espera)
         if (this.deps.deveParar?.()) return { interrompida: true }
       }
     }
+  }
+
+  /** Último `proxima_consulta_em` que ESTE executor gravou (já esperado por ele; só o de outro conta). */
+  private minhaEspera = 0
+
+  /**
+   * Espera de propósito (intervalo entre consultas ou Receita fora do ar): grava até quando ANTES de
+   * dormir, para a varredura não tomar o lote por parado e para outro worker respeitar o intervalo.
+   */
+  private async aguardar(tenantId: string, loteId: string, ms: number): Promise<void> {
+    const ate = new Date(Date.now() + ms)
+    this.minhaEspera = ate.getTime()
+    await this.noTenant(tenantId, (tx) =>
+      tx
+        .update(importacoes)
+        .set({ proximaConsultaEm: ate })
+        .where(sql`${importacoes.id} = ${loteId}`),
+    )
+    await this.esperar(ms)
+  }
+
+  /** Quanto falta de uma espera programada por OUTRO executor (0 se nenhuma). */
+  private async esperaProgramada(tenantId: string, loteId: string): Promise<number> {
+    const [l] = await this.noTenant(tenantId, (tx) =>
+      tx
+        .select({ ate: importacoes.proximaConsultaEm })
+        .from(importacoes)
+        .where(sql`${importacoes.id} = ${loteId}`),
+    )
+    const ate = l?.ate?.getTime() ?? 0
+    return ate > Math.max(Date.now(), this.minhaEspera) ? ate - Date.now() : 0
   }
 
   private async cadastrar(
@@ -406,6 +540,9 @@ export class ExecutorDaImportacao {
 
     try {
       const resultado = await this.noTenant(tenantId, async (tx) => {
+        // A transação é curta (a Receita já foi consultada, fora dela): trava a linha e confere que
+        // ainda está pendente. Outro executor que a pegou antes deixa esta sem fazer nada.
+        if (!(await this.travarPendente(tx, linha.id))) return null
         const municipioDaPlanilha = await this.municipioDaPlanilha(tx, planilha)
         const montada = montarEmpresa({
           fonte: lote.fonteDados,
@@ -455,11 +592,32 @@ export class ExecutorDaImportacao {
         await this.gravarEm(tx, linha.id, r)
         return r
       })
-      if (resultado.resultado === 'erro') await this.gravar(tenantId, linha.id, resultado)
+      if (resultado?.resultado === 'erro') await this.gravar(tenantId, linha.id, resultado)
     } catch (erro) {
-      await this.gravar(tenantId, linha.id, this.resultadoDoErro(erro))
+      await this.gravar(tenantId, linha.id, await this.resultadoDoCadastro(erro, tenantId, p))
     }
     return { semReceita: false }
+  }
+
+  /**
+   * Erro ao cadastrar. Documento repetido que é de ESTE lote (empresa criada por um bloco que caiu
+   * antes de gravar o resultado) vale como `criada`; qualquer outro repetido, como `pulada_duplicada`.
+   */
+  private async resultadoDoCadastro(
+    erro: unknown,
+    tenantId: string,
+    p: { lote: Lote; linha: { documento: string | null } },
+  ): Promise<Resultado> {
+    if (erro instanceof ErroApi && erro.codigo === 'empresa_ja_cadastrada') {
+      const [propria] = await this.noTenant(tenantId, (tx) =>
+        tx.execute<{ id: string }>(sql`
+          SELECT id FROM empresas
+          WHERE documento = ${p.linha.documento} AND importacao_id = ${p.lote.id} AND excluido_em IS NULL
+          LIMIT 1`),
+      )
+      if (propria) return { resultado: 'criada', empresaId: propria.id }
+    }
+    return this.resultadoDoErro(erro)
   }
 
   private resultadoDoErro(erro: unknown): Resultado {
@@ -548,8 +706,24 @@ export class ExecutorDaImportacao {
     return (criada as { id: string }).id
   }
 
-  private gravar(tenantId: string, linhaId: string, r: Resultado) {
-    return this.noTenant(tenantId, (tx) => this.gravarEm(tx, linhaId, r))
+  /** Grava o resultado só se a linha ainda estiver pendente; `false` quando outro executor chegou antes. */
+  private gravar(tenantId: string, linhaId: string, r: Resultado): Promise<boolean> {
+    return this.noTenant(tenantId, async (tx) => {
+      if (!(await this.travarPendente(tx, linhaId))) return false
+      await this.gravarEm(tx, linhaId, r)
+      return true
+    })
+  }
+
+  /**
+   * Trava a linha para esta transação (`FOR UPDATE SKIP LOCKED`) e diz se ela ainda está pendente.
+   * Quem não consegue a trava, ou encontra a linha já resolvida, não grava nada.
+   */
+  private async travarPendente(tx: Transacao, linhaId: string): Promise<boolean> {
+    const r = await tx.execute<{ id: string }>(sql`
+      SELECT id FROM importacao_linhas WHERE id = ${linhaId} AND resultado = 'pendente'
+      FOR UPDATE SKIP LOCKED`)
+    return r.length > 0
   }
 
   private gravarEm(tx: Transacao, linhaId: string, r: Resultado) {
@@ -587,15 +761,17 @@ export class ExecutorDaImportacao {
   ): Promise<void> {
     const totais = await this.gravarTotais(tenantId, lote.id)
     await this.noTenant(tenantId, async (tx) => {
-      await tx
+      // Só quem encerra de fato avisa: dois executores chegando ao fim juntos não duplicam nada
+      const mudou = await tx
         .update(importacoes)
         .set({
           situacao,
           concluidoEm: new Date(),
           totais: motivo ? { ...totais, motivo } : totais,
         })
-        .where(sql`${importacoes.id} = ${lote.id}`)
-      if (lote.criadoPor) {
+        .where(sql`${importacoes.id} = ${lote.id} AND ${importacoes.situacao} = 'em_andamento'`)
+        .returning({ id: importacoes.id })
+      if (mudou.length > 0 && lote.criadoPor) {
         const criadas = (totais['criada'] ?? 0) + (totais['criada_fora_do_perfil'] ?? 0)
         await tx.execute(sql`
           INSERT INTO notificacoes (id, tenant_id, membro_id, tipo, titulo, mensagem, link)
