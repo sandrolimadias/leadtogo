@@ -85,6 +85,7 @@ export class ListaDeAtividadesService {
     return [
       c.empresaId ? eq(atividades.empresaId, c.empresaId) : undefined,
       c.contatoId ? eq(atividades.contatoId, c.contatoId) : undefined,
+      c.oportunidadeId ? eq(atividades.oportunidadeId, c.oportunidadeId) : undefined,
       c.tipoAtividadeId ? eq(atividades.tipoAtividadeId, c.tipoAtividadeId) : undefined,
       c.responsavelId ? eq(atividades.responsavelId, c.responsavelId) : undefined,
       c.minhas === 'true' ? eq(atividades.responsavelId, membroId) : undefined,

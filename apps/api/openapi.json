@@ -150,6 +150,15 @@
             }
           },
           {
+            "name": "oportunidadeId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "tipoAtividadeId",
             "required": false,
             "in": "query",
@@ -2821,6 +2830,791 @@
         },
         "summary": "Aplicar uma tag a várias empresas",
         "tags": ["Carteira: empresas"]
+      }
+    },
+    "/v1/carteira/oportunidades": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Lista simples de qualquer status, com filtros (status, funil, fase, empresa, responsável, busca por título ou empresa), ordenação, paginação e as somas do que o filtro pegou. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados.",
+        "operationId": "OportunidadesController_listar",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["ativo", "conquistado", "perdido", "cancelado", "suspenso"]
+            }
+          },
+          {
+            "name": "funilId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "faseId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "empresaId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "responsavelId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "ordem",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "criada",
+              "type": "string",
+              "enum": ["criada", "titulo", "total", "previsao"]
+            }
+          },
+          {
+            "name": "sentido",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeOportunidades"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lista de oportunidades",
+        "tags": ["Carteira: oportunidades"]
+      },
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Sem funil, vale o funil padrão; sem fase, a primeira fase ativa dele; sem responsável, o vendedor da empresa (o vendedor só atribui a si). Sem `probabilidade`, vale a da fase; uma probabilidade diferente da fase fica marcada como editada à mão. Com valor mensal e sem `meses`, valem 12. O contato precisa ser da empresa (400 `contato_invalido`). A data prevista é opcional. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados. Registra na auditoria e no histórico da oportunidade.",
+        "operationId": "OportunidadesController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarOportunidadeEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Oportunidade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar oportunidade",
+        "tags": ["Carteira: oportunidades"]
+      }
+    },
+    "/v1/carteira/oportunidades/{id}": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Traz os dados, o alerta de parada (`diasParada`, `parada`), a próxima atividade e o histórico de fases e de status.",
+        "operationId": "OportunidadesController_detalhar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OportunidadeDetalhada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ficha da oportunidade",
+        "tags": ["Carteira: oportunidades"]
+      },
+      "patch": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Só o que vier muda. Fase e status mudam por `mover` e `fechar`. Informar a `probabilidade` igual à da fase volta a acompanhar a fase; diferente, marca como editada à mão. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados. Registra na auditoria o antes e o depois.",
+        "operationId": "OportunidadesController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarOportunidadeEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Oportunidade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar oportunidade",
+        "tags": ["Carteira: oportunidades"]
+      },
+      "delete": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Exclusão lógica (sem lixeira no MVP), só de gestor e administrador. Registra na auditoria.",
+        "operationId": "OportunidadesController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir oportunidade",
+        "tags": ["Carteira: oportunidades"]
+      }
+    },
+    "/v1/carteira/oportunidades/{id}/fechar": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Conquistado, Perdido, Cancelado ou Suspenso (só de uma Ativa; 409 `oportunidade_nao_ativa`). Perdido, Cancelado e Suspenso exigem o `motivoId` (da lista do status; 400 `motivo_invalido`); Suspenso exige `retomarEm` e cria a atividade de retomada (Tarefa de dia inteiro nessa data, com a mesma empresa e o mesmo responsável). Guarda a fase em que parou e a data de fechamento. Conquistado muda a empresa para Cliente (a tag `chave_sistema = cliente`, seja qual for o nome dela) se `empresaViraCliente` for verdadeiro (sem o campo, vale a configuração da empresa).",
+        "operationId": "OportunidadesController_fechar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FecharOportunidadeEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Oportunidade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Fechar oportunidade",
+        "tags": ["Carteira: oportunidades"]
+      }
+    },
+    "/v1/carteira/oportunidades/{id}/mover": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Só oportunidade Ativa, para uma fase ativa do mesmo funil (409 `oportunidade_nao_ativa`; 400 `fase_invalida`). A probabilidade assume a da nova fase, a menos que tenha sido editada à mão: então fica a dela e `avisoDeProbabilidade` traz a sugestão da nova fase. Registra no histórico de fases.",
+        "operationId": "OportunidadesController_mover",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoverOportunidadeEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDoMovimento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Mover de fase",
+        "tags": ["Carteira: oportunidades"]
+      }
+    },
+    "/v1/carteira/oportunidades/{id}/reabrir": {
+      "post": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Volta a Ativa (409 `oportunidade_ja_ativa`), na mesma fase (ou na primeira ativa do funil, se a fase foi inativada). Não desfaz o \"empresa vira Cliente\": fica só o registro no histórico. Cancela a atividade de retomada que ainda esteja aberta.",
+        "operationId": "OportunidadesController_reabrir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Oportunidade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reabrir oportunidade",
+        "tags": ["Carteira: oportunidades"]
+      }
+    },
+    "/v1/carteira/oportunidades/kanban": {
+      "get": {
+        "description": "Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Só as oportunidades Ativas, nas colunas das fases ativas do funil (sem `funilId`, o funil padrão), com a contagem e a soma de cada coluna, o resumo (ativas, total, mensal, ponderado) e quantas Suspensas o funil tem. Cada coluna traz até 100 oportunidades; `semMostrar` diz quantas ficaram de fora. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados.",
+        "operationId": "OportunidadesController_kanban",
+        "parameters": [
+          {
+            "name": "funilId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "responsavelId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KanbanDeOportunidades"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Kanban de um funil",
+        "tags": ["Carteira: oportunidades"]
       }
     },
     "/v1/configuracoes/carteira": {
@@ -9412,6 +10206,11 @@
             "type": "string",
             "format": "uuid"
           },
+          "oportunidadeId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
           "responsavelId": {
             "type": "string",
             "format": "uuid"
@@ -9628,6 +10427,9 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 3650
+          },
+          "ativo": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -9708,6 +10510,66 @@
           },
           "ativo": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlterarOportunidadeEntrada": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "contatoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "solucaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "origemId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "valorUnico": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "valorMensal": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "meses": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600
+          },
+          "probabilidade": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "dataPrevistaFechamento": {
+            "nullable": true,
+            "type": "string",
+            "format": "date"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
           }
         },
         "additionalProperties": false
@@ -10107,6 +10969,21 @@
             "required": ["id", "nome"],
             "additionalProperties": false
           },
+          "oportunidade": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
           "responsavel": {
             "type": "object",
             "properties": {
@@ -10173,6 +11050,7 @@
           "titulo",
           "empresa",
           "contato",
+          "oportunidade",
           "responsavel",
           "dataInicio",
           "dataFim",
@@ -10914,6 +11792,11 @@
             "type": "string",
             "format": "uuid"
           },
+          "oportunidadeId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
           "responsavelId": {
             "type": "string",
             "format": "uuid"
@@ -11227,6 +12110,81 @@
           }
         },
         "required": ["nome", "aplicaA"],
+        "additionalProperties": false
+      },
+      "CriarOportunidadeEntrada": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "empresaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contatoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "solucaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "origemId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "funilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "faseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "valorUnico": {
+            "default": 0,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "valorMensal": {
+            "default": 0,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "meses": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600
+          },
+          "probabilidade": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "dataPrevistaFechamento": {
+            "nullable": true,
+            "type": "string",
+            "format": "date"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "required": ["titulo", "empresaId"],
         "additionalProperties": false
       },
       "CriarOrigemEntrada": {
@@ -12279,6 +13237,46 @@
         "required": ["id", "em", "por", "automatica", "titulo", "mudancas"],
         "additionalProperties": false
       },
+      "EntradaDoHistoricoDaOportunidade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "em": {
+            "type": "string"
+          },
+          "por": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "acao": {
+            "type": "string",
+            "enum": ["criada", "fase", "status", "reaberta"]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "detalhe": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["id", "em", "por", "acao", "titulo", "detalhe"],
+        "additionalProperties": false
+      },
       "Erro": {
         "type": "object",
         "properties": {
@@ -12318,6 +13316,35 @@
           }
         },
         "required": ["statusCode", "erro", "mensagem"],
+        "additionalProperties": false
+      },
+      "FecharOportunidadeEntrada": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["conquistado", "perdido", "cancelado", "suspenso"]
+          },
+          "motivoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "detalhe": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 2000
+          },
+          "retomarEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date"
+          },
+          "empresaViraCliente": {
+            "type": "boolean"
+          }
+        },
+        "required": ["status"],
         "additionalProperties": false
       },
       "Funil": {
@@ -12379,6 +13406,9 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "ativo": {
+            "type": "boolean"
+          },
           "ordem": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -12392,6 +13422,7 @@
           "cor",
           "probabilidadePadrao",
           "diasAlertaParada",
+          "ativo",
           "ordem"
         ],
         "additionalProperties": false
@@ -12645,6 +13676,113 @@
           "situacaoNaoVerificada",
           "editavel"
         ],
+        "additionalProperties": false
+      },
+      "KanbanDeOportunidades": {
+        "type": "object",
+        "properties": {
+          "funil": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "fases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "cor": {
+                  "$ref": "#/components/schemas/CorDeTag"
+                },
+                "probabilidadePadrao": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "diasAlertaParada": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "quantidade": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "total": {
+                  "type": "number"
+                },
+                "itens": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Oportunidade"
+                  }
+                },
+                "semMostrar": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "nome",
+                "cor",
+                "probabilidadePadrao",
+                "diasAlertaParada",
+                "quantidade",
+                "total",
+                "itens",
+                "semMostrar"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "resumo": {
+            "type": "object",
+            "properties": {
+              "ativas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "total": {
+                "type": "number"
+              },
+              "mensal": {
+                "type": "number"
+              },
+              "ponderado": {
+                "type": "number"
+              }
+            },
+            "required": ["ativas", "total", "mensal", "ponderado"],
+            "additionalProperties": false
+          },
+          "suspensas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["funil", "fases", "resumo", "suspensas"],
         "additionalProperties": false
       },
       "LinhasDaImportacao": {
@@ -12943,6 +14081,50 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina"],
+        "additionalProperties": false
+      },
+      "ListaDeOportunidades": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Oportunidade"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "somas": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "number"
+              },
+              "mensal": {
+                "type": "number"
+              },
+              "ponderado": {
+                "type": "number"
+              }
+            },
+            "required": ["total", "mensal", "ponderado"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina", "somas"],
         "additionalProperties": false
       },
       "LoteDeImportacao": {
@@ -13250,6 +14432,17 @@
         "required": ["id", "nome", "aplicaA", "ativo", "ordem"],
         "additionalProperties": false
       },
+      "MoverOportunidadeEntrada": {
+        "type": "object",
+        "properties": {
+          "faseId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["faseId"],
+        "additionalProperties": false
+      },
       "NovaOrdemEntrada": {
         "type": "object",
         "properties": {
@@ -13340,6 +14533,581 @@
           }
         },
         "required": ["loginGoogle"],
+        "additionalProperties": false
+      },
+      "Oportunidade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "empresa": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "contato": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "solucao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "origem": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "funil": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "fase": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "cor": {
+                "$ref": "#/components/schemas/CorDeTag"
+              }
+            },
+            "required": ["id", "nome", "cor"],
+            "additionalProperties": false
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ativo", "conquistado", "perdido", "cancelado", "suspenso"]
+          },
+          "faseParouEm": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "cor": {
+                "$ref": "#/components/schemas/CorDeTag"
+              }
+            },
+            "required": ["id", "nome", "cor"],
+            "additionalProperties": false
+          },
+          "motivo": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "motivoDetalhe": {
+            "nullable": true,
+            "type": "string"
+          },
+          "suspensaAte": {
+            "nullable": true,
+            "type": "string"
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "valorUnico": {
+            "type": "number"
+          },
+          "valorMensal": {
+            "type": "number"
+          },
+          "meses": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "valorTotal": {
+            "type": "number"
+          },
+          "valorPonderado": {
+            "type": "number"
+          },
+          "probabilidade": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "probabilidadeManual": {
+            "type": "boolean"
+          },
+          "dataPrevistaFechamento": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dataFechamento": {
+            "nullable": true,
+            "type": "string"
+          },
+          "faseDesde": {
+            "type": "string"
+          },
+          "diasParada": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "parada": {
+            "type": "boolean"
+          },
+          "ultimaAtividadeEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "proximaAtividade": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "titulo": {
+                "type": "string"
+              },
+              "em": {
+                "type": "string"
+              },
+              "diaInteiro": {
+                "type": "boolean"
+              },
+              "tipoIcone": {
+                "type": "string"
+              },
+              "tipoCor": {
+                "$ref": "#/components/schemas/CorDeTag"
+              }
+            },
+            "required": ["id", "titulo", "em", "diaInteiro", "tipoIcone", "tipoCor"],
+            "additionalProperties": false
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadaEm": {
+            "type": "string"
+          },
+          "editavel": {
+            "type": "boolean"
+          },
+          "excluivel": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "empresa",
+          "contato",
+          "solucao",
+          "origem",
+          "funil",
+          "fase",
+          "status",
+          "faseParouEm",
+          "motivo",
+          "motivoDetalhe",
+          "suspensaAte",
+          "responsavel",
+          "valorUnico",
+          "valorMensal",
+          "meses",
+          "valorTotal",
+          "valorPonderado",
+          "probabilidade",
+          "probabilidadeManual",
+          "dataPrevistaFechamento",
+          "dataFechamento",
+          "faseDesde",
+          "diasParada",
+          "parada",
+          "ultimaAtividadeEm",
+          "proximaAtividade",
+          "observacoes",
+          "criadaEm",
+          "editavel",
+          "excluivel"
+        ],
+        "additionalProperties": false
+      },
+      "OportunidadeDetalhada": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "empresa": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "contato": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "solucao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "origem": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "funil": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "fase": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "cor": {
+                "$ref": "#/components/schemas/CorDeTag"
+              }
+            },
+            "required": ["id", "nome", "cor"],
+            "additionalProperties": false
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ativo", "conquistado", "perdido", "cancelado", "suspenso"]
+          },
+          "faseParouEm": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "cor": {
+                "$ref": "#/components/schemas/CorDeTag"
+              }
+            },
+            "required": ["id", "nome", "cor"],
+            "additionalProperties": false
+          },
+          "motivo": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "motivoDetalhe": {
+            "nullable": true,
+            "type": "string"
+          },
+          "suspensaAte": {
+            "nullable": true,
+            "type": "string"
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "valorUnico": {
+            "type": "number"
+          },
+          "valorMensal": {
+            "type": "number"
+          },
+          "meses": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "valorTotal": {
+            "type": "number"
+          },
+          "valorPonderado": {
+            "type": "number"
+          },
+          "probabilidade": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "probabilidadeManual": {
+            "type": "boolean"
+          },
+          "dataPrevistaFechamento": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dataFechamento": {
+            "nullable": true,
+            "type": "string"
+          },
+          "faseDesde": {
+            "type": "string"
+          },
+          "diasParada": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "parada": {
+            "type": "boolean"
+          },
+          "ultimaAtividadeEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "proximaAtividade": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "titulo": {
+                "type": "string"
+              },
+              "em": {
+                "type": "string"
+              },
+              "diaInteiro": {
+                "type": "boolean"
+              },
+              "tipoIcone": {
+                "type": "string"
+              },
+              "tipoCor": {
+                "$ref": "#/components/schemas/CorDeTag"
+              }
+            },
+            "required": ["id", "titulo", "em", "diaInteiro", "tipoIcone", "tipoCor"],
+            "additionalProperties": false
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadaEm": {
+            "type": "string"
+          },
+          "editavel": {
+            "type": "boolean"
+          },
+          "excluivel": {
+            "type": "boolean"
+          },
+          "historico": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntradaDoHistoricoDaOportunidade"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "empresa",
+          "contato",
+          "solucao",
+          "origem",
+          "funil",
+          "fase",
+          "status",
+          "faseParouEm",
+          "motivo",
+          "motivoDetalhe",
+          "suspensaAte",
+          "responsavel",
+          "valorUnico",
+          "valorMensal",
+          "meses",
+          "valorTotal",
+          "valorPonderado",
+          "probabilidade",
+          "probabilidadeManual",
+          "dataPrevistaFechamento",
+          "dataFechamento",
+          "faseDesde",
+          "diasParada",
+          "parada",
+          "ultimaAtividadeEm",
+          "proximaAtividade",
+          "observacoes",
+          "criadaEm",
+          "editavel",
+          "excluivel",
+          "historico"
+        ],
         "additionalProperties": false
       },
       "Origem": {
@@ -13710,6 +15478,34 @@
           }
         },
         "required": ["aplicadas", "semMudanca", "ignoradas"],
+        "additionalProperties": false
+      },
+      "ResultadoDoMovimento": {
+        "type": "object",
+        "properties": {
+          "oportunidade": {
+            "$ref": "#/components/schemas/Oportunidade"
+          },
+          "avisoDeProbabilidade": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "atual": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "sugerida": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["atual", "sugerida"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["oportunidade", "avisoDeProbabilidade"],
         "additionalProperties": false
       },
       "Saude": {

@@ -324,7 +324,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 - Ao mudar para **Perdido, Cancelado ou Suspenso**: exige o **Motivo** (lista cadastrável por status) e guarda a **fase em que parou** (análise de onde se perde).
 - **Suspenso** tem o campo "**Retomar em**", que cria uma atividade de retomada.
 - Reabrir (voltar para Ativo) é permitido, com registro no histórico.
-- **Funil padrão (v1.6):** há **sempre exatamente um**. Tornar outro funil o padrão troca o anterior; o padrão não pode ser inativado nem excluído. Um funil nasce com ao menos uma etapa e a **última etapa** de um funil não pode ser excluída. A etapa tem nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (vazio = sem alerta); etapas são só excluídas, não inativadas.
+- **Funil padrão (v1.6):** há **sempre exatamente um**. Tornar outro funil o padrão troca o anterior; o padrão não pode ser inativado nem excluído. Um funil nasce com ao menos uma etapa e a **última etapa** de um funil não pode ser excluída. A etapa tem nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (vazio = sem alerta); a etapa **nunca usada** se exclui; a que **já teve oportunidade** (mesmo só fechada) **só se inativa** (Módulo 6): etapa inativa sai do Kanban e das escolhas, e o funil precisa de ao menos uma etapa ativa.
 - **Excluir etapa (v1.6):** com oportunidades **ativas** na etapa, é preciso **movê-las antes**. Uma etapa que **já teve** oportunidades (mesmo só fechadas) **só se inativa**; só a que **nunca foi usada** pode ser excluída (regra geral da seção 11). O histórico de fases e a **"fase em que parou"** continuam mostrando o nome dela.
 - **Histórico de etapas:** cada mudança de etapa é registrada (data, usuário, de → para). Isso permite calcular tempo médio por etapa e conversão.
 
@@ -341,9 +341,9 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 | **Solução** | Linha de solução cadastrável |
 | Funil / Fase | Obrigatório |
 | **Status** | Ativo · Conquistado · Perdido · Cancelado · Suspenso |
-| **Valores** | **Valor único**, **Valor mensal (MRR)** e **Valor total do contrato**, calculados pelos itens ou digitados |
-| **Data prevista de fechamento** | Para a previsão de vendas |
-| **Probabilidade (%)** | Sugerida pela etapa e editável |
+| **Valores (Módulo 6)** | A pessoa digita o **valor único**, o **valor mensal** e a **duração em meses** (inteiro ≥ 0; **12** quando há valor mensal e nada foi dito). O **total é calculado** (`único + mensal × meses`) e **nunca digitado**; o **ponderado** é `total × probabilidade`. As duas contas ficam no banco (colunas geradas), num lugar só. *(Itens e catálogo de produtos: depois do MVP.)* |
+| **Data prevista de fechamento** | **Opcional.** Sem data, a oportunidade é "sem previsão" e fica fora da previsão do mês (Módulo 7) |
+| **Probabilidade (%)** | Começa com a da fase e é editável. **Ao mover de fase assume a da nova fase, a menos que a pessoa a tenha editado à mão** (o sistema guarda essa marca): aí fica a dela e aparece um aviso com a sugestão da nova fase. Editar para o mesmo valor da fase volta a acompanhar a fase |
 | Valor ponderado | Valor × probabilidade (calculado) |
 | **Origem** | Lista cadastrável (Indicação, Site, Prospecção ativa, Evento…) |
 | Responsável | Usuário (por padrão, o responsável da empresa) |

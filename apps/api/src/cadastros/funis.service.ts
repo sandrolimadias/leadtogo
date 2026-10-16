@@ -26,6 +26,7 @@ const paraFase = (f: LinhaFase): FunilFase => ({
   cor: f.cor,
   probabilidadePadrao: f.probabilidadePadrao,
   diasAlertaParada: f.diasAlertaParada,
+  ativo: f.ativo,
   ordem: f.ordem,
 })
 const paraFunil = (f: LinhaFunil, fases: LinhaFase[]): Funil => ({
@@ -140,6 +141,16 @@ export class FunisService {
     if (dados.padrao && !atual.ativo && dados.ativo !== true) {
       throw new ErroApi('funil_inativo', 'Reative o funil antes de torná-lo o padrão.', 409)
     }
+    if (dados.ativo === false && atual.ativo) {
+      const ativas = await this.oportunidadesDoFunil(id, true)
+      if (ativas > 0) {
+        throw new ErroApi(
+          'funil_com_oportunidades_ativas',
+          `O funil tem ${ativas} ${ativas === 1 ? 'oportunidade ativa' : 'oportunidades ativas'}: mova-${ativas === 1 ? 'a' : 'as'} para outro funil ou feche-${ativas === 1 ? 'a' : 'as'} antes de inativar.`,
+          409,
+        )
+      }
+    }
     const mudancas = diferencas(atual, { nome: dados.nome, ativo: dados.ativo })
     if (dados.padrao && !atual.padrao) mudancas['padrao'] = { de: false, para: true }
     if (Object.keys(mudancas).length === 0) return this.completo(atual)
@@ -185,7 +196,14 @@ export class FunisService {
         409,
       )
     }
-    // Módulo 6: funil com oportunidades ativas só se exclui depois de movê-las (só fechadas, pode); a conferência entra aqui
+    // Regra de 13/10/2026: o que já foi usado só se inativa (o histórico guarda o nome do funil)
+    if ((await this.oportunidadesDoFunil(id, false)) > 0) {
+      throw new ErroApi(
+        'funil_ja_usado',
+        'O funil já teve oportunidades: ele só pode ser inativado (o histórico guarda o nome dele).',
+        409,
+      )
+    }
     const agora = new Date()
     await db
       .update(funilFases)
@@ -258,6 +276,13 @@ export class FunisService {
     const funil = await this.funil(fase.funilId)
     const mudancas = diferencas(fase, dados)
     if (Object.keys(mudancas).length === 0) return this.completo(funil)
+    if (dados.ativo === false && fase.ativo) {
+      await this.exigirFaseLivre(fase, 'inativar')
+      const outras = (await this.fasesDe(funil.id)).filter((f) => f.ativo && f.id !== fase.id)
+      if (outras.length === 0) {
+        throw new ErroApi('ultima_fase', 'O funil precisa ter ao menos uma fase ativa.', 409)
+      }
+    }
     await this.gravando(() =>
       this.ctx
         .db()
@@ -269,6 +294,7 @@ export class FunisService {
             probabilidadePadrao: dados.probabilidadePadrao,
           }),
           ...(dados.diasAlertaParada !== undefined && { diasAlertaParada: dados.diasAlertaParada }),
+          ...(dados.ativo !== undefined && { ativo: dados.ativo }),
           atualizadoPor: this.ctx.membro.id,
         })
         .where(eq(funilFases.id, faseId)),
@@ -290,7 +316,18 @@ export class FunisService {
     if ((await this.fasesDe(funil.id)).length <= 1) {
       throw new ErroApi('ultima_fase', 'O funil precisa ter ao menos uma fase.', 409)
     }
-    // Módulo 6: fase com oportunidades ativas só se exclui depois de movê-las; com só fechadas, pode (mantém o histórico e a "fase em que parou"). A conferência entra aqui
+    await this.exigirFaseLivre(fase, 'excluir')
+    // Regra de 13/10/2026: fase que já teve oportunidade (mesmo só fechada) só se inativa
+    if ((await this.oportunidadesDaFase(fase.id, false)) > 0) {
+      throw new ErroApi(
+        'fase_ja_usada',
+        `A fase "${fase.nome}" já teve oportunidades: ela só pode ser inativada (o histórico e a "fase em que parou" guardam o nome dela).`,
+        409,
+      )
+    }
+    if (fase.ativo && (await this.fasesDe(funil.id)).filter((f) => f.ativo).length <= 1) {
+      throw new ErroApi('ultima_fase', 'O funil precisa ter ao menos uma fase ativa.', 409)
+    }
     await this.ctx
       .db()
       .update(funilFases)
@@ -344,6 +381,42 @@ export class FunisService {
       .where(and(eq(funilFases.id, id), isNull(funilFases.excluidoEm)))
     if (!f) throw new ErroApi('fase_nao_encontrada', 'Fase não encontrada.', 404)
     return f
+  }
+
+  /** Fase com oportunidades ativas só sai de uso depois de movê-las. */
+  private async exigirFaseLivre(fase: LinhaFase, verbo: 'inativar' | 'excluir'): Promise<void> {
+    const ativas = await this.oportunidadesDaFase(fase.id, true)
+    if (ativas > 0) {
+      throw new ErroApi(
+        'fase_com_oportunidades_ativas',
+        `A fase "${fase.nome}" tem ${ativas} ${ativas === 1 ? 'oportunidade ativa' : 'oportunidades ativas'}: mova-${ativas === 1 ? 'a' : 'as'} para outra fase antes de ${verbo}.`,
+        409,
+      )
+    }
+  }
+
+  /** Quantas oportunidades a fase tem (só as ativas, ou todas que já passaram por ela, inclusive as fechadas). */
+  private async oportunidadesDaFase(faseId: string, soAtivas: boolean): Promise<number> {
+    const r = (await this.ctx.db().execute(
+      soAtivas
+        ? sql`SELECT count(*)::int AS n FROM oportunidades WHERE fase_id = ${faseId} AND status = 'ativo' AND excluido_em IS NULL`
+        : sql`SELECT count(*)::int AS n FROM oportunidades o
+              WHERE o.fase_id = ${faseId} OR o.fase_parou_em_id = ${faseId}
+                 OR EXISTS (SELECT 1 FROM oportunidade_historico h
+                            WHERE h.oportunidade_id = o.id AND (h.fase_de_id = ${faseId} OR h.fase_para_id = ${faseId}))`,
+    )) as unknown as { n: number }[]
+    return r[0]?.n ?? 0
+  }
+
+  private async oportunidadesDoFunil(funilId: string, soAtivas: boolean): Promise<number> {
+    const r = (await this.ctx
+      .db()
+      .execute(
+        soAtivas
+          ? sql`SELECT count(*)::int AS n FROM oportunidades WHERE funil_id = ${funilId} AND status = 'ativo' AND excluido_em IS NULL`
+          : sql`SELECT count(*)::int AS n FROM oportunidades WHERE funil_id = ${funilId}`,
+      )) as unknown as { n: number }[]
+    return r[0]?.n ?? 0
   }
 
   private fasesDe(funilId: string): Promise<LinhaFase[]> {

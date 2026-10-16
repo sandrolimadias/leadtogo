@@ -16,6 +16,7 @@ import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
 import { recalcularCarteira } from './atividades-efeitos.js'
+import { recalcularOportunidade } from './oportunidades-efeitos.js'
 import {
   condicaoDeEdicaoDaAtividade,
   condicaoDeVisibilidadeDaAtividade,
@@ -29,7 +30,8 @@ import {
   podeVer,
 } from './regras-de-carteira.js'
 
-const { atividades, empresaContatos, contatos, empresas, membros, tiposAtividade } = schema
+const { atividades, empresaContatos, contatos, empresas, membros, oportunidades, tiposAtividade } =
+  schema
 
 const naoEncontrada = () =>
   new ErroApi('atividade_nao_encontrada', 'Atividade não encontrada.', 404)
@@ -85,6 +87,9 @@ export class AtividadesService {
     if (empresaId !== null) await this.exigirEmpresaEditavel(db, escopo, empresaId)
     const contatoId = dados.contatoId ?? null
     if (contatoId !== null) await this.exigirContatoDaEmpresa(db, contatoId, empresaId)
+    const oportunidadeId = dados.oportunidadeId ?? null
+    if (oportunidadeId !== null)
+      await this.exigirOportunidadeDaEmpresa(db, oportunidadeId, empresaId)
     const responsavelId = dados.responsavelId ?? escopo.membroId
     await this.exigirResponsavel(db, escopo, responsavelId)
 
@@ -105,6 +110,7 @@ export class AtividadesService {
         titulo: dados.titulo,
         empresaId,
         contatoId,
+        oportunidadeId,
         responsavelId,
         dataInicio: inicio,
         dataFim: fim,
@@ -123,6 +129,7 @@ export class AtividadesService {
     if (!criada) throw new Error('INSERT de atividade sem retorno')
 
     if (empresaId !== null) await recalcularCarteira(db, tenantId, empresaId, escopo.membroId)
+    if (oportunidadeId !== null) await recalcularOportunidade(db, tenantId, oportunidadeId)
     await this.auditoria.registrar({
       entidade: 'atividade',
       entidadeId: criada.id,
@@ -171,6 +178,16 @@ export class AtividadesService {
     if (contatoId !== null && (contatoId !== atual.contatoId || empresaId !== atual.empresaId)) {
       await this.exigirContatoDaEmpresa(db, contatoId, empresaId)
     }
+    // a oportunidade é da empresa: trocar de empresa sem dizer a oportunidade a tira
+    let oportunidadeId =
+      dados.oportunidadeId !== undefined ? dados.oportunidadeId : atual.oportunidadeId
+    if (empresaId !== atual.empresaId && dados.oportunidadeId === undefined) oportunidadeId = null
+    if (
+      oportunidadeId !== null &&
+      (oportunidadeId !== atual.oportunidadeId || empresaId !== atual.empresaId)
+    ) {
+      await this.exigirOportunidadeDaEmpresa(db, oportunidadeId, empresaId)
+    }
     const responsavelId = dados.responsavelId ?? atual.responsavelId
     if (responsavelId !== atual.responsavelId) {
       await this.exigirResponsavel(db, escopo, responsavelId)
@@ -196,6 +213,7 @@ export class AtividadesService {
       titulo: dados.titulo,
       empresaId,
       contatoId,
+      oportunidadeId,
       responsavelId,
       dataInicio: mudouData ? inicio : undefined,
       dataFim: dados.dataFim !== undefined || mudouData ? fim : undefined,
@@ -226,6 +244,7 @@ export class AtividadesService {
         tipoAtividadeId: tipo.id,
         empresaId,
         contatoId,
+        oportunidadeId,
         responsavelId,
         ...(novo.dataInicio !== undefined && { dataInicio: novo.dataInicio }),
         ...(novo.dataFim !== undefined && { dataFim: novo.dataFim }),
@@ -241,6 +260,7 @@ export class AtividadesService {
       .where(eq(atividades.id, id))
 
     await this.recalcular(db, tenantId, escopo.membroId, atual.empresaId, empresaId)
+    await this.recalcularOportunidades(db, tenantId, atual.oportunidadeId, oportunidadeId)
     await this.auditoria.registrar({
       entidade: 'atividade',
       entidadeId: id,
@@ -272,6 +292,7 @@ export class AtividadesService {
       })
       .where(eq(atividades.id, id))
     if (atual.empresaId) await recalcularCarteira(db, tenantId, atual.empresaId, escopo.membroId)
+    await this.recalcularOportunidades(db, tenantId, atual.oportunidadeId, null)
     await this.auditoria.registrar({
       entidade: 'atividade',
       entidadeId: id,
@@ -296,6 +317,7 @@ export class AtividadesService {
     if (atual.empresaId) {
       await recalcularCarteira(db, this.ctx.tenantId, atual.empresaId, escopo.membroId)
     }
+    await this.recalcularOportunidades(db, this.ctx.tenantId, atual.oportunidadeId, null)
     await this.auditoria.registrar({
       entidade: 'atividade',
       entidadeId: id,
@@ -317,6 +339,7 @@ export class AtividadesService {
     if (atual.empresaId) {
       await recalcularCarteira(db, this.ctx.tenantId, atual.empresaId, escopo.membroId)
     }
+    await this.recalcularOportunidades(db, this.ctx.tenantId, atual.oportunidadeId, null)
     await this.auditoria.registrar({
       entidade: 'atividade',
       entidadeId: id,
@@ -396,6 +419,49 @@ export class AtividadesService {
     if (!v) {
       throw invalido('contatoId', 'contato_invalido', 'O contato não é desta empresa.')
     }
+  }
+
+  /** A oportunidade existe, não foi excluída e é da empresa da atividade (a atividade tem empresa). */
+  private async exigirOportunidadeDaEmpresa(
+    db: Transacao,
+    oportunidadeId: string,
+    empresaId: string | null,
+  ) {
+    if (empresaId === null) {
+      throw invalido(
+        'oportunidadeId',
+        'oportunidade_sem_empresa',
+        'Escolha a empresa antes da oportunidade.',
+      )
+    }
+    const [o] = await db
+      .select({ id: oportunidades.id })
+      .from(oportunidades)
+      .where(
+        and(
+          eq(oportunidades.id, oportunidadeId),
+          eq(oportunidades.empresaId, empresaId),
+          isNull(oportunidades.excluidoEm),
+        ),
+      )
+    if (!o) {
+      throw invalido(
+        'oportunidadeId',
+        'oportunidade_invalida',
+        'A oportunidade não é desta empresa.',
+      )
+    }
+  }
+
+  /** Recalcula a oportunidade antiga e a nova (se a atividade trocou de oportunidade). */
+  private async recalcularOportunidades(
+    db: Transacao,
+    tenantId: string,
+    antiga: string | null,
+    nova: string | null,
+  ) {
+    const ids = new Set([antiga, nova].filter((x): x is string => x !== null))
+    for (const id of ids) await recalcularOportunidade(db, tenantId, id)
   }
 
   /** O responsável é um membro ativo; o vendedor só atribui a si mesmo. */

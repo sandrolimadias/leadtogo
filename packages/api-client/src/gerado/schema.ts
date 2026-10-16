@@ -520,6 +520,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/carteira/oportunidades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista de oportunidades
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Lista simples de qualquer status, com filtros (status, funil, fase, empresa, responsável, busca por título ou empresa), ordenação, paginação e as somas do que o filtro pegou. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados.
+         */
+        get: operations["OportunidadesController_listar"];
+        put?: never;
+        /**
+         * Cadastrar oportunidade
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Sem funil, vale o funil padrão; sem fase, a primeira fase ativa dele; sem responsável, o vendedor da empresa (o vendedor só atribui a si). Sem `probabilidade`, vale a da fase; uma probabilidade diferente da fase fica marcada como editada à mão. Com valor mensal e sem `meses`, valem 12. O contato precisa ser da empresa (400 `contato_invalido`). A data prevista é opcional. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados. Registra na auditoria e no histórico da oportunidade.
+         */
+        post: operations["OportunidadesController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/oportunidades/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ficha da oportunidade
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Traz os dados, o alerta de parada (`diasParada`, `parada`), a próxima atividade e o histórico de fases e de status.
+         */
+        get: operations["OportunidadesController_detalhar"];
+        put?: never;
+        post?: never;
+        /**
+         * Excluir oportunidade
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Exclusão lógica (sem lixeira no MVP), só de gestor e administrador. Registra na auditoria.
+         */
+        delete: operations["OportunidadesController_excluir"];
+        options?: never;
+        head?: never;
+        /**
+         * Editar oportunidade
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Só o que vier muda. Fase e status mudam por `mover` e `fechar`. Informar a `probabilidade` igual à da fase volta a acompanhar a fase; diferente, marca como editada à mão. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados. Registra na auditoria o antes e o depois.
+         */
+        patch: operations["OportunidadesController_alterar"];
+        trace?: never;
+    };
+    "/v1/carteira/oportunidades/{id}/fechar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fechar oportunidade
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Conquistado, Perdido, Cancelado ou Suspenso (só de uma Ativa; 409 `oportunidade_nao_ativa`). Perdido, Cancelado e Suspenso exigem o `motivoId` (da lista do status; 400 `motivo_invalido`); Suspenso exige `retomarEm` e cria a atividade de retomada (Tarefa de dia inteiro nessa data, com a mesma empresa e o mesmo responsável). Guarda a fase em que parou e a data de fechamento. Conquistado muda a empresa para Cliente (a tag `chave_sistema = cliente`, seja qual for o nome dela) se `empresaViraCliente` for verdadeiro (sem o campo, vale a configuração da empresa).
+         */
+        post: operations["OportunidadesController_fechar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/oportunidades/{id}/mover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mover de fase
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Só oportunidade Ativa, para uma fase ativa do mesmo funil (409 `oportunidade_nao_ativa`; 400 `fase_invalida`). A probabilidade assume a da nova fase, a menos que tenha sido editada à mão: então fica a dela e `avisoDeProbabilidade` traz a sugestão da nova fase. Registra no histórico de fases.
+         */
+        post: operations["OportunidadesController_mover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/oportunidades/{id}/reabrir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reabrir oportunidade
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Volta a Ativa (409 `oportunidade_ja_ativa`), na mesma fase (ou na primeira ativa do funil, se a fase foi inativada). Não desfaz o "empresa vira Cliente": fica só o registro no histórico. Cancela a atividade de retomada que ainda esteja aberta.
+         */
+        post: operations["OportunidadesController_reabrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/oportunidades/kanban": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Kanban de um funil
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Só as oportunidades Ativas, nas colunas das fases ativas do funil (sem `funilId`, o funil padrão), com a contagem e a soma de cada coluna, o resumo (ativas, total, mensal, ponderado) e quantas Suspensas o funil tem. Cada coluna traz até 100 oportunidades; `semMostrar` diz quantas ficaram de fora. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados.
+         */
+        get: operations["OportunidadesController_kanban"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/configuracoes/carteira": {
         parameters: {
             query?: never;
@@ -1832,6 +1964,8 @@ export interface components {
             /** Format: uuid */
             contatoId?: string | null;
             /** Format: uuid */
+            oportunidadeId?: string | null;
+            /** Format: uuid */
             responsavelId?: string;
             /** Format: date-time */
             dataInicio?: string;
@@ -1886,6 +2020,7 @@ export interface components {
             cor?: components["schemas"]["CorDeTag"];
             probabilidadePadrao?: number;
             diasAlertaParada?: number | null;
+            ativo?: boolean;
         };
         AlterarLoteEntrada: {
             nome?: string;
@@ -1914,6 +2049,24 @@ export interface components {
             nome?: string;
             aplicaA?: ("perdido" | "cancelado" | "suspenso")[];
             ativo?: boolean;
+        };
+        AlterarOportunidadeEntrada: {
+            titulo?: string;
+            /** Format: uuid */
+            contatoId?: string | null;
+            /** Format: uuid */
+            solucaoId?: string | null;
+            /** Format: uuid */
+            origemId?: string | null;
+            /** Format: uuid */
+            responsavelId?: string;
+            valorUnico?: number;
+            valorMensal?: number;
+            meses?: number;
+            probabilidade?: number;
+            /** Format: date */
+            dataPrevistaFechamento?: string | null;
+            observacoes?: string | null;
         };
         AlterarOrigemEntrada: {
             nome?: string;
@@ -2017,6 +2170,11 @@ export interface components {
                 nome: string;
             } | null;
             contato: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            oportunidade: {
                 /** Format: uuid */
                 id: string;
                 nome: string;
@@ -2252,6 +2410,8 @@ export interface components {
             /** Format: uuid */
             contatoId?: string | null;
             /** Format: uuid */
+            oportunidadeId?: string | null;
+            /** Format: uuid */
             responsavelId?: string;
             /** Format: date-time */
             dataInicio: string;
@@ -2337,6 +2497,32 @@ export interface components {
         CriarMotivoEntrada: {
             nome: string;
             aplicaA: ("perdido" | "cancelado" | "suspenso")[];
+        };
+        CriarOportunidadeEntrada: {
+            titulo: string;
+            /** Format: uuid */
+            empresaId: string;
+            /** Format: uuid */
+            contatoId?: string | null;
+            /** Format: uuid */
+            solucaoId?: string | null;
+            /** Format: uuid */
+            origemId?: string | null;
+            /** Format: uuid */
+            funilId?: string;
+            /** Format: uuid */
+            faseId?: string;
+            /** Format: uuid */
+            responsavelId?: string;
+            /** @default 0 */
+            valorUnico: number;
+            /** @default 0 */
+            valorMensal: number;
+            meses?: number;
+            probabilidade?: number;
+            /** Format: date */
+            dataPrevistaFechamento?: string | null;
+            observacoes?: string | null;
         };
         CriarOrigemEntrada: {
             nome: string;
@@ -2631,6 +2817,20 @@ export interface components {
                 para: string | null;
             }[];
         };
+        EntradaDoHistoricoDaOportunidade: {
+            /** Format: uuid */
+            id: string;
+            em: string;
+            por: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            /** @enum {string} */
+            acao: "criada" | "fase" | "status" | "reaberta";
+            titulo: string;
+            detalhe: string | null;
+        };
         Erro: {
             statusCode: number;
             erro: string;
@@ -2643,6 +2843,16 @@ export interface components {
             dados?: {
                 [key: string]: unknown;
             };
+        };
+        FecharOportunidadeEntrada: {
+            /** @enum {string} */
+            status: "conquistado" | "perdido" | "cancelado" | "suspenso";
+            /** Format: uuid */
+            motivoId?: string | null;
+            detalhe?: string | null;
+            /** Format: date */
+            retomarEm?: string | null;
+            empresaViraCliente?: boolean;
         };
         Funil: {
             /** Format: uuid */
@@ -2662,6 +2872,7 @@ export interface components {
             cor: components["schemas"]["CorDeTag"];
             probabilidadePadrao: number;
             diasAlertaParada: number | null;
+            ativo: boolean;
             ordem: number;
         };
         HistoricoDaEmpresa: {
@@ -2731,6 +2942,32 @@ export interface components {
             situacaoNaoVerificada: boolean;
             editavel: boolean;
         };
+        KanbanDeOportunidades: {
+            funil: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            fases: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cor: components["schemas"]["CorDeTag"];
+                probabilidadePadrao: number;
+                diasAlertaParada: number | null;
+                quantidade: number;
+                total: number;
+                itens: components["schemas"]["Oportunidade"][];
+                semMostrar: number;
+            }[];
+            resumo: {
+                ativas: number;
+                total: number;
+                mensal: number;
+                ponderado: number;
+            };
+            suspensas: number;
+        };
         LinhasDaImportacao: {
             itens: {
                 /** Format: uuid */
@@ -2796,6 +3033,17 @@ export interface components {
             total: number;
             pagina: number;
             porPagina: number;
+        };
+        ListaDeOportunidades: {
+            itens: components["schemas"]["Oportunidade"][];
+            total: number;
+            pagina: number;
+            porPagina: number;
+            somas: {
+                total: number;
+                mensal: number;
+                ponderado: number;
+            };
         };
         LoteDeImportacao: {
             /** Format: uuid */
@@ -2885,6 +3133,10 @@ export interface components {
             ativo: boolean;
             ordem: number;
         };
+        MoverOportunidadeEntrada: {
+            /** Format: uuid */
+            faseId: string;
+        };
         NovaOrdemEntrada: {
             ids: string[];
         };
@@ -2907,6 +3159,171 @@ export interface components {
         };
         OpcoesDeAcesso: {
             loginGoogle: boolean;
+        };
+        Oportunidade: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            empresa: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            contato: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            solucao: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            origem: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            funil: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            fase: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cor: components["schemas"]["CorDeTag"];
+            };
+            /** @enum {string} */
+            status: "ativo" | "conquistado" | "perdido" | "cancelado" | "suspenso";
+            faseParouEm: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cor: components["schemas"]["CorDeTag"];
+            } | null;
+            motivo: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            motivoDetalhe: string | null;
+            suspensaAte: string | null;
+            responsavel: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            valorUnico: number;
+            valorMensal: number;
+            meses: number;
+            valorTotal: number;
+            valorPonderado: number;
+            probabilidade: number;
+            probabilidadeManual: boolean;
+            dataPrevistaFechamento: string | null;
+            dataFechamento: string | null;
+            faseDesde: string;
+            diasParada: number;
+            parada: boolean;
+            ultimaAtividadeEm: string | null;
+            proximaAtividade: {
+                /** Format: uuid */
+                id: string;
+                titulo: string;
+                em: string;
+                diaInteiro: boolean;
+                tipoIcone: string;
+                tipoCor: components["schemas"]["CorDeTag"];
+            } | null;
+            observacoes: string | null;
+            criadaEm: string;
+            editavel: boolean;
+            excluivel: boolean;
+        };
+        OportunidadeDetalhada: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            empresa: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            contato: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            solucao: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            origem: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            funil: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            fase: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cor: components["schemas"]["CorDeTag"];
+            };
+            /** @enum {string} */
+            status: "ativo" | "conquistado" | "perdido" | "cancelado" | "suspenso";
+            faseParouEm: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cor: components["schemas"]["CorDeTag"];
+            } | null;
+            motivo: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            motivoDetalhe: string | null;
+            suspensaAte: string | null;
+            responsavel: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            valorUnico: number;
+            valorMensal: number;
+            meses: number;
+            valorTotal: number;
+            valorPonderado: number;
+            probabilidade: number;
+            probabilidadeManual: boolean;
+            dataPrevistaFechamento: string | null;
+            dataFechamento: string | null;
+            faseDesde: string;
+            diasParada: number;
+            parada: boolean;
+            ultimaAtividadeEm: string | null;
+            proximaAtividade: {
+                /** Format: uuid */
+                id: string;
+                titulo: string;
+                em: string;
+                diaInteiro: boolean;
+                tipoIcone: string;
+                tipoCor: components["schemas"]["CorDeTag"];
+            } | null;
+            observacoes: string | null;
+            criadaEm: string;
+            editavel: boolean;
+            excluivel: boolean;
+            historico: components["schemas"]["EntradaDoHistoricoDaOportunidade"][];
         };
         Origem: {
             /** Format: uuid */
@@ -3007,6 +3424,13 @@ export interface components {
             aplicadas: number;
             semMudanca: number;
             ignoradas: number;
+        };
+        ResultadoDoMovimento: {
+            oportunidade: components["schemas"]["Oportunidade"];
+            avisoDeProbabilidade: {
+                atual: number;
+                sugerida: number;
+            } | null;
         };
         Saude: {
             /** @enum {string} */
@@ -3224,6 +3648,7 @@ export interface operations {
                 aba?: "agendadas" | "atrasadas" | "realizadas";
                 empresaId?: string;
                 contatoId?: string;
+                oportunidadeId?: string;
                 tipoAtividadeId?: string;
                 responsavelId?: string;
                 minhas?: "true" | "false";
@@ -5238,6 +5663,578 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_listar: {
+        parameters: {
+            query?: {
+                status?: "ativo" | "conquistado" | "perdido" | "cancelado" | "suspenso";
+                funilId?: string;
+                faseId?: string;
+                empresaId?: string;
+                responsavelId?: string;
+                busca?: string;
+                ordem?: "criada" | "titulo" | "total" | "previsao";
+                sentido?: "asc" | "desc";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeOportunidades"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarOportunidadeEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Oportunidade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_detalhar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OportunidadeDetalhada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarOportunidadeEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Oportunidade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_fechar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FecharOportunidadeEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Oportunidade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_mover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoverOportunidadeEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoDoMovimento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_reabrir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Oportunidade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    OportunidadesController_kanban: {
+        parameters: {
+            query?: {
+                funilId?: string;
+                responsavelId?: string;
+                busca?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KanbanDeOportunidades"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

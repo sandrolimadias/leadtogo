@@ -245,6 +245,28 @@ Formulário **Registrar atividade** (protótipo), situação, resultado, importa
 
 ### Módulo 6 — Oportunidades *(em desenvolvimento; plano aprovado pelo Ale em 16/10/2026)*
 **Kanban por funil**, arrastar entre fases, **diálogo de fechamento** (Conquistado/Perdido/Cancelado/Suspenso, motivo, *retomar em*, empresa vira Cliente), **valores digitados** (único, mensal, total), probabilidade sugerida pela etapa, histórico de fases e lista simples.
+**Decisões do Ale (16/10/2026), ao aprovar o plano**
+1. **Arrastar e soltar com `@dnd-kit`** (teclado e toque); no celular continua também o menu do card.
+2. **Fora do MVP:** itens e catálogo de produtos, campos personalizados e filtros salvos.
+3. **Valores:** a pessoa digita **valor único**, **valor mensal** e **meses** (coluna `meses`, inteiro ≥ 0; padrão 12 quando há valor mensal). O **total é calculado** (`único + mensal × meses`), no banco (coluna gerada): nunca digitado. **Ponderado** = total × probabilidade (também coluna gerada). A coluna **"Em aberto"** da lista de Empresas = soma do total das oportunidades ativas da empresa. Dinheiro em `numeric(15,2)`.
+4. **Probabilidade:** começa com a da fase e é editável. Ao mover de fase assume a da nova fase **a menos que tenha sido editada à mão** (marca `probabilidade_manual` na oportunidade); nesse caso mantém e mostra aviso com a sugestão.
+5. **Data prevista de fechamento é opcional:** sem data aparece como "sem previsão" e fica fora da previsão do mês (Módulo 7).
+6. **Vendedor** cria, edita e move só nas empresas da própria carteira; admin e gestor, em todas.
+7. **Reabrir** uma Conquistada **não desfaz** o "empresa vira Cliente"; fica só o registro no histórico.
+- **"Empresa vira Cliente"** ao conquistar: a tag é achada pela **`chave_sistema = 'cliente'`**, nunca pelo nome (na empresa do Ale ela se chama "Associado").
+- **Excluir** oportunidade: só exclusão lógica, só admin e gestor.
+- **Suspenso:** a atividade de retomada é criada **na data "retomar em"**, com a mesma empresa e o mesmo responsável (implementada como **Tarefa de dia inteiro**, ligada à oportunidade; reabrir ou excluir a oportunidade cancela a que estiver aberta). "Retomar em" é obrigatório no Suspenso e não pode ser no passado (no fuso da empresa).
+- **Layout:** o Kanban rola na horizontal **dentro da área do quadro** quando as colunas não cabem, sem rolagem horizontal na página; a Lista usa a paginação 25/50/100.
+
+**Decisões do Claude na implementação** (dentro do plano aprovado)
+- **Status:** Ativo, Conquistado, Perdido, Cancelado e Suspenso; só uma Ativa muda de fase ou se fecha (409 `oportunidade_nao_ativa`); para mudar de um fechamento para outro, reabre-se antes.
+- **Fase em que parou** = a fase atual no instante do fechamento (`fase_parou_em_id`), preenchida se e somente se o status não é Ativo; vale também para Suspenso. **Data de fechamento** é gravada ao sair de Ativo (inclusive no Suspenso).
+- **Fases inativas:** `ativo` entra nas fases (o Kanban e as escolhas só mostram as ativas). Fase com oportunidades **ativas** não se inativa nem se exclui (409 `fase_com_oportunidades_ativas`); fase que **já teve** oportunidade (atual, "em que parou" ou no histórico) **só se inativa** (409 `fase_ja_usada`); o funil precisa de uma fase ativa (409 `ultima_fase`). Funil com oportunidades ativas não se inativa (409 `funil_com_oportunidades_ativas`) e funil que já teve oportunidade **só se inativa** (409 `funil_ja_usado`).
+- **Mover** só dentro do mesmo funil (mudar de funil: depois do MVP).
+- **Alerta de parada:** dias desde o maior entre a entrada na fase e a última atividade realizada ligada à oportunidade; passou do "dias para alerta" da fase, o card é destacado.
+- **Kanban:** cada coluna traz até 100 oportunidades (o resto é contado em "e mais N"); ordem por data prevista (sem previsão por último) e depois a mais nova.
+- **Atividade** ganha a **oportunidade** (campo opcional, só as da mesma empresa); a oportunidade guarda a última atividade realizada e a próxima atividade aberta.
+
 - **Regra de fase e funil (12/10 e 13/10/2026):** fase com oportunidades **ativas** só sai de uso depois de **mover** essas oportunidades. Com a regra geral de 13/10/2026 (só se exclui o que nunca foi usado), uma fase que **já teve** oportunidades, mesmo só fechadas, **só se inativa**: a decisão de 12/10 de poder excluí-la quando só há fechadas fica **substituída**, e o histórico de fases e a "fase em que parou" seguem intactos. O mesmo vale para o **funil**. A API de funis (Módulo 1) ainda não confere isso, porque ainda não há oportunidades: a verificação entra junto com a tabela `oportunidades`, com teste.
 
 ### Módulo 7 — Dashboard

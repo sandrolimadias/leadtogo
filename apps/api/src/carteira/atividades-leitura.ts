@@ -4,7 +4,7 @@ import { type Atividade, estaAtrasada } from '@leadtogo/shared'
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
 import type { EscopoDaCarteira } from './regras-de-carteira.js'
 
-const { atividades, contatos, empresas, membros, tiposAtividade } = schema
+const { atividades, contatos, empresas, membros, oportunidades, tiposAtividade } = schema
 const responsavel = alias(membros, 'responsavel')
 
 /** Ela vê a atividade: admin e gestor, todas; o vendedor a da empresa que vê, ou a Tarefa sem empresa que é dele. */
@@ -38,6 +38,8 @@ export const colunasDaAtividade = {
   empresaNomeFantasia: empresas.nomeFantasia,
   contatoId: atividades.contatoId,
   contatoNome: contatos.nome,
+  oportunidadeId: oportunidades.id,
+  oportunidadeTitulo: oportunidades.titulo,
   responsavelId: atividades.responsavelId,
   responsavelNome: responsavel.nome,
   dataInicio: atividades.dataInicio,
@@ -65,6 +67,10 @@ export function selecionarAtividades(db: Transacao, escopo: EscopoDaCarteira) {
     .innerJoin(responsavel, eq(responsavel.id, atividades.responsavelId))
     .leftJoin(empresas, eq(empresas.id, atividades.empresaId))
     .leftJoin(contatos, eq(contatos.id, atividades.contatoId))
+    .leftJoin(
+      oportunidades,
+      and(eq(oportunidades.id, atividades.oportunidadeId), isNull(oportunidades.excluidoEm)),
+    )
 }
 
 export type LinhaDeAtividade = Awaited<ReturnType<typeof selecionarAtividades>>[number]
@@ -88,6 +94,8 @@ export function paraAtividade(l: LinhaDeAtividade, agora: Date, fuso: string): A
         ? { id: l.empresaId, nome: l.empresaNomeFantasia ?? l.empresaRazaoSocial ?? '' }
         : null,
     contato: l.contatoId !== null ? { id: l.contatoId, nome: l.contatoNome ?? '' } : null,
+    oportunidade:
+      l.oportunidadeId !== null ? { id: l.oportunidadeId, nome: l.oportunidadeTitulo ?? '' } : null,
     responsavel: { id: l.responsavelId, nome: l.responsavelNome },
     dataInicio: new Date(l.dataInicio).toISOString(),
     dataFim: iso(l.dataFim),
