@@ -272,7 +272,7 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 - Abre pelo botão **"Registrar atividade"** da barra superior, pelo botão **"+"** do cabeçalho do celular (folha que sobe do rodapé), por **"Nova atividade"** nas fichas (com a empresa já preenchida; na ficha do contato, também o contato) e pela tela **Atividades**.
 - Campos: **Tipo** (botões com o ícone de cada tipo ativo; padrão Visita) · **Empresa** (**campo de pesquisa**: digite parte do nome, da razão social, o CNPJ/CPF com ou sem máscara ou a cidade; **os resultados só aparecem depois de digitar** e abrem como uma camada sobre os campos de baixo, sem mudar o tamanho da janela; escolhida a empresa, o campo mostra o nome e **Trocar empresa**; obrigatória, exceto no tipo Tarefa) · **Contato** (só os ativos da empresa; trocar de empresa limpa o contato) · **Título** (obrigatório) · **Data e hora** (em atividade **Realizada** o campo é **"Quando aconteceu"**; **Dia inteiro** troca por só a data) · **Situação** (**Realizada**, padrão, ou **Pendente**, para agendar; cancelada não se cria) · **Resultado** (obrigatório quando Realizada; a dica diz o efeito do tipo na carteira: visita aplica Visitada e atualiza última visita e último contato, contato aplica Contactada e atualiza o último contato, os demais não alteram a carteira) · **Importante** e **Urgente**.
 - **Responsável:** o padrão é o usuário logado. Administrador e gestor escolhem outro em **"Mais opções → Responsável"**; o vendedor registra sempre para si.
-- **Fora desta entrega (depois do MVP):** do bloco "Mais opções" do desenho, **Oportunidade** (entra com o Módulo 6), **Lembrete** ("Notificar em") e **Repetir** (recorrência). Ver a tabela "Fora do MVP" em `escopo_mvp.md`.
+- **Fora desta entrega (depois do MVP):** do bloco "Mais opções" do desenho, **Oportunidade** (entra com o Módulo 6), **Lembrete** ("Notificar em") e **Repetir** (recorrência). Ver `backlog_pos_mvp.md`.
 - **Botões:** "Registrar atividade" (ou "Agendar atividade", quando Pendente) e **"Registrar e agendar próxima"** (só quando Realizada), que registra e **reabre o formulário com a mesma empresa, o mesmo tipo e o mesmo contato, situação Pendente e data vazia**.
 - **Regras de data:** uma atividade realizada **não pode ter data no futuro**, com tolerância de **5 minutos** (para o celular com o relógio adiantado). "Hoje", "atrasada", "dia inteiro" e o agrupamento por dia valem no **fuso da empresa** (America/Sao_Paulo), nunca em UTC; atividade de dia inteiro só atrasa quando o dia acaba.
 - **Ações de cada atividade** (menu ⋯): **Concluir** (resultado obrigatório, data em que aconteceu e "Concluir e agendar próxima"), **Editar**, **Cancelar atividade** (vale também para a realizada, que deixa de contar como visita ou contato; o resultado fica guardado; a cancelada não se edita) e **Excluir** (lógica). Toda mudança **recalcula** na empresa a última visita, o último contato, a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo.
@@ -353,7 +353,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 | Observações | Texto livre |
 | Campos personalizados | Ver seção 8 *(fora do MVP)* |
 
-### Produtos/itens *(fora do MVP: o Módulo 6 usa valores digitados; ver a tabela "Fora do MVP" em `escopo_mvp.md`)*
+### Produtos/itens *(fora do MVP: o Módulo 6 usa valores digitados; ver `backlog_pos_mvp.md`)*
 - **Catálogo de produtos e serviços** (cadastrável): código, nome, tipo (produto/serviço), solução, unidade, preço padrão, **cobrança padrão (única/mensal/anual)** e **meses padrão**.
 - Itens da oportunidade: produto, quantidade, preço unitário (editável), desconto (%), **cobrança** e **quantidade de meses**.
 - Cálculo: única = qtd × preço · mensal = qtd × preço × meses · anual = qtd × preço × (meses ÷ 12).
@@ -431,6 +431,13 @@ Filtro de período no topo: mês atual, mês anterior, trimestre ou personalizad
 - Minhas atividades com abas **Hoje · Atrasadas · Próximos 7 dias** e conclusão rápida.
 - Funil por fase com barras, Conquistadas × Perdidas e canceladas, Principais motivos de perda.
 - Carteira: barra por Status, novos leads no mês (quantos vieram da prospecção) e lista "Sem contato há 60 dias".
+
+### Dashboard como ficou no Módulo 7 (visão "Minha")
+- **Período:** Mês atual, Mês anterior ou Trimestre do calendário, no fuso da empresa; o "anterior" é o período inteiro de mesmo tipo logo antes. Sem período personalizado nem alternância Equipe (pós-MVP).
+- **Indicadores:** **Previsão do período** (valor ponderado das ativas com data prevista no período; as sem data em "N sem previsão"), **MRR conquistado** (soma do valor mensal das conquistadas pela data de fechamento, com a variação sobre o período anterior e os últimos 6 meses), **Taxa de conversão** = conquistadas ÷ (conquistadas + perdidas) (as canceladas ficam fora da taxa) e **Sem contato há N dias** (Cliente e Prospect, pelas chaves de sistema; inclui as nunca contatadas; N é o prazo da empresa, padrão 60).
+- **Minhas atividades:** Hoje (abertas de hoje que ainda não venceram, mais as de dia inteiro de hoje), Atrasadas e Próximos 7 dias (de amanhã até daqui a 7 dias), sem sobreposição; conclusão rápida na própria linha. O rodapé "Quadro de tarefas" não existe (Kanban de Tarefas fora do MVP); no lugar, "Ver todas as atividades".
+- **Funil e previsão:** funil por fase (as ativas de hoje), Conquistadas × Perdidas e canceladas e Principais motivos de perda, em **gráficos interativos** (tooltip e clique levando à lista filtrada; `design_system.md`, "Gráficos").
+- **Carteira:** barra por Status nas cores das tags (pelo nome que a empresa deu), empresas novas no período e a lista "Sem contato" (até 8) com "Ver as N".
 
 ## 9A. Tarefas — Kanban do vendedor
 

@@ -16,10 +16,12 @@ const coluna = (page: Page, fase: string) => page.getByRole('region', { name: `F
 /** Arrasta pela alça (o dnd-kit precisa de movimento do ponteiro em passos). */
 async function arrastar(page: Page, titulo: string, alvo: ReturnType<Page['locator']>) {
   const alca = page.getByRole('button', { name: `Arrastar ${titulo}` })
+  await page.waitForTimeout(400) // o quadro termina de reler e de se arrumar antes de pegar o card
   const de = (await alca.boundingBox())!
   await page.mouse.move(de.x + de.width / 2, de.y + de.height / 2)
   await page.mouse.down()
   await page.mouse.move(de.x + de.width / 2 + 12, de.y + de.height / 2 + 12, { steps: 4 })
+  await page.waitForTimeout(150) // o dnd-kit passa a arrastar (e mostra as zonas) um instante depois
   const para = (await alvo.boundingBox())!
   await page.mouse.move(para.x + para.width / 2, para.y + Math.min(para.height / 2, 60), {
     steps: 12,
@@ -66,9 +68,12 @@ test('oportunidades: criar, arrastar de fase, fechar, reabrir, suspender e conqu
   ).toContainText('50%')
 
   // 2b. Pelo teclado: Espaço levanta a alça, a seta para a esquerda vai para a coluna anterior, Espaço solta
+  await page.waitForTimeout(600) // o quadro termina de reler depois do arrastar com o mouse
   await page.getByRole('button', { name: 'Arrastar Contrato anual' }).focus()
   await page.keyboard.press('Space')
+  await page.waitForTimeout(250) // o dnd-kit só passa a ouvir as setas um instante depois de pegar
   await page.keyboard.press('ArrowLeft')
+  await expect(page.getByText(/Contrato anual está sobre a fase Diagnóstico/)).toBeAttached()
   await page.keyboard.press('Space')
   await expect(
     coluna(page, 'Diagnóstico').getByRole('article', { name: 'Contrato anual' }),

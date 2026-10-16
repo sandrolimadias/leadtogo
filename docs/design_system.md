@@ -77,6 +77,17 @@ Para escolher um registro que vem de uma tabela grande (a empresa, no "Registrar
 - Alerta de parada: contorno `warning` **e** a frase "Parada há N dias nesta fase". Nunca só a cor.
 - Valores sempre em `tabular-nums`; dinheiro em R$ com centavos nos cards e sem centavos nas somas das colunas.
 
+## Gráficos (regra, Módulo 7)
+Os gráficos do app usam **Recharts**, no padrão do **shadcn/ui Charts**: um contêiner que dá as cores das séries e um tooltip no visual dos cartões. Componente único em `apps/web/src/components/ui/grafico.tsx` (`ContainerDoGrafico`, `ConteudoDoTooltip`, `GraficoVazio`) e apoio em `apps/web/src/lib/grafico.ts` (`corDaTag`, `useReduzirMovimento`).
+- **Biblioteca só onde se usa:** a rota do Dashboard é carregada com `lazy` e leva o Recharts junto; as outras telas não pagam por ele. Gráfico novo em outra tela entra no mesmo componente e também deve ser carregado sob demanda.
+- **Cores só dos tokens** (`docs/design-system/tokens.css`): a série ou a fase usa `var(--tag-<cor>-fg)` (mesma cor da tag da fase ou do Status); resultado positivo `var(--success)`, perdas `var(--danger)` e `var(--tag-red-fg)`; destaque neutro `var(--accent)`. Nada de hexadecimal. Como os tokens trocam no tema escuro, o gráfico acompanha o tema sozinho.
+- **Cor nunca é a única informação:** cada barra tem o rótulo (fase, status, motivo) e o valor ao lado, e o contêiner tem um `aria-label` com o resumo em palavras. Alerta usa frase, não só cor.
+- **Tooltip** (mouse, toque e foco do teclado): título e linhas "rótulo: valor" com a **quantidade**, o **valor em R$** e o **percentual** quando fizer sentido; quando o elemento é clicável, termina com "Clique para ver a lista". O cursor é `pointer` nos elementos clicáveis.
+- **Clique leva à lista já filtrada** (`telas/dashboard/links.ts`): fase do funil → Oportunidades do funil, na fase; status da carteira → Empresas com o status; motivo de perda → Oportunidades perdidas e canceladas com o motivo, no período; mês do MRR → Oportunidades conquistadas no mês. Para o **teclado e o leitor de tela** (o gráfico em si se clica com o mouse ou o toque), cada gráfico clicável tem uma lista de links equivalente, escondida até receber o foco.
+- **Animação** ao trocar de período (500 ms), desligada quando o usuário pede menos movimento (`prefers-reduced-motion`).
+- **Estados:** carregando (esqueleto do bloco), erro (alerta com "Tentar de novo") e **vazio** (`GraficoVazio`: uma frase que diz o que falta, como "Nenhuma perda neste período", nunca um gráfico em branco).
+- Valores sempre em `tabular-nums`; R$ com centavos nos tooltips e sem centavos nos rótulos curtos.
+
 ## Próximos passos
 1. Revisar o design system no artifact e pedir ajustes (cores, fonte, cantos, densidade).
 2. Prototipar as telas principais (Dashboard, Empresas, Ficha da empresa, Oportunidades, Tarefas, versões para celular) sobre este sistema.
