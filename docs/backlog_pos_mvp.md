@@ -42,7 +42,6 @@
 | Lixeira e restauração de contatos | Exclusão lógica sem volta pela tela; o caminho comum é inativar o vínculo | Módulo 3 |
 | Coluna "Última interação" na lista de Contatos | Prevista para depois das atividades; a ficha mostra a aba Atividades, mas a coluna da lista não foi feita | Módulo 3 / Módulo 5 |
 | Aba Oportunidades na ficha do contato | O Módulo 6 entregou a aba na empresa e a oportunidade guarda só o contato principal | Módulo 3 / Módulo 6 |
-| Importar contatos por planilha (alternância Empresas / Contatos do assistente) | Decidido em 15/10/2026: o contato entra pela ficha e pela conversão de sócio; reaproveita o assistente do Módulo 4 | Módulo 4 |
 
 ## Importação
 | Item | Motivo de ter ficado fora | Origem |
@@ -56,6 +55,14 @@
 | Desfazer depois de 7 dias, ou desfazer o que alguém já alterou | Decidido em 15/10/2026: a empresa alterada (ou com contato ou atividade) fica na carteira | Módulo 4 |
 | Tela de lotes no celular com ações (cancelar, desfazer na lista) | As ações ficam no relatório do lote | Módulo 4 |
 | Exportação de dados da carteira | A empresa tem a planilha de origem; sai com a exportação por empresa (LGPD) | Seção 3 |
+
+## Importação de contatos e de atividades (o que ficou de fora)
+| Item | Motivo de ter ficado fora | Origem |
+|---|---|---|
+| Atualizar contato ou atividade que já existe (hoje o contato duplicado só é vinculado e a atividade idêntica é pulada) | Decidido em 16/10/2026: nunca sobrescrever | Importação de contatos e de atividades |
+| Vincular a empresa pelo nome, e não só pelo CNPJ | Decidido em 16/10/2026 | Idem |
+| Mais de um e-mail e dois telefones por contato; contato da atividade por nome ou telefone | O modelo tem uma coluna de e-mail, uma de telefone e uma de celular; o contato da atividade é só pelo e-mail | Idem |
+| Recálculo da carteira em lote (uma consulta para todas as empresas do bloco) | Medido em 16/10/2026 com 10.000 linhas e 1.000 empresas: o recálculo por empresa soma 80 s dos 270 s do lote; só vale se um dia pesar | Idem |
 
 ## Atividades
 | Item | Motivo de ter ficado fora | Origem |
@@ -153,5 +160,7 @@
 | Item | Feito em | Onde |
 |---|---|---|
 | Regra "só se exclui o que nunca foi usado" para tipos de atividade, motivos, origens e soluções (a verificação que ficou pendente nos Módulos 5 e 6) | 16/10/2026 | commit `fix: cadastros usados só se inativam` (Módulo 7) |
+
+| **Importação de contatos por planilha** (e, junto, **de atividades**), com a alternância Empresas / Contatos / Atividades no assistente | 16/10/2026 | `979bb5f` (API de contatos), `5142fe9` (API de atividades), `cc851a8` (telas) e a migração 0025 em `68caf55`/`1a7f861`; roteiro em `roteiro_teste_importacao_contatos_atividades.md` |
 
 _(mova para cá o que for entregue, com a data e o commit)_

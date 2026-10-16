@@ -308,6 +308,21 @@ Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase,
 - O **menu do card** passou a ter altura máxima e rolagem (com 6 fases ele passava da janela em 1366×768); vale para todos os menus.
 - No celular o topo da tela Oportunidades ficou mais compacto (resumo em duas linhas, "Kanban | Lista" e "Nova" na mesma linha, funil e "Suspensas" na mesma linha) para sobrar altura ao quadro.
 
+### Importação de contatos e de atividades ✅ *(pedido do Ale em 16/10/2026, depois dos Módulos 1 a 7; plano aprovado em 16/10/2026; roteiro em `docs/roteiro_teste_importacao_contatos_atividades.md`)*
+Reaproveita o assistente, o worker em blocos curtos com idempotência por linha, o relatório, o CSV do que não entrou, o "Baixar modelo", o desfazer em 7 dias e a lista de importações do Módulo 4, com os tipos **contatos** e **atividades**. **Sem consulta à Receita.** Detalhe das regras em `funcionalidades.md`, "Importação por planilha".
+
+**Decisões do Ale (16/10/2026)**
+1. O vínculo com a empresa é sempre pelo **CNPJ** (obrigatório, com ou sem pontuação); CNPJ que não está na carteira pula e é listado. Ordem recomendada: empresas → contatos → atividades (dica no primeiro passo). Mesmos limites (10.000 linhas e 10 MB), só administrador e gestor, desfazer em 7 dias (`DIAS_PARA_DESFAZER`).
+2. **Contatos:** duplicado (mesmo e-mail ou telefone) usa o existente e só o **vincula**, sem mudar os dados dele (o vínculo novo leva o cargo e o "principal" da linha); "Não quer contato" em duplicado é ignorado com aviso; "Principal = sim" não troca o principal que já existe. E-mail ou telefone **inválido pula** a linha; aniversário ou LinkedIn inválido **entra sem o campo**, com aviso. Papel na decisão inexistente: entra sem o papel e avisa (comparação sem maiúsculas e acento). "Não quer contato = sim" grava a saída com origem "importação" e a data.
+3. **Atividades:** tipo pelo mapeamento de valores (cada valor distinto da coluna Tipo aponta para um tipo cadastrado, ou "pular"); data e hora no **fuso da empresa**, sem hora = dia inteiro; situação em branco pela data (o dia inteiro de hoje é Pendente); Realizada não pode estar no futuro (tolerância de 5 minutos); título vazio vira o nome do tipo; resultado em Pendente é ignorado com aviso; **atividade idêntica pulada**; contato só pelo e-mail e com vínculo ativo; responsável pelo e-mail de um usuário ativo, senão quem importa; `origem = importacao`. A atividade realizada **mexe na carteira como a registrada à mão** (última visita, último contato, próxima atividade, tags Visitada e Contactada).
+4. Blocos de **200 linhas**; a carteira é recalculada **uma vez por empresa por bloco**, mais uma varredura final; o desfazer recalcula as empresas afetadas. Tipo fixo no envio.
+
+**Decisões do Claude (dentro do plano)**
+- **Realizada sem Resultado pula** como dado inválido (o cadastro pela tela e o banco exigem o resultado). "Não quer contato" que não é sim nem não pula a linha; "Principal", "Importante" e "Urgente" estranhos viram "não", com aviso. Vínculo inativo é reativado (como o cadastro manual) com aviso. Dois executores no mesmo lote não duplicam contato nem atividade (travas por e-mail e telefone, e pela chave da atividade).
+- **Medida (10.000 linhas de atividades, 1.000 empresas, na máquina de desenvolvimento):** o lote inteiro levou **cerca de 270 s**, dos quais **cerca de 80 s** foram os 10.800 recálculos de carteira (7 ms cada); o **desfazer** levou **cerca de 5 s**. Cada bloco de 200 linhas dura uns 5 s. Foi mantido o recálculo por empresa (não pesa o bastante para o recálculo em lote).
+
+**Entregue:** migração 0025 (só acréscimos: `tipo_importacao` ganha `atividades`, `origem_atividade` ganha `importacao`, novos resultados de linha, `avisos` e as ligações com o lote em `contatos`, `empresa_contatos`, `atividades` e `importacao_linhas`; ver `modelagem_banco.md`); `ExecutorBase` com um executor por tipo; API (prévia, modelo, valores da coluna Tipo, desfazer, relatório e CSV por tipo); telas (alternância, 5 passos, mapeamento dos tipos, prévia e relatório por tipo, lista de importações com o tipo, botões em Contatos e em Atividades); testes de 25 regras puras, da API (contatos e atividades, inclusive "igual ao registro manual", isolamento, dois executores e desfazer), de tela e 2 E2E.
+
 ### Transversal (entra junto dos módulos em que fizer sentido)
 - **Busca global** (empresas, contatos, oportunidades).
 - **Auditoria nas fichas** (aba Histórico).
@@ -336,7 +351,7 @@ Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase,
 | **Mapa e rotas**, **offline** | Fases 2 e 3 de `funcionalidades.md`; o PWA exige conexão no MVP | Carteira e Empresas |
 | **Exportação**, lixeira e restauração, mesclar duplicados | Fora do MVP; o contato e a empresa seguem exclusão lógica | Carteira e Empresas; Contatos |
 | **Faixas de funcionários e de faturamento** | Decidido em 12/10/2026 | Carteira e Empresas |
-| **Importação de contatos por planilha** e relatório completo em Excel | Decidido em 15/10/2026; o MVP importa empresas | Importação; Contatos |
+| **Relatório completo em Excel** da importação | O CSV do que não entrou cobre a correção. (A importação de contatos e de atividades por planilha foi entregue em 16/10/2026: ver "Importação de contatos e de atividades" acima.) | Importação |
 | **Trilha antes do primeiro cliente externo** (`acessos_log` de 6 meses, limpeza de sessões, retenção da auditoria, ensaio de restauração, revisão jurídica) e **a volta dos testes e do E2E à esteira** (runner próprio) | Não bloqueia o uso do Ale | Segurança e LGPD; Infraestrutura e esteira |
 
 > As tabelas e o desenho dos itens acima **continuam em `modelagem_banco.md`**. O MVP só não cria as tabelas de que não precisa; cada uma entra, por migração, quando o item for implementado.
