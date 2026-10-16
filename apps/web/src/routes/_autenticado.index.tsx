@@ -1,14 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { LayoutDashboard } from 'lucide-react'
 
-import { PaginaVazia } from '@/casca/partes'
+import { lerBusca } from '@/telas/dashboard/busca'
+import { DashboardSobDemanda } from '@/telas/dashboard/preguicoso'
 
 export const Route = createFileRoute('/_autenticado/')({
-  component: () => (
-    <PaginaVazia
-      titulo="Dashboard"
-      icone={LayoutDashboard}
-      descricao="Em breve: indicadores, previsão e atividades do dia."
-    />
-  ),
+  validateSearch: lerBusca,
+  component: DashboardSobDemanda,
 })

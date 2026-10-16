@@ -177,6 +177,9 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       reabrir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       excluir: vi.fn(async () => ok(undefined)),
     },
+    dashboard: {
+      carregar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+    },
     configuracaoDaCarteira: vi.fn(async () =>
       ok({ bloquearEmpresaNaoAtiva: true, vendedorVeTodasEmpresas: false }),
     ),

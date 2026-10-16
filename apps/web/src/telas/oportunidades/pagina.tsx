@@ -18,7 +18,7 @@ import { cn } from '@/lib/cn'
 import { useAcoesDaOportunidade } from './acoes'
 import { type BuscaDeOportunidades, lerBusca } from './busca'
 import { useFormularioDeOportunidade } from './contexto-formulario'
-import { reais } from './formatos'
+import { diaDoBanco, reais } from './formatos'
 import { QuadroKanban } from './kanban'
 import { TabelaDeOportunidades } from './lista'
 import { JanelaDeSuspensas } from './suspensas'
@@ -83,6 +83,16 @@ export function PaginaDeOportunidades() {
       return r.dados
     },
   })
+  const motivos = useQuery({
+    queryKey: ['cadastros', 'motivos'],
+    enabled: lista && Boolean(busca.motivo),
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.cadastros.motivos.listar()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
   const funisAtivos = (funis.data ?? []).filter((f) => f.ativo || f.id === busca.funil)
   const funilEscolhido =
     funisAtivos.find((f) => f.id === busca.funil) ?? funisAtivos.find((f) => f.padrao)
@@ -114,6 +124,11 @@ export function PaginaDeOportunidades() {
         ...(busca.funil ? { funilId: busca.funil } : {}),
         ...(busca.responsavel ? { responsavelId: busca.responsavel } : {}),
         ...(busca.status ? { status: busca.status } : {}),
+        ...(busca.fase ? { faseId: busca.fase } : {}),
+        ...(busca.motivo ? { motivoId: busca.motivo } : {}),
+        ...(busca.grupo ? { grupo: busca.grupo } : {}),
+        ...(busca.de ? { fechadaDe: busca.de } : {}),
+        ...(busca.ate ? { fechadaAte: busca.ate } : {}),
         ...(termo ? { busca: termo } : {}),
         pagina: busca.pagina ?? 1,
         porPagina: tamanho.porPagina,
@@ -124,7 +139,28 @@ export function PaginaDeOportunidades() {
   })
 
   const acoes = useAcoesDaOportunidade()
-  const comFiltro = Boolean(busca.responsavel ?? busca.status ?? (termo || undefined))
+  // Os filtros que vieram de um clique do Dashboard (fase, motivo, perdas, período), em palavras
+  const nomeDaFase = (funis.data ?? [])
+    .flatMap((f) => f.fases)
+    .find((f) => f.id === busca.fase)?.nome
+  const nomeDoMotivo = (motivos.data ?? []).find((m) => m.id === busca.motivo)?.nome
+  const filtrosDoDashboard = [
+    busca.fase ? `fase ${nomeDaFase ?? '…'}` : null,
+    busca.motivo ? `motivo ${nomeDoMotivo ?? '…'}` : null,
+    busca.grupo === 'perdas' ? 'perdidas e canceladas' : null,
+    busca.de || busca.ate
+      ? `fechadas ${busca.de ? `de ${diaDoBanco(busca.de)} ` : ''}${busca.ate ? `até ${diaDoBanco(busca.ate)}` : ''}`.trim()
+      : null,
+  ].filter((x): x is string => x !== null)
+  const comFiltro = Boolean(
+    busca.responsavel ??
+    busca.status ??
+    busca.fase ??
+    busca.motivo ??
+    busca.grupo ??
+    busca.de ??
+    (termo || undefined),
+  )
   const limpar = () => {
     setTexto('')
     setTermo('')
@@ -243,6 +279,12 @@ export function PaginaDeOportunidades() {
           </Button>
         ) : null}
       </div>
+
+      {lista && filtrosDoDashboard.length > 0 ? (
+        <p className="m-0 text-sm text-ink-muted" aria-live="polite">
+          Filtrando por <strong className="text-ink">{filtrosDoDashboard.join(' · ')}</strong>.
+        </p>
+      ) : null}
 
       {!lista ? (
         <>

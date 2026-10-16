@@ -234,6 +234,7 @@ export function ListaDeEmpresas() {
     busca.vendedor,
     busca.cidade,
     busca.ultimaVisita,
+    busca.semContato,
   ].filter(Boolean).length
 
   const chips = CHIPS_DA_LISTA.filter((c) => !(c === 'minha' && unicoMembro))
@@ -405,6 +406,15 @@ export function ListaDeEmpresas() {
           </>
         ) : null}
         {celular && !filtrosAbertos ? null : selects}
+        {busca.semContato ? (
+          <Button
+            icon={X}
+            onClick={() => mudar({ semContato: undefined })}
+            aria-label={`Tirar o filtro: sem contato há ${busca.semContato} dias`}
+          >
+            Sem contato há {busca.semContato} dias
+          </Button>
+        ) : null}
         {comFiltro ? (
           <Button variant="ghost" icon={X} onClick={limpar}>
             Limpar filtros

@@ -1,5 +1,6 @@
 import type {
   Atividade,
+  Dashboard,
   KanbanDeOportunidades,
   ListaDeOportunidades,
   Oportunidade,
@@ -47,6 +48,7 @@ import type {
 } from '@leadtogo/api-client'
 import type {
   AlterarAtividadeEntrada,
+  ConsultaDoDashboardEntrada,
   AlterarOportunidadeEntrada,
   ConsultaDeOportunidadesEntrada,
   ConsultaDoKanbanEntrada,
@@ -227,6 +229,12 @@ export interface ServicosDeAtividades {
   excluir: (id: string) => Promise<Resultado>
 }
 
+/** Dashboard (Módulo 7), visão "Minha". */
+export interface ServicosDoDashboard {
+  /** Os números do período, de uma vez só (sem `funilId`, o funil padrão) */
+  carregar: (consulta: ConsultaDoDashboardEntrada) => Promise<Resultado<Dashboard>>
+}
+
 /** Oportunidades (Módulo 6): o funil de vendas. Segue a regra de carteira da API. */
 export interface ServicosDeOportunidades {
   /** O Kanban de um funil (sem `funilId`, o padrão): só as Ativas, nas fases ativas */
@@ -396,4 +404,7 @@ export interface ServicosDeAcesso {
 
   // Oportunidades (Módulo 6)
   oportunidades: ServicosDeOportunidades
+
+  // Dashboard (Módulo 7)
+  dashboard: ServicosDoDashboard
 }

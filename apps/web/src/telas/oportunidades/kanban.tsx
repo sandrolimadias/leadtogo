@@ -1,5 +1,6 @@
 import {
   DndContext,
+  type Announcements,
   type DragEndEvent,
   DragOverlay,
   type DragStartEvent,
@@ -201,9 +202,37 @@ export function QuadroKanban({
     if (fase) void acoes.mover(o, fase.id, fase.nome)
   }
 
+  // O que o leitor de tela anuncia ao arrastar (o padrão do dnd-kit é em inglês)
+  const titulo = (e: { data: { current?: Record<string, unknown> } }) =>
+    (e.data.current?.['o'] as Oportunidade | undefined)?.titulo ?? 'a oportunidade'
+  const destino = (id: string | number | undefined) => {
+    const alvo = String(id ?? '')
+    if (alvo.startsWith('fechar:')) {
+      return `a zona ${ZONAS.find((z) => `fechar:${z.status}` === alvo)?.rotulo.toLowerCase() ?? ''}`
+    }
+    const fase = kanban.fases.find((f) => f.id === alvo)
+    return fase ? `a fase ${fase.nome}` : 'nenhuma fase'
+  }
+  const anuncios: Announcements = {
+    onDragStart: ({ active }) => `Pegou ${titulo(active)}.`,
+    onDragOver: ({ active, over }) => `${titulo(active)} está sobre ${destino(over?.id)}.`,
+    onDragEnd: ({ active, over }) =>
+      over
+        ? `${titulo(active)} solto em ${destino(over.id)}.`
+        : `${titulo(active)} foi solto fora das fases.`,
+    onDragCancel: ({ active }) => `Arrastar ${titulo(active)} cancelado.`,
+  }
+
   return (
     <DndContext
       sensors={sensores}
+      accessibility={{
+        announcements: anuncios,
+        screenReaderInstructions: {
+          draggable:
+            'Para pegar a oportunidade, aperte Espaço. Use as setas para esquerda e direita para mudar de fase e Espaço para soltar. Esc cancela.',
+        },
+      }}
       onDragStart={aoComecar}
       onDragEnd={aoSoltar}
       onDragCancel={() => setArrastada(null)}

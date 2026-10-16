@@ -423,6 +423,13 @@ export const servicosReais: ServicosDeAcesso = {
       ),
   },
 
+  dashboard: {
+    carregar: (consulta) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/carteira/dashboard', { params: { query: consulta as never } })),
+      ),
+  },
+
   configuracaoDaCarteira: () =>
     protegido(async () => daApi(await api.GET('/v1/configuracoes/carteira'))),
   alterarConfiguracaoDaCarteira: (patch) =>

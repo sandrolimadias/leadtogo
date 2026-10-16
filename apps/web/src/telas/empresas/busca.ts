@@ -16,6 +16,8 @@ export interface BuscaDaLista {
   cidade?: number
   /** 30, 60 ou 90 dias, ou `nunca` (número na URL: `?ultimaVisita=60`) */
   ultimaVisita?: 30 | 60 | 90 | 'nunca'
+  /** Sem contato há N dias, quem nunca teve contato incluído (o botão "Ver as N" do Dashboard) */
+  semContato?: number
   pagina?: number
 }
 
@@ -37,6 +39,7 @@ export function lerBusca(entrada: Record<string, unknown>): BuscaDaLista {
   const visitacao = texto(entrada['visitacao'])
   const vendedor = texto(entrada['vendedor'])
   const cidade = inteiro(entrada['cidade'])
+  const semContato = inteiro(entrada['semContato'])
   return {
     ...(busca ? { busca } : {}),
     ...(chip && chip !== 'todas' ? { chip } : {}),
@@ -48,13 +51,16 @@ export function lerBusca(entrada: Record<string, unknown>): BuscaDaLista {
     ...(vendedor ? { vendedor } : {}),
     ...(cidade ? { cidade } : {}),
     ...(ultima ? { ultimaVisita: ultima } : {}),
+    ...(semContato ? { semContato } : {}),
     ...(pagina && pagina > 1 ? { pagina } : {}),
   }
 }
 
 /** Há algum filtro da barra ativo (o chip não conta: ele tem o próprio estado)? */
 export const temFiltroAtivo = (b: BuscaDaLista): boolean =>
-  Boolean(b.busca ?? b.status ?? b.visitacao ?? b.vendedor ?? b.cidade ?? b.ultimaVisita)
+  Boolean(
+    b.busca ?? b.status ?? b.visitacao ?? b.vendedor ?? b.cidade ?? b.ultimaVisita ?? b.semContato,
+  )
 
 /** O que o servidor recebe. */
 export function consultaDaLista(b: BuscaDaLista, porPagina = 25): ConsultaDaListaEntrada {
@@ -69,6 +75,7 @@ export function consultaDaLista(b: BuscaDaLista, porPagina = 25): ConsultaDaList
     ...(b.ultimaVisita
       ? { ultimaVisita: String(b.ultimaVisita) as '30' | '60' | '90' | 'nunca' }
       : {}),
+    ...(b.semContato ? { semContato: b.semContato } : {}),
     pagina: b.pagina ?? 1,
     porPagina,
   }
