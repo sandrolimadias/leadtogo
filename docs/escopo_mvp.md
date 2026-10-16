@@ -243,8 +243,12 @@ Formulário **Registrar atividade** (protótipo), situação, resultado, importa
 - **Desfazer importação:** empresa com qualquer atividade fica na carteira.
 - **Fora do Módulo 5, para depois do MVP:** registrado na tabela da seção 3 ("Fora do MVP"), na linha de cada item, e em `roteiro_teste_modulo5.md`. A tela do formulário **não tem** o bloco "Mais opções" do desenho com Oportunidade, Lembrete e Repetir (só o Responsável, para administrador e gestor).
 
-### Módulo 6 — Oportunidades *(em desenvolvimento; plano aprovado pelo Ale em 16/10/2026)*
+### Módulo 6 — Oportunidades *(no ar em 16/10/2026, aguardando o teste do Ale; roteiro em `docs/roteiro_teste_modulo6.md`; plano aprovado em 16/10/2026)*
 **Kanban por funil**, arrastar entre fases, **diálogo de fechamento** (Conquistado/Perdido/Cancelado/Suspenso, motivo, *retomar em*, empresa vira Cliente), **valores digitados** (único, mensal, total), probabilidade sugerida pela etapa, histórico de fases e lista simples.
+**Entregue (commits na `main`; esteira verde até o verify):** `72102c8` migração 0024 (`oportunidades`, `oportunidade_historico`, `atividades.oportunidade_id`, RLS, total e ponderado gerados pelo banco) · `1e5d231` schemas compartilhados · `116d11a` API (cadastro, mover, fechar, reabrir, excluir, Kanban, lista) e regra de fase e funil · `fd34da6` ajuste das fixtures da web e do "vira Cliente" padrão na oportunidade · `9485aad` coluna "Em aberto" da lista de Empresas · `629af85` Kanban com arrastar e soltar, lista, fechamento, formulário, ficha, aba na empresa, oportunidade na atividade e inativar fase · e o commit do grupo 3 (E2E, roteiro e docs).
+- **Telas:** `/oportunidades` com **Kanban | Lista** (resumo, funil, responsável, busca, "Suspensas · N"), card (valor total e mensal, previsão, próxima atividade, alerta de parada), **arrastar pela alça** (mouse, toque e teclado) e zonas de fechamento; **Fechar oportunidade**; **Nova/Editar oportunidade** (empresa por campo de pesquisa; total e ponderado na hora); **ficha** (dados, atividades, histórico); aba **Oportunidades** na ficha da empresa; coluna **Em aberto** na lista de Empresas; campo **Oportunidade** no formulário de atividade; **Inativar/Reativar fase** em Configurações → Funis.
+- **Testes:** 26 da API (valores, probabilidade, mover, fechar, retomada, "Associado" pela chave, permissões, Kanban, alerta de parada, regra de fase e funil, isolamento, auditoria, "Em aberto"), 5 do banco (restrições e colunas calculadas), 6 dos schemas, 28 de tela do módulo (Kanban, fechar, formulário, ficha, funis) e 2 E2E (`apps/web/e2e/oportunidades.spec.ts`, com arrastar de verdade pelo mouse e pelo teclado).
+
 **Decisões do Ale (16/10/2026), ao aprovar o plano**
 1. **Arrastar e soltar com `@dnd-kit`** (teclado e toque); no celular continua também o menu do card.
 2. **Fora do MVP:** itens e catálogo de produtos, campos personalizados e filtros salvos.
@@ -295,7 +299,16 @@ Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase,
 | Catálogo de produtos/itens | O MVP usa valores digitados na oportunidade (único, mensal, total) |
 | Campos personalizados | Não há necessidade comprovada; os campos fixos cobrem o uso inicial |
 | Recorrência e lembretes | Dependem da central de notificações e de rotinas no worker |
-| Atividade: oportunidade vinculada | A tabela `oportunidades` só nasce no Módulo 6; a coluna `oportunidade_id` e o campo do formulário entram lá (Módulo 5 deixou a tela sem esse campo) |
+| ~~Atividade: oportunidade vinculada~~ | **Entregue no Módulo 6**: `atividades.oportunidade_id` e o campo "Oportunidade" em "Mais opções" do formulário |
+| Oportunidade: itens e catálogo de produtos e serviços | Decisão do Ale (16/10/2026): o MVP usa valores digitados (único, mensal e meses); `oportunidade_itens`, `produtos` e `valor_manual` seguem só na modelagem |
+| Oportunidade: campos personalizados (`campos_extras`) e filtros salvos | Decisão do Ale (16/10/2026): fora do MVP |
+| Oportunidade: exportação da lista | Fora do MVP (a exportação em geral) |
+| Oportunidade: mudar de funil | Só se move de fase dentro do funil; trocar de funil fica para depois |
+| Oportunidade: mais de um contato | Só o contato principal; os outros (`oportunidade_contatos`) ficam para depois |
+| Oportunidade: previsão do mês, conquistadas × perdidas e motivos de perda | Módulo 7 (Dashboard) |
+| Oportunidade: e-mail e WhatsApp, comentários e notificação de parada | Fases de integração e central de notificações |
+| Oportunidade: acima de 100 cards por coluna no Kanban | O quadro traz 100 por fase e avisa "e mais N"; a busca e a Lista alcançam o resto |
+| Oportunidade: probabilidade 100% ao conquistar | Não pedido; a conquistada guarda a probabilidade que tinha |
 | Atividade: vários contatos (tabela `atividade_contatos`) | Decisão do Ale em 15/10/2026: um contato por atividade (`contato_id`); o N:N fica para depois do MVP |
 | Atividade: lembretes ("Notificar em"), recorrência ("Repetir"), checklist, etiquetas e anexos | Dependem da central de notificações, do worker e do Kanban de Tarefas; as tabelas `atividade_lembretes`, `atividade_recorrencias`, `atividade_checklist` e `atividade_etiquetas` seguem só na modelagem |
 | Atividade: `id_externo` e check-in com GPS | Adiados pelo Ale em 15/10/2026 (WhatsApp, e-mail, agenda e visita com localização); `origem` já existe, com padrão `manual` |

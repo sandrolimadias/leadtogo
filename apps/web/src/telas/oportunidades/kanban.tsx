@@ -3,6 +3,7 @@ import {
   type DragEndEvent,
   DragOverlay,
   type DragStartEvent,
+  type KeyboardCoordinateGetter,
   KeyboardSensor,
   PointerSensor,
   TouchSensor,
@@ -26,6 +27,26 @@ import { useFormularioDeOportunidade } from './contexto-formulario'
 import { reaisCurto } from './formatos'
 
 type Fase = KanbanDeOportunidades['fases'][number]
+
+/** Uma coluna (296 px) mais o espaço entre elas: a seta para os lados pula de coluna em coluna. */
+const PASSO_DA_COLUNA = 308
+const PASSO_VERTICAL = 80
+
+/** As setas movem o card com o teclado: uma coluna por vez para os lados e um pedaço para cima e para baixo. */
+const coordenadasDoTeclado: KeyboardCoordinateGetter = (evento, { currentCoordinates: c }) => {
+  switch (evento.code) {
+    case 'ArrowRight':
+      return { ...c, x: c.x + PASSO_DA_COLUNA }
+    case 'ArrowLeft':
+      return { ...c, x: c.x - PASSO_DA_COLUNA }
+    case 'ArrowDown':
+      return { ...c, y: c.y + PASSO_VERTICAL }
+    case 'ArrowUp':
+      return { ...c, y: c.y - PASSO_VERTICAL }
+    default:
+      return undefined
+  }
+}
 
 const ZONAS: { status: StatusDeFechamento; rotulo: string; classe: string }[] = [
   { status: 'conquistado', rotulo: 'Conquistada', classe: 'border-success text-success' },
@@ -160,7 +181,7 @@ export function QuadroKanban({
   const sensores = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: coordenadasDoTeclado }),
   )
   const fases = kanban.fases.map((f) => ({ id: f.id, nome: f.nome }))
 

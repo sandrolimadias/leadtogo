@@ -70,6 +70,13 @@ Para escolher um registro que vem de uma tabela grande (a empresa, no "Registrar
 - **Nunca usar popover (`Popover`, `Select` suspenso) dentro de `Dialog` ou `Sheet`**: o diálogo fica na camada 1400 e o popover abria atrás dele (parecia travado). O campo fica dentro da própria janela.
 - Escolhido o registro, o campo vira o nome com um botão **Trocar** (volta à busca). Componente: `telas/atividades/busca-de-empresa.tsx`. Teste: a janela mantém o mesmo tamanho com os resultados abertos (`apps/web/e2e/atividades.spec.ts`).
 
+## Kanban (regra, Módulo 6)
+- O quadro rola **na horizontal por dentro** (`overflow-x-auto` só no quadro) quando as colunas (296 px, `--kanban-column`) não cabem: **nunca a página**. As **colunas crescem com os cards**, sem rolagem vertical por coluna: quem rola na vertical é a área central.
+- **Arrastar pela alça** (ícone de seis pontos), não pelo card inteiro: o card continua clicável e o toque não briga com a rolagem. Mouse, toque (pressão curta) e **teclado** (Espaço, setas, Espaço, Esc) funcionam com `@dnd-kit/core`. No **celular não há arrastar**: o menu do card move e fecha.
+- As **zonas de soltura** (Conquistada, Perdida, Cancelada, Suspensa) ficam coladas no rodapé da área central e **só aparecem enquanto se arrasta** (`sticky bottom-0`).
+- Alerta de parada: contorno `warning` **e** a frase "Parada há N dias nesta fase". Nunca só a cor.
+- Valores sempre em `tabular-nums`; dinheiro em R$ com centavos nos cards e sem centavos nas somas das colunas.
+
 ## Próximos passos
 1. Revisar o design system no artifact e pedir ajustes (cores, fonte, cantos, densidade).
 2. Prototipar as telas principais (Dashboard, Empresas, Ficha da empresa, Oportunidades, Tarefas, versões para celular) sobre este sistema.

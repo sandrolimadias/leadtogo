@@ -351,9 +351,9 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 | Retomar em | Data de retomada (Suspenso) |
 | Data de fechamento | Automática ao sair de Ativo |
 | Observações | Texto livre |
-| Campos personalizados | Ver seção 8 |
+| Campos personalizados | Ver seção 8 *(fora do MVP)* |
 
-### Produtos/itens
+### Produtos/itens *(fora do MVP: o Módulo 6 usa valores digitados; ver a tabela "Fora do MVP" em `escopo_mvp.md`)*
 - **Catálogo de produtos e serviços** (cadastrável): código, nome, tipo (produto/serviço), solução, unidade, preço padrão, **cobrança padrão (única/mensal/anual)** e **meses padrão**.
 - Itens da oportunidade: produto, quantidade, preço unitário (editável), desconto (%), **cobrança** e **quantidade de meses**.
 - Cálculo: única = qtd × preço · mensal = qtd × preço × meses · anual = qtd × preço × (meses ÷ 12).
@@ -363,11 +363,11 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 - **Kanban** por funil (seletor de funil no topo):
   - Colunas = fases, com **soma de valores e quantidade** no cabeçalho. Só oportunidades com status **Ativo**.
   - Card: nome, empresa, valor, responsável, data prevista e próxima atividade.
-  - **Arrastar e soltar** entre etapas.
+  - **Arrastar e soltar** entre etapas (Módulo 6: **pela alça** do card, com mouse, toque ou teclado; ao mover, a probabilidade assume a da nova fase, a menos que tenha sido editada à mão).
   - **Alerta de oportunidade parada:** card destacado quando passa X dias sem atividade.
   - Zona de soltura no rodapé: **Conquistado · Perdido · Cancelado · Suspenso** (arrastar o card para fechar). Filtro para ver as suspensas.
   - No celular: rolagem horizontal por coluna e mover pelo menu do card (sem depender de arrastar).
-- **Visão em lista** (alternância Kanban ↔ Lista): tabela com ordenação, filtros e exportação.
+- **Visão em lista** (alternância Kanban ↔ Lista): tabela com ordenação, filtros e paginação 25/50/100 *(exportação: depois do MVP)*.
 - **Filtros:** responsável, fase, status, solução, período de previsão, origem, valor, tags da empresa e campos personalizados.
 - **Filtros salvos** por usuário (ex.: "Minhas oportunidades acima de R$ 10 mil").
 
