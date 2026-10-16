@@ -109,6 +109,7 @@
 | Agendas Google e Microsoft | Idem | Seção 3 |
 | n8n e API pública / webhooks (formulário do site cria empresa + oportunidade + atividade) | Idem | Seção 3 |
 | Link público de agendamento (estilo Calendly) | Idem | `funcionalidades.md` |
+| **Integração com ERP, Omie primeiro.** A regra de situação financeira fica no CRM, alimentada por conectores nativos (liga/desliga por empresa, só leitura) e pela API aberta. Grupo de tags de sistema **Financeiro**: Adimplente; Inadimplente até 30, 31–60, 61–90 e +90 dias; Sem cadastro no ERP. Só mensalidades, sem tolerância; a consulta é pelo CNPJ e só para empresas com a tag de sistema "cliente". **Ordem:** chaves de API e API aberta, depois o recurso financeiro, depois o conector Omie. **Em aberto:** como identificar a mensalidade na Omie | Fase de integrações; depende da API aberta | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
 
 ## SaaS (vários clientes)
 | Item | Motivo de ter ficado fora | Origem |
@@ -117,6 +118,11 @@
 | Cobrança, planos e limites por empresa | Fora do MVP; hoje só o Ale usa | `plano_implantacao.md` |
 | Onboarding de empresa cliente (convite, dados iniciais) além do primeiro acesso | Só o Ale usa no MVP | Trilha antes do primeiro cliente externo |
 | Revisão jurídica dos termos e da política de privacidade | Antes do primeiro cliente externo | `lgpd.md` |
+| Painel administrativo do SaaS | Fora do MVP; hoje só o Ale usa | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+| Plano de capacidade (quantos clientes por VPS, custo por cliente) | Só faz sentido com clientes externos | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+| Contratos: termos de uso, DPA, SLA e política de privacidade | Antes do primeiro cliente externo (a revisão jurídica está em Segurança e LGPD) | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+| Limites de plano aplicados pelo `PlanoService` | Junto de cobrança e planos | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 (`configuracao_tecnologia.md`, seção 17) |
+| Empacotamento **on-premise** e imagens **amd64** nas versões numeradas | Modelo de distribuição descrito na seção 17; não é necessário para o MVP | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 (`configuracao_tecnologia.md`, seção 17) |
 
 ## Infraestrutura e esteira
 | Item | Motivo de ter ficado fora | Origem |
@@ -127,6 +133,8 @@
 | `better-call` preso na versão que o Better Auth exige (1.4.0) | Só sobe junto com o Better Auth | Pendência técnica (16/10/2026) |
 | Aviso "Nova versão disponível" no PWA | Transversal ainda não entregue | Transversal (`escopo_mvp.md`) |
 | Exportação de dados por empresa (LGPD) | Pendência de produto antes do primeiro cliente externo | `lgpd.md` |
+| Migrar o ambiente de desenvolvimento para o homelab (VM Ubuntu 24.04 com Tailscale e VS Code Remote-SSH) | Previsto para depois do MVP; hoje o desenvolvimento é no WSL2 | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+| Runner próprio do GitHub Actions nessa VM | Depende da VM; resolve a falta de minutos (ver a primeira linha desta tabela) | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
 
 ## Segurança e LGPD
 | Item | Motivo de ter ficado fora | Origem |
@@ -138,6 +146,8 @@
 | Teste real de restauração dos arquivos (Garage) | Pendente até existirem arquivos no bucket | `runbook_backup.md`, seção 4.6 |
 | Revisão jurídica (base legal dos registros de acesso, termos, política de privacidade) | "Aplicação a confirmar com advogado" | `lgpd.md` |
 | Vulnerabilidades moderadas abertas (`esbuild` via `drizzle-kit`; `uuid` via `exceljs`) | Sem versão corrigida e sem risco alcançável; reavaliar a cada atualização | `seguranca_dependencias.md` |
+| Opcionais de segurança: **fail2ban**, **SSH só pelo Tailscale** e o cabeçalho **Cross-Origin-Opener-Policy** | Endurecimento opcional, fora do MVP | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+| Opcionais de observabilidade: **Zabbix + Grafana** e alertas por **Telegram ou WhatsApp** | Opcionais; hoje valem o Uptime Kuma e o GlitchTip | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
 
 ## Feito
 | Item | Feito em | Onde |
