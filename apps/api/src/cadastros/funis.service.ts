@@ -1,11 +1,12 @@
 import { and, asc, eq, isNull, ne, schema, sql } from '@leadtogo/db'
-import type {
-  AlterarFaseEntrada,
-  AlterarFunilEntrada,
-  CriarFaseEntrada,
-  CriarFunilEntrada,
-  Funil,
-  FunilFase,
+import {
+  MAX_FASES_ATIVAS_POR_FUNIL,
+  type AlterarFaseEntrada,
+  type AlterarFunilEntrada,
+  type CriarFaseEntrada,
+  type CriarFunilEntrada,
+  type Funil,
+  type FunilFase,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
@@ -71,6 +72,7 @@ export class FunisService {
 
   async criar(dados: CriarFunilEntrada): Promise<Funil> {
     exigirAdmin(this.ctx)
+    if (dados.fases.length > MAX_FASES_ATIVAS_POR_FUNIL) throw limiteDeFases()
     const db = this.ctx.db()
     const existentes = await db
       .select({ ordem: funis.ordem, padrao: funis.padrao })
@@ -242,6 +244,8 @@ export class FunisService {
     exigirAdmin(this.ctx)
     const funil = await this.funil(funilId)
     const existentes = await this.fasesDe(funilId)
+    if (existentes.filter((f) => f.ativo).length >= MAX_FASES_ATIVAS_POR_FUNIL)
+      throw limiteDeFases()
     const ordem = existentes.reduce((m, f) => Math.max(m, f.ordem), -1) + 1
     const [fase] = await this.gravando(() =>
       this.ctx
@@ -276,6 +280,10 @@ export class FunisService {
     const funil = await this.funil(fase.funilId)
     const mudancas = diferencas(fase, dados)
     if (Object.keys(mudancas).length === 0) return this.completo(funil)
+    if (dados.ativo === true && !fase.ativo) {
+      const ativas = (await this.fasesDe(funil.id)).filter((f) => f.ativo).length
+      if (ativas >= MAX_FASES_ATIVAS_POR_FUNIL) throw limiteDeFases()
+    }
     if (dados.ativo === false && fase.ativo) {
       await this.exigirFaseLivre(fase, 'inativar')
       const outras = (await this.fasesDe(funil.id)).filter((f) => f.ativo && f.id !== fase.id)
@@ -446,3 +454,12 @@ export class FunisService {
 }
 
 const ordenadas = (fases: LinhaFase[]) => [...fases].sort((a, b) => a.ordem - b.ordem)
+
+/** 409 `limite_de_fases_ativas`: o funil já está com o máximo de fases ativas. */
+function limiteDeFases(): ErroApi {
+  return new ErroApi(
+    'limite_de_fases_ativas',
+    `Um funil pode ter no máximo ${MAX_FASES_ATIVAS_POR_FUNIL} fases ativas. Inative uma fase antes de criar ou reativar outra.`,
+    409,
+  )
+}

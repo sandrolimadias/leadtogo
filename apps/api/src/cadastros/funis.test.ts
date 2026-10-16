@@ -396,3 +396,61 @@ describe('isolamento entre empresas', () => {
     expect((await funis(a.cookie))[0]?.nome).toBe('Vendas')
   })
 })
+
+describe('limite de 6 fases ativas por funil', () => {
+  const nomes = (n: number) => Array.from({ length: n }, (_, i) => `Fase ${i + 1}`)
+
+  it('um funil novo aceita 6 fases e recusa 7 (409 limite_de_fases_ativas)', async () => {
+    const d = await novoDono(app)
+    const seis = await chamar('post', d.cookie, '', {
+      nome: 'Seis',
+      fases: nomes(6).map((nome) => ({ nome })),
+    })
+    expect(seis.status).toBe(201)
+    const sete = await chamar('post', d.cookie, '', {
+      nome: 'Sete',
+      fases: nomes(7).map((nome) => ({ nome })),
+    })
+    expect(sete.status).toBe(409)
+    expect(erroDe(sete)).toBe('limite_de_fases_ativas')
+  })
+
+  it('não cria a 7ª fase ativa; inativar uma libera, e reativar com 6 ativas também é recusado', async () => {
+    const d = await novoDono(app)
+    const f = await criarFunil(d.cookie, 'Cheio', nomes(6))
+    const sete = await chamar('post', d.cookie, `/${f.id}/fases`, { nome: 'Fase 7' })
+    expect(sete.status).toBe(409)
+    expect(erroDe(sete)).toBe('limite_de_fases_ativas')
+
+    const [primeira, segunda] = f.fases
+    const inativada = await chamar('patch', d.cookie, `/fases/${primeira?.id}`, { ativo: false })
+    expect(inativada.status).toBe(200)
+    const criada = await chamar('post', d.cookie, `/${f.id}/fases`, { nome: 'Fase 7' })
+    expect(criada.status).toBe(201)
+    expect((criada.body as Funil).fases.filter((x) => x.ativo)).toHaveLength(6)
+
+    // de volta a 6 ativas: reativar a que estava inativa passaria de 6
+    const reativar = await chamar('patch', d.cookie, `/fases/${primeira?.id}`, { ativo: true })
+    expect(reativar.status).toBe(409)
+    expect(erroDe(reativar)).toBe('limite_de_fases_ativas')
+    // editar outra coisa de uma fase ativa continua valendo no funil cheio
+    expect(
+      (await chamar('patch', d.cookie, `/fases/${segunda?.id}`, { nome: 'Segunda' })).status,
+    ).toBe(200)
+  })
+
+  it('fases inativas não contam: um funil com 6 ativas e 2 inativas vale; outro funil não é afetado', async () => {
+    const d = await novoDono(app)
+    const f = await criarFunil(d.cookie, 'Com inativas', nomes(6))
+    await chamar('patch', d.cookie, `/fases/${f.fases[0]?.id}`, { ativo: false })
+    await chamar('patch', d.cookie, `/fases/${f.fases[1]?.id}`, { ativo: false })
+    expect((await chamar('post', d.cookie, `/${f.id}/fases`, { nome: 'A' })).status).toBe(201)
+    expect((await chamar('post', d.cookie, `/${f.id}/fases`, { nome: 'B' })).status).toBe(201)
+    expect((await chamar('post', d.cookie, `/${f.id}/fases`, { nome: 'C' })).status).toBe(409)
+    // o limite é por funil
+    const outro = await criarFunil(d.cookie, 'Outro', nomes(2))
+    expect((await chamar('post', d.cookie, `/${outro.id}/fases`, { nome: 'Nova' })).status).toBe(
+      201,
+    )
+  })
+})

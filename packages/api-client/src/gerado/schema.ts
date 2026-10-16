@@ -711,7 +711,7 @@ export interface paths {
         put?: never;
         /**
          * Criar funil
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`.
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`. Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.
          */
         post: operations["FunisController_criar"];
         delete?: never;
@@ -755,7 +755,7 @@ export interface paths {
         put?: never;
         /**
          * Criar fase no funil
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`).
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`). Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.
          */
         post: operations["FunisController_criarFase"];
         delete?: never;
@@ -803,7 +803,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar fase
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo.
+         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo. Reativar (`ativo: true`) uma fase com o funil já em 6 ativas é 409 `limite_de_fases_ativas`.
          */
         patch: operations["FunisController_alterarFase"];
         trace?: never;
@@ -2543,6 +2543,8 @@ export interface components {
             /** Format: date */
             dataPrevistaFechamento?: string | null;
             observacoes?: string | null;
+            /** Format: uuid */
+            duplicadaDeId?: string;
         };
         CriarOrigemEntrada: {
             nome: string;
@@ -3498,6 +3500,9 @@ export interface components {
             porPagina: {
                 [key: string]: 25 | 50 | 100;
             };
+            kanbanColapsadas: {
+                [key: string]: string[];
+            };
         };
         PreferenciasPatch: {
             /** @enum {string|null} */
@@ -3510,6 +3515,9 @@ export interface components {
             };
             porPagina?: {
                 [key: string]: (25 | 50 | 100) | null;
+            };
+            kanbanColapsadas?: {
+                [key: string]: string[] | null;
             };
         };
         PreviaDaImportacao: {

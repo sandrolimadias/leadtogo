@@ -3939,7 +3939,7 @@
         "tags": ["Cadastros: funis"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`.",
+        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`. Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.",
         "operationId": "FunisController_criar",
         "parameters": [],
         "requestBody": {
@@ -4171,7 +4171,7 @@
     },
     "/v1/configuracoes/funis/{id}/fases": {
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`).",
+        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`). Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.",
         "operationId": "FunisController_criarFase",
         "parameters": [
           {
@@ -4351,7 +4351,7 @@
     },
     "/v1/configuracoes/funis/fases/{faseId}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo.",
+        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo. Reativar (`ativo: true`) uma fase com o funil já em 6 ativas é 409 `limite_de_fases_ativas`.",
         "operationId": "FunisController_alterarFase",
         "parameters": [
           {
@@ -12309,6 +12309,10 @@
             "nullable": true,
             "type": "string",
             "maxLength": 5000
+          },
+          "duplicadaDeId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": ["titulo", "empresaId"],
@@ -15799,9 +15803,27 @@
                 }
               ]
             }
+          },
+          "kanbanColapsadas": {
+            "type": "object",
+            "additionalProperties": {
+              "maxItems": 40,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
           }
         },
-        "required": ["tema", "menuRecolhido", "visaoDashboard", "filtroPadrao", "porPagina"],
+        "required": [
+          "tema",
+          "menuRecolhido",
+          "visaoDashboard",
+          "filtroPadrao",
+          "porPagina",
+          "kanbanColapsadas"
+        ],
         "additionalProperties": false
       },
       "PreferenciasPatch": {
@@ -15847,6 +15869,18 @@
                   "enum": [100]
                 }
               ]
+            }
+          },
+          "kanbanColapsadas": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "maxItems": 40,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
             }
           }
         },

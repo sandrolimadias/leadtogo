@@ -68,6 +68,7 @@ describe('GET /v1/me/preferencias', () => {
       visaoDashboard: 'minha',
       filtroPadrao: {},
       porPagina: {},
+      kanbanColapsadas: {},
     })
   })
 
@@ -84,6 +85,7 @@ describe('GET /v1/me/preferencias', () => {
       visaoDashboard: 'minha',
       filtroPadrao: {},
       porPagina: {},
+      kanbanColapsadas: {},
     })
   })
 })
@@ -100,12 +102,14 @@ describe('PATCH /v1/me/preferencias', () => {
       visaoDashboard: 'minha',
       filtroPadrao: {},
       porPagina: {},
+      kanbanColapsadas: {},
     })
 
     const segundo = await alterar(d.cookie, {
       visaoDashboard: 'equipe',
       filtroPadrao: { empresas: F1 },
       porPagina: {},
+      kanbanColapsadas: {},
     })
     expect(prefs(segundo)).toEqual({
       tema: 'escuro',
@@ -113,6 +117,7 @@ describe('PATCH /v1/me/preferencias', () => {
       visaoDashboard: 'equipe',
       filtroPadrao: { empresas: F1 },
       porPagina: {},
+      kanbanColapsadas: {},
     })
     const terceiro = await alterar(d.cookie, { filtroPadrao: { contatos: F2 } })
     expect(prefs(terceiro).filtroPadrao).toEqual({ empresas: F1, contatos: F2 }) // mescla por tela
@@ -127,6 +132,7 @@ describe('PATCH /v1/me/preferencias', () => {
       menuRecolhido: true,
       filtroPadrao: { empresas: F1, contatos: F2 },
       porPagina: {},
+      kanbanColapsadas: {},
     })
     const r = await alterar(d.cookie, { tema: null, filtroPadrao: { empresas: null } })
     expect(prefs(r)).toEqual({
@@ -135,6 +141,7 @@ describe('PATCH /v1/me/preferencias', () => {
       visaoDashboard: 'minha',
       filtroPadrao: { contatos: F2 },
       porPagina: {},
+      kanbanColapsadas: {},
     })
     expect((await guardadoNoBanco(d.usuarioId, d.tenantId))?.preferencias).toEqual({
       menuRecolhido: true,
@@ -248,6 +255,7 @@ describe('PATCH /v1/me/preferencias', () => {
       visaoDashboard: 'equipe',
       filtroPadrao: { empresas: F1 },
       porPagina: {},
+      kanbanColapsadas: {},
     })
   })
 })

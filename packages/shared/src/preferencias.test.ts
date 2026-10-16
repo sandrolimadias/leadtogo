@@ -122,3 +122,36 @@ describe('preferências do membro', () => {
     expect(guardado).toEqual({})
   })
 })
+
+describe('fases recolhidas do Kanban (kanbanColapsadas)', () => {
+  it('guarda a lista inteira do funil, não repete fase e remove com null ou lista vazia', () => {
+    let guardado = aplicarPatch({}, { kanbanColapsadas: { [F1]: [F2, F2] } })
+    expect(guardado.kanbanColapsadas).toEqual({ [F1]: [F2] })
+    guardado = aplicarPatch(guardado, { kanbanColapsadas: { [F2]: [F1] } })
+    expect(guardado.kanbanColapsadas).toEqual({ [F1]: [F2], [F2]: [F1] })
+    guardado = aplicarPatch(guardado, { kanbanColapsadas: { [F1]: [] } })
+    expect(guardado.kanbanColapsadas).toEqual({ [F2]: [F1] })
+    guardado = aplicarPatch(guardado, { kanbanColapsadas: { [F2]: null } })
+    expect(guardado).toEqual({})
+  })
+
+  it('lê chave a chave: id inválido ou lista ruim some sem levar o resto', () => {
+    expect(
+      lerPreferencias({ kanbanColapsadas: { [F1]: [F2], lixo: [F2], [F2]: 'x' }, tema: 'escuro' }),
+    ).toEqual({ ...PREFERENCIAS_PADRAO, tema: 'escuro', kanbanColapsadas: { [F1]: [F2] } })
+    expect(lerPreferencias({ kanbanColapsadas: [F1] })).toEqual(PREFERENCIAS_PADRAO)
+  })
+
+  it('o patch só aceita ids de funil e de fase (uuid)', () => {
+    expect(preferenciasPatchSchema.safeParse({ kanbanColapsadas: { [F1]: [F2] } }).success).toBe(
+      true,
+    )
+    expect(preferenciasPatchSchema.safeParse({ kanbanColapsadas: { [F1]: null } }).success).toBe(
+      true,
+    )
+    expect(preferenciasPatchSchema.safeParse({ kanbanColapsadas: { x: [F2] } }).success).toBe(false)
+    expect(preferenciasPatchSchema.safeParse({ kanbanColapsadas: { [F1]: ['x'] } }).success).toBe(
+      false,
+    )
+  })
+})

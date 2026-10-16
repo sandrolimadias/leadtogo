@@ -65,6 +65,9 @@ export function usePreferencias(empresaAtivaId: string | null) {
         ...(patch.porPagina
           ? { porPagina: aplicarPorPagina(base.porPagina, patch.porPagina) }
           : {}),
+        ...(patch.kanbanColapsadas
+          ? { kanbanColapsadas: aplicarColapsadas(base.kanbanColapsadas, patch.kanbanColapsadas) }
+          : {}),
       })
       return { antes }
     },
@@ -109,6 +112,42 @@ function aplicarPorPagina(
     else novo[tabela as TabelaPaginada] = tamanho
   }
   return novo
+}
+
+/** Mescla o patch de `kanbanColapsadas` (a lista inteira do funil; `null` ou vazia remove o funil). */
+function aplicarColapsadas(
+  atual: Preferencias['kanbanColapsadas'],
+  patch: NonNullable<PreferenciasPatch['kanbanColapsadas']>,
+): Preferencias['kanbanColapsadas'] {
+  const novo: Preferencias['kanbanColapsadas'] = { ...atual }
+  for (const [funil, fases] of Object.entries(patch)) {
+    if (fases === null || fases === undefined || fases.length === 0) delete novo[funil]
+    else novo[funil] = fases
+  }
+  return novo
+}
+
+/**
+ * As fases que a pessoa deixou recolhidas no Kanban de um funil, guardadas nas preferências dela (por usuário
+ * e por funil, valendo em qualquer aparelho). `alternar` recolhe ou abre uma fase e grava na hora.
+ */
+export function useFasesRecolhidas(funilId: string | undefined) {
+  const servicos = useServicos()
+  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data
+  const { prefs, alterar } = usePreferencias(me?.empresaAtivaId ?? null)
+  const guardadas = funilId ? (prefs.kanbanColapsadas[funilId] ?? []) : []
+  return {
+    recolhidas: guardadas,
+    alternar: (faseId: string, idsDasFasesDoFunil: string[]) => {
+      if (!funilId) return
+      // guarda só fases que ainda existem no funil (as excluídas ou inativadas saem da lista)
+      const atuais = guardadas.filter((id) => idsDasFasesDoFunil.includes(id))
+      const proximas = atuais.includes(faseId)
+        ? atuais.filter((id) => id !== faseId)
+        : [...atuais, faseId]
+      alterar({ kanbanColapsadas: { [funilId]: proximas.length > 0 ? proximas : null } })
+    },
+  }
 }
 
 /**

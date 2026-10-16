@@ -56,6 +56,7 @@ function servicosDaCasca(inicial: Me, extra = {}) {
     visaoDashboard: 'minha',
     filtroPadrao: {},
     porPagina: {},
+    kanbanColapsadas: {},
   }
   return servicosFalsos({
     me: async () => atual,
@@ -133,6 +134,7 @@ describe('casca no desktop', () => {
           visaoDashboard: 'minha',
           filtroPadrao: {},
           porPagina: {},
+          kanbanColapsadas: {},
         }),
       }),
       '/',

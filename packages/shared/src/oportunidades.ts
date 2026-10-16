@@ -88,6 +88,8 @@ export const criarOportunidadeSchema = z
     /** Opcional: sem data é "sem previsão" e fica fora da previsão do mês */
     dataPrevistaFechamento: dia.nullable().optional(),
     observacoes: texto(5000),
+    /** Id da oportunidade de que esta é cópia ("Duplicar"): só vai para a auditoria, nada é copiado por ele */
+    duplicadaDeId: z.uuid().optional(),
   })
   .strict()
   .meta({ id: 'CriarOportunidadeEntrada' })

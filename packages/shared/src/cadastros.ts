@@ -361,6 +361,9 @@ export const alterarFaseSchema = z
   .meta({ id: 'AlterarFunilFaseEntrada' })
 export type AlterarFaseEntrada = z.infer<typeof alterarFaseSchema>
 
+/** Quantas fases ATIVAS um funil pode ter (as inativas não contam): o Kanban precisa caber na tela. */
+export const MAX_FASES_ATIVAS_POR_FUNIL = 6
+
 /** Um funil nasce com ao menos uma fase (a primeira etapa do andamento). */
 export const criarFunilSchema = z
   .object({

@@ -64,7 +64,7 @@ export class FunisController {
     resumo: 'Criar funil',
     descricao:
       ESCRITA +
-      ' O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`.',
+      ' O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`. Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.',
     corpo: criarFunilSchema,
     resposta: funilSchema,
     status: 201,
@@ -124,7 +124,7 @@ export class FunisController {
     resumo: 'Criar fase no funil',
     descricao:
       ESCRITA +
-      ' A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`).',
+      ' A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`). Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.',
     corpo: criarFaseSchema,
     resposta: funilSchema,
     status: 201,
@@ -159,7 +159,7 @@ export class FunisController {
     resumo: 'Alterar fase',
     descricao:
       ESCRITA +
-      ' Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo.',
+      ' Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo. Reativar (`ativo: true`) uma fase com o funil já em 6 ativas é 409 `limite_de_fases_ativas`.',
     corpo: alterarFaseSchema,
     resposta: funilSchema,
     erros: [400, 401, 403, 404, 409],

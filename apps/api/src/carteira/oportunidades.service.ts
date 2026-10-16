@@ -96,6 +96,11 @@ export class OportunidadesService {
     if (dados.origemId) await this.exigirCadastro(db, 'origemId', origens, dados.origemId)
     const responsavelId = dados.responsavelId ?? empresa.vendedorId
     await this.exigirResponsavel(db, escopo, responsavelId)
+    // "Duplicar": a original precisa existir e ser visível para quem duplica (só o id vai para a auditoria)
+    if (dados.duplicadaDeId) {
+      const original = await lerOportunidade(db, escopo, dados.duplicadaDeId, new Date())
+      if (!original) throw naoEncontrada()
+    }
 
     const meses = dados.meses ?? (dados.valorMensal > 0 ? MESES_PADRAO : 0)
     const manual =
@@ -137,7 +142,12 @@ export class OportunidadesService {
       entidade: 'oportunidade',
       entidadeId: criada.id,
       acao: 'criar',
-      alteracoes: { titulo: dados.titulo, empresaId: dados.empresaId, fase: fase.nome },
+      alteracoes: {
+        titulo: dados.titulo,
+        empresaId: dados.empresaId,
+        fase: fase.nome,
+        ...(dados.duplicadaDeId && { duplicadaDeId: dados.duplicadaDeId }),
+      },
     })
     return this.ler(criada.id)
   }

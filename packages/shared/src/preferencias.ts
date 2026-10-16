@@ -25,6 +25,8 @@ export const preferenciasSchema = z
     filtroPadrao: z.partialRecord(z.enum(TELAS_COM_FILTRO), z.uuid()),
     /** Quantas linhas por página em cada tabela de dados (25, 50 ou 100); ausente = 25 */
     porPagina: z.partialRecord(z.enum(TABELAS_PAGINADAS), tamanhoDePaginaSchema),
+    /** Por funil (id), as fases (ids) que o usuário deixou recolhidas no Kanban; ausente = nenhuma */
+    kanbanColapsadas: z.record(z.uuid(), z.array(z.uuid()).max(40)),
   })
   .strict()
   .meta({ id: 'Preferencias' })
@@ -38,6 +40,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   visaoDashboard: 'minha',
   filtroPadrao: {},
   porPagina: {},
+  kanbanColapsadas: {},
 }
 
 /**
@@ -52,6 +55,8 @@ export const preferenciasPatchSchema = z
     filtroPadrao: z.partialRecord(z.enum(TELAS_COM_FILTRO), z.uuid().nullable()),
     /** `null` volta a tabela ao padrão (25) */
     porPagina: z.partialRecord(z.enum(TABELAS_PAGINADAS), tamanhoDePaginaSchema.nullable()),
+    /** A lista INTEIRA de fases recolhidas do funil; `null` (ou lista vazia) volta o funil ao padrão */
+    kanbanColapsadas: z.record(z.uuid(), z.array(z.uuid()).max(40).nullable()),
   })
   .partial()
   .strict()
@@ -89,6 +94,15 @@ export function aplicarPatch(
     }
     if (Object.keys(tamanhos).length === 0) delete novo.porPagina
     else novo.porPagina = tamanhos
+  }
+  if (patch.kanbanColapsadas) {
+    const colapsadas: Record<string, string[]> = { ...guardado.kanbanColapsadas }
+    for (const [funil, fases] of Object.entries(patch.kanbanColapsadas)) {
+      if (fases === null || fases === undefined || fases.length === 0) delete colapsadas[funil]
+      else colapsadas[funil] = [...new Set(fases)]
+    }
+    if (Object.keys(colapsadas).length === 0) delete novo.kanbanColapsadas
+    else novo.kanbanColapsadas = colapsadas
   }
   return novo
 }
@@ -132,5 +146,24 @@ export function lerPreferencias(guardado: unknown): Preferencias {
       if (tamanho.success) tamanhos[tabela] = tamanho.data
     }
   }
-  return { ...PREFERENCIAS_PADRAO, ...lidas, filtroPadrao: filtros, porPagina: tamanhos }
+  const colapsadas: Preferencias['kanbanColapsadas'] = {}
+  const brutoDeColapsadas = objeto['kanbanColapsadas']
+  if (
+    brutoDeColapsadas !== null &&
+    typeof brutoDeColapsadas === 'object' &&
+    !Array.isArray(brutoDeColapsadas)
+  ) {
+    for (const [funil, fases] of Object.entries(brutoDeColapsadas)) {
+      const id = z.uuid().safeParse(funil)
+      const lista = z.array(z.uuid()).max(40).safeParse(fases)
+      if (id.success && lista.success && lista.data.length > 0) colapsadas[id.data] = lista.data
+    }
+  }
+  return {
+    ...PREFERENCIAS_PADRAO,
+    ...lidas,
+    filtroPadrao: filtros,
+    porPagina: tamanhos,
+    kanbanColapsadas: colapsadas,
+  }
 }

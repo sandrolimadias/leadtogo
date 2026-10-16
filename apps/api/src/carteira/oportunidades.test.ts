@@ -813,6 +813,84 @@ describe('regra de fase e de funil (Módulo 1)', () => {
   })
 })
 
+describe('duplicar oportunidade', () => {
+  it('a cópia nasce Ativa, sem histórico, e a auditoria diz de qual foi duplicada', async () => {
+    const c = await cenario()
+    const e = await empresa(c.ana.cookie, 'Mercado da Ana')
+    const original = await nova(c.ana.cookie, {
+      titulo: 'Contrato anual',
+      empresaId: e.id,
+      faseId: c.fase('Proposta'),
+      valorUnico: 1000,
+      valorMensal: 200,
+      meses: 10,
+      probabilidade: 77,
+      dataPrevistaFechamento: '2026-12-10',
+    })
+    await fechar(c.ana.cookie, original.id, { status: 'conquistado' })
+
+    const copia = await nova(c.ana.cookie, {
+      titulo: 'Contrato anual (cópia)',
+      empresaId: e.id,
+      faseId: c.fase('Proposta'),
+      valorUnico: 1000,
+      valorMensal: 200,
+      meses: 10,
+      probabilidade: 77,
+      dataPrevistaFechamento: '2026-12-10',
+      duplicadaDeId: original.id,
+    })
+    expect(copia.id).not.toBe(original.id)
+    expect(copia).toMatchObject({
+      status: 'ativo',
+      probabilidade: 77,
+      probabilidadeManual: true,
+      valorTotal: 3000,
+      fase: { id: c.fase('Proposta') },
+    })
+    // só a criação no histórico: nada de fechamento nem de fases da original
+    const { historico } = (await chamar('get', c.ana.cookie, `${OPS}/${copia.id}`)).body as {
+      historico: { acao: string }[]
+    }
+    expect(historico.map((h) => h.acao)).toEqual(['criada'])
+    const reg = (await auditoriaDe(c.d.tenantId)).find(
+      (r) => r.entidade === 'oportunidade' && r.entidade_id === copia.id,
+    )
+    expect(reg?.alteracoes).toMatchObject({ duplicadaDeId: original.id })
+  })
+
+  it('a original precisa existir e ser visível: de outra carteira ou de outra empresa é 404', async () => {
+    const c = await cenario()
+    const outra = await cenario()
+    const daAna = await empresa(c.ana.cookie, 'Carteira da Ana')
+    const daBia = await empresa(c.bia.cookie, 'Carteira da Bia')
+    const o = await nova(c.ana.cookie, { titulo: 'Da Ana', empresaId: daAna.id })
+    // a Bia não vê a da Ana, então não a duplica (nem para a empresa dela)
+    const r = await chamar('post', c.bia.cookie, OPS, {
+      titulo: 'Da Ana (cópia)',
+      empresaId: daBia.id,
+      duplicadaDeId: o.id,
+    })
+    expect(r.status).toBe(404)
+    // de outra empresa (tenant): também não existe
+    const naOutra = await empresa(outra.d.cookie, 'Outra empresa')
+    const r2 = await chamar('post', outra.d.cookie, OPS, {
+      titulo: 'x',
+      empresaId: naOutra.id,
+      duplicadaDeId: o.id,
+    })
+    expect(r2.status).toBe(404)
+    // e o vendedor só duplica PARA empresa da própria carteira
+    const r3 = await chamar('post', c.bia.cookie, OPS, {
+      titulo: 'cópia',
+      empresaId: daAna.id,
+      duplicadaDeId: o.id,
+    })
+    expect(r3.status).toBe(400)
+    expect(erroDe(r3)).toBe('empresa_invalida')
+  })
+})
+
 describe('isolamento entre empresas e auditoria', () => {
   it('uma empresa não vê nem toca as oportunidades da outra', async () => {
     const a = await cenario()
