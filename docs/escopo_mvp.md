@@ -291,6 +291,23 @@ Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase,
 **Entregue (em produção):** `GET /v1/carteira/dashboard` (todos os números calculados no banco, no fuso da empresa), abas `hoje` e `proximos7` na lista de atividades (mesmas contas da tela Atividades), filtro `semContato` na lista de Empresas e filtros de motivo, perdas e período de fechamento na lista de Oportunidades; a tela do Dashboard (indicadores, minhas atividades com conclusão rápida, funil, conquistadas × perdidas e canceladas, motivos de perda e carteira); 14 testes da API, 17 de tela, 5 dos links dos cliques e 2 E2E (clique no gráfico do funil, tooltip, conclusão rápida, tema escuro e a página que não rola). **Junto, a pedido do Ale:** correção do executor da importação (corrida entre dois executores) e a regra "só se inativa o que já foi usado" para tipos de atividade, motivos, origens e soluções.
 - **Backlog único de pós-MVP:** `docs/backlog_pos_mvp.md` (este documento só aponta para ele; a seção 3 abaixo ficou com os grandes blocos).
 
+### Ajustes do Kanban e das fases *(pedidos do Ale em 16/10/2026, depois do Módulo 7; sem migração)*
+**Decisões do Ale**
+1. **Exceção de layout, só para o quadro de Oportunidades:** largura toda da área central (sem o teto de 1440 px; cabeçalho, filtros e resumo continuam como estão) e altura toda, com **cada coluna rolando os próprios cards**; a página continua sem rolagem.
+2. **Computador e tablet:** as colunas abertas **dividem a largura por igual, sem rolagem horizontal**. **Botão por coluna para recolher**: a faixa estreita mostra o nome na vertical, a quantidade e o total, e **aceita soltar um card**. O estado fica **por usuário e por funil, na conta**, nas preferências do usuário que já existiam (`preferencias.kanbanColapsadas`, só uma chave nova no JSON).
+3. **Celular:** **uma coluna por vez** na largura da tela, deslizando (`scroll-snap`), com indicador "N de M" e pontos. O arrastar do card continua pela alça ou pelo menu.
+4. **Limite de 6 fases ativas por funil** (as inativas não contam): API e tela de Configurações → Funis não deixam criar nem reativar a 7ª (409 `limite_de_fases_ativas`). **Nada foi inativado por conta própria:** funis que já passem de 6 continuam como estão (o limite só barra criar e reativar) até o Ale escolher quais inativar.
+5. **Zonas de fechamento no topo** do quadro (também no celular).
+6. **Duplicar oportunidade** (menu ⋯ do card, da lista e da ficha), como descrito em `funcionalidades.md` (seção 7); a auditoria da cópia guarda `duplicadaDeId`.
+
+**Decisões do Claude (dentro do pedido)**
+- A **última fase aberta não tem o botão de recolher** (o quadro nunca fica vazio); no celular não há recolher.
+- No celular a alça de arrastar **fica** (é por ela que o card chega às zonas do topo); o menu do card continua movendo de fase.
+- As zonas ficam **por cima** dos cabeçalhos das colunas (posição absoluta, sem empurrar nada) e o destino é o que está sob o ponteiro (as zonas ganham das colunas); no teclado, seta para cima vai às zonas e para baixo volta às fases.
+- A cópia **não leva o responsável** (volta ao vendedor da empresa, como em toda oportunidade nova) **nem as observações**; a probabilidade só vai quando foi editada à mão (senão acompanha a fase).
+- O **menu do card** passou a ter altura máxima e rolagem (com 6 fases ele passava da janela em 1366×768); vale para todos os menus.
+- No celular o topo da tela Oportunidades ficou mais compacto (resumo em duas linhas, "Kanban | Lista" e "Nova" na mesma linha, funil e "Suspensas" na mesma linha) para sobrar altura ao quadro.
+
 ### Transversal (entra junto dos módulos em que fizer sentido)
 - **Busca global** (empresas, contatos, oportunidades).
 - **Auditoria nas fichas** (aba Histórico).

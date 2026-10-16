@@ -43,7 +43,7 @@ Leadtogo é um CRM de gestão de carteira para vendedores que trabalham no escri
 - Cantos: `radius-sm` para controles, `radius-md` para cards e menus, `radius-lg` para diálogos e colunas do Kanban, `radius-full` para tags, avatares e switch.
 - Densidade pela propriedade `data-density` no container: `compact` (`control-sm`, 28px) em tabelas e barras de filtro, padrão (`control-md`, 36px) e `touch` (`control-lg`, 44px) no celular e tablet.
 - Layout: navegação lateral `sidebar-width` no desktop (≥ `bp-lg`), trilho de ícones no tablet (≥ `bp-md`), barra inferior + botão flutuante "+" no celular. A topbar (`topbar-height`) tem busca global, seletor de empresa e notificações.
-- Kanban com colunas `kanban-column` (296px) e rolagem horizontal; no celular, uma coluna por vez.
+- Kanban: no computador e no tablet as colunas abertas dividem a largura da área central por igual (sem rolagem horizontal; qualquer coluna pode ser recolhida) e cada coluna rola os cards por dentro; no celular, uma coluna por vez, com deslize e indicador de posição (regra viva em `docs/design_system.md`, seção "Kanban").
 
 ## Estados e interação
 

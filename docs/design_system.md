@@ -55,6 +55,7 @@
 5. Vale para listas, fichas, formulários, Configurações, importação, Dashboard e as telas futuras: use `PaginaDeTabela`/`AreaDaTabela`/`CorpoDaTabela` (`components/ui/pagina.tsx`) nas listas e um `<main>` comum nas demais.
 - Estrutura: `html`/`body` com `overflow: hidden`; casca `relative h-dvh overflow-hidden`; `#conteudo` com `min-h-0 flex-1 overflow-y-auto overflow-x-hidden` e, dentro, `mx-auto flex min-h-full w-full max-w-[1440px] flex-col`.
 - Teste que protege a regra: `apps/web/e2e/layout.spec.ts` (1920×1080, 1366×768 e 390×844: janela sem rolagem, menu e topo parados, uma única barra, cabeçalho das colunas grudado, 1440 px centralizado).
+6. **Única exceção: o quadro Kanban de Oportunidades** (largura toda, altura toda e rolagem por coluna), descrita na seção "Kanban" abaixo. Toda outra exceção precisa da aprovação do Ale e entra aqui.
 
 ## Tabelas e paginação (regra para toda tabela de dados)
 - **Um componente só: `Paginacao`** (`components/ui/paginacao.tsx`), usado por todas as tabelas, inclusive as dos próximos módulos. Mostra "1–25 de 120", **Linhas por página (25, 50 ou 100)**, "Página N de M", Anterior e Próxima.
@@ -70,12 +71,18 @@ Para escolher um registro que vem de uma tabela grande (a empresa, no "Registrar
 - **Nunca usar popover (`Popover`, `Select` suspenso) dentro de `Dialog` ou `Sheet`**: o diálogo fica na camada 1400 e o popover abria atrás dele (parecia travado). O campo fica dentro da própria janela.
 - Escolhido o registro, o campo vira o nome com um botão **Trocar** (volta à busca). Componente: `telas/atividades/busca-de-empresa.tsx`. Teste: a janela mantém o mesmo tamanho com os resultados abertos (`apps/web/e2e/atividades.spec.ts`).
 
-## Kanban (regra, Módulo 6)
-- O quadro rola **na horizontal por dentro** (`overflow-x-auto` só no quadro) quando as colunas (296 px, `--kanban-column`) não cabem: **nunca a página**. As **colunas crescem com os cards**, sem rolagem vertical por coluna: quem rola na vertical é a área central.
-- **Arrastar pela alça** (ícone de seis pontos), não pelo card inteiro: o card continua clicável e o toque não briga com a rolagem. Mouse, toque (pressão curta) e **teclado** (Espaço, setas, Espaço, Esc) funcionam com `@dnd-kit/core`. No **celular não há arrastar**: o menu do card move e fecha.
-- As **zonas de soltura** (Conquistada, Perdida, Cancelada, Suspensa) ficam coladas no rodapé da área central e **só aparecem enquanto se arrasta** (`sticky bottom-0`).
+## Kanban (regra, Módulo 6; layout revisto em 16/10/2026)
+**Exceção aprovada pelo Ale à regra de "Layout e rolagem", valendo só para o quadro de Oportunidades** (a página continua sem rolagem, e o cabeçalho, os filtros e o resumo continuam como nas outras telas, centralizados em até 1440 px):
+- **Largura toda.** O quadro usa a largura inteira da área central (sem o limite de 1440 px, só com o espaçamento lateral `p-6`/`p-4`). A página marca isso com `PaginaDeQuadro` (`components/ui/pagina.tsx`, atributo `data-quadro`); a casca (`has-[[data-quadro]]`) tira o `max-w-[1440px]` e dá ao conteúdo a altura toda. O topo da página fica em `CabecalhoDoQuadro` (1440 px centralizado).
+- **Altura toda e rolagem por coluna.** As colunas descem até o fim da área central e **cada coluna rola os próprios cards por dentro** (`overflow-y-auto` na lista de cards). A área central e a página não rolam. Altura mínima de 420 px: abaixo disso a área central rola, e a página nunca.
+- **Computador e tablet: sem rolagem horizontal.** As colunas **abertas dividem a largura por igual** (`flex-1 basis-0 min-w-0`; o token `--kanban-column` de 296 px **deixa de ser largura** do quadro). Cada fase tem o botão **Recolher**; a coluna recolhida vira uma **faixa de 44 px** com o nome na vertical, a quantidade e a soma, e o espaço liberado vai para as abertas. Também **recebe cards** soltos. A última fase aberta não tem o botão de recolher (o quadro nunca fica vazio). O estado fica **por usuário e por funil, na conta** (`preferencias.kanbanColapsadas`, vale em qualquer aparelho; hook `useFasesRecolhidas`, `casca/preferencias.ts`). O limite de **6 fases ativas por funil** garante que caibam.
+- **Celular: uma coluna por vez.** Cada coluna ocupa a largura da tela e **encaixa** ao deslizar (`snap-x snap-mandatory`); abaixo do quadro, o indicador **"2 de 5"** com um ponto por fase (os pontos levam à fase). Não há recolher no celular. O card tem a **alça de arrastar** (para as zonas de fechamento, que ficam no topo) e o **menu**, que também move de fase.
+- **Zonas de soltura** (Conquistada, Perdida, Cancelada, Suspensa): **no topo do quadro** (também no celular), `absolute` sobre os cabeçalhos das colunas, **só enquanto se arrasta**, sem empurrar o layout. Quem decide o destino é o ponteiro (as zonas ganham das colunas sob elas).
+- **Arrastar pela alça** (ícone de seis pontos), não pelo card inteiro: o card continua clicável e o toque não briga com a rolagem. Mouse, toque (pressão curta) e **teclado** (Espaço, setas para os lados entre fases, seta para cima para as zonas, seta para baixo de volta às fases, Espaço, Esc) com `@dnd-kit/core`.
+- O **menu do card** e os menus em geral nunca passam da altura da janela (rolam por dentro): com 6 fases o menu do card é longo.
 - Alerta de parada: contorno `warning` **e** a frase "Parada há N dias nesta fase". Nunca só a cor.
 - Valores sempre em `tabular-nums`; dinheiro em R$ com centavos nos cards e sem centavos nas somas das colunas.
+- Testes que protegem a regra: `apps/web/e2e/kanban-layout.spec.ts` (1920×1080, 1366×768 e 390×844) e `apps/web/src/telas/oportunidades/kanban.test.tsx`.
 
 ## Gráficos (regra, Módulo 7)
 Os gráficos do app usam **Recharts**, no padrão do **shadcn/ui Charts**: um contêiner que dá as cores das séries e um tooltip no visual dos cartões. Componente único em `apps/web/src/components/ui/grafico.tsx` (`ContainerDoGrafico`, `ConteudoDoTooltip`, `GraficoVazio`) e apoio em `apps/web/src/lib/grafico.ts` (`corDaTag`, `useReduzirMovimento`).

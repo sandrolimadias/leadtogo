@@ -339,7 +339,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 | Empresa | Obrigatório (busca) |
 | Contatos | Principal (busca **apenas entre os contatos da empresa escolhida**) + outros |
 | **Solução** | Linha de solução cadastrável |
-| Funil / Fase | Obrigatório |
+| Funil / Fase | Obrigatório. **Um funil tem no máximo 6 fases ativas** (as inativas não contam): criar ou reativar a 7ª é recusado (409 `limite_de_fases_ativas`) |
 | **Status** | Ativo · Conquistado · Perdido · Cancelado · Suspenso |
 | **Valores (Módulo 6)** | A pessoa digita o **valor único**, o **valor mensal** e a **duração em meses** (inteiro ≥ 0; **12** quando há valor mensal e nada foi dito). O **total é calculado** (`único + mensal × meses`) e **nunca digitado**; o **ponderado** é `total × probabilidade`. As duas contas ficam no banco (colunas geradas), num lugar só. *(Itens e catálogo de produtos: depois do MVP.)* |
 | **Data prevista de fechamento** | **Opcional.** Sem data, a oportunidade é "sem previsão" e fica fora da previsão do mês (Módulo 7) |
@@ -365,14 +365,16 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
   - Card: nome, empresa, valor, responsável, data prevista e próxima atividade.
   - **Arrastar e soltar** entre etapas (Módulo 6: **pela alça** do card, com mouse, toque ou teclado; ao mover, a probabilidade assume a da nova fase, a menos que tenha sido editada à mão).
   - **Alerta de oportunidade parada:** card destacado quando passa X dias sem atividade.
-  - Zona de soltura no rodapé: **Conquistado · Perdido · Cancelado · Suspenso** (arrastar o card para fechar). Filtro para ver as suspensas.
+  - Zona de soltura no **topo** do quadro (também no celular), só enquanto se arrasta: **Conquistado · Perdido · Cancelado · Suspenso** (arrastar o card para fechar). Filtro para ver as suspensas.
+  - **Layout (16/10/2026):** o quadro usa a largura e a altura toda da área central; cada coluna rola os próprios cards. No computador e no tablet as colunas abertas dividem a largura por igual, sem rolagem horizontal, e qualquer fase pode ser **recolhida** numa faixa estreita (o estado fica por usuário e por funil, na conta); no celular é uma coluna por vez, com deslize e indicador de posição. Regra em `design_system.md`, seção "Kanban".
+  - **Duplicar** (menu ⋯ do card, da lista e da ficha): abre "Nova oportunidade" preenchida com empresa, contato, solução, origem, funil, fase, valores, meses, probabilidade (com a marca de editada à mão, se houver) e data prevista, com " (cópia)" no nome; tudo editável, inclusive a empresa (o contato só fica se tiver vínculo com a nova empresa). **Não** copia histórico, atividades, status, fechamento, responsável nem observações: a cópia nasce **Ativa**. O vendedor só duplica para empresas da própria carteira; a auditoria da cópia registra de qual foi duplicada (`duplicadaDeId`).
   - No celular: rolagem horizontal por coluna e mover pelo menu do card (sem depender de arrastar).
 - **Visão em lista** (alternância Kanban ↔ Lista): tabela com ordenação, filtros e paginação 25/50/100 *(exportação: depois do MVP)*.
 - **Filtros:** responsável, fase, status, solução, período de previsão, origem, valor, tags da empresa e campos personalizados.
 - **Filtros salvos** por usuário (ex.: "Minhas oportunidades acima de R$ 10 mil").
 
 ### Diálogo "Fechar oportunidade" (v1.5, do protótipo)
-- Abre ao soltar o card numa das 4 zonas do rodapé do Kanban (Conquistado, Perdido, Cancelado, Suspenso) ou pelo menu do card (que é o jeito de mover no celular).
+- Abre ao soltar o card numa das 4 zonas do **topo** do Kanban (Conquistado, Perdido, Cancelado, Suspenso) ou pelo menu do card (que é o jeito de mover no celular).
 - Escolha do status em 4 opções · **Motivo** obrigatório (lista filtrada pelo status) para Perdido, Cancelado e Suspenso · **Retomar em** para Suspenso · Detalhe.
 - **Conquistado:** mostra Valor total e MRR e um interruptor **"Mudar o Status da empresa para Cliente"**, que já vem ligado conforme a configuração do tenant e pode ser desligado naquele fechamento.
 - Informa "Fica registrado que parou na fase X". O botão repete o verbo ("Marcar como perdida").

@@ -179,8 +179,8 @@ Coluna de quadro Kanban, usada no funil (fases) e nas tarefas (colunas customiz�
 
 **O consumidor fornece:** `title`, `color` (cor da paleta de tags, mostrada no ponto), `count`, `limit?` (limite de cards; passa a vermelho quando estoura), `total?` (soma em R$, só no funil), `children` (cards), `onAdd` / `addLabel` ou `onAdd={false}`.
 
-- Largura fixa `kanban-column` (296px); o quadro rola na horizontal.
-- No celular: uma coluna por vez, com deslize lateral; mover cards pelo menu do card, sem depender de arrastar.
+- Largura: as colunas abertas dividem o quadro por igual (`flex: 1`, sem rolagem horizontal; o token `kanban-column` de 296px é só a referência do protótipo). A coluna rola os cards por dentro. Recolhida, vira uma faixa estreita (nome na vertical, quantidade e soma).
+- No celular: uma coluna por vez, com deslize lateral encaixado e indicador "N de M"; mover cards pela alça (zonas de fechamento) ou pelo menu do card.
 
 
 ## Dados

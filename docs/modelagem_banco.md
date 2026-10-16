@@ -233,7 +233,7 @@ O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verifi
 | cor | char(7) | Cor do vendedor em agenda/mapa |
 | foto_arquivo_id | uuid FK | |
 | ativo | boolean default true | Inativar mantém o histórico |
-| preferencias | jsonb | Preferências de interface (v1.1), com **chaves fechadas**: `tema` (claro/escuro/sistema), `menuRecolhido`, `visaoDashboard` (minha/equipe) e `filtroPadrao` (id do filtro salvo por tela: empresas, contatos, oportunidades, tarefas). Só se guarda o que foge do padrão; `GET/PATCH /v1/me/preferencias` |
+| preferencias | jsonb | Preferências de interface (v1.1), com **chaves fechadas**: `tema` (claro/escuro/sistema), `menuRecolhido`, `visaoDashboard` (minha/equipe), `filtroPadrao` (id do filtro salvo por tela: empresas, contatos, oportunidades, tarefas), `porPagina` e `kanbanColapsadas` (por funil, a lista de ids das fases que o usuário recolheu no Kanban; sem migração: é só uma chave nova do JSON). Só se guarda o que foge do padrão; `GET/PATCH /v1/me/preferencias` |
 | criado_em, atualizado_em, excluido_em | | |
 
 Únicos: `(tenant_id, email)` parcial; `(tenant_id, usuario_id)`.
