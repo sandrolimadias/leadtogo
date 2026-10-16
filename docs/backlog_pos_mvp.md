@@ -55,14 +55,13 @@
 | Desfazer depois de 7 dias, ou desfazer o que alguém já alterou | Decidido em 15/10/2026: a empresa alterada (ou com contato ou atividade) fica na carteira | Módulo 4 |
 | Tela de lotes no celular com ações (cancelar, desfazer na lista) | As ações ficam no relatório do lote | Módulo 4 |
 | Exportação de dados da carteira | A empresa tem a planilha de origem; sai com a exportação por empresa (LGPD) | Seção 3 |
-
-## Importação de contatos e de atividades (o que ficou de fora)
-| Item | Motivo de ter ficado fora | Origem |
-|---|---|---|
-| Atualizar contato ou atividade que já existe (hoje o contato duplicado só é vinculado e a atividade idêntica é pulada) | Decidido em 16/10/2026: nunca sobrescrever | Importação de contatos e de atividades |
-| Vincular a empresa pelo nome, e não só pelo CNPJ | Decidido em 16/10/2026 | Idem |
-| Mais de um e-mail e dois telefones por contato; contato da atividade por nome ou telefone | O modelo tem uma coluna de e-mail, uma de telefone e uma de celular; o contato da atividade é só pelo e-mail | Idem |
-| Recálculo da carteira em lote (uma consulta para todas as empresas do bloco) | Medido em 16/10/2026 com 10.000 linhas e 1.000 empresas: o recálculo por empresa soma 80 s dos 270 s do lote; só vale se um dia pesar | Idem |
+| Atualizar contato ou atividade que já existe (hoje o contato duplicado só é vinculado, sem mudar os dados, e a atividade idêntica é pulada) | Decidido em 16/10/2026: a importação nunca sobrescreve | Importação de contatos e atividades |
+| Vincular a empresa pelo nome, e não só pelo CNPJ | Decidido em 16/10/2026: o vínculo é sempre pelo CNPJ, que precisa estar na carteira | Importação de contatos e atividades |
+| Mais de um e-mail e mais de dois telefones por contato; contato da atividade por nome ou telefone | O modelo da planilha tem uma coluna de e-mail, uma de telefone e uma de celular; o contato da atividade é achado só pelo e-mail (com vínculo ativo com a empresa) | Importação de contatos e atividades |
+| Tarefa sem empresa, oportunidade, lembrete, recorrência e vários participantes na atividade importada | Não existem no formulário manual do MVP (o CNPJ é obrigatório, a atividade tem um contato só e não há oportunidade, lembrete nem repetição) | Importação de contatos e atividades |
+| Notificação de "importação concluída" para contatos e atividades | A central de notificações está fora do MVP (vale o mesmo motivo da importação de empresas) | Importação de contatos e atividades |
+| Relatório completo da importação de contatos e atividades em Excel | O CSV do que não entrou cobre a correção; o relatório inteiro está na tela, filtrável por resultado | Importação de contatos e atividades |
+| Recálculo da carteira em lote (uma consulta para todas as empresas do bloco, no lugar de uma por empresa) | Medido em 16/10/2026 com 10.000 linhas de atividades e 1.000 empresas: o recálculo por empresa soma 80 s dos 270 s do lote (7 ms por empresa) e o bloco de 200 linhas dura cerca de 5 s; só vale se um dia pesar, com teste de equivalência com `recalcularCarteira` | Importação de contatos e atividades |
 
 ## Atividades
 | Item | Motivo de ter ficado fora | Origem |
