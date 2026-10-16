@@ -191,6 +191,9 @@ export class ExecutorDaImportacao {
         return l
       })
       if (atual?.situacao !== 'em_andamento') {
+        // Cancelada pela pessoa: guarda os totais e avisa. Qualquer outra situação (por exemplo, o outro executor
+        // acabou de concluir o lote): não há mais nada a fazer aqui, e não foi um cancelamento
+        if (atual?.situacao !== 'cancelada') return fim('ignorada')
         await this.gravarTotais(tenantId, lote.id)
         return fim('cancelada')
       }
