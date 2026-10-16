@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Gabarito G0: geocodificação no ES</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: system-ui, sans-serif;
+      }
+      #m {
+        height: 100%;
+      }
+      .leg {
+        position: absolute;
+        z-index: 1000;
+        top: 10px;
+        right: 10px;
+        background: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        box-shadow: 0 1px 4px #0005;
+        font-size: 13px;
+      }
+      .n {
+        background: #1d4ed8;
+        color: #fff;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        line-height: 22px;
+        text-align: center;
+        font-size: 11px;
+        border: 2px solid #fff;
+      }
+      .c {
+        background: #ea580c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="leg">
+      <b>Gabarito G0</b> (coordenada declarada no CNES)<br /><span style="color: #1d4ed8">●</span>
+      ponto do gabarito &nbsp; <span style="color: #ea580c">●</span> <b>conferir</b> (10)<br />Abra
+      o ponto, olhe se cai no estabelecimento certo.
+    </div>
+    <div id="m"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const pontos = [
+        {
+          id: 1,
+          lat: -20.318642,
+          lon: -40.3300531,
+          texto:
+            '#1 IDAF<br>AV JERONIMO MONTEIRO, 1000 · CENTRO<br>Vitória · grande_vitoria · normal<br>CEP 29010935',
+          conferir: false,
+        },
+        {
+          id: 2,
+          lat: -20.3426406,
+          lon: -40.3983997,
+          texto:
+            '#2 CLIMEPI CLINICA MEDICA PSICOLOGICA<br>DOS APOSTOLOS, 234 · SAO FRANCISCO<br>Cariacica · grande_vitoria · normal<br>CEP 29145476',
+          conferir: false,
+        },
+        {
+          id: 3,
+          lat: -20.3520369,
+          lon: -40.2999059,
+          texto:
+            '#3 ODONTO SCAN<br>RUA LUCIANO DAS NEVES, 2418 · DIVINO ESPIRITO SANT<br>Vila Velha · grande_vitoria · normal<br>CEP 29107900',
+          conferir: true,
+        },
+        {
+          id: 4,
+          lat: -20.263034,
+          lon: -40.267182,
+          texto:
+            '#4 ALMA SAUDE MENTAL LTDA<br>FORTUNATO ABREU GAGNO, 299 · JARDIM CAMBURI<br>Vitória · grande_vitoria · normal<br>CEP 29090200',
+          conferir: false,
+        },
+        {
+          id: 5,
+          lat: -20.385393625907792,
+          lon: -40.325220272065565,
+          texto:
+            '#5 DROGARIA FARMALIS<br>SERGIO CARDOSO, 1928 · ARACAS<br>Vila Velha · grande_vitoria · normal<br>CEP 29103295',
+          conferir: false,
+        },
+        {
+          id: 6,
+          lat: -20.3732616,
+          lon: -40.31658,
+          texto:
+            '#6 PLENO SAUDE LTDA<br>AVENIDA DO CANAL, 245 · PRAIA DA COSTA<br>Vila Velha · grande_vitoria · normal<br>CEP 29101440',
+          conferir: false,
+        },
+        {
+          id: 7,
+          lat: -20.3127575060352,
+          lon: -40.30187755823154,
+          texto:
+            '#7 GASTROCENTER VITORIA<br>AVENIDA LEITAO DA SILVA, 270 · PRAIA DO SUA<br>Vitória · grande_vitoria · normal<br>CEP 29052110',
+          conferir: false,
+        },
+        {
+          id: 8,
+          lat: -20.3001095,
+          lon: -40.3203982,
+          texto:
+            '#8 HOSPITAL UNIVERSITARIO CASSIANO ANTONIO MORAES HUCAM<br>AV MARECHAL CAMPOS, 1355 · SANTA CECILIA<br>Vitória · grande_vitoria · normal<br>CEP 29043260',
+          conferir: false,
+        },
+        {
+          id: 9,
+          lat: -20.282752,
+          lon: -40.299619,
+          texto:
+            '#9 PRECISAO ODONTOLOGIA<br>AVENIDA HUGO VIOLA, 360 · JARDIM DA PENHA<br>Vitória · grande_vitoria · normal<br>CEP 29060420',
+          conferir: false,
+        },
+        {
+          id: 10,
+          lat: -20.674186327063207,
+          lon: -40.50177454948425,
+          texto:
+            '#10 ORAL SIN IMPLANTES<br>RUA ANTONIO CLAUDIO COUTINHO, 65 · CENTRO<br>Guarapari · grande_vitoria · normal<br>CEP 29200115',
+          conferir: false,
+        },
+        {
+          id: 11,
+          lat: -19.93322642469073,
+          lon: -40.40414214134216,
+          texto:
+            '#11 ESTRATEGIA SAUDE DA FAMILIA I<br>RUA EVERALDINO SILVA, 60 · CENTRO<br>Fundão · grande_vitoria · normal<br>CEP 29185000',
+          conferir: true,
+        },
+        {
+          id: 12,
+          lat: -20.1952412,
+          lon: -40.2459717,
+          texto:
+            '#12 LABORATORIO DETTMANN<br>AV ELDES SCHERRER SOUZA, 2230 · COLINA DE LARANJEIRA<br>Serra · grande_vitoria · normal<br>CEP 29167080',
+          conferir: false,
+        },
+        {
+          id: 13,
+          lat: -20.338973370851754,
+          lon: -40.39267301559448,
+          texto:
+            '#13 CREMASCO MEDICINA DIAGNOSTICA LTDA<br>AVENIDA EXPEDITO GARCIA, 1712 · CAMPO GRANDE<br>Cariacica · grande_vitoria · normal<br>CEP 29146200',
+          conferir: false,
+        },
+        {
+          id: 14,
+          lat: -20.1342666,
+          lon: -40.1926411,
+          texto:
+            '#14 RAIA DROGASIL<br>AV MINAS GERAIS, 1357 · RESIDENCIAL JACARAIP<br>Serra · grande_vitoria · normal<br>CEP 29175456',
+          conferir: false,
+        },
+        {
+          id: 15,
+          lat: -20.34470936018962,
+          lon: -40.29612284477461,
+          texto:
+            '#15 HEALTH TECH<br>MOEMA, 151 · DIVINO ESPIRITO SANT<br>Vila Velha · grande_vitoria · normal<br>CEP 29107250',
+          conferir: false,
+        },
+        {
+          id: 16,
+          lat: -20.66339516545982,
+          lon: -40.49954295158386,
+          texto:
+            '#16 LABORATORIO PRETTI<br>RUA JOSE AARAO JORGE, 115 · MUQUICABA<br>Guarapari · grande_vitoria · normal<br>CEP 29215110',
+          conferir: false,
+        },
+        {
+          id: 17,
+          lat: -20.395479,
+          lon: -40.496545,
+          texto:
+            '#17 UNIDADE DE SAUDE DA FAMILIA IPANEMA<br>RUA PASCOAL MARQUES, S/N · IPANEMA<br>Viana · grande_vitoria · sem_numero<br>CEP 29130915',
+          conferir: false,
+        },
+        {
+          id: 18,
+          lat: -20.36648,
+          lon: -40.420532,
+          texto:
+            '#18 CAF VIANA<br>AVENIDA GUARAPARI, S/N · AREINHA<br>Viana · grande_vitoria · sem_numero<br>CEP 29137110',
+          conferir: false,
+        },
+        {
+          id: 19,
+          lat: -20.3694114,
+          lon: -40.4149089,
+          texto:
+            '#19 UNIDADE BASICA DE SAUDE DE NOVA BETHANIA<br>AVENIDA ANDES, S/N · NOVA BETHANIA<br>Viana · grande_vitoria · sem_numero<br>CEP 29130915',
+          conferir: false,
+        },
+        {
+          id: 20,
+          lat: -20.35166847143395,
+          lon: -40.425074100494385,
+          texto:
+            '#20 CENTRO DE ESPECIALIDADE ODONTOLOGICA CEO<br>RUA BAJE, S/N · MARCILIO DE NORONHA<br>Viana · grande_vitoria · sem_numero<br>CEP 29135356',
+          conferir: true,
+        },
+        {
+          id: 21,
+          lat: -20.39338,
+          lon: -40.49653,
+          texto:
+            '#21 UNIDADE ODONTOLOGICA MOVEL<br>QUINTINO BOCAIUVA, S/N · CENTRO<br>Viana · grande_vitoria · sem_numero<br>CEP 29130915',
+          conferir: false,
+        },
+        {
+          id: 22,
+          lat: -19.9377024,
+          lon: -40.4019279,
+          texto:
+            '#22 UNIDADE DE SAUDE DA FAMILIA DRA MILENA GOTTARDI TONINI<br>AV CESAR PEGORETTI, S/N · CENTRO<br>Fundão · grande_vitoria · sem_numero<br>CEP 29185000',
+          conferir: true,
+        },
+        {
+          id: 23,
+          lat: -19.9383236,
+          lon: -40.4013728,
+          texto:
+            '#23 PRONTO ATENDIMENTO DR CESAR AGOSTINI<br>AV CEZAR PEGORETTI, S/N · OZEAS<br>Fundão · grande_vitoria · sem_numero<br>CEP 29185000',
+          conferir: false,
+        },
+        {
+          id: 24,
+          lat: -20.52184974776454,
+          lon: -40.67131698131561,
+          texto:
+            '#24 UNIDADE DE SAUDE DA FAMILIA VENTURA ASTORI<br>ZONA RURAL DE TODOS OS SANTOS, S/N · TODOS OS SANTOS<br>Guarapari · grande_vitoria · rural<br>CEP 29228985',
+          conferir: true,
+        },
+        {
+          id: 25,
+          lat: -20.18218733849169,
+          lon: -40.26556499460995,
+          texto:
+            '#25 NEON NUCLEO ESPECIALIZADO EM ONCOLOGIA<br>RODOVIA GOVERNADOR MARIO COVAS, 591 · BOA VISTA II<br>Serra · grande_vitoria · rural<br>CEP 29161001',
+          conferir: false,
+        },
+        {
+          id: 26,
+          lat: -20.52155333239863,
+          lon: -40.47855734825134,
+          texto:
+            '#26 UNIDADE DE SAUDE DA FAMILIA DRA SANDRA MARLENE B SCHNEIDER<br>ZONA RURAL DE AMARELOS, S/N · AMARELOS<br>Guarapari · grande_vitoria · rural<br>CEP 29226540',
+          conferir: false,
+        },
+        {
+          id: 27,
+          lat: -18.12682638778316,
+          lon: -40.364885330200195,
+          texto:
+            '#27 HEMOCENTER MEDICINA LABORATORIAL<br>RUA FONSO DEPOLLO, 431 · CENTRO<br>Montanha · interior · normal<br>CEP 29890000',
+          conferir: false,
+        },
+        {
+          id: 28,
+          lat: -20.23409335170144,
+          lon: -41.51102542877197,
+          texto:
+            '#28 SENA ODONTOLOGIA<br>DAVID GOMES, 14 · CENTRO<br>Ibatiba · interior · normal<br>CEP 29395000',
+          conferir: true,
+        },
+        {
+          id: 29,
+          lat: -20.238623314900003,
+          lon: -41.51106834411621,
+          texto:
+            '#29 HIRAN ODONTOLOGIA MODERNA<br>CANTIDIO ROBERTO DE MORAIS, 130 · NOVO HORIZONTE<br>Ibatiba · interior · normal<br>CEP 29395000',
+          conferir: false,
+        },
+        {
+          id: 30,
+          lat: -18.412701493129795,
+          lon: -40.21341562271118,
+          texto:
+            '#30 CLINICA ODONTOLOGICA DR RAFAEL RODRIGUES LTDA<br>AV AGENOR LUIS HERINGER, 386 · CENTRO<br>Pinheiros · interior · normal<br>CEP 29980000',
+          conferir: false,
+        },
+        {
+          id: 31,
+          lat: -18.4129458,
+          lon: -40.2192094,
+          texto:
+            '#31 UNIDADE PSF BAIRRO DOMICIANO<br>RUA SANTOS DUMONT, 31 · DOMICIANO<br>Pinheiros · interior · normal<br>CEP 29980000',
+          conferir: false,
+        },
+        {
+          id: 32,
+          lat: -19.976963,
+          lon: -41.282136,
+          texto:
+            '#32 FARMACIA AMORIM<br>JOAQUIM CANDIDO DA SILVA, 311 · SAO JORGE DO OLIVEIR<br>Brejetuba · interior · normal<br>CEP 29630000',
+          conferir: false,
+        },
+        {
+          id: 33,
+          lat: -19.75254234920093,
+          lon: -40.38575828075409,
+          texto:
+            '#33 UNIDADE DE ATENDIMENTO A SAUDE DA MULHER CASA ROSA DAYANE<br>RUA SETE DE SETEMBRO, 86 · CENTRO<br>João Neiva · interior · normal<br>CEP 29680000',
+          conferir: false,
+        },
+        {
+          id: 34,
+          lat: -18.8627891,
+          lon: -41.1229782,
+          texto:
+            '#34 KAMILLA SILVA FISIOTERAPIA E PILATES<br>RUA RODRIGUES DE MENEZES, 14 · CENTRO<br>Mantenópolis · interior · normal<br>CEP 29770000',
+          conferir: false,
+        },
+        {
+          id: 35,
+          lat: -18.618808280724465,
+          lon: -40.60159295797348,
+          texto:
+            '#35 SECRETARIA MUNICIPAL DE SAUDE DE VILA PAVAO<br>RUA AURORA, 51 · CENTRO<br>Vila Pavão · interior · normal<br>CEP 29843000',
+          conferir: true,
+        },
+        {
+          id: 36,
+          lat: -18.408283496896818,
+          lon: -40.220303535461426,
+          texto:
+            '#36 FAVERO E MONTEIRO SERVICOS MEDICOS LTDA<br>RUA VEREADOR JONAS ORLETTI, 437 · PINHEIRINHO<br>Pinheiros · interior · normal<br>CEP 29980000',
+          conferir: false,
+        },
+        {
+          id: 37,
+          lat: -19.9354762,
+          lon: -40.5986721,
+          texto:
+            '#37 LABORATORIO FERRARI<br>JOSE RUSCHI, 347 · CENTRO<br>Santa Teresa · interior · normal<br>CEP 29650000',
+          conferir: false,
+        },
+        {
+          id: 38,
+          lat: -19.05660134839733,
+          lon: -41.01654410362244,
+          texto:
+            '#38 FARMECEUTICO LTDA<br>JOAO FELIPE, 417 · CENTRO<br>Alto Rio Novo · interior · normal<br>CEP 29760000',
+          conferir: false,
+        },
+        {
+          id: 39,
+          lat: -21.101517043909826,
+          lon: -41.04717493057251,
+          texto:
+            '#39 ASSISTENCIA FARMACEUTICA MUNICIPAL DE PRESIDENTE KENNEDY<br>DONA SENHORINHA, 74 · CENTRO<br>Presidente Kennedy · interior · normal<br>CEP 29350000',
+          conferir: false,
+        },
+        {
+          id: 40,
+          lat: -20.150053729909718,
+          lon: -41.292500495910645,
+          texto:
+            '#40 VIGILANCIAS DE BREJETUBA<br>RUA APOLINARIO DIAS PIMENTA, 1 · CENTRO<br>Brejetuba · interior · normal<br>CEP 29630000',
+          conferir: false,
+        },
+        {
+          id: 41,
+          lat: -20.603543018088047,
+          lon: -41.02775573730469,
+          texto:
+            '#41 CARLA CARETA ODONTOLOGIA<br>AVENIDA JULIO GUIDI, S/N · CENTRO<br>Vargem Alta · interior · sem_numero<br>CEP 29295000',
+          conferir: true,
+        },
+        {
+          id: 42,
+          lat: -18.537101832244083,
+          lon: -40.285481214523315,
+          texto:
+            '#42 UNIDADE DE SAUDE DA FAMILIA FLORIANO DALLAPARTE MILANESE<br>AVENIDA SAD TAVARES DE OLIVEIRA, S/N · VILA FERNANDES<br>Boa Esperança · interior · sem_numero<br>CEP 29845000',
+          conferir: false,
+        },
+        {
+          id: 43,
+          lat: -20.6054711842945,
+          lon: -41.027069091796875,
+          texto:
+            '#43 PIN FARMA<br>AVENIDA JOAQUIM DEBONA, S/N · SAO JOSE DE FRUTEIRA<br>Vargem Alta · interior · sem_numero<br>CEP 29295000',
+          conferir: false,
+        },
+        {
+          id: 44,
+          lat: -18.5398,
+          lon: -40.2974,
+          texto:
+            '#44 CENTRO DE ESPECIALIDADES<br>RUA MINAS GERAIS, S/N · CENTRO<br>Boa Esperança · interior · sem_numero<br>CEP 29845000',
+          conferir: false,
+        },
+        {
+          id: 45,
+          lat: -18.303237,
+          lon: -39.955123,
+          texto:
+            '#45 CASA ROSA<br>RUA BENEVIDES JUNIOR, S/N · CENTRO<br>Pedro Canário · interior · sem_numero<br>CEP 29970000',
+          conferir: false,
+        },
+        {
+          id: 46,
+          lat: -20.3605241,
+          lon: -41.2509104,
+          texto:
+            '#46 SECRETARIA MUNICIPAL DE CONCEICAO DO CASTELO ES<br>RUA JOSE OLIVEIRA DE SOUZA, S/N · PEDRO RIGO<br>Conceição do Castelo · interior · sem_numero<br>CEP 29370000',
+          conferir: false,
+        },
+        {
+          id: 47,
+          lat: -19.08795381041431,
+          lon: -40.13948425032532,
+          texto:
+            '#47 UNIDADE ESF DO JUNCADO THAIRIS CALENTE DA SILVA<br>RUA PRINCIPAL, S/N · CORREGO JUNCADO<br>Sooretama · interior · rural<br>CEP 29929730',
+          conferir: true,
+        },
+        {
+          id: 48,
+          lat: -18.365185,
+          lon: -39.788533,
+          texto:
+            '#48 EAP ASSENTAMENTO PAULO CESAR VINHA<br>ASSENTAMENTO PAULO VINHA, S/N · ITAUNAS<br>Conceição da Barra · interior · rural<br>CEP 29960000',
+          conferir: false,
+        },
+        {
+          id: 49,
+          lat: -19.781726682429095,
+          lon: -40.95724582672119,
+          texto:
+            '#49 UNIDADE SANITARIA RURAL DE ALTO SOBREIRO<br>VILA DE ALTO SOBREIRO, S/N · ZONA RURAL<br>Itaguaçu · interior · rural<br>CEP 29690000',
+          conferir: true,
+        },
+        {
+          id: 50,
+          lat: -19.117406204869823,
+          lon: -40.19080042966436,
+          texto:
+            '#50 DROGARIA PRECO JUSTO<br>RUA PRINCIPAL, S/N · CORREGO CHUMBADO<br>Sooretama · interior · rural<br>CEP 29929520',
+          conferir: false,
+        },
+        {
+          id: 51,
+          lat: -20.700224,
+          lon: -40.92757,
+          texto:
+            '#51 UNIDADE BASICA DE SAUDE DA FAMILIA MILTON SANGIORGIO<br>PRINCESA, S/N · ZONA RURAL<br>Rio Novo do Sul · interior · rural<br>CEP 29290000',
+          conferir: false,
+        },
+      ]
+      const mapa = L.map('m').setView([-20.1, -40.5], 8)
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap',
+      }).addTo(mapa)
+      const grupo = []
+      for (const p of pontos) {
+        const icone = L.divIcon({
+          className: '',
+          html: '<div class="n ' + (p.conferir ? 'c' : '') + '">' + p.id + '</div>',
+          iconSize: [22, 22],
+        })
+        const mk = L.marker([p.lat, p.lon], { icon: icone }).addTo(mapa).bindPopup(p.texto)
+        grupo.push(mk)
+      }
+      mapa.fitBounds(L.featureGroup(grupo).getBounds().pad(0.1))
+    </script>
+  </body>
+</html>

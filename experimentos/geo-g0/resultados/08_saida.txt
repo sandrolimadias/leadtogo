@@ -1,0 +1,82 @@
+nominatim      cheio           grande_vitoria  {'numero': 3, 'rua': 9, 'nao': 14}  med 182 p90 880 pior 1030
+nominatim      cheio           interior        {'nao': 19, 'rua': 6}  med 80 p90 1308 pior 1308
+nominatim      limpo           grande_vitoria  {'numero': 3, 'rua': 9, 'nao': 14}  med 182 p90 1265 pior 2504
+nominatim      limpo           interior        {'nao': 18, 'rua': 7}  med 84 p90 1308 pior 1308
+nominatim      sem_tipo        grande_vitoria  {'numero': 9, 'rua': 13, 'nao': 4}  med 170 p90 4361 pior 21543
+nominatim      sem_tipo        interior        {'nao': 8, 'rua': 12, 'bairro_cidade': 4, 'numero': 1}  med 147 p90 6278 pior 107585
+nominatim      sem_tipo_sem_numero grande_vitoria  {'numero': 7, 'rua': 14, 'bairro_cidade': 1, 'nao': 4}  med 299 p90 9020 pior 122182
+nominatim      sem_tipo_sem_numero interior        {'nao': 7, 'rua': 11, 'bairro_cidade': 5, 'numero': 2}  med 183 p90 6278 pior 107585
+nominatim      cep_numero      grande_vitoria  {'numero': 9, 'nao': 8, 'rua': 5, 'bairro_cidade': 4}  med 2151 p90 265845 pior 288968
+nominatim      cep_numero      interior        {'numero': 4, 'bairro_cidade': 11, 'rua': 5, 'nao': 5}  med 2831 p90 90505 pior 187640
+nominatim      cep_completado  grande_vitoria  {'numero': 8, 'rua': 14, 'bairro_cidade': 4}  med 405 p90 8659 pior 24472
+nominatim      cep_completado  interior        {'bairro_cidade': 23, 'rua': 1, 'nao': 1}  med 5827 p90 12593 pior 19305
+nominatim      estruturada     grande_vitoria  {'numero': 8, 'rua': 15, 'nao': 3}  med 263 p90 4348 pior 746934
+nominatim      estruturada     interior        {'nao': 10, 'rua': 15}  med 220 p90 619805 pior 1563911
+photon         cheio           grande_vitoria  {'numero': 8, 'rua': 14, 'nao': 4}  med 171 p90 2183 pior 6005
+photon         cheio           interior        {'rua': 13, 'numero': 4, 'nao': 8}  med 169 p90 1158 pior 1702
+photon         limpo           grande_vitoria  {'numero': 9, 'rua': 16, 'bairro_cidade': 1}  med 221 p90 5754 pior 6358
+photon         limpo           interior        {'rua': 18, 'nao': 4, 'numero': 1, 'bairro_cidade': 2}  med 182 p90 1158 pior 4625
+photon         sem_tipo        grande_vitoria  {'numero': 9, 'rua': 15, 'bairro_cidade': 1, 'nao': 1}  med 313 p90 5181 pior 8238
+photon         sem_tipo        interior        {'nao': 5, 'numero': 1, 'rua': 15, 'bairro_cidade': 4}  med 301 p90 4625 pior 107585
+photon         sem_tipo_sem_numero grande_vitoria  {'rua': 22, 'bairro_cidade': 2, 'numero': 1, 'nao': 1}  med 357 p90 5181 pior 8238
+photon         sem_tipo_sem_numero interior        {'bairro_cidade': 5, 'rua': 20}  med 268 p90 6055 pior 176451
+photon         cep_numero      grande_vitoria  {'nao': 1, 'bairro_cidade': 24, 'numero': 1}  med 980 p90 27667 pior 43178
+photon         cep_numero      interior        {'bairro_cidade': 25}  med 2916 p90 18604 pior 152332
+photon         cep_completado  grande_vitoria  {'numero': 8, 'rua': 14, 'bairro_cidade': 4}  med 550 p90 4348 pior 24545
+photon         cep_completado  interior        {'bairro_cidade': 23, 'rua': 1, 'nao': 1}  med 461 p90 18181 pior 24942
+cnefe          cheio           grande_vitoria  {'numero': 10, 'rua': 11, 'numero_interp': 2, 'bairro_cidade': 3}  med 209 p90 4025 pior 5776
+cnefe          cheio           interior        {'numero': 9, 'numero_interp': 3, 'rua': 10, 'bairro_cidade': 3}  med 111 p90 5794 pior 12007
+cnefe          limpo           grande_vitoria  {'numero': 10, 'rua': 10, 'numero_interp': 3, 'bairro_cidade': 3}  med 240 p90 4025 pior 5776
+cnefe          limpo           interior        {'numero': 9, 'numero_interp': 3, 'rua': 10, 'bairro_cidade': 1, 'nao': 2}  med 90 p90 1208 pior 12007
+cnefe          cep_numero      grande_vitoria  {'nao': 7, 'bairro_cidade': 19}  med 238 p90 4274 pior 5948
+cnefe          cep_numero      interior        {'bairro_cidade': 23, 'nao': 2}  med 657 p90 17999 pior 24302
+cnefe          cep_completado  grande_vitoria  {'numero': 9, 'rua': 12, 'bairro_cidade': 3, 'numero_interp': 2}  med 279 p90 3203 pior 8818
+cnefe          cep_completado  interior        {'bairro_cidade': 23, 'rua': 2}  med 600 p90 17999 pior 24302
+nominatim_sem_limite cheio           grande_vitoria  {'numero': 3, 'rua': 9, 'nao': 14}  med 182 p90 880 pior 1030
+nominatim_sem_limite cheio           interior        {'nao': 19, 'rua': 6}  med 80 p90 1308 pior 1308
+nominatim_sem_limite limpo           grande_vitoria  {'numero': 3, 'rua': 9, 'nao': 14}  med 174 p90 1265 pior 2504
+nominatim_sem_limite limpo           interior        {'nao': 18, 'rua': 7}  med 84 p90 1308 pior 1308
+nominatim_sem_limite cep_numero      grande_vitoria  {'numero': 10, 'nao': 2, 'rua': 6, 'bairro_cidade': 8}  med 739725 p90 1438489 pior 1493799
+nominatim_sem_limite cep_numero      interior        {'numero': 4, 'bairro_cidade': 13, 'rua': 6, 'nao': 2}  med 2986 p90 855082 pior 1528745
+nominatim_sem_limite cep_completado  grande_vitoria  {'numero': 3, 'rua': 13, 'nao': 7, 'bairro_cidade': 3}  med 263 p90 3532 pior 8551
+nominatim_sem_limite cep_completado  interior        {'bairro_cidade': 23, 'nao': 2}  med 5886 p90 12593 pior 19305
+photon_sem_limite cheio           grande_vitoria  {'numero': 8, 'rua': 14, 'nao': 4}  med 171 p90 2183 pior 6005
+photon_sem_limite cheio           interior        {'rua': 13, 'numero': 4, 'nao': 8}  med 169 p90 1158 pior 1702
+photon_sem_limite limpo           grande_vitoria  {'numero': 10, 'rua': 16}  med 221 p90 5754 pior 2057473
+photon_sem_limite limpo           interior        {'rua': 20, 'numero': 2, 'nao': 1, 'bairro_cidade': 2}  med 226 p90 746919 pior 1860317
+photon_sem_limite cep_numero      grande_vitoria  {'rua': 3, 'bairro_cidade': 19, 'numero': 4}  med 1013 p90 1044454 pior 1844154
+photon_sem_limite cep_numero      interior        {'bairro_cidade': 24, 'rua': 1}  med 2916 p90 18604 pior 1358844
+photon_sem_limite cep_completado  grande_vitoria  {'numero': 6, 'rua': 15, 'bairro_cidade': 4, 'nao': 1}  med 357 p90 5849 pior 556406
+photon_sem_limite cep_completado  interior        {'bairro_cidade': 23, 'rua': 2}  med 453 p90 18181 pior 24942
+nominatim_local cheio           grande_vitoria  {'nao': 26}  med None p90 None pior None
+nominatim_local cheio           interior        {'nao': 25}  med None p90 None pior None
+nominatim_local limpo           grande_vitoria  {'nao': 26}  med None p90 None pior None
+nominatim_local limpo           interior        {'nao': 25}  med None p90 None pior None
+nominatim_local sem_tipo        grande_vitoria  {'numero': 7, 'rua': 15, 'nao': 4}  med 216 p90 2183 pior 10237
+nominatim_local sem_tipo        interior        {'nao': 9, 'rua': 15, 'bairro_cidade': 1}  med 215 p90 1303 pior 5943
+nominatim_local sem_tipo_sem_numero grande_vitoria  {'numero': 1, 'rua': 21, 'nao': 4}  med 364 p90 8665 pior 122182
+nominatim_local sem_tipo_sem_numero interior        {'nao': 9, 'rua': 15, 'bairro_cidade': 1}  med 215 p90 1303 pior 5943
+nominatim_local so_cidade       grande_vitoria  {'bairro_cidade': 26}  med 5611 p90 11924 pior 24536
+nominatim_local so_cidade       interior        {'bairro_cidade': 25}  med 499 p90 18181 pior 24942
+nominatim_local cep_numero      grande_vitoria  {'nao': 15, 'rua': 6, 'numero': 1, 'bairro_cidade': 4}  med 850 p90 4322 pior 36693
+nominatim_local cep_numero      interior        {'bairro_cidade': 16, 'rua': 7, 'nao': 2}  med 9147 p90 50974 pior 63890
+nominatim_local cep_completado  grande_vitoria  {'numero': 7, 'rua': 16, 'bairro_cidade': 3}  med 417 p90 8665 pior 24472
+nominatim_local cep_completado  interior        {'bairro_cidade': 23, 'nao': 2}  med 469 p90 18181 pior 24942
+nominatim_local estruturada     grande_vitoria  {'numero': 7, 'rua': 15, 'nao': 4}  med 248 p90 2183 pior 10237
+nominatim_local estruturada     interior        {'nao': 10, 'rua': 15}  med 211 p90 1303 pior 5943
+photon_local   cheio           grande_vitoria  {'numero': 7, 'nao': 15, 'rua': 4}  med 83 p90 1014 pior 2183
+photon_local   cheio           interior        {'nao': 11, 'numero': 2, 'rua': 11, 'bairro_cidade': 1}  med 214 p90 7298 pior 71561
+photon_local   limpo           grande_vitoria  {'numero': 9, 'rua': 8, 'nao': 9}  med 181 p90 2183 pior 5394
+photon_local   limpo           interior        {'nao': 9, 'rua': 13, 'numero': 2, 'bairro_cidade': 1}  med 244 p90 7298 pior 146001
+photon_local   sem_tipo        grande_vitoria  {'numero': 9, 'rua': 15, 'nao': 2}  med 220 p90 10902 pior 28669
+photon_local   sem_tipo        interior        {'nao': 4, 'numero': 1, 'rua': 18, 'bairro_cidade': 2}  med 218 p90 1695 pior 7257
+photon_local   sem_tipo_sem_numero grande_vitoria  {'rua': 23, 'numero': 1, 'nao': 2}  med 564 p90 10902 pior 28669
+photon_local   sem_tipo_sem_numero interior        {'bairro_cidade': 3, 'numero': 1, 'rua': 20, 'nao': 1}  med 222 p90 1695 pior 7257
+photon_local   so_cidade       grande_vitoria  {'bairro_cidade': 26}  med 5611 p90 11924 pior 24536
+photon_local   so_cidade       interior        {'bairro_cidade': 25}  med 499 p90 18181 pior 24942
+photon_local   cep_numero      grande_vitoria  {'bairro_cidade': 24, 'rua': 2}  med 1285 p90 29185 pior 43200
+photon_local   cep_numero      interior        {'bairro_cidade': 23, 'rua': 2}  med 2916 p90 18603 pior 141199
+photon_local   cep_completado  grande_vitoria  {'numero': 8, 'rua': 15, 'bairro_cidade': 3}  med 367 p90 10902 pior 28669
+photon_local   cep_completado  interior        {'bairro_cidade': 24, 'nao': 1}  med 484 p90 18181 pior 24942
+brasilapi_cep  cep             grande_vitoria  {'bairro_cidade': 26}  med 5576 p90 12037 pior 24266
+brasilapi_cep  cep             interior        {'bairro_cidade': 25}  med 802 p90 18068 pior 26054

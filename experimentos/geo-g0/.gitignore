@@ -1,0 +1,8 @@
+# Dados públicos baixados e arquivos pesados ficam fora do git: só scripts, gabarito e relatório entram
+dados
+tmp
+*.pbf
+*.pmtiles
+*.zip
+*.csv.gz
+__pycache__/

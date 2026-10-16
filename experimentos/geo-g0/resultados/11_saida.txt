@@ -1,0 +1,46 @@
+A: CNEFE número → OSM número → CNEFE interpolado → rua OSM → rua CNEFE → CEP/cidade
+    exata {'n': 25, 'mediana_m': 41, 'p90_m': 652, 'pior_m': 4353, 'ate_100m': 15, 'ate_300m': 21}
+    aprox_numero {'n': 3, 'mediana_m': 220, 'p90_m': 4025, 'pior_m': 4025, 'ate_100m': 1, 'ate_300m': 2}
+    rua {'n': 20, 'mediana_m': 290, 'p90_m': 5943, 'pior_m': 7711, 'ate_100m': 4, 'ate_300m': 10}
+    cep_cidade {'n': 3, 'mediana_m': 402, 'p90_m': 10488, 'pior_m': 10488, 'ate_100m': 0, 'ate_300m': 0}
+    todos {'n': 51, 'mediana_m': 197, 'p90_m': 4025, 'pior_m': 10488, 'nao_achou': 0} {'exata|grande_vitoria': 15, 'rua|grande_vitoria': 8, 'cep_cidade|grande_vitoria': 2, 'aprox_numero|grande_vitoria': 1, 'exata|interior': 10, 'aprox_numero|interior': 2, 'rua|interior': 12, 'cep_cidade|interior': 1}
+B: OSM número → CNEFE número → CNEFE interpolado → rua OSM → rua CNEFE → CEP/cidade
+    exata {'n': 25, 'mediana_m': 33, 'p90_m': 652, 'pior_m': 4361, 'ate_100m': 15, 'ate_300m': 21}
+    aprox_numero {'n': 3, 'mediana_m': 220, 'p90_m': 4025, 'pior_m': 4025, 'ate_100m': 1, 'ate_300m': 2}
+    rua {'n': 20, 'mediana_m': 290, 'p90_m': 5943, 'pior_m': 7711, 'ate_100m': 4, 'ate_300m': 10}
+    cep_cidade {'n': 3, 'mediana_m': 402, 'p90_m': 10488, 'pior_m': 10488, 'ate_100m': 0, 'ate_300m': 0}
+    todos {'n': 51, 'mediana_m': 197, 'p90_m': 4025, 'pior_m': 10488, 'nao_achou': 0} {'exata|grande_vitoria': 15, 'rua|grande_vitoria': 8, 'cep_cidade|grande_vitoria': 2, 'aprox_numero|grande_vitoria': 1, 'exata|interior': 10, 'aprox_numero|interior': 2, 'rua|interior': 12, 'cep_cidade|interior': 1}
+C: só CNEFE (número → interpolado → rua → CEP)
+    exata {'n': 19, 'mediana_m': 33, 'p90_m': 217, 'pior_m': 4353, 'ate_100m': 14, 'ate_300m': 18}
+    aprox_numero {'n': 5, 'mediana_m': 220, 'p90_m': 4025, 'pior_m': 4025, 'ate_100m': 2, 'ate_300m': 3}
+    rua {'n': 21, 'mediana_m': 336, 'p90_m': 5776, 'pior_m': 12007, 'ate_100m': 5, 'ate_300m': 9}
+    cep_cidade {'n': 6, 'mediana_m': 909, 'p90_m': 10488, 'pior_m': 10488, 'ate_100m': 0, 'ate_300m': 1}
+    todos {'n': 51, 'mediana_m': 180, 'p90_m': 4353, 'pior_m': 12007, 'nao_achou': 0} {'exata|grande_vitoria': 10, 'rua|grande_vitoria': 11, 'aprox_numero|grande_vitoria': 2, 'cep_cidade|grande_vitoria': 3, 'exata|interior': 9, 'aprox_numero|interior': 3, 'rua|interior': 10, 'cep_cidade|interior': 3}
+D: só OSM (Nominatim → Photon; número → rua → cidade)
+    exata {'n': 10, 'mediana_m': 216, 'p90_m': 2183, 'pior_m': 4361, 'ate_100m': 4, 'ate_300m': 6}
+    rua {'n': 33, 'mediana_m': 233, 'p90_m': 7257, 'pior_m': 10237, 'ate_100m': 6, 'ate_300m': 18}
+    cep_cidade {'n': 8, 'mediana_m': 13829, 'p90_m': 24942, 'pior_m': 24942, 'ate_100m': 2, 'ate_300m': 3}
+    todos {'n': 51, 'mediana_m': 263, 'p90_m': 10237, 'pior_m': 24942, 'nao_achou': 0} {'exata|grande_vitoria': 9, 'rua|grande_vitoria': 15, 'cep_cidade|grande_vitoria': 2, 'cep_cidade|interior': 6, 'exata|interior': 1, 'rua|interior': 18}
+E: Nominatim local sozinho (número → rua → cidade)
+    exata {'n': 7, 'mediana_m': 30, 'p90_m': 2183, 'pior_m': 2183, 'ate_100m': 4, 'ate_300m': 5}
+    rua {'n': 30, 'mediana_m': 248, 'p90_m': 1499, 'pior_m': 10237, 'ate_100m': 6, 'ate_300m': 16}
+    cep_cidade {'n': 14, 'mediana_m': 575, 'p90_m': 24536, 'pior_m': 24942, 'ate_100m': 2, 'ate_300m': 5}
+    todos {'n': 51, 'mediana_m': 287, 'p90_m': 10237, 'pior_m': 24942, 'nao_achou': 0} {'exata|grande_vitoria': 7, 'rua|grande_vitoria': 15, 'cep_cidade|grande_vitoria': 4, 'cep_cidade|interior': 10, 'rua|interior': 15}
+G: CNEFE número → Photon número → CNEFE interpolado → Photon rua → CNEFE rua → CEP/cidade
+    exata {'n': 25, 'mediana_m': 41, 'p90_m': 652, 'pior_m': 4353, 'ate_100m': 15, 'ate_300m': 20}
+    aprox_numero {'n': 3, 'mediana_m': 220, 'p90_m': 4025, 'pior_m': 4025, 'ate_100m': 1, 'ate_300m': 2}
+    rua {'n': 20, 'mediana_m': 290, 'p90_m': 7257, 'pior_m': 28669, 'ate_100m': 5, 'ate_300m': 10}
+    cep_cidade {'n': 3, 'mediana_m': 402, 'p90_m': 10488, 'pior_m': 10488, 'ate_100m': 0, 'ate_300m': 0}
+    todos {'n': 51, 'mediana_m': 203, 'p90_m': 4353, 'pior_m': 28669, 'nao_achou': 0} {'exata|grande_vitoria': 15, 'rua|grande_vitoria': 8, 'cep_cidade|grande_vitoria': 2, 'aprox_numero|grande_vitoria': 1, 'exata|interior': 10, 'aprox_numero|interior': 2, 'rua|interior': 12, 'cep_cidade|interior': 1}
+H: CNEFE número → Nominatim número → Photon número → CNEFE interpolado → Nominatim rua → Photon rua → CNEFE rua → CEP/cidade
+    exata {'n': 25, 'mediana_m': 41, 'p90_m': 652, 'pior_m': 4353, 'ate_100m': 15, 'ate_300m': 21}
+    aprox_numero {'n': 3, 'mediana_m': 220, 'p90_m': 4025, 'pior_m': 4025, 'ate_100m': 1, 'ate_300m': 2}
+    rua {'n': 20, 'mediana_m': 290, 'p90_m': 5943, 'pior_m': 7711, 'ate_100m': 4, 'ate_300m': 10}
+    cep_cidade {'n': 3, 'mediana_m': 402, 'p90_m': 10488, 'pior_m': 10488, 'ate_100m': 0, 'ate_300m': 0}
+    todos {'n': 51, 'mediana_m': 197, 'p90_m': 4025, 'pior_m': 10488, 'nao_achou': 0} {'exata|grande_vitoria': 15, 'rua|grande_vitoria': 8, 'cep_cidade|grande_vitoria': 2, 'aprox_numero|grande_vitoria': 1, 'exata|interior': 10, 'aprox_numero|interior': 2, 'rua|interior': 12, 'cep_cidade|interior': 1}
+F: CNEFE número → Nominatim rua → CNEFE interpolado/rua → CEP/cidade
+    exata {'n': 23, 'mediana_m': 33, 'p90_m': 313, 'pior_m': 4353, 'ate_100m': 15, 'ate_300m': 20}
+    aprox_numero {'n': 4, 'mediana_m': 137, 'p90_m': 4025, 'pior_m': 4025, 'ate_100m': 2, 'ate_300m': 3}
+    rua {'n': 20, 'mediana_m': 290, 'p90_m': 1334, 'pior_m': 5943, 'ate_100m': 5, 'ate_300m': 10}
+    cep_cidade {'n': 4, 'mediana_m': 909, 'p90_m': 10488, 'pior_m': 10488, 'ate_100m': 0, 'ate_300m': 0}
+    todos {'n': 51, 'mediana_m': 165, 'p90_m': 2183, 'pior_m': 10488, 'nao_achou': 0} {'exata|grande_vitoria': 14, 'rua|grande_vitoria': 9, 'cep_cidade|grande_vitoria': 2, 'aprox_numero|grande_vitoria': 1, 'exata|interior': 9, 'aprox_numero|interior': 3, 'rua|interior': 11, 'cep_cidade|interior': 2}

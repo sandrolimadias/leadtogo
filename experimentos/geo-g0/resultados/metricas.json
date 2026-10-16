@@ -1,0 +1,2118 @@
+{
+  "nominatim": {
+    "cheio|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 3,
+        "rua": 15,
+        "nao": 33
+      },
+      "n_com_coord": 18,
+      "mediana_m": 127,
+      "p90_m": 1030,
+      "pior_m": 1308,
+      "ate_50m": 5,
+      "ate_200m": 11,
+      "acima_1km": 2,
+      "acima_5km": 0
+    },
+    "cheio|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 3,
+        "rua": 9,
+        "nao": 14
+      },
+      "n_com_coord": 12,
+      "mediana_m": 182,
+      "p90_m": 880,
+      "pior_m": 1030,
+      "ate_50m": 3,
+      "ate_200m": 6,
+      "acima_1km": 1,
+      "acima_5km": 0
+    },
+    "cheio|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 19,
+        "rua": 6
+      },
+      "n_com_coord": 6,
+      "mediana_m": 80,
+      "p90_m": 1308,
+      "pior_m": 1308,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 1,
+      "acima_5km": 0
+    },
+    "limpo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 3,
+        "rua": 16,
+        "nao": 32
+      },
+      "n_com_coord": 19,
+      "mediana_m": 147,
+      "p90_m": 1308,
+      "pior_m": 2504,
+      "ate_50m": 6,
+      "ate_200m": 11,
+      "acima_1km": 3,
+      "acima_5km": 0
+    },
+    "limpo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 3,
+        "rua": 9,
+        "nao": 14
+      },
+      "n_com_coord": 12,
+      "mediana_m": 182,
+      "p90_m": 1265,
+      "pior_m": 2504,
+      "ate_50m": 4,
+      "ate_200m": 6,
+      "acima_1km": 2,
+      "acima_5km": 0
+    },
+    "limpo|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 18,
+        "rua": 7
+      },
+      "n_com_coord": 7,
+      "mediana_m": 84,
+      "p90_m": 1308,
+      "pior_m": 1308,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 1,
+      "acima_5km": 0
+    },
+    "sem_tipo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 10,
+        "rua": 25,
+        "nao": 12,
+        "bairro_cidade": 4
+      },
+      "n_com_coord": 39,
+      "mediana_m": 147,
+      "p90_m": 6278,
+      "pior_m": 107585,
+      "ate_50m": 8,
+      "ate_200m": 21,
+      "acima_1km": 10,
+      "acima_5km": 4
+    },
+    "sem_tipo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 9,
+        "rua": 13,
+        "nao": 4
+      },
+      "n_com_coord": 22,
+      "mediana_m": 170,
+      "p90_m": 4361,
+      "pior_m": 21543,
+      "ate_50m": 6,
+      "ate_200m": 12,
+      "acima_1km": 6,
+      "acima_5km": 2
+    },
+    "sem_tipo|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 8,
+        "rua": 12,
+        "bairro_cidade": 4,
+        "numero": 1
+      },
+      "n_com_coord": 17,
+      "mediana_m": 147,
+      "p90_m": 6278,
+      "pior_m": 107585,
+      "ate_50m": 2,
+      "ate_200m": 9,
+      "acima_1km": 4,
+      "acima_5km": 2
+    },
+    "sem_tipo_sem_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 9,
+        "rua": 25,
+        "bairro_cidade": 6,
+        "nao": 11
+      },
+      "n_com_coord": 40,
+      "mediana_m": 238,
+      "p90_m": 6984,
+      "pior_m": 122182,
+      "ate_50m": 5,
+      "ate_200m": 17,
+      "acima_1km": 14,
+      "acima_5km": 7
+    },
+    "sem_tipo_sem_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 7,
+        "rua": 14,
+        "bairro_cidade": 1,
+        "nao": 4
+      },
+      "n_com_coord": 22,
+      "mediana_m": 299,
+      "p90_m": 9020,
+      "pior_m": 122182,
+      "ate_50m": 2,
+      "ate_200m": 8,
+      "acima_1km": 9,
+      "acima_5km": 4
+    },
+    "sem_tipo_sem_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 7,
+        "rua": 11,
+        "bairro_cidade": 5,
+        "numero": 2
+      },
+      "n_com_coord": 18,
+      "mediana_m": 183,
+      "p90_m": 6278,
+      "pior_m": 107585,
+      "ate_50m": 3,
+      "ate_200m": 9,
+      "acima_1km": 5,
+      "acima_5km": 3
+    },
+    "cep_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 13,
+        "nao": 13,
+        "rua": 10,
+        "bairro_cidade": 15
+      },
+      "n_com_coord": 38,
+      "mediana_m": 2820,
+      "p90_m": 147920,
+      "pior_m": 288968,
+      "ate_50m": 1,
+      "ate_200m": 3,
+      "acima_1km": 23,
+      "acima_5km": 14
+    },
+    "cep_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 9,
+        "nao": 8,
+        "rua": 5,
+        "bairro_cidade": 4
+      },
+      "n_com_coord": 18,
+      "mediana_m": 2151,
+      "p90_m": 265845,
+      "pior_m": 288968,
+      "ate_50m": 1,
+      "ate_200m": 3,
+      "acima_1km": 10,
+      "acima_5km": 6
+    },
+    "cep_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "numero": 4,
+        "bairro_cidade": 11,
+        "rua": 5,
+        "nao": 5
+      },
+      "n_com_coord": 20,
+      "mediana_m": 2831,
+      "p90_m": 90505,
+      "pior_m": 187640,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 13,
+      "acima_5km": 8
+    },
+    "cep_completado|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 8,
+        "rua": 15,
+        "bairro_cidade": 27,
+        "nao": 1
+      },
+      "n_com_coord": 50,
+      "mediana_m": 2863,
+      "p90_m": 11638,
+      "pior_m": 24472,
+      "ate_50m": 4,
+      "ate_200m": 8,
+      "acima_1km": 29,
+      "acima_5km": 19
+    },
+    "cep_completado|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 8,
+        "rua": 14,
+        "bairro_cidade": 4
+      },
+      "n_com_coord": 26,
+      "mediana_m": 405,
+      "p90_m": 8659,
+      "pior_m": 24472,
+      "ate_50m": 4,
+      "ate_200m": 8,
+      "acima_1km": 11,
+      "acima_5km": 3
+    },
+    "cep_completado|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 23,
+        "rua": 1,
+        "nao": 1
+      },
+      "n_com_coord": 24,
+      "mediana_m": 5827,
+      "p90_m": 12593,
+      "pior_m": 19305,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 18,
+      "acima_5km": 16
+    },
+    "estruturada|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 8,
+        "rua": 30,
+        "nao": 13
+      },
+      "n_com_coord": 38,
+      "mediana_m": 242,
+      "p90_m": 9020,
+      "pior_m": 1563911,
+      "ate_50m": 9,
+      "ate_200m": 18,
+      "acima_1km": 12,
+      "acima_5km": 5
+    },
+    "estruturada|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 8,
+        "rua": 15,
+        "nao": 3
+      },
+      "n_com_coord": 23,
+      "mediana_m": 263,
+      "p90_m": 4348,
+      "pior_m": 746934,
+      "ate_50m": 7,
+      "ate_200m": 11,
+      "acima_1km": 8,
+      "acima_5km": 2
+    },
+    "estruturada|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 10,
+        "rua": 15
+      },
+      "n_com_coord": 15,
+      "mediana_m": 220,
+      "p90_m": 619805,
+      "pior_m": 1563911,
+      "ate_50m": 2,
+      "ate_200m": 7,
+      "acima_1km": 4,
+      "acima_5km": 3
+    }
+  },
+  "photon": {
+    "cheio|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 12,
+        "rua": 27,
+        "nao": 12
+      },
+      "n_com_coord": 39,
+      "mediana_m": 169,
+      "p90_m": 1702,
+      "pior_m": 6005,
+      "ate_50m": 9,
+      "ate_200m": 22,
+      "acima_1km": 6,
+      "acima_5km": 2
+    },
+    "cheio|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 8,
+        "rua": 14,
+        "nao": 4
+      },
+      "n_com_coord": 22,
+      "mediana_m": 171,
+      "p90_m": 2183,
+      "pior_m": 6005,
+      "ate_50m": 5,
+      "ate_200m": 12,
+      "acima_1km": 4,
+      "acima_5km": 2
+    },
+    "cheio|interior": {
+      "total": 25,
+      "niveis": {
+        "rua": 13,
+        "numero": 4,
+        "nao": 8
+      },
+      "n_com_coord": 17,
+      "mediana_m": 169,
+      "p90_m": 1158,
+      "pior_m": 1702,
+      "ate_50m": 4,
+      "ate_200m": 10,
+      "acima_1km": 2,
+      "acima_5km": 0
+    },
+    "limpo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 10,
+        "rua": 34,
+        "bairro_cidade": 3,
+        "nao": 4
+      },
+      "n_com_coord": 47,
+      "mediana_m": 210,
+      "p90_m": 2504,
+      "pior_m": 6358,
+      "ate_50m": 8,
+      "ate_200m": 23,
+      "acima_1km": 9,
+      "acima_5km": 3
+    },
+    "limpo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 9,
+        "rua": 16,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 26,
+      "mediana_m": 221,
+      "p90_m": 5754,
+      "pior_m": 6358,
+      "ate_50m": 6,
+      "ate_200m": 12,
+      "acima_1km": 5,
+      "acima_5km": 3
+    },
+    "limpo|interior": {
+      "total": 25,
+      "niveis": {
+        "rua": 18,
+        "nao": 4,
+        "numero": 1,
+        "bairro_cidade": 2
+      },
+      "n_com_coord": 21,
+      "mediana_m": 182,
+      "p90_m": 1158,
+      "pior_m": 4625,
+      "ate_50m": 2,
+      "ate_200m": 11,
+      "acima_1km": 4,
+      "acima_5km": 0
+    },
+    "sem_tipo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 10,
+        "rua": 30,
+        "bairro_cidade": 5,
+        "nao": 6
+      },
+      "n_com_coord": 45,
+      "mediana_m": 313,
+      "p90_m": 5181,
+      "pior_m": 107585,
+      "ate_50m": 7,
+      "ate_200m": 17,
+      "acima_1km": 13,
+      "acima_5km": 5
+    },
+    "sem_tipo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 9,
+        "rua": 15,
+        "bairro_cidade": 1,
+        "nao": 1
+      },
+      "n_com_coord": 25,
+      "mediana_m": 313,
+      "p90_m": 5181,
+      "pior_m": 8238,
+      "ate_50m": 4,
+      "ate_200m": 9,
+      "acima_1km": 8,
+      "acima_5km": 3
+    },
+    "sem_tipo|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 5,
+        "numero": 1,
+        "rua": 15,
+        "bairro_cidade": 4
+      },
+      "n_com_coord": 20,
+      "mediana_m": 301,
+      "p90_m": 4625,
+      "pior_m": 107585,
+      "ate_50m": 3,
+      "ate_200m": 8,
+      "acima_1km": 5,
+      "acima_5km": 2
+    },
+    "sem_tipo_sem_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "rua": 42,
+        "bairro_cidade": 7,
+        "numero": 1,
+        "nao": 1
+      },
+      "n_com_coord": 50,
+      "mediana_m": 311,
+      "p90_m": 5181,
+      "pior_m": 176451,
+      "ate_50m": 4,
+      "ate_200m": 16,
+      "acima_1km": 14,
+      "acima_5km": 6
+    },
+    "sem_tipo_sem_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "rua": 22,
+        "bairro_cidade": 2,
+        "numero": 1,
+        "nao": 1
+      },
+      "n_com_coord": 25,
+      "mediana_m": 357,
+      "p90_m": 5181,
+      "pior_m": 8238,
+      "ate_50m": 0,
+      "ate_200m": 7,
+      "acima_1km": 8,
+      "acima_5km": 3
+    },
+    "sem_tipo_sem_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 5,
+        "rua": 20
+      },
+      "n_com_coord": 25,
+      "mediana_m": 268,
+      "p90_m": 6055,
+      "pior_m": 176451,
+      "ate_50m": 4,
+      "ate_200m": 9,
+      "acima_1km": 6,
+      "acima_5km": 3
+    },
+    "cep_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "nao": 1,
+        "bairro_cidade": 49,
+        "numero": 1
+      },
+      "n_com_coord": 50,
+      "mediana_m": 2218,
+      "p90_m": 18712,
+      "pior_m": 152332,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 33,
+      "acima_5km": 18
+    },
+    "cep_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "nao": 1,
+        "bairro_cidade": 24,
+        "numero": 1
+      },
+      "n_com_coord": 25,
+      "mediana_m": 980,
+      "p90_m": 27667,
+      "pior_m": 43178,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 12,
+      "acima_5km": 8
+    },
+    "cep_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 25
+      },
+      "n_com_coord": 25,
+      "mediana_m": 2916,
+      "p90_m": 18604,
+      "pior_m": 152332,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 21,
+      "acima_5km": 10
+    },
+    "cep_completado|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 8,
+        "rua": 15,
+        "bairro_cidade": 27,
+        "nao": 1
+      },
+      "n_com_coord": 50,
+      "mediana_m": 484,
+      "p90_m": 8823,
+      "pior_m": 24942,
+      "ate_50m": 3,
+      "ate_200m": 11,
+      "acima_1km": 14,
+      "acima_5km": 8
+    },
+    "cep_completado|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 8,
+        "rua": 14,
+        "bairro_cidade": 4
+      },
+      "n_com_coord": 26,
+      "mediana_m": 550,
+      "p90_m": 4348,
+      "pior_m": 24545,
+      "ate_50m": 3,
+      "ate_200m": 6,
+      "acima_1km": 8,
+      "acima_5km": 2
+    },
+    "cep_completado|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 23,
+        "rua": 1,
+        "nao": 1
+      },
+      "n_com_coord": 24,
+      "mediana_m": 461,
+      "p90_m": 18181,
+      "pior_m": 24942,
+      "ate_50m": 0,
+      "ate_200m": 5,
+      "acima_1km": 6,
+      "acima_5km": 6
+    }
+  },
+  "cnefe": {
+    "cheio|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 19,
+        "rua": 21,
+        "numero_interp": 5,
+        "bairro_cidade": 6
+      },
+      "n_com_coord": 51,
+      "mediana_m": 180,
+      "p90_m": 4353,
+      "pior_m": 12007,
+      "ate_50m": 16,
+      "ate_200m": 27,
+      "acima_1km": 12,
+      "acima_5km": 4
+    },
+    "cheio|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 10,
+        "rua": 11,
+        "numero_interp": 2,
+        "bairro_cidade": 3
+      },
+      "n_com_coord": 26,
+      "mediana_m": 209,
+      "p90_m": 4025,
+      "pior_m": 5776,
+      "ate_50m": 9,
+      "ate_200m": 12,
+      "acima_1km": 5,
+      "acima_5km": 1
+    },
+    "cheio|interior": {
+      "total": 25,
+      "niveis": {
+        "numero": 9,
+        "numero_interp": 3,
+        "rua": 10,
+        "bairro_cidade": 3
+      },
+      "n_com_coord": 25,
+      "mediana_m": 111,
+      "p90_m": 5794,
+      "pior_m": 12007,
+      "ate_50m": 7,
+      "ate_200m": 15,
+      "acima_1km": 7,
+      "acima_5km": 3
+    },
+    "limpo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 19,
+        "rua": 20,
+        "numero_interp": 6,
+        "bairro_cidade": 4,
+        "nao": 2
+      },
+      "n_com_coord": 49,
+      "mediana_m": 165,
+      "p90_m": 4025,
+      "pior_m": 12007,
+      "ate_50m": 16,
+      "ate_200m": 27,
+      "acima_1km": 10,
+      "acima_5km": 3
+    },
+    "limpo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 10,
+        "rua": 10,
+        "numero_interp": 3,
+        "bairro_cidade": 3
+      },
+      "n_com_coord": 26,
+      "mediana_m": 240,
+      "p90_m": 4025,
+      "pior_m": 5776,
+      "ate_50m": 9,
+      "ate_200m": 11,
+      "acima_1km": 6,
+      "acima_5km": 1
+    },
+    "limpo|interior": {
+      "total": 25,
+      "niveis": {
+        "numero": 9,
+        "numero_interp": 3,
+        "rua": 10,
+        "bairro_cidade": 1,
+        "nao": 2
+      },
+      "n_com_coord": 23,
+      "mediana_m": 90,
+      "p90_m": 1208,
+      "pior_m": 12007,
+      "ate_50m": 7,
+      "ate_200m": 16,
+      "acima_1km": 4,
+      "acima_5km": 2
+    },
+    "cep_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "nao": 9,
+        "bairro_cidade": 42
+      },
+      "n_com_coord": 42,
+      "mediana_m": 420,
+      "p90_m": 9514,
+      "pior_m": 24302,
+      "ate_50m": 5,
+      "ate_200m": 13,
+      "acima_1km": 12,
+      "acima_5km": 6
+    },
+    "cep_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "nao": 7,
+        "bairro_cidade": 19
+      },
+      "n_com_coord": 19,
+      "mediana_m": 238,
+      "p90_m": 4274,
+      "pior_m": 5948,
+      "ate_50m": 3,
+      "ate_200m": 9,
+      "acima_1km": 3,
+      "acima_5km": 1
+    },
+    "cep_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 23,
+        "nao": 2
+      },
+      "n_com_coord": 23,
+      "mediana_m": 657,
+      "p90_m": 17999,
+      "pior_m": 24302,
+      "ate_50m": 2,
+      "ate_200m": 4,
+      "acima_1km": 9,
+      "acima_5km": 5
+    },
+    "cep_completado|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 9,
+        "rua": 14,
+        "bairro_cidade": 26,
+        "numero_interp": 2
+      },
+      "n_com_coord": 51,
+      "mediana_m": 471,
+      "p90_m": 8818,
+      "pior_m": 24302,
+      "ate_50m": 10,
+      "ate_200m": 17,
+      "acima_1km": 15,
+      "acima_5km": 6
+    },
+    "cep_completado|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 9,
+        "rua": 12,
+        "bairro_cidade": 3,
+        "numero_interp": 2
+      },
+      "n_com_coord": 26,
+      "mediana_m": 279,
+      "p90_m": 3203,
+      "pior_m": 8818,
+      "ate_50m": 8,
+      "ate_200m": 12,
+      "acima_1km": 6,
+      "acima_5km": 1
+    },
+    "cep_completado|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 23,
+        "rua": 2
+      },
+      "n_com_coord": 25,
+      "mediana_m": 600,
+      "p90_m": 17999,
+      "pior_m": 24302,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 9,
+      "acima_5km": 5
+    }
+  },
+  "nominatim_sem_limite": {
+    "cheio|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 3,
+        "rua": 15,
+        "nao": 33
+      },
+      "n_com_coord": 18,
+      "mediana_m": 127,
+      "p90_m": 1030,
+      "pior_m": 1308,
+      "ate_50m": 5,
+      "ate_200m": 12,
+      "acima_1km": 2,
+      "acima_5km": 0
+    },
+    "cheio|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 3,
+        "rua": 9,
+        "nao": 14
+      },
+      "n_com_coord": 12,
+      "mediana_m": 182,
+      "p90_m": 880,
+      "pior_m": 1030,
+      "ate_50m": 3,
+      "ate_200m": 7,
+      "acima_1km": 1,
+      "acima_5km": 0
+    },
+    "cheio|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 19,
+        "rua": 6
+      },
+      "n_com_coord": 6,
+      "mediana_m": 80,
+      "p90_m": 1308,
+      "pior_m": 1308,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 1,
+      "acima_5km": 0
+    },
+    "limpo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 3,
+        "rua": 16,
+        "nao": 32
+      },
+      "n_com_coord": 19,
+      "mediana_m": 147,
+      "p90_m": 1308,
+      "pior_m": 2504,
+      "ate_50m": 5,
+      "ate_200m": 12,
+      "acima_1km": 3,
+      "acima_5km": 0
+    },
+    "limpo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 3,
+        "rua": 9,
+        "nao": 14
+      },
+      "n_com_coord": 12,
+      "mediana_m": 174,
+      "p90_m": 1265,
+      "pior_m": 2504,
+      "ate_50m": 3,
+      "ate_200m": 7,
+      "acima_1km": 2,
+      "acima_5km": 0
+    },
+    "limpo|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 18,
+        "rua": 7
+      },
+      "n_com_coord": 7,
+      "mediana_m": 84,
+      "p90_m": 1308,
+      "pior_m": 1308,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 1,
+      "acima_5km": 0
+    },
+    "cep_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 14,
+        "nao": 4,
+        "rua": 12,
+        "bairro_cidade": 21
+      },
+      "n_com_coord": 47,
+      "mediana_m": 6382,
+      "p90_m": 1438489,
+      "pior_m": 1528745,
+      "ate_50m": 1,
+      "ate_200m": 3,
+      "acima_1km": 33,
+      "acima_5km": 24
+    },
+    "cep_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 10,
+        "nao": 2,
+        "rua": 6,
+        "bairro_cidade": 8
+      },
+      "n_com_coord": 24,
+      "mediana_m": 739725,
+      "p90_m": 1438489,
+      "pior_m": 1493799,
+      "ate_50m": 1,
+      "ate_200m": 3,
+      "acima_1km": 17,
+      "acima_5km": 13
+    },
+    "cep_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "numero": 4,
+        "bairro_cidade": 13,
+        "rua": 6,
+        "nao": 2
+      },
+      "n_com_coord": 23,
+      "mediana_m": 2986,
+      "p90_m": 855082,
+      "pior_m": 1528745,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 16,
+      "acima_5km": 11
+    },
+    "cep_completado|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 3,
+        "rua": 13,
+        "nao": 9,
+        "bairro_cidade": 26
+      },
+      "n_com_coord": 42,
+      "mediana_m": 3004,
+      "p90_m": 11638,
+      "pior_m": 19305,
+      "ate_50m": 5,
+      "ate_200m": 8,
+      "acima_1km": 24,
+      "acima_5km": 17
+    },
+    "cep_completado|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 3,
+        "rua": 13,
+        "nao": 7,
+        "bairro_cidade": 3
+      },
+      "n_com_coord": 19,
+      "mediana_m": 263,
+      "p90_m": 3532,
+      "pior_m": 8551,
+      "ate_50m": 5,
+      "ate_200m": 8,
+      "acima_1km": 6,
+      "acima_5km": 1
+    },
+    "cep_completado|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 23,
+        "nao": 2
+      },
+      "n_com_coord": 23,
+      "mediana_m": 5886,
+      "p90_m": 12593,
+      "pior_m": 19305,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 18,
+      "acima_5km": 16
+    }
+  },
+  "photon_sem_limite": {
+    "cheio|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 12,
+        "rua": 27,
+        "nao": 12
+      },
+      "n_com_coord": 39,
+      "mediana_m": 169,
+      "p90_m": 1702,
+      "pior_m": 6005,
+      "ate_50m": 9,
+      "ate_200m": 22,
+      "acima_1km": 6,
+      "acima_5km": 2
+    },
+    "cheio|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 8,
+        "rua": 14,
+        "nao": 4
+      },
+      "n_com_coord": 22,
+      "mediana_m": 171,
+      "p90_m": 2183,
+      "pior_m": 6005,
+      "ate_50m": 5,
+      "ate_200m": 12,
+      "acima_1km": 4,
+      "acima_5km": 2
+    },
+    "cheio|interior": {
+      "total": 25,
+      "niveis": {
+        "rua": 13,
+        "numero": 4,
+        "nao": 8
+      },
+      "n_com_coord": 17,
+      "mediana_m": 169,
+      "p90_m": 1158,
+      "pior_m": 1702,
+      "ate_50m": 4,
+      "ate_200m": 10,
+      "acima_1km": 2,
+      "acima_5km": 0
+    },
+    "limpo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 12,
+        "rua": 36,
+        "nao": 1,
+        "bairro_cidade": 2
+      },
+      "n_com_coord": 50,
+      "mediana_m": 226,
+      "p90_m": 5796,
+      "pior_m": 2057473,
+      "ate_50m": 8,
+      "ate_200m": 23,
+      "acima_1km": 12,
+      "acima_5km": 7
+    },
+    "limpo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 10,
+        "rua": 16
+      },
+      "n_com_coord": 26,
+      "mediana_m": 221,
+      "p90_m": 5754,
+      "pior_m": 2057473,
+      "ate_50m": 6,
+      "ate_200m": 12,
+      "acima_1km": 5,
+      "acima_5km": 3
+    },
+    "limpo|interior": {
+      "total": 25,
+      "niveis": {
+        "rua": 20,
+        "numero": 2,
+        "nao": 1,
+        "bairro_cidade": 2
+      },
+      "n_com_coord": 24,
+      "mediana_m": 226,
+      "p90_m": 746919,
+      "pior_m": 1860317,
+      "ate_50m": 2,
+      "ate_200m": 11,
+      "acima_1km": 7,
+      "acima_5km": 4
+    },
+    "cep_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "rua": 4,
+        "bairro_cidade": 43,
+        "numero": 4
+      },
+      "n_com_coord": 51,
+      "mediana_m": 2365,
+      "p90_m": 900865,
+      "pior_m": 1844154,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 34,
+      "acima_5km": 20
+    },
+    "cep_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "rua": 3,
+        "bairro_cidade": 19,
+        "numero": 4
+      },
+      "n_com_coord": 26,
+      "mediana_m": 1013,
+      "p90_m": 1044454,
+      "pior_m": 1844154,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 13,
+      "acima_5km": 10
+    },
+    "cep_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 24,
+        "rua": 1
+      },
+      "n_com_coord": 25,
+      "mediana_m": 2916,
+      "p90_m": 18604,
+      "pior_m": 1358844,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 21,
+      "acima_5km": 10
+    },
+    "cep_completado|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 6,
+        "rua": 17,
+        "bairro_cidade": 27,
+        "nao": 1
+      },
+      "n_com_coord": 50,
+      "mediana_m": 421,
+      "p90_m": 8823,
+      "pior_m": 556406,
+      "ate_50m": 3,
+      "ate_200m": 14,
+      "acima_1km": 11,
+      "acima_5km": 9
+    },
+    "cep_completado|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 6,
+        "rua": 15,
+        "bairro_cidade": 4,
+        "nao": 1
+      },
+      "n_com_coord": 25,
+      "mediana_m": 357,
+      "p90_m": 5849,
+      "pior_m": 556406,
+      "ate_50m": 3,
+      "ate_200m": 8,
+      "acima_1km": 5,
+      "acima_5km": 3
+    },
+    "cep_completado|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 23,
+        "rua": 2
+      },
+      "n_com_coord": 25,
+      "mediana_m": 453,
+      "p90_m": 18181,
+      "pior_m": 24942,
+      "ate_50m": 0,
+      "ate_200m": 6,
+      "acima_1km": 6,
+      "acima_5km": 6
+    }
+  },
+  "nominatim_local": {
+    "cheio|todos": {
+      "total": 51,
+      "niveis": {
+        "nao": 51
+      },
+      "n_com_coord": 0,
+      "mediana_m": null,
+      "p90_m": null,
+      "pior_m": null,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 0,
+      "acima_5km": 0
+    },
+    "cheio|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "nao": 26
+      },
+      "n_com_coord": 0,
+      "mediana_m": null,
+      "p90_m": null,
+      "pior_m": null,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 0,
+      "acima_5km": 0
+    },
+    "cheio|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 25
+      },
+      "n_com_coord": 0,
+      "mediana_m": null,
+      "p90_m": null,
+      "pior_m": null,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 0,
+      "acima_5km": 0
+    },
+    "limpo|todos": {
+      "total": 51,
+      "niveis": {
+        "nao": 51
+      },
+      "n_com_coord": 0,
+      "mediana_m": null,
+      "p90_m": null,
+      "pior_m": null,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 0,
+      "acima_5km": 0
+    },
+    "limpo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "nao": 26
+      },
+      "n_com_coord": 0,
+      "mediana_m": null,
+      "p90_m": null,
+      "pior_m": null,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 0,
+      "acima_5km": 0
+    },
+    "limpo|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 25
+      },
+      "n_com_coord": 0,
+      "mediana_m": null,
+      "p90_m": null,
+      "pior_m": null,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 0,
+      "acima_5km": 0
+    },
+    "sem_tipo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 7,
+        "rua": 30,
+        "nao": 13,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 38,
+      "mediana_m": 215,
+      "p90_m": 2183,
+      "pior_m": 10237,
+      "ate_50m": 8,
+      "ate_200m": 18,
+      "acima_1km": 8,
+      "acima_5km": 3
+    },
+    "sem_tipo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 7,
+        "rua": 15,
+        "nao": 4
+      },
+      "n_com_coord": 22,
+      "mediana_m": 216,
+      "p90_m": 2183,
+      "pior_m": 10237,
+      "ate_50m": 6,
+      "ate_200m": 11,
+      "acima_1km": 5,
+      "acima_5km": 2
+    },
+    "sem_tipo|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 9,
+        "rua": 15,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 16,
+      "mediana_m": 215,
+      "p90_m": 1303,
+      "pior_m": 5943,
+      "ate_50m": 2,
+      "ate_200m": 7,
+      "acima_1km": 3,
+      "acima_5km": 1
+    },
+    "sem_tipo_sem_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 1,
+        "rua": 36,
+        "nao": 13,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 38,
+      "mediana_m": 278,
+      "p90_m": 5943,
+      "pior_m": 122182,
+      "ate_50m": 4,
+      "ate_200m": 14,
+      "acima_1km": 11,
+      "acima_5km": 4
+    },
+    "sem_tipo_sem_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 1,
+        "rua": 21,
+        "nao": 4
+      },
+      "n_com_coord": 22,
+      "mediana_m": 364,
+      "p90_m": 8665,
+      "pior_m": 122182,
+      "ate_50m": 2,
+      "ate_200m": 7,
+      "acima_1km": 8,
+      "acima_5km": 3
+    },
+    "sem_tipo_sem_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 9,
+        "rua": 15,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 16,
+      "mediana_m": 215,
+      "p90_m": 1303,
+      "pior_m": 5943,
+      "ate_50m": 2,
+      "ate_200m": 7,
+      "acima_1km": 3,
+      "acima_5km": 1
+    },
+    "so_cidade|todos": {
+      "total": 51,
+      "niveis": {
+        "bairro_cidade": 51
+      },
+      "n_com_coord": 51,
+      "mediana_m": 1723,
+      "p90_m": 12335,
+      "pior_m": 24942,
+      "ate_50m": 0,
+      "ate_200m": 6,
+      "acima_1km": 26,
+      "acima_5km": 22
+    },
+    "so_cidade|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "bairro_cidade": 26
+      },
+      "n_com_coord": 26,
+      "mediana_m": 5611,
+      "p90_m": 11924,
+      "pior_m": 24536,
+      "ate_50m": 0,
+      "ate_200m": 1,
+      "acima_1km": 18,
+      "acima_5km": 14
+    },
+    "so_cidade|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 25
+      },
+      "n_com_coord": 25,
+      "mediana_m": 499,
+      "p90_m": 18181,
+      "pior_m": 24942,
+      "ate_50m": 0,
+      "ate_200m": 5,
+      "acima_1km": 8,
+      "acima_5km": 8
+    },
+    "cep_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "nao": 17,
+        "rua": 13,
+        "numero": 1,
+        "bairro_cidade": 20
+      },
+      "n_com_coord": 34,
+      "mediana_m": 2935,
+      "p90_m": 37021,
+      "pior_m": 63890,
+      "ate_50m": 1,
+      "ate_200m": 2,
+      "acima_1km": 22,
+      "acima_5km": 14
+    },
+    "cep_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "nao": 15,
+        "rua": 6,
+        "numero": 1,
+        "bairro_cidade": 4
+      },
+      "n_com_coord": 11,
+      "mediana_m": 850,
+      "p90_m": 4322,
+      "pior_m": 36693,
+      "ate_50m": 1,
+      "ate_200m": 2,
+      "acima_1km": 4,
+      "acima_5km": 1
+    },
+    "cep_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 16,
+        "rua": 7,
+        "nao": 2
+      },
+      "n_com_coord": 23,
+      "mediana_m": 9147,
+      "p90_m": 50974,
+      "pior_m": 63890,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 18,
+      "acima_5km": 13
+    },
+    "cep_completado|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 7,
+        "rua": 16,
+        "bairro_cidade": 26,
+        "nao": 2
+      },
+      "n_com_coord": 49,
+      "mediana_m": 453,
+      "p90_m": 10815,
+      "pior_m": 24942,
+      "ate_50m": 4,
+      "ate_200m": 13,
+      "acima_1km": 13,
+      "acima_5km": 10
+    },
+    "cep_completado|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 7,
+        "rua": 16,
+        "bairro_cidade": 3
+      },
+      "n_com_coord": 26,
+      "mediana_m": 417,
+      "p90_m": 8665,
+      "pior_m": 24472,
+      "ate_50m": 4,
+      "ate_200m": 8,
+      "acima_1km": 7,
+      "acima_5km": 4
+    },
+    "cep_completado|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 23,
+        "nao": 2
+      },
+      "n_com_coord": 23,
+      "mediana_m": 469,
+      "p90_m": 18181,
+      "pior_m": 24942,
+      "ate_50m": 0,
+      "ate_200m": 5,
+      "acima_1km": 6,
+      "acima_5km": 6
+    },
+    "estruturada|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 7,
+        "rua": 30,
+        "nao": 14
+      },
+      "n_com_coord": 37,
+      "mediana_m": 233,
+      "p90_m": 2183,
+      "pior_m": 10237,
+      "ate_50m": 8,
+      "ate_200m": 17,
+      "acima_1km": 8,
+      "acima_5km": 3
+    },
+    "estruturada|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 7,
+        "rua": 15,
+        "nao": 4
+      },
+      "n_com_coord": 22,
+      "mediana_m": 248,
+      "p90_m": 2183,
+      "pior_m": 10237,
+      "ate_50m": 6,
+      "ate_200m": 10,
+      "acima_1km": 5,
+      "acima_5km": 2
+    },
+    "estruturada|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 10,
+        "rua": 15
+      },
+      "n_com_coord": 15,
+      "mediana_m": 211,
+      "p90_m": 1303,
+      "pior_m": 5943,
+      "ate_50m": 2,
+      "ate_200m": 7,
+      "acima_1km": 3,
+      "acima_5km": 1
+    }
+  },
+  "photon_local": {
+    "cheio|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 9,
+        "nao": 26,
+        "rua": 15,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 25,
+      "mediana_m": 191,
+      "p90_m": 2183,
+      "pior_m": 71561,
+      "ate_50m": 7,
+      "ate_200m": 15,
+      "acima_1km": 5,
+      "acima_5km": 2
+    },
+    "cheio|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 7,
+        "nao": 15,
+        "rua": 4
+      },
+      "n_com_coord": 11,
+      "mediana_m": 83,
+      "p90_m": 1014,
+      "pior_m": 2183,
+      "ate_50m": 4,
+      "ate_200m": 9,
+      "acima_1km": 2,
+      "acima_5km": 0
+    },
+    "cheio|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 11,
+        "numero": 2,
+        "rua": 11,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 14,
+      "mediana_m": 214,
+      "p90_m": 7298,
+      "pior_m": 71561,
+      "ate_50m": 3,
+      "ate_200m": 6,
+      "acima_1km": 3,
+      "acima_5km": 2
+    },
+    "limpo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 11,
+        "rua": 21,
+        "nao": 18,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 33,
+      "mediana_m": 218,
+      "p90_m": 2183,
+      "pior_m": 146001,
+      "ate_50m": 8,
+      "ate_200m": 15,
+      "acima_1km": 8,
+      "acima_5km": 3
+    },
+    "limpo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 9,
+        "rua": 8,
+        "nao": 9
+      },
+      "n_com_coord": 17,
+      "mediana_m": 181,
+      "p90_m": 2183,
+      "pior_m": 5394,
+      "ate_50m": 5,
+      "ate_200m": 10,
+      "acima_1km": 4,
+      "acima_5km": 1
+    },
+    "limpo|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 9,
+        "rua": 13,
+        "numero": 2,
+        "bairro_cidade": 1
+      },
+      "n_com_coord": 16,
+      "mediana_m": 244,
+      "p90_m": 7298,
+      "pior_m": 146001,
+      "ate_50m": 3,
+      "ate_200m": 5,
+      "acima_1km": 4,
+      "acima_5km": 2
+    },
+    "sem_tipo|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 10,
+        "rua": 33,
+        "nao": 6,
+        "bairro_cidade": 2
+      },
+      "n_com_coord": 45,
+      "mediana_m": 218,
+      "p90_m": 7257,
+      "pior_m": 28669,
+      "ate_50m": 7,
+      "ate_200m": 18,
+      "acima_1km": 12,
+      "acima_5km": 6
+    },
+    "sem_tipo|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 9,
+        "rua": 15,
+        "nao": 2
+      },
+      "n_com_coord": 24,
+      "mediana_m": 220,
+      "p90_m": 10902,
+      "pior_m": 28669,
+      "ate_50m": 5,
+      "ate_200m": 11,
+      "acima_1km": 8,
+      "acima_5km": 4
+    },
+    "sem_tipo|interior": {
+      "total": 25,
+      "niveis": {
+        "nao": 4,
+        "numero": 1,
+        "rua": 18,
+        "bairro_cidade": 2
+      },
+      "n_com_coord": 21,
+      "mediana_m": 218,
+      "p90_m": 1695,
+      "pior_m": 7257,
+      "ate_50m": 2,
+      "ate_200m": 7,
+      "acima_1km": 4,
+      "acima_5km": 2
+    },
+    "sem_tipo_sem_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "rua": 43,
+        "numero": 2,
+        "nao": 3,
+        "bairro_cidade": 3
+      },
+      "n_com_coord": 48,
+      "mediana_m": 279,
+      "p90_m": 7257,
+      "pior_m": 28669,
+      "ate_50m": 4,
+      "ate_200m": 15,
+      "acima_1km": 15,
+      "acima_5km": 6
+    },
+    "sem_tipo_sem_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "rua": 23,
+        "numero": 1,
+        "nao": 2
+      },
+      "n_com_coord": 24,
+      "mediana_m": 564,
+      "p90_m": 10902,
+      "pior_m": 28669,
+      "ate_50m": 2,
+      "ate_200m": 7,
+      "acima_1km": 11,
+      "acima_5km": 4
+    },
+    "sem_tipo_sem_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 3,
+        "numero": 1,
+        "rua": 20,
+        "nao": 1
+      },
+      "n_com_coord": 24,
+      "mediana_m": 222,
+      "p90_m": 1695,
+      "pior_m": 7257,
+      "ate_50m": 2,
+      "ate_200m": 8,
+      "acima_1km": 4,
+      "acima_5km": 2
+    },
+    "so_cidade|todos": {
+      "total": 51,
+      "niveis": {
+        "bairro_cidade": 51
+      },
+      "n_com_coord": 51,
+      "mediana_m": 1723,
+      "p90_m": 12335,
+      "pior_m": 24942,
+      "ate_50m": 0,
+      "ate_200m": 6,
+      "acima_1km": 26,
+      "acima_5km": 22
+    },
+    "so_cidade|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "bairro_cidade": 26
+      },
+      "n_com_coord": 26,
+      "mediana_m": 5611,
+      "p90_m": 11924,
+      "pior_m": 24536,
+      "ate_50m": 0,
+      "ate_200m": 1,
+      "acima_1km": 18,
+      "acima_5km": 14
+    },
+    "so_cidade|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 25
+      },
+      "n_com_coord": 25,
+      "mediana_m": 499,
+      "p90_m": 18181,
+      "pior_m": 24942,
+      "ate_50m": 0,
+      "ate_200m": 5,
+      "acima_1km": 8,
+      "acima_5km": 8
+    },
+    "cep_numero|todos": {
+      "total": 51,
+      "niveis": {
+        "bairro_cidade": 47,
+        "rua": 4
+      },
+      "n_com_coord": 51,
+      "mediana_m": 2283,
+      "p90_m": 26760,
+      "pior_m": 141199,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 36,
+      "acima_5km": 19
+    },
+    "cep_numero|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "bairro_cidade": 24,
+        "rua": 2
+      },
+      "n_com_coord": 26,
+      "mediana_m": 1285,
+      "p90_m": 29185,
+      "pior_m": 43200,
+      "ate_50m": 2,
+      "ate_200m": 5,
+      "acima_1km": 15,
+      "acima_5km": 9
+    },
+    "cep_numero|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 23,
+        "rua": 2
+      },
+      "n_com_coord": 25,
+      "mediana_m": 2916,
+      "p90_m": 18603,
+      "pior_m": 141199,
+      "ate_50m": 0,
+      "ate_200m": 0,
+      "acima_1km": 21,
+      "acima_5km": 10
+    },
+    "cep_completado|todos": {
+      "total": 51,
+      "niveis": {
+        "numero": 8,
+        "rua": 15,
+        "bairro_cidade": 27,
+        "nao": 1
+      },
+      "n_com_coord": 50,
+      "mediana_m": 461,
+      "p90_m": 10902,
+      "pior_m": 28669,
+      "ate_50m": 4,
+      "ate_200m": 13,
+      "acima_1km": 16,
+      "acima_5km": 11
+    },
+    "cep_completado|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "numero": 8,
+        "rua": 15,
+        "bairro_cidade": 3
+      },
+      "n_com_coord": 26,
+      "mediana_m": 367,
+      "p90_m": 10902,
+      "pior_m": 28669,
+      "ate_50m": 4,
+      "ate_200m": 8,
+      "acima_1km": 9,
+      "acima_5km": 4
+    },
+    "cep_completado|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 24,
+        "nao": 1
+      },
+      "n_com_coord": 24,
+      "mediana_m": 484,
+      "p90_m": 18181,
+      "pior_m": 24942,
+      "ate_50m": 0,
+      "ate_200m": 5,
+      "acima_1km": 7,
+      "acima_5km": 7
+    }
+  },
+  "brasilapi_cep": {
+    "cep|todos": {
+      "total": 51,
+      "niveis": {
+        "bairro_cidade": 51
+      },
+      "n_com_coord": 51,
+      "mediana_m": 2599,
+      "p90_m": 13179,
+      "pior_m": 26054,
+      "ate_50m": 1,
+      "ate_200m": 7,
+      "acima_1km": 30,
+      "acima_5km": 22
+    },
+    "cep|grande_vitoria": {
+      "total": 26,
+      "niveis": {
+        "bairro_cidade": 26
+      },
+      "n_com_coord": 26,
+      "mediana_m": 5576,
+      "p90_m": 12037,
+      "pior_m": 24266,
+      "ate_50m": 0,
+      "ate_200m": 1,
+      "acima_1km": 18,
+      "acima_5km": 14
+    },
+    "cep|interior": {
+      "total": 25,
+      "niveis": {
+        "bairro_cidade": 25
+      },
+      "n_com_coord": 25,
+      "mediana_m": 802,
+      "p90_m": 18068,
+      "pior_m": 26054,
+      "ate_50m": 1,
+      "ate_200m": 6,
+      "acima_1km": 12,
+      "acima_5km": 8
+    }
+  },
+  "_por_nivel_limpo": {
+    "nominatim": {
+      "numero": {
+        "n": 3,
+        "mediana_m": 7,
+        "p90_m": 16,
+        "pior_m": 16,
+        "ate_100m": 3
+      },
+      "rua": {
+        "n": 16,
+        "mediana_m": 182,
+        "p90_m": 1308,
+        "pior_m": 2504,
+        "ate_100m": 6
+      }
+    },
+    "photon": {
+      "numero": {
+        "n": 10,
+        "mediana_m": 115,
+        "p90_m": 341,
+        "pior_m": 2183,
+        "ate_100m": 5
+      },
+      "rua": {
+        "n": 34,
+        "mediana_m": 215,
+        "p90_m": 1702,
+        "pior_m": 5796,
+        "ate_100m": 8
+      },
+      "bairro_cidade": {
+        "n": 3,
+        "mediana_m": 4625,
+        "p90_m": 6358,
+        "pior_m": 6358,
+        "ate_100m": 1
+      }
+    },
+    "cnefe": {
+      "numero": {
+        "n": 19,
+        "mediana_m": 33,
+        "p90_m": 217,
+        "pior_m": 4353,
+        "ate_100m": 14
+      },
+      "rua": {
+        "n": 20,
+        "mediana_m": 345,
+        "p90_m": 5776,
+        "pior_m": 12007,
+        "ate_100m": 5
+      },
+      "numero_interp": {
+        "n": 6,
+        "mediana_m": 270,
+        "p90_m": 4025,
+        "pior_m": 4025,
+        "ate_100m": 2
+      },
+      "bairro_cidade": {
+        "n": 4,
+        "mediana_m": 301,
+        "p90_m": 1546,
+        "pior_m": 1546,
+        "ate_100m": 1
+      }
+    },
+    "nominatim_sem_limite": {
+      "numero": {
+        "n": 3,
+        "mediana_m": 7,
+        "p90_m": 16,
+        "pior_m": 16,
+        "ate_100m": 3
+      },
+      "rua": {
+        "n": 16,
+        "mediana_m": 174,
+        "p90_m": 1308,
+        "pior_m": 2504,
+        "ate_100m": 6
+      }
+    },
+    "photon_sem_limite": {
+      "numero": {
+        "n": 12,
+        "mediana_m": 216,
+        "p90_m": 1157131,
+        "pior_m": 2057473,
+        "ate_100m": 5
+      },
+      "rua": {
+        "n": 36,
+        "mediana_m": 226,
+        "p90_m": 5796,
+        "pior_m": 1860317,
+        "ate_100m": 8
+      },
+      "bairro_cidade": {
+        "n": 2,
+        "mediana_m": 2352,
+        "p90_m": 4625,
+        "pior_m": 4625,
+        "ate_100m": 1
+      }
+    },
+    "nominatim_local": {},
+    "photon_local": {
+      "numero": {
+        "n": 11,
+        "mediana_m": 200,
+        "p90_m": 5394,
+        "pior_m": 146001,
+        "ate_100m": 5
+      },
+      "rua": {
+        "n": 21,
+        "mediana_m": 218,
+        "p90_m": 1146,
+        "pior_m": 1695,
+        "ate_100m": 4
+      },
+      "bairro_cidade": {
+        "n": 1,
+        "mediana_m": 7298,
+        "p90_m": 7298,
+        "pior_m": 7298,
+        "ate_100m": 0
+      }
+    }
+  }
+}
