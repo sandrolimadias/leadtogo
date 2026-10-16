@@ -85,7 +85,7 @@ describe('casca no desktop', () => {
       'aria-current',
       'page',
     )
-    for (const nome of ['Empresas', 'Contatos', 'Oportunidades', 'Tarefas', 'Prospecção']) {
+    for (const nome of ['Empresas', 'Contatos', 'Oportunidades', 'Atividades', 'Prospecção']) {
       expect(within(nav).getByRole('link', { name: new RegExp(nome) })).toBeInTheDocument()
     }
     expect(within(nav).getByText('Carteira')).toBeInTheDocument()
@@ -349,7 +349,7 @@ describe('casca no celular e no tablet', () => {
       await screen.findByRole('navigation', { name: 'Navegação do celular' }),
     ).toBeInTheDocument()
     const barra = screen.getByRole('navigation', { name: 'Navegação do celular' })
-    for (const rotulo of ['Início', 'Empresas', 'Funil', 'Tarefas', 'Mais']) {
+    for (const rotulo of ['Início', 'Empresas', 'Funil', 'Atividades', 'Mais']) {
       expect(within(barra).getByText(rotulo)).toBeInTheDocument()
     }
     expect(within(barra).getByRole('link', { name: 'Início' })).toHaveAttribute(
@@ -423,7 +423,7 @@ describe('casca: teclado', () => {
       'Empresas',
       'Contatos',
       'Oportunidades',
-      'Tarefas',
+      'Atividades',
     ])
     expect(ordem).toContain('Menu de Alessandro Dias')
     expect(ordem.indexOf('Menu de Alessandro Dias')).toBeLessThan(

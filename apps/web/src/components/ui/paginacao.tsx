@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn'
 
 /**
  * Paginação de toda tabela de dados (docs/design_system.md, "Tabelas e paginação"): "1–25 de 120",
- * linhas por página (25, 50 ou 100) e Anterior / Próxima. Fica FORA da área que rola, colada embaixo da
+ * linhas por página (25, 50 ou 100) e Anterior / Próxima. Fica colada embaixo da
  * tabela. A escolha do tamanho é guardada por tabela nas preferências da pessoa (`usePorPagina`).
  */
 export function Paginacao({

@@ -3,7 +3,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Settings,
-  SquareKanban,
+  CalendarCheck,
   Handshake,
   Target,
   Users,
@@ -29,7 +29,7 @@ export const TELAS: TelaDoApp[] = [
   { caminho: '/empresas', titulo: 'Empresas', icone: Building2 },
   { caminho: '/contatos', titulo: 'Contatos', icone: Users },
   { caminho: '/oportunidades', titulo: 'Oportunidades', icone: Handshake, rotuloCurto: 'Funil' },
-  { caminho: '/tarefas', titulo: 'Tarefas', icone: SquareKanban },
+  { caminho: '/atividades', titulo: 'Atividades', icone: CalendarCheck },
   { caminho: '/prospeccao', titulo: 'Prospecção', icone: Target, grupo: 'carteira' },
   // Rotas é da Fase 3: item de fase futura fica fora do menu até existir
   {
@@ -49,7 +49,7 @@ export const TELAS: TelaDoApp[] = [
 ]
 
 /** Itens da barra inferior do celular (além de "Mais", que abre o perfil). */
-export const TELAS_DA_BARRA_INFERIOR = ['/', '/empresas', '/oportunidades', '/tarefas']
+export const TELAS_DA_BARRA_INFERIOR = ['/', '/empresas', '/oportunidades', '/atividades']
 
 export function tituloDoCaminho(caminho: string): string {
   if (caminho === '/') return 'Início'

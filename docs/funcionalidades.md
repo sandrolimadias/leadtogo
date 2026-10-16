@@ -42,9 +42,9 @@ CRM focado em **gestão de carteira**: a empresa é o centro de tudo. Contatos, 
 
 
 ### Navegação e layout (v1.5, do protótipo)
-- **Desktop:** menu lateral (Dashboard, Empresas, Contatos, Oportunidades, Tarefas; grupo Carteira com Prospecção e Rotas) **recolhível** para ícones, com a preferência salva por usuário. Seletor de empresa (multiempresa) no topo do menu.
+- **Desktop:** menu lateral (Dashboard, Empresas, Contatos, Oportunidades, **Atividades**; grupo Carteira com Prospecção e Rotas) *(Módulo 5: o item "Tarefas" virou "Atividades", com as abas Agendadas, Atrasadas e Realizadas; o Kanban de Tarefas, seção 9A, fica para depois do MVP)* **recolhível** para ícones, com a preferência salva por usuário. Seletor de empresa (multiempresa) no topo do menu.
 - **Barra superior:** busca global, botão "Registrar atividade" e sino de notificações (de todas as empresas, identificadas pela empresa).
-- **Celular:** cabeçalho com título, busca e notificações; **barra inferior** com Início, Empresas, Funil, Tarefas e Mais; **botão "+"** para registrar atividade; o seletor de empresa fica na folha de perfil.
+- **Celular:** cabeçalho com título, busca e notificações; **barra inferior** com Início, Empresas, Funil, **Atividades** e Mais; **botão "+"** (no cabeçalho) para registrar atividade; o seletor de empresa fica na folha de perfil.
 - Temas claro e escuro (padrão: o do sistema), com a escolha salva por usuário.
 ---
 
