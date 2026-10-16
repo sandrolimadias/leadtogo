@@ -2,10 +2,11 @@ import type { ListaDeContatos as ListaDeContatosDados, TagGrupo } from '@leadtog
 import type { TamanhoDePagina } from '@leadtogo/shared'
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
-import { Filter, Plus, Search, Users, X } from 'lucide-react'
+import { Filter, Plus, Search, Upload, Users, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePodeImportar } from '@/telas/importacao/comum'
 import { useDispositivo } from '@/casca/dispositivo'
 import { usePorPagina } from '@/casca/preferencias'
 import { Button, IconButton } from '@/components/ui/button'
@@ -36,6 +37,7 @@ const contagemDeContatos = (n: number): string => `${n} ${n === 1 ? 'contato' : 
 export function ListaDeContatos() {
   const servicos = useServicos()
   const navegar = useNavigate()
+  const podeImportar = usePodeImportar()
   const celular = useDispositivo() === 'celular'
   // O roteador junta a URL crua com o que `validateSearch` devolveu: valor inválido ainda aparece. Limpa de novo.
   const busca = rota.useSearch({ select: (s) => lerBusca(s) })
@@ -194,9 +196,21 @@ export function ListaDeContatos() {
           </span>
         </div>
         {celular ? null : (
-          <Button variant="primary" icon={Plus} onClick={novo}>
-            Novo contato
-          </Button>
+          <>
+            {podeImportar ? (
+              <Button
+                icon={Upload}
+                onClick={() =>
+                  void navegar({ to: '/importacao/nova', search: { tipo: 'contatos' } })
+                }
+              >
+                Importar planilha
+              </Button>
+            ) : null}
+            <Button variant="primary" icon={Plus} onClick={novo}>
+              Novo contato
+            </Button>
+          </>
         )}
       </div>
 

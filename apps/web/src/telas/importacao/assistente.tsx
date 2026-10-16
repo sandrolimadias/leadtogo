@@ -8,6 +8,7 @@ import { Alert, Skeleton } from '@/components/ui/feedback'
 
 import { PassoImportar, PassoRelatorio } from './acompanhamento'
 import { chaveDoLote, PASSO, useQuemImporta } from './comum'
+import { PassoMapearDoTipo, PassoPreviaDoTipo } from './novos-tipos'
 import { PassoCarteira, PassoMapear, PassoPrevia, PassoRegras } from './passos'
 
 const rota = getRouteApi('/_autenticado/importacao/$loteId')
@@ -78,18 +79,20 @@ export function AssistenteDaImportacao() {
 
   const passo = passoDaSituacao(lote.data, escolhido)
   const props = { lote: lote.data, ir: setEscolhido, aoAlterar: guardar }
+  // Contatos e atividades não têm Regras nem Carteira: Mapear · Prévia · Importar · Relatório
+  const doTipo = lote.data.tipo !== 'empresas'
   switch (passo) {
     case PASSO.regras:
-      return <PassoRegras {...props} />
+      return doTipo ? <PassoMapearDoTipo {...props} /> : <PassoRegras {...props} />
     case PASSO.previa:
-      return <PassoPrevia {...props} />
+      return doTipo ? <PassoPreviaDoTipo {...props} /> : <PassoPrevia {...props} />
     case PASSO.carteira:
-      return <PassoCarteira {...props} />
+      return doTipo ? <PassoPreviaDoTipo {...props} /> : <PassoCarteira {...props} />
     case PASSO.importar:
       return <PassoImportar {...props} />
     case PASSO.relatorio:
       return <PassoRelatorio {...props} />
     default:
-      return <PassoMapear {...props} />
+      return doTipo ? <PassoMapearDoTipo {...props} /> : <PassoMapear {...props} />
   }
 }

@@ -260,13 +260,18 @@ export class LotesDeImportacaoController {
     resumo: 'Valores da coluna Tipo (atividades)',
     descricao:
       QUEM +
-      ' Só no lote de atividades, depois de indicar a coluna do Tipo: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.',
+      ' Só no lote de atividades: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Sem `coluna`, vale a coluna do Tipo já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.',
+    consulta: z.object({ coluna: z.string().optional() }),
     resposta: valoresDoTipoSchema,
     erros: [401, 403, 404, 409],
   })
   @Get('lotes/:id/valores-do-tipo')
-  valoresDoTipo(@Param('id', new ParseUUIDPipe()) id: string): Promise<ValoresDoTipo> {
-    return this.servico.valoresDoTipo(id)
+  valoresDoTipo(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query(new ZodPipe(z.object({ coluna: z.string().trim().min(1).max(300).optional() })))
+    consulta: { coluna?: string },
+  ): Promise<ValoresDoTipo> {
+    return this.servico.valoresDoTipo(id, consulta.coluna)
   }
 
   @Documenta({

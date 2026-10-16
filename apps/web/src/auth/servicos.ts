@@ -490,19 +490,33 @@ export const servicosReais: ServicosDeAcesso = {
         ),
     },
     lotes: {
-      listar: (pagina = 1, porPagina = 25) =>
+      listar: (pagina = 1, porPagina = 25, tipo) =>
         protegido(async () =>
           daApi(
             await api.GET('/v1/importacao/lotes', {
-              params: { query: { pagina, porPagina } },
+              params: { query: { pagina, porPagina, ...(tipo ? { tipo } : {}) } },
             }),
           ),
         ),
-      enviar: (arquivo, nome) =>
+      valoresDoTipo: (id, coluna) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/importacao/lotes/{id}/valores-do-tipo', {
+              params: { path: { id }, query: coluna ? { coluna } : {} },
+            }),
+          ),
+        ),
+      enviar: (arquivo, nome, tipo) =>
         protegido(async () =>
           daApi(
             await api.POST('/v1/importacao/lotes', {
-              params: { query: { arquivo: arquivo.name, ...(nome ? { nome } : {}) } },
+              params: {
+                query: {
+                  arquivo: arquivo.name,
+                  ...(nome ? { nome } : {}),
+                  ...(tipo ? { tipo } : {}),
+                },
+              },
               // os bytes vão no corpo, sem serialização (o servidor lê o arquivo como octet-stream)
               body: arquivo as unknown as string,
               bodySerializer: (corpo) => corpo as BodyInit,

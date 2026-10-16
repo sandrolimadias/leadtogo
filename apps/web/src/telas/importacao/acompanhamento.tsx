@@ -1,8 +1,13 @@
 import type { LoteDeImportacao } from '@leadtogo/api-client'
-import { DIAS_PARA_DESFAZER, ROTULO_DO_RESULTADO, type ResultadoDaLinha } from '@leadtogo/shared'
+import {
+  DIAS_PARA_DESFAZER,
+  ROTULO_DO_RESULTADO,
+  rotuloDoResultado,
+  type ResultadoDaLinha,
+} from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, Download, RotateCw, Undo2 } from 'lucide-react'
+import { ArrowRight, Download, RotateCw, TriangleAlert, Undo2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -11,35 +16,18 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Paginacao } from '@/components/ui/paginacao'
 import { AreaDaTabela, CorpoDaTabela } from '@/components/ui/pagina'
 import { usePorPagina } from '@/casca/preferencias'
-import { Badge, type TomDoBadge } from '@/components/ui/exibicao'
+import { Badge } from '@/components/ui/exibicao'
 import { Alert, Skeleton } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 import { useEnvio } from '@/telas/acesso/comum'
 import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
 
-import { formatarDataHora, formatarDuracao, PASSO } from './comum'
+import { formatarDataHora, formatarDuracao, PASSO, TEXTOS_DO_TIPO, TOM_DO_RESULTADO } from './comum'
 import { Pagina } from './pagina'
 import type { PropsDoPasso } from './passos'
 
 const chaveDoAndamento = (id: string) => ['importacao', 'andamento', id] as const
-
-const TOM_DO_RESULTADO: Record<ResultadoDaLinha, TomDoBadge> = {
-  pendente: 'neutral',
-  criada: 'success',
-  criada_fora_do_perfil: 'info',
-  fora_do_perfil: 'warning',
-  pulada_sem_cnpj: 'neutral',
-  pulada_duplicada: 'neutral',
-  pulada_nao_ativa: 'neutral',
-  erro: 'danger',
-  vinculada: 'info',
-  ja_vinculada: 'neutral',
-  pulada_empresa_inexistente: 'neutral',
-  pulada_tipo_inexistente: 'neutral',
-  pulada_no_futuro: 'neutral',
-  pulada_invalida: 'warning',
-}
 
 function useAndamento(id: string, acompanhar: boolean) {
   const servicos = useServicos()
@@ -89,7 +77,12 @@ export function PassoImportar({ lote, aoAlterar }: PropsDoPasso) {
     })
 
   return (
-    <Pagina titulo="Importar planilha" trilha={`Empresas › ${lote.nome}`} passo={PASSO.importar}>
+    <Pagina
+      titulo="Importar planilha"
+      trilha={`${TEXTOS_DO_TIPO[lote.tipo].trilha} › ${lote.nome}`}
+      passo={PASSO.importar}
+      tipo={lote.tipo}
+    >
       <section
         aria-label="Andamento da importação"
         className="flex flex-col gap-3.5 rounded-lg border border-border bg-surface p-6 max-md:p-4"
@@ -116,7 +109,9 @@ export function PassoImportar({ lote, aoAlterar }: PropsDoPasso) {
         <span className="text-[13px] text-ink-muted">
           {a && a.estimativaRestanteSegundos > 0
             ? `Faltam cerca de ${formatarDuracao(a.estimativaRestanteSegundos)} (no máximo: o que já está no cache não espera).`
-            : 'Validando CNPJs, consultando a Receita e cadastrando as empresas…'}
+            : lote.tipo === 'empresas'
+              ? 'Validando CNPJs, consultando a Receita e cadastrando as empresas…'
+              : `Lendo as linhas e gravando ${TEXTOS_DO_TIPO[lote.tipo].plural}…`}
         </span>
         {andamento.isError ? (
           <Alert tone="warning" title="Não foi possível atualizar o andamento">
@@ -138,6 +133,27 @@ export function PassoImportar({ lote, aoAlterar }: PropsDoPasso) {
 
 // ---------------------------------------------------------------------------------------------------
 // Passo 7: Relatório
+
+/** O que o desfazer faz, em palavras, em cada tipo de lote. */
+function textoDoDesfazer(tipo: LoteDeImportacao['tipo']): string {
+  if (tipo === 'contatos') {
+    return 'Tira os contatos que este lote criou e que ninguém alterou nem usou depois, e inativa os vínculos que ele criou com contatos que já existiam (esses contatos ficam). O que alguém mexeu ou usou numa atividade fica, e o resultado avisa quantos.'
+  }
+  if (tipo === 'atividades') {
+    return 'Tira as atividades que este lote criou e que ninguém alterou depois (as que alguém concluiu, editou ou cancelou ficam). Depois recalcula a última visita, o último contato, a próxima atividade e as tags de cada empresa afetada.'
+  }
+  return 'Tira da carteira as empresas que este lote criou e que ninguém alterou depois; as que alguém editou, marcou com tag ou vinculou a um contato ficam, e o resultado avisa quais. As que já estavam na carteira antes não são tocadas.'
+}
+
+function descricaoDoDesfazer(tipo: LoteDeImportacao['tipo'], nome: string): string {
+  if (tipo === 'contatos') {
+    return `Os contatos criados por "${nome}" saem (menos os que alguém alterou ou usou depois) e os vínculos com contatos que já existiam são inativados; esses contatos ficam.`
+  }
+  if (tipo === 'atividades') {
+    return `As atividades criadas por "${nome}" saem (menos as que alguém alterou depois) e a carteira das empresas afetadas é recalculada.`
+  }
+  return `As empresas criadas por "${nome}" saem da carteira, menos as que alguém alterou depois ou que têm contato vinculado (essas ficam e o relatório avisa quais). As que já existiam antes não mudam.`
+}
 
 function dadoPrincipal(dados: Record<string, string>, colunas: string[]): string {
   return colunas.map((c) => dados[c]).find((v) => v) ?? ''
@@ -178,25 +194,54 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
   const n = (r: ResultadoDaLinha) => contagens[r] ?? 0
   const foraDoPerfil = n('fora_do_perfil')
   const naoEntraram = (Object.keys(contagens) as ResultadoDaLinha[])
-    .filter((r) => r !== 'criada' && r !== 'criada_fora_do_perfil' && r !== 'pendente')
+    .filter(
+      (r) =>
+        r !== 'criada' &&
+        r !== 'criada_fora_do_perfil' &&
+        r !== 'pendente' &&
+        r !== 'vinculada' &&
+        r !== 'ja_vinculada',
+    )
     .reduce((soma, r) => soma + n(r), 0)
   const concluida = lote.situacao === 'concluida'
 
-  const resumo = [
-    { rotulo: 'Importadas', n: n('criada') + n('criada_fora_do_perfil'), tom: 'success' as const },
-    { rotulo: 'Fora do perfil', n: foraDoPerfil, tom: 'warning' as const },
-    {
-      rotulo: 'Puladas',
-      n: n('pulada_sem_cnpj') + n('pulada_duplicada') + n('pulada_nao_ativa'),
-      tom: 'neutral' as const,
-    },
-    { rotulo: 'Com erro', n: n('erro'), tom: 'danger' as const },
-  ]
+  const puladasDoTipo = (Object.keys(contagens) as ResultadoDaLinha[])
+    .filter((r) => r.startsWith('pulada_') && r !== 'pulada_duplicada')
+    .reduce((soma, r) => soma + n(r), 0)
+  const resumo =
+    lote.tipo === 'contatos'
+      ? [
+          { rotulo: 'Contatos criados', n: n('criada'), tom: 'success' as const },
+          { rotulo: 'Vinculados', n: n('vinculada') + n('ja_vinculada'), tom: 'info' as const },
+          { rotulo: 'Puladas', n: puladasDoTipo + n('pulada_duplicada'), tom: 'neutral' as const },
+          { rotulo: 'Com erro', n: n('erro'), tom: 'danger' as const },
+        ]
+      : lote.tipo === 'atividades'
+        ? [
+            { rotulo: 'Atividades criadas', n: n('criada'), tom: 'success' as const },
+            { rotulo: 'Já existiam', n: n('pulada_duplicada'), tom: 'neutral' as const },
+            { rotulo: 'Puladas', n: puladasDoTipo, tom: 'warning' as const },
+            { rotulo: 'Com erro', n: n('erro'), tom: 'danger' as const },
+          ]
+        : [
+            {
+              rotulo: 'Importadas',
+              n: n('criada') + n('criada_fora_do_perfil'),
+              tom: 'success' as const,
+            },
+            { rotulo: 'Fora do perfil', n: foraDoPerfil, tom: 'warning' as const },
+            {
+              rotulo: 'Puladas',
+              n: n('pulada_sem_cnpj') + n('pulada_duplicada') + n('pulada_nao_ativa'),
+              tom: 'neutral' as const,
+            },
+            { rotulo: 'Com erro', n: n('erro'), tom: 'danger' as const },
+          ]
   const filtros = (Object.keys(ROTULO_DO_RESULTADO) as ResultadoDaLinha[]).filter((r) => n(r) > 0)
 
   const opcoesDeFiltro: { valor: ResultadoDaLinha | ''; rotulo: string; n: number }[] = [
     { valor: '', rotulo: 'Todas', n: lote.totalLinhas },
-    ...filtros.map((r) => ({ valor: r, rotulo: ROTULO_DO_RESULTADO[r], n: n(r) })),
+    ...filtros.map((r) => ({ valor: r, rotulo: rotuloDoResultado(r, lote.tipo), n: n(r) })),
   ]
 
   const alternar = (id: string) =>
@@ -252,7 +297,8 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
   const avisos = {
     concluida: (
       <Alert tone="success" title="Importação concluída">
-        {resumo[0]?.n.toLocaleString('pt-BR')} empresas importadas
+        {resumo[0]?.n.toLocaleString('pt-BR')} {TEXTOS_DO_TIPO[lote.tipo].plural}{' '}
+        {lote.tipo === 'contatos' ? 'criados' : 'importadas'}
         {naoEntraram > 0 ? ` e ${naoEntraram.toLocaleString('pt-BR')} linhas que não entraram` : ''}
         .
       </Alert>
@@ -285,12 +331,28 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
     ),
     desfeita: (
       <Alert tone="info" title="Importação desfeita">
-        {lote.desfeito
-          ? `${lote.desfeito.removidas.toLocaleString('pt-BR')} ${lote.desfeito.removidas === 1 ? 'empresa saiu' : 'empresas saíram'} da carteira.`
-          : 'As empresas criadas por este lote saíram da carteira.'}
-        {lote.desfeito && lote.desfeito.mantidas > 0
-          ? ` ${lote.desfeito.mantidas.toLocaleString('pt-BR')} ${lote.desfeito.mantidas === 1 ? 'ficou' : 'ficaram'} porque alguém alterou depois da importação ou vinculou um contato; ${lote.desfeito.mantidas === 1 ? 'aparece' : 'aparecem'} marcadas como "Ficou na carteira" na lista abaixo.`
-          : ''}
+        {lote.tipo === 'empresas' ? (
+          <>
+            {lote.desfeito
+              ? `${lote.desfeito.removidas.toLocaleString('pt-BR')} ${lote.desfeito.removidas === 1 ? 'empresa saiu' : 'empresas saíram'} da carteira.`
+              : 'As empresas criadas por este lote saíram da carteira.'}
+            {lote.desfeito && lote.desfeito.mantidas > 0
+              ? ` ${lote.desfeito.mantidas.toLocaleString('pt-BR')} ${lote.desfeito.mantidas === 1 ? 'ficou' : 'ficaram'} porque alguém alterou depois da importação ou vinculou um contato; ${lote.desfeito.mantidas === 1 ? 'aparece' : 'aparecem'} marcadas como "Ficou na carteira" na lista abaixo.`
+              : ''}
+          </>
+        ) : (
+          <>
+            {lote.desfeito
+              ? `${lote.desfeito.removidas.toLocaleString('pt-BR')} ${lote.tipo === 'contatos' ? 'contatos e vínculos' : 'atividades'} desfeitos.`
+              : 'O que este lote criou foi desfeito.'}
+            {lote.desfeito && lote.desfeito.mantidas > 0
+              ? ` ${lote.desfeito.mantidas.toLocaleString('pt-BR')} ficaram porque alguém alterou ou usou depois da importação.`
+              : ''}
+            {lote.tipo === 'atividades'
+              ? ' A última visita, o último contato, a próxima atividade e as tags das empresas foram recalculados.'
+              : ''}
+          </>
+        )}
       </Alert>
     ),
   } as const
@@ -300,16 +362,17 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
     <Pagina
       tabela
       titulo="Importar planilha"
-      trilha={`Empresas › ${lote.nome}`}
+      trilha={`${TEXTOS_DO_TIPO[lote.tipo].trilha} › ${lote.nome}`}
       passo={PASSO.relatorio}
+      tipo={lote.tipo}
       rodape={
         <>
           <span className="flex-1" />
           <Link
-            to="/empresas"
+            to={TEXTOS_DO_TIPO[lote.tipo].destino}
             className="inline-flex h-(--ctl) items-center gap-1.5 rounded-sm bg-brand px-3 text-[length:var(--ctl-font)] font-semibold text-on-brand hover:bg-brand-hover"
           >
-            Ver empresas importadas
+            {TEXTOS_DO_TIPO[lote.tipo].verTudo}
             <ArrowRight size={16} strokeWidth={1.75} aria-hidden="true" />
           </Link>
         </>
@@ -404,15 +467,23 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
                     )}
                     <span className="text-xs text-ink-muted tabular-nums">Linha {l.numero}</span>
                     <div className="flex min-w-0 flex-col">
-                      <span className="font-semibold">
-                        {l.empresaNome ??
+                      <span className="font-semibold [overflow-wrap:anywhere]">
+                        {(lote.tipo === 'contatos'
+                          ? l.contatoNome
+                          : lote.tipo === 'atividades'
+                            ? l.atividadeTitulo
+                            : null) ??
+                          l.empresaNome ??
                           (dadoPrincipal(l.dados, linhas.data.colunas) || 'Sem dados')}
                       </span>
+                      {lote.tipo !== 'empresas' && l.empresaNome ? (
+                        <span className="text-[13px] text-ink-muted">{l.empresaNome}</span>
+                      ) : null}
                     </div>
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="flex flex-wrap gap-1">
                         <Badge tone={TOM_DO_RESULTADO[l.resultado]}>
-                          {ROTULO_DO_RESULTADO[l.resultado]}
+                          {rotuloDoResultado(l.resultado, lote.tipo)}
                         </Badge>
                         {lote.situacao === 'desfeita' && l.empresaNaCarteira === false ? (
                           <Badge tone="neutral">Removida</Badge>
@@ -426,6 +497,20 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
                       {l.motivo ? (
                         <span className="text-[13px] text-ink-muted">{l.motivo}</span>
                       ) : null}
+                      {l.avisos.map((aviso) => (
+                        <span
+                          key={aviso}
+                          className="flex items-start gap-1 text-[13px] text-warning"
+                        >
+                          <TriangleAlert
+                            size={13}
+                            strokeWidth={1.75}
+                            aria-hidden="true"
+                            className="mt-0.5 flex-none"
+                          />
+                          <span>Aviso: {aviso}</span>
+                        </span>
+                      ))}
                     </div>
                   </li>
                 ))}
@@ -478,9 +563,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
           <h2 className="m-0 text-[15px] leading-5 font-semibold">Desfazer a importação</h2>
           <p className="m-0 text-[13px] text-ink-muted">
             Disponível até {formatarDataHora(lote.desfazerAte)} ({DIAS_PARA_DESFAZER} dias depois de
-            terminar). Tira da carteira as empresas que este lote criou e que ninguém alterou
-            depois; as que alguém editou, marcou com tag ou vinculou a um contato ficam, e o
-            resultado avisa quais. As que já estavam na carteira antes não são tocadas.
+            terminar). {textoDoDesfazer(lote.tipo)}
           </p>
           <div>
             <Button variant="danger-ghost" icon={Undo2} onClick={() => setDesfazendo(true)}>
@@ -492,7 +575,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
       <DialogoDeConfirmacao
         aberto={desfazendo}
         titulo="Desfazer esta importação?"
-        descricao={`As empresas criadas por "${lote.nome}" saem da carteira, menos as que alguém alterou depois ou que têm contato vinculado (essas ficam e o relatório avisa quais). As que já existiam antes não mudam. O relatório continua disponível.`}
+        descricao={`${descricaoDoDesfazer(lote.tipo, lote.nome)} O relatório continua disponível.`}
         rotuloDoBotao="Desfazer importação"
         erro={erroAoDesfazer}
         enviando={enviando}

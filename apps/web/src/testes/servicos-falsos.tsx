@@ -244,6 +244,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       lotes: {
         listar: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 20 })),
         enviar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        valoresDoTipo: vi.fn(async () => ok({ itens: [] })),
         detalhar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
         alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
         previa: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),

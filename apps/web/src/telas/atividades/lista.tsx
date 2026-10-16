@@ -1,10 +1,11 @@
 import type { Atividade } from '@leadtogo/api-client'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
-import { CalendarPlus, Search, X } from 'lucide-react'
+import { getRouteApi, useNavigate } from '@tanstack/react-router'
+import { CalendarPlus, Search, Upload, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePodeImportar } from '@/telas/importacao/comum'
 import { useDispositivo } from '@/casca/dispositivo'
 import { usePorPagina } from '@/casca/preferencias'
 import { Button } from '@/components/ui/button'
@@ -62,6 +63,8 @@ export function ListaDeAtividades() {
   const acoes = useAcoesDaAtividade()
   const busca = rota.useSearch({ select: (s) => lerBusca(s) })
   const navegar = rota.useNavigate()
+  const navegarParaFora = useNavigate()
+  const podeImportar = usePodeImportar()
   const aba = abaDaBusca(busca)
 
   const [texto, setTexto] = useState('')
@@ -144,6 +147,16 @@ export function ListaDeAtividades() {
               : ''}
           </span>
         </div>
+        {podeImportar ? (
+          <Button
+            icon={Upload}
+            onClick={() =>
+              void navegarParaFora({ to: '/importacao/nova', search: { tipo: 'atividades' } })
+            }
+          >
+            Importar planilha
+          </Button>
+        ) : null}
         <Button variant="primary" icon={CalendarPlus} onClick={() => abrir()}>
           Registrar atividade
         </Button>

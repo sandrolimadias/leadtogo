@@ -1,4 +1,9 @@
 import type { ListaDeLotesDeImportacao } from '@leadtogo/api-client'
+import {
+  ROTULO_DO_TIPO_DE_IMPORTACAO,
+  TIPOS_DE_IMPORTACAO,
+  type TipoDeImportacao,
+} from '@leadtogo/shared'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { FileSpreadsheet, Upload } from 'lucide-react'
@@ -9,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Badge, type TomDoBadge } from '@/components/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { Paginacao } from '@/components/ui/paginacao'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { AreaDaTabela, CorpoDaTabela, PaginaDeTabela } from '@/components/ui/pagina'
 import { usePorPagina } from '@/casca/preferencias'
 
@@ -32,25 +38,26 @@ export function ListaDeImportacoes() {
   const navegar = useNavigate()
   const { pode } = useQuemImporta()
   const [pagina, setPagina] = useState(1)
+  const [tipo, setTipo] = useState<TipoDeImportacao | ''>('')
   const tamanho = usePorPagina('importacoes')
   const lotes = useQuery({
-    queryKey: ['importacao', 'lotes', pagina, tamanho.porPagina],
+    queryKey: ['importacao', 'lotes', pagina, tamanho.porPagina, tipo],
     retry: false,
     enabled: pode && tamanho.pronto,
     queryFn: async () => {
-      const r = await servicos.importacao.lotes.listar(pagina, tamanho.porPagina)
+      const r = await servicos.importacao.lotes.listar(pagina, tamanho.porPagina, tipo || undefined)
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
   })
   if (!pode) return null
-  const nova = () => void navegar({ to: '/importacao/nova' })
+  const nova = () => void navegar({ to: '/importacao/nova', search: tipo ? { tipo } : {} })
 
   return (
     <PaginaDeTabela className="max-w-[1080px]">
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-[13px] text-ink-muted">Empresas</span>
+          <span className="text-[13px] text-ink-muted">Carteira</span>
           <h1 className="m-0 text-[30px] leading-9 font-semibold tracking-[-0.015em] max-md:text-[22px] max-md:leading-7">
             Importações
           </h1>
@@ -59,6 +66,18 @@ export function ListaDeImportacoes() {
           Importar planilha
         </Button>
       </div>
+      <SegmentedControl
+        label="Tipo de importação"
+        options={[
+          { value: '', label: 'Todas' },
+          ...TIPOS_DE_IMPORTACAO.map((t) => ({ value: t, label: ROTULO_DO_TIPO_DE_IMPORTACAO[t] })),
+        ]}
+        value={tipo}
+        onChange={(v) => {
+          setTipo(v as TipoDeImportacao | '')
+          setPagina(1)
+        }}
+      />
 
       {lotes.isPending ? (
         <div role="status" aria-label="Carregando as importações">
@@ -80,7 +99,7 @@ export function ListaDeImportacoes() {
         <EmptyState
           icon={FileSpreadsheet}
           title="Nenhuma importação ainda"
-          description="Envie uma planilha Excel ou CSV para cadastrar várias empresas de uma vez."
+          description="Envie uma planilha Excel ou CSV para cadastrar várias empresas, contatos ou atividades de uma vez."
           actions={
             <Button variant="primary" icon={Upload} onClick={nova}>
               Importar planilha
@@ -114,6 +133,7 @@ export function ListaDeImportacoes() {
                       <span className="text-[13px] text-danger">{l.totais['motivo']}</span>
                     ) : null}
                   </div>
+                  <Badge tone="neutral">{ROTULO_DO_TIPO_DE_IMPORTACAO[l.tipo]}</Badge>
                   <Badge tone={SITUACAO[l.situacao].tom}>{SITUACAO[l.situacao].rotulo}</Badge>
                 </li>
               ))}

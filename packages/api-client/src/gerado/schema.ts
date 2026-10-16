@@ -1713,7 +1713,7 @@ export interface paths {
         };
         /**
          * Valores da coluna Tipo (atividades)
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só no lote de atividades, depois de indicar a coluna do Tipo: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só no lote de atividades: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Sem `coluna`, vale a coluna do Tipo já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.
          */
         get: operations["LotesDeImportacaoController_valoresDoTipo"];
         put?: never;
@@ -10973,7 +10973,9 @@ export interface operations {
     };
     LotesDeImportacaoController_valoresDoTipo: {
         parameters: {
-            query?: never;
+            query?: {
+                coluna?: string;
+            };
             header?: never;
             path: {
                 id: string;

@@ -3,11 +3,21 @@ import { CircleCheck } from 'lucide-react'
 import { useDispositivo } from '@/casca/dispositivo'
 import { cn } from '@/lib/cn'
 
-import { NOMES_DOS_PASSOS } from './comum'
+import type { TipoDeImportacao } from '@leadtogo/shared'
 
-/** Indicador dos 7 passos: barras no computador, "Passo N de 7" e uma barra só no celular. */
-export function Etapas({ atual }: { atual: number }) {
+import { nomesDosPassos, posicaoDoPasso } from './comum'
+
+/** Indicador dos passos (7 em empresas, 5 nos outros tipos): barras no computador, "Passo N de M" e uma barra só no celular. */
+export function Etapas({
+  atual: passo,
+  tipo = 'empresas',
+}: {
+  atual: number
+  tipo?: TipoDeImportacao
+}) {
   const celular = useDispositivo() === 'celular'
+  const NOMES_DOS_PASSOS = nomesDosPassos(tipo)
+  const atual = posicaoDoPasso(tipo, passo)
   if (celular) {
     return (
       <div className="flex flex-col gap-2">
@@ -24,7 +34,13 @@ export function Etapas({ atual }: { atual: number }) {
     )
   }
   return (
-    <ol aria-label="Passos da importação" className="m-0 grid list-none grid-cols-7 gap-2 p-0">
+    <ol
+      aria-label="Passos da importação"
+      className={cn(
+        'm-0 grid list-none gap-2 p-0',
+        NOMES_DOS_PASSOS.length === 7 ? 'grid-cols-7' : 'grid-cols-5',
+      )}
+    >
       {NOMES_DOS_PASSOS.map((nome, i) => (
         <li
           key={nome}
@@ -59,6 +75,7 @@ export function Pagina({
   children,
   rodape,
   tabela,
+  tipo = 'empresas',
 }: {
   titulo: string
   trilha?: string
@@ -67,6 +84,7 @@ export function Pagina({
   rodape?: React.ReactNode
   /** A tela tem uma tabela ou lista: ocupa a altura da área central e só as linhas rolam */
   tabela?: boolean
+  tipo?: TipoDeImportacao
 }) {
   return (
     <main
@@ -82,7 +100,7 @@ export function Pagina({
             {titulo}
           </h1>
         </div>
-        <Etapas atual={passo} />
+        <Etapas atual={passo} tipo={tipo} />
         {children}
       </div>
       {rodape ? (

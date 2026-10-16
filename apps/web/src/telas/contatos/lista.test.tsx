@@ -121,7 +121,8 @@ describe('Contatos: a lista', () => {
     expect(within(linha).getByLabelText('Tem WhatsApp')).toBeInTheDocument()
     expect(within(linha).getByLabelText('Contato principal')).toBeInTheDocument()
     expect(within(linha).getByText('contato1@exemplo.com.br')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Importar planilha/ })).toBeNull()
+    // quem importa (administrador e gestor) tem o botão; o vendedor não (teste abaixo)
+    expect(screen.getByRole('button', { name: 'Importar planilha' })).toBeInTheDocument()
     expect(ultimaConsulta(x)).toEqual({ pagina: 1, porPagina: 25 })
   })
 

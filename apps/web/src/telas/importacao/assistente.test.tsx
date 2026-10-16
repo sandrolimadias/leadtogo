@@ -203,7 +203,7 @@ describe('Importar planilha: enviar o arquivo', () => {
     await userEvent.type(screen.getByLabelText('Nome da importação'), 'Serra 2026')
     await userEvent.click(screen.getByRole('button', { name: 'Enviar e mapear colunas' }))
 
-    await waitFor(() => expect(enviar).toHaveBeenCalledWith(arquivo, 'Serra 2026'))
+    await waitFor(() => expect(enviar).toHaveBeenCalledWith(arquivo, 'Serra 2026', 'empresas'))
     await waitFor(() => expect(historico.location.pathname).toBe(`/importacao/${LOTE}`))
   })
 

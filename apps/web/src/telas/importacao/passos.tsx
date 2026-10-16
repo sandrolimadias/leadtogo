@@ -48,7 +48,7 @@ const FONTES: { value: FonteDosDados; titulo: string; descricao: string }[] = [
 const invertido = (campos: Record<string, string>): Record<string, string> =>
   Object.fromEntries(Object.entries(campos).map(([campo, coluna]) => [coluna, campo]))
 
-function Rodape({
+export function Rodape({
   voltar,
   avancar,
   rotulo,
@@ -84,7 +84,7 @@ function Rodape({
   )
 }
 
-const cartao = 'flex flex-col gap-3.5 rounded-lg border border-border bg-surface p-4'
+export const cartao = 'flex flex-col gap-3.5 rounded-lg border border-border bg-surface p-4'
 
 // ---------------------------------------------------------------------------------------------------
 // Passo 2: Mapear colunas

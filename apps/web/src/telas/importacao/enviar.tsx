@@ -1,5 +1,12 @@
-import { LIMITE_BYTES_DA_IMPORTACAO, LIMITE_LINHAS_DA_IMPORTACAO } from '@leadtogo/shared'
-import { Link, useNavigate } from '@tanstack/react-router'
+import {
+  campoDoTipo,
+  LIMITE_BYTES_DA_IMPORTACAO,
+  LIMITE_LINHAS_DA_IMPORTACAO,
+  ROTULO_DO_TIPO_DE_IMPORTACAO,
+  TIPOS_DE_IMPORTACAO,
+  type TipoDeImportacao,
+} from '@leadtogo/shared'
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { Download, FileSpreadsheet, Info, Upload, X } from 'lucide-react'
 import { type DragEvent, useRef, useState } from 'react'
 
@@ -7,13 +14,24 @@ import { useServicos } from '@/auth/contexto'
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/campos'
 import { Alert } from '@/components/ui/feedback'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { cn } from '@/lib/cn'
 import { useEnvio } from '@/telas/acesso/comum'
 
-import { formatarTamanho, PASSO, useQuemImporta } from './comum'
+import { formatarTamanho, PASSO, TEXTOS_DO_TIPO, useQuemImporta } from './comum'
 import { Pagina } from './pagina'
 
 const EXTENSOES = ['.xlsx', '.csv']
+const rota = getRouteApi('/_autenticado/importacao/nova')
+
+/** Uma frase do que cada linha da planilha vira, para quem escolhe o tipo. */
+const DESCRICAO_DO_TIPO: Record<TipoDeImportacao, string> = {
+  empresas: 'Cada linha da planilha vira uma empresa na carteira, identificada pelo CNPJ.',
+  contatos:
+    'Cada linha vira um contato, ligado à empresa pelo CNPJ (a empresa precisa já estar na carteira). Contato que já existe (mesmo e-mail ou telefone) só é vinculado à empresa, sem mudar os dados dele.',
+  atividades:
+    'Cada linha vira uma atividade da empresa, ligada pelo CNPJ (a empresa precisa já estar na carteira). A realizada atualiza a última visita, o último contato e as tags da empresa, como se tivesse sido registrada à mão.',
+}
 
 /** O que está errado no arquivo escolhido, antes de enviar; `undefined` = pode enviar. */
 function erroDoArquivo(arquivo: File): string | undefined {
@@ -34,6 +52,8 @@ export function EnviarPlanilha() {
   const navegar = useNavigate()
   const { pode } = useQuemImporta()
   const { enviando, executar } = useEnvio()
+  const { tipo: tipoInicial } = rota.useSearch()
+  const [tipo, setTipo] = useState<TipoDeImportacao>(tipoInicial ?? 'empresas')
   const entrada = useRef<HTMLInputElement>(null)
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [nome, setNome] = useState('')
@@ -59,7 +79,7 @@ export function EnviarPlanilha() {
   const enviar = () =>
     executar(async () => {
       if (!arquivo) return
-      const r = await servicos.importacao.lotes.enviar(arquivo, nome.trim() || undefined)
+      const r = await servicos.importacao.lotes.enviar(arquivo, nome.trim() || undefined, tipo)
       if (!r.ok) {
         setErro(r.erro.mensagem)
         return
@@ -71,8 +91,9 @@ export function EnviarPlanilha() {
   return (
     <Pagina
       titulo="Importar planilha"
-      trilha="Empresas › Importar planilha"
+      trilha={`${TEXTOS_DO_TIPO[tipo].trilha} › Importar planilha`}
       passo={PASSO.enviar}
+      tipo={tipo}
       rodape={
         <Button
           variant="primary"
@@ -90,9 +111,29 @@ export function EnviarPlanilha() {
         className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
       >
         <h2 className="m-0 text-[15px] leading-5 font-semibold">O que você vai importar?</h2>
-        <p className="m-0 text-[13px] text-ink-muted">
-          Empresas. Cada linha da planilha vira uma empresa na carteira, identificada pelo CNPJ.
-        </p>
+        <SegmentedControl
+          label="O que importar"
+          options={TIPOS_DE_IMPORTACAO.map((t) => ({
+            value: t,
+            label: ROTULO_DO_TIPO_DE_IMPORTACAO[t],
+          }))}
+          value={tipo}
+          onChange={(v) => setTipo(v as TipoDeImportacao)}
+        />
+        <p className="m-0 text-[13px] text-ink-muted">{DESCRICAO_DO_TIPO[tipo]}</p>
+        <Alert tone="info">
+          Ordem recomendada: <strong>empresas → contatos → atividades</strong>. Contatos e
+          atividades se ligam à empresa pelo CNPJ, que já precisa estar na carteira.
+        </Alert>
+        {tipo !== 'empresas' ? (
+          <p className="m-0 text-[13px] text-ink-muted">
+            Colunas:{' '}
+            {(campoDoTipo(tipo) as readonly { rotulo: string; obrigatorio?: boolean }[])
+              .map((c) => (c.obrigatorio ? `${c.rotulo}*` : c.rotulo))
+              .join(' · ')}
+            . O que tem * é obrigatório.
+          </p>
+        ) : null}
 
         {arquivo ? (
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
@@ -164,7 +205,9 @@ export function EnviarPlanilha() {
             A primeira linha precisa ter os nomes das colunas.
           </span>
           <a
-            href="/v1/importacao/modelo"
+            href={
+              tipo === 'empresas' ? '/v1/importacao/modelo' : `/v1/importacao/modelo?tipo=${tipo}`
+            }
             download
             className="inline-flex h-(--control-sm) items-center gap-1.5 rounded-sm px-2 text-[13px] font-semibold text-ink hover:bg-surface-hover"
           >

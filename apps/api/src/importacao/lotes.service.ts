@@ -407,14 +407,18 @@ export class LotesDeImportacaoService {
    * Atividades: cada valor distinto da coluna Tipo da planilha, com quantas linhas tem e o tipo que valerá
    * (o que a pessoa apontou, ou o tipo de mesmo nome). É a lista do passo "Mapear colunas".
    */
-  async valoresDoTipo(id: string): Promise<ValoresDoTipo> {
+  async valoresDoTipo(id: string, colunaEscolhida?: string): Promise<ValoresDoTipo> {
     exigirQuemImporta(this.ctx)
     const db = this.ctx.db()
     const lote = await this.achar(id)
     if (lote.tipo !== 'atividades') {
       throw new ErroApi('tipo_sem_valores', 'Só a importação de atividades mapeia tipos.', 409)
     }
-    const coluna = camposDe(lote)['tipo']
+    // A tela pode perguntar antes de gravar o mapeamento: `coluna` é a escolhida agora, no passo
+    const coluna = colunaEscolhida ?? camposDe(lote)['tipo']
+    if (colunaEscolhida && !colunasDe(lote).includes(colunaEscolhida)) {
+      throw new ErroApi('coluna_invalida', 'Essa coluna não existe na planilha.', 400)
+    }
     if (!coluna) {
       throw new ErroApi('mapeamento_incompleto', 'Indique a coluna do Tipo primeiro.', 409)
     }

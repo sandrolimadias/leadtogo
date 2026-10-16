@@ -27,6 +27,7 @@ import type {
   ListaDeEmpresas,
   ListaDeLotesDeImportacao,
   LoteDeImportacao,
+  ValoresDoTipoDaImportacao,
   Me,
   MembroDaEquipe,
   OpcoesDaLista,
@@ -47,6 +48,7 @@ import type {
   Vertical,
 } from '@leadtogo/api-client'
 import type {
+  TipoDeImportacao,
   AlterarAtividadeEntrada,
   ConsultaDoDashboardEntrada,
   AlterarOportunidadeEntrada,
@@ -289,9 +291,19 @@ export interface ServicosDeImportacao {
   /** Os lotes (uma planilha enviada, do envio ao relatório). Só administrador e gestor. */
   lotes: {
     /** Do mais novo para o mais antigo */
-    listar: (pagina?: number, porPagina?: number) => Promise<Resultado<ListaDeLotesDeImportacao>>
-    /** Envia o arquivo (.xlsx ou CSV) e cria o lote em rascunho */
-    enviar: (arquivo: File, nome?: string) => Promise<Resultado<LoteDeImportacao>>
+    listar: (
+      pagina?: number,
+      porPagina?: number,
+      tipo?: TipoDeImportacao,
+    ) => Promise<Resultado<ListaDeLotesDeImportacao>>
+    /** Envia o arquivo (.xlsx ou CSV) e cria o lote em rascunho; o tipo (empresas, contatos ou atividades) fica fixo */
+    enviar: (
+      arquivo: File,
+      nome?: string,
+      tipo?: TipoDeImportacao,
+    ) => Promise<Resultado<LoteDeImportacao>>
+    /** Atividades: cada valor da coluna Tipo da planilha e o tipo que valerá */
+    valoresDoTipo: (id: string, coluna?: string) => Promise<Resultado<ValoresDoTipoDaImportacao>>
     detalhar: (id: string) => Promise<Resultado<LoteDeImportacao>>
     alterar: (id: string, dados: AlterarLoteEntrada) => Promise<Resultado<LoteDeImportacao>>
     previa: (id: string) => Promise<Resultado<PreviaDaImportacao>>

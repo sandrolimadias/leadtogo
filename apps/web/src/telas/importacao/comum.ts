@@ -1,10 +1,12 @@
 import type { ListaDeLotesDeImportacao } from '@leadtogo/api-client'
+import type { ResultadoDaLinha, TipoDeImportacao } from '@leadtogo/shared'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { chaveDoMe } from '@/auth/guardas'
+import type { TomDoBadge } from '@/components/ui/exibicao'
 
 /** Os passos da importação, na ordem (docs/escopo_mvp.md, Módulo 4). */
 export const NOMES_DOS_PASSOS = [
@@ -28,6 +30,57 @@ export const PASSO = {
   relatorio: 6,
 } as const
 
+/** Contatos e atividades não têm Regras nem Carteira: são 5 passos. */
+export const NOMES_DOS_PASSOS_DOS_NOVOS_TIPOS = [
+  'Enviar arquivo',
+  'Mapear colunas',
+  'Prévia',
+  'Importar',
+  'Relatório',
+] as const
+
+export const nomesDosPassos = (tipo: TipoDeImportacao): readonly string[] =>
+  tipo === 'empresas' ? NOMES_DOS_PASSOS : NOMES_DOS_PASSOS_DOS_NOVOS_TIPOS
+
+/** A posição do passo na barra do tipo (os passos Regras e Carteira só existem em empresas). */
+export function posicaoDoPasso(tipo: TipoDeImportacao, passo: number): number {
+  if (tipo === 'empresas') return passo
+  if (passo >= PASSO.relatorio) return 4
+  if (passo >= PASSO.importar) return 3
+  if (passo >= PASSO.previa) return 2
+  return passo
+}
+
+/** O que o lote importa, no singular e no plural, para os textos das telas. */
+export const TEXTOS_DO_TIPO: Record<
+  TipoDeImportacao,
+  {
+    plural: string
+    trilha: string
+    verTudo: string
+    destino: '/empresas' | '/contatos' | '/atividades'
+  }
+> = {
+  empresas: {
+    plural: 'empresas',
+    trilha: 'Empresas',
+    verTudo: 'Ver empresas importadas',
+    destino: '/empresas',
+  },
+  contatos: {
+    plural: 'contatos',
+    trilha: 'Contatos',
+    verTudo: 'Ver contatos',
+    destino: '/contatos',
+  },
+  atividades: {
+    plural: 'atividades',
+    trilha: 'Atividades',
+    verTudo: 'Ver atividades',
+    destino: '/atividades',
+  },
+}
+
 /**
  * Importar planilha é de administrador e gestor. Quem não pode volta para o início (a API também
  * recusa com 403). `pode` fica `false` enquanto a sessão carrega.
@@ -42,6 +95,14 @@ export function useQuemImporta(): { pode: boolean; carregando: boolean } {
     if (me.data && !pode) void navegar({ to: '/' })
   }, [me.data, pode, navegar])
   return { pode, carregando: me.isPending }
+}
+
+/** Administrador e gestor veem o botão "Importar planilha" nas listas (sem redirecionar quem não pode). */
+export function usePodeImportar(): boolean {
+  const servicos = useServicos()
+  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me })
+  const papel = me.data?.empresas.find((e) => e.ativa)?.papel
+  return papel === 'admin' || papel === 'gestor'
 }
 
 /** "menos de 1 min", "7 min", "1 h 20 min": para a estimativa de uma importação. */
@@ -94,6 +155,7 @@ const n = (totais: LoteDaLista['totais'], chave: string) => {
 
 /** "30 importadas · 3 puladas · 1 com erro": o que cada lote fez, em uma linha. */
 export function resumoDoLote(l: LoteDaLista): string {
+  if (l.tipo !== 'empresas') return resumoDoLoteDoNovoTipo(l)
   const importadas = n(l.totais, 'criada') + n(l.totais, 'criada_fora_do_perfil')
   const puladas =
     n(l.totais, 'pulada_sem_cnpj') +
@@ -117,4 +179,47 @@ export function resumoDoLote(l: LoteDaLista): string {
       : []),
   ]
   return partes.join(' · ')
+}
+
+/** Contatos e atividades: "40 linhas · 30 criados · 5 vinculados · 5 puladas". */
+function resumoDoLoteDoNovoTipo(l: LoteDaLista): string {
+  const criadas = n(l.totais, 'criada')
+  const vinculadas = n(l.totais, 'vinculada') + n(l.totais, 'ja_vinculada')
+  const nao = (chave: string) => n(l.totais, chave)
+  const puladas = Object.keys(l.totais)
+    .filter((k) => k.startsWith('pulada_'))
+    .reduce((soma, k) => soma + nao(k), 0)
+  const partes = [
+    `${l.totalLinhas.toLocaleString('pt-BR')} linhas`,
+    ...(criadas > 0
+      ? [`${criadas.toLocaleString('pt-BR')} ${l.tipo === 'contatos' ? 'criados' : 'criadas'}`]
+      : []),
+    ...(vinculadas > 0 ? [`${vinculadas.toLocaleString('pt-BR')} vinculados`] : []),
+    ...(puladas > 0 ? [`${puladas.toLocaleString('pt-BR')} puladas`] : []),
+    ...(l.situacao === 'desfeita'
+      ? [
+          `${nao('desfeitas').toLocaleString('pt-BR')} desfeitas`,
+          ...(nao('mantidas') > 0 ? [`${nao('mantidas').toLocaleString('pt-BR')} ficaram`] : []),
+        ]
+      : []),
+  ]
+  return partes.join(' · ')
+}
+
+/** A cor do selo de cada resultado de linha, no relatório e na prévia. */
+export const TOM_DO_RESULTADO: Record<ResultadoDaLinha, TomDoBadge> = {
+  pendente: 'neutral',
+  criada: 'success',
+  criada_fora_do_perfil: 'info',
+  fora_do_perfil: 'warning',
+  pulada_sem_cnpj: 'neutral',
+  pulada_duplicada: 'neutral',
+  pulada_nao_ativa: 'neutral',
+  erro: 'danger',
+  vinculada: 'info',
+  ja_vinculada: 'neutral',
+  pulada_empresa_inexistente: 'neutral',
+  pulada_tipo_inexistente: 'neutral',
+  pulada_no_futuro: 'neutral',
+  pulada_invalida: 'warning',
 }

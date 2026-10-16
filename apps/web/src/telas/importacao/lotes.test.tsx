@@ -138,7 +138,7 @@ describe('Importações: a lista de lotes', () => {
     await screen.findByText('Página 1 de 3')
     await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
     await screen.findByText('Página 2 de 3')
-    expect(listar).toHaveBeenLastCalledWith(2, 25)
+    expect(listar).toHaveBeenLastCalledWith(2, 25, undefined)
   })
 
   it('o vendedor não vê a lista: volta para o início', async () => {
@@ -168,7 +168,7 @@ describe('Importações: a lista de lotes', () => {
       '100',
     )
     await waitFor(() => expect(guardar).toHaveBeenCalledWith({ porPagina: { importacoes: 100 } }))
-    await waitFor(() => expect(listar).toHaveBeenLastCalledWith(1, 100))
+    await waitFor(() => expect(listar).toHaveBeenLastCalledWith(1, 100, undefined))
   })
 
   it('a lista não rola por dentro: cresce com as linhas', async () => {
