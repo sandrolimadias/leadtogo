@@ -560,6 +560,39 @@ describe('Kanban e lista', () => {
   })
 })
 
+describe('"Em aberto" da lista de Empresas', () => {
+  it('é a soma do total das oportunidades ativas da empresa (fechadas, suspensas e excluídas ficam fora)', async () => {
+    const c = await cenario()
+    const e1 = await empresa(c.d.cookie, 'Com oportunidades')
+    const e2 = await empresa(c.d.cookie, 'Sem oportunidades')
+    await nova(c.d.cookie, { titulo: 'A', empresaId: e1.id, valorUnico: 1000 })
+    await nova(c.d.cookie, {
+      titulo: 'B',
+      empresaId: e1.id,
+      valorUnico: 500,
+      valorMensal: 100,
+      meses: 5,
+    })
+    const perdida = await nova(c.d.cookie, {
+      titulo: 'Perdida',
+      empresaId: e1.id,
+      valorUnico: 7000,
+    })
+    await fechar(c.d.cookie, perdida.id, { status: 'perdido', motivoId: c.motivoDe('perdido') })
+    const apagada = await nova(c.d.cookie, {
+      titulo: 'Apagada',
+      empresaId: e1.id,
+      valorUnico: 9000,
+    })
+    await chamar('delete', c.d.cookie, `${OPS}/${apagada.id}`)
+    const lista = (await chamar('get', c.d.cookie, '/v1/carteira/empresas?ordem=nome')).body as {
+      itens: { id: string; emAberto: number }[]
+    }
+    expect(lista.itens.find((i) => i.id === e1.id)?.emAberto).toBe(2000) // 1.000 + (500 + 100 × 5)
+    expect(lista.itens.find((i) => i.id === e2.id)?.emAberto).toBe(0)
+  })
+})
+
 describe('permissões (regra de carteira)', () => {
   it('vendedor cria, edita, move e fecha só nas empresas dele; o outro recebe 404', async () => {
     const c = await cenario()

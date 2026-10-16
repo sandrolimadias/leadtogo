@@ -13651,6 +13651,9 @@
             "nullable": true,
             "type": "string"
           },
+          "emAberto": {
+            "type": "number"
+          },
           "situacaoNaoVerificada": {
             "type": "boolean"
           },
@@ -13673,6 +13676,7 @@
           "ultimaVisitaEm",
           "ultimoContatoEm",
           "proximaAtividadeEm",
+          "emAberto",
           "situacaoNaoVerificada",
           "editavel"
         ],

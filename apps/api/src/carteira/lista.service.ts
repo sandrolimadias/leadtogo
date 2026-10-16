@@ -71,6 +71,8 @@ export class ListaDeEmpresasService {
         ultimaVisitaEm: empresas.ultimaVisitaEm,
         ultimoContatoEm: empresas.ultimoContatoEm,
         proximaAtividadeEm: empresas.proximaAtividadeEm,
+        emAberto: sql<string>`(SELECT coalesce(sum(o.valor_total), 0) FROM oportunidades o
+          WHERE o.empresa_id = ${empresas.id} AND o.status = 'ativo' AND o.excluido_em IS NULL)`,
         situacaoNaoVerificada: empresas.situacaoNaoVerificada,
       })
       .from(empresas)
@@ -121,6 +123,7 @@ export class ListaDeEmpresasService {
       ultimaVisitaEm: l.ultimaVisitaEm?.toISOString() ?? null,
       ultimoContatoEm: l.ultimoContatoEm?.toISOString() ?? null,
       proximaAtividadeEm: l.proximaAtividadeEm?.toISOString() ?? null,
+      emAberto: Number(l.emAberto),
       situacaoNaoVerificada: l.situacaoNaoVerificada,
       editavel: podeEditar(escopo, l.vendedorId),
     }))

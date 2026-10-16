@@ -93,6 +93,8 @@ export const itemDaListaSchema = z
     ultimaVisitaEm: z.string().nullable(),
     ultimoContatoEm: z.string().nullable(),
     proximaAtividadeEm: z.string().nullable(),
+    /** Soma do total das oportunidades ativas da empresa (Módulo 6); zero sem oportunidade ativa */
+    emAberto: z.number(),
     situacaoNaoVerificada: z.boolean(),
     /** O usuário pode editar (o vendedor só edita a própria carteira): habilita ações em massa */
     editavel: z.boolean(),

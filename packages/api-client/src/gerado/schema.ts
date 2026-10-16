@@ -2939,6 +2939,7 @@ export interface components {
             ultimaVisitaEm: string | null;
             ultimoContatoEm: string | null;
             proximaAtividadeEm: string | null;
+            emAberto: number;
             situacaoNaoVerificada: boolean;
             editavel: boolean;
         };
