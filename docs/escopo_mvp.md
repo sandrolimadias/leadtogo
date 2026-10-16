@@ -243,7 +243,7 @@ Formulário **Registrar atividade** (protótipo), situação, resultado, importa
 - **Desfazer importação:** empresa com qualquer atividade fica na carteira.
 - **Fora do Módulo 5, para depois do MVP:** registrado na tabela da seção 3 ("Fora do MVP"), na linha de cada item, e em `roteiro_teste_modulo5.md`. A tela do formulário **não tem** o bloco "Mais opções" do desenho com Oportunidade, Lembrete e Repetir (só o Responsável, para administrador e gestor).
 
-### Módulo 6 — Oportunidades
+### Módulo 6 — Oportunidades *(em desenvolvimento; plano aprovado pelo Ale em 16/10/2026)*
 **Kanban por funil**, arrastar entre fases, **diálogo de fechamento** (Conquistado/Perdido/Cancelado/Suspenso, motivo, *retomar em*, empresa vira Cliente), **valores digitados** (único, mensal, total), probabilidade sugerida pela etapa, histórico de fases e lista simples.
 - **Regra de fase e funil (12/10 e 13/10/2026):** fase com oportunidades **ativas** só sai de uso depois de **mover** essas oportunidades. Com a regra geral de 13/10/2026 (só se exclui o que nunca foi usado), uma fase que **já teve** oportunidades, mesmo só fechadas, **só se inativa**: a decisão de 12/10 de poder excluí-la quando só há fechadas fica **substituída**, e o histórico de fases e a "fase em que parou" seguem intactos. O mesmo vale para o **funil**. A API de funis (Módulo 1) ainda não confere isso, porque ainda não há oportunidades: a verificação entra junto com a tabela `oportunidades`, com teste.
 

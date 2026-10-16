@@ -14,6 +14,7 @@ import {
 import { tiposAtividade } from './cadastros.js'
 import { empresas } from './carteira.js'
 import { contatos } from './contatos.js'
+import { oportunidades } from './oportunidades.js'
 import { membros, tenants } from './plataforma.js'
 import { carimbos, chaveUuid } from './tipos.js'
 
@@ -56,6 +57,8 @@ export const atividades = pgTable(
     /** Obrigatória, exceto no tipo com `exige_empresa = false` (Tarefa): conferido na API */
     empresaId: uuid().references(() => empresas.id),
     contatoId: uuid().references(() => contatos.id),
+    /** Opcional; da mesma empresa (conferido na API) */
+    oportunidadeId: uuid().references(() => oportunidades.id),
     responsavelId: uuid()
       .notNull()
       .references(() => membros.id),
@@ -78,6 +81,7 @@ export const atividades = pgTable(
   (t) => [
     index('atividades_responsavel_idx').on(t.tenantId, t.responsavelId, t.situacao, t.dataInicio),
     index('atividades_empresa_idx').on(t.tenantId, t.empresaId, t.dataInicio.desc()),
+    index('atividades_oportunidade_idx').on(t.tenantId, t.oportunidadeId),
     index('atividades_contato_idx').on(t.tenantId, t.contatoId, t.dataInicio.desc()),
     // "realizada" e "realizada_em" andam juntos; realizada exige o resultado
     check(

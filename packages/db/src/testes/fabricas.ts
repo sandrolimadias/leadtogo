@@ -396,3 +396,56 @@ fabricas['atividades'] = definirFabrica<{ tipoId: string; membroId: string }>({
     return id
   },
 })
+
+// Oportunidades (Módulo 6)
+interface PaisDaOportunidade {
+  empresaId: string
+  membroId: string
+  funilId: string
+  faseId: string
+}
+async function paisDaOportunidade(owner: Sql, tenantId: string): Promise<PaisDaOportunidade> {
+  return comTenant(owner, tenantId, async (tx) => {
+    const membroId = novoId()
+    const empresaId = novoId()
+    const funilId = novoId()
+    const faseId = novoId()
+    await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${membroId}, ${tenantId}, 'Vendedor de teste')`
+    await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id) VALUES (${empresaId}, ${tenantId}, 'Empresa de teste', ${membroId})`
+    await tx`INSERT INTO funis (id, tenant_id, nome) VALUES (${funilId}, ${tenantId}, 'Funil')`
+    await tx`INSERT INTO funil_fases (id, tenant_id, nome, funil_id) VALUES (${faseId}, ${tenantId}, 'Fase', ${funilId})`
+    return { empresaId, membroId, funilId, faseId }
+  })
+}
+
+fabricas['oportunidades'] = definirFabrica<PaisDaOportunidade>({
+  colunaAlteravel: 'titulo',
+  preparar: paisDaOportunidade,
+  criar: async (tx, tenantId, p) => {
+    const id = novoId()
+    await tx`INSERT INTO oportunidades (id, tenant_id, titulo, empresa_id, funil_id, fase_id, responsavel_id)
+      VALUES (${id}, ${tenantId}, 'Oportunidade de teste', ${p.empresaId}, ${p.funilId}, ${p.faseId}, ${p.membroId})`
+    return id
+  },
+})
+
+fabricas['oportunidade_historico'] = definirFabrica<
+  PaisDaOportunidade & { oportunidadeId: string }
+>({
+  colunaAlteravel: 'detalhe',
+  preparar: async (owner, tenantId) => {
+    const p = await paisDaOportunidade(owner, tenantId)
+    const oportunidadeId = novoId()
+    await comTenant(owner, tenantId, async (tx) => {
+      await tx`INSERT INTO oportunidades (id, tenant_id, titulo, empresa_id, funil_id, fase_id, responsavel_id)
+        VALUES (${oportunidadeId}, ${tenantId}, 'Oportunidade de teste', ${p.empresaId}, ${p.funilId}, ${p.faseId}, ${p.membroId})`
+    })
+    return { ...p, oportunidadeId }
+  },
+  criar: async (tx, tenantId, p) => {
+    const id = novoId()
+    await tx`INSERT INTO oportunidade_historico (id, tenant_id, oportunidade_id, acao, fase_para_id)
+      VALUES (${id}, ${tenantId}, ${p.oportunidadeId}, 'criada', ${p.faseId})`
+    return id
+  },
+})

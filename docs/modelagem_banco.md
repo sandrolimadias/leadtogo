@@ -572,6 +572,13 @@ Estratégia: o sistema gera as ocorrências **de 60 dias à frente** (rotina di�
 - Conquistar dispara a automação "empresa vira Cliente" (se ligada).
 - **Índices:** `(tenant_id, status, funil_id, fase_id)`, `(tenant_id, responsavel_id, status)`, `(tenant_id, empresa_id)`, `(tenant_id, data_prevista_fechamento)`.
 
+> **Implementação (Módulo 6, migração 0024):** criadas `oportunidades` e `oportunidade_historico`; `oportunidade_itens`, o catálogo de produtos e `campos_extras` ficam **fora do MVP**. Diferenças em relação à tabela acima:
+> - **Valores (decisão do Ale, 16/10/2026):** a pessoa digita `valor_unico`, `valor_mensal` e **`meses`** (inteiro ≥ 0; a API assume 12 quando há valor mensal e nada foi dito). **`valor_total` é coluna gerada pelo banco** (`valor_unico + valor_mensal × meses`) e **`valor_ponderado` também** (`round(total × probabilidade ÷ 100, 2)`): a conta existe num lugar só e nunca fica inconsistente. Dinheiro em `numeric(15,2)`. Sem `valor_manual` (não há itens).
+> - **Probabilidade:** `probabilidade_manual` marca que a pessoa a editou à mão; mover de fase só troca a probabilidade quando a marca está desligada.
+> - **Fechamento:** `fase_parou_em_id` guarda a fase em que a oportunidade estava ao sair de Ativo (CHECK: preenchida se e somente se o status não é `ativo`); `fase_id` continua sendo a última fase. `atividade_retomada_id` aponta a atividade criada ao suspender. `data_prevista_fechamento` é **opcional** ("sem previsão" fica fora da previsão do mês).
+> - `oportunidade_historico` (só de acréscimo): `criada`, `fase`, `status` e `reaberta`, com fase de → para, status de → para, motivo e quem fez.
+> - `atividades.oportunidade_id` entrou (FK, da mesma empresa); `oportunidades.proxima_atividade_id` e `atividade_retomada_id` têm FK só no SQL da migração (ciclo de importação), e a FK não passa pelo RLS: a API só grava atividade da própria empresa.
+
 ### 9.2 `oportunidade_itens` — **Produtos e Serviços**
 | Coluna | Tipo | Observação |
 |---|---|---|
