@@ -214,8 +214,13 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 - **Deduplicação por CNPJ dentro do tenant.**
 - Os **perfis serão reaproveitados na Prospecção**.
 
-### Módulo 5 — Atividades *(em desenvolvimento; plano aprovado pelo Ale em 15/10/2026, com as 7 decisões recomendadas)*
+### Módulo 5 — Atividades *(no ar em 16/10/2026, aguardando o teste do Ale; roteiro em `docs/roteiro_teste_modulo5.md`; plano aprovado em 15/10/2026, com as 7 decisões recomendadas)*
 Formulário **Registrar atividade** (protótipo), situação, resultado, importante/urgente, **efeito na carteira** (tags Visitada/Contactada, última visita e último contato), **"Registrar e agendar próxima"**, atrasadas e linha do tempo na ficha.
+
+**Entregue (commits na `main`; esteira verde até o verify):** `2245dcc` migração 0023 (tabela `atividades`, RLS, fuso da empresa, FK da próxima atividade) · `54c4380` schemas e regras de fuso, atraso e data no futuro · `a735a1e` API (registrar, listar com abas, editar, concluir, cancelar, excluir) com o efeito na carteira e o desfazer da importação · `4114f37` ajuste do teste da lista de empresas (a FK exige atividade real) · `e9d5b60` formulário Registrar atividade e abas nas fichas · `6a31003` tela Atividades, menu, E2E, roteiro e docs · `ce35a89` e o commit seguinte: campo de busca da empresa (ver abaixo).
+- **Telas:** formulário **Registrar/Editar atividade** (janela no computador, folha no celular), abertura pelo botão da barra do topo, pelo "+" do cabeçalho do celular e por "Nova atividade" nas fichas; **Concluir** (resultado obrigatório, "Concluir e agendar próxima"), **Cancelar** e **Excluir** pelo menu ⋯ de cada atividade; tela **Atividades** (abas Agendadas, Atrasadas e Realizadas com contagem, busca, tipo, "Só as minhas", paginação 25/50/100 lembrada na tabela `atividades`); aba **Atividades** nas fichas da empresa e do contato (paginação lembrada à parte, em `atividades_ficha`); botão "Atividade" ao lado de Ligar, WhatsApp e Rota na ficha da empresa no celular.
+- **Campo de busca da empresa no formulário (decidido pelo Ale em 16/10/2026, depois do primeiro teste):** a empresa se escolhe num **campo de pesquisa** (nome, razão social, CNPJ/CPF ou cidade, com ou sem máscara), no servidor, pelo mesmo índice da lista de Empresas. **Os resultados só aparecem depois de digitar** (ao abrir a janela não há lista) e abrem como **uma camada sobre os campos de baixo: a janela não muda de tamanho**. Escolhida a empresa, o campo vira o nome com **Trocar empresa**. A primeira versão usava uma lista suspensa (popover) que abria atrás da janela e parecia travada; a segunda mostrava a lista aberta e empurrava o conteúdo. Regra geral no `design_system.md` ("Escolha de registro em diálogo").
+- **Testes:** 23 da API (efeito na carteira, tags, datas, fuso 22h × 00h30, permissões, isolamento entre empresas, auditoria), restrições e RLS no banco, 19 de tela do módulo e 3 E2E (`apps/web/e2e/atividades.spec.ts`, inclusive a busca por nome e por documento e a janela sem mudar de tamanho).
 
 **Decisões do Ale (15/10/2026)**
 1. **Um contato por atividade** (`contato_id`); a tabela N:N de participantes fica para depois.
@@ -236,7 +241,7 @@ Formulário **Registrar atividade** (protótipo), situação, resultado, importa
 - **Quem vê e quem edita:** admin e gestor, tudo. O vendedor vê a atividade da empresa que ele vê e edita a da própria carteira; **atribui atividade só a si mesmo**. A **Tarefa sem empresa** só o responsável, o gestor e o administrador veem.
 - **Contato** precisa ter vínculo ativo com a empresa da atividade; trocar de empresa sem dizer o contato tira o contato.
 - **Desfazer importação:** empresa com qualquer atividade fica na carteira.
-- **Fora do Módulo 5** (tabela em `roteiro_teste_modulo5.md`): oportunidade na atividade (Módulo 6), lembretes, recorrência, checklist, etiquetas, anexos, participantes (N:N), `id_externo`, check-in, "Em execução" na tela, validade da tag de visita (`dias_validade_tag_visita`), conclusão rápida no Dashboard (Módulo 7), Kanban de Tarefas e notificação de atividade atrasada.
+- **Fora do Módulo 5, para depois do MVP:** registrado na tabela da seção 3 ("Fora do MVP"), na linha de cada item, e em `roteiro_teste_modulo5.md`. A tela do formulário **não tem** o bloco "Mais opções" do desenho com Oportunidade, Lembrete e Repetir (só o Responsável, para administrador e gestor).
 
 ### Módulo 6 — Oportunidades
 **Kanban por funil**, arrastar entre fases, **diálogo de fechamento** (Conquistado/Perdido/Cancelado/Suspenso, motivo, *retomar em*, empresa vira Cliente), **valores digitados** (único, mensal, total), probabilidade sugerida pela etapa, histórico de fases e lista simples.
@@ -268,6 +273,21 @@ Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase,
 | Catálogo de produtos/itens | O MVP usa valores digitados na oportunidade (único, mensal, total) |
 | Campos personalizados | Não há necessidade comprovada; os campos fixos cobrem o uso inicial |
 | Recorrência e lembretes | Dependem da central de notificações e de rotinas no worker |
+| Atividade: oportunidade vinculada | A tabela `oportunidades` só nasce no Módulo 6; a coluna `oportunidade_id` e o campo do formulário entram lá (Módulo 5 deixou a tela sem esse campo) |
+| Atividade: vários contatos (tabela `atividade_contatos`) | Decisão do Ale em 15/10/2026: um contato por atividade (`contato_id`); o N:N fica para depois do MVP |
+| Atividade: lembretes ("Notificar em"), recorrência ("Repetir"), checklist, etiquetas e anexos | Dependem da central de notificações, do worker e do Kanban de Tarefas; as tabelas `atividade_lembretes`, `atividade_recorrencias`, `atividade_checklist` e `atividade_etiquetas` seguem só na modelagem |
+| Atividade: `id_externo` e check-in com GPS | Adiados pelo Ale em 15/10/2026 (WhatsApp, e-mail, agenda e visita com localização); `origem` já existe, com padrão `manual` |
+| Atividade: situação "Em execução" na tela | Existe no banco e na API; a tela usa Realizada, Pendente e Cancelada |
+| Atividade: reabrir cancelada ou realizada | Não pedido; para refazer, registra-se outra atividade |
+| Atividade: validade da tag de visita (`dias_validade_tag_visita`) | Opcional na regra, sem tela de configuração; hoje a tag só sai quando não resta atividade realizada do tipo |
+| Atividade: fuso da empresa editável pela tela | O fuso é `America/Sao_Paulo` (`tenant_configuracoes.fuso_horario`); a tela de escolha vem quando houver empresa em outro fuso |
+| Atividade: fuso do aparelho × fuso da empresa nas telas | As datas aparecem no fuso do aparelho; "hoje" e "atrasada" são do servidor, no fuso da empresa. Mostrar tudo no fuso da empresa fica para quando houver mais de um |
+| Atividade: "Próxima atividade" em vermelho nas listas de Empresas e fichas | A API informa a data; a tela da lista e da ficha não destaca a atrasada (a tela Atividades destaca) |
+| Atividade: aviso na empresa de que há atividade atrasada, e notificação de atraso | Central de notificações fora do MVP |
+| Atividade: criação de atividade em lote e exportação | Não pedido |
+| Atividade: ações em massa na tela Atividades (concluir, cancelar, transferir) | Não pedido; vem junto com a visão de Equipe |
+| Atividades no Histórico da empresa | O Histórico mostra as tags aplicadas pelo sistema; cada atividade tem linha própria na aba Atividades |
+| Conclusão rápida no Dashboard e "Minhas atividades" | Módulo 7 (Dashboard) |
 | Central de notificações e push | Um usuário só; o Dashboard mostra o que está atrasado |
 | Filtros salvos personalizados | Os chips fixos da lista de Empresas bastam |
 | Visão Equipe e transferência de carteira | Só há um usuário |

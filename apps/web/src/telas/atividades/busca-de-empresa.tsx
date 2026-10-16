@@ -33,6 +33,7 @@ export function BuscaDeEmpresa({
   const servicos = useServicos()
   const [texto, setTexto] = useState('')
   const [termo, setTermo] = useState('')
+  const [aberta, setAberta] = useState(false)
   useEffect(() => {
     const espera = setTimeout(() => setTermo(texto.trim()), 250)
     return () => clearTimeout(espera)
@@ -40,19 +41,21 @@ export function BuscaDeEmpresa({
 
   const achadas = useQuery({
     queryKey: ['atividades', 'busca-de-empresa', termo],
-    enabled: valor === null,
+    enabled: valor === null && termo !== '',
     retry: false,
     staleTime: 30_000,
     queryFn: async () => {
       const r = await servicos.carteira.listar({
-        ...(termo ? { busca: termo } : {}),
+        busca: termo,
         porPagina: RESULTADOS,
         ordem: 'nome',
       })
       if (!r.ok) throw new Error(r.erro.mensagem)
-      return { itens: r.dados.itens, total: r.dados.total }
+      return { itens: r.dados.itens, total: r.dados.total, termo }
     },
   })
+
+  const termoDaBusca = achadas.data?.termo
 
   const rotulo = (
     <span className="text-[13px] leading-[18px] font-semibold">
@@ -86,8 +89,16 @@ export function BuscaDeEmpresa({
 
   const itens = achadas.data?.itens ?? []
   const faltam = (achadas.data?.total ?? 0) - itens.length
+  // Os resultados só aparecem depois de digitar (nada de lista aberta ao abrir a janela) e como uma camada
+  // sobre os campos de baixo: a janela não muda de tamanho.
+  const buscando = aberta && texto.trim() !== '' && termo !== ''
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
+    <div
+      className="relative flex min-w-0 flex-col gap-1.5"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setAberta(false)
+      }}
+    >
       {rotulo}
       <TextField
         icon={Search}
@@ -96,50 +107,65 @@ export function BuscaDeEmpresa({
         placeholder="Buscar por nome ou CNPJ"
         autoComplete="off"
         value={texto}
-        onChange={(e) => setTexto(e.target.value)}
+        onChange={(e) => {
+          setTexto(e.target.value)
+          setAberta(true)
+        }}
+        onFocus={() => setAberta(true)}
         {...(erro ? { error: erro } : {})}
       />
-      {achadas.isError ? (
-        <span className="text-sm text-danger">{achadas.error.message}</span>
-      ) : null}
-      {achadas.isPending ? (
-        <span role="status" className="text-sm text-ink-muted">
-          Buscando…
-        </span>
-      ) : null}
-      {achadas.data && itens.length === 0 ? (
-        <span className="text-sm text-ink-muted">Nenhuma empresa com esse nome ou CNPJ.</span>
-      ) : null}
-      {itens.length > 0 ? (
-        <ul
-          aria-label="Empresas encontradas"
-          className="m-0 flex max-h-56 list-none flex-col gap-0.5 overflow-y-auto rounded-sm border border-border p-1"
+      {buscando ? (
+        <div
+          role="region"
+          aria-label="Resultados da busca de empresa"
+          className="absolute top-full right-0 left-0 z-20 mt-1 flex max-h-60 flex-col overflow-y-auto rounded-md border border-border bg-surface p-1 shadow-md"
         >
-          {itens.map((e) => (
-            <li key={e.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  aoMudar({ id: e.id, nome: e.nome })
-                  setTexto('')
-                  setTermo('')
-                }}
-                className="flex w-full cursor-pointer flex-col rounded-sm border-0 bg-transparent px-2 py-1.5 text-left hover:bg-surface-hover"
-              >
-                <span className="text-sm font-semibold">{e.nome}</span>
-                <span className="font-mono text-xs text-ink-muted">
-                  {documentoFormatado(e.tipoDocumento, e.documento)}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {faltam > 0 ? (
-        <span className="text-xs text-ink-muted">
-          {faltam === 1 ? 'Mais 1 empresa:' : `Mais ${faltam} empresas:`} digite mais do nome ou do
-          CNPJ para achar.
-        </span>
+          {achadas.isError ? (
+            <span className="px-2 py-1.5 text-sm text-danger">{achadas.error.message}</span>
+          ) : null}
+          {achadas.isPending || termo !== termoDaBusca ? (
+            <span role="status" className="px-2 py-1.5 text-sm text-ink-muted">
+              Buscando…
+            </span>
+          ) : null}
+          {achadas.data && termo === termoDaBusca && itens.length === 0 ? (
+            <span className="px-2 py-1.5 text-sm text-ink-muted">
+              Nenhuma empresa com esse nome ou CNPJ.
+            </span>
+          ) : null}
+          {termo === termoDaBusca && itens.length > 0 ? (
+            <ul
+              aria-label="Empresas encontradas"
+              className="m-0 flex list-none flex-col gap-0.5 p-0"
+            >
+              {itens.map((e) => (
+                <li key={e.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      aoMudar({ id: e.id, nome: e.nome })
+                      setTexto('')
+                      setTermo('')
+                      setAberta(false)
+                    }}
+                    className="flex w-full cursor-pointer flex-col rounded-sm border-0 bg-transparent px-2 py-1.5 text-left hover:bg-surface-hover"
+                  >
+                    <span className="text-sm font-semibold">{e.nome}</span>
+                    <span className="font-mono text-xs text-ink-muted">
+                      {documentoFormatado(e.tipoDocumento, e.documento)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {faltam > 0 && termo === termoDaBusca ? (
+            <span className="px-2 pt-1 pb-1.5 text-xs text-ink-muted">
+              {faltam === 1 ? 'Mais 1 empresa:' : `Mais ${faltam} empresas:`} digite mais do nome ou
+              do CNPJ para achar.
+            </span>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )

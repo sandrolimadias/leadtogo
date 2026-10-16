@@ -502,6 +502,7 @@ Regra (trigger ou serviço): em grupo de **seleção única**, a nova tag **subs
 > - **Dia inteiro:** `data_inicio` é a meia-noite do dia **no fuso da empresa**. O fuso é `tenant_configuracoes.fuso_horario` (IANA, padrão `America/Sao_Paulo`); "hoje", "atrasada" e os agrupamentos por dia são calculados nele, nunca em UTC.
 > - `empresas.proxima_atividade_id` ganhou a FK para `atividades` (só no SQL da migração). Como toda FK, ela não passa pelo RLS: a API só grava ali atividade da própria empresa.
 > - Fora o RLS (`aplicar_rls_tenant`), a tabela tem `excluido_em`, `criado_por` e `atualizado_por` como as demais; exclusão lógica.
+> - **Seguem só nesta modelagem, para depois do MVP** (lista completa em `escopo_mvp.md`, seção 3): `oportunidade_id` (Módulo 6), `id_externo` e o índice único `(tenant_id, origem, id_externo)`, `recorrencia_id`/`recorrencia_ocorrencia_em`, check-in (`checkin_local`, `checkin_em`), `atividade_lembretes`, `atividade_recorrencias`, `atividade_contatos`, `atividade_checklist`, `atividade_etiquetas` e os cards de quadro.
 
 ### 8.2 `atividade_lembretes` — **Notificar em**
 `id, tenant_id, atividade_id, notificar_em timestamptz, canal enum(app/push/email/whatsapp), enviado_em`. Uma atividade pode ter vários lembretes (ex.: 1 dia antes e 30 min antes). O *worker* lê os pendentes e cria a notificação.

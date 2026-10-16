@@ -62,6 +62,14 @@
 - **A API limita o tamanho de página a 100** (`TAMANHO_MAXIMO_DE_PAGINA`; todo `porPagina` usa o `porPaginaSchema`) e o padrão é 25. A tela só busca depois de as preferências chegarem, para não pedir duas vezes.
 - Listas que carregam "mais" (histórico) não são tabelas de dados paginadas e ficam de fora.
 
+## Escolha de registro em diálogo (regra, decidida pelo Ale em 16/10/2026)
+Para escolher um registro que vem de uma tabela grande (a empresa, no "Registrar atividade"; vale para contato, oportunidade e o que vier):
+- **Campo de pesquisa**, não lista suspensa. A busca é no servidor (a carteira passa de milhares de linhas), por todos os nomes que a pessoa conhece (nome e documento, com ou sem máscara).
+- **Ao abrir a janela não aparece lista nenhuma.** Os resultados só vêm **depois de digitar**.
+- Os resultados abrem **como uma camada sobre os campos de baixo** (`absolute`, com altura máxima e rolagem própria): **a janela nunca muda de tamanho nem de lugar** quando eles aparecem ou somem.
+- **Nunca usar popover (`Popover`, `Select` suspenso) dentro de `Dialog` ou `Sheet`**: o diálogo fica na camada 1400 e o popover abria atrás dele (parecia travado). O campo fica dentro da própria janela.
+- Escolhido o registro, o campo vira o nome com um botão **Trocar** (volta à busca). Componente: `telas/atividades/busca-de-empresa.tsx`. Teste: a janela mantém o mesmo tamanho com os resultados abertos (`apps/web/e2e/atividades.spec.ts`).
+
 ## Próximos passos
 1. Revisar o design system no artifact e pedir ajustes (cores, fonte, cantos, densidade).
 2. Prototipar as telas principais (Dashboard, Empresas, Ficha da empresa, Oportunidades, Tarefas, versões para celular) sobre este sistema.

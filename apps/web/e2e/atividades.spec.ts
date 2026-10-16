@@ -115,9 +115,14 @@ test('registrar: a empresa se acha pelo campo de busca, por nome e por documento
   await page.goto('/atividades')
   await page.getByRole('button', { name: 'Registrar atividade' }).first().click()
   const busca = formulario(page).getByRole('searchbox', { name: 'Buscar empresa' })
+  // ao abrir, nenhuma empresa aparece
+  await expect(formulario(page).getByRole('list', { name: 'Empresas encontradas' })).toHaveCount(0)
+  const antes = await formulario(page).boundingBox()
   // pelo nome (sem acento nem caixa)
   await busca.fill('OFICINA')
   await expect(formulario(page).getByRole('button', { name: /Oficina do Nome/ })).toBeVisible()
+  // os resultados são uma camada: a janela não muda de tamanho nem de lugar
+  expect(await formulario(page).boundingBox()).toEqual(antes)
   await expect(formulario(page).getByRole('button', { name: /Padaria do Documento/ })).toHaveCount(
     0,
   )

@@ -27,7 +27,7 @@
 
 ## 2. Registrar uma visita já realizada
 1. Abra a ficha de uma empresa que **nunca foi visitada** (Última visita: "Nunca"). Clique **Nova atividade**.
-2. O formulário abre com **Visita** escolhida, a **empresa já preenchida** (sem empresa, o campo **Buscar empresa** mostra os resultados logo abaixo, achando por **nome ou CNPJ/CPF**, com ou sem máscara; **Trocar empresa** volta à busca), a situação **Realizada**, "Quando aconteceu" com a data e a hora de agora e o responsável padrão (você).
+2. O formulário abre com **Visita** escolhida, a **empresa já preenchida** (sem empresa, o campo **Buscar empresa** **não mostra nada até você digitar**; ao digitar, os resultados abrem como uma camada sobre os campos de baixo, **sem mudar o tamanho da janela**, achando por **nome ou CNPJ/CPF**, com ou sem máscara; **Trocar empresa** volta à busca), a situação **Realizada**, "Quando aconteceu" com a data e a hora de agora e o responsável padrão (você).
 3. Clique em **Registrar atividade** sem preencher: aparecem "Informe o título.", e "Informe o resultado.". Nada é gravado.
 4. Preencha **Título** e **Resultado** (a dica do Resultado diz que a visita atualiza a última visita e o último contato e aplica **Visitada**). Registre.
 5. Na ficha: **Última visita: Hoje**, **Último contato: Hoje** e a tag **Visitada** aparece (e a lista de Empresas mostra a data).
@@ -107,7 +107,7 @@ Use uma empresa com **uma única visita realizada** (a de 2 dias atrás, por exe
 
 ---
 
-## O que ficou de fora e por quê
+## O que ficou de fora e por quê (fica para depois do MVP; a lista completa está em `escopo_mvp.md`, seção 3)
 | Item | Motivo |
 |---|---|
 | Oportunidade dentro da atividade | A tabela `oportunidades` só nasce no Módulo 6; a coluna entra lá |
@@ -123,6 +123,10 @@ Use uma empresa com **uma única visita realizada** (a de 2 dias atrás, por exe
 | Conclusão rápida no Dashboard e "Minhas atividades" | Módulo 7 (Dashboard) |
 | Kanban de Tarefas | Fora do MVP (o menu "Atividades" cobre o dia a dia) |
 | Notificação de atividade atrasada | Fora do MVP (central de notificações) |
+| "Mais opções" do formulário: Oportunidade, Lembrete e Repetir | Oportunidade vem com o Módulo 6; Lembrete e Repetir dependem de notificações e worker (a tela só tem o Responsável em "Mais opções") |
+| Datas nas listas no fuso da empresa | Hoje as telas usam o fuso do aparelho; só o cálculo de "hoje" e "atrasada" é do servidor, no fuso da empresa |
+| "Próxima atividade" em vermelho nas listas de Empresas e fichas | A API informa a data; só a tela Atividades destaca a atrasada |
+| Ações em massa na tela Atividades | Não pedido |
 | Atividades no Histórico da empresa | O Histórico mostra as tags aplicadas pelo sistema; cada atividade tem a própria linha do tempo na aba Atividades |
 
 ## Decisões
@@ -136,4 +140,5 @@ Use uma empresa com **uma única visita realizada** (a de 2 dias atrás, por exe
 - **Quem vê e edita**: regra de carteira; o vendedor atribui só a si; a Tarefa sem empresa só o responsável, o gestor e o administrador veem.
 - Empresa com atividade (mesmo excluída) **não sai** no desfazer da importação.
 - A tela mostra as datas no fuso do aparelho; os cálculos de "hoje" e "atrasada" são do servidor, no fuso da empresa. Dia inteiro vai como meio-dia do dia escolhido para não depender do fuso do aparelho.
+- A empresa do formulário é um **campo de pesquisa** (resultados só depois de digitar, como camada, sem mudar a janela), decisão do Ale em 16/10/2026 depois do primeiro teste.
 - No celular o "+" fica no cabeçalho (e não flutuante), para não cobrir as linhas e a paginação.

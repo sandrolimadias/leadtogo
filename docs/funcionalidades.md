@@ -165,7 +165,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 
 **Decisões de 13/10/2026 (v1.7): ficha (valem sobre o protótipo)**
 - **Cabeçalho:** nome, Matriz/Filial, situação na Receita, razão social, CNPJ, tags + **Editar tags**, **Ligar** e **WhatsApp** (telefone principal da empresa) e **Mais ações** (Editar, Excluir). **Vendedor** some da faixa de resumo quando a empresa tem um membro só.
-- **Abas visíveis agora: Resumo e Histórico.** Contatos, Atividades e Oportunidades (e os botões "Nova atividade" e "Nova oportunidade") ficam **escondidos até o módulo de cada um** existir. Última visita, último contato e próxima atividade aparecem como "Nunca"/"—" até o Módulo 5.
+- **Abas visíveis agora: Resumo, Contatos, Atividades e Histórico** (Contatos veio no Módulo 3 e Atividades no **Módulo 5**, com o botão **Nova atividade**, no cabeçalho e na aba). **Oportunidades** e o botão "Nova oportunidade" ficam **escondidos até o Módulo 6**. Última visita, último contato e próxima atividade vêm das atividades ("Nunca"/"—" enquanto não há nenhuma).
 - **Resumo:** *Dados cadastrais*, *CNAEs* (principal marcado), *Sócios* (só nome e qualificação; **"Converter em contato"** cria o contato com o vínculo e marca o sócio como "Contato"; não converte duas vezes e sobrevive ao "Atualizar pela Receita") e *Observações*. **Sem campos personalizados e sem faixas de funcionários e faturamento** (fora do MVP).
 - **Atualizar pela Receita** (card Dados cadastrais, ao lado de "Receita em dd/mm/aaaa"): reconsulta ignorando o cache, atualiza a situação e a data e abre um diálogo com **o que mudou (atual × Receita)**, com **Aplicar alterações** ou **Manter como está**; fica na auditoria. Telefones da Receita se somam aos da equipe. Empresa que deixou de ser ativa **continua na carteira**, com o aviso de situação.
 - **Editar** usa a mesma tela do cadastro, **sem o passo da Receita e sem o documento**. **Excluir** é só de administrador e gestor, é lógico e **não há lixeira** por enquanto (pendência pós-MVP).
@@ -268,12 +268,15 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 3. Atividade agendada com data passada fica como **Atrasada** (destaque em vermelho).
 4. É possível registrar direto como concluída (algo que já aconteceu).
 
-### Formulário "Registrar atividade" (v1.5, do protótipo)
-- Abre pelo botão "+" (celular, folha que sobe do rodapé), pelo botão da barra superior ou por "Nova atividade" na ficha (com a empresa já preenchida).
-- Campos principais: **Tipo** (6 botões com ícone; padrão Visita) · **Empresa** (busca na carteira; obrigatória exceto Tarefa) · **Contato** (só os da empresa) · **Título** · **Data e hora** · **Situação** (padrão **Realizada**) · **Resultado** (obrigatório quando Realizada; a dica explica o efeito: aplica Visitada/Contactada ou não altera a carteira) · Importante · Urgente.
-- **Bloco "Mais opções"** (recolhido): **Oportunidade** (só as da empresa), **Lembrete** ("Notificar em") e **Repetir** (recorrência). *Não estava no protótipo e foi acrescentado para atender os requisitos.*
-- Botões: "Registrar atividade" e "Registrar e agendar próxima" (só quando Realizada).
-- **Conclusão rápida** no Dashboard: na própria linha, com Resultado e "Concluir" ou "Concluir e agendar próxima".
+### Formulário "Registrar atividade" (v1.5, do protótipo; **como ficou no Módulo 5**)
+- Abre pelo botão **"Registrar atividade"** da barra superior, pelo botão **"+"** do cabeçalho do celular (folha que sobe do rodapé), por **"Nova atividade"** nas fichas (com a empresa já preenchida; na ficha do contato, também o contato) e pela tela **Atividades**.
+- Campos: **Tipo** (botões com o ícone de cada tipo ativo; padrão Visita) · **Empresa** (**campo de pesquisa**: digite parte do nome, da razão social, o CNPJ/CPF com ou sem máscara ou a cidade; **os resultados só aparecem depois de digitar** e abrem como uma camada sobre os campos de baixo, sem mudar o tamanho da janela; escolhida a empresa, o campo mostra o nome e **Trocar empresa**; obrigatória, exceto no tipo Tarefa) · **Contato** (só os ativos da empresa; trocar de empresa limpa o contato) · **Título** (obrigatório) · **Data e hora** (em atividade **Realizada** o campo é **"Quando aconteceu"**; **Dia inteiro** troca por só a data) · **Situação** (**Realizada**, padrão, ou **Pendente**, para agendar; cancelada não se cria) · **Resultado** (obrigatório quando Realizada; a dica diz o efeito do tipo na carteira: visita aplica Visitada e atualiza última visita e último contato, contato aplica Contactada e atualiza o último contato, os demais não alteram a carteira) · **Importante** e **Urgente**.
+- **Responsável:** o padrão é o usuário logado. Administrador e gestor escolhem outro em **"Mais opções → Responsável"**; o vendedor registra sempre para si.
+- **Fora desta entrega (depois do MVP):** do bloco "Mais opções" do desenho, **Oportunidade** (entra com o Módulo 6), **Lembrete** ("Notificar em") e **Repetir** (recorrência). Ver a tabela "Fora do MVP" em `escopo_mvp.md`.
+- **Botões:** "Registrar atividade" (ou "Agendar atividade", quando Pendente) e **"Registrar e agendar próxima"** (só quando Realizada), que registra e **reabre o formulário com a mesma empresa, o mesmo tipo e o mesmo contato, situação Pendente e data vazia**.
+- **Regras de data:** uma atividade realizada **não pode ter data no futuro**, com tolerância de **5 minutos** (para o celular com o relógio adiantado). "Hoje", "atrasada", "dia inteiro" e o agrupamento por dia valem no **fuso da empresa** (America/Sao_Paulo), nunca em UTC; atividade de dia inteiro só atrasa quando o dia acaba.
+- **Ações de cada atividade** (menu ⋯): **Concluir** (resultado obrigatório, data em que aconteceu e "Concluir e agendar próxima"), **Editar**, **Cancelar atividade** (vale também para a realizada, que deixa de contar como visita ou contato; o resultado fica guardado; a cancelada não se edita) e **Excluir** (lógica). Toda mudança **recalcula** na empresa a última visita, o último contato, a próxima atividade e as tags Visitada e Contactada; a tag só sai quando não resta nenhuma atividade realizada daquele tipo.
+- **Conclusão rápida** no Dashboard: na própria linha, com Resultado e "Concluir" ou "Concluir e agendar próxima" (**Módulo 7**).
 
 ### Tipos de atividade (cadastráveis)
 | Campo | Observação |
@@ -780,7 +783,7 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 | 26 | Multiempresa (v1.4) | Conta dona de várias empresas; dados isolados + painel consolidado + cópia de configurações |
 | 27 | Usuários (v1.4) | Mesmo login em várias empresas, papel por empresa |
 | 28 | Protótipo (v1.5) | Telas do protótipo (`docs/prototipo/`) são a referência visual; regras continuam neste documento |
-| 29 | Registrar atividade (v1.5) | Situação padrão Realizada; resultado obrigatório ao realizar; "Mais opções" com Oportunidade, Lembrete e Repetir |
+| 29 | Registrar atividade (v1.5) | Situação padrão Realizada; resultado obrigatório ao realizar; "Mais opções" com Oportunidade, Lembrete e Repetir. **Módulo 5 (16/10/2026):** empresa por campo de pesquisa (resultados só depois de digitar, como camada); "Mais opções" só com o Responsável; Oportunidade, Lembrete e Repetir ficaram para depois do MVP |
 | 30 | Fechamento (v1.5) | Interruptor "empresa vira Cliente" por fechamento, padrão vindo da configuração do tenant |
 | 31 | Navegação (v1.5) | Menu lateral recolhível (preferência salva por usuário); celular com barra inferior (Início, Empresas, Funil, Tarefas, Mais) e botão "+" |
 | 32 | Importação (v1.6) | Perfis de regras nomeados por empresa, aplicados depois da consulta à Receita; limite de 10.000 linhas e 10 MB; lote desfazível; ver `escopo_mvp.md` (Módulo 4) |

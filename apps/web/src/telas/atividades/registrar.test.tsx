@@ -143,6 +143,20 @@ describe('Registrar atividade', () => {
     expect(within(nova).getByLabelText(/Título/)).toHaveValue('')
   })
 
+  it('ao abrir, nenhuma empresa aparece: os resultados só vêm depois de digitar (e apagar o texto os esconde)', async () => {
+    const x = servicos()
+    const janela = await abrirFormulario(x)
+    expect(within(janela).queryByRole('list', { name: 'Empresas encontradas' })).toBeNull()
+    expect(within(janela).queryByRole('region', { name: /Resultados/ })).toBeNull()
+    expect(x.s.carteira.listar).not.toHaveBeenCalled()
+    const busca = within(janela).getByRole('searchbox', { name: 'Buscar empresa' })
+    await userEvent.type(busca, 'usid')
+    expect(await within(janela).findByRole('list', { name: 'Empresas encontradas' })).toBeVisible()
+    // apagar o texto esconde tudo de novo
+    await userEvent.clear(busca)
+    expect(within(janela).queryByRole('region', { name: /Resultados/ })).toBeNull()
+  })
+
   it('a empresa se acha pelo campo de busca (nome ou CNPJ), dentro da janela, e dá para trocar', async () => {
     const x = servicos()
     const janela = await abrirFormulario(x)
