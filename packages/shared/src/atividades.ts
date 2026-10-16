@@ -143,6 +143,8 @@ export const criarAtividadeSchema = z
     empresaId: z.uuid().nullable().optional(),
     /** Um contato da empresa */
     contatoId: z.uuid().nullable().optional(),
+    /** Uma oportunidade da empresa (opcional) */
+    oportunidadeId: z.uuid().nullable().optional(),
     /** Quem executa; sem ele, o próprio usuário. O vendedor só escolhe a si mesmo */
     responsavelId: z.uuid().optional(),
     dataInicio: dataEHora,
@@ -178,6 +180,7 @@ export const alterarAtividadeSchema = z
     titulo: z.string().trim().min(1, 'informe o título').max(200),
     empresaId: z.uuid().nullable(),
     contatoId: z.uuid().nullable(),
+    oportunidadeId: z.uuid().nullable(),
     responsavelId: z.uuid(),
     dataInicio: dataEHora,
     dataFim: dataEHora.nullable(),
@@ -211,6 +214,7 @@ export const consultaDeAtividadesSchema = z
     aba: abaDeAtividadesSchema.optional(),
     empresaId: z.uuid().optional(),
     contatoId: z.uuid().optional(),
+    oportunidadeId: z.uuid().optional(),
     tipoAtividadeId: z.uuid().optional(),
     responsavelId: z.uuid().optional(),
     /** Só as do usuário (responsável) */
@@ -244,6 +248,7 @@ export const atividadeSchema = z
     titulo: z.string(),
     empresa: z.object({ id: z.uuid(), nome: z.string() }).nullable(),
     contato: z.object({ id: z.uuid(), nome: z.string() }).nullable(),
+    oportunidade: z.object({ id: z.uuid(), nome: z.string() }).nullable(),
     responsavel: z.object({ id: z.uuid(), nome: z.string() }),
     dataInicio: z.string(),
     dataFim: z.string().nullable(),

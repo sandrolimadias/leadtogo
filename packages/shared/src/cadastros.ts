@@ -316,6 +316,8 @@ export const funilFaseSchema = z
     cor: corDeTagSchema,
     probabilidadePadrao: z.number().int(),
     diasAlertaParada: z.number().int().nullable(),
+    /** Fase inativa sai do Kanban e das escolhas; a que já teve oportunidade só se inativa (Módulo 6) */
+    ativo: z.boolean(),
     ordem: z.number().int(),
   })
   .meta({ id: 'FunilFase' })
@@ -351,6 +353,7 @@ export const alterarFaseSchema = z
     cor: corDeTagSchema,
     probabilidadePadrao: probabilidadeSchema,
     diasAlertaParada: diasAlertaSchema,
+    ativo: z.boolean(),
   })
   .partial()
   .strict()
