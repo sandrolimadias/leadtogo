@@ -93,6 +93,25 @@ const ajustar = (tenantId: string, id: string, colunas: string) =>
     )
   })
 
+/** Uma atividade pendente de verdade (a FK de `proxima_atividade_id` exige que ela exista) como a próxima da empresa. */
+const agendarProxima = (tenantId: string, empresaId: string, dias: number) =>
+  noTenant(tenantId, async (tx) => {
+    const sql = tx as unknown as {
+      unsafe: (q: string, p: unknown[]) => Promise<{ id: string }[]>
+    }
+    const [a] = await sql.unsafe(
+      `INSERT INTO atividades (id, tenant_id, tipo_atividade_id, titulo, empresa_id, responsavel_id, data_inicio)
+       SELECT gen_random_uuid(), $1, (SELECT id FROM tipos_atividade WHERE chave_sistema = 'visita'),
+              'Próxima', $2, (SELECT vendedor_id FROM empresas WHERE id = $2), now() + make_interval(days => $3)
+       RETURNING id`,
+      [tenantId, empresaId, dias],
+    )
+    await sql.unsafe(
+      `UPDATE empresas SET proxima_atividade_id = $1, proxima_atividade_em = now() + make_interval(days => $3) WHERE id = $2`,
+      [a?.id, empresaId, dias],
+    )
+  })
+
 /** Equipe: o administrador, um gestor e dois vendedores. */
 async function cenario() {
   const d = await novoDono(app)
@@ -232,11 +251,8 @@ describe('chips e contagens', () => {
     const C = await criar(d.cookie, 'C lead novo')
     const D = await criar(d.cookie, 'D cliente recente', { statusTagId: status.cliente })
     const E = await criar(d.cookie, 'E inativo', { statusTagId: status.inativo })
-    await ajustar(
-      d.tenantId,
-      B.id,
-      `ultima_visita_em = now() - interval '100 days', proxima_atividade_id = gen_random_uuid(), proxima_atividade_em = now() + interval '3 days'`,
-    )
+    await ajustar(d.tenantId, B.id, `ultima_visita_em = now() - interval '100 days'`)
+    await agendarProxima(d.tenantId, B.id, 3)
     await ajustar(d.tenantId, D.id, `ultima_visita_em = now() - interval '10 days'`)
     await ajustar(d.tenantId, E.id, `ultima_visita_em = now() - interval '200 days'`)
     return { ...c, A, B, C, D, E }
