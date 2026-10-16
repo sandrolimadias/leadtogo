@@ -6,6 +6,7 @@ import {
   Ban,
   CircleCheck,
   CircleX,
+  Copy,
   Ellipsis,
   Pause,
   Pencil,
@@ -146,6 +147,7 @@ export function useAcoesDaOportunidade(aoMudar?: () => void): {
           ] satisfies ItemDeMenu[])
         : [{ icon: RotateCcw, label: 'Reabrir', onSelect: () => void reabrir(o) } as ItemDeMenu]),
       { icon: Pencil, label: 'Editar', onSelect: () => abrir({ oportunidade: o }) },
+      { icon: Copy, label: 'Duplicar', onSelect: () => abrir({ duplicar: o }) },
       ...(o.excluivel
         ? ([
             { separator: true },

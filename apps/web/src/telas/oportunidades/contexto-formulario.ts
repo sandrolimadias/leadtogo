@@ -10,6 +10,8 @@ export interface InicioDoFormularioDeOportunidade {
   faseId?: string
   /** Editar uma oportunidade que já existe */
   oportunidade?: Oportunidade
+  /** Duplicar: abre "Nova oportunidade" já preenchida com os dados desta (a cópia nasce Ativa) */
+  duplicar?: Oportunidade
 }
 
 interface Controle {

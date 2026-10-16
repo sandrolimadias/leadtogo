@@ -122,12 +122,11 @@ describe('Oportunidades: Kanban', () => {
     expect(screen.getByText(/3 ativas · Total/)).toBeInTheDocument()
   })
 
-  it('o quadro rola na horizontal por dentro; a página e a coluna não', async () => {
+  it('a página e a coluna não rolam; os cards rolam dentro da coluna (layout em kanban.test.tsx)', async () => {
     const x = servicos()
     await abrir(x)
     const quadro = await screen.findByRole('region', { name: /Quadro do funil Vendas/ })
-    expect(quadro.className).toContain('overflow-x-auto')
-    expect(quadro.className).not.toContain('overflow-y')
+    expect(quadro.className).not.toContain('overflow-x')
     expect(screen.getByRole('main').className).not.toContain('overflow')
   })
 

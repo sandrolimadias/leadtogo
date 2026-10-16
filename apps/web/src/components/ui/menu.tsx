@@ -123,7 +123,11 @@ export function Menu({
           align={align}
           side={side}
           sideOffset={6}
-          className={cn('z-[1000]', classeDoPainel, className)}
+          className={cn(
+            'z-[1000] max-h-(--radix-dropdown-menu-content-available-height) overflow-y-auto',
+            classeDoPainel,
+            className,
+          )}
         >
           {items.map((item, i) => {
             if ('separator' in item) {

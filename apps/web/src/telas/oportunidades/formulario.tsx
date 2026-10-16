@@ -75,7 +75,35 @@ const ehNumeroValido = (v: string): boolean =>
   v.trim() === '' ||
   (Number.isFinite(Number(v.replace(',', '.'))) && Number(v.replace(',', '.')) >= 0)
 
+const SUFIXO_DA_COPIA = ' (cópia)'
+const TAMANHO_MAXIMO_DO_TITULO = 200
+
 function formularioInicial(inicio: InicioDoFormularioDeOportunidade): Formulario {
+  const original = inicio.duplicar
+  if (original) {
+    // Copia o que a pessoa configurou; não copia o responsável (volta ao vendedor da empresa), as observações,
+    // o histórico, as atividades, o status nem o fechamento. A probabilidade só vai se foi editada à mão.
+    return {
+      titulo:
+        original.titulo.slice(0, TAMANHO_MAXIMO_DO_TITULO - SUFIXO_DA_COPIA.length) +
+        SUFIXO_DA_COPIA,
+      tituloDigitado: true,
+      empresaId: original.empresa.id,
+      empresaNome: original.empresa.nome,
+      contatoId: original.contato?.id ?? '',
+      solucaoId: original.solucao?.id ?? '',
+      origemId: original.origem?.id ?? '',
+      funilId: original.funil.id,
+      faseId: original.fase.id,
+      responsavelId: '',
+      valorUnico: String(original.valorUnico),
+      valorMensal: String(original.valorMensal),
+      meses: String(original.meses),
+      probabilidade: original.probabilidadeManual ? String(original.probabilidade) : '',
+      dataPrevista: original.dataPrevistaFechamento ?? '',
+      observacoes: '',
+    }
+  }
   const o = inicio.oportunidade
   if (o) {
     return {
@@ -140,6 +168,7 @@ function FormularioDeOportunidade({
   const servicos = useServicos()
   const queryClient = useQueryClient()
   const edicao = inicio.oportunidade
+  const duplicando = inicio.duplicar
   const [f, setF] = useState<Formulario>(() => formularioInicial(inicio))
   const [erros, setErros] = useState<Record<string, string>>({})
   const [erroGeral, setErroGeral] = useState<string>()
@@ -194,6 +223,12 @@ function FormularioDeOportunidade({
       return r.dados.filter((c) => c.ativo)
     },
   })
+
+  // O contato só vale se tiver vínculo com a empresa escolhida (ao trocar a empresa de uma cópia, sai sozinho)
+  const contatoId =
+    f.contatoId !== '' && contatos.data && !contatos.data.some((c) => c.id === f.contatoId)
+      ? ''
+      : f.contatoId
 
   const funisAtivos: Funil[] = (funis.data ?? []).filter((x) => x.ativo || x.id === f.funilId)
   const funil: Funil | undefined =
@@ -259,7 +294,7 @@ function FormularioDeOportunidade({
     const r = edicao
       ? await servicos.oportunidades.alterar(edicao.id, {
           titulo: tituloMostrado.trim(),
-          contatoId: f.contatoId === '' ? null : f.contatoId,
+          contatoId: contatoId === '' ? null : contatoId,
           solucaoId: f.solucaoId === '' ? null : f.solucaoId,
           origemId: f.origemId === '' ? null : f.origemId,
           ...(f.responsavelId !== '' && f.responsavelId !== edicao.responsavel.id
@@ -273,7 +308,7 @@ function FormularioDeOportunidade({
       : await servicos.oportunidades.criar({
           titulo: tituloMostrado.trim(),
           empresaId: f.empresaId,
-          ...(f.contatoId !== '' ? { contatoId: f.contatoId } : {}),
+          ...(contatoId !== '' ? { contatoId } : {}),
           ...(f.solucaoId !== '' ? { solucaoId: f.solucaoId } : {}),
           ...(f.origemId !== '' ? { origemId: f.origemId } : {}),
           ...(funil ? { funilId: funil.id } : {}),
@@ -281,6 +316,7 @@ function FormularioDeOportunidade({
           ...(f.responsavelId !== '' ? { responsavelId: f.responsavelId } : {}),
           ...valores,
           ...(f.probabilidade.trim() !== '' ? { probabilidade } : {}),
+          ...(duplicando ? { duplicadaDeId: duplicando.id } : {}),
         })
     setSalvando(false)
     if (!r.ok) {
@@ -294,9 +330,16 @@ function FormularioDeOportunidade({
         queryClient.invalidateQueries({ queryKey: [k] }),
       ),
     )
-    toast.success(edicao ? 'Oportunidade atualizada' : 'Oportunidade criada', {
-      description: r.dados.titulo,
-    })
+    toast.success(
+      edicao
+        ? 'Oportunidade atualizada'
+        : duplicando
+          ? 'Oportunidade duplicada'
+          : 'Oportunidade criada',
+      {
+        description: r.dados.titulo,
+      },
+    )
     aoFechar()
   }
 
@@ -306,7 +349,9 @@ function FormularioDeOportunidade({
       onOpenChange={(aberto) => {
         if (!aberto && !salvando) aoFechar()
       }}
-      title={edicao ? 'Editar oportunidade' : 'Nova oportunidade'}
+      title={
+        edicao ? 'Editar oportunidade' : duplicando ? 'Duplicar oportunidade' : 'Nova oportunidade'
+      }
       width={620}
       footer={
         <>
@@ -341,7 +386,12 @@ function FormularioDeOportunidade({
             obrigatoria
             erro={erros['empresa']}
             aoMudar={(e) =>
-              mudar({ empresaId: e?.id ?? '', empresaNome: e?.nome ?? '', contatoId: '' })
+              mudar({
+                empresaId: e?.id ?? '',
+                empresaNome: e?.nome ?? '',
+                // na cópia o contato fica até a lista da nova empresa chegar; sem vínculo, sai (efeito acima)
+                ...(duplicando ? {} : { contatoId: '' }),
+              })
             }
           />
         )}
@@ -365,7 +415,7 @@ function FormularioDeOportunidade({
               value: c.id,
               label: c.cargo ? `${c.nome} · ${c.cargo}` : c.nome,
             }))}
-            value={f.contatoId}
+            value={contatoId}
             onChange={(e) => mudar({ contatoId: e.target.value })}
             {...(erros['contato'] ? { error: erros['contato'] } : {})}
           />

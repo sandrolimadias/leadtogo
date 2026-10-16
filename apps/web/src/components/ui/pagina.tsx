@@ -28,6 +28,34 @@ export function PaginaDeTabela({
   )
 }
 
+/**
+ * Página de quadro (o Kanban de Oportunidades): exceção à largura de 1440 px e à rolagem da área central
+ * (docs/design_system.md, "Layout e rolagem"). O marcador `data-quadro` faz a casca tirar o limite de largura
+ * e dar ao conteúdo a altura toda da área central; o quadro ocupa o que sobra do cabeçalho e dos filtros e cada
+ * coluna rola por dentro. O cabeçalho e os filtros ficam num contêiner de 1440 px (use `CabecalhoDoQuadro`).
+ */
+export function PaginaDeQuadro({
+  className,
+  children,
+}: {
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <main
+      data-quadro=""
+      className={cn('flex h-full min-h-0 w-full flex-1 flex-col gap-4 p-6 max-md:p-4', className)}
+    >
+      {children}
+    </main>
+  )
+}
+
+/** O topo da página de quadro (título, filtros, resumo): centralizado em até 1440 px, como nas outras telas. */
+export function CabecalhoDoQuadro({ children }: { children: ReactNode }) {
+  return <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4">{children}</div>
+}
+
 /** A caixa da tabela: borda e cantos arredondados, com a tabela e a `Paginacao` dentro. */
 export function AreaDaTabela({ className, children }: { className?: string; children: ReactNode }) {
   return (

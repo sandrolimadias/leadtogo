@@ -9,7 +9,13 @@ import { usePorPagina } from '@/casca/preferencias'
 import { Button } from '@/components/ui/button'
 import { Select, TextField } from '@/components/ui/campos'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
-import { AreaDaTabela, CorpoDaTabela, PaginaDeTabela } from '@/components/ui/pagina'
+import {
+  AreaDaTabela,
+  CabecalhoDoQuadro,
+  CorpoDaTabela,
+  PaginaDeQuadro,
+  PaginaDeTabela,
+} from '@/components/ui/pagina'
 import { Paginacao } from '@/components/ui/paginacao'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { toast } from '@/components/ui/toast'
@@ -190,101 +196,111 @@ export function PaginaDeOportunidades() {
       : `${quantidade} ${lista ? (quantidade === 1 ? 'oportunidade' : 'oportunidades') : quantidade === 1 ? 'ativa' : 'ativas'} · Total ${reais(resumo.total)} · Mensal ${reais(resumo.mensal)} · Ponderado ${reais(resumo.ponderado)}`
   const funilIdDoKanban = kanban.data?.funil.id ?? funilEscolhido?.id
 
-  return (
-    <PaginaDeTabela>
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <h1
-            className={cn(
-              'm-0 text-[30px] leading-9 font-semibold tracking-[-0.015em]',
-              celular && 'sr-only',
-            )}
-          >
-            Oportunidades
-          </h1>
-          <span className="text-[13px] text-ink-muted tabular-nums" aria-live="polite">
-            {subtitulo}
-          </span>
-        </div>
-        <SegmentedControl
-          label="Visão"
-          options={[
-            { value: 'kanban', label: 'Kanban', icon: SquareKanban },
-            { value: 'lista', label: 'Lista', icon: LayoutList },
-          ]}
-          value={lista ? 'lista' : 'kanban'}
-          onChange={(v) => mudar({ visao: v === 'lista' ? 'lista' : undefined, status: undefined })}
-        />
-        <Button
-          variant="primary"
-          icon={Plus}
-          onClick={() => abrir({ ...(funilEscolhido ? { funilId: funilEscolhido.id } : {}) })}
-        >
-          Nova oportunidade
-        </Button>
-      </div>
+  const Raiz = lista ? PaginaDeTabela : PaginaDeQuadro
 
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border-border bg-surface p-3 md:border">
-        <TextField
-          icon={Search}
-          placeholder="Nome da oportunidade ou da empresa"
-          aria-label="Buscar oportunidades"
-          className="min-w-0 flex-1 md:min-w-64"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-        />
-        <Select
-          aria-label="Funil"
-          className="w-full md:w-44"
-          options={funisAtivos.map((f) => ({ value: f.id, label: f.nome }))}
-          value={funilEscolhido?.id ?? ''}
-          onChange={(e) =>
-            mudar({
-              funil:
-                e.target.value === funis.data?.find((f) => f.padrao)?.id
-                  ? undefined
-                  : e.target.value,
-            })
-          }
-        />
-        {opcoes.data && !opcoes.data.unicoMembro ? (
-          <Select
-            aria-label="Responsável"
-            placeholder="Responsável: todos"
-            className="w-full md:w-48"
-            options={opcoes.data.vendedores.map((v) => ({ value: v.id, label: v.nome }))}
-            value={busca.responsavel ?? ''}
-            onChange={(e) => mudar({ responsavel: e.target.value || undefined })}
+  return (
+    <Raiz>
+      <CabecalhoDoQuadro>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5 max-md:basis-full">
+            <h1
+              className={cn(
+                'm-0 text-[30px] leading-9 font-semibold tracking-[-0.015em]',
+                celular && 'sr-only',
+              )}
+            >
+              Oportunidades
+            </h1>
+            <span className="text-[13px] text-ink-muted tabular-nums" aria-live="polite">
+              {subtitulo}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 max-md:w-full">
+            <SegmentedControl
+              label="Visão"
+              options={[
+                { value: 'kanban', label: 'Kanban', icon: SquareKanban },
+                { value: 'lista', label: 'Lista', icon: LayoutList },
+              ]}
+              value={lista ? 'lista' : 'kanban'}
+              onChange={(v) =>
+                mudar({ visao: v === 'lista' ? 'lista' : undefined, status: undefined })
+              }
+            />
+            <Button
+              variant="primary"
+              icon={Plus}
+              className="max-md:min-w-0 max-md:flex-1"
+              aria-label="Nova oportunidade"
+              onClick={() => abrir({ ...(funilEscolhido ? { funilId: funilEscolhido.id } : {}) })}
+            >
+              {celular ? 'Nova' : 'Nova oportunidade'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-2 rounded-lg border-border bg-surface p-3 md:border">
+          <TextField
+            icon={Search}
+            placeholder="Nome da oportunidade ou da empresa"
+            aria-label="Buscar oportunidades"
+            className="min-w-0 flex-1 max-md:basis-full md:min-w-64"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
           />
-        ) : null}
-        {lista ? (
           <Select
-            aria-label="Status"
-            placeholder="Status: todos"
-            className="w-full md:w-44"
-            options={STATUS}
-            value={busca.status ?? ''}
+            aria-label="Funil"
+            className="max-md:min-w-0 max-md:flex-1 md:w-44"
+            options={funisAtivos.map((f) => ({ value: f.id, label: f.nome }))}
+            value={funilEscolhido?.id ?? ''}
             onChange={(e) =>
-              mudar({ status: (e.target.value || undefined) as BuscaDeOportunidades['status'] })
+              mudar({
+                funil:
+                  e.target.value === funis.data?.find((f) => f.padrao)?.id
+                    ? undefined
+                    : e.target.value,
+              })
             }
           />
-        ) : (
-          <Button onClick={() => setSuspensasAbertas(true)} disabled={!funilIdDoKanban}>
-            Suspensas · {kanban.data?.suspensas ?? 0}
-          </Button>
-        )}
-        {comFiltro ? (
-          <Button variant="ghost" icon={X} onClick={limpar}>
-            Limpar filtros
-          </Button>
-        ) : null}
-      </div>
+          {opcoes.data && !opcoes.data.unicoMembro ? (
+            <Select
+              aria-label="Responsável"
+              placeholder="Responsável: todos"
+              className="w-full md:w-48"
+              options={opcoes.data.vendedores.map((v) => ({ value: v.id, label: v.nome }))}
+              value={busca.responsavel ?? ''}
+              onChange={(e) => mudar({ responsavel: e.target.value || undefined })}
+            />
+          ) : null}
+          {lista ? (
+            <Select
+              aria-label="Status"
+              placeholder="Status: todos"
+              className="w-full md:w-44"
+              options={STATUS}
+              value={busca.status ?? ''}
+              onChange={(e) =>
+                mudar({ status: (e.target.value || undefined) as BuscaDeOportunidades['status'] })
+              }
+            />
+          ) : (
+            <Button onClick={() => setSuspensasAbertas(true)} disabled={!funilIdDoKanban}>
+              Suspensas · {kanban.data?.suspensas ?? 0}
+            </Button>
+          )}
+          {comFiltro ? (
+            <Button variant="ghost" icon={X} onClick={limpar}>
+              Limpar filtros
+            </Button>
+          ) : null}
+        </div>
 
-      {lista && filtrosDoDashboard.length > 0 ? (
-        <p className="m-0 text-sm text-ink-muted" aria-live="polite">
-          Filtrando por <strong className="text-ink">{filtrosDoDashboard.join(' · ')}</strong>.
-        </p>
-      ) : null}
+        {lista && filtrosDoDashboard.length > 0 ? (
+          <p className="m-0 text-sm text-ink-muted" aria-live="polite">
+            Filtrando por <strong className="text-ink">{filtrosDoDashboard.join(' · ')}</strong>.
+          </p>
+        ) : null}
+      </CabecalhoDoQuadro>
 
       {!lista ? (
         <>
@@ -297,7 +313,12 @@ export function PaginaDeOportunidades() {
             </div>
           ) : null}
           {kanban.data ? (
-            <div className={cn(kanban.isPlaceholderData && 'opacity-60')}>
+            <div
+              className={cn(
+                'flex min-h-0 flex-1 flex-col',
+                kanban.isPlaceholderData && 'opacity-60',
+              )}
+            >
               <QuadroKanban kanban={kanban.data} celular={celular} />
             </div>
           ) : null}
@@ -369,6 +390,6 @@ export function PaginaDeOportunidades() {
         />
       ) : null}
       {acoes.janelas}
-    </PaginaDeTabela>
+    </Raiz>
   )
 }

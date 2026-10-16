@@ -139,7 +139,7 @@ test('oportunidades: criar, arrastar de fase, fechar, reabrir, suspender e conqu
   )
 })
 
-test('oportunidades: a página não rola e o quadro rola na horizontal por dentro', async ({
+test('oportunidades: a página não rola e as colunas cabem sem rolagem horizontal (tablet)', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 800, height: 700 })
@@ -153,8 +153,12 @@ test('oportunidades: a página não rola e o quadro rola na horizontal por dentr
     return {
       paginaVertical: e.scrollHeight === e.clientHeight,
       paginaHorizontal: e.scrollWidth === e.clientWidth,
-      quadroRola: q.scrollWidth > q.clientWidth,
+      quadroSemRolagemHorizontal: q.scrollWidth <= q.clientWidth,
     }
   })
-  expect(medidas).toEqual({ paginaVertical: true, paginaHorizontal: true, quadroRola: true })
+  expect(medidas).toEqual({
+    paginaVertical: true,
+    paginaHorizontal: true,
+    quadroSemRolagemHorizontal: true,
+  })
 })
