@@ -9,7 +9,7 @@
 3. **O Photon não entra:** na cascata completa, somar o Photon ao Nominatim não muda o resultado (ordens A e H iguais), e o Nominatim sozinho já cobre o papel de OSM. Photon só vale se o G1 precisar de busca "digitando" (autocomplete) ou de tolerância a erro de digitação.
 4. **O Nominatim exige a consulta limpa.** Com o endereço como vem do CRM (`RUA X, 123, BAIRRO, CIDADE - ES, 29100-000`) o Nominatim local achou **0 de 51**. Tirando o tipo da rua, o "- ES", o bairro e o CEP (`X, 123, Cidade`), achou **7 com número e 30 só a rua**. Esta normalização é obrigatória no G1.
 5. **Completar pelo CEP ajuda na Grande Vitória e quase nada no interior:** o ViaCEP devolve a rua para 23 dos 26 CEPs da Grande Vitória, mas só para 2 dos 25 do interior (CEP único do município).
-6. **Cabe na VPS, se ela tiver cerca de 2 GiB de RAM livres e uns 6 GB de disco livres** (Nominatim + OSRM + VROOM + CNEFE + PMTiles). Sem o Nominatim, cai para ~0,4 GiB e ~2,5 GB, com pior resultado nas ruas. **Preciso do resultado do comando da seção 9 para confirmar** (não sei o que a VPS tem livre).
+6. **Cabe na VPS com folga** (conferido com o comando do Ale em 16/10/2026: aarch64, 4 CPUs, 23 GiB de RAM com **17 GiB disponíveis**, **157 GB de disco livres**). A pilha recomendada (Nominatim + OSRM + VROOM + CNEFE + PMTiles) pede cerca de 1,4 GiB de RAM (2 GiB com folga, ~12% do disponível) e cerca de 5,3 GB de disco (~3,4% do livre). **O ponto de atenção é a CPU, não a memória ou o disco:** a carga média da VPS já está em ~2,0 de 4, então o preparo pesado continua **fora da VPS**.
 
 ## 1. Acesso do ambiente
 Todos os sites necessários responderam: Geofabrik, IBGE (FTP e `servicodados`), Nominatim e Photon públicos, CNES/OpenDataSUS (`apidadosabertos.saude.gov.br`), ViaCEP, BrasilAPI, Docker Hub, ghcr.io, Protomaps (`build.protomaps.com`, `build-metadata.protomaps.dev`) e GitHub releases. **Nenhum domínio precisou ser liberado.** O único ponto sem solução automática foi o **INEP** (seção 2).
@@ -140,7 +140,7 @@ Por dificuldade (ordem recomendada): **normais** 30: 23 exatas (mediana 33 m), 3
 - **Disco:** imagens ≈ 3,2 GB (Nominatim 2,35 + OSRM 0,39 + VROOM 0,45) + dados ≈ 2,0 GB (Nominatim 1,0 + OSRM 0,35 + PMTiles 0,23 + CNEFE 0,4) ≈ **5,3 GB**, mais o PMTiles no Garage (já contado) e margem para atualizar os dados (o dobro durante a troca).
 - **Sem o Nominatim** (só CNEFE para endereço): ~0,4 GiB de RAM e ~2,5 GB de disco, **mas** o número exato cai de 25 para 19 e o erro das ruas piora (p90 4,35 km no lugar de 2,2 km).
 - **CPU:** o preparo pesado (importação do Nominatim, `osrm-extract`, recorte do OSM) **fica fora da VPS**: no teste levou 10 min com 8 threads; num ARM pequeno tende a levar de 3 a 5 vezes isso. Para a VPS vão **só os arquivos prontos**: o diretório do Postgres do Nominatim (**427 MB** compactado), os arquivos do OSRM (346 MB), o CNEFE (380 MB) e o PMTiles (227 MB).
-- **Se não couber:** (a) aumentar a VPS (a parte mais pesada é a RAM do Nominatim); (b) rodar o Nominatim e o OSRM numa segunda máquina pequena e deixar na atual só o CNEFE e o VROOM; (c) trocar o Nominatim por serviço pago **só para geocodificar** (mas o CNEFE já resolve a maior parte).
+- **Se não coubesse** (não é o caso, ver a seção 9): aumentar a VPS, rodar Nominatim e OSRM numa segunda máquina pequena, ou trocar o Nominatim por serviço pago só para geocodificar.
 
 ## 7. O que estava na lista "A verificar" do plano
 | Item | Resultado |
@@ -151,25 +151,25 @@ Por dificuldade (ordem recomendada): **normais** 30: 23 exatas (mediana 33 m), 3
 | **Imagens `arm64`** (geocodificador, OSRM, VROOM) | **Existem** (lista na seção 6). Não testei a execução em ARM. |
 | **Limite de paradas do link do Google Maps** | Pela documentação oficial ("Maps URLs", ação `dir`): **até 3 pontos intermediários (`waypoints`) em navegador de celular e até 9 nos demais casos**, separados por `|`; URL limitada a **2.048 caracteres**. Não há parâmetro para otimizar a ordem. **Não testei em aparelho.** Rota de mais de 5 paradas no celular precisa ser **dividida em trechos**. |
 | **Link do Waze** | Pela documentação oficial (`waze.com/ul`): **um destino só** (`ll=lat,lon&navigate=yes`, ou `q=` para busca); **não documenta paradas intermediárias**. Rota com várias paradas no Waze = **um link por parada** (vai de uma em uma). |
-| **Sem confirmação** | (1) Escolas do INEP (seção 2). (2) A **licença de uso** do CNEFE (o IBGE publica como dados abertos, mas não li o termo: confirmar antes de embarcar o arquivo no produto). (3) **Desempenho e consumo reais em ARM** (precisa do resultado da seção 9). (4) Comportamento dos links do Google Maps e do Waze em aparelhos reais. (5) Qualidade com **muito mais endereços** (51 é pouco; as medianas são confiáveis, o p90 e o pior caso não). (6) Como atualizar o Nominatim depois do `freeze` (a recomendação é **recriar o banco por fora** a cada trimestre e trocar). |
+| **Sem confirmação** | (1) Escolas do INEP (seção 2). (2) A **licença de uso** do CNEFE (o IBGE publica como dados abertos, mas não li o termo: confirmar antes de embarcar o arquivo no produto). (3) **Desempenho real em ARM** (a VPS tem 4 CPUs ARM; os tempos medidos aqui são de x86 com 12 CPUs, e os números de RAM e disco não mudam muito, mas o tempo de resposta e o do VROOM sim). (4) Comportamento dos links do Google Maps e do Waze em aparelhos reais. (5) Qualidade com **muito mais endereços** (51 é pouco; as medianas são confiáveis, o p90 e o pior caso não). (6) Como atualizar o Nominatim depois do `freeze` (a recomendação é **recriar o banco por fora** a cada trimestre e trocar). |
 
 ## 8. Limites deste teste
 - **51 endereços de saúde (CNES)**: endereços de empresa podem ser diferentes (salas, galpões, rodovias com km). A coordenada do gabarito também tem erro (mediana de 33 m contra o CNEFE).
 - Todo o tempo e RAM foram medidos em x86 com 12 CPUs; **a VPS ARM pode ser bem mais lenta**.
 - O OSM do ES tem **muito pouco número de casa no interior**: isso pode melhorar com o tempo, mas hoje quem dá o número é o CNEFE.
 
-## 9. Comando para rodar na VPS (só lê) e devolver
-Está em `experimentos/geo-g0/vps-conferir.sh`. Rode na VPS e me devolva a saída inteira:
+## 9. A VPS (resultado do comando do Ale, 16/10/2026)
+| Item | Valor lido | Pilha recomendada | Folga |
+|---|---|---|---|
+| Arquitetura e CPU | **aarch64**, 4 CPUs, carga média **2,04 / 1,89 / 2,10** | consulta leve; preparo pesado fora | **CPU é o gargalo**: já está em ~50% |
+| Memória | 23 GiB; em uso 5,6 GiB; **17 GiB disponíveis** (17 GiB de cache, reaproveitáveis); sem swap | ~1,4 GiB (2 GiB com folga) | ~12% do disponível |
+| Disco | 193 GB; **157 GB livres** (19% usado); imagens do Docker 18,8 GB (4,9 GB recuperáveis) | ~5,3 GB (imagens 3,2 + dados 2,0) | ~3,4% do livre |
+| Containers hoje | 28 rodando; os maiores: MySQL dos WordPress (578 e 652 MiB), n8n (440 MiB) e Coolify (441 MiB); o app Leadtogo (API, web, worker, Postgres e Redis) soma uns 0,9 GiB | – | – |
+| Garage | limite de **512 MiB**, usando 5 MiB | o PMTiles de 227 MB fica nele | cabe; só conferir que o limite aguenta a leitura por faixas (range) do arquivo |
 
-```bash
-echo "=== arquitetura, CPU e carga ==="; uname -m; nproc; uptime
-echo "=== memória e swap ==="; free -h; swapon --show 2>/dev/null
-echo "=== disco (raiz e docker) ==="; df -h / /var/lib/docker 2>/dev/null
-echo "=== uso do docker em disco ==="; docker system df 2>/dev/null
-echo "=== containers: memória e CPU agora ==="; docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}\t{{.CPUPerc}}' 2>/dev/null
-echo "=== maiores consumidores de memória ==="; ps aux --sort=-%mem | head -8 | cut -c1-160
-echo "=== docker e kernel ==="; docker --version 2>/dev/null; uname -r
-```
+**Conclusão:** memória e disco **não são problema**. O risco é **CPU** (4 núcleos ARM já com carga de ~2): a importação do Nominatim (10 min com 8 threads no meu x86; num ARM com 4 núcleos disputando CPU, algo como 30 a 50 min) e o `osrm-extract` **não devem rodar na VPS**; rodar fora e subir os arquivos prontos (427 MB, 346 MB, 380 MB e 227 MB). Em consulta, o Nominatim, o OSRM e o VROOM respondem em milissegundos e usam pouca CPU. O tempo do VROOM com 400 paradas (23 s com 12 CPUs aqui) será bem maior em 4 núcleos ARM: **o G4 deve limitar o tamanho da rota** (por exemplo, 100 a 150 paradas por veículo e por pedido, 0,5 a 2,5 s medidos aqui) ou rodar o VROOM com tempo-limite.
+
+O comando está em `experimentos/geo-g0/vps-conferir.sh`.
 
 ## 10. Commits
 - `5382707` chore: experimento G0 da geolocalização (scripts, gabarito e resultados).
