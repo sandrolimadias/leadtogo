@@ -439,3 +439,61 @@ describe('Configurações → Funis e fases: fases', () => {
     )
   })
 })
+
+describe('Configurações → Funis e fases: limite de 6 fases ativas', () => {
+  const cheio = (): Funil[] => {
+    const [vendas, ...resto] = dados()
+    const nomes = ['A', 'B', 'C', 'D', 'E', 'F']
+    return [
+      {
+        ...(vendas as Funil),
+        fases: [
+          ...nomes.map((n, i) => fase(40 + i, 1, `Fase ${n}`)),
+          fase(50, 1, 'Fase velha', { ativo: false }),
+        ],
+      },
+      ...resto,
+    ]
+  }
+
+  it('com 6 ativas, "Nova fase" e "Reativar" ficam desligados e a tela explica por quê', async () => {
+    await abrir(servicosDeFunis(cheio()))
+    expect(screen.getByRole('button', { name: 'Nova fase em Vendas' })).toBeDisabled()
+    expect(
+      within(funil('Vendas')).getByText(/já tem 6 fases ativas, o máximo\. Inative uma/),
+    ).toBeInTheDocument()
+    const velha = within(fasedo('Vendas', 'Fase velha')).getByRole('button', { name: /Reativar/ })
+    expect(velha).toBeDisabled()
+    // inativar continua valendo; os outros funis não são afetados
+    expect(
+      within(fasedo('Vendas', 'Fase A')).getByRole('button', { name: /Inativar/ }),
+    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Nova fase em Renovação' })).toBeEnabled()
+  })
+
+  it('fases inativas não contam: com 5 ativas e 2 inativas, "Nova fase" e "Reativar" valem', async () => {
+    const [vendas, ...resto] = cheio()
+    const fases = (vendas as Funil).fases.map((f, i) => (i === 5 ? { ...f, ativo: false } : f))
+    await abrir(servicosDeFunis([{ ...(vendas as Funil), fases }, ...resto]))
+    expect(screen.getByRole('button', { name: 'Nova fase em Vendas' })).toBeEnabled()
+    expect(
+      within(fasedo('Vendas', 'Fase velha')).getByRole('button', { name: /Reativar/ }),
+    ).toBeEnabled()
+  })
+
+  it('se a API recusar (409 limite_de_fases_ativas), a mensagem aparece no diálogo', async () => {
+    const s = servicosDeFunis(dados(), {
+      criarFase: vi.fn(async () =>
+        falha('limite_de_fases_ativas', 'Um funil pode ter no máximo 6 fases ativas.', 409),
+      ),
+    })
+    await abrir(s)
+    await userEvent.click(screen.getByRole('button', { name: 'Nova fase em Vendas' }))
+    const dialogo = await screen.findByRole('dialog')
+    await userEvent.type(within(dialogo).getByLabelText(/Nome da fase/), 'Sétima')
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Criar fase' }))
+    expect(
+      await within(dialogo).findByText('Um funil pode ter no máximo 6 fases ativas.'),
+    ).toBeInTheDocument()
+  })
+})

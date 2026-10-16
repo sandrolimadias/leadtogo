@@ -1,5 +1,5 @@
 import type { Funil } from '@leadtogo/api-client'
-import type { CorDeTag } from '@leadtogo/shared'
+import { type CorDeTag, MAX_FASES_ATIVAS_POR_FUNIL } from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Funnel, Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
@@ -261,6 +261,8 @@ function CartaoDoFunil({
   aoAlternarFase: (fase: Fase) => void
 }) {
   const umaFase = funil.fases.length <= 1
+  // Máximo de fases ATIVAS por funil (as inativas não contam): sem espaço, nova e reativar ficam desligadas
+  const cheio = funil.fases.filter((f) => f.ativo).length >= MAX_FASES_ATIVAS_POR_FUNIL
   return (
     <section
       aria-label={funil.nome}
@@ -342,7 +344,12 @@ function CartaoDoFunil({
                 label={`Editar a fase ${fase.nome}`}
                 onClick={() => aoEditarFase(fase)}
               />
-              <Button size="sm" variant="ghost" onClick={() => aoAlternarFase(fase)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!fase.ativo && cheio}
+                onClick={() => aoAlternarFase(fase)}
+              >
                 {fase.ativo ? 'Inativar' : 'Reativar'}
                 <span className="sr-only"> a fase {fase.nome}</span>
               </Button>
@@ -360,9 +367,15 @@ function CartaoDoFunil({
       </ol>
 
       <footer className="flex flex-wrap items-center gap-3 border-t border-border bg-surface-sunken px-4 py-2">
-        <Button size="sm" icon={Plus} onClick={aoCriarFase}>
+        <Button size="sm" icon={Plus} disabled={cheio} onClick={aoCriarFase}>
           Nova fase em {funil.nome}
         </Button>
+        {cheio ? (
+          <span className="text-[13px] text-ink-muted">
+            Este funil já tem {MAX_FASES_ATIVAS_POR_FUNIL} fases ativas, o máximo. Inative uma para
+            criar ou reativar outra.
+          </span>
+        ) : null}
         {umaFase ? (
           <span className="text-[13px] text-ink-muted">
             O funil precisa ter ao menos uma fase: a última não pode ser excluída nem inativada.
