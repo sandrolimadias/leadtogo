@@ -4,6 +4,7 @@ import {
   PROBLEMAS_NA_PREVIA,
   type PreviaDaImportacao,
   validarMapeamento,
+  validarMapeamentoDoTipo,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
@@ -11,6 +12,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { escopoDaCarteira } from '../carteira/regras-de-carteira.js'
 import { ErroApi } from '../http/erro-api.js'
 import { VALIDADE_DO_CACHE_DIAS } from '../receita/receita.service.js'
+import { preverContatos } from './previa-novos-tipos.js'
 
 const { empresas, importacaoLinhas, importacoes, receitaConsultas } = schema
 
@@ -32,6 +34,7 @@ export class PreviaDaImportacaoService {
       throw new ErroApi('importacao_nao_encontrada', 'Importação não encontrada.', 404)
     }
     const mapeamento = lote.mapeamento as { colunas?: string[]; campos?: Record<string, string> }
+    if (lote.tipo !== 'empresas') return this.calcularDosNovosTipos(lote, mapeamento)
     const colunaDoCnpj = mapeamento.campos?.['documento']
     if (
       !colunaDoCnpj ||
@@ -126,5 +129,31 @@ export class PreviaDaImportacaoService {
       estimativaSegundos: Math.ceil((consultasNecessarias * lote.intervaloMs) / 1000),
       problemas,
     }
+  }
+
+  /** Contatos e atividades: a prévia lê as linhas pelo mesmo código do worker e não consulta a Receita. */
+  private async calcularDosNovosTipos(
+    lote: typeof importacoes.$inferSelect,
+    mapeamento: { colunas?: string[]; campos?: Record<string, string> },
+  ): Promise<PreviaDaImportacao> {
+    const tipo = lote.tipo as Exclude<typeof lote.tipo, 'empresas'>
+    if (
+      validarMapeamentoDoTipo(tipo, mapeamento.campos ?? {}, mapeamento.colunas ?? []).length > 0
+    ) {
+      throw new ErroApi(
+        'mapeamento_incompleto',
+        'Indique as colunas obrigatórias antes de ver a prévia.',
+        409,
+      )
+    }
+    const db = this.ctx.db()
+    const linhas = (
+      await db
+        .select({ numero: importacaoLinhas.numero, dados: importacaoLinhas.dados })
+        .from(importacaoLinhas)
+        .where(eq(importacaoLinhas.importacaoId, lote.id))
+        .orderBy(importacaoLinhas.numero)
+    ).map((l) => ({ numero: l.numero, dados: l.dados as Record<string, string> }))
+    return preverContatos(db, lote, linhas)
   }
 }

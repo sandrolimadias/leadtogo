@@ -15,7 +15,9 @@ import {
   listaDeLotesSchema,
   type ResultadoDaLinha,
   resultadoDaLinhaSchema,
-  CAMPOS_DA_EMPRESA_NA_IMPORTACAO,
+  campoDoTipo,
+  tipoDeImportacaoSchema,
+  type TipoDeImportacao,
   type ConsultaDoEnvio,
   consultaDoEnvioSchema,
   type LoteDeImportacao,
@@ -256,33 +258,116 @@ export class LotesDeImportacaoController {
     resumo: 'Baixar a planilha modelo',
     descricao:
       QUEM +
-      ' Um .xlsx só com os títulos das colunas que a importação de empresas reconhece, e uma aba com as instruções.',
-    erros: [401, 403, 409],
+      ' Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.',
+    consulta: z.object({ tipo: tipoDeImportacaoSchema.default('empresas') }),
+    erros: [400, 401, 403, 409],
   })
   @Get('modelo')
   @HttpCode(200)
   @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  @Header('Content-Disposition', 'attachment; filename="modelo-importacao-empresas.xlsx"')
-  async modelo(): Promise<StreamableFile> {
+  async modelo(
+    @Query(new ZodPipe(z.object({ tipo: tipoDeImportacaoSchema.default('empresas') })))
+    consulta: {
+      tipo: TipoDeImportacao
+    },
+  ): Promise<StreamableFile> {
     if (this.ctx.membro.papel !== 'admin' && this.ctx.membro.papel !== 'gestor') {
       throw new ErroApi('acesso_negado', 'Só administradores e gestores importam planilhas.', 403)
     }
+    const modelo = MODELOS[consulta.tipo]
     const livro = new ExcelJS.Workbook()
-    const folha = livro.addWorksheet('Empresas')
-    folha.addRow(CAMPOS_DA_EMPRESA_NA_IMPORTACAO.map((c) => c.rotulo))
+    const folha = livro.addWorksheet(modelo.aba)
+    folha.addRow(campoDoTipo(consulta.tipo).map((c) => c.rotulo))
+    for (const exemplo of modelo.exemplos) folha.addRow(exemplo)
     folha.getRow(1).font = { bold: true }
     folha.columns.forEach((coluna) => (coluna.width = 22))
     const ajuda = livro.addWorksheet('Como preencher')
-    for (const linha of [
+    for (const linha of modelo.ajuda) ajuda.addRow([linha])
+    ajuda.getColumn(1).width = 110
+    return new StreamableFile(Buffer.from(await livro.xlsx.writeBuffer()), {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      disposition: `attachment; filename="modelo-importacao-${modelo.arquivo}.xlsx"`,
+    })
+  }
+}
+
+const AJUDA_COMUM = [
+  'Até 10.000 linhas e 10 MB por arquivo. Também é possível enviar CSV (separado por ; , ou tabulação).',
+  'Os títulos podem ter outros nomes: você liga cada coluna ao campo certo na próxima etapa.',
+  'Ordem recomendada: empresas, depois contatos, depois atividades. O CNPJ precisa já estar na carteira.',
+]
+
+/** O que cada modelo traz: aba, nome do arquivo, linhas de exemplo (inventadas) e as instruções. */
+const MODELOS: Record<
+  TipoDeImportacao,
+  { aba: string; arquivo: string; exemplos: string[][]; ajuda: string[] }
+> = {
+  empresas: {
+    aba: 'Empresas',
+    arquivo: 'empresas',
+    exemplos: [],
+    ajuda: [
       'A primeira linha da aba "Empresas" traz os títulos; preencha uma empresa por linha abaixo dela.',
       'Só o CNPJ é obrigatório quando os dados vêm da Receita. Os demais campos são opcionais.',
       'Pode escrever o CNPJ com ou sem pontuação. Linha sem CNPJ válido é pulada e aparece no relatório.',
-      'Até 10.000 linhas e 10 MB por arquivo. Também é possível enviar CSV (separado por ; , ou tabulação).',
-      'Os títulos podem ter outros nomes: você liga cada coluna ao campo certo na próxima etapa.',
-    ]) {
-      ajuda.addRow([linha])
-    }
-    ajuda.getColumn(1).width = 110
-    return new StreamableFile(Buffer.from(await livro.xlsx.writeBuffer()))
-  }
+      ...AJUDA_COMUM.slice(0, 2),
+    ],
+  },
+  contatos: {
+    aba: 'Contatos',
+    arquivo: 'contatos',
+    exemplos: [
+      [
+        '11.222.333/0001-81',
+        'Maria Exemplo',
+        'Diretora',
+        'maria@exemplo.com.br',
+        '(27) 3000-0000',
+        '(27) 99999-0000',
+        'Decisor',
+        '15/03',
+        'https://www.linkedin.com/in/maria-exemplo',
+        'sim',
+        'não',
+        'Linha de exemplo: apague antes de importar.',
+      ],
+    ],
+    ajuda: [
+      'Uma pessoa por linha. Colunas obrigatórias: CNPJ da empresa e Nome. O CNPJ precisa estar na carteira (importe as empresas antes).',
+      'E-mail e telefone são usados para achar contato que já existe: nesse caso o contato só é vinculado à empresa da linha, sem alterar os dados dele.',
+      'E-mail ou telefone inválido pula a linha. Aniversário (dd/mm) ou LinkedIn inválido entra sem o campo, com aviso.',
+      'Papel na decisão: o nome de um papel cadastrado (Decisor, Influenciador...). Papel que não existe entra sem papel, com aviso.',
+      'Principal e Não quer contato: sim ou não. "Principal" não troca o principal que a empresa já tem.',
+      ...AJUDA_COMUM,
+    ],
+  },
+  atividades: {
+    aba: 'Atividades',
+    arquivo: 'atividades',
+    exemplos: [
+      [
+        '11.222.333/0001-81',
+        'Visita',
+        'Visita de apresentação',
+        '05/03/2026',
+        '14:30',
+        'Realizada',
+        'Cliente gostou da proposta.',
+        'maria@exemplo.com.br',
+        'vendedor@suaempresa.com.br',
+        'sim',
+        'não',
+        'Linha de exemplo: apague antes de importar.',
+      ],
+    ],
+    ajuda: [
+      'Uma atividade por linha. Colunas obrigatórias: CNPJ da empresa, Tipo e Data (dd/mm/aaaa). O CNPJ precisa estar na carteira.',
+      'Tipo: o nome de um tipo de atividade cadastrado. Na próxima etapa você aponta cada valor da planilha para um tipo (por exemplo, "Visita técnica" para Visita).',
+      'Hora é opcional: sem hora, a atividade é de dia inteiro. Data e hora valem no fuso da empresa.',
+      'Situação: Realizada, Pendente ou Cancelada. Em branco: data passada vira Realizada e data futura vira Pendente. Realizada exige o Resultado e não pode ter data no futuro.',
+      'E-mail do contato: só vale se o contato tiver vínculo com a empresa da linha. E-mail do responsável: um usuário da empresa; sem ele, vale quem está importando.',
+      'Atividade igual (mesma empresa, tipo, data, hora e título) que já existe é pulada.',
+      ...AJUDA_COMUM,
+    ],
+  },
 }

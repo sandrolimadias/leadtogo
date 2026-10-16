@@ -9224,12 +9224,33 @@
     },
     "/v1/importacao/modelo": {
       "get": {
-        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um .xlsx só com os títulos das colunas que a importação de empresas reconhece, e uma aba com as instruções.",
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.",
         "operationId": "LotesDeImportacaoController_modelo",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "tipo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "empresas",
+              "type": "string",
+              "enum": ["empresas", "contatos", "atividades"]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
           },
           "401": {
             "description": "Sem login (`nao_autenticado`) ou sessão expirada",

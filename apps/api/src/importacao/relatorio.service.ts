@@ -46,15 +46,19 @@ export class RelatorioDaImportacaoService {
   async listarLotes(consulta: ConsultaDosLotes): Promise<ListaDeLotes> {
     this.exigirQuemImporta()
     const db = this.ctx.db()
+    const filtro = and(
+      sql`${importacoes.excluidoEm} IS NULL`,
+      consulta.tipo ? eq(importacoes.tipo, consulta.tipo) : undefined,
+    )
     const [{ total } = { total: 0 }] = await db
       .select({ total: sql<number>`count(*)::int` })
       .from(importacoes)
-      .where(sql`${importacoes.excluidoEm} IS NULL`)
+      .where(filtro)
     const linhas = await db
       .select({ lote: importacoes, criadoPor: membros.nome })
       .from(importacoes)
       .leftJoin(membros, eq(membros.id, importacoes.criadoPor))
-      .where(sql`${importacoes.excluidoEm} IS NULL`)
+      .where(filtro)
       .orderBy(desc(importacoes.criadoEm))
       .limit(consulta.porPagina)
       .offset((consulta.pagina - 1) * consulta.porPagina)

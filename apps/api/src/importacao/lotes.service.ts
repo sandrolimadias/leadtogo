@@ -1,5 +1,5 @@
 import { DeleteObjectCommand, PutObjectCommand, type S3Client } from '@aws-sdk/client-s3'
-import { and, eq, isNull, schema } from '@leadtogo/db'
+import { and, eq, inArray, isNull, schema } from '@leadtogo/db'
 import {
   type AlterarLoteEntrada,
   type ConsultaDoEnvio,
@@ -8,8 +8,9 @@ import {
   LINHAS_DE_AMOSTRA,
   type LoteDeImportacao,
   type RegrasDeImportacao,
-  sugerirMapeamento,
+  sugerirMapeamentoDoTipo,
   validarMapeamento,
+  validarMapeamentoDoTipo,
 } from '@leadtogo/shared'
 import { Inject, Injectable } from '@nestjs/common'
 
@@ -31,6 +32,7 @@ const {
   origens,
   tagGrupos,
   tags,
+  tiposAtividade,
   verticais,
 } = schema
 type Lote = typeof importacoes.$inferSelect
@@ -64,6 +66,10 @@ const camposDe = (lote: Lote): Record<string, string> =>
 
 /** O que falta para o lote poder ser importado (vazio = pronta). */
 function pendenciasDe(lote: Lote, colunas: string[], campos: Record<string, string>): string[] {
+  // Contatos e atividades: só o mapeamento (sem fonte de dados, perfil, vendedor nem Status)
+  if (lote.tipo !== 'empresas') {
+    return validarMapeamentoDoTipo(lote.tipo, campos, colunas).map((e) => e.mensagem)
+  }
   const pendencias = validarMapeamento(campos, colunas, lote.fonteDados).map((e) => e.mensagem)
   if (!lote.vendedorId) pendencias.push('Escolha o vendedor responsável pelas empresas.')
   if (!lote.statusTagId)
@@ -210,7 +216,46 @@ export class LotesDeImportacaoService {
     const colunas = colunasDe(atual)
     const campos = dados.campos ? limparCampos(dados.campos) : camposDe(atual)
     const fonteDados: FonteDosDados = dados.fonteDados ?? atual.fonteDados
-    if (dados.campos) {
+    if (atual.tipo !== 'empresas') {
+      // A fonte dos dados, o perfil e as escolhas da carteira são das empresas
+      const soDeEmpresas = [
+        'fonteDados',
+        'perfilId',
+        'vendedorId',
+        'statusTagId',
+        'origemId',
+        'verticalId',
+      ]
+      const enviado = soDeEmpresas.find((c) => c in dados)
+      if (enviado) {
+        throw new ErroApi(
+          'campo_so_de_empresas',
+          'Esta escolha vale só para a importação de empresas.',
+          400,
+          [{ campo: enviado, mensagem: 'Esta escolha vale só para a importação de empresas.' }],
+        )
+      }
+    } else if (dados.tiposDeAtividade) {
+      throw new ErroApi(
+        'campo_so_de_atividades',
+        'A escolha dos tipos vale só para a importação de atividades.',
+        400,
+      )
+    }
+    if (dados.campos && atual.tipo !== 'empresas') {
+      const erros = validarMapeamentoDoTipo(atual.tipo, campos, colunas).filter(
+        (e) => !e.mensagem.startsWith('Indique a coluna'),
+      )
+      if (erros.length > 0) {
+        throw new ErroApi(
+          'mapeamento_invalido',
+          erros[0]?.mensagem ?? 'Mapeamento inválido.',
+          400,
+          erros.map((e) => ({ campo: e.campo, mensagem: e.mensagem })),
+        )
+      }
+    }
+    if (dados.campos && atual.tipo === 'empresas') {
       const erros = validarMapeamento(campos, colunas, fonteDados).filter(
         // o que ainda falta aparece em `pendencias`; aqui só o que está errado no que veio
         (e) => !e.mensagem.startsWith('Indique a coluna'),
@@ -228,7 +273,33 @@ export class LotesDeImportacaoService {
     const valores: Partial<typeof importacoes.$inferInsert> = {}
     if (dados.nome !== undefined) valores.nome = dados.nome
     if (dados.fonteDados !== undefined) valores.fonteDados = dados.fonteDados
-    if (dados.campos) valores.mapeamento = { colunas, campos }
+    const tiposAtuais = (atual.mapeamento as { tipos?: Record<string, string | null> }).tipos
+    if (dados.tiposDeAtividade) {
+      const ids = [
+        ...new Set(Object.values(dados.tiposDeAtividade).filter((v): v is string => v !== null)),
+      ]
+      if (ids.length > 0) {
+        const validos = await db
+          .select({ id: tiposAtividade.id })
+          .from(tiposAtividade)
+          .where(
+            and(
+              inArray(tiposAtividade.id, ids),
+              eq(tiposAtividade.ativo, true),
+              isNull(tiposAtividade.excluidoEm),
+            ),
+          )
+        if (validos.length !== ids.length) {
+          throw new ErroApi('tipo_invalido', 'Escolha tipos de atividade ativos.', 400)
+        }
+      }
+    }
+    if (dados.campos || dados.tiposDeAtividade) {
+      const tipos = dados.tiposDeAtividade
+        ? { ...tiposAtuais, ...dados.tiposDeAtividade }
+        : tiposAtuais
+      valores.mapeamento = { colunas, campos, ...(tipos ? { tipos } : {}) }
+    }
     if (dados.perfilId !== undefined) {
       valores.perfilId = dados.perfilId
       valores.regras = dados.perfilId ? await this.regrasDoPerfil(dados.perfilId) : null
@@ -384,7 +455,7 @@ export class LotesDeImportacaoService {
         Object.fromEntries(colunas.map((c, i) => [c, valores[i] ?? ''])),
       ),
       campos,
-      sugestao: sugerirMapeamento(colunas),
+      sugestao: sugerirMapeamentoDoTipo(lote.tipo, colunas),
       fonteDados: lote.fonteDados,
       perfilId: lote.perfilId,
       vendedorId: lote.vendedorId,

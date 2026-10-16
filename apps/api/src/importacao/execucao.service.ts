@@ -10,6 +10,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { agendarExecucao } from './evento.js'
+import { desfazerContatos, type ResultadoDoDesfazer } from './desfazer-novos-tipos.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
 
 const { empresaContatos, empresas, importacaoLinhas, importacoes } = schema
@@ -102,6 +103,17 @@ export class ExecucaoDaImportacaoService {
         409,
       )
     }
+    // O que mudou depois do fim do lote "foi alterado" (contatos e atividades usam esta marca)
+    const [tempos] = await db
+      .select({
+        concluidoEm: importacoes.concluidoEm,
+        ultimoProgressoEm: importacoes.ultimoProgressoEm,
+      })
+      .from(importacoes)
+      .where(eq(importacoes.id, id))
+    const limite = new Date(
+      Math.max(tempos?.concluidoEm?.getTime() ?? 0, tempos?.ultimoProgressoEm?.getTime() ?? 0, 1),
+    )
     const [mudou] = await db
       .update(importacoes)
       .set({ situacao: 'desfeita', desfeitaEm: sql`now()`, atualizadoPor: this.ctx.membro.id })
@@ -113,6 +125,22 @@ export class ExecucaoDaImportacaoService {
         'Só dá para desfazer uma importação concluída ou cancelada.',
         409,
       )
+    }
+    if (lote.tipo !== 'empresas') {
+      const r = await desfazerDoTipo(db, lote.tipo, id, this.ctx.membro.id, limite)
+      await db
+        .update(importacoes)
+        .set({
+          totais: sql`${importacoes.totais} || ${JSON.stringify({ desfeitas: r.removidas, mantidas: r.mantidas })}::jsonb`,
+        })
+        .where(eq(importacoes.id, id))
+      await this.auditoria.registrar({
+        entidade: 'importacao',
+        entidadeId: id,
+        acao: 'desfazer',
+        alteracoes: { tipo: lote.tipo, removidas: r.removidas, mantidas: r.mantidas },
+      })
+      return this.lotes.detalhar(id)
     }
     const removidas = await db
       .update(empresas)
@@ -205,4 +233,20 @@ export class ExecucaoDaImportacaoService {
     }
     throw new ErroApi('importacao_encerrada', 'Esta importação já foi encerrada.', 409)
   }
+}
+
+/** O desfazer dos tipos que não são empresas. */
+async function desfazerDoTipo(
+  db: ReturnType<ContextoTenantService['db']>,
+  tipo: Exclude<LoteDeImportacao['tipo'], 'empresas'>,
+  id: string,
+  membroId: string,
+  limite: Date,
+): Promise<ResultadoDoDesfazer> {
+  if (tipo === 'contatos') return desfazerContatos(db, id, membroId, limite)
+  throw new ErroApi(
+    'importacao_nao_desfazivel',
+    'Este tipo de importação ainda não pode ser desfeito.',
+    409,
+  )
 }

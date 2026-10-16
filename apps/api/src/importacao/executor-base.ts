@@ -1,5 +1,5 @@
 import { type Conexao, schema, sql } from '@leadtogo/db'
-import type { ResultadoDaLinha } from '@leadtogo/shared'
+import { documentoDaPlanilha, type ResultadoDaLinha } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
 import type { PapelMembro } from '../acesso/requisicao.js'
@@ -45,6 +45,12 @@ export interface Resultado {
   resultado: ResultadoDaLinha
   motivo?: string | null
   empresaId?: string | null
+  /** Contatos: o contato criado, ou o que já existia e foi vinculado */
+  contatoId?: string | null
+  /** Atividades: a atividade criada */
+  atividadeId?: string | null
+  /** O que entrou, mas com ressalva */
+  avisos?: string[]
 }
 
 export type Lote = typeof importacoes.$inferSelect
@@ -280,6 +286,56 @@ export abstract class ExecutorBase<Estado> {
     })
   }
 
+  /**
+   * Contatos e atividades: lê o CNPJ de cada linha pendente e pula as sem CNPJ válido. Diferente de empresas,
+   * o mesmo CNPJ pode aparecer em várias linhas (muitos contatos e atividades por empresa).
+   */
+  protected async prepararDocumentos(
+    tenantId: string,
+    loteId: string,
+    colunaDoCnpj: string,
+  ): Promise<void> {
+    const [falta] = await this.noTenant(tenantId, (tx) =>
+      tx.execute<{ n: number }>(sql`
+        SELECT count(*)::int AS n FROM importacao_linhas
+        WHERE importacao_id = ${loteId} AND resultado = 'pendente' AND documento IS NULL`),
+    )
+    if (!falta?.n) return
+    const linhas = await this.noTenant(tenantId, (tx) =>
+      tx
+        .select({ id: importacaoLinhas.id, dados: importacaoLinhas.dados })
+        .from(importacaoLinhas)
+        .where(
+          sql`${importacaoLinhas.importacaoId} = ${loteId} AND ${importacaoLinhas.resultado} = 'pendente' AND ${importacaoLinhas.documento} IS NULL`,
+        ),
+    )
+    for (let i = 0; i < linhas.length; i += 500) {
+      await this.noTenant(tenantId, async (tx) => {
+        for (const l of linhas.slice(i, i + 500)) {
+          const bruto = (l.dados as Record<string, string>)[colunaDoCnpj] ?? ''
+          const documento = documentoDaPlanilha(bruto)
+          await tx
+            .update(importacaoLinhas)
+            .set(
+              documento
+                ? { documento }
+                : {
+                    resultado: 'pulada_sem_cnpj',
+                    motivo:
+                      bruto.trim() === ''
+                        ? 'CNPJ em branco.'
+                        : `CNPJ inválido: ${bruto.trim().slice(0, 40)}.`,
+                    processadaEm: new Date(),
+                  },
+            )
+            .where(
+              sql`${importacaoLinhas.id} = ${l.id} AND ${importacaoLinhas.resultado} = 'pendente'`,
+            )
+        }
+      })
+    }
+  }
+
   /** Grava o resultado só se a linha ainda estiver pendente; `false` quando outro executor chegou antes. */
   protected gravar(tenantId: string, linhaId: string, r: Resultado): Promise<boolean> {
     return this.noTenant(tenantId, async (tx) => {
@@ -307,6 +363,9 @@ export abstract class ExecutorBase<Estado> {
         resultado: r.resultado,
         motivo: r.motivo ?? null,
         empresaId: r.empresaId ?? null,
+        contatoId: r.contatoId ?? null,
+        atividadeId: r.atividadeId ?? null,
+        avisos: r.avisos ?? [],
         processadaEm: new Date(),
       })
       .where(sql`${importacaoLinhas.id} = ${linhaId}`)

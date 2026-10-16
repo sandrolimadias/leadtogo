@@ -1713,7 +1713,7 @@ export interface paths {
         };
         /**
          * Baixar a planilha modelo
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um .xlsx só com os títulos das colunas que a importação de empresas reconhece, e uma aba com as instruções.
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.
          */
         get: operations["LotesDeImportacaoController_modelo"];
         put?: never;
@@ -10942,7 +10942,9 @@ export interface operations {
     };
     LotesDeImportacaoController_modelo: {
         parameters: {
-            query?: never;
+            query?: {
+                tipo?: "empresas" | "contatos" | "atividades";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -10955,6 +10957,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
             };
             /** @description Sem login (`nao_autenticado`) ou sessão expirada */
             401: {
