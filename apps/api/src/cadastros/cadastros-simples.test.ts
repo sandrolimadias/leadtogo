@@ -394,3 +394,110 @@ describe('papéis na decisão: excluir só o que nunca foi usado', () => {
     )
   })
 })
+
+describe('excluir só o que nunca foi usado: tipos de atividade, motivos, origens e soluções', () => {
+  /** Uma oportunidade e uma atividade que usam os cadastros (mesmo excluídas: o histórico guarda o nome). */
+  async function usar(
+    tenantId: string,
+    uso: { tipoId?: string; motivoId?: string; origemId?: string; solucaoId?: string },
+  ) {
+    await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+      const [m] = await tx<
+        { id: string }[]
+      >`SELECT id FROM membros WHERE tenant_id = ${tenantId} LIMIT 1`
+      const membroId = (m as { id: string }).id
+      const [e] = await tx<{ id: string }[]>`
+        INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id)
+        VALUES (gen_random_uuid(), ${tenantId}, 'Usa cadastros', ${membroId}) RETURNING id`
+      const empresaId = (e as { id: string }).id
+      if (uso.tipoId) {
+        await tx`INSERT INTO atividades (id, tenant_id, tipo_atividade_id, titulo, empresa_id, responsavel_id, data_inicio, excluido_em)
+          VALUES (gen_random_uuid(), ${tenantId}, ${uso.tipoId}, 'x', ${empresaId}, ${membroId}, now(), now())`
+      }
+      const [f] = await tx<{ funil: string; fase: string }[]>`
+        SELECT funil_id AS funil, id AS fase FROM funil_fases WHERE tenant_id = ${tenantId} ORDER BY ordem LIMIT 1`
+      const funil = f as { funil: string; fase: string }
+      if (uso.motivoId || uso.origemId || uso.solucaoId) {
+        await tx`INSERT INTO oportunidades (id, tenant_id, titulo, empresa_id, funil_id, fase_id, responsavel_id,
+            motivo_id, origem_id, solucao_id, status, fase_parou_em_id, excluido_em)
+          VALUES (gen_random_uuid(), ${tenantId}, 'Usa cadastros', ${empresaId}, ${funil.funil}, ${funil.fase}, ${membroId},
+            ${uso.motivoId ?? null}, ${uso.origemId ?? null}, ${uso.solucaoId ?? null},
+            ${uso.motivoId ? 'perdido' : 'ativo'}::status_oportunidade, ${uso.motivoId ? funil.fase : null}, now())`
+      }
+    })
+  }
+
+  const casos = [
+    {
+      rota: 'tipos-atividade',
+      codigo: 'tipo_em_uso',
+      corpo: { nome: 'Tipo usado', icone: 'utensils' },
+      outro: { nome: 'Tipo livre', icone: 'coffee' },
+      chave: 'tipoId',
+    },
+    {
+      rota: 'motivos',
+      codigo: 'motivo_em_uso',
+      corpo: { nome: 'Motivo usado', aplicaA: ['perdido'] },
+      outro: { nome: 'Motivo livre', aplicaA: ['perdido'] },
+      chave: 'motivoId',
+    },
+    {
+      rota: 'origens',
+      codigo: 'origem_em_uso',
+      corpo: { nome: 'Origem usada' },
+      outro: { nome: 'Origem livre' },
+      chave: 'origemId',
+    },
+    {
+      rota: 'solucoes',
+      codigo: 'solucao_em_uso',
+      corpo: { nome: 'Solução usada' },
+      outro: { nome: 'Solução livre' },
+      chave: 'solucaoId',
+    },
+  ] as const
+
+  it.each(casos)(
+    '$rota: o que já foi usado (mesmo excluído) só se inativa; o nunca usado exclui',
+    async (c) => {
+      const d = await novoDono(app)
+      const usado = (await chamar('post', d.cookie, c.rota, c.corpo)).body as Item
+      const livre = (await chamar('post', d.cookie, c.rota, c.outro)).body as Item
+      await usar(d.tenantId, { [c.chave]: usado.id })
+      const r = await chamar('delete', d.cookie, `${c.rota}/${usado.id}`)
+      expect(r.status, JSON.stringify(r.body)).toBe(409)
+      expect(erroDe(r)).toBe(c.codigo)
+      expect(
+        (await chamar('patch', d.cookie, `${c.rota}/${usado.id}`, { ativo: false })).status,
+      ).toBe(200)
+      expect((await chamar('delete', d.cookie, `${c.rota}/${livre.id}`)).status).toBe(204)
+    },
+  )
+
+  it('o motivo que só aparece no histórico de fechamentos também só se inativa', async () => {
+    const d = await novoDono(app)
+    const motivo = (
+      await chamar('post', d.cookie, 'motivos', { nome: 'Só no histórico', aplicaA: ['perdido'] })
+    ).body as Item
+    await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${d.tenantId}, true)`
+      const [m] = await tx<
+        { id: string }[]
+      >`SELECT id FROM membros WHERE tenant_id = ${d.tenantId} LIMIT 1`
+      const [e] = await tx<{ id: string }[]>`
+        INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id)
+        VALUES (gen_random_uuid(), ${d.tenantId}, 'Histórico', ${(m as { id: string }).id}) RETURNING id`
+      const [f] = await tx<{ funil: string; fase: string }[]>`
+        SELECT funil_id AS funil, id AS fase FROM funil_fases WHERE tenant_id = ${d.tenantId} ORDER BY ordem LIMIT 1`
+      const fase = f as { funil: string; fase: string }
+      const [o] = await tx<{ id: string }[]>`
+        INSERT INTO oportunidades (id, tenant_id, titulo, empresa_id, funil_id, fase_id, responsavel_id)
+        VALUES (gen_random_uuid(), ${d.tenantId}, 'x', ${(e as { id: string }).id}, ${fase.funil}, ${fase.fase}, ${(m as { id: string }).id}) RETURNING id`
+      await tx`INSERT INTO oportunidade_historico (id, tenant_id, oportunidade_id, acao, motivo_id)
+        VALUES (gen_random_uuid(), ${d.tenantId}, ${(o as { id: string }).id}, 'status', ${motivo.id})`
+    })
+    expect(erroDe(await chamar('delete', d.cookie, `motivos/${motivo.id}`))).toBe('motivo_em_uso')
+  })
+})

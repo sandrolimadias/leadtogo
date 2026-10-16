@@ -62,6 +62,20 @@ export class VerticaisService extends CadastroSimplesService<
   }
 }
 
+/**
+ * "Só se exclui o que nunca foi usado" (regra de 13/10/2026): o cadastro usado por algum registro (mesmo
+ * excluído) só se inativa, para o histórico guardar o nome. `consulta` devolve se há uso.
+ */
+async function recusarSeEmUso(
+  ctx: ContextoTenantService,
+  consulta: ReturnType<typeof sql>,
+  codigo: string,
+  mensagem: string,
+): Promise<void> {
+  const [uso] = await ctx.db().execute<{ usada: boolean }>(consulta)
+  if (uso?.usada) throw new ErroApi(codigo, mensagem, 409)
+}
+
 /** Texto vazio vira nulo: "sem descrição". */
 const descricaoOuNula = (d: string | null | undefined) => (d?.trim() ? d.trim() : null)
 
@@ -96,6 +110,13 @@ export class SolucoesService extends CadastroSimplesService<
         ativo: d.ativo,
         ...(d.descricao !== undefined && { descricao: descricaoOuNula(d.descricao) }),
       }),
+      conferirExclusao: (l) =>
+        recusarSeEmUso(
+          ctx,
+          sql`SELECT EXISTS (SELECT 1 FROM oportunidades WHERE solucao_id = ${l.id}) AS usada`,
+          'solucao_em_uso',
+          `A solução "${l.nome}" já foi usada em oportunidades: não dá para excluir, só inativar.`,
+        ),
     })
   }
 }
@@ -130,8 +151,15 @@ export class OrigensService extends CadastroSimplesService<
       conferirAlteracao: (l, v) => {
         if (l.chaveSistema && v['ativo'] === false) throw protegida(l.nome)
       },
-      conferirExclusao: (l) => {
+      conferirExclusao: async (l) => {
         if (l.chaveSistema) throw protegida(l.nome)
+        await recusarSeEmUso(
+          ctx,
+          sql`SELECT (EXISTS (SELECT 1 FROM oportunidades WHERE origem_id = ${l.id})
+                   OR EXISTS (SELECT 1 FROM importacoes WHERE origem_id = ${l.id})) AS usada`,
+          'origem_em_uso',
+          `A origem "${l.nome}" já foi usada em oportunidades ou importações: não dá para excluir, só inativar.`,
+        )
       },
     })
   }
@@ -159,6 +187,14 @@ export class MotivosService extends CadastroSimplesService<
       }),
       valoresCriar: (d) => ({ nome: d.nome, aplicaA: d.aplicaA }),
       valoresAlterar: (d) => ({ nome: d.nome, aplicaA: d.aplicaA, ativo: d.ativo }),
+      conferirExclusao: (l) =>
+        recusarSeEmUso(
+          ctx,
+          sql`SELECT (EXISTS (SELECT 1 FROM oportunidades WHERE motivo_id = ${l.id})
+                   OR EXISTS (SELECT 1 FROM oportunidade_historico WHERE motivo_id = ${l.id})) AS usada`,
+          'motivo_em_uso',
+          `O motivo "${l.nome}" já foi usado ao fechar oportunidades: não dá para excluir, só inativar.`,
+        ),
     })
   }
 }
@@ -219,8 +255,14 @@ export class TiposAtividadeService extends CadastroSimplesService<
           throw tarefa('não conta como visita nem contato')
         }
       },
-      conferirExclusao: (l) => {
+      conferirExclusao: async (l) => {
         if (l.chaveSistema === 'tarefa') throw tarefa('não pode ser excluído')
+        await recusarSeEmUso(
+          ctx,
+          sql`SELECT EXISTS (SELECT 1 FROM atividades WHERE tipo_atividade_id = ${l.id}) AS usada`,
+          'tipo_em_uso',
+          `O tipo "${l.nome}" já foi usado em atividades: não dá para excluir, só inativar.`,
+        )
       },
     })
   }

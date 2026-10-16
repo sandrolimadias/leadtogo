@@ -33,8 +33,8 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 | Módulo | Passa a usar | Verificação pendente |
 |---|---|---|
 | 2 (Empresas) | tags e grupos de tags (`empresa_tags` e o histórico de Status), verticais | **Feito (13/10/2026):** excluir só se nunca usado, **nem no histórico de Status** (409 `tag_em_uso`, `grupo_em_uso`, `vertical_em_uso`); usado, só inativar. Empresa excluída continua contando como uso |
-| 5 (Atividades) | tipos de atividade | Idem |
-| 6 (Oportunidades) | funis, fases, motivos, origens, soluções | Idem. **Fases passam a poder ser inativadas** (a coluna `ativo` já existe; a API e a tela do Módulo 1 não oferecem, porque a fase só era excluível). A regra "fase com oportunidades **ativas** exige mover antes" continua valendo para tirar a fase de uso |
+| 5 (Atividades) | tipos de atividade | **Feito (16/10/2026, junto do Módulo 7):** 409 `tipo_em_uso`; a Tarefa continua protegida (`tipo_de_sistema`) |
+| 6 (Oportunidades) | funis, fases, motivos, origens, soluções | **Funis e fases: feito no Módulo 6** (409 `funil_ja_usado`, `fase_ja_usada`, `fase_com_oportunidades_ativas`). **Motivos, origens e soluções: feito em 16/10/2026** (409 `motivo_em_uso`, incluindo o histórico de fechamentos; `origem_em_uso`, incluindo as importações; `solucao_em_uso`). **Fases passam a poder ser inativadas** (a coluna `ativo` já existe; a API e a tela do Módulo 1 não oferecem, porque a fase só era excluível). A regra "fase com oportunidades **ativas** exige mover antes" continua valendo para tirar a fase de uso |
 
 
 ### Módulo 2 — Empresas ✅ *concluído e aprovado pelo Ale (13/10/2026)*
