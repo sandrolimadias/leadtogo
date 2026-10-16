@@ -468,15 +468,16 @@ export type ConsultaDosLotes = z.infer<typeof consultaDosLotesSchema>
 
 /** Atividades: cada valor distinto da coluna Tipo da planilha, para apontar o tipo cadastrado. */
 export const valorDoTipoSchema = z.object({
-  /** Como está na planilha */
+  /** Como está na planilha (a primeira grafia que apareceu) */
   valor: z.string(),
   /** O valor sem acento e em minúsculas: é a chave do mapeamento */
   chave: z.string(),
   linhas: z.number().int(),
-  /** O tipo escolhido (nulo = pular essas linhas; ausente = ainda sem escolha) */
+  /** O tipo que valerá para essas linhas; nulo = vão ser puladas */
   tipoId: z.uuid().nullable(),
-  /** Se há um tipo cadastrado com o mesmo nome (sem acento e caixa), é o sugerido */
-  sugerido: z.uuid().nullable(),
+  /** `apontado`: a pessoa escolheu; `automatico`: o nome casa com um tipo cadastrado; `pular`: a pessoa mandou
+   * pular; `sem_correspondencia`: ninguém escolheu e nenhum tipo tem esse nome (as linhas serão puladas) */
+  origem: z.enum(['apontado', 'automatico', 'pular', 'sem_correspondencia']),
 })
 export const valoresDoTipoSchema = z
   .object({ itens: z.array(valorDoTipoSchema) })

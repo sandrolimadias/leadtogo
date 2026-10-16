@@ -1,6 +1,8 @@
 import { type schema, sql } from '@leadtogo/db'
 import {
+  decidirAtividade,
   documentoDaPlanilha,
+  lerLinhaDeAtividade,
   lerLinhaDeContato,
   paraComparar,
   PROBLEMAS_NA_PREVIA,
@@ -182,4 +184,125 @@ export async function preverContatos(
     if (avisos > 0) acc.comAviso += 1
   }
   return acc.paraPrevia(linhas.length, aImportar)
+}
+
+/** O valor da coluna Tipo (sem acento e em minúsculas) → tipo cadastrado; `null` = pular essas linhas. */
+export type MapaDeTipos = Map<string, { id: string; nome: string } | null>
+
+/**
+ * O que a pessoa apontou no mapeamento vale; o resto casa pelo nome do tipo cadastrado (sem maiúsculas,
+ * acento nem pontuação). Quem monta o mapa é o worker e a prévia, para os dois lerem igual.
+ */
+export function montarMapaDeTipos(
+  cadastrados: { id: string; nome: string }[],
+  escolhidos: Record<string, string | null>,
+): MapaDeTipos {
+  const mapa: MapaDeTipos = new Map()
+  for (const t of cadastrados) mapa.set(paraComparar(t.nome), { id: t.id, nome: t.nome })
+  for (const [chave, id] of Object.entries(escolhidos)) {
+    mapa.set(chave, id === null ? null : (cadastrados.find((t) => t.id === id) ?? null))
+  }
+  return mapa
+}
+
+/** Prévia da importação de atividades: o mesmo código do worker (`lerLinhaDeAtividade` e `decidirAtividade`). */
+export async function preverAtividades(
+  db: Transacao,
+  lote: Lote,
+  linhas: LinhaDaPlanilha[],
+  tenantId: string,
+  fuso: string,
+): Promise<PreviaDaImportacao> {
+  const mapeamento = lote.mapeamento as {
+    campos?: Record<string, string>
+    tipos?: Record<string, string | null>
+  }
+  const campos = mapeamento.campos ?? {}
+  const colunaDoCnpj = campos['documento'] as string
+  const acc = new Acumulador()
+  const agora = new Date()
+
+  const cadastrados = await db.execute<{ id: string; nome: string }>(
+    sql`SELECT id, nome FROM tipos_atividade WHERE ativo AND excluido_em IS NULL`,
+  )
+  const tipos = montarMapaDeTipos(cadastrados, mapeamento.tipos ?? {})
+  const lidas = linhas.map((l) => ({
+    numero: l.numero,
+    documento: documentoDaPlanilha(l.dados[colunaDoCnpj] ?? ''),
+    leitura: lerLinhaDeAtividade(l.dados, campos),
+  }))
+  const empresas = await empresasPorDocumento(
+    db,
+    lidas.flatMap((l) => (l.documento ? [l.documento] : [])),
+  )
+  // Atividades que já existem com a mesma empresa, tipo, data e título (para o "já existe")
+  const existentes = new Set<string>()
+  const idsDeEmpresas = [...new Set(empresas.values())]
+  for (let i = 0; i < idsDeEmpresas.length; i += 2000) {
+    const rs = await db.execute<{
+      empresa_id: string
+      tipo_atividade_id: string
+      inicio: string
+      titulo: string
+    }>(sql`
+      SELECT empresa_id, tipo_atividade_id, data_inicio::text AS inicio, titulo FROM atividades
+      WHERE empresa_id = ANY(${arraySql(idsDeEmpresas.slice(i, i + 2000), 'uuid')}) AND excluido_em IS NULL
+        AND importacao_id IS DISTINCT FROM ${lote.id}::uuid`)
+    for (const r of rs) {
+      existentes.add(
+        `${r.empresa_id}|${r.tipo_atividade_id}|${new Date(r.inicio).toISOString()}|${r.titulo}`,
+      )
+    }
+  }
+  const vistas = new Set<string>()
+  let aImportar = 0
+  let comoVoce = 0
+  void tenantId
+  for (const l of lidas) {
+    if (!l.documento) {
+      acc.semCnpjValido += 1
+      acc.conta('pulada_sem_cnpj')
+      acc.anota(l.numero, 'CNPJ em branco ou inválido')
+      continue
+    }
+    if (!l.leitura.ok) {
+      acc.conta('pulada_invalida')
+      acc.anota(l.numero, l.leitura.motivo)
+      continue
+    }
+    const a = l.leitura.atividade
+    const tipo = tipos.get(paraComparar(a.tipo))
+    if (!tipo) {
+      acc.conta('pulada_tipo_inexistente')
+      acc.anota(l.numero, `Tipo "${a.tipo.slice(0, 40)}" sem correspondência`)
+      continue
+    }
+    const decisao = decidirAtividade(a, agora, fuso)
+    if (!decisao.ok) {
+      acc.conta(decisao.resultado)
+      acc.anota(l.numero, decisao.motivo)
+      continue
+    }
+    const empresaId = empresas.get(l.documento)
+    if (!empresaId) {
+      acc.conta('pulada_empresa_inexistente')
+      acc.anota(l.numero, `O CNPJ ${l.documento} não está na carteira`)
+      continue
+    }
+    const chave = `${empresaId}|${tipo.id}|${decisao.dataInicio.toISOString()}|${a.titulo ?? tipo.nome}`
+    if (existentes.has(chave) || vistas.has(chave)) {
+      acc.conta('pulada_duplicada')
+      acc.anota(l.numero, 'Já existe uma atividade igual')
+      continue
+    }
+    vistas.add(chave)
+    acc.conta('criada')
+    aImportar += 1
+    if (l.leitura.avisos.length + decisao.avisos.length > 0) acc.comAviso += 1
+    if (!a.emailResponsavel) comoVoce += 1
+  }
+  const previa = acc.paraPrevia(linhas.length, aImportar)
+  // quantas ficarão com quem importa como responsável (sem o e-mail do responsável)
+  previa.previsao = { ...previa.previsao, ficam_com_voce: comoVoce }
+  return previa
 }

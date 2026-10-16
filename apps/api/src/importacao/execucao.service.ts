@@ -10,7 +10,11 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { agendarExecucao } from './evento.js'
-import { desfazerContatos, type ResultadoDoDesfazer } from './desfazer-novos-tipos.js'
+import {
+  desfazerAtividades,
+  desfazerContatos,
+  type ResultadoDoDesfazer,
+} from './desfazer-novos-tipos.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
 
 const { empresaContatos, empresas, importacaoLinhas, importacoes } = schema
@@ -127,7 +131,14 @@ export class ExecucaoDaImportacaoService {
       )
     }
     if (lote.tipo !== 'empresas') {
-      const r = await desfazerDoTipo(db, lote.tipo, id, this.ctx.membro.id, limite)
+      const r = await desfazerDoTipo(
+        db,
+        lote.tipo,
+        this.ctx.tenantId,
+        id,
+        this.ctx.membro.id,
+        limite,
+      )
       await db
         .update(importacoes)
         .set({
@@ -239,14 +250,11 @@ export class ExecucaoDaImportacaoService {
 async function desfazerDoTipo(
   db: ReturnType<ContextoTenantService['db']>,
   tipo: Exclude<LoteDeImportacao['tipo'], 'empresas'>,
+  tenantId: string,
   id: string,
   membroId: string,
   limite: Date,
 ): Promise<ResultadoDoDesfazer> {
   if (tipo === 'contatos') return desfazerContatos(db, id, membroId, limite)
-  throw new ErroApi(
-    'importacao_nao_desfazivel',
-    'Este tipo de importação ainda não pode ser desfeito.',
-    409,
-  )
+  return desfazerAtividades(db, tenantId, id, membroId, limite)
 }

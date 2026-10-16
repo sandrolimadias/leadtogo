@@ -9222,6 +9222,76 @@
         "tags": ["Importação: lotes"]
       }
     },
+    "/v1/importacao/lotes/{id}/valores-do-tipo": {
+      "get": {
+        "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só no lote de atividades, depois de indicar a coluna do Tipo: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.",
+        "operationId": "LotesDeImportacaoController_valoresDoTipo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValoresDoTipoDaImportacao"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Valores da coluna Tipo (atividades)",
+        "tags": ["Importação: lotes"]
+      }
+    },
     "/v1/importacao/modelo": {
       "get": {
         "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.",
@@ -16448,6 +16518,43 @@
           "ordem",
           "chaveSistema"
         ],
+        "additionalProperties": false
+      },
+      "ValoresDoTipoDaImportacao": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "valor": {
+                  "type": "string"
+                },
+                "chave": {
+                  "type": "string"
+                },
+                "linhas": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "tipoId": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "origem": {
+                  "type": "string",
+                  "enum": ["apontado", "automatico", "pular", "sem_correspondencia"]
+                }
+              },
+              "required": ["valor", "chave", "linhas", "tipoId", "origem"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["itens"],
         "additionalProperties": false
       },
       "Vertical": {

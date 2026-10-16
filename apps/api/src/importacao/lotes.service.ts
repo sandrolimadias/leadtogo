@@ -1,5 +1,5 @@
 import { DeleteObjectCommand, PutObjectCommand, type S3Client } from '@aws-sdk/client-s3'
-import { and, eq, inArray, isNull, schema } from '@leadtogo/db'
+import { and, eq, inArray, isNull, schema, sql } from '@leadtogo/db'
 import {
   type AlterarLoteEntrada,
   type ConsultaDoEnvio,
@@ -8,7 +8,10 @@ import {
   LINHAS_DE_AMOSTRA,
   type LoteDeImportacao,
   type RegrasDeImportacao,
+  MAX_VALORES_DE_TIPO,
+  paraComparar,
   sugerirMapeamentoDoTipo,
+  type ValoresDoTipo,
   validarMapeamento,
   validarMapeamentoDoTipo,
 } from '@leadtogo/shared'
@@ -398,6 +401,68 @@ export class LotesDeImportacaoService {
       })
     }
     return this.detalhar(id)
+  }
+
+  /**
+   * Atividades: cada valor distinto da coluna Tipo da planilha, com quantas linhas tem e o tipo que valerá
+   * (o que a pessoa apontou, ou o tipo de mesmo nome). É a lista do passo "Mapear colunas".
+   */
+  async valoresDoTipo(id: string): Promise<ValoresDoTipo> {
+    exigirQuemImporta(this.ctx)
+    const db = this.ctx.db()
+    const lote = await this.achar(id)
+    if (lote.tipo !== 'atividades') {
+      throw new ErroApi('tipo_sem_valores', 'Só a importação de atividades mapeia tipos.', 409)
+    }
+    const coluna = camposDe(lote)['tipo']
+    if (!coluna) {
+      throw new ErroApi('mapeamento_incompleto', 'Indique a coluna do Tipo primeiro.', 409)
+    }
+    const rs = await db.execute<{ valor: string | null; n: number }>(sql`
+      SELECT dados ->> ${coluna} AS valor, count(*)::int AS n
+      FROM importacao_linhas WHERE importacao_id = ${id} GROUP BY 1 ORDER BY n DESC`)
+    const porChave = new Map<string, { valor: string; linhas: number }>()
+    for (const r of rs) {
+      const valor = (r.valor ?? '').trim()
+      if (valor === '') continue
+      const chave = paraComparar(valor)
+      const atual = porChave.get(chave)
+      if (atual) atual.linhas += r.n
+      else porChave.set(chave, { valor, linhas: r.n })
+    }
+    if (porChave.size > MAX_VALORES_DE_TIPO) {
+      throw new ErroApi(
+        'coluna_tipo_invalida',
+        `A coluna escolhida tem mais de ${MAX_VALORES_DE_TIPO} valores diferentes: confira se é a coluna do Tipo.`,
+        409,
+      )
+    }
+    const cadastrados = await db
+      .select({ id: tiposAtividade.id, nome: tiposAtividade.nome })
+      .from(tiposAtividade)
+      .where(and(eq(tiposAtividade.ativo, true), isNull(tiposAtividade.excluidoEm)))
+    const escolhidos = (lote.mapeamento as { tipos?: Record<string, string | null> }).tipos ?? {}
+    return {
+      itens: [...porChave.entries()].map(([chave, v]) => {
+        const automatico = cadastrados.find((t) => paraComparar(t.nome) === chave)?.id ?? null
+        const escolhido = chave in escolhidos ? escolhidos[chave] : undefined
+        const origem =
+          escolhido === null
+            ? ('pular' as const)
+            : escolhido !== undefined
+              ? ('apontado' as const)
+              : automatico
+                ? ('automatico' as const)
+                : ('sem_correspondencia' as const)
+        return {
+          valor: v.valor,
+          chave,
+          linhas: v.linhas,
+          tipoId: escolhido === undefined ? automatico : escolhido,
+          origem,
+        }
+      }),
+    }
   }
 
   /** Cópia das regras do perfil no momento da escolha: mexer no perfil depois não muda o lote. */

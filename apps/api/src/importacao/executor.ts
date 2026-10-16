@@ -10,6 +10,7 @@ import {
   LIMITES_DO_BLOCO,
   type LimitesDoBloco,
 } from './executor-base.js'
+import { ExecutorDeAtividades } from './executor-atividades.js'
 import { ExecutorDeContatos } from './executor-contatos.js'
 import {
   ESPERAS_DA_RECEITA_MS,
@@ -36,6 +37,7 @@ export class ExecutorDaImportacao {
     this.porTipo = {
       empresas: new ExecutorDeEmpresas(deps) as ExecutorBase<never>,
       contatos: new ExecutorDeContatos(deps) as ExecutorBase<never>,
+      atividades: new ExecutorDeAtividades(deps) as ExecutorBase<never>,
     }
   }
 

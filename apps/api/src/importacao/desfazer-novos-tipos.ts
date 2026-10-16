@@ -1,6 +1,7 @@
 import { sql } from '@leadtogo/db'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
+import { recalcularCarteira } from '../carteira/atividades-efeitos.js'
 import { arraySql } from './sql-array.js'
 
 export interface ResultadoDoDesfazer {
@@ -58,4 +59,32 @@ export async function desfazerContatos(
     removidas: ids.length + vinculosInativados.length,
     mantidas: contatosQueFicaram + vinculosQueFicaram,
   }
+}
+
+/**
+ * Desfaz um lote de ATIVIDADES: as que o lote criou e ninguém alterou depois (sem registro de auditoria,
+ * sem mudança depois do fim do lote) saem por exclusão lógica, como a manual; a atividade que alguém
+ * concluiu, editou ou cancelou depois fica (conta em `mantidas`). Depois recalcula a última visita, o
+ * último contato, a próxima atividade e as tags de cada empresa afetada, uma vez cada.
+ */
+export async function desfazerAtividades(
+  db: Transacao,
+  tenantId: string,
+  loteId: string,
+  membroId: string,
+  limite: Date,
+): Promise<ResultadoDoDesfazer> {
+  const ate = limite.toISOString()
+  const removidas = await db.execute<{ empresa_id: string | null }>(sql`
+    UPDATE atividades a SET excluido_em = now(), atualizado_por = ${membroId}
+    WHERE a.importacao_id = ${loteId} AND a.excluido_em IS NULL
+      AND a.atualizado_em <= ${ate}::timestamptz
+      AND NOT EXISTS (SELECT 1 FROM auditoria x WHERE x.entidade = 'atividade'
+            AND x.entidade_id = a.id AND x.acao <> 'criar')
+    RETURNING a.empresa_id`)
+  const empresas = [...new Set(removidas.flatMap((r) => (r.empresa_id ? [r.empresa_id] : [])))]
+  for (const empresaId of empresas) await recalcularCarteira(db, tenantId, empresaId, membroId)
+  const [{ n } = { n: 0 }] = await db.execute<{ n: number }>(sql`
+    SELECT count(*)::int AS n FROM atividades WHERE importacao_id = ${loteId} AND excluido_em IS NULL`)
+  return { removidas: removidas.length, mantidas: n }
 }

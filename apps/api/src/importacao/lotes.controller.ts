@@ -23,6 +23,8 @@ import {
   type LoteDeImportacao,
   loteDeImportacaoSchema,
   type PreviaDaImportacao,
+  type ValoresDoTipo,
+  valoresDoTipoSchema,
   previaDaImportacaoSchema,
 } from '@leadtogo/shared'
 import {
@@ -252,6 +254,19 @@ export class LotesDeImportacaoController {
     @Body(new ZodPipe(importarForaDoPerfilSchema)) dados: ImportarForaDoPerfil,
   ): Promise<LoteDeImportacao> {
     return this.relatorio.importarForaDoPerfil(id, dados.linhaIds)
+  }
+
+  @Documenta({
+    resumo: 'Valores da coluna Tipo (atividades)',
+    descricao:
+      QUEM +
+      ' Só no lote de atividades, depois de indicar a coluna do Tipo: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.',
+    resposta: valoresDoTipoSchema,
+    erros: [401, 403, 404, 409],
+  })
+  @Get('lotes/:id/valores-do-tipo')
+  valoresDoTipo(@Param('id', new ParseUUIDPipe()) id: string): Promise<ValoresDoTipo> {
+    return this.servico.valoresDoTipo(id)
   }
 
   @Documenta({

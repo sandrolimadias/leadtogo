@@ -12,7 +12,8 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { escopoDaCarteira } from '../carteira/regras-de-carteira.js'
 import { ErroApi } from '../http/erro-api.js'
 import { VALIDADE_DO_CACHE_DIAS } from '../receita/receita.service.js'
-import { preverContatos } from './previa-novos-tipos.js'
+import { fusoDaEmpresa } from '../carteira/atividades-leitura.js'
+import { preverAtividades, preverContatos } from './previa-novos-tipos.js'
 
 const { empresas, importacaoLinhas, importacoes, receitaConsultas } = schema
 
@@ -154,6 +155,8 @@ export class PreviaDaImportacaoService {
         .where(eq(importacaoLinhas.importacaoId, lote.id))
         .orderBy(importacaoLinhas.numero)
     ).map((l) => ({ numero: l.numero, dados: l.dados as Record<string, string> }))
-    return preverContatos(db, lote, linhas)
+    if (tipo === 'contatos') return preverContatos(db, lote, linhas)
+    const fuso = await fusoDaEmpresa(db, this.ctx.tenantId)
+    return preverAtividades(db, lote, linhas, this.ctx.tenantId, fuso)
   }
 }

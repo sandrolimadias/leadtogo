@@ -1704,6 +1704,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/importacao/lotes/{id}/valores-do-tipo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Valores da coluna Tipo (atividades)
+         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só no lote de atividades, depois de indicar a coluna do Tipo: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.
+         */
+        get: operations["LotesDeImportacaoController_valoresDoTipo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/importacao/modelo": {
         parameters: {
             query?: never;
@@ -3663,6 +3683,17 @@ export interface components {
             ativo: boolean;
             ordem: number;
             chaveSistema: string | null;
+        };
+        ValoresDoTipoDaImportacao: {
+            itens: {
+                valor: string;
+                chave: string;
+                linhas: number;
+                /** Format: uuid */
+                tipoId: string | null;
+                /** @enum {string} */
+                origem: "apontado" | "automatico" | "pular" | "sem_correspondencia";
+            }[];
         };
         Vertical: {
             /** Format: uuid */
@@ -10900,6 +10931,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    LotesDeImportacaoController_valoresDoTipo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValoresDoTipoDaImportacao"];
                 };
             };
             /** @description Sem login (`nao_autenticado`) ou sessão expirada */
