@@ -58,6 +58,11 @@ export const consultaDaListaSchema = z
     /** Ids de tags separados por vírgula: a empresa precisa ter todas (ex.: um Status e uma Visitação) */
     tags: listaDeIds,
     vendedorId: z.uuid().optional(),
+    /**
+     * Sem contato há N dias (inclui quem nunca teve contato): a mesma regra do Dashboard. Considera só Status
+     * Cliente e Prospect, salvo `incluirLeads=true`.
+     */
+    semContato: z.coerce.number().int().min(1).max(3650).optional(),
     /** Código IBGE da cidade */
     municipio: z.coerce.number().int().positive().optional(),
     /** 30: visitada nos últimos 30 dias · 60 e 90: sem visita há 60/90 dias (inclui nunca) · nunca */

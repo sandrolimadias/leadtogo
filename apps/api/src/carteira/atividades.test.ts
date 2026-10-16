@@ -435,7 +435,7 @@ describe('fuso horário (America/Sao_Paulo, nunca UTC)', () => {
     expect(atrasadas.itens.every((a) => a.atrasada)).toBe(true)
     const agendadas = await lista('agendadas')
     expect(agendadas.itens.map((a) => a.titulo)).toEqual(['Dia inteiro de hoje'])
-    expect(agendadas.contagens).toEqual({ agendadas: 1, atrasadas: 2, realizadas: 0 })
+    expect(agendadas.contagens).toMatchObject({ agendadas: 1, atrasadas: 2, realizadas: 0 })
   })
 })
 
@@ -472,7 +472,7 @@ describe('lista e abas', () => {
 
     const realizadas = await lista(`aba=realizadas&empresaId=${e.id}`)
     expect(titulos(realizadas)).toEqual(['Feita 1d', 'Feita 3d']) // a mais recente primeiro
-    expect(realizadas.contagens).toEqual({ agendadas: 1, atrasadas: 1, realizadas: 2 })
+    expect(realizadas.contagens).toMatchObject({ agendadas: 1, atrasadas: 1, realizadas: 2 })
     expect(titulos(await lista(`aba=agendadas&empresaId=${e.id}`))).toEqual(['Adiantada'])
     expect(titulos(await lista(`aba=atrasadas&empresaId=${e.id}`))).toEqual(['Esquecida'])
     // linha do tempo: abertas primeiro (a mais antiga), depois o histórico (o mais recente primeiro)

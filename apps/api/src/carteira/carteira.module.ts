@@ -8,6 +8,8 @@ import { ListaDeAtividadesService } from './lista-atividades.service.js'
 import { ListaDeOportunidadesService } from './lista-oportunidades.service.js'
 import { OportunidadesController } from './oportunidades.controller.js'
 import { OportunidadesService } from './oportunidades.service.js'
+import { DashboardController } from './dashboard.controller.js'
+import { DashboardService } from './dashboard.service.js'
 import { ConverterSocioService } from './converter-socio.service.js'
 import { ContatosController } from './contatos.controller.js'
 import { ContatosService } from './contatos.service.js'
@@ -27,6 +29,7 @@ import { ListaDeEmpresasService } from './lista.service.js'
     ContatosController,
     AtividadesController,
     OportunidadesController,
+    DashboardController,
   ],
   providers: [
     EmpresasDaCarteiraService,
@@ -42,6 +45,7 @@ import { ListaDeEmpresasService } from './lista.service.js'
     ListaDeAtividadesService,
     OportunidadesService,
     ListaDeOportunidadesService,
+    DashboardService,
   ],
 })
 export class CarteiraModule {}

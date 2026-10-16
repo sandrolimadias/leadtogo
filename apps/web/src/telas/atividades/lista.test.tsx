@@ -10,7 +10,7 @@ import { atividade, TIPOS } from './fixtures'
 
 const lista = (
   itens = [atividade(1), atividade(2, { titulo: 'Ligar para o Zé' })],
-  contagens = { agendadas: itens.length, atrasadas: 1, realizadas: 4 },
+  contagens = { agendadas: itens.length, atrasadas: 1, realizadas: 4, hoje: 0, proximos7: 0 },
 ): ListaDeAtividades => ({
   itens,
   total: itens.length,

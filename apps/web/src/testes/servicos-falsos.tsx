@@ -138,7 +138,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
           total: 0,
           pagina: 1,
           porPagina: 25,
-          contagens: { agendadas: 0, atrasadas: 0, realizadas: 0 },
+          contagens: { agendadas: 0, atrasadas: 0, realizadas: 0, hoje: 0, proximos7: 0 },
         }),
       ),
       detalhar: vi.fn(async () =>

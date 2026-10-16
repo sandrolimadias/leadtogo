@@ -121,12 +121,11 @@ const AutenticadoAtividadesRoute = AutenticadoAtividadesRouteImport.update({
   path: '/atividades',
   getParentRoute: () => AutenticadoRoute,
 } as any)
-const AutenticadoConfiguracoesRoute =
-  AutenticadoConfiguracoesRouteImport.update({
-    id: '/configuracoes',
-    path: '/configuracoes',
-    getParentRoute: () => AutenticadoRoute,
-  } as any)
+const AutenticadoConfiguracoesRoute = AutenticadoConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoConsolidadoRoute = AutenticadoConsolidadoRouteImport.update({
   id: '/consolidado',
   path: '/consolidado',
@@ -152,12 +151,11 @@ const AutenticadoImportacaoRoute = AutenticadoImportacaoRouteImport.update({
   path: '/importacao',
   getParentRoute: () => AutenticadoRoute,
 } as any)
-const AutenticadoOportunidadesRoute =
-  AutenticadoOportunidadesRouteImport.update({
-    id: '/oportunidades',
-    path: '/oportunidades',
-    getParentRoute: () => AutenticadoRoute,
-  } as any)
+const AutenticadoOportunidadesRoute = AutenticadoOportunidadesRouteImport.update({
+  id: '/oportunidades',
+  path: '/oportunidades',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoProspeccaoRoute = AutenticadoProspeccaoRouteImport.update({
   id: '/prospeccao',
   path: '/prospeccao',
@@ -168,30 +166,26 @@ const DevCatalogoRoute = DevCatalogoRouteImport.update({
   path: '/dev/catalogo',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AutenticadoAtividadesIndexRoute =
-  AutenticadoAtividadesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AutenticadoAtividadesRoute,
-  } as any)
-const AutenticadoConfiguracoesIndexRoute =
-  AutenticadoConfiguracoesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AutenticadoConfiguracoesRoute,
-  } as any)
-const AutenticadoConfiguracoesCarteiraRoute =
-  AutenticadoConfiguracoesCarteiraRouteImport.update({
-    id: '/carteira',
-    path: '/carteira',
-    getParentRoute: () => AutenticadoConfiguracoesRoute,
-  } as any)
-const AutenticadoConfiguracoesFunisRoute =
-  AutenticadoConfiguracoesFunisRouteImport.update({
-    id: '/funis',
-    path: '/funis',
-    getParentRoute: () => AutenticadoConfiguracoesRoute,
-  } as any)
+const AutenticadoAtividadesIndexRoute = AutenticadoAtividadesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutenticadoAtividadesRoute,
+} as any)
+const AutenticadoConfiguracoesIndexRoute = AutenticadoConfiguracoesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutenticadoConfiguracoesRoute,
+} as any)
+const AutenticadoConfiguracoesCarteiraRoute = AutenticadoConfiguracoesCarteiraRouteImport.update({
+  id: '/carteira',
+  path: '/carteira',
+  getParentRoute: () => AutenticadoConfiguracoesRoute,
+} as any)
+const AutenticadoConfiguracoesFunisRoute = AutenticadoConfiguracoesFunisRouteImport.update({
+  id: '/funis',
+  path: '/funis',
+  getParentRoute: () => AutenticadoConfiguracoesRoute,
+} as any)
 const AutenticadoConfiguracoesImportacaoRoute =
   AutenticadoConfiguracoesImportacaoRouteImport.update({
     id: '/importacao',
@@ -210,106 +204,94 @@ const AutenticadoConfiguracoesPapeisNaDecisaoRoute =
     path: '/papeis-na-decisao',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
-const AutenticadoConfiguracoesSegurancaRoute =
-  AutenticadoConfiguracoesSegurancaRouteImport.update({
-    id: '/seguranca',
-    path: '/seguranca',
-    getParentRoute: () => AutenticadoConfiguracoesRoute,
-  } as any)
-const AutenticadoConfiguracoesTagsRoute =
-  AutenticadoConfiguracoesTagsRouteImport.update({
-    id: '/tags',
-    path: '/tags',
-    getParentRoute: () => AutenticadoConfiguracoesRoute,
-  } as any)
+const AutenticadoConfiguracoesSegurancaRoute = AutenticadoConfiguracoesSegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
+  getParentRoute: () => AutenticadoConfiguracoesRoute,
+} as any)
+const AutenticadoConfiguracoesTagsRoute = AutenticadoConfiguracoesTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => AutenticadoConfiguracoesRoute,
+} as any)
 const AutenticadoConfiguracoesTiposDeAtividadeRoute =
   AutenticadoConfiguracoesTiposDeAtividadeRouteImport.update({
     id: '/tipos-de-atividade',
     path: '/tipos-de-atividade',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
-const AutenticadoConfiguracoesUsuariosRoute =
-  AutenticadoConfiguracoesUsuariosRouteImport.update({
-    id: '/usuarios',
-    path: '/usuarios',
-    getParentRoute: () => AutenticadoConfiguracoesRoute,
-  } as any)
+const AutenticadoConfiguracoesUsuariosRoute = AutenticadoConfiguracoesUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AutenticadoConfiguracoesRoute,
+} as any)
 const AutenticadoConfiguracoesVerticaisESolucoesRoute =
   AutenticadoConfiguracoesVerticaisESolucoesRouteImport.update({
     id: '/verticais-e-solucoes',
     path: '/verticais-e-solucoes',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
-const AutenticadoContatosIndexRoute =
-  AutenticadoContatosIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AutenticadoContatosRoute,
-  } as any)
-const AutenticadoContatosContatoIdRoute =
-  AutenticadoContatosContatoIdRouteImport.update({
-    id: '/$contatoId',
-    path: '/$contatoId',
-    getParentRoute: () => AutenticadoContatosRoute,
-  } as any)
+const AutenticadoContatosIndexRoute = AutenticadoContatosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutenticadoContatosRoute,
+} as any)
+const AutenticadoContatosContatoIdRoute = AutenticadoContatosContatoIdRouteImport.update({
+  id: '/$contatoId',
+  path: '/$contatoId',
+  getParentRoute: () => AutenticadoContatosRoute,
+} as any)
 const AutenticadoContatosNovoRoute = AutenticadoContatosNovoRouteImport.update({
   id: '/novo',
   path: '/novo',
   getParentRoute: () => AutenticadoContatosRoute,
 } as any)
-const AutenticadoEmpresasIndexRoute =
-  AutenticadoEmpresasIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AutenticadoEmpresasRoute,
-  } as any)
-const AutenticadoEmpresasEmpresaIdRoute =
-  AutenticadoEmpresasEmpresaIdRouteImport.update({
-    id: '/$empresaId',
-    path: '/$empresaId',
-    getParentRoute: () => AutenticadoEmpresasRoute,
-  } as any)
+const AutenticadoEmpresasIndexRoute = AutenticadoEmpresasIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutenticadoEmpresasRoute,
+} as any)
+const AutenticadoEmpresasEmpresaIdRoute = AutenticadoEmpresasEmpresaIdRouteImport.update({
+  id: '/$empresaId',
+  path: '/$empresaId',
+  getParentRoute: () => AutenticadoEmpresasRoute,
+} as any)
 const AutenticadoEmpresasNovaRoute = AutenticadoEmpresasNovaRouteImport.update({
   id: '/nova',
   path: '/nova',
   getParentRoute: () => AutenticadoEmpresasRoute,
 } as any)
-const AutenticadoImportacaoIndexRoute =
-  AutenticadoImportacaoIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AutenticadoImportacaoRoute,
-  } as any)
-const AutenticadoImportacaoLoteIdRoute =
-  AutenticadoImportacaoLoteIdRouteImport.update({
-    id: '/$loteId',
-    path: '/$loteId',
-    getParentRoute: () => AutenticadoImportacaoRoute,
-  } as any)
-const AutenticadoImportacaoNovaRoute =
-  AutenticadoImportacaoNovaRouteImport.update({
-    id: '/nova',
-    path: '/nova',
-    getParentRoute: () => AutenticadoImportacaoRoute,
-  } as any)
-const AutenticadoOportunidadesIndexRoute =
-  AutenticadoOportunidadesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AutenticadoOportunidadesRoute,
-  } as any)
+const AutenticadoImportacaoIndexRoute = AutenticadoImportacaoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutenticadoImportacaoRoute,
+} as any)
+const AutenticadoImportacaoLoteIdRoute = AutenticadoImportacaoLoteIdRouteImport.update({
+  id: '/$loteId',
+  path: '/$loteId',
+  getParentRoute: () => AutenticadoImportacaoRoute,
+} as any)
+const AutenticadoImportacaoNovaRoute = AutenticadoImportacaoNovaRouteImport.update({
+  id: '/nova',
+  path: '/nova',
+  getParentRoute: () => AutenticadoImportacaoRoute,
+} as any)
+const AutenticadoOportunidadesIndexRoute = AutenticadoOportunidadesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutenticadoOportunidadesRoute,
+} as any)
 const AutenticadoOportunidadesOportunidadeIdRoute =
   AutenticadoOportunidadesOportunidadeIdRouteImport.update({
     id: '/$oportunidadeId',
     path: '/$oportunidadeId',
     getParentRoute: () => AutenticadoOportunidadesRoute,
   } as any)
-const AutenticadoPerfilSegurancaRoute =
-  AutenticadoPerfilSegurancaRouteImport.update({
-    id: '/perfil/seguranca',
-    path: '/perfil/seguranca',
-    getParentRoute: () => AutenticadoRoute,
-  } as any)
+const AutenticadoPerfilSegurancaRoute = AutenticadoPerfilSegurancaRouteImport.update({
+  id: '/perfil/seguranca',
+  path: '/perfil/seguranca',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoContatosContatoIdEditarRoute =
   AutenticadoContatosContatoIdEditarRouteImport.update({
     id: '/$contatoId_/editar',
@@ -978,8 +960,7 @@ const AcessoRouteChildren: AcessoRouteChildren = {
   AcessoVerificarEmailRoute: AcessoVerificarEmailRoute,
 }
 
-const AcessoRouteWithChildren =
-  AcessoRoute._addFileChildren(AcessoRouteChildren)
+const AcessoRouteWithChildren = AcessoRoute._addFileChildren(AcessoRouteChildren)
 
 interface AutenticadoAtividadesRouteChildren {
   AutenticadoAtividadesIndexRoute: typeof AutenticadoAtividadesIndexRoute
@@ -989,10 +970,9 @@ const AutenticadoAtividadesRouteChildren: AutenticadoAtividadesRouteChildren = {
   AutenticadoAtividadesIndexRoute: AutenticadoAtividadesIndexRoute,
 }
 
-const AutenticadoAtividadesRouteWithChildren =
-  AutenticadoAtividadesRoute._addFileChildren(
-    AutenticadoAtividadesRouteChildren,
-  )
+const AutenticadoAtividadesRouteWithChildren = AutenticadoAtividadesRoute._addFileChildren(
+  AutenticadoAtividadesRouteChildren,
+)
 
 interface AutenticadoConfiguracoesRouteChildren {
   AutenticadoConfiguracoesCarteiraRoute: typeof AutenticadoConfiguracoesCarteiraRoute
@@ -1008,33 +988,23 @@ interface AutenticadoConfiguracoesRouteChildren {
   AutenticadoConfiguracoesIndexRoute: typeof AutenticadoConfiguracoesIndexRoute
 }
 
-const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildren =
-  {
-    AutenticadoConfiguracoesCarteiraRoute:
-      AutenticadoConfiguracoesCarteiraRoute,
-    AutenticadoConfiguracoesFunisRoute: AutenticadoConfiguracoesFunisRoute,
-    AutenticadoConfiguracoesImportacaoRoute:
-      AutenticadoConfiguracoesImportacaoRoute,
-    AutenticadoConfiguracoesOrigensEMotivosRoute:
-      AutenticadoConfiguracoesOrigensEMotivosRoute,
-    AutenticadoConfiguracoesPapeisNaDecisaoRoute:
-      AutenticadoConfiguracoesPapeisNaDecisaoRoute,
-    AutenticadoConfiguracoesSegurancaRoute:
-      AutenticadoConfiguracoesSegurancaRoute,
-    AutenticadoConfiguracoesTagsRoute: AutenticadoConfiguracoesTagsRoute,
-    AutenticadoConfiguracoesTiposDeAtividadeRoute:
-      AutenticadoConfiguracoesTiposDeAtividadeRoute,
-    AutenticadoConfiguracoesUsuariosRoute:
-      AutenticadoConfiguracoesUsuariosRoute,
-    AutenticadoConfiguracoesVerticaisESolucoesRoute:
-      AutenticadoConfiguracoesVerticaisESolucoesRoute,
-    AutenticadoConfiguracoesIndexRoute: AutenticadoConfiguracoesIndexRoute,
-  }
+const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildren = {
+  AutenticadoConfiguracoesCarteiraRoute: AutenticadoConfiguracoesCarteiraRoute,
+  AutenticadoConfiguracoesFunisRoute: AutenticadoConfiguracoesFunisRoute,
+  AutenticadoConfiguracoesImportacaoRoute: AutenticadoConfiguracoesImportacaoRoute,
+  AutenticadoConfiguracoesOrigensEMotivosRoute: AutenticadoConfiguracoesOrigensEMotivosRoute,
+  AutenticadoConfiguracoesPapeisNaDecisaoRoute: AutenticadoConfiguracoesPapeisNaDecisaoRoute,
+  AutenticadoConfiguracoesSegurancaRoute: AutenticadoConfiguracoesSegurancaRoute,
+  AutenticadoConfiguracoesTagsRoute: AutenticadoConfiguracoesTagsRoute,
+  AutenticadoConfiguracoesTiposDeAtividadeRoute: AutenticadoConfiguracoesTiposDeAtividadeRoute,
+  AutenticadoConfiguracoesUsuariosRoute: AutenticadoConfiguracoesUsuariosRoute,
+  AutenticadoConfiguracoesVerticaisESolucoesRoute: AutenticadoConfiguracoesVerticaisESolucoesRoute,
+  AutenticadoConfiguracoesIndexRoute: AutenticadoConfiguracoesIndexRoute,
+}
 
-const AutenticadoConfiguracoesRouteWithChildren =
-  AutenticadoConfiguracoesRoute._addFileChildren(
-    AutenticadoConfiguracoesRouteChildren,
-  )
+const AutenticadoConfiguracoesRouteWithChildren = AutenticadoConfiguracoesRoute._addFileChildren(
+  AutenticadoConfiguracoesRouteChildren,
+)
 
 interface AutenticadoContatosRouteChildren {
   AutenticadoContatosContatoIdRoute: typeof AutenticadoContatosContatoIdRoute
@@ -1047,12 +1017,12 @@ const AutenticadoContatosRouteChildren: AutenticadoContatosRouteChildren = {
   AutenticadoContatosContatoIdRoute: AutenticadoContatosContatoIdRoute,
   AutenticadoContatosNovoRoute: AutenticadoContatosNovoRoute,
   AutenticadoContatosIndexRoute: AutenticadoContatosIndexRoute,
-  AutenticadoContatosContatoIdEditarRoute:
-    AutenticadoContatosContatoIdEditarRoute,
+  AutenticadoContatosContatoIdEditarRoute: AutenticadoContatosContatoIdEditarRoute,
 }
 
-const AutenticadoContatosRouteWithChildren =
-  AutenticadoContatosRoute._addFileChildren(AutenticadoContatosRouteChildren)
+const AutenticadoContatosRouteWithChildren = AutenticadoContatosRoute._addFileChildren(
+  AutenticadoContatosRouteChildren,
+)
 
 interface AutenticadoEmpresasRouteChildren {
   AutenticadoEmpresasEmpresaIdRoute: typeof AutenticadoEmpresasEmpresaIdRoute
@@ -1065,12 +1035,12 @@ const AutenticadoEmpresasRouteChildren: AutenticadoEmpresasRouteChildren = {
   AutenticadoEmpresasEmpresaIdRoute: AutenticadoEmpresasEmpresaIdRoute,
   AutenticadoEmpresasNovaRoute: AutenticadoEmpresasNovaRoute,
   AutenticadoEmpresasIndexRoute: AutenticadoEmpresasIndexRoute,
-  AutenticadoEmpresasEmpresaIdEditarRoute:
-    AutenticadoEmpresasEmpresaIdEditarRoute,
+  AutenticadoEmpresasEmpresaIdEditarRoute: AutenticadoEmpresasEmpresaIdEditarRoute,
 }
 
-const AutenticadoEmpresasRouteWithChildren =
-  AutenticadoEmpresasRoute._addFileChildren(AutenticadoEmpresasRouteChildren)
+const AutenticadoEmpresasRouteWithChildren = AutenticadoEmpresasRoute._addFileChildren(
+  AutenticadoEmpresasRouteChildren,
+)
 
 interface AutenticadoImportacaoRouteChildren {
   AutenticadoImportacaoLoteIdRoute: typeof AutenticadoImportacaoLoteIdRoute
@@ -1084,27 +1054,23 @@ const AutenticadoImportacaoRouteChildren: AutenticadoImportacaoRouteChildren = {
   AutenticadoImportacaoIndexRoute: AutenticadoImportacaoIndexRoute,
 }
 
-const AutenticadoImportacaoRouteWithChildren =
-  AutenticadoImportacaoRoute._addFileChildren(
-    AutenticadoImportacaoRouteChildren,
-  )
+const AutenticadoImportacaoRouteWithChildren = AutenticadoImportacaoRoute._addFileChildren(
+  AutenticadoImportacaoRouteChildren,
+)
 
 interface AutenticadoOportunidadesRouteChildren {
   AutenticadoOportunidadesOportunidadeIdRoute: typeof AutenticadoOportunidadesOportunidadeIdRoute
   AutenticadoOportunidadesIndexRoute: typeof AutenticadoOportunidadesIndexRoute
 }
 
-const AutenticadoOportunidadesRouteChildren: AutenticadoOportunidadesRouteChildren =
-  {
-    AutenticadoOportunidadesOportunidadeIdRoute:
-      AutenticadoOportunidadesOportunidadeIdRoute,
-    AutenticadoOportunidadesIndexRoute: AutenticadoOportunidadesIndexRoute,
-  }
+const AutenticadoOportunidadesRouteChildren: AutenticadoOportunidadesRouteChildren = {
+  AutenticadoOportunidadesOportunidadeIdRoute: AutenticadoOportunidadesOportunidadeIdRoute,
+  AutenticadoOportunidadesIndexRoute: AutenticadoOportunidadesIndexRoute,
+}
 
-const AutenticadoOportunidadesRouteWithChildren =
-  AutenticadoOportunidadesRoute._addFileChildren(
-    AutenticadoOportunidadesRouteChildren,
-  )
+const AutenticadoOportunidadesRouteWithChildren = AutenticadoOportunidadesRoute._addFileChildren(
+  AutenticadoOportunidadesRouteChildren,
+)
 
 interface AutenticadoRouteChildren {
   AutenticadoAtividadesRoute: typeof AutenticadoAtividadesRouteWithChildren
@@ -1134,9 +1100,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoPerfilSegurancaRoute: AutenticadoPerfilSegurancaRoute,
 }
 
-const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(
-  AutenticadoRouteChildren,
-)
+const AutenticadoRouteWithChildren = AutenticadoRoute._addFileChildren(AutenticadoRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AcessoRoute: AcessoRouteWithChildren,

@@ -122,6 +122,15 @@ export const ABAS_DE_ATIVIDADES = ['agendadas', 'atrasadas', 'realizadas'] as co
 export const abaDeAtividadesSchema = z.enum(ABAS_DE_ATIVIDADES)
 export type AbaDeAtividades = z.infer<typeof abaDeAtividadesSchema>
 
+/**
+ * As janelas do Dashboard (sem sobreposição com as abas): `hoje` = abertas de hoje que ainda não venceram
+ * (mais as de dia inteiro de hoje); `proximos7` = abertas de amanhã até daqui a 7 dias. "Atrasadas" é a aba
+ * de sempre. Todas no fuso da empresa.
+ */
+export const JANELAS_DO_DASHBOARD = ['hoje', 'proximos7'] as const
+export const abaDaConsultaSchema = z.enum([...ABAS_DE_ATIVIDADES, ...JANELAS_DO_DASHBOARD])
+export type AbaDaConsulta = z.infer<typeof abaDaConsultaSchema>
+
 export const origemDaAtividadeSchema = z.enum([
   'manual',
   'whatsapp',
@@ -211,7 +220,7 @@ export type ConcluirAtividadeEntrada = z.input<typeof concluirAtividadeSchema>
 export const consultaDeAtividadesSchema = z
   .object({
     /** Sem aba, a linha do tempo (as abertas primeiro, depois o histórico) */
-    aba: abaDeAtividadesSchema.optional(),
+    aba: abaDaConsultaSchema.optional(),
     empresaId: z.uuid().optional(),
     contatoId: z.uuid().optional(),
     oportunidadeId: z.uuid().optional(),
@@ -280,6 +289,8 @@ export const listaDeAtividadesSchema = z
       agendadas: z.number().int(),
       atrasadas: z.number().int(),
       realizadas: z.number().int(),
+      hoje: z.number().int(),
+      proximos7: z.number().int(),
     }),
   })
   .meta({ id: 'ListaDeAtividades' })

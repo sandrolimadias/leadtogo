@@ -5,11 +5,13 @@ import {
   type KanbanDeOportunidades,
   LIMITE_POR_FASE_NO_KANBAN,
   type ListaDeOportunidades,
+  inicioDoDiaNoFuso,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { fusoDaEmpresa } from './atividades-leitura.js'
 import {
   condicaoDeVisibilidadeDaOportunidade,
   paraOportunidade,
@@ -22,6 +24,13 @@ const { empresas, funilFases, funis, oportunidades } = schema
 const semAcento = (valor: unknown) => sql`lower(f_unaccent(${valor}))`
 const literalParaLike = (texto: string): string => texto.replace(/[\\%_]/g, (c) => `\\${c}`)
 const numero = (v: unknown): number => Number(v ?? 0)
+
+/** O dia seguinte a AAAA-MM-DD (para "até o dia X" valer o dia todo). */
+const diaSeguinte = (dia: string): string => {
+  const d = new Date(`${dia}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
 
 /** O Kanban de um funil e a lista simples (com filtros e paginação). */
 @Injectable()
@@ -131,6 +140,7 @@ export class ListaDeOportunidadesService {
   async listar(consulta: ConsultaDeOportunidades): Promise<ListaDeOportunidades> {
     const db = this.ctx.db()
     const escopo = await escopoDaCarteira(this.ctx)
+    const fuso = await fusoDaEmpresa(db, this.ctx.tenantId)
     const onde = and(
       isNull(oportunidades.excluidoEm),
       isNull(empresas.excluidoEm),
@@ -140,6 +150,16 @@ export class ListaDeOportunidadesService {
       consulta.faseId ? eq(oportunidades.faseId, consulta.faseId) : undefined,
       consulta.empresaId ? eq(oportunidades.empresaId, consulta.empresaId) : undefined,
       consulta.responsavelId ? eq(oportunidades.responsavelId, consulta.responsavelId) : undefined,
+      consulta.motivoId ? eq(oportunidades.motivoId, consulta.motivoId) : undefined,
+      consulta.grupo === 'perdas'
+        ? sql`${oportunidades.status} IN ('perdido', 'cancelado')`
+        : undefined,
+      consulta.fechadaDe
+        ? sql`${oportunidades.dataFechamento} >= ${inicioDoDiaNoFuso(consulta.fechadaDe, fuso).toISOString()}::timestamptz`
+        : undefined,
+      consulta.fechadaAte
+        ? sql`${oportunidades.dataFechamento} < ${inicioDoDiaNoFuso(diaSeguinte(consulta.fechadaAte), fuso).toISOString()}::timestamptz`
+        : undefined,
       this.buscaSql(consulta.busca),
     )
     const [somas] = await db

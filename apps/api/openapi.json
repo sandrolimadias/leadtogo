@@ -128,7 +128,7 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["agendadas", "atrasadas", "realizadas"]
+              "enum": ["agendadas", "atrasadas", "realizadas", "hoje", "proximos7"]
             }
           },
           {
@@ -1540,6 +1540,87 @@
         "tags": ["Carteira: contatos"]
       }
     },
+    "/v1/carteira/dashboard": {
+      "get": {
+        "description": "Os números do usuário no período (`mes`, `mes_anterior` ou `trimestre` do calendário, no fuso da empresa): previsão (valor ponderado das oportunidades ativas com data prevista no período; as sem data vêm em `semPrevisao`), MRR conquistado (soma do valor mensal das conquistadas, pela data de fechamento, com a variação sobre o período anterior e os últimos 6 meses), taxa de conversão (conquistadas ÷ (conquistadas + perdidas); as canceladas ficam fora), conquistadas × perdidas e canceladas, principais motivos de perda, o funil por fase (as ativas de hoje; sem `funilId`, o funil padrão), a carteira por Status (pela chave do sistema), as empresas novas, as sem contato há N dias (Cliente e Prospect, inclui as nunca contatadas, pelo prazo configurado na empresa) e a contagem das atividades de hoje, atrasadas e dos próximos 7 dias. \"Minha\" = as oportunidades e atividades de que o usuário é o responsável e as empresas da carteira dele.",
+        "operationId": "DashboardController_dashboard",
+        "parameters": [
+          {
+            "name": "periodo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "mes",
+              "type": "string",
+              "enum": ["mes", "mes_anterior", "trimestre"]
+            }
+          },
+          {
+            "name": "funilId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dashboard (visão Minha)",
+        "tags": ["Carteira: dashboard"]
+      }
+    },
     "/v1/carteira/empresas": {
       "get": {
         "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Busca sem acento (nome, razão social, CNPJ/CPF com ou sem máscara, cidade), filtros (`tags`: a empresa precisa ter todas; vendedor, cidade, última visita), chips fixos e paginação. Os chips \"sem visita há 90 dias\", \"nunca visitadas\" e \"sem próxima atividade\" consideram só Status Cliente e Prospect, salvo `incluirLeads=true`. Cada item traz todas as tags, o telefone principal (Ligar/WhatsApp) e o endereço para a rota.",
@@ -1596,6 +1677,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "semContato",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
             }
           },
           {
@@ -2889,6 +2980,42 @@
             "schema": {
               "type": "string",
               "maxLength": 100
+            }
+          },
+          {
+            "name": "motivoId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "grupo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["perdas"]
+            }
+          },
+          {
+            "name": "fechadaDe",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fechadaAte",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
             }
           },
           {
@@ -12614,6 +12741,405 @@
         ],
         "additionalProperties": false
       },
+      "Dashboard": {
+        "type": "object",
+        "properties": {
+          "membro": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "periodo": {
+            "type": "object",
+            "properties": {
+              "chave": {
+                "type": "string",
+                "enum": ["mes", "mes_anterior", "trimestre"]
+              },
+              "rotulo": {
+                "type": "string"
+              },
+              "inicio": {
+                "type": "string"
+              },
+              "fim": {
+                "type": "string"
+              }
+            },
+            "required": ["chave", "rotulo", "inicio", "fim"],
+            "additionalProperties": false
+          },
+          "previsao": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "number"
+              },
+              "quantidade": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "semPrevisao": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["valor", "quantidade", "semPrevisao"],
+            "additionalProperties": false
+          },
+          "mrr": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "number"
+              },
+              "quantidade": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "anterior": {
+                "type": "number"
+              },
+              "variacao": {
+                "nullable": true,
+                "type": "number"
+              },
+              "serie": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "mes": {
+                      "type": "string"
+                    },
+                    "rotulo": {
+                      "type": "string"
+                    },
+                    "inicio": {
+                      "type": "string"
+                    },
+                    "fimExclusivo": {
+                      "type": "string"
+                    },
+                    "valor": {
+                      "type": "number"
+                    },
+                    "quantidade": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["mes", "rotulo", "inicio", "fimExclusivo", "valor", "quantidade"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["valor", "quantidade", "anterior", "variacao", "serie"],
+            "additionalProperties": false
+          },
+          "conversao": {
+            "type": "object",
+            "properties": {
+              "taxa": {
+                "nullable": true,
+                "type": "number"
+              },
+              "conquistadas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "perdidas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["taxa", "conquistadas", "perdidas"],
+            "additionalProperties": false
+          },
+          "resultado": {
+            "type": "object",
+            "properties": {
+              "conquistadas": {
+                "type": "object",
+                "properties": {
+                  "quantidade": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "total": {
+                    "type": "number"
+                  },
+                  "mensal": {
+                    "type": "number"
+                  }
+                },
+                "required": ["quantidade", "total", "mensal"],
+                "additionalProperties": false
+              },
+              "perdidasECanceladas": {
+                "type": "object",
+                "properties": {
+                  "quantidade": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "total": {
+                    "type": "number"
+                  },
+                  "perdidas": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "canceladas": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": ["quantidade", "total", "perdidas", "canceladas"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["conquistadas", "perdidasECanceladas"],
+            "additionalProperties": false
+          },
+          "motivosDePerda": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "quantidade": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "total": {
+                  "type": "number"
+                }
+              },
+              "required": ["id", "nome", "quantidade", "total"],
+              "additionalProperties": false
+            }
+          },
+          "funil": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "fases": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "cor": {
+                      "$ref": "#/components/schemas/CorDeTag"
+                    },
+                    "quantidade": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["id", "nome", "cor", "quantidade", "total"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["id", "nome", "fases"],
+            "additionalProperties": false
+          },
+          "carteira": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "porStatus": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "cor": {
+                      "$ref": "#/components/schemas/CorDeTag"
+                    },
+                    "chaveSistema": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "quantidade": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["id", "nome", "cor", "chaveSistema", "quantidade"],
+                  "additionalProperties": false
+                }
+              },
+              "novas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["total", "porStatus", "novas"],
+            "additionalProperties": false
+          },
+          "semContato": {
+            "type": "object",
+            "properties": {
+              "dias": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "total": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "itens": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "cidade": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "nome": {
+                          "type": "string"
+                        },
+                        "uf": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["nome", "uf"],
+                      "additionalProperties": false
+                    },
+                    "status": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "nome": {
+                          "type": "string"
+                        },
+                        "cor": {
+                          "$ref": "#/components/schemas/CorDeTag"
+                        }
+                      },
+                      "required": ["nome", "cor"],
+                      "additionalProperties": false
+                    },
+                    "diasSemContato": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["id", "nome", "cidade", "status", "diasSemContato"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["dias", "total", "itens"],
+            "additionalProperties": false
+          },
+          "atividades": {
+            "type": "object",
+            "properties": {
+              "hoje": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "atrasadas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "proximos7": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["hoje", "atrasadas", "proximos7"],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "membro",
+          "periodo",
+          "previsao",
+          "mrr",
+          "conversao",
+          "resultado",
+          "motivosDePerda",
+          "funil",
+          "carteira",
+          "semContato",
+          "atividades"
+        ],
+        "additionalProperties": false
+      },
       "DefinirTagsDaEmpresaEntrada": {
         "type": "object",
         "properties": {
@@ -13922,9 +14448,19 @@
                 "type": "integer",
                 "minimum": -9007199254740991,
                 "maximum": 9007199254740991
+              },
+              "hoje": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "proximos7": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
               }
             },
-            "required": ["agendadas", "atrasadas", "realizadas"],
+            "required": ["agendadas", "atrasadas", "realizadas", "hoje", "proximos7"],
             "additionalProperties": false
           }
         },

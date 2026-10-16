@@ -179,6 +179,12 @@ export const consultaDeOportunidadesSchema = z
     empresaId: z.uuid().optional(),
     responsavelId: z.uuid().optional(),
     busca: textoDeBusca,
+    motivoId: z.uuid().optional(),
+    /** `perdas` = Perdidas e Canceladas (o que o Dashboard soma em "Perdidas e canceladas") */
+    grupo: z.enum(['perdas']).optional(),
+    /** Fechadas dentro do período (datas AAAA-MM-DD no fuso da empresa; o fim vale o dia todo) */
+    fechadaDe: z.iso.date().optional(),
+    fechadaAte: z.iso.date().optional(),
     ordem: z.enum(ORDENS_DE_OPORTUNIDADES).default('criada'),
     sentido: z.enum(['asc', 'desc']).default('desc'),
     pagina: z.coerce.number().int().min(1).default(1),

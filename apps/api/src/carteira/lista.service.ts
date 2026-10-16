@@ -223,6 +223,16 @@ export class ListaDeEmpresasService {
     if (c.busca) condicoes.push(this.busca(c.busca))
     for (const tagId of c.tags ?? []) condicoes.push(temATag(tagId))
     if (c.vendedorId) condicoes.push(eq(empresas.vendedorId, c.vendedorId))
+    if (c.semContato) {
+      // Sem contato há N dias (inclui quem nunca teve): a regra do Dashboard, só Cliente e Prospect salvo "incluir leads"
+      condicoes.push(
+        or(
+          isNull(empresas.ultimoContatoEm),
+          sql`${empresas.ultimoContatoEm} <= ${haDias(c.semContato)}`,
+        ),
+      )
+      if (!incluirLeads) condicoes.push(statusClienteOuProspect)
+    }
     if (c.municipio) condicoes.push(eq(empresas.municipioCodigo, c.municipio))
     switch (c.ultimaVisita) {
       case '30':

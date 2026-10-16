@@ -9,6 +9,7 @@ import {
   paraAtividade,
   selecionarAtividades,
 } from './atividades-leitura.js'
+import { agendadas, atrasada, hoje, proximos7 } from './atividades-janelas.js'
 import { escopoDaCarteira } from './regras-de-carteira.js'
 
 const { atividades, contatos, empresas } = schema
@@ -36,14 +37,12 @@ export class ListaDeAtividadesService {
       ...filtros,
     )
 
-    const aberta = sql`${atividades.situacao} IN ('pendente', 'em_execucao')`
-    const atrasada = sql`(${aberta} AND (CASE WHEN ${atividades.diaInteiro}
-      THEN (${atividades.dataInicio} AT TIME ZONE ${fuso})::date < (now() AT TIME ZONE ${fuso})::date
-      ELSE ${atividades.dataInicio} < now() END))`
     const abas = {
-      agendadas: sql`(${aberta} AND NOT ${atrasada})`,
-      atrasadas: atrasada,
+      agendadas: agendadas(fuso),
+      atrasadas: atrasada(fuso),
       realizadas: sql`${atividades.situacao} = 'realizada'`,
+      hoje: hoje(fuso),
+      proximos7: proximos7(fuso),
     }
 
     const [contagem] = await db
@@ -51,6 +50,8 @@ export class ListaDeAtividadesService {
         agendadas: sql<number>`count(*) FILTER (WHERE ${abas.agendadas})::int`,
         atrasadas: sql<number>`count(*) FILTER (WHERE ${abas.atrasadas})::int`,
         realizadas: sql<number>`count(*) FILTER (WHERE ${abas.realizadas})::int`,
+        hoje: sql<number>`count(*) FILTER (WHERE ${abas.hoje})::int`,
+        proximos7: sql<number>`count(*) FILTER (WHERE ${abas.proximos7})::int`,
         todas: sql<number>`count(*)::int`,
       })
       .from(atividades)
@@ -70,6 +71,8 @@ export class ListaDeAtividadesService {
       agendadas: contagem?.agendadas ?? 0,
       atrasadas: contagem?.atrasadas ?? 0,
       realizadas: contagem?.realizadas ?? 0,
+      hoje: contagem?.hoje ?? 0,
+      proximos7: contagem?.proximos7 ?? 0,
     }
     return {
       itens: linhas.map((l) => paraAtividade(l, agora, fuso)),
@@ -106,7 +109,7 @@ export class ListaDeAtividadesService {
     if (aba === 'realizadas') {
       return [desc(atividades.realizadaEm), desc(atividades.id)]
     }
-    if (aba === 'agendadas' || aba === 'atrasadas') {
+    if (aba === 'agendadas' || aba === 'atrasadas' || aba === 'hoje' || aba === 'proximos7') {
       return [asc(atividades.dataInicio), asc(atividades.id)]
     }
     return [
