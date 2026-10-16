@@ -51,8 +51,9 @@ async function abrirFormulario(x: ReturnType<typeof servicos>) {
 }
 
 async function escolherEmpresa(janela: HTMLElement) {
-  await userEvent.click(within(janela).getByRole('button', { name: 'Empresa' }))
-  await userEvent.click(await screen.findByRole('button', { name: /Usidantec/ }))
+  // o campo de busca fica dentro da própria janela (nada de lista suspensa escondida atrás dela)
+  await userEvent.type(within(janela).getByRole('searchbox', { name: 'Buscar empresa' }), 'usid')
+  await userEvent.click(await within(janela).findByRole('button', { name: /Usidantec/ }))
 }
 
 describe('Registrar atividade', () => {
@@ -132,7 +133,7 @@ describe('Registrar atividade', () => {
         'true',
       ),
     )
-    expect(within(nova).getByRole('button', { name: 'Empresa' })).toHaveTextContent('Usidantec')
+    expect(within(nova).getByLabelText('Empresa escolhida')).toHaveTextContent('Usidantec')
     expect(within(nova).getByRole('button', { name: /Pendente/ })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -140,6 +141,23 @@ describe('Registrar atividade', () => {
     expect(within(nova).getByLabelText(/Data e hora/)).toHaveValue('')
     expect(within(nova).queryByLabelText(/Resultado/)).not.toBeInTheDocument()
     expect(within(nova).getByLabelText(/Título/)).toHaveValue('')
+  })
+
+  it('a empresa se acha pelo campo de busca (nome ou CNPJ), dentro da janela, e dá para trocar', async () => {
+    const x = servicos()
+    const janela = await abrirFormulario(x)
+    const busca = within(janela).getByRole('searchbox', { name: 'Buscar empresa' })
+    await userEvent.type(busca, '12.345.678/0001-95')
+    await waitFor(() =>
+      expect(x.s.carteira.listar).toHaveBeenLastCalledWith(
+        expect.objectContaining({ busca: '12.345.678/0001-95' }),
+      ),
+    )
+    await userEvent.click(await within(janela).findByRole('button', { name: /Usidantec/ }))
+    expect(within(janela).getByLabelText('Empresa escolhida')).toHaveTextContent('Usidantec')
+    expect(within(janela).queryByRole('searchbox', { name: 'Buscar empresa' })).toBeNull()
+    await userEvent.click(within(janela).getByRole('button', { name: 'Trocar empresa' }))
+    expect(within(janela).getByRole('searchbox', { name: 'Buscar empresa' })).toHaveValue('')
   })
 
   it('Tarefa não exige empresa', async () => {

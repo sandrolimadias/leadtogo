@@ -33,9 +33,9 @@ test('atividades: registrar visita, agendar, concluir, cancelar e excluir', asyn
     'aria-pressed',
     'true',
   )
-  await expect(
-    formulario(page).getByRole('button', { name: 'Empresa', exact: true }),
-  ).toContainText('Mercado das Atividades')
+  await expect(formulario(page).getByLabel('Empresa escolhida')).toContainText(
+    'Mercado das Atividades',
+  )
   await formulario(page)
     .getByLabel(/Título/)
     .fill('Visita de apresentação')
@@ -99,6 +99,39 @@ test('atividades: registrar visita, agendar, concluir, cancelar e excluir', asyn
   await page.getByRole('button', { name: 'Excluir', exact: true }).click()
   await expect(page.getByText('Atividade excluída')).toBeVisible()
   await expect(page.getByRole('cell', { name: /^Voltar com a proposta/ })).toHaveCount(0)
+})
+
+test('registrar: a empresa se acha pelo campo de busca, por nome e por documento (dentro da janela)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1366, height: 768 })
+  const api = await entrarComSessao(page, 'ativbusca')
+  for (const data of [
+    { tipoDocumento: 'cpf', documento: '52998224725', razaoSocial: 'Padaria do Documento' },
+    { tipoDocumento: 'nenhum', razaoSocial: 'Oficina do Nome' },
+  ]) {
+    expect((await api.post('/v1/carteira/empresas', { data })).status()).toBe(201)
+  }
+  await page.goto('/atividades')
+  await page.getByRole('button', { name: 'Registrar atividade' }).first().click()
+  const busca = formulario(page).getByRole('searchbox', { name: 'Buscar empresa' })
+  // pelo nome (sem acento nem caixa)
+  await busca.fill('OFICINA')
+  await expect(formulario(page).getByRole('button', { name: /Oficina do Nome/ })).toBeVisible()
+  await expect(formulario(page).getByRole('button', { name: /Padaria do Documento/ })).toHaveCount(
+    0,
+  )
+  // pelo documento, com máscara
+  await busca.fill('529.982.247-25')
+  await formulario(page)
+    .getByRole('button', { name: /Padaria do Documento/ })
+    .click()
+  await expect(formulario(page).getByLabel('Empresa escolhida')).toContainText(
+    'Padaria do Documento',
+  )
+  // trocar volta ao campo de busca
+  await formulario(page).getByRole('button', { name: 'Trocar empresa' }).click()
+  await expect(busca).toBeVisible()
 })
 
 test('atividades no celular: o "+" do cabeçalho abre a folha de registro e a página não rola', async ({

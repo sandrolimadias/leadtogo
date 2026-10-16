@@ -27,7 +27,7 @@
 
 ## 2. Registrar uma visita já realizada
 1. Abra a ficha de uma empresa que **nunca foi visitada** (Última visita: "Nunca"). Clique **Nova atividade**.
-2. O formulário abre com **Visita** escolhida, a **empresa já preenchida**, a situação **Realizada**, "Quando aconteceu" com a data e a hora de agora e o responsável padrão (você).
+2. O formulário abre com **Visita** escolhida, a **empresa já preenchida** (sem empresa, o campo **Buscar empresa** mostra os resultados logo abaixo, achando por **nome ou CNPJ/CPF**, com ou sem máscara; **Trocar empresa** volta à busca), a situação **Realizada**, "Quando aconteceu" com a data e a hora de agora e o responsável padrão (você).
 3. Clique em **Registrar atividade** sem preencher: aparecem "Informe o título.", e "Informe o resultado.". Nada é gravado.
 4. Preencha **Título** e **Resultado** (a dica do Resultado diz que a visita atualiza a última visita e o último contato e aplica **Visitada**). Registre.
 5. Na ficha: **Última visita: Hoje**, **Último contato: Hoje** e a tag **Visitada** aparece (e a lista de Empresas mostra a data).

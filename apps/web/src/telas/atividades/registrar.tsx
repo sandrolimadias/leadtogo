@@ -12,8 +12,8 @@ import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 import { BolhaDoTipo } from '@/telas/cadastros/tipos-de-atividade'
 import { Janela } from '@/telas/cadastros/base'
-import { FiltroDeEmpresa } from '@/telas/contatos/filtro-de-empresa'
 
+import { BuscaDeEmpresa } from './busca-de-empresa'
 import { Contexto, type InicioDoRegistro } from './registro-contexto'
 import {
   doCampoDeData,
@@ -321,31 +321,16 @@ function FormularioDeAtividade({
           ) : null}
         </fieldset>
 
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <span className="text-[13px] leading-[18px] font-semibold">
-            Empresa
-            {exigeEmpresa ? (
-              <span aria-hidden="true" className="ml-0.5 text-danger">
-                *
-              </span>
-            ) : (
-              <span className="ml-1 font-normal text-ink-muted">(opcional na {tipo?.nome})</span>
-            )}
-          </span>
-          <FiltroDeEmpresa
-            valor={f.empresaId === '' ? undefined : f.empresaId}
-            nomeInicial={f.empresaNome}
-            placeholder="Escolha a empresa"
-            semTodas
-            aoMudar={(id, nome) =>
-              // trocar de empresa limpa o contato (ele é da empresa anterior)
-              mudar({ empresaId: id ?? '', empresaNome: nome ?? '', contatoId: '' })
-            }
-          />
-          {erros['empresa'] ? (
-            <span className="text-xs font-medium text-danger">{erros['empresa']}</span>
-          ) : null}
-        </div>
+        <BuscaDeEmpresa
+          valor={f.empresaId === '' ? null : { id: f.empresaId, nome: f.empresaNome }}
+          obrigatoria={exigeEmpresa}
+          rotuloOpcional={`opcional na ${tipo?.nome ?? 'Tarefa'}`}
+          erro={erros['empresa']}
+          // trocar de empresa limpa o contato (ele é da empresa anterior)
+          aoMudar={(e) =>
+            mudar({ empresaId: e?.id ?? '', empresaNome: e?.nome ?? '', contatoId: '' })
+          }
+        />
 
         <Select
           label="Contato"
