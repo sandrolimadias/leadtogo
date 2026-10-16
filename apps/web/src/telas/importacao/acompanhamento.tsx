@@ -33,6 +33,12 @@ const TOM_DO_RESULTADO: Record<ResultadoDaLinha, TomDoBadge> = {
   pulada_duplicada: 'neutral',
   pulada_nao_ativa: 'neutral',
   erro: 'danger',
+  vinculada: 'info',
+  ja_vinculada: 'neutral',
+  pulada_empresa_inexistente: 'neutral',
+  pulada_tipo_inexistente: 'neutral',
+  pulada_no_futuro: 'neutral',
+  pulada_invalida: 'warning',
 }
 
 function useAndamento(id: string, acompanhar: boolean) {

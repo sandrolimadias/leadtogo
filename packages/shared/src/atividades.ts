@@ -63,15 +63,21 @@ function deslocamentoDoFuso(instante: number, fuso: string): number {
   return comoUtc - Math.floor(instante / 1000) * 1000
 }
 
-/** O instante da meia-noite (início) do dia AAAA-MM-DD no fuso. */
-export function inicioDoDiaNoFuso(dia: string, fuso: string = FUSO_PADRAO): Date {
+/** O instante em que, no fuso, o relógio marca `hora` (HH:mm) no dia AAAA-MM-DD. */
+export function instanteNoFuso(dia: string, hora: string, fuso: string = FUSO_PADRAO): Date {
   const [a, m, d] = dia.split('-').map(Number) as [number, number, number]
-  const nominal = Date.UTC(a, m - 1, d)
+  const [h, min] = hora.split(':').map(Number) as [number, number]
+  const nominal = Date.UTC(a, m - 1, d, h, min)
   let instante = nominal - deslocamentoDoFuso(nominal, fuso)
   // Ajuste fino quando o deslocamento muda (horário de verão) entre o palpite e o instante real
   const depois = deslocamentoDoFuso(instante, fuso)
   if (nominal - depois !== instante) instante = nominal - depois
   return new Date(instante)
+}
+
+/** O instante da meia-noite (início) do dia AAAA-MM-DD no fuso. */
+export function inicioDoDiaNoFuso(dia: string, fuso: string = FUSO_PADRAO): Date {
+  return instanteNoFuso(dia, '00:00', fuso)
 }
 
 export const situacaoDaAtividadeSchema = z.enum([
@@ -138,6 +144,7 @@ export const origemDaAtividadeSchema = z.enum([
   'agenda',
   'api',
   'recorrencia',
+  'importacao',
 ])
 
 /**

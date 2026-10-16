@@ -2059,6 +2059,9 @@ export interface components {
             origemId?: string | null;
             /** Format: uuid */
             verticalId?: string | null;
+            tiposDeAtividade?: {
+                [key: string]: string | null;
+            };
         };
         AlterarMembroEntrada: {
             /** @enum {string} */
@@ -2216,7 +2219,7 @@ export interface components {
             urgente: boolean;
             observacoes: string | null;
             /** @enum {string} */
-            origem: "manual" | "whatsapp" | "email" | "agenda" | "api" | "recorrencia";
+            origem: "manual" | "whatsapp" | "email" | "agenda" | "api" | "recorrencia" | "importacao";
             criadaEm: string;
             editavel: boolean;
         };
@@ -3103,12 +3106,19 @@ export interface components {
                 id: string;
                 numero: number;
                 /** @enum {string} */
-                resultado: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro";
+                resultado: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro" | "vinculada" | "ja_vinculada" | "pulada_empresa_inexistente" | "pulada_tipo_inexistente" | "pulada_no_futuro" | "pulada_invalida";
                 motivo: string | null;
                 /** Format: uuid */
                 empresaId: string | null;
                 empresaNome: string | null;
                 empresaNaCarteira: boolean | null;
+                /** Format: uuid */
+                contatoId: string | null;
+                contatoNome: string | null;
+                /** Format: uuid */
+                atividadeId: string | null;
+                atividadeTitulo: string | null;
+                avisos: string[];
                 dados: {
                     [key: string]: string;
                 };
@@ -3149,7 +3159,7 @@ export interface components {
                 id: string;
                 nome: string;
                 /** @enum {string} */
-                tipo: "empresas" | "contatos";
+                tipo: "empresas" | "contatos" | "atividades";
                 nomeArquivo: string;
                 /** @enum {string} */
                 situacao: "rascunho" | "pronta" | "em_andamento" | "concluida" | "falhou" | "cancelada" | "desfeita";
@@ -3181,7 +3191,7 @@ export interface components {
             id: string;
             nome: string;
             /** @enum {string} */
-            tipo: "empresas" | "contatos";
+            tipo: "empresas" | "contatos" | "atividades";
             nomeArquivo: string;
             /** @enum {string} */
             situacao: "rascunho" | "pronta" | "em_andamento" | "concluida" | "falhou" | "cancelada" | "desfeita";
@@ -3208,6 +3218,9 @@ export interface components {
             origemId: string | null;
             /** Format: uuid */
             verticalId: string | null;
+            tiposDeAtividade: {
+                [key: string]: string | null;
+            };
             pendencias: string[];
             criadoEm: string;
             concluidoEm: string | null;
@@ -3533,6 +3546,10 @@ export interface components {
                 numero: number;
                 motivo: string;
             }[];
+            previsao?: {
+                [key: string]: number;
+            };
+            comAviso?: number;
         };
         PrimeiroAcessoEntrada: {
             nome: string;
@@ -10122,6 +10139,7 @@ export interface operations {
             query?: {
                 pagina?: number;
                 porPagina?: number;
+                tipo?: "empresas" | "contatos" | "atividades";
             };
             header?: never;
             path?: never;
@@ -10181,7 +10199,7 @@ export interface operations {
             query: {
                 arquivo: string;
                 nome?: string;
-                tipo?: "empresas";
+                tipo?: "empresas" | "contatos" | "atividades";
             };
             header?: never;
             path?: never;
@@ -10720,7 +10738,7 @@ export interface operations {
     LotesDeImportacaoController_linhas: {
         parameters: {
             query?: {
-                resultado?: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro";
+                resultado?: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro" | "vinculada" | "ja_vinculada" | "pulada_empresa_inexistente" | "pulada_tipo_inexistente" | "pulada_no_futuro" | "pulada_invalida";
                 pagina?: number;
                 porPagina?: number;
             };
@@ -10858,7 +10876,7 @@ export interface operations {
     LotesDeImportacaoController_problemas: {
         parameters: {
             query?: {
-                resultado?: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro";
+                resultado?: "pendente" | "criada" | "criada_fora_do_perfil" | "fora_do_perfil" | "pulada_sem_cnpj" | "pulada_duplicada" | "pulada_nao_ativa" | "erro" | "vinculada" | "ja_vinculada" | "pulada_empresa_inexistente" | "pulada_tipo_inexistente" | "pulada_no_futuro" | "pulada_invalida";
             };
             header?: never;
             path: {

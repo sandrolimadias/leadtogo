@@ -8179,7 +8179,7 @@
             "schema": {
               "default": "empresas",
               "type": "string",
-              "enum": ["empresas"]
+              "enum": ["empresas", "contatos", "atividades"]
             }
           }
         ],
@@ -8273,6 +8273,15 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 100
+            }
+          },
+          {
+            "name": "tipo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["empresas", "contatos", "atividades"]
             }
           }
         ],
@@ -8937,7 +8946,13 @@
                 "pulada_sem_cnpj",
                 "pulada_duplicada",
                 "pulada_nao_ativa",
-                "erro"
+                "erro",
+                "vinculada",
+                "ja_vinculada",
+                "pulada_empresa_inexistente",
+                "pulada_tipo_inexistente",
+                "pulada_no_futuro",
+                "pulada_invalida"
               ]
             }
           },
@@ -9137,7 +9152,13 @@
                 "pulada_sem_cnpj",
                 "pulada_duplicada",
                 "pulada_nao_ativa",
-                "erro"
+                "erro",
+                "vinculada",
+                "ja_vinculada",
+                "pulada_empresa_inexistente",
+                "pulada_tipo_inexistente",
+                "pulada_no_futuro",
+                "pulada_invalida"
               ]
             }
           }
@@ -10602,6 +10623,14 @@
             "nullable": true,
             "type": "string",
             "format": "uuid"
+          },
+          "tiposDeAtividade": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
         "additionalProperties": false
@@ -11162,7 +11191,7 @@
           },
           "origem": {
             "type": "string",
-            "enum": ["manual", "whatsapp", "email", "agenda", "api", "recorrencia"]
+            "enum": ["manual", "whatsapp", "email", "agenda", "api", "recorrencia", "importacao"]
           },
           "criadaEm": {
             "type": "string"
@@ -14346,7 +14375,13 @@
                     "pulada_sem_cnpj",
                     "pulada_duplicada",
                     "pulada_nao_ativa",
-                    "erro"
+                    "erro",
+                    "vinculada",
+                    "ja_vinculada",
+                    "pulada_empresa_inexistente",
+                    "pulada_tipo_inexistente",
+                    "pulada_no_futuro",
+                    "pulada_invalida"
                   ]
                 },
                 "motivo": {
@@ -14366,6 +14401,30 @@
                   "nullable": true,
                   "type": "boolean"
                 },
+                "contatoId": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "contatoNome": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "atividadeId": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "atividadeTitulo": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "avisos": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
                 "dados": {
                   "type": "object",
                   "additionalProperties": {
@@ -14381,6 +14440,11 @@
                 "empresaId",
                 "empresaNome",
                 "empresaNaCarteira",
+                "contatoId",
+                "contatoNome",
+                "atividadeId",
+                "atividadeTitulo",
+                "avisos",
                 "dados"
               ],
               "additionalProperties": false
@@ -14544,7 +14608,7 @@
                 },
                 "tipo": {
                   "type": "string",
-                  "enum": ["empresas", "contatos"]
+                  "enum": ["empresas", "contatos", "atividades"]
                 },
                 "nomeArquivo": {
                   "type": "string"
@@ -14683,7 +14747,7 @@
           },
           "tipo": {
             "type": "string",
-            "enum": ["empresas", "contatos"]
+            "enum": ["empresas", "contatos", "atividades"]
           },
           "nomeArquivo": {
             "type": "string"
@@ -14761,6 +14825,14 @@
             "type": "string",
             "format": "uuid"
           },
+          "tiposDeAtividade": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "pendencias": {
             "type": "array",
             "items": {
@@ -14814,6 +14886,7 @@
           "statusTagId",
           "origemId",
           "verticalId",
+          "tiposDeAtividade",
           "pendencias",
           "criadoEm",
           "concluidoEm",
@@ -15944,6 +16017,19 @@
               "required": ["numero", "motivo"],
               "additionalProperties": false
             }
+          },
+          "previsao": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "comAviso": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
         },
         "required": [

@@ -15,8 +15,10 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 
+import { atividades } from './atividades.js'
 import { origens, tags, verticais } from './cadastros.js'
 import { empresas } from './carteira.js'
+import { contatos } from './contatos.js'
 import { membros, tenants } from './plataforma.js'
 import { arquivos } from './sistema.js'
 import { carimbos, chaveUuid } from './tipos.js'
@@ -25,7 +27,7 @@ import { carimbos, chaveUuid } from './tipos.js'
 // RLS, FORCE e GRANTs ficam na migração. `empresas.importacao_id` tem a FK só no SQL da migração
 // (importar `importacoes` em `carteira.ts` faria ciclo de módulos), como `empresa_socios.contato_id`.
 
-export const tipoImportacao = pgEnum('tipo_importacao', ['empresas', 'contatos'])
+export const tipoImportacao = pgEnum('tipo_importacao', ['empresas', 'contatos', 'atividades'])
 /** De onde vêm os dados da empresa: a planilha, tudo da Receita ou a planilha completada pela Receita. */
 export const fonteDadosImportacao = pgEnum('fonte_dados_importacao', [
   'planilha',
@@ -57,6 +59,13 @@ export const resultadoDaLinha = pgEnum('resultado_da_linha', [
   'pulada_duplicada',
   'pulada_nao_ativa',
   'erro',
+  // Contatos e atividades (sem Receita): ver docs/funcionalidades.md, "Importação de contatos e de atividades"
+  'vinculada',
+  'ja_vinculada',
+  'pulada_empresa_inexistente',
+  'pulada_tipo_inexistente',
+  'pulada_no_futuro',
+  'pulada_invalida',
 ])
 
 /** Regras de importação nomeadas por empresa (tenant): nada fixo no código. */
@@ -168,6 +177,14 @@ export const importacaoLinhas = pgTable(
     motivo: text(),
     /** Empresa criada por esta linha (ou a que já existia, nas duplicadas) */
     empresaId: uuid().references(() => empresas.id),
+    /** Contato criado (ou o existente que foi vinculado) por esta linha, na importação de contatos */
+    contatoId: uuid().references(() => contatos.id),
+    /** Atividade criada por esta linha, na importação de atividades */
+    atividadeId: uuid().references(() => atividades.id),
+    /** O que entrou, mas com ressalva (papel inexistente, responsável trocado...): lista de textos */
+    avisos: jsonb()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     processadaEm: timestamp({ withTimezone: true }),
     ...carimbos(),
   },

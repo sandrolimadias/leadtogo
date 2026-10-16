@@ -35,6 +35,7 @@ export const origemAtividade = pgEnum('origem_atividade', [
   'agenda',
   'api',
   'recorrencia',
+  'importacao',
 ])
 
 /**
@@ -73,6 +74,8 @@ export const atividades = pgTable(
     urgente: boolean().notNull().default(false),
     observacoes: text(),
     origem: origemAtividade().notNull().default('manual'),
+    /** O lote de importação que criou a atividade (sem FK, como `empresas.importacao_id`: evita ciclo de módulos) */
+    importacaoId: uuid(),
     ...carimbos(),
     criadoPor: uuid().references((): AnyPgColumn => membros.id),
     atualizadoPor: uuid().references((): AnyPgColumn => membros.id),
@@ -83,6 +86,7 @@ export const atividades = pgTable(
     index('atividades_empresa_idx').on(t.tenantId, t.empresaId, t.dataInicio.desc()),
     index('atividades_oportunidade_idx').on(t.tenantId, t.oportunidadeId),
     index('atividades_contato_idx').on(t.tenantId, t.contatoId, t.dataInicio.desc()),
+    index('atividades_importacao_idx').on(t.tenantId, t.importacaoId),
     // "realizada" e "realizada_em" andam juntos; realizada exige o resultado
     check(
       'atividades_realizada_em',

@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
 import { nomeDeCadastroSchema } from './cadastros.js'
+import { CAMPOS_DA_ATIVIDADE_NA_IMPORTACAO } from './importacao-atividades.js'
+import { CAMPOS_DO_CONTATO_NA_IMPORTACAO } from './importacao-contatos.js'
 import { porPaginaSchema } from './paginacao.js'
 
 // Importação de planilha (docs/escopo_mvp.md, Módulo 4): perfis de regras por empresa.
@@ -157,6 +159,16 @@ export const CAMPOS_DA_EMPRESA_NA_IMPORTACAO = [
 ] as const
 
 /** De onde vêm os dados da empresa: a planilha, tudo da Receita ou a planilha completada pela Receita. */
+/** O que o lote importa. O tipo é fixado no envio da planilha (não muda depois). */
+export const TIPOS_DE_IMPORTACAO = ['empresas', 'contatos', 'atividades'] as const
+export const tipoDeImportacaoSchema = z.enum(TIPOS_DE_IMPORTACAO)
+export type TipoDeImportacao = z.infer<typeof tipoDeImportacaoSchema>
+export const ROTULO_DO_TIPO_DE_IMPORTACAO: Record<TipoDeImportacao, string> = {
+  empresas: 'Empresas',
+  contatos: 'Contatos',
+  atividades: 'Atividades',
+}
+
 export const fonteDosDadosSchema = z.enum(['planilha', 'receita', 'completar'])
 export type FonteDosDados = z.infer<typeof fonteDosDadosSchema>
 
@@ -175,7 +187,7 @@ export const loteDeImportacaoSchema = z
   .object({
     id: z.uuid(),
     nome: z.string(),
-    tipo: z.enum(['empresas', 'contatos']),
+    tipo: tipoDeImportacaoSchema,
     nomeArquivo: z.string(),
     situacao: situacaoDaImportacaoSchema,
     totalLinhas: z.number().int(),
@@ -193,6 +205,8 @@ export const loteDeImportacaoSchema = z
     statusTagId: z.uuid().nullable(),
     origemId: z.uuid().nullable(),
     verticalId: z.uuid().nullable(),
+    /** Atividades: a escolha de cada valor da coluna Tipo (a chave é o valor sem acento e em minúsculas) */
+    tiposDeAtividade: z.record(z.string(), z.uuid().nullable()),
     /** O que falta para o lote ficar pronta; vazio = pronta (`situacao`) */
     pendencias: z.array(z.string()),
     criadoEm: z.string(),
@@ -230,6 +244,8 @@ export const alterarLoteSchema = z
     statusTagId: z.uuid(),
     origemId: z.uuid().nullable(),
     verticalId: z.uuid().nullable(),
+    /** Atividades: valor da coluna Tipo (sem acento e em minúsculas) → tipo de atividade; nulo = pular essas linhas */
+    tiposDeAtividade: z.record(z.string(), z.uuid().nullable()),
   })
   .partial()
   .strict()
@@ -242,7 +258,7 @@ export const consultaDoEnvioSchema = z
   .object({
     arquivo: z.string().trim().min(1).max(255),
     nome: z.string().trim().min(1).max(120).optional(),
-    tipo: z.enum(['empresas']).default('empresas'),
+    tipo: tipoDeImportacaoSchema.default('empresas'),
   })
   .strict()
 export type ConsultaDoEnvio = z.infer<typeof consultaDoEnvioSchema>
@@ -272,6 +288,10 @@ export const previaDaImportacaoSchema = z
     estimativaSegundos: z.number().int(),
     /** As primeiras linhas com problema, para conferir o arquivo */
     problemas: z.array(problemaDaPreviaSchema),
+    /** Contatos e atividades: quantas linhas terão cada resultado (a prévia usa a mesma leitura do worker) */
+    previsao: z.record(z.string(), z.number().int()).optional(),
+    /** Contatos e atividades: quantas linhas entram com algum aviso */
+    comAviso: z.number().int().optional(),
   })
   .meta({ id: 'PreviaDaImportacao' })
 export type PreviaDaImportacao = z.infer<typeof previaDaImportacaoSchema>
@@ -290,6 +310,13 @@ export const resultadoDaLinhaSchema = z.enum([
   'pulada_duplicada',
   'pulada_nao_ativa',
   'erro',
+  // Contatos e atividades
+  'vinculada',
+  'ja_vinculada',
+  'pulada_empresa_inexistente',
+  'pulada_tipo_inexistente',
+  'pulada_no_futuro',
+  'pulada_invalida',
 ])
 export type ResultadoDaLinha = z.infer<typeof resultadoDaLinhaSchema>
 
@@ -303,6 +330,28 @@ export const ROTULO_DO_RESULTADO: Record<ResultadoDaLinha, string> = {
   pulada_duplicada: 'Pulada: CNPJ repetido ou já na carteira',
   pulada_nao_ativa: 'Pulada: empresa não ativa na Receita',
   erro: 'Erro',
+  vinculada: 'Vinculada a contato que já existia',
+  ja_vinculada: 'Contato já estava vinculado à empresa',
+  pulada_empresa_inexistente: 'Pulada: CNPJ não está na carteira',
+  pulada_tipo_inexistente: 'Pulada: tipo de atividade sem correspondência',
+  pulada_no_futuro: 'Pulada: atividade realizada com data no futuro',
+  pulada_invalida: 'Pulada: dado inválido',
+}
+
+/**
+ * O texto do resultado conforme o tipo do lote: "Importada" vale para empresas, mas contato e atividade
+ * "criada" são "Contato criado" e "Atividade criada"; "duplicada" na atividade é "já existe".
+ */
+export function rotuloDoResultado(resultado: ResultadoDaLinha, tipo: TipoDeImportacao): string {
+  if (tipo === 'contatos') {
+    if (resultado === 'criada') return 'Contato criado'
+    if (resultado === 'pulada_sem_cnpj') return 'Pulada: sem CNPJ válido'
+  }
+  if (tipo === 'atividades') {
+    if (resultado === 'criada') return 'Atividade criada'
+    if (resultado === 'pulada_duplicada') return 'Pulada: atividade idêntica já existe'
+  }
+  return ROTULO_DO_RESULTADO[resultado]
 }
 
 export const andamentoDaImportacaoSchema = z
@@ -346,6 +395,14 @@ export const linhaDoRelatorioSchema = z.object({
   empresaNome: z.string().nullable(),
   /** A empresa continua na carteira (`false` = saiu, por exemplo no desfazer); nulo se a linha não tem empresa */
   empresaNaCarteira: z.boolean().nullable(),
+  /** O contato criado ou vinculado (importação de contatos) */
+  contatoId: z.uuid().nullable(),
+  contatoNome: z.string().nullable(),
+  /** A atividade criada (importação de atividades) */
+  atividadeId: z.uuid().nullable(),
+  atividadeTitulo: z.string().nullable(),
+  /** O que entrou com ressalva (papel inexistente, responsável trocado...) */
+  avisos: z.array(z.string()),
   /** A linha como veio da planilha, por título de coluna */
   dados: z.record(z.string(), z.string()),
 })
@@ -379,7 +436,7 @@ export type ImportarForaDoPerfil = z.infer<typeof importarForaDoPerfilSchema>
 export const resumoDoLoteSchema = z.object({
   id: z.uuid(),
   nome: z.string(),
-  tipo: z.enum(['empresas', 'contatos']),
+  tipo: tipoDeImportacaoSchema,
   nomeArquivo: z.string(),
   situacao: situacaoDaImportacaoSchema,
   totalLinhas: z.number().int(),
@@ -404,6 +461,35 @@ export const consultaDosLotesSchema = z
   .object({
     pagina: z.coerce.number().int().min(1).default(1),
     porPagina: porPaginaSchema(),
+    tipo: tipoDeImportacaoSchema.optional(),
   })
   .strict()
 export type ConsultaDosLotes = z.infer<typeof consultaDosLotesSchema>
+
+/** Atividades: cada valor distinto da coluna Tipo da planilha, para apontar o tipo cadastrado. */
+export const valorDoTipoSchema = z.object({
+  /** Como está na planilha */
+  valor: z.string(),
+  /** O valor sem acento e em minúsculas: é a chave do mapeamento */
+  chave: z.string(),
+  linhas: z.number().int(),
+  /** O tipo escolhido (nulo = pular essas linhas; ausente = ainda sem escolha) */
+  tipoId: z.uuid().nullable(),
+  /** Se há um tipo cadastrado com o mesmo nome (sem acento e caixa), é o sugerido */
+  sugerido: z.uuid().nullable(),
+})
+export const valoresDoTipoSchema = z
+  .object({ itens: z.array(valorDoTipoSchema) })
+  .meta({ id: 'ValoresDoTipoDaImportacao' })
+export type ValoresDoTipo = z.infer<typeof valoresDoTipoSchema>
+
+/** Quantos valores distintos de Tipo a tela lista; mais que isso é planilha com a coluna errada. */
+export const MAX_VALORES_DE_TIPO = 200
+
+/** Os campos do mapeamento de cada tipo de lote. */
+export const campoDoTipo = (tipo: TipoDeImportacao) =>
+  tipo === 'contatos'
+    ? CAMPOS_DO_CONTATO_NA_IMPORTACAO
+    : tipo === 'atividades'
+      ? CAMPOS_DA_ATIVIDADE_NA_IMPORTACAO
+      : CAMPOS_DA_EMPRESA_NA_IMPORTACAO

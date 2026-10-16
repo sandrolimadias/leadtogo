@@ -6,7 +6,7 @@ import {
   type ListaDeLotes,
   type LoteDeImportacao,
   MOTIVO_IMPORTAR_MESMO_ASSIM,
-  ROTULO_DO_RESULTADO,
+  rotuloDoResultado,
   type ResultadoDaLinha,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
@@ -17,7 +17,7 @@ import { ErroApi } from '../http/erro-api.js'
 import { agendarExecucao } from './evento.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
 
-const { empresas, importacaoLinhas, importacoes, membros } = schema
+const { atividades, contatos, empresas, importacaoLinhas, importacoes, membros } = schema
 
 /**
  * Uma célula de CSV segura para abrir no Excel: texto que começa com `=`, `+`, `-`, `@`, tabulação ou
@@ -97,6 +97,11 @@ export class RelatorioDaImportacaoService {
         resultado: importacaoLinhas.resultado,
         motivo: importacaoLinhas.motivo,
         empresaId: importacaoLinhas.empresaId,
+        contatoId: importacaoLinhas.contatoId,
+        atividadeId: importacaoLinhas.atividadeId,
+        avisos: importacaoLinhas.avisos,
+        contatoNome: contatos.nome,
+        atividadeTitulo: atividades.titulo,
         dados: importacaoLinhas.dados,
         empresaNome: sql<
           string | null
@@ -108,12 +113,18 @@ export class RelatorioDaImportacaoService {
       })
       .from(importacaoLinhas)
       .leftJoin(empresas, eq(empresas.id, importacaoLinhas.empresaId))
+      .leftJoin(contatos, eq(contatos.id, importacaoLinhas.contatoId))
+      .leftJoin(atividades, eq(atividades.id, importacaoLinhas.atividadeId))
       .where(onde)
       .orderBy(importacaoLinhas.numero)
       .limit(consulta.porPagina)
       .offset((consulta.pagina - 1) * consulta.porPagina)
     return {
-      itens: linhas.map((l) => ({ ...l, dados: l.dados as Record<string, string> })),
+      itens: linhas.map((l) => ({
+        ...l,
+        avisos: l.avisos as string[],
+        dados: l.dados as Record<string, string>,
+      })),
       total,
       pagina: consulta.pagina,
       porPagina: consulta.porPagina,
@@ -142,7 +153,7 @@ export class RelatorioDaImportacaoService {
           eq(importacaoLinhas.importacaoId, id),
           resultado
             ? eq(importacaoLinhas.resultado, resultado)
-            : sql`${importacaoLinhas.resultado} NOT IN ('criada', 'criada_fora_do_perfil', 'pendente')`,
+            : sql`${importacaoLinhas.resultado} NOT IN ('criada', 'criada_fora_do_perfil', 'vinculada', 'ja_vinculada', 'pendente')`,
         ),
       )
       .orderBy(importacaoLinhas.numero)
@@ -151,7 +162,7 @@ export class RelatorioDaImportacaoService {
       const dados = l.dados as Record<string, string>
       return [
         String(l.numero),
-        ROTULO_DO_RESULTADO[l.resultado],
+        rotuloDoResultado(l.resultado, lote.tipo),
         l.motivo ?? '',
         ...lote.colunas.map((c) => dados[c] ?? ''),
       ]

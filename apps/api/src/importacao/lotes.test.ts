@@ -235,7 +235,7 @@ describe('POST /v1/importacao/lotes', () => {
       .set('Content-Type', 'application/octet-stream')
       .send(CSV)
     expect(semNome.status).toBe(400)
-    expect((await enviar(d.cookie, 'a.csv', CSV, '&tipo=contatos')).status).toBe(400)
+    expect((await enviar(d.cookie, 'a.csv', CSV, '&tipo=produtos')).status).toBe(400)
   })
 })
 

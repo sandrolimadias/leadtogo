@@ -176,6 +176,13 @@
       "when": 1792117536099,
       "tag": "0024_oportunidades",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792161469407,
+      "tag": "0025_importacao_contatos_atividades",
+      "breakpoints": true
     }
   ]
 }

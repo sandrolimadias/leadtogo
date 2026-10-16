@@ -391,6 +391,7 @@ export class LotesDeImportacaoService {
       statusTagId: lote.statusTagId,
       origemId: lote.origemId,
       verticalId: lote.verticalId,
+      tiposDeAtividade: (lote.mapeamento as { tipos?: Record<string, string | null> }).tipos ?? {},
       pendencias: pendenciasDe(lote, colunas, campos),
       criadoEm: lote.criadoEm.toISOString(),
       concluidoEm: lote.concluidoEm?.toISOString() ?? null,

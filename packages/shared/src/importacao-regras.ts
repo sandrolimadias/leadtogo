@@ -1,6 +1,12 @@
 import { cnpjValido, normalizarCnpj } from './cnpj.js'
 import type { DadosDaReceita } from './receita.js'
-import { CAMPOS_DA_EMPRESA_NA_IMPORTACAO, type FonteDosDados } from './importacao.js'
+import {
+  CAMPOS_DA_EMPRESA_NA_IMPORTACAO,
+  campoDoTipo,
+  type FonteDosDados,
+  type TipoDeImportacao,
+} from './importacao.js'
+import { paraComparar } from './importacao-leitura.js'
 
 // Regras puras da importação de empresas (sem banco, sem rede): ler o CNPJ da planilha, sugerir e
 // validar o mapeamento de colunas e decidir, com os dados da Receita, se a empresa entra.
@@ -21,13 +27,7 @@ export function documentoDaPlanilha(valor: string): string | null {
 }
 
 /** Minúsculas, sem acento e com um espaço entre palavras: "Razão  Social" → "razao social". */
-const semAcento = (t: string): string =>
-  t
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
+export const semAcento = paraComparar
 
 /** Títulos de coluna que costumam ser cada campo, do mais específico ao mais genérico. */
 const SINONIMOS: Record<ChaveDoCampo, string[]> = {
@@ -108,6 +108,86 @@ export function validarMapeamento(
       campo: 'razaoSocial',
       mensagem: 'Indique a coluna da razão social (ou busque os dados na Receita).',
     })
+  }
+  return erros
+}
+
+/** Títulos de coluna que costumam ser cada campo de contatos e de atividades. */
+const SINONIMOS_DOS_NOVOS_TIPOS: Record<string, string[]> = {
+  documento: ['cnpj', 'cnpj da empresa', 'cnpj empresa', 'documento', 'cnpj cpf'],
+  nome: ['nome', 'nome do contato', 'contato'],
+  cargo: ['cargo', 'funcao'],
+  email: ['e mail', 'email', 'e mail do contato', 'email do contato'],
+  telefone: ['telefone', 'fone', 'tel', 'telefone fixo'],
+  celular: ['celular', 'celular whatsapp', 'whatsapp', 'celular/whatsapp', 'cel'],
+  papel: ['papel na decisao', 'papel', 'papel de decisao'],
+  aniversario: ['aniversario', 'aniversario dia mes', 'nascimento', 'data de aniversario'],
+  linkedin: ['linkedin', 'linked in'],
+  principal: ['principal', 'contato principal'],
+  naoQuerContato: ['nao quer contato', 'nao contatar', 'optout', 'opt out'],
+  observacoes: ['observacoes', 'observacao', 'obs'],
+  tipo: ['tipo', 'tipo de atividade', 'tipo da atividade', 'atividade'],
+  titulo: ['titulo', 'assunto', 'descricao'],
+  data: ['data', 'data da atividade', 'data dd mm aaaa'],
+  hora: ['hora', 'horario'],
+  situacao: ['situacao', 'status'],
+  resultado: ['resultado', 'retorno'],
+  emailContato: ['e mail do contato', 'email do contato', 'e mail contato'],
+  emailResponsavel: ['e mail do responsavel', 'email do responsavel', 'responsavel', 'vendedor'],
+  importante: ['importante'],
+  urgente: ['urgente'],
+}
+
+/** O campo de cada coluna que o título indica, para qualquer tipo de lote (empresas segue `sugerirMapeamento`). */
+export function sugerirMapeamentoDoTipo(
+  tipo: TipoDeImportacao,
+  colunas: string[],
+): Record<string, string> {
+  if (tipo === 'empresas') return sugerirMapeamento(colunas)
+  const normalizadas = colunas.map((c) => [c, paraComparar(c)] as const)
+  const usadas = new Set<string>()
+  const sugestao: Record<string, string> = {}
+  for (const { chave } of campoDoTipo(tipo)) {
+    for (const sinonimo of SINONIMOS_DOS_NOVOS_TIPOS[chave] ?? []) {
+      const achada = normalizadas.find(([coluna, n]) => !usadas.has(coluna) && n === sinonimo)
+      if (achada) {
+        sugestao[chave] = achada[0]
+        usadas.add(achada[0])
+        break
+      }
+    }
+  }
+  return sugestao
+}
+
+/** Confere o mapeamento de contatos e de atividades: as colunas obrigatórias e uma coluna para um campo só. */
+export function validarMapeamentoDoTipo(
+  tipo: Exclude<TipoDeImportacao, 'empresas'>,
+  campos: Partial<Record<string, string | null>>,
+  colunas: string[],
+): ErroDoMapeamento[] {
+  const catalogo: readonly { chave: string; rotulo: string; obrigatorio?: boolean }[] =
+    campoDoTipo(tipo)
+  const conhecidos = new Map<string, string>(catalogo.map((c) => [c.chave, c.rotulo]))
+  const erros: ErroDoMapeamento[] = []
+  const usadas = new Map<string, string>()
+  for (const [campo, coluna] of Object.entries(campos)) {
+    if (!conhecidos.has(campo)) erros.push({ campo, mensagem: 'Campo desconhecido.' })
+    else if (coluna) {
+      if (!colunas.includes(coluna)) {
+        erros.push({ campo, mensagem: `A coluna "${coluna}" não existe na planilha.` })
+      } else if (usadas.has(coluna)) {
+        erros.push({
+          campo,
+          mensagem: `A coluna "${coluna}" já alimenta o campo ${usadas.get(coluna)}.`,
+        })
+      } else usadas.set(coluna, conhecidos.get(campo) as string)
+    }
+  }
+  for (const c of catalogo) {
+    if (c.obrigatorio && !campos[c.chave]) {
+      erros.push({ campo: c.chave, mensagem: `Indique a coluna de ${c.rotulo}.` })
+    }
   }
   return erros
 }

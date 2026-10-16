@@ -45,6 +45,8 @@ export const contatos = pgTable(
     consentimentoEm: timestamp({ withTimezone: true }),
     consentimentoOrigem: text(),
     observacoes: text(),
+    /** O lote de importação que criou o contato (sem FK, como `empresas.importacao_id`) */
+    importacaoId: uuid(),
     ...carimbos(),
     criadoPor: uuid().references((): AnyPgColumn => membros.id),
     atualizadoPor: uuid().references((): AnyPgColumn => membros.id),
@@ -52,6 +54,7 @@ export const contatos = pgTable(
   },
   (t) => [
     index('contatos_papel_idx').on(t.tenantId, t.papelDecisaoId),
+    index('contatos_importacao_idx').on(t.tenantId, t.importacaoId),
     check(
       'contatos_aniversario_mes',
       sql`${t.aniversarioMes} IS NULL OR ${t.aniversarioMes} BETWEEN 1 AND 12`,
@@ -89,9 +92,12 @@ export const empresaContatos = pgTable(
     ativo: boolean().notNull().default(true),
     desde: date({ mode: 'string' }),
     ate: date({ mode: 'string' }),
+    /** O lote de importação que criou este vínculo (inclusive com contato que já existia) */
+    importacaoId: uuid(),
     ...carimbos(),
   },
   (t) => [
+    index('empresa_contatos_importacao_idx').on(t.tenantId, t.importacaoId),
     uniqueIndex('empresa_contatos_uq').on(t.empresaId, t.contatoId),
     // No máximo um contato principal por empresa
     uniqueIndex('empresa_contatos_principal_uq')
