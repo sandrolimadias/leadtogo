@@ -46,6 +46,7 @@ export const atividade = (n: number, extra: Partial<Atividade> = {}): Atividade 
   titulo: `Atividade ${n}`,
   empresa: { id: id(1), nome: 'Usidantec' },
   contato: null,
+  oportunidade: null,
   responsavel: { id: id(800), nome: 'Alessandro Dias' },
   dataInicio: '2026-10-20T13:00:00.000Z',
   dataFim: null,

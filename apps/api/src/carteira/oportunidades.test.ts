@@ -132,6 +132,8 @@ describe('cadastrar oportunidade e valores', () => {
       editavel: true,
       excluivel: false,
     })
+    // a configuração "empresa vira Cliente ao conquistar" vem na oportunidade (o fechamento já abre ligado ou desligado)
+    expect(o.empresaViraClientePadrao).toBe(true)
     // sem valor mensal, a duração fica em zero e o total é só o único
     const unico = await nova(c.ana.cookie, {
       titulo: 'Só implantação',

@@ -36,6 +36,7 @@ const fase = (
   cor: 'gray',
   probabilidadePadrao: 0,
   diasAlertaParada: null,
+  ativo: true,
   ordem: n,
   ...extra,
 })

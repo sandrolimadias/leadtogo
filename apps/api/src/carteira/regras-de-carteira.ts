@@ -17,6 +17,8 @@ export interface EscopoDaCarteira {
   veTodas: boolean
   /** Bloqueia o cadastro de CNPJ que não esteja ativo na Receita */
   bloquearNaoAtiva: boolean
+  /** Conquistar uma oportunidade muda a empresa para Cliente, salvo se a pessoa desligar no fechamento */
+  clienteAoConquistar: boolean
 }
 
 export async function escopoDaCarteira(ctx: ContextoTenantService): Promise<EscopoDaCarteira> {
@@ -25,6 +27,7 @@ export async function escopoDaCarteira(ctx: ContextoTenantService): Promise<Esco
     .select({
       vendedorVeTodas: schema.tenantConfiguracoes.vendedorVeTodasEmpresas,
       bloquear: schema.tenantConfiguracoes.bloquearEmpresaNaoAtiva,
+      clienteAoConquistar: schema.tenantConfiguracoes.statusClienteAoConquistar,
     })
     .from(schema.tenantConfiguracoes)
     .where(eq(schema.tenantConfiguracoes.tenantId, ctx.tenantId))
@@ -34,6 +37,7 @@ export async function escopoDaCarteira(ctx: ContextoTenantService): Promise<Esco
     papel,
     veTodas: papel !== 'vendedor' || (config?.vendedorVeTodas ?? false),
     bloquearNaoAtiva: config?.bloquear ?? true,
+    clienteAoConquistar: config?.clienteAoConquistar ?? true,
   }
 }
 

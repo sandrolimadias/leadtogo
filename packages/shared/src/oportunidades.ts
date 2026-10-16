@@ -243,6 +243,8 @@ export const oportunidadeSchema = z
     editavel: z.boolean(),
     /** Só admin e gestor excluem */
     excluivel: z.boolean(),
+    /** Configuração da empresa: ao conquistar, a empresa vira Cliente (o fechamento pode desligar) */
+    empresaViraClientePadrao: z.boolean(),
   })
   .meta({ id: 'Oportunidade' })
 export type Oportunidade = z.infer<typeof oportunidadeSchema>

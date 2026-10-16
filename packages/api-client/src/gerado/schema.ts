@@ -3241,6 +3241,7 @@ export interface components {
             criadaEm: string;
             editavel: boolean;
             excluivel: boolean;
+            empresaViraClientePadrao: boolean;
         };
         OportunidadeDetalhada: {
             /** Format: uuid */
@@ -3323,6 +3324,7 @@ export interface components {
             criadaEm: string;
             editavel: boolean;
             excluivel: boolean;
+            empresaViraClientePadrao: boolean;
             historico: components["schemas"]["EntradaDoHistoricoDaOportunidade"][];
         };
         Origem: {

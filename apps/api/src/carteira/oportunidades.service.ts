@@ -46,7 +46,6 @@ const {
   oportunidades,
   origens,
   solucoes,
-  tenantConfiguracoes,
   tiposAtividade,
 } = schema
 
@@ -321,11 +320,7 @@ export class OportunidadesService {
 
     let virouCliente: string | null = null
     if (dados.status === 'conquistado') {
-      const [config] = await db
-        .select({ ligado: tenantConfiguracoes.statusClienteAoConquistar })
-        .from(tenantConfiguracoes)
-        .where(eq(tenantConfiguracoes.tenantId, tenantId))
-      if (dados.empresaViraCliente ?? config?.ligado ?? true) {
+      if (dados.empresaViraCliente ?? escopo.clienteAoConquistar) {
         const r = await empresaViraCliente(db, tenantId, atual.empresaId, escopo.membroId)
         if (r.mudou) virouCliente = r.nomeDaTag
       }

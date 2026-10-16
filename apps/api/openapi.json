@@ -14781,6 +14781,9 @@
           },
           "excluivel": {
             "type": "boolean"
+          },
+          "empresaViraClientePadrao": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -14815,7 +14818,8 @@
           "observacoes",
           "criadaEm",
           "editavel",
-          "excluivel"
+          "excluivel",
+          "empresaViraClientePadrao"
         ],
         "additionalProperties": false
       },
@@ -15066,6 +15070,9 @@
           "excluivel": {
             "type": "boolean"
           },
+          "empresaViraClientePadrao": {
+            "type": "boolean"
+          },
           "historico": {
             "type": "array",
             "items": {
@@ -15106,6 +15113,7 @@
           "criadaEm",
           "editavel",
           "excluivel",
+          "empresaViraClientePadrao",
           "historico"
         ],
         "additionalProperties": false

@@ -169,6 +169,7 @@ export function paraOportunidade(
     criadaEm: new Date(l.criadaEm).toISOString(),
     editavel: l.editavel,
     excluivel: escopo.papel !== 'vendedor',
+    empresaViraClientePadrao: escopo.clienteAoConquistar,
   }
 }
 
