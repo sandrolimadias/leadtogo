@@ -214,7 +214,7 @@ Vínculo N:N com empresas, cargo por vínculo, telefones, e-mails, papel na deci
 - **Deduplicação por CNPJ dentro do tenant.**
 - Os **perfis serão reaproveitados na Prospecção**.
 
-### Módulo 5 — Atividades *(no ar em 16/10/2026, aguardando o teste do Ale; roteiro em `docs/roteiro_teste_modulo5.md`; plano aprovado em 15/10/2026, com as 7 decisões recomendadas)*
+### Módulo 5 — Atividades ✅ *concluído e aprovado pelo Ale (16/10/2026; roteiro em `docs/roteiro_teste_modulo5.md`; plano aprovado em 15/10/2026, com as 7 decisões recomendadas)*
 Formulário **Registrar atividade** (protótipo), situação, resultado, importante/urgente, **efeito na carteira** (tags Visitada/Contactada, última visita e último contato), **"Registrar e agendar próxima"**, atrasadas e linha do tempo na ficha.
 
 **Entregue (commits na `main`; esteira verde até o verify):** `2245dcc` migração 0023 (tabela `atividades`, RLS, fuso da empresa, FK da próxima atividade) · `54c4380` schemas e regras de fuso, atraso e data no futuro · `a735a1e` API (registrar, listar com abas, editar, concluir, cancelar, excluir) com o efeito na carteira e o desfazer da importação · `4114f37` ajuste do teste da lista de empresas (a FK exige atividade real) · `e9d5b60` formulário Registrar atividade e abas nas fichas · `6a31003` tela Atividades, menu, E2E, roteiro e docs · `ce35a89` e o commit seguinte: campo de busca da empresa (ver abaixo).
