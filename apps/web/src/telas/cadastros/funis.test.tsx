@@ -388,6 +388,39 @@ describe('Configurações → Funis e fases: fases', () => {
     expect(await screen.findByText('Fase Proposta excluída')).toBeInTheDocument()
   })
 
+  it('inativa e reativa a fase (a que já teve oportunidade só se inativa); o erro da API vira aviso', async () => {
+    const alterarFase = vi
+      .fn()
+      .mockResolvedValueOnce(
+        falha(
+          'fase_com_oportunidades_ativas',
+          'A fase tem 2 oportunidades ativas: mova-as antes.',
+          409,
+        ),
+      )
+      .mockResolvedValue(ok(dados()[0] as Funil))
+    const s = servicosDeFunis(dados(), { alterarFase })
+    await abrir(s)
+    const botao = () =>
+      within(fasedo('Vendas', 'Proposta')).getByRole('button', { name: /Inativar.*Proposta/ })
+    await userEvent.click(botao())
+    expect(await screen.findByText(/A fase tem 2 oportunidades ativas/)).toBeInTheDocument()
+    await userEvent.click(botao())
+    await waitFor(() => expect(alterarFase).toHaveBeenCalledTimes(2))
+    expect(alterarFase).toHaveBeenLastCalledWith(expect.any(String), { ativo: false })
+    expect(await screen.findByText('Fase Proposta inativada')).toBeInTheDocument()
+  })
+
+  it('fase inativa aparece como Inativa, com o botão Reativar', async () => {
+    const funis = dados()
+    const f = funis[0] as Funil
+    f.fases = f.fases.map((x) => (x.nome === 'Proposta' ? { ...x, ativo: false } : x))
+    await abrir(servicosDeFunis(funis))
+    const fase = fasedo('Vendas', 'Proposta')
+    expect(within(fase).getByText('Inativa')).toBeInTheDocument()
+    expect(within(fase).getByRole('button', { name: /Reativar.*Proposta/ })).toBeInTheDocument()
+  })
+
   it('reordena as fases do funil pelos botões', async () => {
     const s = servicosDeFunis()
     await abrir(s)

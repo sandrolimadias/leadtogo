@@ -361,6 +361,68 @@ export const servicosReais: ServicosDeAcesso = {
       ),
   },
 
+  oportunidades: {
+    kanban: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/oportunidades/kanban', {
+            params: { query: consulta as never },
+          }),
+        ),
+      ),
+    listar: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/oportunidades', { params: { query: consulta as never } }),
+        ),
+      ),
+    criar: (dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/carteira/oportunidades', { body: dados as never })),
+      ),
+    detalhar: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/carteira/oportunidades/{id}', { params: { path: { id } } })),
+      ),
+    alterar: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/carteira/oportunidades/{id}', {
+            params: { path: { id } },
+            body: dados as never,
+          }),
+        ),
+      ),
+    mover: (id, faseId) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/oportunidades/{id}/mover', {
+            params: { path: { id } },
+            body: { faseId },
+          }),
+        ),
+      ),
+    fechar: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/oportunidades/{id}/fechar', {
+            params: { path: { id } },
+            body: dados as never,
+          }),
+        ),
+      ),
+    reabrir: (id) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/oportunidades/{id}/reabrir', { params: { path: { id } } }),
+        ),
+      ),
+    excluir: (id) =>
+      protegido(async () =>
+        semCorpo(await api.DELETE('/v1/carteira/oportunidades/{id}', { params: { path: { id } } })),
+      ),
+  },
+
   configuracaoDaCarteira: () =>
     protegido(async () => daApi(await api.GET('/v1/configuracoes/carteira'))),
   alterarConfiguracaoDaCarteira: (patch) =>

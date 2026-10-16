@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Tag } from '@/components/ui/exibicao'
 import type { CorDeTag } from '@/components/ui/cores'
 import { cn } from '@/lib/cn'
+import { reais } from '@/telas/oportunidades/formatos'
 
 import { dataCurta, diasDesde, documentoFormatado, linkDeRota, tempoRelativo } from './formatos'
 
@@ -118,6 +119,9 @@ export function TabelaDeEmpresas({
             <th scope="col" className={cabecalho}>
               Próxima atividade
             </th>
+            <th scope="col" className={cn(cabecalho, 'text-right')}>
+              Em aberto
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -170,6 +174,9 @@ export function TabelaDeEmpresas({
               </td>
               <td className="border-b border-border px-3 py-2">
                 <ProximaAtividade iso={e.proximaAtividadeEm} />
+              </td>
+              <td className="border-b border-border px-3 py-2 text-right tabular-nums">
+                {e.emAberto > 0 ? reais(e.emAberto) : <span className="text-ink-muted">—</span>}
               </td>
             </tr>
           ))}

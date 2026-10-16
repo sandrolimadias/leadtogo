@@ -294,19 +294,19 @@ describe('Ficha da empresa: cabeçalho', () => {
     )
   })
 
-  it('o que é dos módulos seguintes fica escondido: Oportunidades e "chega no Módulo X"', async () => {
+  it('as abas e os botões de cada módulo; nada de "chega no Módulo X"', async () => {
     await abrir(servicos())
-    // Contatos (Módulo 3) e Atividades (Módulo 5) existem; Oportunidades espera o Módulo 6
+    // Contatos (Módulo 3), Atividades (Módulo 5) e Oportunidades (Módulo 6) existem
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
       'Resumo',
       'Contatos (0)',
       'Atividades',
+      'Oportunidades',
       'Histórico',
     ])
     expect(await screen.findByRole('button', { name: 'Nova atividade' })).toBeInTheDocument()
-    for (const nome of ['Nova oportunidade', 'Vincular contato']) {
-      expect(screen.queryByRole('button', { name: nome })).toBeNull()
-    }
+    expect(screen.getByRole('button', { name: 'Nova oportunidade' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Vincular contato' })).toBeNull()
     expect(screen.queryByText(/Módulo \d/)).toBeNull()
   })
 

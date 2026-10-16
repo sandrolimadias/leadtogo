@@ -1,14 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Handshake } from 'lucide-react'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-import { PaginaVazia } from '@/casca/partes'
-
+// Oportunidades: o funil em Kanban ou lista (/oportunidades) e a ficha (/oportunidades/:id).
 export const Route = createFileRoute('/_autenticado/oportunidades')({
-  component: () => (
-    <PaginaVazia
-      titulo="Oportunidades"
-      icone={Handshake}
-      descricao="Em breve: o funil de vendas, em Kanban e em lista."
-    />
-  ),
+  component: Outlet,
 })

@@ -154,6 +154,15 @@ export function TelaDeFunis() {
               aoCriarFase={() => setJanela({ tipo: 'fase', funil: f, fase: null })}
               aoEditarFase={(fase) => setJanela({ tipo: 'fase', funil: f, fase })}
               aoExcluirFase={(fase) => setJanela({ tipo: 'excluir-fase', funil: f, fase })}
+              aoAlternarFase={(fase) =>
+                void agir(
+                  () => servicos.funis.alterarFase(fase.id, { ativo: !fase.ativo }),
+                  fase.ativo ? `Fase ${fase.nome} inativada` : `Fase ${fase.nome} reativada`,
+                  fase.ativo
+                    ? 'Não foi possível inativar a fase'
+                    : 'Não foi possível reativar a fase',
+                )
+              }
             />
           ))
         ) : (
@@ -206,7 +215,7 @@ export function TelaDeFunis() {
       <DialogoDeConfirmacao
         aberto={janela?.tipo === 'excluir-fase'}
         titulo={`Excluir a fase ${janela?.tipo === 'excluir-fase' ? janela.fase.nome : ''}?`}
-        descricao="A fase deixa de aparecer no funil. Esta ação não pode ser desfeita por aqui."
+        descricao="A fase deixa de aparecer no funil. Esta ação não pode ser desfeita por aqui. Fase que já teve oportunidades não se exclui: use Inativar."
         rotuloDoBotao="Excluir fase"
         erro={erroDaExclusao}
         enviando={enviando}
@@ -234,6 +243,7 @@ function CartaoDoFunil({
   aoCriarFase,
   aoEditarFase,
   aoExcluirFase,
+  aoAlternarFase,
 }: {
   funil: Funil
   primeiro: boolean
@@ -247,6 +257,8 @@ function CartaoDoFunil({
   aoCriarFase: () => void
   aoEditarFase: (fase: Fase) => void
   aoExcluirFase: (fase: Fase) => void
+  /** Inativa (ou reativa) a fase: a que já teve oportunidade só se inativa, não se exclui */
+  aoAlternarFase: (fase: Fase) => void
 }) {
   const umaFase = funil.fases.length <= 1
   return (
@@ -307,7 +319,10 @@ function CartaoDoFunil({
                 className={cn('size-3 flex-none rounded-full', classeDaCor[fase.cor])}
                 style={{ boxShadow: 'inset 0 0 0 1.5px currentColor' }}
               />
-              <span className="font-semibold">{fase.nome}</span>
+              <span className={cn('font-semibold', !fase.ativo && 'text-ink-muted')}>
+                {fase.nome}
+              </span>
+              {fase.ativo ? null : <Badge tone="neutral">Inativa</Badge>}
               <span className="text-[13px] text-ink-muted tabular-nums">
                 Probabilidade {fase.probabilidadePadrao}%
               </span>
@@ -327,6 +342,10 @@ function CartaoDoFunil({
                 label={`Editar a fase ${fase.nome}`}
                 onClick={() => aoEditarFase(fase)}
               />
+              <Button size="sm" variant="ghost" onClick={() => aoAlternarFase(fase)}>
+                {fase.ativo ? 'Inativar' : 'Reativar'}
+                <span className="sr-only"> a fase {fase.nome}</span>
+              </Button>
               {umaFase ? null : (
                 <IconButton
                   size="sm"
@@ -346,7 +365,7 @@ function CartaoDoFunil({
         </Button>
         {umaFase ? (
           <span className="text-[13px] text-ink-muted">
-            O funil precisa ter ao menos uma fase: a última não pode ser excluída.
+            O funil precisa ter ao menos uma fase: a última não pode ser excluída nem inativada.
           </span>
         ) : null}
       </footer>

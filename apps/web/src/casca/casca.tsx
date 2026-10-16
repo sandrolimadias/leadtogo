@@ -14,6 +14,7 @@ import { cn } from '@/lib/cn'
 
 import { Logo } from '@/components/acesso/logo'
 import { RegistrarAtividadeProvider } from '@/telas/atividades/registrar'
+import { FormularioDeOportunidadeProvider } from '@/telas/oportunidades/formulario'
 import { useDispositivo } from './dispositivo'
 import { useTrocarEmpresa } from './empresas'
 import { ROTULO_DO_PAPEL, TELAS, estaAtiva, telaVisivel, tituloDoCaminho } from './navegacao'
@@ -60,34 +61,38 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
   if (dispositivo === 'celular') {
     return (
       <RegistrarAtividadeProvider>
-        <div
-          data-density="touch"
-          className="relative flex h-dvh flex-col overflow-hidden bg-bg text-ink"
-        >
-          <PularParaOConteudo />
-          <CabecalhoDoCelular
-            titulo={tituloDoCaminho(caminho)}
-            me={me}
-            aoAbrirPerfil={() => setPerfilAberto(true)}
-          />
+        <FormularioDeOportunidadeProvider>
           <div
-            id="conteudo"
-            tabIndex={-1}
-            className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto outline-none"
+            data-density="touch"
+            className="relative flex h-dvh flex-col overflow-hidden bg-bg text-ink"
           >
-            <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col">{children}</div>
+            <PularParaOConteudo />
+            <CabecalhoDoCelular
+              titulo={tituloDoCaminho(caminho)}
+              me={me}
+              aoAbrirPerfil={() => setPerfilAberto(true)}
+            />
+            <div
+              id="conteudo"
+              tabIndex={-1}
+              className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto outline-none"
+            >
+              <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col">
+                {children}
+              </div>
+            </div>
+            <BarraInferior caminho={caminho} aoAbrirPerfil={() => setPerfilAberto(true)} />
+            <FolhaDePerfil
+              aberta={perfilAberto}
+              aoFechar={() => setPerfilAberto(false)}
+              me={me}
+              tema={prefs.tema}
+              aoMudarTema={(tema) => alterar({ tema })}
+              aoTrocarEmpresa={(id) => void trocarEmpresa(id).then(() => setPerfilAberto(false))}
+              aoSair={() => void sair()}
+            />
           </div>
-          <BarraInferior caminho={caminho} aoAbrirPerfil={() => setPerfilAberto(true)} />
-          <FolhaDePerfil
-            aberta={perfilAberto}
-            aoFechar={() => setPerfilAberto(false)}
-            me={me}
-            tema={prefs.tema}
-            aoMudarTema={(tema) => alterar({ tema })}
-            aoTrocarEmpresa={(id) => void trocarEmpresa(id).then(() => setPerfilAberto(false))}
-            aoSair={() => void sair()}
-          />
-        </div>
+        </FormularioDeOportunidadeProvider>
       </RegistrarAtividadeProvider>
     )
   }
@@ -195,49 +200,53 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
 
   return (
     <RegistrarAtividadeProvider>
-      <div
-        data-density={dispositivo === 'tablet' ? 'touch' : undefined}
-        className="relative flex h-dvh overflow-hidden bg-bg text-ink"
-      >
-        <PularParaOConteudo />
-        <AppNav
-          className="h-full flex-none overflow-x-hidden overflow-y-auto"
-          recolhido={recolhido}
-          espacoso
-          marca={<Logo tamanho={24} />}
-          {...(dispositivo === 'desktop'
-            ? { aoAlternarRecolhimento: () => alterar({ menuRecolhido: !prefs.menuRecolhido }) }
-            : {})}
-          groups={grupos}
-          renderLink={({ item, className, children: conteudo, ...resto }) => (
-            <Link to={(item.href ?? '/') as '/'} className={className} {...resto}>
-              {conteudo}
-            </Link>
-          )}
-          tenantSlot={
-            empresaDoMenu ? (
-              <Menu
-                side={recolhido ? 'right' : 'bottom'}
-                align="start"
-                className="w-[264px]"
-                items={itensDeEmpresas}
-                trigger={<TenantSwitcher current={empresaDoMenu} recolhido={recolhido} />}
-              />
-            ) : null
-          }
-          rodape={rodape}
-        />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <BarraSuperior />
-          <div
-            id="conteudo"
-            tabIndex={-1}
-            className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto outline-none"
-          >
-            <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col">{children}</div>
+      <FormularioDeOportunidadeProvider>
+        <div
+          data-density={dispositivo === 'tablet' ? 'touch' : undefined}
+          className="relative flex h-dvh overflow-hidden bg-bg text-ink"
+        >
+          <PularParaOConteudo />
+          <AppNav
+            className="h-full flex-none overflow-x-hidden overflow-y-auto"
+            recolhido={recolhido}
+            espacoso
+            marca={<Logo tamanho={24} />}
+            {...(dispositivo === 'desktop'
+              ? { aoAlternarRecolhimento: () => alterar({ menuRecolhido: !prefs.menuRecolhido }) }
+              : {})}
+            groups={grupos}
+            renderLink={({ item, className, children: conteudo, ...resto }) => (
+              <Link to={(item.href ?? '/') as '/'} className={className} {...resto}>
+                {conteudo}
+              </Link>
+            )}
+            tenantSlot={
+              empresaDoMenu ? (
+                <Menu
+                  side={recolhido ? 'right' : 'bottom'}
+                  align="start"
+                  className="w-[264px]"
+                  items={itensDeEmpresas}
+                  trigger={<TenantSwitcher current={empresaDoMenu} recolhido={recolhido} />}
+                />
+              ) : null
+            }
+            rodape={rodape}
+          />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <BarraSuperior />
+            <div
+              id="conteudo"
+              tabIndex={-1}
+              className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto outline-none"
+            >
+              <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col">
+                {children}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </FormularioDeOportunidadeProvider>
     </RegistrarAtividadeProvider>
   )
 }

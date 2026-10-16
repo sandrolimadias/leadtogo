@@ -22,7 +22,7 @@ export function AtividadesDaFicha({
   podeRegistrar,
   mostrarEmpresa,
 }: {
-  filtro: { empresaId: string } | { contatoId: string }
+  filtro: { empresaId: string } | { contatoId: string } | { oportunidadeId: string }
   /** O que o formulário já traz ao abrir ("Nova atividade") */
   inicio: InicioDoRegistro
   podeRegistrar: boolean

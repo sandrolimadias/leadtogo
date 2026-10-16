@@ -6,6 +6,8 @@ export interface InicioDoRegistro {
   /** A empresa já escolhida ("Nova atividade" da ficha, ou "Registrar e agendar próxima") */
   empresa?: { id: string; nome: string }
   contatoId?: string
+  /** A oportunidade já escolhida ("Nova atividade" da ficha da oportunidade) */
+  oportunidade?: { id: string; nome: string }
   tipoId?: string
   /** Padrão Realizada; "agendar próxima" abre em Pendente */
   situacao?: 'realizada' | 'pendente'

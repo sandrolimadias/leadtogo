@@ -96,6 +96,7 @@ export const itemDeEmpresa = (n: number, extra: Partial<ItemDaLista> = {}): Item
   ultimaVisitaEm: null,
   ultimoContatoEm: null,
   proximaAtividadeEm: null,
+  emAberto: 0,
   situacaoNaoVerificada: false,
   editavel: true,
   ...extra,

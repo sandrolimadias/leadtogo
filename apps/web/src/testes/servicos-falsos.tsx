@@ -149,6 +149,34 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       cancelar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       excluir: vi.fn(async () => ok(undefined)),
     },
+    oportunidades: {
+      kanban: vi.fn(async () =>
+        ok({
+          funil: { id: '0192f0a0-0000-7000-8000-0000000000f1', nome: 'Vendas' },
+          fases: [],
+          resumo: { ativas: 0, total: 0, mensal: 0, ponderado: 0 },
+          suspensas: 0,
+        }),
+      ),
+      listar: vi.fn(async () =>
+        ok({
+          itens: [],
+          total: 0,
+          pagina: 1,
+          porPagina: 25,
+          somas: { total: 0, mensal: 0, ponderado: 0 },
+        }),
+      ),
+      criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      detalhar: vi.fn(async () =>
+        falha('oportunidade_nao_encontrada', 'Oportunidade não encontrada.', 404),
+      ),
+      alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      mover: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      fechar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      reabrir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      excluir: vi.fn(async () => ok(undefined)),
+    },
     configuracaoDaCarteira: vi.fn(async () =>
       ok({ bloquearEmpresaNaoAtiva: true, vendedorVeTodasEmpresas: false }),
     ),

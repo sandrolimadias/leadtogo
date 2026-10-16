@@ -1,0 +1,332 @@
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
+import { LayoutList, Plus, Search, SquareKanban, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+
+import { useServicos } from '@/auth/contexto'
+import { useDispositivo } from '@/casca/dispositivo'
+import { usePorPagina } from '@/casca/preferencias'
+import { Button } from '@/components/ui/button'
+import { Select, TextField } from '@/components/ui/campos'
+import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
+import { AreaDaTabela, CorpoDaTabela, PaginaDeTabela } from '@/components/ui/pagina'
+import { Paginacao } from '@/components/ui/paginacao'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { toast } from '@/components/ui/toast'
+import { cn } from '@/lib/cn'
+
+import { useAcoesDaOportunidade } from './acoes'
+import { type BuscaDeOportunidades, lerBusca } from './busca'
+import { useFormularioDeOportunidade } from './contexto-formulario'
+import { reais } from './formatos'
+import { QuadroKanban } from './kanban'
+import { TabelaDeOportunidades } from './lista'
+import { JanelaDeSuspensas } from './suspensas'
+
+const rota = getRouteApi('/_autenticado/oportunidades/')
+const ESPERA_DA_BUSCA_MS = 400
+
+const STATUS = [
+  { value: 'ativo', label: 'Ativas' },
+  { value: 'conquistado', label: 'Conquistadas' },
+  { value: 'perdido', label: 'Perdidas' },
+  { value: 'cancelado', label: 'Canceladas' },
+  { value: 'suspenso', label: 'Suspensas' },
+]
+
+/** Oportunidades: o funil de vendas em Kanban ou em lista, com filtros, resumo e as suspensas. */
+export function PaginaDeOportunidades() {
+  const servicos = useServicos()
+  const queryClient = useQueryClient()
+  const celular = useDispositivo() === 'celular'
+  const { abrir } = useFormularioDeOportunidade()
+  const busca = rota.useSearch({ select: (s) => lerBusca(s) })
+  const navegar = rota.useNavigate()
+  const lista = busca.visao === 'lista'
+  const [suspensasAbertas, setSuspensasAbertas] = useState(false)
+
+  const [texto, setTexto] = useState('')
+  const [termo, setTermo] = useState('')
+  useEffect(() => {
+    const espera = setTimeout(() => setTermo(texto.trim()), ESPERA_DA_BUSCA_MS)
+    return () => clearTimeout(espera)
+  }, [texto])
+
+  const mudar = (patch: Partial<BuscaDeOportunidades>, voltarParaAPrimeira = true) =>
+    void navegar({
+      search: (anterior) => {
+        const novo: BuscaDeOportunidades = { ...lerBusca(anterior), ...patch }
+        if (voltarParaAPrimeira && !('pagina' in patch)) delete novo.pagina
+        for (const [chave, valor] of Object.entries(novo)) {
+          if (valor === undefined || valor === '') delete (novo as Record<string, unknown>)[chave]
+        }
+        return novo
+      },
+      replace: true,
+    })
+
+  const funis = useQuery({
+    queryKey: ['cadastros', 'funis'],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.funis.listar()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+  const opcoes = useQuery({
+    queryKey: ['carteira', 'opcoes'],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.carteira.opcoes()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+  const funisAtivos = (funis.data ?? []).filter((f) => f.ativo || f.id === busca.funil)
+  const funilEscolhido =
+    funisAtivos.find((f) => f.id === busca.funil) ?? funisAtivos.find((f) => f.padrao)
+
+  const kanban = useQuery({
+    queryKey: ['oportunidades', 'kanban', busca.funil, busca.responsavel, termo],
+    enabled: !lista,
+    retry: false,
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      const r = await servicos.oportunidades.kanban({
+        ...(busca.funil ? { funilId: busca.funil } : {}),
+        ...(busca.responsavel ? { responsavelId: busca.responsavel } : {}),
+        ...(termo ? { busca: termo } : {}),
+      })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+
+  const tamanho = usePorPagina('oportunidades')
+  const itens = useQuery({
+    queryKey: ['oportunidades', 'lista', busca, termo, tamanho.porPagina],
+    enabled: lista && tamanho.pronto,
+    retry: false,
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      const r = await servicos.oportunidades.listar({
+        ...(busca.funil ? { funilId: busca.funil } : {}),
+        ...(busca.responsavel ? { responsavelId: busca.responsavel } : {}),
+        ...(busca.status ? { status: busca.status } : {}),
+        ...(termo ? { busca: termo } : {}),
+        pagina: busca.pagina ?? 1,
+        porPagina: tamanho.porPagina,
+      })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+
+  const acoes = useAcoesDaOportunidade()
+  const comFiltro = Boolean(busca.responsavel ?? busca.status ?? (termo || undefined))
+  const limpar = () => {
+    setTexto('')
+    setTermo('')
+    void navegar({
+      search: (a) => {
+        const { visao, funil } = lerBusca(a)
+        return { ...(visao ? { visao } : {}), ...(funil ? { funil } : {}) }
+      },
+      replace: true,
+    })
+  }
+  const reabrirDaLista = async (id: string) => {
+    const r = await servicos.oportunidades.reabrir(id)
+    if (!r.ok) {
+      toast.error('Não foi possível reabrir', { description: r.erro.mensagem })
+      return
+    }
+    await queryClient.invalidateQueries({ queryKey: ['oportunidades'] })
+    toast.success('Oportunidade reaberta')
+  }
+
+  const resumo = lista ? itens.data?.somas : kanban.data?.resumo
+  const quantidade = lista ? itens.data?.total : kanban.data?.resumo.ativas
+  const subtitulo =
+    quantidade === undefined || !resumo
+      ? ''
+      : `${quantidade} ${lista ? (quantidade === 1 ? 'oportunidade' : 'oportunidades') : quantidade === 1 ? 'ativa' : 'ativas'} · Total ${reais(resumo.total)} · Mensal ${reais(resumo.mensal)} · Ponderado ${reais(resumo.ponderado)}`
+  const funilIdDoKanban = kanban.data?.funil.id ?? funilEscolhido?.id
+
+  return (
+    <PaginaDeTabela>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h1
+            className={cn(
+              'm-0 text-[30px] leading-9 font-semibold tracking-[-0.015em]',
+              celular && 'sr-only',
+            )}
+          >
+            Oportunidades
+          </h1>
+          <span className="text-[13px] text-ink-muted tabular-nums" aria-live="polite">
+            {subtitulo}
+          </span>
+        </div>
+        <SegmentedControl
+          label="Visão"
+          options={[
+            { value: 'kanban', label: 'Kanban', icon: SquareKanban },
+            { value: 'lista', label: 'Lista', icon: LayoutList },
+          ]}
+          value={lista ? 'lista' : 'kanban'}
+          onChange={(v) => mudar({ visao: v === 'lista' ? 'lista' : undefined, status: undefined })}
+        />
+        <Button
+          variant="primary"
+          icon={Plus}
+          onClick={() => abrir({ ...(funilEscolhido ? { funilId: funilEscolhido.id } : {}) })}
+        >
+          Nova oportunidade
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-2 rounded-lg border-border bg-surface p-3 md:border">
+        <TextField
+          icon={Search}
+          placeholder="Nome da oportunidade ou da empresa"
+          aria-label="Buscar oportunidades"
+          className="min-w-0 flex-1 md:min-w-64"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+        />
+        <Select
+          aria-label="Funil"
+          className="w-full md:w-44"
+          options={funisAtivos.map((f) => ({ value: f.id, label: f.nome }))}
+          value={funilEscolhido?.id ?? ''}
+          onChange={(e) =>
+            mudar({
+              funil:
+                e.target.value === funis.data?.find((f) => f.padrao)?.id
+                  ? undefined
+                  : e.target.value,
+            })
+          }
+        />
+        {opcoes.data && !opcoes.data.unicoMembro ? (
+          <Select
+            aria-label="Responsável"
+            placeholder="Responsável: todos"
+            className="w-full md:w-48"
+            options={opcoes.data.vendedores.map((v) => ({ value: v.id, label: v.nome }))}
+            value={busca.responsavel ?? ''}
+            onChange={(e) => mudar({ responsavel: e.target.value || undefined })}
+          />
+        ) : null}
+        {lista ? (
+          <Select
+            aria-label="Status"
+            placeholder="Status: todos"
+            className="w-full md:w-44"
+            options={STATUS}
+            value={busca.status ?? ''}
+            onChange={(e) =>
+              mudar({ status: (e.target.value || undefined) as BuscaDeOportunidades['status'] })
+            }
+          />
+        ) : (
+          <Button onClick={() => setSuspensasAbertas(true)} disabled={!funilIdDoKanban}>
+            Suspensas · {kanban.data?.suspensas ?? 0}
+          </Button>
+        )}
+        {comFiltro ? (
+          <Button variant="ghost" icon={X} onClick={limpar}>
+            Limpar filtros
+          </Button>
+        ) : null}
+      </div>
+
+      {!lista ? (
+        <>
+          {kanban.isError ? <Alert tone="danger">{kanban.error.message}</Alert> : null}
+          {kanban.isPending ? (
+            <div className="flex gap-3" role="status" aria-label="Carregando o funil">
+              <Skeleton width={296} height={200} />
+              <Skeleton width={296} height={200} />
+              <Skeleton width={296} height={200} />
+            </div>
+          ) : null}
+          {kanban.data ? (
+            <div className={cn(kanban.isPlaceholderData && 'opacity-60')}>
+              <QuadroKanban kanban={kanban.data} celular={celular} />
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          {itens.isError ? <Alert tone="danger">{itens.error.message}</Alert> : null}
+          {itens.isPending && tamanho.pronto ? <Skeleton height={44} /> : null}
+          {itens.data && itens.data.total === 0 ? (
+            <AreaDaTabela>
+              <EmptyState
+                title={
+                  comFiltro
+                    ? 'Nenhuma oportunidade com esses filtros'
+                    : 'Nenhuma oportunidade ainda'
+                }
+                description={
+                  comFiltro
+                    ? 'Revise a busca ou limpe os filtros.'
+                    : 'Crie a primeira oportunidade de uma empresa da carteira.'
+                }
+                actions={
+                  comFiltro ? (
+                    <Button onClick={limpar}>Limpar filtros</Button>
+                  ) : (
+                    <Button variant="primary" icon={Plus} onClick={() => abrir()}>
+                      Nova oportunidade
+                    </Button>
+                  )
+                }
+              />
+            </AreaDaTabela>
+          ) : null}
+          {itens.data && itens.data.total > 0 ? (
+            <AreaDaTabela className={cn(itens.isPlaceholderData && 'opacity-60')}>
+              <CorpoDaTabela>
+                <TabelaDeOportunidades
+                  itens={itens.data.itens}
+                  menu={(o) =>
+                    acoes.menu(
+                      o,
+                      (funis.data?.find((f) => f.id === o.funil.id)?.fases ?? []).filter(
+                        (f) => f.ativo,
+                      ),
+                    )
+                  }
+                />
+              </CorpoDaTabela>
+              <Paginacao
+                pagina={itens.data.pagina}
+                porPagina={itens.data.porPagina}
+                total={itens.data.total}
+                aoMudarPagina={(pagina) => mudar({ pagina }, false)}
+                aoMudarPorPagina={(n) => {
+                  tamanho.mudar(n)
+                  mudar({ pagina: undefined }, false)
+                }}
+              />
+            </AreaDaTabela>
+          ) : null}
+        </>
+      )}
+
+      {suspensasAbertas && funilIdDoKanban ? (
+        <JanelaDeSuspensas
+          funilId={funilIdDoKanban}
+          aoFechar={() => setSuspensasAbertas(false)}
+          aoReabrir={reabrirDaLista}
+        />
+      ) : null}
+      {acoes.janelas}
+    </PaginaDeTabela>
+  )
+}

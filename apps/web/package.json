@@ -20,6 +20,7 @@
     "verificar:pwa": "node scripts/verificar-pwa.mjs"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
     "@leadtogo/api-client": "workspace:*",
     "@leadtogo/shared": "workspace:*",
     "@sentry/react": "^11.6.0",

@@ -202,9 +202,11 @@ describe('Registrar atividade', () => {
     expect(within(janela).getByLabelText(/Título/)).toHaveValue('Visita')
   })
 
-  it('o vendedor não vê "Mais opções" (só atribui a si mesmo); o gestor escolhe o responsável', async () => {
+  it('"Mais opções" tem a Oportunidade para todos; o Responsável só para administrador e gestor', async () => {
     const vend = servicos('vendedor')
     const j1 = await abrirFormulario(vend)
-    expect(within(j1).queryByRole('button', { name: 'Mais opções' })).not.toBeInTheDocument()
+    await userEvent.click(within(j1).getByRole('button', { name: 'Mais opções' }))
+    expect(within(j1).getByLabelText('Oportunidade')).toBeInTheDocument()
+    expect(within(j1).queryByLabelText('Responsável')).not.toBeInTheDocument()
   })
 })

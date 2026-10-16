@@ -61,6 +61,8 @@ interface Formulario {
   resultado: string
   importante: boolean
   urgente: boolean
+  /** Vazio = sem oportunidade */
+  oportunidadeId: string
   /** Vazio = o próprio usuário */
   responsavelId: string
 }
@@ -84,6 +86,7 @@ function formularioInicial(inicio: InicioDoRegistro): Formulario {
       resultado: a.resultado ?? '',
       importante: a.importante,
       urgente: a.urgente,
+      oportunidadeId: a.oportunidade?.id ?? '',
       responsavelId: a.responsavel.id,
     }
   }
@@ -101,6 +104,7 @@ function formularioInicial(inicio: InicioDoRegistro): Formulario {
     resultado: '',
     importante: false,
     urgente: false,
+    oportunidadeId: inicio.oportunidade?.id ?? '',
     responsavelId: '',
   }
 }
@@ -111,6 +115,8 @@ const CAMPO_DO_ERRO: Record<string, string> = {
   empresa_invalida: 'empresa',
   contato_invalido: 'contato',
   contato_sem_empresa: 'contato',
+  oportunidade_invalida: 'oportunidade',
+  oportunidade_sem_empresa: 'oportunidade',
   atividade_no_futuro: 'data',
   fim_antes_do_inicio: 'data',
   resultado_obrigatorio: 'resultado',
@@ -175,6 +181,24 @@ function FormularioDeAtividade({
     },
   })
 
+  // As oportunidades ativas da empresa (a da atividade que se edita aparece mesmo se já fechou)
+  const oportunidades = useQuery({
+    queryKey: ['oportunidades', 'da-empresa', f.empresaId],
+    enabled: f.empresaId !== '',
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.oportunidades.listar({
+        empresaId: f.empresaId,
+        status: 'ativo',
+        porPagina: 100,
+        ordem: 'titulo',
+        sentido: 'asc',
+      })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.itens
+    },
+  })
+
   // Os tipos ativos (o do registro que se edita aparece mesmo inativo); padrão: Visita
   const tiposAtivos = (tipos.data ?? []).filter((t) => t.ativo || t.id === inicial.tipoId)
   const tipoId =
@@ -211,6 +235,7 @@ function FormularioDeAtividade({
           titulo: f.titulo.trim(),
           empresaId: f.empresaId === '' ? null : f.empresaId,
           contatoId: f.contatoId === '' ? null : f.contatoId,
+          oportunidadeId: f.oportunidadeId === '' ? null : f.oportunidadeId,
           ...(f.responsavelId !== '' && f.responsavelId !== inicial.responsavelId
             ? { responsavelId: f.responsavelId }
             : {}),
@@ -227,6 +252,7 @@ function FormularioDeAtividade({
           titulo: f.titulo.trim(),
           ...(f.empresaId !== '' ? { empresaId: f.empresaId } : {}),
           ...(f.contatoId !== '' ? { contatoId: f.contatoId } : {}),
+          ...(f.oportunidadeId !== '' ? { oportunidadeId: f.oportunidadeId } : {}),
           ...(f.responsavelId !== '' ? { responsavelId: f.responsavelId } : {}),
           dataInicio: dataIso,
           diaInteiro: f.diaInteiro,
@@ -433,28 +459,45 @@ function FormularioDeAtividade({
           />
         </div>
 
-        {podeEscolherResponsavel ? (
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              aria-expanded={maisOpcoes}
-              onClick={() => setMaisOpcoes((v) => !v)}
-              className="w-fit cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-brand"
-            >
-              {maisOpcoes ? 'Menos opções' : 'Mais opções'}
-            </button>
-            {maisOpcoes ? (
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            aria-expanded={maisOpcoes}
+            onClick={() => setMaisOpcoes((v) => !v)}
+            className="w-fit cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-brand"
+          >
+            {maisOpcoes ? 'Menos opções' : 'Mais opções'}
+          </button>
+          {maisOpcoes ? (
+            <>
               <Select
-                label="Responsável"
-                placeholder="Eu (padrão)"
-                options={responsaveis.map((v) => ({ value: v.id, label: v.nome }))}
-                value={f.responsavelId}
-                onChange={(e) => mudar({ responsavelId: e.target.value })}
-                {...(erros['responsavel'] ? { error: erros['responsavel'] } : {})}
+                label="Oportunidade"
+                placeholder={f.empresaId === '' ? 'Escolha a empresa antes' : 'Sem oportunidade'}
+                disabled={f.empresaId === ''}
+                options={[
+                  ...(edicao?.oportunidade &&
+                  !(oportunidades.data ?? []).some((o) => o.id === edicao.oportunidade?.id)
+                    ? [{ value: edicao.oportunidade.id, label: edicao.oportunidade.nome }]
+                    : []),
+                  ...(oportunidades.data ?? []).map((o) => ({ value: o.id, label: o.titulo })),
+                ]}
+                value={f.oportunidadeId}
+                onChange={(e) => mudar({ oportunidadeId: e.target.value })}
+                {...(erros['oportunidade'] ? { error: erros['oportunidade'] } : {})}
               />
-            ) : null}
-          </div>
-        ) : null}
+              {podeEscolherResponsavel ? (
+                <Select
+                  label="Responsável"
+                  placeholder="Eu (padrão)"
+                  options={responsaveis.map((v) => ({ value: v.id, label: v.nome }))}
+                  value={f.responsavelId}
+                  onChange={(e) => mudar({ responsavelId: e.target.value })}
+                  {...(erros['responsavel'] ? { error: erros['responsavel'] } : {})}
+                />
+              ) : null}
+            </>
+          ) : null}
+        </div>
         {/* Enter no campo de texto envia o formulário */}
         <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true" />
       </form>

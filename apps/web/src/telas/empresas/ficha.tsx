@@ -8,6 +8,7 @@ import {
   Check,
   ChevronRight,
   Ellipsis,
+  Handshake,
   MessageCircle,
   Navigation,
   Pencil,
@@ -27,6 +28,8 @@ import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { Menu } from '@/components/ui/menu'
 import { ConteudoDaAba, Tabs } from '@/components/ui/tabs'
 import { AtividadesDaFicha } from '@/telas/atividades/na-ficha'
+import { useFormularioDeOportunidade } from '@/telas/oportunidades/contexto-formulario'
+import { OportunidadesDaEmpresa } from '@/telas/oportunidades/na-ficha'
 import { useRegistrarAtividade } from '@/telas/atividades/registro-contexto'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
@@ -49,6 +52,7 @@ const abasDaEmpresa = (contatosAtivos: number | undefined) => [
     label: contatosAtivos === undefined ? 'Contatos' : `Contatos (${contatosAtivos})`,
   },
   { value: 'atividades', label: 'Atividades' },
+  { value: 'oportunidades', label: 'Oportunidades' },
   { value: 'historico', label: 'Histórico' },
 ]
 
@@ -118,6 +122,7 @@ export function FichaDaEmpresa() {
 
   const [aba, setAba] = useState('resumo')
   const { abrir: abrirAtividade } = useRegistrarAtividade()
+  const { abrir: abrirOportunidade } = useFormularioDeOportunidade()
   const [editandoTags, setEditandoTags] = useState(false)
   const [salvandoTags, setSalvandoTags] = useState(false)
   const [convertendoSocio, setConvertendoSocio] = useState<string | null>(null)
@@ -397,6 +402,14 @@ export function FichaDaEmpresa() {
           <div className="flex items-center gap-2">
             {e.permissoes.editar && !celular ? (
               <Button
+                icon={Handshake}
+                onClick={() => abrirOportunidade({ empresa: { id: e.id, nome: e.nome } })}
+              >
+                Nova oportunidade
+              </Button>
+            ) : null}
+            {e.permissoes.editar && !celular ? (
+              <Button
                 variant="primary"
                 icon={CalendarPlus}
                 onClick={() => abrirAtividade({ empresa: { id: e.id, nome: e.nome } })}
@@ -587,6 +600,12 @@ export function FichaDaEmpresa() {
               inicio={{ empresa: { id: e.id, nome: e.nome } }}
               podeRegistrar={e.permissoes.editar}
               mostrarEmpresa={false}
+            />
+          </ConteudoDaAba>
+          <ConteudoDaAba value="oportunidades">
+            <OportunidadesDaEmpresa
+              empresa={{ id: e.id, nome: e.nome }}
+              podeCriar={e.permissoes.editar}
             />
           </ConteudoDaAba>
           <ConteudoDaAba value="historico">

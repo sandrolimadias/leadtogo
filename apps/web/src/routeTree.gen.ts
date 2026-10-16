@@ -52,6 +52,8 @@ import { Route as AutenticadoEmpresasNovaRouteImport } from './routes/_autentica
 import { Route as AutenticadoImportacaoIndexRouteImport } from './routes/_autenticado.importacao.index'
 import { Route as AutenticadoImportacaoLoteIdRouteImport } from './routes/_autenticado.importacao.$loteId'
 import { Route as AutenticadoImportacaoNovaRouteImport } from './routes/_autenticado.importacao.nova'
+import { Route as AutenticadoOportunidadesIndexRouteImport } from './routes/_autenticado.oportunidades.index'
+import { Route as AutenticadoOportunidadesOportunidadeIdRouteImport } from './routes/_autenticado.oportunidades.$oportunidadeId'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
 import { Route as AutenticadoContatosContatoIdEditarRouteImport } from './routes/_autenticado.contatos.$contatoId_.editar'
 import { Route as AutenticadoEmpresasEmpresaIdEditarRouteImport } from './routes/_autenticado.empresas.$empresaId_.editar'
@@ -290,6 +292,18 @@ const AutenticadoImportacaoNovaRoute =
     path: '/nova',
     getParentRoute: () => AutenticadoImportacaoRoute,
   } as any)
+const AutenticadoOportunidadesIndexRoute =
+  AutenticadoOportunidadesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AutenticadoOportunidadesRoute,
+  } as any)
+const AutenticadoOportunidadesOportunidadeIdRoute =
+  AutenticadoOportunidadesOportunidadeIdRouteImport.update({
+    id: '/$oportunidadeId',
+    path: '/$oportunidadeId',
+    getParentRoute: () => AutenticadoOportunidadesRoute,
+  } as any)
 const AutenticadoPerfilSegurancaRoute =
   AutenticadoPerfilSegurancaRouteImport.update({
     id: '/perfil/seguranca',
@@ -327,7 +341,7 @@ export interface FileRoutesByFullPath {
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/empresas': typeof AutenticadoEmpresasRouteWithChildren
   '/importacao': typeof AutenticadoImportacaoRouteWithChildren
-  '/oportunidades': typeof AutenticadoOportunidadesRoute
+  '/oportunidades': typeof AutenticadoOportunidadesRouteWithChildren
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
@@ -346,12 +360,14 @@ export interface FileRoutesByFullPath {
   '/empresas/nova': typeof AutenticadoEmpresasNovaRoute
   '/importacao/$loteId': typeof AutenticadoImportacaoLoteIdRoute
   '/importacao/nova': typeof AutenticadoImportacaoNovaRoute
+  '/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/atividades/': typeof AutenticadoAtividadesIndexRoute
   '/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
   '/contatos/': typeof AutenticadoContatosIndexRoute
   '/empresas/': typeof AutenticadoEmpresasIndexRoute
   '/importacao/': typeof AutenticadoImportacaoIndexRoute
+  '/oportunidades/': typeof AutenticadoOportunidadesIndexRoute
   '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -368,7 +384,6 @@ export interface FileRoutesByTo {
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/consolidado': typeof AutenticadoConsolidadoRoute
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
-  '/oportunidades': typeof AutenticadoOportunidadesRoute
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
@@ -387,12 +402,14 @@ export interface FileRoutesByTo {
   '/empresas/nova': typeof AutenticadoEmpresasNovaRoute
   '/importacao/$loteId': typeof AutenticadoImportacaoLoteIdRoute
   '/importacao/nova': typeof AutenticadoImportacaoNovaRoute
+  '/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/atividades': typeof AutenticadoAtividadesIndexRoute
   '/configuracoes': typeof AutenticadoConfiguracoesIndexRoute
   '/contatos': typeof AutenticadoContatosIndexRoute
   '/empresas': typeof AutenticadoEmpresasIndexRoute
   '/importacao': typeof AutenticadoImportacaoIndexRoute
+  '/oportunidades': typeof AutenticadoOportunidadesIndexRoute
   '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -416,7 +433,7 @@ export interface FileRoutesById {
   '/_autenticado/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/_autenticado/empresas': typeof AutenticadoEmpresasRouteWithChildren
   '/_autenticado/importacao': typeof AutenticadoImportacaoRouteWithChildren
-  '/_autenticado/oportunidades': typeof AutenticadoOportunidadesRoute
+  '/_autenticado/oportunidades': typeof AutenticadoOportunidadesRouteWithChildren
   '/_autenticado/prospeccao': typeof AutenticadoProspeccaoRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
@@ -436,12 +453,14 @@ export interface FileRoutesById {
   '/_autenticado/empresas/nova': typeof AutenticadoEmpresasNovaRoute
   '/_autenticado/importacao/$loteId': typeof AutenticadoImportacaoLoteIdRoute
   '/_autenticado/importacao/nova': typeof AutenticadoImportacaoNovaRoute
+  '/_autenticado/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/_autenticado/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
   '/_autenticado/atividades/': typeof AutenticadoAtividadesIndexRoute
   '/_autenticado/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
   '/_autenticado/contatos/': typeof AutenticadoContatosIndexRoute
   '/_autenticado/empresas/': typeof AutenticadoEmpresasIndexRoute
   '/_autenticado/importacao/': typeof AutenticadoImportacaoIndexRoute
+  '/_autenticado/oportunidades/': typeof AutenticadoOportunidadesIndexRoute
   '/_autenticado/contatos/$contatoId_/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/_autenticado/empresas/$empresaId_/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -484,12 +503,14 @@ export interface FileRouteTypes {
     | '/empresas/nova'
     | '/importacao/$loteId'
     | '/importacao/nova'
+    | '/oportunidades/$oportunidadeId'
     | '/perfil/seguranca'
     | '/atividades/'
     | '/configuracoes/'
     | '/contatos/'
     | '/empresas/'
     | '/importacao/'
+    | '/oportunidades/'
     | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
   fileRoutesByTo: FileRoutesByTo
@@ -506,7 +527,6 @@ export interface FileRouteTypes {
     | '/verificar-email'
     | '/consolidado'
     | '/criar-empresa'
-    | '/oportunidades'
     | '/prospeccao'
     | '/dev/catalogo'
     | '/configuracoes/carteira'
@@ -525,12 +545,14 @@ export interface FileRouteTypes {
     | '/empresas/nova'
     | '/importacao/$loteId'
     | '/importacao/nova'
+    | '/oportunidades/$oportunidadeId'
     | '/perfil/seguranca'
     | '/atividades'
     | '/configuracoes'
     | '/contatos'
     | '/empresas'
     | '/importacao'
+    | '/oportunidades'
     | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
   id:
@@ -573,12 +595,14 @@ export interface FileRouteTypes {
     | '/_autenticado/empresas/nova'
     | '/_autenticado/importacao/$loteId'
     | '/_autenticado/importacao/nova'
+    | '/_autenticado/oportunidades/$oportunidadeId'
     | '/_autenticado/perfil/seguranca'
     | '/_autenticado/atividades/'
     | '/_autenticado/configuracoes/'
     | '/_autenticado/contatos/'
     | '/_autenticado/empresas/'
     | '/_autenticado/importacao/'
+    | '/_autenticado/oportunidades/'
     | '/_autenticado/contatos/$contatoId_/editar'
     | '/_autenticado/empresas/$empresaId_/editar'
   fileRoutesById: FileRoutesById
@@ -892,6 +916,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoImportacaoNovaRouteImport
       parentRoute: typeof AutenticadoImportacaoRoute
     }
+    '/_autenticado/oportunidades/': {
+      id: '/_autenticado/oportunidades/'
+      path: '/'
+      fullPath: '/oportunidades/'
+      preLoaderRoute: typeof AutenticadoOportunidadesIndexRouteImport
+      parentRoute: typeof AutenticadoOportunidadesRoute
+    }
+    '/_autenticado/oportunidades/$oportunidadeId': {
+      id: '/_autenticado/oportunidades/$oportunidadeId'
+      path: '/$oportunidadeId'
+      fullPath: '/oportunidades/$oportunidadeId'
+      preLoaderRoute: typeof AutenticadoOportunidadesOportunidadeIdRouteImport
+      parentRoute: typeof AutenticadoOportunidadesRoute
+    }
     '/_autenticado/perfil/seguranca': {
       id: '/_autenticado/perfil/seguranca'
       path: '/perfil/seguranca'
@@ -1051,6 +1089,23 @@ const AutenticadoImportacaoRouteWithChildren =
     AutenticadoImportacaoRouteChildren,
   )
 
+interface AutenticadoOportunidadesRouteChildren {
+  AutenticadoOportunidadesOportunidadeIdRoute: typeof AutenticadoOportunidadesOportunidadeIdRoute
+  AutenticadoOportunidadesIndexRoute: typeof AutenticadoOportunidadesIndexRoute
+}
+
+const AutenticadoOportunidadesRouteChildren: AutenticadoOportunidadesRouteChildren =
+  {
+    AutenticadoOportunidadesOportunidadeIdRoute:
+      AutenticadoOportunidadesOportunidadeIdRoute,
+    AutenticadoOportunidadesIndexRoute: AutenticadoOportunidadesIndexRoute,
+  }
+
+const AutenticadoOportunidadesRouteWithChildren =
+  AutenticadoOportunidadesRoute._addFileChildren(
+    AutenticadoOportunidadesRouteChildren,
+  )
+
 interface AutenticadoRouteChildren {
   AutenticadoAtividadesRoute: typeof AutenticadoAtividadesRouteWithChildren
   AutenticadoConfiguracoesRoute: typeof AutenticadoConfiguracoesRouteWithChildren
@@ -1059,7 +1114,7 @@ interface AutenticadoRouteChildren {
   AutenticadoCriarEmpresaRoute: typeof AutenticadoCriarEmpresaRoute
   AutenticadoEmpresasRoute: typeof AutenticadoEmpresasRouteWithChildren
   AutenticadoImportacaoRoute: typeof AutenticadoImportacaoRouteWithChildren
-  AutenticadoOportunidadesRoute: typeof AutenticadoOportunidadesRoute
+  AutenticadoOportunidadesRoute: typeof AutenticadoOportunidadesRouteWithChildren
   AutenticadoProspeccaoRoute: typeof AutenticadoProspeccaoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
   AutenticadoPerfilSegurancaRoute: typeof AutenticadoPerfilSegurancaRoute
@@ -1073,7 +1128,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoCriarEmpresaRoute: AutenticadoCriarEmpresaRoute,
   AutenticadoEmpresasRoute: AutenticadoEmpresasRouteWithChildren,
   AutenticadoImportacaoRoute: AutenticadoImportacaoRouteWithChildren,
-  AutenticadoOportunidadesRoute: AutenticadoOportunidadesRoute,
+  AutenticadoOportunidadesRoute: AutenticadoOportunidadesRouteWithChildren,
   AutenticadoProspeccaoRoute: AutenticadoProspeccaoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
   AutenticadoPerfilSegurancaRoute: AutenticadoPerfilSegurancaRoute,

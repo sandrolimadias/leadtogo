@@ -145,6 +145,7 @@ const item = (n: number, extra: Partial<ItemDaLista> = {}): ItemDaLista => ({
   ultimaVisitaEm: diasAtras(120),
   ultimoContatoEm: diasAtras(5),
   proximaAtividadeEm: null,
+  emAberto: 0,
   situacaoNaoVerificada: false,
   editavel: true,
   ...extra,
@@ -226,7 +227,7 @@ function temRolagemPropria(el: Element): boolean {
 }
 
 describe('Empresas: a lista', () => {
-  it('mostra o título, a contagem e as colunas decididas (sem Vendedor nem "Em aberto")', async () => {
+  it('mostra o título, a contagem e as colunas decididas (sem Vendedor, com "Em aberto")', async () => {
     const s = servicos()
     await abrir(s)
     expect(await screen.findByText('2 empresas na carteira')).toBeInTheDocument()
@@ -242,6 +243,7 @@ describe('Empresas: a lista', () => {
       'Última visita',
       'Último contato',
       'Próxima atividade',
+      'Em aberto',
     ])
     expect(screen.getByRole('button', { name: 'Nova empresa' })).toBeInTheDocument()
     // administrador e gestor importam planilha; o vendedor não vê o botão

@@ -1,5 +1,10 @@
 import type {
   Atividade,
+  KanbanDeOportunidades,
+  ListaDeOportunidades,
+  Oportunidade,
+  OportunidadeDetalhada,
+  ResultadoDoMovimento,
   AndamentoDaImportacao,
   CnaesConferidos,
   ConfiguracaoDaCarteira,
@@ -42,6 +47,11 @@ import type {
 } from '@leadtogo/api-client'
 import type {
   AlterarAtividadeEntrada,
+  AlterarOportunidadeEntrada,
+  ConsultaDeOportunidadesEntrada,
+  ConsultaDoKanbanEntrada,
+  CriarOportunidadeEntrada,
+  FecharOportunidadeEntrada,
   ConcluirAtividadeEntrada,
   ConsultaDeAtividadesEntrada,
   CriarAtividadeEntrada,
@@ -217,6 +227,25 @@ export interface ServicosDeAtividades {
   excluir: (id: string) => Promise<Resultado>
 }
 
+/** Oportunidades (Módulo 6): o funil de vendas. Segue a regra de carteira da API. */
+export interface ServicosDeOportunidades {
+  /** O Kanban de um funil (sem `funilId`, o padrão): só as Ativas, nas fases ativas */
+  kanban: (consulta: ConsultaDoKanbanEntrada) => Promise<Resultado<KanbanDeOportunidades>>
+  /** A lista simples, de qualquer status, com filtros e paginação */
+  listar: (consulta: ConsultaDeOportunidadesEntrada) => Promise<Resultado<ListaDeOportunidades>>
+  criar: (dados: CriarOportunidadeEntrada) => Promise<Resultado<Oportunidade>>
+  /** A ficha, com o histórico de fases e de status. 404 `oportunidade_nao_encontrada` */
+  detalhar: (id: string) => Promise<Resultado<OportunidadeDetalhada>>
+  alterar: (id: string, dados: AlterarOportunidadeEntrada) => Promise<Resultado<Oportunidade>>
+  /** Muda de fase; devolve o aviso quando a probabilidade foi editada à mão. 409 `oportunidade_nao_ativa` */
+  mover: (id: string, faseId: string) => Promise<Resultado<ResultadoDoMovimento>>
+  /** Conquistado, Perdido, Cancelado ou Suspenso (motivo e "retomar em" conforme o status) */
+  fechar: (id: string, dados: FecharOportunidadeEntrada) => Promise<Resultado<Oportunidade>>
+  reabrir: (id: string) => Promise<Resultado<Oportunidade>>
+  /** Exclusão lógica, só de gestor e administrador */
+  excluir: (id: string) => Promise<Resultado>
+}
+
 /**
  * Cadastro simples da empresa ativa (verticais, soluções, origens, motivos, tipos de atividade): a
  * mesma forma de API para os cinco. Só o administrador escreve.
@@ -364,4 +393,7 @@ export interface ServicosDeAcesso {
 
   // Atividades (Módulo 5)
   atividades: ServicosDeAtividades
+
+  // Oportunidades (Módulo 6)
+  oportunidades: ServicosDeOportunidades
 }
