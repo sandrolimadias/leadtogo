@@ -15,7 +15,7 @@ import { Redis } from 'ioredis'
 import request from 'supertest'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { configuracaoDaTeste } from './dashboard.helper.js'
+import { configuracaoDaTeste } from '../testes/dashboard.js'
 import type { RespostaDeErro } from '../http/filtro-excecoes.js'
 import { criarAppComRotas } from '../testes/app-teste.js'
 import { limparLimitesAuth, ORIGEM_DO_FRONT } from '../testes/auth-teste.js'
