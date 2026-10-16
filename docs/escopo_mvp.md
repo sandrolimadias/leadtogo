@@ -26,7 +26,7 @@ Grupos de tags e tags (**Status** e **Visitação**), tipos de atividade, vertic
 - **API** em `/v1/configuracoes/...` (tag-grupos, tags, tipos-atividade, verticais, solucoes, origens, motivos, funis): ler é de qualquer membro, escrever é do administrador; auditoria, exclusão lógica, nome único e reordenação.
 - **Telas** em Configurações: Tags, Tipos de atividade, Funis e fases, Origens e motivos, Verticais e soluções (reordenar por botões, sem arrastar).
 - **O que o sistema protege:** grupos Status e Visitação (só renomear); tags `lead`, `cliente`, `visitada` e `contactada` (renomear e recolorir, sem inativar nem excluir); origem **Importação** e tipo **Tarefa** (idem; a Tarefa fica sempre com empresa opcional e sem contar como visita ou contato); o **funil padrão** (sempre exatamente um, garantido também por índice único no banco) e a **última fase** de um funil.
-- **Faixas de funcionários e de faturamento** ficaram fora do MVP (ver seção 3).
+- **Faixas de funcionários e de faturamento** ficaram fora do MVP (ver `backlog_pos_mvp.md`).
 
 **Regra de exclusão de todos os cadastros** (decidida em 13/10/2026; registrada em `funcionalidades.md`, seção 11): **só se exclui o que nunca foi usado; o que já foi usado só se inativa**, para preservar o histórico. Vale para tags, grupos de tags, tipos de atividade, origens, motivos, soluções, verticais, funis e fases. A API do Módulo 1 ainda **não confere o uso**, porque ainda não há onde usar; cada verificação entra, **com teste**, junto da tabela que passa a usar o cadastro:
 
@@ -241,7 +241,7 @@ Formulário **Registrar atividade** (protótipo), situação, resultado, importa
 - **Quem vê e quem edita:** admin e gestor, tudo. O vendedor vê a atividade da empresa que ele vê e edita a da própria carteira; **atribui atividade só a si mesmo**. A **Tarefa sem empresa** só o responsável, o gestor e o administrador veem.
 - **Contato** precisa ter vínculo ativo com a empresa da atividade; trocar de empresa sem dizer o contato tira o contato.
 - **Desfazer importação:** empresa com qualquer atividade fica na carteira.
-- **Fora do Módulo 5, para depois do MVP:** registrado na tabela da seção 3 ("Fora do MVP"), na linha de cada item, e em `roteiro_teste_modulo5.md`. A tela do formulário **não tem** o bloco "Mais opções" do desenho com Oportunidade, Lembrete e Repetir (só o Responsável, para administrador e gestor).
+- **Fora do Módulo 5, para depois do MVP:** registrado em `backlog_pos_mvp.md` (tema Atividades) e em `roteiro_teste_modulo5.md`. A tela do formulário **não tem** o bloco "Mais opções" do desenho com Oportunidade, Lembrete e Repetir (só o Responsável, para administrador e gestor).
 
 ### Módulo 6 — Oportunidades ✅ *concluído e aprovado pelo Ale (16/10/2026; roteiro em `docs/roteiro_teste_modulo6.md`; plano aprovado em 16/10/2026)*
 **Kanban por funil**, arrastar entre fases, **diálogo de fechamento** (Conquistado/Perdido/Cancelado/Suspenso, motivo, *retomar em*, empresa vira Cliente), **valores digitados** (único, mensal, total), probabilidade sugerida pela etapa, histórico de fases e lista simples.
@@ -273,8 +273,23 @@ Formulário **Registrar atividade** (protótipo), situação, resultado, importa
 
 - **Regra de fase e funil (12/10 e 13/10/2026):** fase com oportunidades **ativas** só sai de uso depois de **mover** essas oportunidades. Com a regra geral de 13/10/2026 (só se exclui o que nunca foi usado), uma fase que **já teve** oportunidades, mesmo só fechadas, **só se inativa**: a decisão de 12/10 de poder excluí-la quando só há fechadas fica **substituída**, e o histórico de fases e a "fase em que parou" seguem intactos. O mesmo vale para o **funil**. A API de funis (Módulo 1) ainda não confere isso, porque ainda não há oportunidades: a verificação entra junto com a tabela `oportunidades`, com teste.
 
-### Módulo 7 — Dashboard
+### Módulo 7 — Dashboard *(no ar em dev; aguardando o envio e o teste do Ale; roteiro em `docs/roteiro_teste_modulo7.md`; plano aprovado em 16/10/2026)*
 Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase, previsão do mês, conquistadas × perdidas, carteira por status e sem contato há 60 dias. **Só a visão "Minha".**
+
+**Decisões do Ale (16/10/2026), ao aprovar o plano**
+1. **Taxa de conversão** = conquistadas ÷ (conquistadas + perdidas). As canceladas ficam fora da taxa, mas entram na soma "Perdidas e canceladas".
+2. **MRR conquistado** = soma do valor mensal das conquistadas no período, pela data de fechamento; variação sobre o período anterior do mesmo tipo; mini-gráfico dos últimos 6 meses.
+3. **Trimestre** = trimestre do calendário; o período anterior do trimestre é o trimestre anterior.
+4. **Previsão** = ponderado das ativas com data prevista dentro do período; as sem data aparecem como "N sem previsão", fora da soma.
+5. **Abas de atividades sem sobreposição**: Hoje, Atrasadas, Próximos 7 dias.
+6. **"Sem contato"** só Cliente e Prospect, pelas **chaves de sistema** (nunca pelo nome), incluindo as nunca contatadas, com o prazo configurado na empresa.
+7. **"Novos no período"** = empresas cadastradas ou importadas no período, sem o texto da prospecção.
+8. O rodapé "Quadro de tarefas" sai; entra o atalho "Ver todas as atividades".
+- **Sem índice novo e sem migração**; todos os números no fuso da empresa (America/Sao_Paulo), com testes de borda de mês (22h do último dia e 00h30 do primeiro); mesma regra de layout.
+- **Gráficos interativos (Recharts, padrão shadcn/ui Charts):** cores só dos tokens (claro e escuro); biblioteca carregada **só na rota do Dashboard**; tooltip com quantidade, R$ e percentual (mouse, toque e foco do teclado); **clique leva à lista filtrada** (fase do funil → Oportunidades do funil na fase; status da carteira → Empresas com o status; motivo de perda → perdidas e canceladas com o motivo no período; mês do MRR → conquistadas do mês); animação na troca de período respeitando `prefers-reduced-motion`; estados vazio, carregando e erro em cada gráfico. Regra geral em `design_system.md`, seção "Gráficos".
+
+**Entregue:** `GET /v1/carteira/dashboard` (todos os números calculados no banco, no fuso da empresa), abas `hoje` e `proximos7` na lista de atividades (mesmas contas da tela Atividades), filtro `semContato` na lista de Empresas e filtros de motivo, perdas e período de fechamento na lista de Oportunidades; a tela do Dashboard (indicadores, minhas atividades com conclusão rápida, funil, conquistadas × perdidas e canceladas, motivos de perda e carteira); 14 testes da API, 17 de tela, 5 dos links dos cliques e 2 E2E (clique no gráfico do funil, tooltip, conclusão rápida, tema escuro e a página que não rola). **Junto, a pedido do Ale:** correção do executor da importação (corrida entre dois executores) e a regra "só se inativa o que já foi usado" para tipos de atividade, motivos, origens e soluções.
+- **Backlog único de pós-MVP:** `docs/backlog_pos_mvp.md` (este documento só aponta para ele; a seção 3 abaixo ficou com os grandes blocos).
 
 ### Transversal (entra junto dos módulos em que fizer sentido)
 - **Busca global** (empresas, contatos, oportunidades).
@@ -292,50 +307,20 @@ Minhas atividades (Hoje, Atrasadas, 7 dias, conclusão rápida), funil por fase,
 
 ## 3. Fora do MVP (e por quê)
 
-| Item | Motivo |
-|---|---|
-| **Prospecção** | **Fase própria logo após o MVP.** Exige a base completa de CNPJs; a API pública da Minha Receita não busca por CNAE + município. **Direção (12/10/2026):** instância **própria** da Minha Receita (código aberto), com a base completa da Receita, o que permite buscar por município (IBGE), CNAE principal, situação, matriz e porte/MEI direto no banco e tira a dependência da API pública. Também é o que permite escalar a importação com vários clientes. Reaproveita os perfis de regras do Módulo 4 |
-| Kanban de Tarefas | Com um usuário só, "Minhas atividades" do Dashboard cobre o dia a dia |
-| Catálogo de produtos/itens | O MVP usa valores digitados na oportunidade (único, mensal, total) |
-| Campos personalizados | Não há necessidade comprovada; os campos fixos cobrem o uso inicial |
-| Recorrência e lembretes | Dependem da central de notificações e de rotinas no worker |
-| ~~Atividade: oportunidade vinculada~~ | **Entregue no Módulo 6**: `atividades.oportunidade_id` e o campo "Oportunidade" em "Mais opções" do formulário |
-| Oportunidade: itens e catálogo de produtos e serviços | Decisão do Ale (16/10/2026): o MVP usa valores digitados (único, mensal e meses); `oportunidade_itens`, `produtos` e `valor_manual` seguem só na modelagem |
-| Oportunidade: campos personalizados (`campos_extras`) e filtros salvos | Decisão do Ale (16/10/2026): fora do MVP |
-| Oportunidade: exportação da lista | Fora do MVP (a exportação em geral) |
-| Oportunidade: mudar de funil | Só se move de fase dentro do funil; trocar de funil fica para depois |
-| Oportunidade: mais de um contato | Só o contato principal; os outros (`oportunidade_contatos`) ficam para depois |
-| Oportunidade: previsão do mês, conquistadas × perdidas e motivos de perda | Módulo 7 (Dashboard) |
-| Oportunidade: e-mail e WhatsApp, comentários e notificação de parada | Fases de integração e central de notificações |
-| Oportunidade: acima de 100 cards por coluna no Kanban | O quadro traz 100 por fase e avisa "e mais N"; a busca e a Lista alcançam o resto |
-| Oportunidade: probabilidade 100% ao conquistar | Não pedido; a conquistada guarda a probabilidade que tinha |
-| Atividade: vários contatos (tabela `atividade_contatos`) | Decisão do Ale em 15/10/2026: um contato por atividade (`contato_id`); o N:N fica para depois do MVP |
-| Atividade: lembretes ("Notificar em"), recorrência ("Repetir"), checklist, etiquetas e anexos | Dependem da central de notificações, do worker e do Kanban de Tarefas; as tabelas `atividade_lembretes`, `atividade_recorrencias`, `atividade_checklist` e `atividade_etiquetas` seguem só na modelagem |
-| Atividade: `id_externo` e check-in com GPS | Adiados pelo Ale em 15/10/2026 (WhatsApp, e-mail, agenda e visita com localização); `origem` já existe, com padrão `manual` |
-| Atividade: situação "Em execução" na tela | Existe no banco e na API; a tela usa Realizada, Pendente e Cancelada |
-| Atividade: reabrir cancelada ou realizada | Não pedido; para refazer, registra-se outra atividade |
-| Atividade: validade da tag de visita (`dias_validade_tag_visita`) | Opcional na regra, sem tela de configuração; hoje a tag só sai quando não resta atividade realizada do tipo |
-| Atividade: fuso da empresa editável pela tela | O fuso é `America/Sao_Paulo` (`tenant_configuracoes.fuso_horario`); a tela de escolha vem quando houver empresa em outro fuso |
-| Atividade: fuso do aparelho × fuso da empresa nas telas | As datas aparecem no fuso do aparelho; "hoje" e "atrasada" são do servidor, no fuso da empresa. Mostrar tudo no fuso da empresa fica para quando houver mais de um |
-| Atividade: "Próxima atividade" em vermelho nas listas de Empresas e fichas | A API informa a data; a tela da lista e da ficha não destaca a atrasada (a tela Atividades destaca) |
-| Atividade: aviso na empresa de que há atividade atrasada, e notificação de atraso | Central de notificações fora do MVP |
-| Atividade: criação de atividade em lote e exportação | Não pedido |
-| Atividade: ações em massa na tela Atividades (concluir, cancelar, transferir) | Não pedido; vem junto com a visão de Equipe |
-| Atividades no Histórico da empresa | O Histórico mostra as tags aplicadas pelo sistema; cada atividade tem linha própria na aba Atividades |
-| Conclusão rápida no Dashboard e "Minhas atividades" | Módulo 7 (Dashboard) |
-| Central de notificações e push | Um usuário só; o Dashboard mostra o que está atrasado |
-| Filtros salvos personalizados | Os chips fixos da lista de Empresas bastam |
-| Visão Equipe e transferência de carteira | Só há um usuário |
-| Painel consolidado | Só há uma empresa em uso |
-| Copiar configurações entre empresas | Só há uma empresa em uso |
-| Offline | Complexidade alta; o PWA exige conexão no MVP |
-| Atualização campo a campo pela Receita e rotina mensal | A consulta inicial e o enriquecimento da importação cobrem o MVP |
-| Faixas de funcionários e de faturamento (cadastros e campos na empresa) | Decidido em 12/10/2026: não entram no MVP; a empresa não tem esses campos até uma fase posterior (`faixas_*` ficam só na modelagem) |
-| Importação de contatos por planilha (ex-Módulo 4b) | Decidido em 15/10/2026, depois do teste do Módulo 4: o contato entra pela ficha e pela conversão de sócio. Quando vier, reaproveita o assistente do Módulo 4 (enviar, mapear, prévia, carteira, importar, relatório e desfazer), ligando o contato à empresa pelo CNPJ ou pelo nome; o envio recusa `tipo` diferente de empresas até lá |
-| Detecção de duplicados por similaridade | O MVP deduplica só por CNPJ |
-| Exportação | O Ale tem a planilha de origem; sai com a exportação de dados por tenant (LGPD) |
-| Integrações (WhatsApp, e-mail, agendas, n8n) | Fases 4 a 7 de `funcionalidades.md` |
-| Mapa e rotas | Fases 2 e 3 de `funcionalidades.md` |
+> **O backlog completo mora em [`backlog_pos_mvp.md`](backlog_pos_mvp.md)** (item, motivo e origem, por tema: Carteira e Empresas, Contatos, Importação, Atividades, Oportunidades, Dashboard, Integrações, SaaS, Infraestrutura e esteira, Segurança e LGPD). Aqui ficam só os **grandes blocos**; qualquer item novo que ficar de fora entra lá, não aqui.
+
+| Bloco | Motivo | No backlog |
+|---|---|---|
+| **Prospecção** (busca por CNAE e município na base completa) | Fase própria logo após o MVP; exige a base completa de CNPJs e a instância própria da Minha Receita (decisão de 12/10/2026) | Carteira e Empresas; SaaS |
+| **Integrações** (WhatsApp, e-mail, agendas Google e Microsoft, n8n e API pública) | Fases 4 a 7 de `funcionalidades.md` | Integrações |
+| **Kanban de Tarefas**, lembretes, recorrência, central de notificações e push | Com um usuário só, "Minhas atividades" do Dashboard cobre o dia a dia; dependem do worker e das notificações | Atividades |
+| **Itens e catálogo de produtos** da oportunidade, campos personalizados e filtros salvos | Decisões do Ale (Módulo 6): o MVP usa valores digitados | Oportunidades; Carteira e Empresas |
+| **Várias pessoas e várias empresas** (visão Equipe, transferência de carteira, Painel consolidado, copiar configurações) | Só há um usuário e uma empresa em uso | Carteira e Empresas; Dashboard |
+| **Mapa e rotas**, **offline** | Fases 2 e 3 de `funcionalidades.md`; o PWA exige conexão no MVP | Carteira e Empresas |
+| **Exportação**, lixeira e restauração, mesclar duplicados | Fora do MVP; o contato e a empresa seguem exclusão lógica | Carteira e Empresas; Contatos |
+| **Faixas de funcionários e de faturamento** | Decidido em 12/10/2026 | Carteira e Empresas |
+| **Importação de contatos por planilha** e relatório completo em Excel | Decidido em 15/10/2026; o MVP importa empresas | Importação; Contatos |
+| **Trilha antes do primeiro cliente externo** (`acessos_log` de 6 meses, limpeza de sessões, retenção da auditoria, ensaio de restauração, revisão jurídica) e **a volta dos testes e do E2E à esteira** (runner próprio) | Não bloqueia o uso do Ale | Segurança e LGPD; Infraestrutura e esteira |
 
 > As tabelas e o desenho dos itens acima **continuam em `modelagem_banco.md`**. O MVP só não cria as tabelas de que não precisa; cada uma entra, por migração, quando o item for implementado.
 

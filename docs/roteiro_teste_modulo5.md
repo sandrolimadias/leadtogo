@@ -107,13 +107,13 @@ Use uma empresa com **uma única visita realizada** (a de 2 dias atrás, por exe
 
 ---
 
-## O que ficou de fora e por quê (fica para depois do MVP; a lista completa está em `escopo_mvp.md`, seção 3)
+## O que ficou de fora e por quê (fica para depois do MVP; a lista completa está em `backlog_pos_mvp.md`)
 | Item | Motivo |
 |---|---|
 | Oportunidade dentro da atividade | A tabela `oportunidades` só nasce no Módulo 6; a coluna entra lá |
 | Vários contatos por atividade (N:N) | Decisão do Ale: um contato por atividade; a tabela N:N fica para depois |
 | Lembretes ("Notificar em") | Dependem da central de notificações e do worker (fora do MVP) |
-| Recorrência ("Repetir") | Idem; fora do MVP (`escopo_mvp.md`, seção 3) |
+| Recorrência ("Repetir") | Idem; fora do MVP (`backlog_pos_mvp.md`) |
 | Checklist, etiquetas e anexos | Servem ao Kanban de Tarefas e ao WhatsApp, fora do MVP |
 | `id_externo` e check-in com GPS | Adiados pelo Ale; `origem` entra agora com o padrão "manual" |
 | Situação "Em execução" na tela | Existe na API e no banco; a tela usa Realizada, Pendente e Cancelada (o Ale registra o que fez ou agenda) |
