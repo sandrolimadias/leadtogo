@@ -24,6 +24,7 @@ import { Avatar, Badge } from '@/components/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { Menu } from '@/components/ui/menu'
 import { ConteudoDaAba, Tabs } from '@/components/ui/tabs'
+import { AtividadesDaFicha } from '@/telas/atividades/na-ficha'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
@@ -40,6 +41,7 @@ const rota = getRouteApi('/_autenticado/contatos/$contatoId')
 
 const ABAS = [
   { value: 'resumo', label: 'Resumo' },
+  { value: 'atividades', label: 'Atividades' },
   { value: 'historico', label: 'Histórico' },
 ]
 
@@ -467,6 +469,17 @@ export function FichaDoContato() {
                 aoMudar={(naoQuer) => void mudarConsentimento(naoQuer)}
               />
             </div>
+          </ConteudoDaAba>
+          <ConteudoDaAba value="atividades">
+            <AtividadesDaFicha
+              filtro={{ contatoId: c.id }}
+              inicio={{
+                contatoId: c.id,
+                ...(principal ? { empresa: principal.empresa } : {}),
+              }}
+              podeRegistrar={c.permissoes.editar && principal !== undefined}
+              mostrarEmpresa
+            />
           </ConteudoDaAba>
           <ConteudoDaAba value="historico">
             <HistoricoAba

@@ -318,6 +318,49 @@ export const servicosReais: ServicosDeAcesso = {
       ),
   },
 
+  atividades: {
+    criar: (dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/carteira/atividades', { body: dados as never })),
+      ),
+    listar: (consulta) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/carteira/atividades', { params: { query: consulta as never } })),
+      ),
+    detalhar: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/carteira/atividades/{id}', { params: { path: { id } } })),
+      ),
+    alterar: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.PATCH('/v1/carteira/atividades/{id}', {
+            params: { path: { id } },
+            body: dados as never,
+          }),
+        ),
+      ),
+    concluir: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/atividades/{id}/concluir', {
+            params: { path: { id } },
+            body: dados as never,
+          }),
+        ),
+      ),
+    cancelar: (id) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/carteira/atividades/{id}/cancelar', { params: { path: { id } } }),
+        ),
+      ),
+    excluir: (id) =>
+      protegido(async () =>
+        semCorpo(await api.DELETE('/v1/carteira/atividades/{id}', { params: { path: { id } } })),
+      ),
+  },
+
   configuracaoDaCarteira: () =>
     protegido(async () => daApi(await api.GET('/v1/configuracoes/carteira'))),
   alterarConfiguracaoDaCarteira: (patch) =>

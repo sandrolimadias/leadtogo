@@ -18,9 +18,18 @@ const RESULTADOS = 8
 export function FiltroDeEmpresa({
   valor,
   aoMudar,
+  placeholder = 'Empresa: todas',
+  semTodas = false,
+  nomeInicial,
 }: {
   valor: string | undefined
-  aoMudar: (id: string | undefined) => void
+  aoMudar: (id: string | undefined, nome?: string) => void
+  /** O que o campo diz quando nenhuma empresa está escolhida */
+  placeholder?: string
+  /** Escolha de uma empresa (formulário), não filtro: sem a opção "Todas as empresas" */
+  semTodas?: boolean
+  /** O nome da empresa de `valor`, quando já se sabe (evita buscar de novo) */
+  nomeInicial?: string
 }) {
   const servicos = useServicos()
   const [aberto, setAberto] = useState(false)
@@ -50,7 +59,8 @@ export function FiltroDeEmpresa({
     },
   })
 
-  const nomeConhecido = escolhida && escolhida.id === valor ? escolhida.nome : undefined
+  const nomeConhecido =
+    escolhida && escolhida.id === valor ? escolhida.nome : valor ? nomeInicial : undefined
   const nomeDaUrl = useQuery({
     queryKey: ['contatos', 'empresa-do-filtro', valor],
     enabled: Boolean(valor) && nomeConhecido === undefined,
@@ -64,7 +74,7 @@ export function FiltroDeEmpresa({
 
   const escolher = (empresa: { id: string; nome: string } | null) => {
     setEscolhida(empresa)
-    aoMudar(empresa?.id)
+    aoMudar(empresa?.id, empresa?.nome)
     setAberto(false)
     setTexto('')
     setTermo('')
@@ -86,7 +96,7 @@ export function FiltroDeEmpresa({
               nome ? 'text-ink' : 'text-ink-subtle',
             )}
           >
-            <span className="truncate">{nome ?? 'Empresa: todas'}</span>
+            <span className="truncate">{nome ?? placeholder}</span>
           </button>
         </Popover.Trigger>
         {valor ? (
@@ -146,7 +156,7 @@ export function FiltroDeEmpresa({
             aria-label="Empresas encontradas"
             className="m-0 flex max-h-72 list-none flex-col gap-0.5 overflow-y-auto p-0"
           >
-            {valor ? (
+            {valor && !semTodas ? (
               <li>
                 <button
                   type="button"

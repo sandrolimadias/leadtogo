@@ -75,7 +75,7 @@ const OPCOES_CONTA_COMO = [
 const ehTarefa = (t: TipoAtividade | null) => t?.chaveSistema === 'tarefa'
 
 /** Bolha colorida com o ícone do tipo (como na linha do tempo e na agenda). */
-function Bolha({ icone, cor }: { icone: string; cor: string }) {
+export function BolhaDoTipo({ icone, cor }: { icone: string; cor: string }) {
   const Icone = ICONE_POR_NOME[icone] ?? CalendarCheck
   return (
     <span
@@ -114,7 +114,7 @@ const config: ConfigDaLista<
   servicos: (s) => s.cadastros.tiposAtividade,
   linha: (t) => (
     <>
-      <Bolha icone={t.icone} cor={t.cor} />
+      <BolhaDoTipo icone={t.icone} cor={t.cor} />
       <span className="font-semibold">{t.nome}</span>
       {t.contaComo === 'visita' ? <Badge tone="accent">Conta como visita</Badge> : null}
       {t.contaComo === 'contato' ? <Badge tone="accent">Conta como contato</Badge> : null}

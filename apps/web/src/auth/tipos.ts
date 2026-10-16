@@ -1,4 +1,5 @@
 import type {
+  Atividade,
   AndamentoDaImportacao,
   CnaesConferidos,
   ConfiguracaoDaCarteira,
@@ -14,6 +15,7 @@ import type {
   EmpresaCriada,
   HistoricoDaEmpresa,
   ContatoDaEmpresa,
+  ListaDeAtividades,
   ListaDeContatos,
   LinhasDaImportacao,
   ListaDeEmpresas,
@@ -39,6 +41,10 @@ import type {
   Vertical,
 } from '@leadtogo/api-client'
 import type {
+  AlterarAtividadeEntrada,
+  ConcluirAtividadeEntrada,
+  ConsultaDeAtividadesEntrada,
+  CriarAtividadeEntrada,
   AlterarContatoEntrada,
   AlterarVinculoEntrada,
   VincularContatoEntrada,
@@ -195,6 +201,22 @@ export interface ServicosDeContatos {
   daEmpresa: (empresaId: string) => Promise<Resultado<ContatoDaEmpresa[]>>
 }
 
+/** Atividades (Módulo 5): agenda e histórico da carteira. Segue a regra de carteira da API. */
+export interface ServicosDeAtividades {
+  /** Registra (Realizada, com resultado, ou Pendente). 400 `atividade_no_futuro`, `empresa_obrigatoria`, `contato_invalido` */
+  criar: (dados: CriarAtividadeEntrada) => Promise<Resultado<Atividade>>
+  /** A lista, com as abas Agendadas, Atrasadas e Realizadas (sem aba: a linha do tempo) e suas contagens */
+  listar: (consulta: ConsultaDeAtividadesEntrada) => Promise<Resultado<ListaDeAtividades>>
+  detalhar: (id: string) => Promise<Resultado<Atividade>>
+  /** Só o que vier muda. 409 `atividade_cancelada` */
+  alterar: (id: string, dados: AlterarAtividadeEntrada) => Promise<Resultado<Atividade>>
+  /** Conclui uma atividade aberta (resultado obrigatório). 409 `atividade_nao_aberta` */
+  concluir: (id: string, dados: ConcluirAtividadeEntrada) => Promise<Resultado<Atividade>>
+  cancelar: (id: string) => Promise<Resultado<Atividade>>
+  /** Exclusão lógica */
+  excluir: (id: string) => Promise<Resultado>
+}
+
 /**
  * Cadastro simples da empresa ativa (verticais, soluções, origens, motivos, tipos de atividade): a
  * mesma forma de API para os cinco. Só o administrador escreve.
@@ -339,4 +361,7 @@ export interface ServicosDeAcesso {
 
   // Importação de planilha (Módulo 4)
   importacao: ServicosDeImportacao
+
+  // Atividades (Módulo 5)
+  atividades: ServicosDeAtividades
 }

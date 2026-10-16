@@ -294,15 +294,17 @@ describe('Ficha da empresa: cabeçalho', () => {
     )
   })
 
-  it('o que é dos módulos seguintes fica escondido: abas, botões e "chega no Módulo X"', async () => {
+  it('o que é dos módulos seguintes fica escondido: Oportunidades e "chega no Módulo X"', async () => {
     await abrir(servicos())
-    // Contatos já existe (Módulo 3); Atividades e Oportunidades esperam os Módulos 5 e 6
+    // Contatos (Módulo 3) e Atividades (Módulo 5) existem; Oportunidades espera o Módulo 6
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
       'Resumo',
       'Contatos (0)',
+      'Atividades',
       'Histórico',
     ])
-    for (const nome of ['Nova atividade', 'Nova oportunidade', 'Vincular contato']) {
+    expect(await screen.findByRole('button', { name: 'Nova atividade' })).toBeInTheDocument()
+    for (const nome of ['Nova oportunidade', 'Vincular contato']) {
       expect(screen.queryByRole('button', { name: nome })).toBeNull()
     }
     expect(screen.queryByText(/Módulo \d/)).toBeNull()
@@ -777,7 +779,7 @@ describe('Ficha da empresa: Editar tags', () => {
 })
 
 describe('Ficha da empresa: no celular', () => {
-  it('traz Ligar, WhatsApp e Rota em botões grandes, sem o caminho de volta nem o "Atividade"', async () => {
+  it('traz Ligar, WhatsApp, Rota e Atividade em botões grandes, sem o caminho de volta', async () => {
     largura(390)
     const x = servicos()
     renderizar(x.s, `/empresas/${id(100)}`)
@@ -790,7 +792,7 @@ describe('Ficha da empresa: no celular', () => {
       'google.com/maps/dir/?api=1&destination=RUA%20PONTA',
     )
     expect(screen.queryByRole('navigation', { name: 'Você está em' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Atividade/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Atividade' })).toBeInTheDocument()
   })
 })
 

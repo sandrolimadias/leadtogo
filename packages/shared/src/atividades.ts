@@ -192,6 +192,7 @@ export const alterarAtividadeSchema = z
   .refine((v) => Object.keys(v).length > 0, 'informe ao menos um campo')
   .meta({ id: 'AlterarAtividadeEntrada' })
 export type AlterarAtividade = z.output<typeof alterarAtividadeSchema>
+export type AlterarAtividadeEntrada = z.input<typeof alterarAtividadeSchema>
 
 /** Concluir uma atividade aberta: o resultado é obrigatório; sem `realizadaEm`, vale agora. */
 export const concluirAtividadeSchema = z
@@ -202,6 +203,7 @@ export const concluirAtividadeSchema = z
   .strict()
   .meta({ id: 'ConcluirAtividadeEntrada' })
 export type ConcluirAtividade = z.output<typeof concluirAtividadeSchema>
+export type ConcluirAtividadeEntrada = z.input<typeof concluirAtividadeSchema>
 
 export const consultaDeAtividadesSchema = z
   .object({

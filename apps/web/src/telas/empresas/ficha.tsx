@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import {
   Building2,
+  CalendarPlus,
   Check,
   ChevronRight,
   Ellipsis,
@@ -25,6 +26,8 @@ import { Avatar, Badge, Tag } from '@/components/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { Menu } from '@/components/ui/menu'
 import { ConteudoDaAba, Tabs } from '@/components/ui/tabs'
+import { AtividadesDaFicha } from '@/telas/atividades/na-ficha'
+import { useRegistrarAtividade } from '@/telas/atividades/registro-contexto'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
@@ -45,6 +48,7 @@ const abasDaEmpresa = (contatosAtivos: number | undefined) => [
     value: 'contatos',
     label: contatosAtivos === undefined ? 'Contatos' : `Contatos (${contatosAtivos})`,
   },
+  { value: 'atividades', label: 'Atividades' },
   { value: 'historico', label: 'Histórico' },
 ]
 
@@ -113,6 +117,7 @@ export function FichaDaEmpresa() {
   const celular = useDispositivo() === 'celular'
 
   const [aba, setAba] = useState('resumo')
+  const { abrir: abrirAtividade } = useRegistrarAtividade()
   const [editandoTags, setEditandoTags] = useState(false)
   const [salvandoTags, setSalvandoTags] = useState(false)
   const [convertendoSocio, setConvertendoSocio] = useState<string | null>(null)
@@ -390,6 +395,15 @@ export function FichaDaEmpresa() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {e.permissoes.editar && !celular ? (
+              <Button
+                variant="primary"
+                icon={CalendarPlus}
+                onClick={() => abrirAtividade({ empresa: { id: e.id, nome: e.nome } })}
+              >
+                Nova atividade
+              </Button>
+            ) : null}
             {celular ? null : (
               <>
                 <LinkDeIcone href={ligar} label="Ligar" icone={Phone} />
@@ -428,7 +442,10 @@ export function FichaDaEmpresa() {
         </div>
 
         {celular ? (
-          <div className="grid grid-cols-3 gap-2" data-density="touch">
+          <div
+            className={cn('grid gap-2', e.permissoes.editar ? 'grid-cols-4' : 'grid-cols-3')}
+            data-density="touch"
+          >
             {[
               { rotulo: 'Ligar', href: ligar, icone: Phone, cor: 'text-tag-blue-fg' },
               {
@@ -471,6 +488,18 @@ export function FichaDaEmpresa() {
                 </span>
               )
             })}
+            {e.permissoes.editar ? (
+              <button
+                type="button"
+                onClick={() => abrirAtividade({ empresa: { id: e.id, nome: e.nome } })}
+                className="flex h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-border bg-surface text-[13px] font-semibold text-ink"
+              >
+                <span className="flex text-brand">
+                  <CalendarPlus size={20} strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                Atividade
+              </button>
+            ) : null}
           </div>
         ) : null}
       </header>
@@ -550,6 +579,14 @@ export function FichaDaEmpresa() {
               empresaId={e.id}
               nomeDaEmpresa={e.nome}
               podeEditar={e.permissoes.editar}
+            />
+          </ConteudoDaAba>
+          <ConteudoDaAba value="atividades">
+            <AtividadesDaFicha
+              filtro={{ empresaId: e.id }}
+              inicio={{ empresa: { id: e.id, nome: e.nome } }}
+              podeRegistrar={e.permissoes.editar}
+              mostrarEmpresa={false}
             />
           </ConteudoDaAba>
           <ConteudoDaAba value="historico">

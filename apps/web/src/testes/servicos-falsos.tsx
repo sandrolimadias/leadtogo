@@ -130,6 +130,25 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       converterSocio: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       daEmpresa: vi.fn(async () => ok([])),
     },
+    atividades: {
+      criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      listar: vi.fn(async () =>
+        ok({
+          itens: [],
+          total: 0,
+          pagina: 1,
+          porPagina: 25,
+          contagens: { agendadas: 0, atrasadas: 0, realizadas: 0 },
+        }),
+      ),
+      detalhar: vi.fn(async () =>
+        falha('atividade_nao_encontrada', 'Atividade não encontrada.', 404),
+      ),
+      alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      concluir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      cancelar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      excluir: vi.fn(async () => ok(undefined)),
+    },
     configuracaoDaCarteira: vi.fn(async () =>
       ok({ bloquearEmpresaNaoAtiva: true, vendedorVeTodasEmpresas: false }),
     ),

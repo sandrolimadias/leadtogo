@@ -24,6 +24,7 @@ import {
   estaAtiva,
   telaVisivel,
 } from './navegacao'
+import { useRegistrarAtividade } from '@/telas/atividades/registro-contexto'
 import { avisarEmBreve, nomeDaEmpresa } from './utilidades'
 
 type Tema = 'claro' | 'escuro' | 'sistema'
@@ -98,6 +99,7 @@ export function Notificacoes({ tamanho = 'md' }: { tamanho?: 'md' | 'lg' }) {
 
 /** Barra superior do desktop e do tablet: busca global, "Registrar atividade" e o sino. */
 export function BarraSuperior() {
+  const { abrir } = useRegistrarAtividade()
   return (
     <header className="flex h-(--topbar-height) flex-none items-center gap-3 border-b border-border bg-surface px-6">
       <div className="w-[420px] max-w-full">
@@ -112,7 +114,7 @@ export function BarraSuperior() {
         />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <Button icon={Plus} onClick={() => avisarEmBreve('Registrar atividade')}>
+        <Button icon={Plus} onClick={() => abrir()}>
           Registrar atividade
         </Button>
         <Notificacoes />
@@ -131,6 +133,7 @@ export function CabecalhoDoCelular({
   me: Me
   aoAbrirPerfil: () => void
 }) {
+  const { abrir } = useRegistrarAtividade()
   return (
     <header className="flex h-14 flex-none items-center gap-1 border-b border-border bg-surface pr-2 pl-3">
       <span className="mr-2 ml-1 inline-flex">
@@ -143,6 +146,7 @@ export function CabecalhoDoCelular({
         size="lg"
         onClick={() => avisarEmBreve('Busca global')}
       />
+      <IconButton icon={Plus} label="Registrar atividade" size="lg" onClick={() => abrir()} />
       <Notificacoes tamanho="lg" />
       <button
         type="button"
@@ -156,7 +160,7 @@ export function CabecalhoDoCelular({
   )
 }
 
-/** Barra inferior do celular: Início, Empresas, Funil, Tarefas e Mais (perfil). */
+/** Barra inferior do celular: Início, Empresas, Funil, Atividades e Mais (perfil). */
 export function BarraInferior({
   caminho,
   aoAbrirPerfil,
