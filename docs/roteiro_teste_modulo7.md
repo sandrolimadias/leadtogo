@@ -1,4 +1,4 @@
-# Roteiro de teste: Módulo 7 (Dashboard)
+# Roteiro de teste: Módulo 7 (Dashboard) ✅ aprovado pelo Ale em 16/10/2026
 
 > Para o Ale testar em `crm.aledias.com.br` depois do deploy. Cada passo diz o que fazer e o que deve acontecer. O que não bater, anote a tela, o passo e o que apareceu.
 > Para ver números de verdade, use a empresa de teste com **algumas oportunidades** (uma em cada fase, uma conquistada, uma perdida e uma cancelada, com valores mensais) e **atividades de hoje, atrasadas e dos próximos dias**. Para o item 9, **dois temas** (claro e escuro) e o celular. Nada de dado de cliente real no repositório.
