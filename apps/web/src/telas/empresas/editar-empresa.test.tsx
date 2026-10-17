@@ -101,6 +101,7 @@ const empresa = (extra: Partial<EmpresaCarteira> = {}): EmpresaCarteira => ({
     atualizadoEm: null,
     ajusteManual: false,
     enderecoMudouDepoisDoAjuste: false,
+    centroSugerido: null,
     faltas: [],
   },
   permissoes: { editar: true, excluir: true, transferir: true },

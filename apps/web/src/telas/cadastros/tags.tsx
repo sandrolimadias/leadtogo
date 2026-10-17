@@ -491,6 +491,8 @@ function DialogoDeTag({
   const [nome, setNome] = useState('')
   const [cor, setCor] = useState<CorDeTag>('gray')
   const [ativa, setAtiva] = useState(true)
+  const [noMapa, setNoMapa] = useState(true)
+  const [aoAbrirMapa, setAoAbrirMapa] = useState(true)
   const [tentou, setTentou] = useState(false)
   const [erroDoNome, setErroDoNome] = useState<string | undefined>()
   const [aviso, setAviso] = useState<string | undefined>()
@@ -503,6 +505,8 @@ function DialogoDeTag({
       setNome(tag?.nome ?? '')
       setCor(tag?.cor ?? 'gray')
       setAtiva(tag?.ativo ?? true)
+      setNoMapa(tag?.apareceNoMapa ?? true)
+      setAoAbrirMapa(tag?.visivelAoAbrir ?? true)
       setTentou(false)
       setErroDoNome(undefined)
       setAviso(undefined)
@@ -510,6 +514,8 @@ function DialogoDeTag({
   }
 
   const nomeVazio = tentou && nome.trim() === ''
+  // Só as tags de Status (grupo de sistema de seleção única) viram chips do mapa
+  const deStatus = Boolean(grupo?.sistema && grupo.selecao === 'unica')
   const enviar = (e: FormEvent) => {
     e.preventDefault()
     setTentou(true)
@@ -519,7 +525,12 @@ function DialogoDeTag({
     setAviso(undefined)
     void executar(async () => {
       const r = tag
-        ? await servicos.tags.alterarTag(tag.id, { nome: nome.trim(), cor, ativo: ativa })
+        ? await servicos.tags.alterarTag(tag.id, {
+            nome: nome.trim(),
+            cor,
+            ativo: ativa,
+            ...(deStatus ? { apareceNoMapa: noMapa, visivelAoAbrir: aoAbrirMapa } : {}),
+          })
         : await servicos.tags.criarTag({ tagGrupoId: grupo.id, nome: nome.trim(), cor })
       if (!r.ok) {
         const { campo, aviso: a } = separarErro(r.erro)
@@ -584,6 +595,26 @@ function DialogoDeTag({
                 : 'Inativar tira a tag das escolhas sem apagar o histórico.'}
             </span>
           </div>
+        ) : null}
+        {editando && deStatus ? (
+          <fieldset className="m-0 flex flex-col gap-2 rounded-md border border-border p-3">
+            <legend className="px-1 text-[13px] font-semibold">No mapa</legend>
+            <Switch
+              label="Aparece no mapa"
+              checked={noMapa}
+              onChange={(e) => setNoMapa(e.target.checked)}
+            />
+            <Switch
+              label="Já vem ligada ao abrir o mapa"
+              checked={aoAbrirMapa}
+              disabled={!noMapa}
+              onChange={(e) => setAoAbrirMapa(e.target.checked)}
+            />
+            <span className="text-xs text-ink-muted">
+              A tag vira um chip de filtro do mapa. Desligada, as empresas com este Status não
+              aparecem nele. A cor e o nome dos pins ficam em Geolocalização → Legenda do mapa.
+            </span>
+          </fieldset>
         ) : null}
         {aviso ? (
           <Alert tone="danger" title="Não foi possível salvar">

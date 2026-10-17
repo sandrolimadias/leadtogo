@@ -26,6 +26,8 @@ const grupos: TagGrupo[] = [
         ativo: true,
         ordem: 0,
         chaveSistema: 'cliente',
+        apareceNoMapa: true,
+        visivelAoAbrir: true,
       },
       {
         id: id(52),
@@ -35,6 +37,8 @@ const grupos: TagGrupo[] = [
         ativo: false,
         ordem: 1,
         chaveSistema: null,
+        apareceNoMapa: true,
+        visivelAoAbrir: true,
       },
     ],
   },

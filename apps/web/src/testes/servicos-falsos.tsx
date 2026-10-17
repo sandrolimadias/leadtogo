@@ -233,6 +233,53 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       excluir: vi.fn(async () => ok(undefined)),
       aplicarTagEmMassa: vi.fn(async () => ok({ aplicadas: 0, semMudanca: 0, ignoradas: 0 })),
     },
+    geolocalizacao: {
+      resumo: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      fila: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 25 })),
+      regioes: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+      },
+      lotes: {
+        previa: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        listar: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 10 })),
+        detalhar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        cancelar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        retomar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      },
+      posicao: {
+        ler: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        ajustar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        confirmarEndereco: vi.fn(async () =>
+          falha('indisponivel', 'Não configurado no teste.', 500),
+        ),
+        geocodificarDeNovo: vi.fn(async () =>
+          falha('indisponivel', 'Não configurado no teste.', 500),
+        ),
+      },
+    },
+    mapa: {
+      opcoes: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      legenda: {
+        ler: vi.fn(async () => ok({ entradas: [] })),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        restaurar: vi.fn(async () => ok({ entradas: [] })),
+      },
+      pontos: vi.fn(async () =>
+        ok({
+          total: 0,
+          pontos: [],
+          agrupamentos: [],
+          leads: { mostrados: 0, total: 0, limite: 500 },
+        }),
+      ),
+      proximas: vi.fn(async () => ok({ total: 0, limite: 500, itens: [] })),
+      selecao: vi.fn(async () => ok({ total: 0, limite: 500, itens: [] })),
+      cobertura: vi.fn(async () => ok({ municipios: [] })),
+    },
     importacao: {
       perfis: {
         listar: vi.fn(async () => ok([])),

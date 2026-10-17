@@ -54,6 +54,8 @@ export default defineConfig(({ command }) => ({
             },
             workbox: {
               globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+              // o MapLibre (~1 MB) só é baixado quando alguém abre um mapa; fica fora da instalação do PWA
+              globIgnores: ['**/maplibre-gl-*.js'],
               navigateFallback: '/index.html',
               navigateFallbackDenylist: [/^\/v1\//, /^\/health/, /^\/docs/],
               // o service worker não precisa de mapa (e o dist não pode ter .map fora do upload ao GlitchTip)

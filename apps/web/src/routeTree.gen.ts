@@ -27,7 +27,9 @@ import { Route as AutenticadoConsolidadoRouteImport } from './routes/_autenticad
 import { Route as AutenticadoContatosRouteImport } from './routes/_autenticado.contatos'
 import { Route as AutenticadoCriarEmpresaRouteImport } from './routes/_autenticado.criar-empresa'
 import { Route as AutenticadoEmpresasRouteImport } from './routes/_autenticado.empresas'
+import { Route as AutenticadoGeolocalizacaoRouteImport } from './routes/_autenticado.geolocalizacao'
 import { Route as AutenticadoImportacaoRouteImport } from './routes/_autenticado.importacao'
+import { Route as AutenticadoMapaRouteImport } from './routes/_autenticado.mapa'
 import { Route as AutenticadoOportunidadesRouteImport } from './routes/_autenticado.oportunidades'
 import { Route as AutenticadoProspeccaoRouteImport } from './routes/_autenticado.prospeccao'
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
@@ -35,6 +37,7 @@ import { Route as AutenticadoAtividadesIndexRouteImport } from './routes/_autent
 import { Route as AutenticadoConfiguracoesIndexRouteImport } from './routes/_autenticado.configuracoes.index'
 import { Route as AutenticadoConfiguracoesCarteiraRouteImport } from './routes/_autenticado.configuracoes.carteira'
 import { Route as AutenticadoConfiguracoesFunisRouteImport } from './routes/_autenticado.configuracoes.funis'
+import { Route as AutenticadoConfiguracoesGeolocalizacaoRouteImport } from './routes/_autenticado.configuracoes.geolocalizacao'
 import { Route as AutenticadoConfiguracoesImportacaoRouteImport } from './routes/_autenticado.configuracoes.importacao'
 import { Route as AutenticadoConfiguracoesOrigensEMotivosRouteImport } from './routes/_autenticado.configuracoes.origens-e-motivos'
 import { Route as AutenticadoConfiguracoesPapeisNaDecisaoRouteImport } from './routes/_autenticado.configuracoes.papeis-na-decisao'
@@ -147,9 +150,20 @@ const AutenticadoEmpresasRoute = AutenticadoEmpresasRouteImport.update({
   path: '/empresas',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoGeolocalizacaoRoute =
+  AutenticadoGeolocalizacaoRouteImport.update({
+    id: '/geolocalizacao',
+    path: '/geolocalizacao',
+    getParentRoute: () => AutenticadoRoute,
+  } as any)
 const AutenticadoImportacaoRoute = AutenticadoImportacaoRouteImport.update({
   id: '/importacao',
   path: '/importacao',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoMapaRoute = AutenticadoMapaRouteImport.update({
+  id: '/mapa',
+  path: '/mapa',
   getParentRoute: () => AutenticadoRoute,
 } as any)
 const AutenticadoOportunidadesRoute =
@@ -190,6 +204,12 @@ const AutenticadoConfiguracoesFunisRoute =
   AutenticadoConfiguracoesFunisRouteImport.update({
     id: '/funis',
     path: '/funis',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
+const AutenticadoConfiguracoesGeolocalizacaoRoute =
+  AutenticadoConfiguracoesGeolocalizacaoRouteImport.update({
+    id: '/geolocalizacao',
+    path: '/geolocalizacao',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
 const AutenticadoConfiguracoesImportacaoRoute =
@@ -340,12 +360,15 @@ export interface FileRoutesByFullPath {
   '/contatos': typeof AutenticadoContatosRouteWithChildren
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/empresas': typeof AutenticadoEmpresasRouteWithChildren
+  '/geolocalizacao': typeof AutenticadoGeolocalizacaoRoute
   '/importacao': typeof AutenticadoImportacaoRouteWithChildren
+  '/mapa': typeof AutenticadoMapaRoute
   '/oportunidades': typeof AutenticadoOportunidadesRouteWithChildren
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
+  '/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
@@ -384,10 +407,13 @@ export interface FileRoutesByTo {
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/consolidado': typeof AutenticadoConsolidadoRoute
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
+  '/geolocalizacao': typeof AutenticadoGeolocalizacaoRoute
+  '/mapa': typeof AutenticadoMapaRoute
   '/prospeccao': typeof AutenticadoProspeccaoRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
+  '/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
@@ -432,13 +458,16 @@ export interface FileRoutesById {
   '/_autenticado/contatos': typeof AutenticadoContatosRouteWithChildren
   '/_autenticado/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/_autenticado/empresas': typeof AutenticadoEmpresasRouteWithChildren
+  '/_autenticado/geolocalizacao': typeof AutenticadoGeolocalizacaoRoute
   '/_autenticado/importacao': typeof AutenticadoImportacaoRouteWithChildren
+  '/_autenticado/mapa': typeof AutenticadoMapaRoute
   '/_autenticado/oportunidades': typeof AutenticadoOportunidadesRouteWithChildren
   '/_autenticado/prospeccao': typeof AutenticadoProspeccaoRoute
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
   '/_autenticado/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/_autenticado/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
+  '/_autenticado/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/_autenticado/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
   '/_autenticado/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/_autenticado/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
@@ -483,12 +512,15 @@ export interface FileRouteTypes {
     | '/contatos'
     | '/criar-empresa'
     | '/empresas'
+    | '/geolocalizacao'
     | '/importacao'
+    | '/mapa'
     | '/oportunidades'
     | '/prospeccao'
     | '/dev/catalogo'
     | '/configuracoes/carteira'
     | '/configuracoes/funis'
+    | '/configuracoes/geolocalizacao'
     | '/configuracoes/importacao'
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/papeis-na-decisao'
@@ -527,10 +559,13 @@ export interface FileRouteTypes {
     | '/verificar-email'
     | '/consolidado'
     | '/criar-empresa'
+    | '/geolocalizacao'
+    | '/mapa'
     | '/prospeccao'
     | '/dev/catalogo'
     | '/configuracoes/carteira'
     | '/configuracoes/funis'
+    | '/configuracoes/geolocalizacao'
     | '/configuracoes/importacao'
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/papeis-na-decisao'
@@ -574,13 +609,16 @@ export interface FileRouteTypes {
     | '/_autenticado/contatos'
     | '/_autenticado/criar-empresa'
     | '/_autenticado/empresas'
+    | '/_autenticado/geolocalizacao'
     | '/_autenticado/importacao'
+    | '/_autenticado/mapa'
     | '/_autenticado/oportunidades'
     | '/_autenticado/prospeccao'
     | '/dev/catalogo'
     | '/_autenticado/'
     | '/_autenticado/configuracoes/carteira'
     | '/_autenticado/configuracoes/funis'
+    | '/_autenticado/configuracoes/geolocalizacao'
     | '/_autenticado/configuracoes/importacao'
     | '/_autenticado/configuracoes/origens-e-motivos'
     | '/_autenticado/configuracoes/papeis-na-decisao'
@@ -741,11 +779,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoEmpresasRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/geolocalizacao': {
+      id: '/_autenticado/geolocalizacao'
+      path: '/geolocalizacao'
+      fullPath: '/geolocalizacao'
+      preLoaderRoute: typeof AutenticadoGeolocalizacaoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/importacao': {
       id: '/_autenticado/importacao'
       path: '/importacao'
       fullPath: '/importacao'
       preLoaderRoute: typeof AutenticadoImportacaoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/mapa': {
+      id: '/_autenticado/mapa'
+      path: '/mapa'
+      fullPath: '/mapa'
+      preLoaderRoute: typeof AutenticadoMapaRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/_autenticado/oportunidades': {
@@ -795,6 +847,13 @@ declare module '@tanstack/react-router' {
       path: '/funis'
       fullPath: '/configuracoes/funis'
       preLoaderRoute: typeof AutenticadoConfiguracoesFunisRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
+    '/_autenticado/configuracoes/geolocalizacao': {
+      id: '/_autenticado/configuracoes/geolocalizacao'
+      path: '/geolocalizacao'
+      fullPath: '/configuracoes/geolocalizacao'
+      preLoaderRoute: typeof AutenticadoConfiguracoesGeolocalizacaoRouteImport
       parentRoute: typeof AutenticadoConfiguracoesRoute
     }
     '/_autenticado/configuracoes/importacao': {
@@ -997,6 +1056,7 @@ const AutenticadoAtividadesRouteWithChildren =
 interface AutenticadoConfiguracoesRouteChildren {
   AutenticadoConfiguracoesCarteiraRoute: typeof AutenticadoConfiguracoesCarteiraRoute
   AutenticadoConfiguracoesFunisRoute: typeof AutenticadoConfiguracoesFunisRoute
+  AutenticadoConfiguracoesGeolocalizacaoRoute: typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   AutenticadoConfiguracoesImportacaoRoute: typeof AutenticadoConfiguracoesImportacaoRoute
   AutenticadoConfiguracoesOrigensEMotivosRoute: typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   AutenticadoConfiguracoesPapeisNaDecisaoRoute: typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
@@ -1013,6 +1073,8 @@ const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildr
     AutenticadoConfiguracoesCarteiraRoute:
       AutenticadoConfiguracoesCarteiraRoute,
     AutenticadoConfiguracoesFunisRoute: AutenticadoConfiguracoesFunisRoute,
+    AutenticadoConfiguracoesGeolocalizacaoRoute:
+      AutenticadoConfiguracoesGeolocalizacaoRoute,
     AutenticadoConfiguracoesImportacaoRoute:
       AutenticadoConfiguracoesImportacaoRoute,
     AutenticadoConfiguracoesOrigensEMotivosRoute:
@@ -1113,7 +1175,9 @@ interface AutenticadoRouteChildren {
   AutenticadoContatosRoute: typeof AutenticadoContatosRouteWithChildren
   AutenticadoCriarEmpresaRoute: typeof AutenticadoCriarEmpresaRoute
   AutenticadoEmpresasRoute: typeof AutenticadoEmpresasRouteWithChildren
+  AutenticadoGeolocalizacaoRoute: typeof AutenticadoGeolocalizacaoRoute
   AutenticadoImportacaoRoute: typeof AutenticadoImportacaoRouteWithChildren
+  AutenticadoMapaRoute: typeof AutenticadoMapaRoute
   AutenticadoOportunidadesRoute: typeof AutenticadoOportunidadesRouteWithChildren
   AutenticadoProspeccaoRoute: typeof AutenticadoProspeccaoRoute
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
@@ -1127,7 +1191,9 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoContatosRoute: AutenticadoContatosRouteWithChildren,
   AutenticadoCriarEmpresaRoute: AutenticadoCriarEmpresaRoute,
   AutenticadoEmpresasRoute: AutenticadoEmpresasRouteWithChildren,
+  AutenticadoGeolocalizacaoRoute: AutenticadoGeolocalizacaoRoute,
   AutenticadoImportacaoRoute: AutenticadoImportacaoRouteWithChildren,
+  AutenticadoMapaRoute: AutenticadoMapaRoute,
   AutenticadoOportunidadesRoute: AutenticadoOportunidadesRouteWithChildren,
   AutenticadoProspeccaoRoute: AutenticadoProspeccaoRoute,
   AutenticadoIndexRoute: AutenticadoIndexRoute,

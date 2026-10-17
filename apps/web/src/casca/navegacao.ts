@@ -2,6 +2,8 @@ import {
   Building2,
   LayoutDashboard,
   LayoutGrid,
+  Map as MapaIcone,
+  MapPin,
   Settings,
   CalendarCheck,
   Handshake,
@@ -30,7 +32,9 @@ export const TELAS: TelaDoApp[] = [
   { caminho: '/contatos', titulo: 'Contatos', icone: Users },
   { caminho: '/oportunidades', titulo: 'Oportunidades', icone: Handshake, rotuloCurto: 'Funil' },
   { caminho: '/atividades', titulo: 'Atividades', icone: CalendarCheck },
+  { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone },
   { caminho: '/prospeccao', titulo: 'Prospecção', icone: Target, grupo: 'carteira' },
+  { caminho: '/geolocalizacao', titulo: 'Geolocalização', icone: MapPin, grupo: 'carteira' },
   // Rotas é da Fase 3: item de fase futura fica fora do menu até existir
   {
     caminho: '/consolidado',

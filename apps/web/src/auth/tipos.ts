@@ -19,6 +19,18 @@ import type {
   ConviteResumo,
   EmpresaCarteira,
   EmpresaCriada,
+  CoberturaDoMapa,
+  FilaConfirmarEndereco,
+  LegendaDoMapa,
+  OpcoesDoMapa,
+  PontosDoMapa,
+  SelecaoDoMapaResposta,
+  ListaDeLotesGeo,
+  LoteGeo,
+  PosicaoDaEmpresa,
+  PreviaDoLoteGeo,
+  RegiaoGeo,
+  ResumoDaGeolocalizacao,
   HistoricoDaEmpresa,
   ContatoDaEmpresa,
   ListaDeAtividades,
@@ -48,6 +60,15 @@ import type {
   Vertical,
 } from '@leadtogo/api-client'
 import type {
+  AjustarPosicao,
+  AlterarEntradaDaLegenda,
+  ConsultaDePontos,
+  ConsultaDeProximas,
+  SelecaoDoMapa,
+  ConfirmarEndereco,
+  CriarLoteGeo,
+  EscopoDoLote,
+  SalvarRegiao,
   TipoDeImportacao,
   AlterarAtividadeEntrada,
   ConsultaDoDashboardEntrada,
@@ -271,6 +292,52 @@ export interface ServicosDeCadastro<Item, Criar, Alterar> {
 }
 
 /** Importação de planilha (Módulo 4). Os perfis de regras são da empresa; só o administrador escreve. */
+/** Geolocalização (G1): posição das empresas, lotes por cidade ou região, regiões e a fila "Confirmar endereço". */
+export interface ServicosDeGeolocalizacao {
+  resumo: () => Promise<Resultado<ResumoDaGeolocalizacao>>
+  fila: (pagina?: number, porPagina?: number) => Promise<Resultado<FilaConfirmarEndereco>>
+  regioes: {
+    /** As microrregiões oficiais da UF e as regiões do administrador */
+    listar: (uf?: string) => Promise<Resultado<RegiaoGeo[]>>
+    criar: (dados: SalvarRegiao) => Promise<Resultado<RegiaoGeo>>
+    alterar: (id: string, dados: SalvarRegiao) => Promise<Resultado<RegiaoGeo>>
+    excluir: (id: string) => Promise<Resultado>
+  }
+  lotes: {
+    previa: (escopo: EscopoDoLote) => Promise<Resultado<PreviaDoLoteGeo>>
+    criar: (dados: CriarLoteGeo) => Promise<Resultado<LoteGeo>>
+    listar: (pagina?: number, porPagina?: number) => Promise<Resultado<ListaDeLotesGeo>>
+    detalhar: (id: string) => Promise<Resultado<LoteGeo>>
+    cancelar: (id: string) => Promise<Resultado<LoteGeo>>
+    retomar: (id: string) => Promise<Resultado<LoteGeo>>
+  }
+  posicao: {
+    ler: (empresaId: string) => Promise<Resultado<PosicaoDaEmpresa>>
+    ajustar: (empresaId: string, dados: AjustarPosicao) => Promise<Resultado<PosicaoDaEmpresa>>
+    confirmarEndereco: (
+      empresaId: string,
+      dados: ConfirmarEndereco,
+    ) => Promise<Resultado<PosicaoDaEmpresa>>
+    geocodificarDeNovo: (empresaId: string) => Promise<Resultado<PosicaoDaEmpresa>>
+  }
+}
+
+/** Mapa (G2): opções e legenda, pontos da área visível, próximas, seleção e cobertura por município. */
+export interface ServicosDoMapa {
+  opcoes: () => Promise<Resultado<OpcoesDoMapa>>
+  legenda: {
+    ler: () => Promise<Resultado<LegendaDoMapa>>
+    /** Só o administrador; nome vazio volta ao padrão */
+    alterar: (chave: string, dados: AlterarEntradaDaLegenda) => Promise<Resultado<LegendaDoMapa>>
+    restaurar: () => Promise<Resultado<LegendaDoMapa>>
+  }
+  /** As empresas da área visível, com os filtros; acima de 400, vêm como bolhas */
+  pontos: (consulta: ConsultaDePontos) => Promise<Resultado<PontosDoMapa>>
+  proximas: (consulta: ConsultaDeProximas) => Promise<Resultado<SelecaoDoMapaResposta>>
+  selecao: (dados: SelecaoDoMapa) => Promise<Resultado<SelecaoDoMapaResposta>>
+  cobertura: () => Promise<Resultado<CoberturaDoMapa>>
+}
+
 export interface ServicosDeImportacao {
   perfis: {
     /** Todos, inclusive os inativos (a tela os mostra com a palavra "Inativo") */
@@ -410,6 +477,10 @@ export interface ServicosDeAcesso {
 
   // Importação de planilha (Módulo 4)
   importacao: ServicosDeImportacao
+
+  // Geolocalização (G1) e mapa (G2)
+  geolocalizacao: ServicosDeGeolocalizacao
+  mapa: ServicosDoMapa
 
   // Atividades (Módulo 5)
   atividades: ServicosDeAtividades

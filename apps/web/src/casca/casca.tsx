@@ -77,7 +77,7 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
               tabIndex={-1}
               className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto outline-none"
             >
-              <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col has-[[data-quadro]]:h-full has-[[data-quadro]]:max-w-none">
+              <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col has-[[data-quadro]]:h-full has-[[data-quadro]]:max-w-none has-[[data-mapa]]:h-full has-[[data-mapa]]:max-w-none">
                 {children}
               </div>
             </div>
@@ -240,7 +240,7 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
               tabIndex={-1}
               className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto outline-none"
             >
-              <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col has-[[data-quadro]]:h-full has-[[data-quadro]]:max-w-none">
+              <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col has-[[data-quadro]]:h-full has-[[data-quadro]]:max-w-none has-[[data-mapa]]:h-full has-[[data-mapa]]:max-w-none">
                 {children}
               </div>
             </div>

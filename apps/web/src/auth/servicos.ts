@@ -444,6 +444,157 @@ export const servicosReais: ServicosDeAcesso = {
     tiposAtividade: cadastroReal('tipos-atividade'),
   },
 
+  geolocalizacao: {
+    resumo: () => protegido(async () => daApi(await api.GET('/v1/geolocalizacao/resumo'))),
+    fila: (pagina = 1, porPagina = 25) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/geolocalizacao/fila', { params: { query: { pagina, porPagina } } }),
+        ),
+      ),
+    regioes: {
+      listar: (uf) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/geolocalizacao/regioes', {
+              params: { query: uf ? { uf } : {} },
+            }),
+          ),
+        ),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/geolocalizacao/regioes', { body: dados }))),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/geolocalizacao/regioes/{id}', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(
+            await api.DELETE('/v1/geolocalizacao/regioes/{id}', { params: { path: { id } } }),
+          ),
+        ),
+    },
+    lotes: {
+      previa: (escopo) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/geolocalizacao/lotes/previa', { body: escopo })),
+        ),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/geolocalizacao/lotes', { body: dados }))),
+      listar: (pagina = 1, porPagina = 10) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/geolocalizacao/lotes', { params: { query: { pagina, porPagina } } }),
+          ),
+        ),
+      detalhar: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/geolocalizacao/lotes/{id}', { params: { path: { id } } })),
+        ),
+      cancelar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/geolocalizacao/lotes/{id}/cancelar', { params: { path: { id } } }),
+          ),
+        ),
+      retomar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/geolocalizacao/lotes/{id}/retomar', { params: { path: { id } } }),
+          ),
+        ),
+    },
+    posicao: {
+      ler: (empresaId) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/geolocalizacao/empresas/{id}/posicao', {
+              params: { path: { id: empresaId } },
+            }),
+          ),
+        ),
+      ajustar: (empresaId, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/geolocalizacao/empresas/{id}/posicao', {
+              params: { path: { id: empresaId } },
+              body: dados,
+            }),
+          ),
+        ),
+      confirmarEndereco: (empresaId, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/geolocalizacao/empresas/{id}/confirmar-endereco', {
+              params: { path: { id: empresaId } },
+              body: dados,
+            }),
+          ),
+        ),
+      geocodificarDeNovo: (empresaId) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/geolocalizacao/empresas/{id}/geocodificar', {
+              params: { path: { id: empresaId } },
+            }),
+          ),
+        ),
+    },
+  },
+
+  mapa: {
+    opcoes: () => protegido(async () => daApi(await api.GET('/v1/mapa/opcoes'))),
+    legenda: {
+      ler: () => protegido(async () => daApi(await api.GET('/v1/mapa/legenda'))),
+      alterar: (chave, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/mapa/legenda/{chave}', {
+              params: { path: { chave } },
+              body: dados,
+            }),
+          ),
+        ),
+      restaurar: () => protegido(async () => daApi(await api.POST('/v1/mapa/legenda/restaurar'))),
+    },
+    pontos: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/mapa/pontos', {
+            params: {
+              query: {
+                ...consulta,
+                statusTagIds: consulta.statusTagIds.join(','),
+                lotes: consulta.lotes.join(','),
+              } as never,
+            },
+          }),
+        ),
+      ),
+    proximas: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/mapa/proximas', {
+            params: {
+              query: {
+                ...consulta,
+                statusTagIds: consulta.statusTagIds.join(','),
+                lotes: consulta.lotes.join(','),
+              } as never,
+            },
+          }),
+        ),
+      ),
+    selecao: (dados) =>
+      protegido(async () => daApi(await api.POST('/v1/mapa/selecao', { body: dados }))),
+    cobertura: () => protegido(async () => daApi(await api.GET('/v1/mapa/cobertura'))),
+  },
+
   importacao: {
     perfis: {
       listar: () =>

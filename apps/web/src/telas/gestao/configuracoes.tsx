@@ -5,6 +5,7 @@ import {
   Compass,
   Factory,
   FileSpreadsheet,
+  MapPin,
   Funnel,
   Scale,
   ShieldCheck,
@@ -25,6 +26,7 @@ const SECOES = [
   { para: '/configuracoes/papeis-na-decisao', titulo: 'Papéis na decisão', icone: Scale },
   { para: '/configuracoes/carteira', titulo: 'Carteira', icone: Building2 },
   { para: '/configuracoes/importacao', titulo: 'Importação', icone: FileSpreadsheet },
+  { para: '/configuracoes/geolocalizacao', titulo: 'Geolocalização', icone: MapPin },
   { para: '/configuracoes/seguranca', titulo: 'Segurança', icone: ShieldCheck },
 ] as const
 

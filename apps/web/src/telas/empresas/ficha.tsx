@@ -41,6 +41,7 @@ import { EditarTags } from './ficha-tags'
 import { useContatosDaEmpresa } from './contatos-da-empresa'
 import { ContatosDaEmpresaAba } from './ficha-contatos'
 import { HistoricoDaEmpresaAba } from './ficha-historico'
+import { CartaoDaPosicao } from '@/telas/geolocalizacao/ficha-posicao'
 import { Cartao, CnaesDaEmpresa, DadosCadastrais, SociosDaEmpresa } from './ficha-resumo'
 
 const rota = getRouteApi('/_autenticado/empresas/$empresaId')
@@ -566,6 +567,7 @@ export function FichaDaEmpresa() {
               </Cartao>
             </div>
             <div className="flex min-w-0 flex-col gap-4">
+              <CartaoDaPosicao empresa={e} />
               {e.socios.length > 0 ? (
                 <Cartao titulo="Sócios" semMargem>
                   <SociosDaEmpresa

@@ -37,6 +37,8 @@ const tag = (
   ativo: true,
   ordem: n,
   chaveSistema: null,
+  apareceNoMapa: true,
+  visivelAoAbrir: true,
   ...extra,
 })
 
@@ -357,8 +359,45 @@ describe('Configurações → Tags: tags', () => {
         nome: 'Lead',
         cor: 'blue',
         ativo: true,
+        // tag de Status: as flags do mapa seguem junto (os valores que a tag já tinha)
+        apareceNoMapa: true,
+        visivelAoAbrir: true,
       }),
     )
+  })
+
+  it('tag de Status: liga e desliga "Aparece no mapa" e "Já vem ligada ao abrir o mapa"', async () => {
+    const servicos = servicosDeTags()
+    await abrir(servicos)
+    await userEvent.click(
+      within(linha('Status', 'Lead')).getByRole('button', { name: 'Editar a tag Lead' }),
+    )
+    const dialogo = await screen.findByRole('dialog', { name: 'Editar a tag Lead' })
+    const noMapa = within(dialogo).getByRole('switch', { name: 'Aparece no mapa' })
+    const aoAbrir = within(dialogo).getByRole('switch', { name: 'Já vem ligada ao abrir o mapa' })
+    expect(noMapa).toBeChecked()
+    expect(aoAbrir).toBeChecked()
+    await userEvent.click(aoAbrir)
+    await userEvent.click(noMapa)
+    expect(aoAbrir).toBeDisabled()
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() =>
+      expect(servicos.tags.alterarTag).toHaveBeenCalledWith(
+        id(11),
+        expect.objectContaining({ apareceNoMapa: false, visivelAoAbrir: false }),
+      ),
+    )
+  })
+
+  it('tag de grupo comum não mostra as opções do mapa', async () => {
+    await abrir()
+    await userEvent.click(
+      within(linha('Interesse', 'Retrofit')).getByRole('button', { name: 'Editar a tag Retrofit' }),
+    )
+    const dialogo = await screen.findByRole('dialog', { name: 'Editar a tag Retrofit' })
+    expect(
+      within(dialogo).queryByRole('switch', { name: 'Aparece no mapa' }),
+    ).not.toBeInTheDocument()
   })
 
   it('tag comum: pode ser inativada', async () => {

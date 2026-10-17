@@ -87,3 +87,7 @@ Check-in com GPS, "Na rota" no painel, rotas e otimização (OSRM/VROOM), janela
 | 16/10/2026 | Fontes, camadas, precisão e normalização do G0 | Ale |
 | 16/10/2026 | CNEFE no Postgres, dentro do backup (caminho A); migração única 0026; "visita tentada" só pelo check-in (G3) | Ale |
 | 16/10/2026 | Nominatim só em produção; tiles por endpoint com Range atrás de sessão; `GEO_CONCORRENCIA` = 1; 1,5 GiB no Nominatim; pushes em 4 etapas | Ale (proposta do Claude) |
+| 17/10/2026 | "Sem visita há 60+ dias" vale só para o Status **Cliente** (como na tela de referência); "visitada" = `ultima_visita_em` preenchida (as atividades de visita realizadas) | Claude (Ale revisa no teste) |
+| 17/10/2026 | Seleção por retângulo em dois toques (funciona igual no celular); a posição do aparelho NÃO é usada no mapa (só no check-in do G3, LGPD) | Claude |
+| 17/10/2026 | Leads no mapa só por lote de importação (até 500, com contador); chip de leads sem lote escolhido mostra aviso | Plano do Ale |
+
