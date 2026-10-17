@@ -13,7 +13,8 @@
     "dificuldade": "normal",
     "lat": -20.318642,
     "lon": -40.3300531,
-    "id": 1
+    "id": 1,
+    "conferencia": null
   },
   {
     "cnes": 4054296,
@@ -29,7 +30,8 @@
     "dificuldade": "normal",
     "lat": -20.3426406,
     "lon": -40.3983997,
-    "id": 2
+    "id": 2,
+    "conferencia": null
   },
   {
     "cnes": 9891773,
@@ -45,7 +47,9 @@
     "dificuldade": "normal",
     "lat": -20.3520369,
     "lon": -40.2999059,
-    "id": 3
+    "id": 3,
+    "conferencia": "desvio",
+    "conferencia_obs": "Coordenada declarada a 239 m do estabelecimento (conferência do Ale, 16/10/2026)"
   },
   {
     "cnes": 8553661,
@@ -61,7 +65,8 @@
     "dificuldade": "normal",
     "lat": -20.263034,
     "lon": -40.267182,
-    "id": 4
+    "id": 4,
+    "conferencia": null
   },
   {
     "cnes": 8326746,
@@ -77,7 +82,8 @@
     "dificuldade": "normal",
     "lat": -20.385393625907792,
     "lon": -40.325220272065565,
-    "id": 5
+    "id": 5,
+    "conferencia": null
   },
   {
     "cnes": 9994106,
@@ -93,7 +99,8 @@
     "dificuldade": "normal",
     "lat": -20.3732616,
     "lon": -40.31658,
-    "id": 6
+    "id": 6,
+    "conferencia": null
   },
   {
     "cnes": 9513272,
@@ -109,7 +116,8 @@
     "dificuldade": "normal",
     "lat": -20.3127575060352,
     "lon": -40.30187755823154,
-    "id": 7
+    "id": 7,
+    "conferencia": null
   },
   {
     "cnes": 4044916,
@@ -125,7 +133,8 @@
     "dificuldade": "normal",
     "lat": -20.3001095,
     "lon": -40.3203982,
-    "id": 8
+    "id": 8,
+    "conferencia": null
   },
   {
     "cnes": 8031738,
@@ -141,7 +150,8 @@
     "dificuldade": "normal",
     "lat": -20.282752,
     "lon": -40.299619,
-    "id": 9
+    "id": 9,
+    "conferencia": null
   },
   {
     "cnes": 2829010,
@@ -157,7 +167,8 @@
     "dificuldade": "normal",
     "lat": -20.674186327063207,
     "lon": -40.50177454948425,
-    "id": 10
+    "id": 10,
+    "conferencia": null
   },
   {
     "cnes": 6648363,
@@ -173,7 +184,8 @@
     "dificuldade": "normal",
     "lat": -19.93322642469073,
     "lon": -40.40414214134216,
-    "id": 11
+    "id": 11,
+    "conferencia": "ok"
   },
   {
     "cnes": 82147,
@@ -189,7 +201,8 @@
     "dificuldade": "normal",
     "lat": -20.1952412,
     "lon": -40.2459717,
-    "id": 12
+    "id": 12,
+    "conferencia": null
   },
   {
     "cnes": 2546981,
@@ -205,7 +218,8 @@
     "dificuldade": "normal",
     "lat": -20.338973370851754,
     "lon": -40.39267301559448,
-    "id": 13
+    "id": 13,
+    "conferencia": null
   },
   {
     "cnes": 8112134,
@@ -221,7 +235,8 @@
     "dificuldade": "normal",
     "lat": -20.1342666,
     "lon": -40.1926411,
-    "id": 14
+    "id": 14,
+    "conferencia": null
   },
   {
     "cnes": 5945453,
@@ -237,7 +252,8 @@
     "dificuldade": "normal",
     "lat": -20.34470936018962,
     "lon": -40.29612284477461,
-    "id": 15
+    "id": 15,
+    "conferencia": null
   },
   {
     "cnes": 475718,
@@ -253,7 +269,8 @@
     "dificuldade": "normal",
     "lat": -20.66339516545982,
     "lon": -40.49954295158386,
-    "id": 16
+    "id": 16,
+    "conferencia": null
   },
   {
     "cnes": 2500108,
@@ -269,7 +286,8 @@
     "dificuldade": "sem_numero",
     "lat": -20.395479,
     "lon": -40.496545,
-    "id": 17
+    "id": 17,
+    "conferencia": null
   },
   {
     "cnes": 9848541,
@@ -285,7 +303,8 @@
     "dificuldade": "sem_numero",
     "lat": -20.36648,
     "lon": -40.420532,
-    "id": 18
+    "id": 18,
+    "conferencia": null
   },
   {
     "cnes": 2615266,
@@ -301,7 +320,8 @@
     "dificuldade": "sem_numero",
     "lat": -20.3694114,
     "lon": -40.4149089,
-    "id": 19
+    "id": 19,
+    "conferencia": null
   },
   {
     "cnes": 2960990,
@@ -317,7 +337,8 @@
     "dificuldade": "sem_numero",
     "lat": -20.35166847143395,
     "lon": -40.425074100494385,
-    "id": 20
+    "id": 20,
+    "conferencia": "ok"
   },
   {
     "cnes": 5735599,
@@ -333,7 +354,8 @@
     "dificuldade": "sem_numero",
     "lat": -20.39338,
     "lon": -40.49653,
-    "id": 21
+    "id": 21,
+    "conferencia": null
   },
   {
     "cnes": 2652803,
@@ -349,7 +371,8 @@
     "dificuldade": "sem_numero",
     "lat": -19.9377024,
     "lon": -40.4019279,
-    "id": 22
+    "id": 22,
+    "conferencia": "ok"
   },
   {
     "cnes": 2626748,
@@ -365,7 +388,8 @@
     "dificuldade": "sem_numero",
     "lat": -19.9383236,
     "lon": -40.4013728,
-    "id": 23
+    "id": 23,
+    "conferencia": null
   },
   {
     "cnes": 2466414,
@@ -381,7 +405,8 @@
     "dificuldade": "rural",
     "lat": -20.52184974776454,
     "lon": -40.67131698131561,
-    "id": 24
+    "id": 24,
+    "conferencia": "ok"
   },
   {
     "cnes": 913642,
@@ -397,7 +422,8 @@
     "dificuldade": "rural",
     "lat": -20.18218733849169,
     "lon": -40.26556499460995,
-    "id": 25
+    "id": 25,
+    "conferencia": null
   },
   {
     "cnes": 2630052,
@@ -413,7 +439,8 @@
     "dificuldade": "rural",
     "lat": -20.52155333239863,
     "lon": -40.47855734825134,
-    "id": 26
+    "id": 26,
+    "conferencia": null
   },
   {
     "cnes": 8484481,
@@ -429,7 +456,8 @@
     "dificuldade": "normal",
     "lat": -18.12682638778316,
     "lon": -40.364885330200195,
-    "id": 27
+    "id": 27,
+    "conferencia": null
   },
   {
     "cnes": 4120035,
@@ -445,7 +473,8 @@
     "dificuldade": "normal",
     "lat": -20.23409335170144,
     "lon": -41.51102542877197,
-    "id": 28
+    "id": 28,
+    "conferencia": "ok"
   },
   {
     "cnes": 611778,
@@ -461,7 +490,8 @@
     "dificuldade": "normal",
     "lat": -20.238623314900003,
     "lon": -41.51106834411621,
-    "id": 29
+    "id": 29,
+    "conferencia": null
   },
   {
     "cnes": 8523312,
@@ -477,7 +507,8 @@
     "dificuldade": "normal",
     "lat": -18.412701493129795,
     "lon": -40.21341562271118,
-    "id": 30
+    "id": 30,
+    "conferencia": null
   },
   {
     "cnes": 4819217,
@@ -493,7 +524,8 @@
     "dificuldade": "normal",
     "lat": -18.4129458,
     "lon": -40.2192094,
-    "id": 31
+    "id": 31,
+    "conferencia": null
   },
   {
     "cnes": 8462011,
@@ -509,7 +541,8 @@
     "dificuldade": "normal",
     "lat": -19.976963,
     "lon": -41.282136,
-    "id": 32
+    "id": 32,
+    "conferencia": null
   },
   {
     "cnes": 4242408,
@@ -525,7 +558,8 @@
     "dificuldade": "normal",
     "lat": -19.75254234920093,
     "lon": -40.38575828075409,
-    "id": 33
+    "id": 33,
+    "conferencia": null
   },
   {
     "cnes": 8053359,
@@ -541,7 +575,8 @@
     "dificuldade": "normal",
     "lat": -18.8627891,
     "lon": -41.1229782,
-    "id": 34
+    "id": 34,
+    "conferencia": null
   },
   {
     "cnes": 6784577,
@@ -557,7 +592,8 @@
     "dificuldade": "normal",
     "lat": -18.618808280724465,
     "lon": -40.60159295797348,
-    "id": 35
+    "id": 35,
+    "conferencia": "ok"
   },
   {
     "cnes": 8316791,
@@ -573,7 +609,8 @@
     "dificuldade": "normal",
     "lat": -18.408283496896818,
     "lon": -40.220303535461426,
-    "id": 36
+    "id": 36,
+    "conferencia": null
   },
   {
     "cnes": 5743729,
@@ -589,7 +626,8 @@
     "dificuldade": "normal",
     "lat": -19.9354762,
     "lon": -40.5986721,
-    "id": 37
+    "id": 37,
+    "conferencia": null
   },
   {
     "cnes": 8280924,
@@ -605,7 +643,8 @@
     "dificuldade": "normal",
     "lat": -19.05660134839733,
     "lon": -41.01654410362244,
-    "id": 38
+    "id": 38,
+    "conferencia": null
   },
   {
     "cnes": 8054592,
@@ -621,7 +660,8 @@
     "dificuldade": "normal",
     "lat": -21.101517043909826,
     "lon": -41.04717493057251,
-    "id": 39
+    "id": 39,
+    "conferencia": null
   },
   {
     "cnes": 6870031,
@@ -637,7 +677,8 @@
     "dificuldade": "normal",
     "lat": -20.150053729909718,
     "lon": -41.292500495910645,
-    "id": 40
+    "id": 40,
+    "conferencia": null
   },
   {
     "cnes": 9555137,
@@ -653,7 +694,9 @@
     "dificuldade": "sem_numero",
     "lat": -20.603543018088047,
     "lon": -41.02775573730469,
-    "id": 41
+    "id": 41,
+    "conferencia": "nao_localizado",
+    "conferencia_obs": "Estabelecimento não localizado no ponto (conferência do Ale, 16/10/2026)"
   },
   {
     "cnes": 2485311,
@@ -669,7 +712,8 @@
     "dificuldade": "sem_numero",
     "lat": -18.537101832244083,
     "lon": -40.285481214523315,
-    "id": 42
+    "id": 42,
+    "conferencia": null
   },
   {
     "cnes": 8373663,
@@ -685,7 +729,8 @@
     "dificuldade": "sem_numero",
     "lat": -20.6054711842945,
     "lon": -41.027069091796875,
-    "id": 43
+    "id": 43,
+    "conferencia": null
   },
   {
     "cnes": 2485362,
@@ -701,7 +746,8 @@
     "dificuldade": "sem_numero",
     "lat": -18.5398,
     "lon": -40.2974,
-    "id": 44
+    "id": 44,
+    "conferencia": null
   },
   {
     "cnes": 4119460,
@@ -717,7 +763,8 @@
     "dificuldade": "sem_numero",
     "lat": -18.303237,
     "lon": -39.955123,
-    "id": 45
+    "id": 45,
+    "conferencia": null
   },
   {
     "cnes": 6571166,
@@ -733,7 +780,8 @@
     "dificuldade": "sem_numero",
     "lat": -20.3605241,
     "lon": -41.2509104,
-    "id": 46
+    "id": 46,
+    "conferencia": null
   },
   {
     "cnes": 2675684,
@@ -749,7 +797,8 @@
     "dificuldade": "rural",
     "lat": -19.08795381041431,
     "lon": -40.13948425032532,
-    "id": 47
+    "id": 47,
+    "conferencia": "ok"
   },
   {
     "cnes": 4241932,
@@ -765,7 +814,8 @@
     "dificuldade": "rural",
     "lat": -18.365185,
     "lon": -39.788533,
-    "id": 48
+    "id": 48,
+    "conferencia": null
   },
   {
     "cnes": 2444976,
@@ -781,7 +831,8 @@
     "dificuldade": "rural",
     "lat": -19.781726682429095,
     "lon": -40.95724582672119,
-    "id": 49
+    "id": 49,
+    "conferencia": "ok"
   },
   {
     "cnes": 280577,
@@ -797,7 +848,8 @@
     "dificuldade": "rural",
     "lat": -19.117406204869823,
     "lon": -40.19080042966436,
-    "id": 50
+    "id": 50,
+    "conferencia": null
   },
   {
     "cnes": 5462711,
@@ -813,6 +865,7 @@
     "dificuldade": "rural",
     "lat": -20.700224,
     "lon": -40.92757,
-    "id": 51
+    "id": 51,
+    "conferencia": null
   }
 ]

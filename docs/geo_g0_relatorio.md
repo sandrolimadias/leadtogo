@@ -22,6 +22,10 @@ Todos os sites necessários responderam: Geofabrik, IBGE (FTP e `servicodados`),
 - **A coordenada do CNES também tem erro** (é declarada). Conferência cruzada: nos 19 endereços em que o CNEFE achou o número exato, a distância até o CNES tem mediana de **33 m** (p90 217 m); só 1 passa de 300 m (a Avenida do Canal, em Vila Velha, que existe em mais de um bairro).
 - **Mapa para o Ale conferir:** `experimentos/geo-g0/gabarito/mapa.html` (abra no navegador). **Confira estes 10** (laranja no mapa): **3** (Vila Velha), **11** (Fundão), **20** (Viana, S/N), **22** (Fundão, S/N), **24** (Guarapari, rural), **28** (Ibatiba), **35** (Vila Pavão), **41** (Vargem Alta, S/N), **47** (Sooretama, rural) e **49** (Itaguaçu, rural). Olhe se o ponto cai no estabelecimento do nome que aparece no balão.
 
+## 2.1 Conferência manual do gabarito (Ale, 16/10/2026)
+
+Dos 10 pontos conferidos no mapa, **8 estavam corretos** (11, 20, 22, 24, 28, 35, 47 e 49). O **ponto 3** estava a **239 m** do estabelecimento (coordenada declarada imprecisa) e o **ponto 41** **não foi localizado** no endereço. Os dois estão marcados no gabarito (campo `conferencia`: `desvio` e `nao_localizado`). O erro desses dois itens pode estar em parte no gabarito, não no geocodificador; as tabelas os mantêm (2 de 51 mudam pouco as medianas) e o G1 pode excluí-los se medir de novo.
+
 ## 3. Resultados
 "Com número" = achou a casa (número exato, ou interpolado no CNEFE). "Erro" = distância em metros até a coordenada do gabarito, só entre os que acharam. As consultas públicas (Nominatim e Photon) foram limitadas ao ES, a 1 requisição por segundo, com User-Agent identificado e cache em disco. Os dados são os mesmos do OSM que rodaremos (o público é um pouco mais novo e completo: na Grande Vitória achou número em 9 contra 7 do local); o local responde com mediana de 19 a 32 ms.
 
