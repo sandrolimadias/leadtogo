@@ -13,6 +13,7 @@ vi.mock('@/components/mapa/mapa-base', () => ({
     pins?: { id: string; rotulo: string; cor: string; visitada?: boolean; selecionado?: boolean }[]
     bolhas?: { id: string; total: number; rotulo?: string; texto?: string }[]
     areas?: unknown[]
+    fonteDosDados?: string
     aoMover?: (a: {
       oeste: number
       sul: number
@@ -31,6 +32,7 @@ vi.mock('@/components/mapa/mapa-base', () => ({
     }, [])
     return (
       <div role="application" aria-label="Mapa das empresas" data-areas={(p.areas ?? []).length}>
+        {p.fonteDosDados ? <p>{p.fonteDosDados}</p> : null}
         {(p.pins ?? []).map((x) => (
           <button
             key={x.id}
@@ -177,6 +179,7 @@ const pontos = (extra: Partial<PontosDoMapa> = {}): PontosDoMapa => ({
       estado: `tag:${TAG_CLIENTE}`,
       visitada: true,
       precisao: 'exata',
+      origem: 'cnefe',
       cidade: 'Vitória',
     },
     {
@@ -187,6 +190,7 @@ const pontos = (extra: Partial<PontosDoMapa> = {}): PontosDoMapa => ({
       estado: 'sem_visita',
       visitada: false,
       precisao: 'aproximada',
+      origem: 'nominatim',
       cidade: 'Serra',
     },
   ],
@@ -395,6 +399,21 @@ describe('Mapa: chips, pins e legenda', () => {
       const ultima = x.m.pontos.mock.calls.at(-1)?.[0] as { statusTagIds: string[] }
       expect(ultima.statusTagIds).toEqual([])
     })
+  })
+
+  it('mostra "Fonte: IBGE – CNEFE 2022" só quando algum pin veio do CNEFE', async () => {
+    await abrir(servicos())
+    expect(await screen.findByText('Fonte: IBGE – CNEFE 2022')).toBeInTheDocument()
+  })
+
+  it('sem pin do CNEFE, a fonte não aparece', async () => {
+    const x = servicos()
+    x.m.pontos.mockResolvedValue(
+      ok(pontos({ pontos: pontos().pontos.map((q) => ({ ...q, origem: 'nominatim' as const })) })),
+    )
+    await abrir(x)
+    await screen.findByRole('button', { name: 'pin Alfa Ltda, Vitória' })
+    expect(screen.queryByText(/CNEFE 2022/)).toBeNull()
   })
 
   it('"Clientes sem visita 60+ dias" liga o atalho e manda semVisitaDias=60', async () => {

@@ -18568,6 +18568,11 @@
                   "type": "string",
                   "enum": ["exata", "aproximada"]
                 },
+                "origem": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": ["cnefe", "nominatim", "cep", "manual", "checkin"]
+                },
                 "cidade": {
                   "nullable": true,
                   "type": "string"
@@ -18581,6 +18586,7 @@
                 "estado",
                 "visitada",
                 "precisao",
+                "origem",
                 "cidade"
               ],
               "additionalProperties": false

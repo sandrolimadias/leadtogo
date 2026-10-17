@@ -316,6 +316,9 @@ export function TelaDoMapa() {
         areas={areas}
         desenhando={ferramenta !== null}
         semAvisoDeMapa
+        {...(pontos.data?.pontos.some((p) => p.origem === 'cnefe')
+          ? { fonteDosDados: 'Fonte: IBGE – CNEFE 2022' }
+          : {})}
         {...(foco ? { foco } : {})}
         aoMover={setArea}
         aoClicarNoPin={abrirEmpresa}

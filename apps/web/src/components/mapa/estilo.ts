@@ -19,7 +19,7 @@ export function estiloDoMapa(tema: 'claro' | 'escuro'): StyleSpecification {
         type: 'vector',
         url: `pmtiles://${URL_DO_MAPA_BASE}`,
         attribution:
-          '© <a href="https://openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>',
+          '© <a href="https://openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
       },
     },
     layers: layers('base', flavor, { lang: 'pt' }).filter(

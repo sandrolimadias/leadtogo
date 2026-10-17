@@ -75,6 +75,8 @@ export interface PropsDoMapa {
   desenhando?: boolean
   /** Quem usa o mapa mostra o aviso de "mapa base não instalado" por conta própria */
   semAvisoDeMapa?: boolean
+  /** Fonte dos dados dos pins (ex.: CNEFE), mostrada ao lado da atribuição do mapa base */
+  fonteDosDados?: string
   rotulo: string
 }
 
@@ -138,7 +140,7 @@ export function MapaBase(props: PropsDoMapa) {
             },
         center: ultimas.current.centro,
         zoom: ultimas.current.zoom ?? 12,
-        attributionControl: { compact: true },
+        attributionControl: { compact: false },
         dragRotate: false,
         pitchWithRotate: false,
         touchPitch: false,
@@ -364,6 +366,11 @@ export function MapaBase(props: PropsDoMapa) {
           className="absolute top-2 left-2 z-10 m-0 max-w-[80%] rounded-sm border border-border bg-surface px-2.5 py-1.5 text-xs text-ink-muted shadow-sm"
         >
           O mapa base ainda não foi instalado. Os pontos continuam valendo.
+        </p>
+      ) : null}
+      {props.fonteDosDados ? (
+        <p className="pointer-events-none absolute right-0 bottom-5 z-10 m-0 rounded-l-sm bg-surface/80 px-1.5 py-0.5 text-[10px] text-ink-muted">
+          {props.fonteDosDados}
         </p>
       ) : null}
       {estado === 'carregando' ? (

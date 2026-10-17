@@ -19,6 +19,7 @@ import {
   type ListaDeSelecao,
   type OpcoesDoMapa,
   PALETA_DO_MAPA,
+  type OrigemGeo,
   type PontoDoMapa,
   type PontosDoMapa,
   type SelecaoDoMapa,
@@ -300,6 +301,7 @@ export class MapaService {
         estado: string
         visitada: boolean
         precisao: 'exata' | 'aproximada'
+        origem: OrigemGeo | null
         cidade: string | null
         lead: boolean
         ordem_lead: number
@@ -308,7 +310,7 @@ export class MapaService {
           SELECT e.id, coalesce(e.nome_fantasia, e.razao_social) AS nome,
                  ST_Y(e.localizacao::geometry) AS lat, ST_X(e.localizacao::geometry) AS lon,
                  ${ESTADO_DO_PIN} AS estado, e.ultima_visita_em IS NOT NULL AS visitada,
-                 e.geo_precisao AS precisao, m.nome AS cidade, t.chave_sistema = 'lead' AS lead,
+                 e.geo_precisao AS precisao, e.geo_origem AS origem, m.nome AS cidade, t.chave_sistema = 'lead' AS lead,
                  row_number() OVER (PARTITION BY (t.chave_sistema = 'lead') ORDER BY e.id) AS ordem_lead
           ${DAS_EMPRESAS_DO_MAPA}
           WHERE ${filtros} AND ${area}
@@ -323,6 +325,7 @@ export class MapaService {
         estado: r.estado,
         visitada: r.visitada,
         precisao: r.precisao,
+        origem: r.origem,
         cidade: r.cidade,
       }))
       return {

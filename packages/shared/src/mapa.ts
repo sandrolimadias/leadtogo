@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { precisaoGeoSchema } from './geolocalizacao.js'
+import { origemGeoSchema, precisaoGeoSchema } from './geolocalizacao.js'
 
 // Mapa (G2): contratos da API entre o web e a API (docs/plano_geolocalizacao.md, seção 4).
 
@@ -175,6 +175,8 @@ export const pontoDoMapaSchema = z.object({
   /** Visitada alguma vez: o pin ganha o visto */
   visitada: z.boolean(),
   precisao: precisaoGeoSchema,
+  /** De onde veio a coordenada (a atribuição do CNEFE aparece quando algum pin vem dele) */
+  origem: origemGeoSchema.nullable(),
   cidade: z.string().nullable(),
 })
 export type PontoDoMapa = z.infer<typeof pontoDoMapaSchema>

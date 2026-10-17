@@ -4102,6 +4102,8 @@ export interface components {
                 visitada: boolean;
                 /** @enum {string} */
                 precisao: "exata" | "aproximada";
+                /** @enum {string|null} */
+                origem: "cnefe" | "nominatim" | "cep" | "manual" | "checkin" | null;
                 cidade: string | null;
             }[];
             agrupamentos: {
