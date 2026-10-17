@@ -20,6 +20,7 @@ import { EmailModule } from './email/email.module.js'
 import { EmpresasModule } from './empresas/empresas.module.js'
 import { FiltroDeExcecoes } from './http/filtro-excecoes.js'
 import { HealthModule } from './health/health.module.js'
+import { GeolocalizacaoModule } from './geolocalizacao/geolocalizacao.module.js'
 import { ImportacaoModule } from './importacao/importacao.module.js'
 import { InfraModule } from './infra/infra.module.js'
 import { LogModule } from './log/log.module.js'
@@ -56,6 +57,7 @@ export class AppModule {
         CarteiraModule,
         ConvitesModule,
         ImportacaoModule,
+        GeolocalizacaoModule,
         EmpresasModule,
         PrimeiroAcessoModule,
         ReceitaModule,

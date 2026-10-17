@@ -2,6 +2,8 @@ import { and, asc, eq, isNull, schema, sql } from '@leadtogo/db'
 import { type EmpresaCarteira, normalizarRespostaDaReceita } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
+import { CHAVE_TAG_ENDERECO_A_CONFIRMAR } from '@leadtogo/db'
+import { coordenadasDaEmpresa, montarPosicao } from '../geolocalizacao/posicao.js'
 import {
   condicaoDeVisibilidade,
   type EscopoDaCarteira,
@@ -159,6 +161,13 @@ export async function lerEmpresa(
       r.tipoDocumento === 'cnpj' && r.documento ? situacaoDaReceita(tx, r.documento) : null,
     ])
 
+  const coordenadas = r.localizacao ? await coordenadasDaEmpresa(tx, id) : null
+  const comTagAConfirmar =
+    (
+      await tx.execute<{ id: string }>(sql`
+    SELECT t.id FROM empresa_tags et JOIN tags t ON t.id = et.tag_id
+    WHERE et.empresa_id = ${id} AND t.chave_sistema = ${CHAVE_TAG_ENDERECO_A_CONFIRMAR}`)
+    ).length > 0
   const matriz = matrizes[0]
   return {
     id: r.id,
@@ -196,6 +205,7 @@ export async function lerEmpresa(
           : null,
       paisCodigo: r.paisCodigo,
     },
+    posicao: montarPosicao({ ...r, municipioNome: e.municipioNome }, coordenadas, comTagAConfirmar),
     observacoes: r.observacoes,
     origemCadastro: r.origemCadastro,
     telefones: telefones.map((t) => ({

@@ -139,7 +139,7 @@ const eventosDe = (tenantId: string, empresaId: string) =>
   dono.begin(async (tx) => {
     await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
     return tx<{ tipo: string; payload: { tentativa: number } }[]>`
-      SELECT tipo, payload FROM eventos_outbox WHERE entidade_id = ${empresaId}`
+      SELECT tipo, payload FROM eventos_outbox WHERE entidade_id = ${empresaId} AND tipo <> 'empresa.geocodificar'`
   })
 
 /** Empresa com o administrador, um gestor e dois vendedores (cada um com a própria carteira). */

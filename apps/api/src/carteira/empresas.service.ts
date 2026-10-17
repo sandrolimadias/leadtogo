@@ -32,6 +32,7 @@ import {
   podeTransferir,
   podeVer,
 } from './regras-de-carteira.js'
+import { agendarGeocodificacao, invalidarCoordenada } from '../geolocalizacao/evento.js'
 import { agendarVerificacaoDaSituacao } from './situacao-evento.js'
 import { normalizarTelefonesDaEmpresa, type TelefoneParaGravar } from './telefones.js'
 
@@ -75,6 +76,17 @@ const ENDERECO_NULO = {
   municipioCodigo: null,
   paisCodigo: null,
 } as const
+
+/** Campos cuja mudança invalida a coordenada da empresa. */
+const CAMPOS_DO_ENDERECO = [
+  'cep',
+  'tipoLogradouro',
+  'logradouro',
+  'numero',
+  'bairro',
+  'municipioCodigo',
+  'paisCodigo',
+]
 
 /** O que a importação em lote muda no cadastro de uma empresa (o cadastro manual não usa). */
 export interface OpcoesDeCriacao {
@@ -215,6 +227,8 @@ export class EmpresasDaCarteiraService {
       // Receita fora do ar: o worker reconsulta de hora em hora (até 24 vezes) e avisa o vendedor
       await agendarVerificacaoDaSituacao(db, tenantId, id, 1, 0)
     }
+    // Geocodificação automática (G1): o worker posiciona a empresa no mapa, uma por vez
+    if (!endereco.paisCodigo) await agendarGeocodificacao(db, tenantId, id)
 
     await this.auditoria.registrar({
       entidade: 'empresa',
@@ -302,6 +316,11 @@ export class EmpresasDaCarteiraService {
       .where(eq(empresas.id, id))
     if (mudouTelefones && telefones) await this.gravarTelefones(db, tenantId, id, telefones)
     if (mudouCnaes && cnaesParaGravar) await this.gravarCnaes(db, tenantId, id, cnaesParaGravar)
+    // Endereço alterado invalida a coordenada e agenda a geocodificação; o ajuste manual é preservado
+    const mudouEndereco = CAMPOS_DO_ENDERECO.some((c) => c in mudancas)
+    if (mudouEndereco && !novo['paisCodigo'] && (await invalidarCoordenada(db, id))) {
+      await agendarGeocodificacao(db, tenantId, id)
+    }
 
     const alteracoes: Record<string, unknown> = { ...mudancas }
     if (mudouTelefones) {

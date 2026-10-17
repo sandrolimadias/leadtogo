@@ -12,6 +12,9 @@ import type { ReceitaService } from '../../receita/receita.service.js'
 import { EVENTO_VERIFICAR_SITUACAO } from '../../carteira/situacao-evento.js'
 import { EVENTO_EXECUTAR_IMPORTACAO } from '../../importacao/evento.js'
 import { enfileirarBloco } from '../../importacao/fila.js'
+import { EVENTO_GEOCODIFICAR_EMPRESA } from '../../geolocalizacao/evento.js'
+import { EVENTO_EXECUTAR_LOTE_GEO } from '../../geolocalizacao/evento-lote.js'
+import { enfileirarBlocoDoLote, enfileirarEmpresa } from '../../geolocalizacao/fila.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
 
@@ -99,6 +102,34 @@ export function manipuladoresPadrao(
     await enfileirarBloco(filas.fila(FILAS.importacao), {
       tenantId: evento.tenantId,
       importacaoId,
+      raiz: evento.id,
+      bloco: 0,
+    })
+  }
+
+  /**
+   * Geocodificação automática (empresa nova ou endereço alterado): vira um job na fila `geocodificacao`,
+   * que tem concorrência baixa e limite por minuto. O id do job vem do evento: reentrega não duplica.
+   */
+  manipuladores[EVENTO_GEOCODIFICAR_EMPRESA] = async (evento, { filas }) => {
+    // Desligado por configuração (testes): o evento é dado como entregue sem fazer nada
+    if (!config.GEO_AUTOMATICA) return
+    const { empresaId } = evento.payload as { empresaId: string }
+    await enfileirarEmpresa(filas.fila(FILAS.geocodificacao), {
+      tipo: 'empresa',
+      tenantId: evento.tenantId,
+      empresaId,
+      eventoId: evento.id,
+    })
+  }
+
+  /** Lote de geocodificação por cidade ou região: o primeiro bloco da cadeia (cada bloco agenda o seguinte). */
+  manipuladores[EVENTO_EXECUTAR_LOTE_GEO] = async (evento, { filas }) => {
+    const { loteId } = evento.payload as { loteId: string }
+    await enfileirarBlocoDoLote(filas.fila(FILAS.geocodificacao), {
+      tipo: 'lote',
+      tenantId: evento.tenantId,
+      loteId,
       raiz: evento.id,
       bloco: 0,
     })

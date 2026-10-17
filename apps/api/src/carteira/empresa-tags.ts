@@ -105,7 +105,8 @@ export async function gravarDiferencaDeTags(
   empresaId: string,
   atuais: ReadonlySet<string>,
   finais: ReadonlySet<string>,
-  membroId: string,
+  /** Quem mudou; nulo = o sistema (ex.: a geocodificação) */
+  membroId: string | null,
 ): Promise<{ adicionadas: string[]; removidas: string[] }> {
   const adicionadas = [...finais].filter((id) => !atuais.has(id))
   const removidas = [...atuais].filter((id) => !finais.has(id))

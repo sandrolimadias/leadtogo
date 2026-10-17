@@ -15,6 +15,8 @@ export const FILAS = {
   outbox: 'outbox',
   /** Execução das importações de planilha, uma por vez (a Receita não tem SLA): consulta, regras e cadastro */
   importacao: 'importacao',
+  /** Geocodificação de endereços (automática e em lote): concorrência baixa e limite por minuto, a CPU da VPS é curta */
+  geocodificacao: 'geocodificacao',
   /** Só existe fora de produção: os testes do worker (encerramento, retenção) usam. */
   teste: 'teste',
 } as const

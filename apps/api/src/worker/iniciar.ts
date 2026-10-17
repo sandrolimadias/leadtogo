@@ -16,6 +16,7 @@ import { RelayDoOutbox } from './outbox/relay.js'
 import { ExecutorDaImportacao } from '../importacao/executor.js'
 import { enfileirarBloco, type JobDeImportacao } from '../importacao/fila.js'
 import { EnviadorSmtp } from '../email/enviador.js'
+import { processadorDaGeocodificacao } from '../geolocalizacao/processador.js'
 import { ReceitaService, provedoresPadrao } from '../receita/receita.service.js'
 import { chavesDe } from '../seguranca/cifra.js'
 import {
@@ -108,6 +109,12 @@ export async function iniciarWorker(deps: {
     },
     { concorrencia: 1 },
   )
+
+  // Geocodificação (G1): concorrência baixa e limite por minuto, para não disputar a CPU da VPS
+  filas.consumir(FILAS.geocodificacao, processadorDaGeocodificacao({ config, banco, filas, log }), {
+    concorrencia: config.GEO_CONCORRENCIA,
+    limitador: { max: config.GEO_LIMITE_POR_MINUTO, duration: 60_000 },
+  })
 
   const relay = new RelayDoOutbox({
     banco,

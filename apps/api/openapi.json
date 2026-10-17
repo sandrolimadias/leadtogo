@@ -8147,6 +8147,1200 @@
         "tags": ["Empresas do grupo"]
       }
     },
+    "/v1/geolocalizacao/empresas/{id}/confirmar-endereco": {
+      "post": {
+        "description": "Quem edita a empresa. `manter_posicao` guarda a posição ajustada à mão; `refazer` descarta o ajuste e geocodifica o endereço novo (o worker faz).",
+        "operationId": "GeolocalizacaoController_confirmar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmarEndereco"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PosicaoDaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Depois de mudar o endereço: manter a posição ajustada ou refazer",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/empresas/{id}/geocodificar": {
+      "post": {
+        "description": "Quem edita a empresa. Apaga a posição automática e agenda a geocodificação (o worker faz, com limite por minuto). Posição ajustada à mão: 409 `posicao_ajustada`; empresa no exterior: 409 `empresa_no_exterior`.",
+        "operationId": "GeolocalizacaoController_geocodificar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PosicaoDaEmpresa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Geocodificar de novo uma empresa",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/empresas/{id}/posicao": {
+      "get": {
+        "description": "Quem vê a empresa. Estado (`exata`, `aproximada`, `sem_coordenada`, `a_confirmar`), origem, raio de incerteza e o que falta no endereço.",
+        "operationId": "GeolocalizacaoController_posicao",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PosicaoDaEmpresa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Posição de uma empresa no mapa",
+        "tags": ["Geolocalização"]
+      },
+      "post": {
+        "description": "Quem edita a empresa. A posição vira exata, de origem `manual`, e é preservada: nenhuma geocodificação a sobrescreve. A tag \"Endereço a confirmar\" sai. Fora do Brasil: 400 `fora_do_brasil`.",
+        "operationId": "GeolocalizacaoController_ajustar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AjustarPosicao"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PosicaoDaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ajustar a posição de uma empresa",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/fila": {
+      "get": {
+        "description": "Empresas com a tag de sistema \"Endereço a confirmar\", com o que falta em cada endereço. O vendedor vê só as suas (ou todas, se a empresa liberou).",
+        "operationId": "GeolocalizacaoController_fila",
+        "parameters": [
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilaConfirmarEndereco"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Fila \"Confirmar endereço\"",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/lotes": {
+      "post": {
+        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor). Um lote em andamento por vez (409 `lote_em_andamento`); sem empresas para fazer, 409 `lote_vazio`. O worker executa em blocos curtos, com concorrência baixa; acompanhe em `GET /geolocalizacao/lotes/{id}`.",
+        "operationId": "GeolocalizacaoController_criarLote",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarLoteGeo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoteGeo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar e iniciar um lote de geocodificação",
+        "tags": ["Geolocalização"]
+      },
+      "get": {
+        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor).",
+        "operationId": "GeolocalizacaoController_listarLotes",
+        "parameters": [
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeLotesGeo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lotes de geocodificação, do mais novo ao mais antigo",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/lotes/{id}": {
+      "get": {
+        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor). Lote de outra empresa: 404 `lote_nao_encontrado`.",
+        "operationId": "GeolocalizacaoController_detalharLote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoteGeo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Andamento de um lote",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/lotes/{id}/cancelar": {
+      "post": {
+        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor). Vale antes da próxima empresa; o que já foi feito fica. 409 `lote_nao_cancelavel`.",
+        "operationId": "GeolocalizacaoController_cancelarLote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoteGeo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cancelar um lote em andamento",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/lotes/{id}/retomar": {
+      "post": {
+        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor). Só faz as empresas que faltam (e as que falharam). 409 `lote_nao_retomavel` ou `lote_em_andamento`.",
+        "operationId": "GeolocalizacaoController_retomarLote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoteGeo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Retomar um lote cancelado ou que falhou",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/lotes/previa": {
+      "post": {
+        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor).",
+        "operationId": "GeolocalizacaoController_previa",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tipo": {
+                    "type": "string",
+                    "enum": ["municipio", "regiao"]
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["tipo", "id"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviaDoLoteGeo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Prévia de um lote: quantas empresas e quantas já têm coordenada",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/regioes": {
+      "get": {
+        "description": "Qualquer membro. As microrregiões do IBGE são só leitura (`id` `micro:<código>`); as personalizadas têm id uuid. `uf` limita as microrregiões a um estado.",
+        "operationId": "GeolocalizacaoController_listarRegioes",
+        "parameters": [
+          {
+            "name": "uf",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegiaoGeo"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Regiões (microrregiões oficiais e as do administrador)",
+        "tags": ["Geolocalização"]
+      },
+      "post": {
+        "description": "Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Nome único (409 `regiao_repetida`); municípios por código IBGE (400 `municipio_invalido`).",
+        "operationId": "GeolocalizacaoController_criarRegiao",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarRegiao"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegiaoGeo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar região",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/regioes/{id}": {
+      "put": {
+        "description": "Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Troca o nome e a lista de municípios inteira.",
+        "operationId": "GeolocalizacaoController_alterarRegiao",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarRegiao"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegiaoGeo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar região",
+        "tags": ["Geolocalização"]
+      },
+      "delete": {
+        "description": "Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; lotes já feitos não mudam.",
+        "operationId": "GeolocalizacaoController_excluirRegiao",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir região",
+        "tags": ["Geolocalização"]
+      }
+    },
+    "/v1/geolocalizacao/resumo": {
+      "get": {
+        "description": "Qualquer membro. Quantas empresas (as que o usuário vê) estão exatas, aproximadas, sem coordenada, a confirmar ou ajustadas à mão, e se o CNEFE e o Nominatim estão disponíveis.",
+        "operationId": "GeolocalizacaoController_resumo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumoDaGeolocalizacao"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Resumo da geolocalização",
+        "tags": ["Geolocalização"]
+      }
+    },
     "/v1/importacao/lotes": {
       "post": {
         "description": "Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). O arquivo (.xlsx ou CSV, até 10 MB e 10.000 linhas) vai nos bytes do corpo, com `Content-Type: application/octet-stream`; o nome do arquivo vai em `arquivo` na consulta. Lê os títulos e as linhas, guarda o original e cria o lote em rascunho. Erros de leitura: 400 `arquivo_vazio`, `sem_cabecalho`, `colunas_repetidas`, `arquivo_invalido`; 413 `limite_de_linhas` e `arquivo_grande_demais`; 415 `formato_nao_suportado`.",
@@ -10389,6 +11583,23 @@
         "required": ["token"],
         "additionalProperties": false
       },
+      "AjustarPosicao": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": ["latitude", "longitude"],
+        "additionalProperties": false
+      },
       "Alertas": {
         "type": "object",
         "properties": {
@@ -11465,6 +12676,17 @@
         "required": ["doisFatoresExigido"],
         "additionalProperties": false
       },
+      "ConfirmarEndereco": {
+        "type": "object",
+        "properties": {
+          "acao": {
+            "type": "string",
+            "enum": ["manter_posicao", "refazer"]
+          }
+        },
+        "required": ["acao"],
+        "additionalProperties": false
+      },
       "ConsultaDaReceitaDaEmpresa": {
         "type": "object",
         "properties": {
@@ -12345,6 +13567,32 @@
           }
         },
         "required": ["nome"],
+        "additionalProperties": false
+      },
+      "CriarLoteGeo": {
+        "type": "object",
+        "properties": {
+          "escopo": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": ["municipio", "regiao"]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["tipo", "id"],
+            "additionalProperties": false
+          },
+          "refazerComCoordenada": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["escopo"],
         "additionalProperties": false
       },
       "CriarMotivoEntrada": {
@@ -13543,6 +14791,9 @@
             ],
             "additionalProperties": false
           },
+          "posicao": {
+            "$ref": "#/components/schemas/PosicaoDaEmpresa"
+          },
           "observacoes": {
             "nullable": true,
             "type": "string"
@@ -13741,6 +14992,7 @@
           "vertical",
           "website",
           "endereco",
+          "posicao",
           "observacoes",
           "origemCadastro",
           "telefones",
@@ -14003,6 +15255,75 @@
           }
         },
         "required": ["status"],
+        "additionalProperties": false
+      },
+      "FilaConfirmarEndereco": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "empresaId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "endereco": {
+                  "type": "string"
+                },
+                "municipio": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "cep": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "faltas": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["logradouro", "numero", "bairro", "cidade"]
+                  }
+                },
+                "vendedor": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "empresaId",
+                "nome",
+                "endereco",
+                "municipio",
+                "cep",
+                "faltas",
+                "vendedor"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina"],
         "additionalProperties": false
       },
       "Funil": {
@@ -14790,6 +16111,34 @@
         "required": ["itens", "total", "pagina", "porPagina"],
         "additionalProperties": false
       },
+      "ListaDeLotesGeo": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoteGeo"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina"],
+        "additionalProperties": false
+      },
       "ListaDeOportunidades": {
         "type": "object",
         "properties": {
@@ -14991,6 +16340,82 @@
           "concluidoEm",
           "desfazerAte",
           "desfeito"
+        ],
+        "additionalProperties": false
+      },
+      "LoteGeo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "escopo": {
+            "type": "string"
+          },
+          "municipios": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "refazerComCoordenada": {
+            "type": "boolean"
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["em_andamento", "concluido", "falhou", "cancelado"]
+          },
+          "totalEmpresas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "processadas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porResultado": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "iniciadoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "concluidoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string"
+          },
+          "criadoPor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "escopo",
+          "municipios",
+          "refazerComCoordenada",
+          "situacao",
+          "totalEmpresas",
+          "processadas",
+          "porResultado",
+          "iniciadoEm",
+          "concluidoEm",
+          "criadoEm",
+          "criadoPor"
         ],
         "additionalProperties": false
       },
@@ -15936,6 +17361,75 @@
         ],
         "additionalProperties": false
       },
+      "PosicaoDaEmpresa": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": ["exata", "aproximada", "sem_coordenada", "a_confirmar"]
+          },
+          "latitude": {
+            "nullable": true,
+            "type": "number"
+          },
+          "longitude": {
+            "nullable": true,
+            "type": "number"
+          },
+          "precisao": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["exata", "aproximada"]
+          },
+          "aproximacao": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["interpolada", "rua", "cep_cidade"]
+          },
+          "origem": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["cnefe", "nominatim", "cep", "manual", "checkin"]
+          },
+          "raioM": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "atualizadoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ajusteManual": {
+            "type": "boolean"
+          },
+          "enderecoMudouDepoisDoAjuste": {
+            "type": "boolean"
+          },
+          "faltas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["logradouro", "numero", "bairro", "cidade"]
+            }
+          }
+        },
+        "required": [
+          "estado",
+          "latitude",
+          "longitude",
+          "precisao",
+          "aproximacao",
+          "origem",
+          "raioM",
+          "atualizadoEm",
+          "ajusteManual",
+          "enderecoMudouDepoisDoAjuste",
+          "faltas"
+        ],
+        "additionalProperties": false
+      },
       "Preferencias": {
         "type": "object",
         "properties": {
@@ -16144,6 +17638,48 @@
         ],
         "additionalProperties": false
       },
+      "PreviaDoLoteGeo": {
+        "type": "object",
+        "properties": {
+          "escopo": {
+            "type": "string"
+          },
+          "municipios": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "comCoordenada": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "aProcessar": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ajustadasAMao": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "escopo",
+          "municipios",
+          "total",
+          "comCoordenada",
+          "aProcessar",
+          "ajustadasAMao"
+        ],
+        "additionalProperties": false
+      },
       "PrimeiroAcessoEntrada": {
         "type": "object",
         "properties": {
@@ -16225,6 +17761,48 @@
         "required": ["usuarioId", "contaId", "tenantId", "membroId", "verificacaoEmailPendente"],
         "additionalProperties": false
       },
+      "RegiaoGeo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": ["microrregiao", "personalizada"]
+          },
+          "nome": {
+            "type": "string"
+          },
+          "uf": {
+            "nullable": true,
+            "type": "string"
+          },
+          "municipios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigoIbge": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "uf": {
+                  "type": "string"
+                }
+              },
+              "required": ["codigoIbge", "nome", "uf"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["id", "tipo", "nome", "uf", "municipios"],
+        "additionalProperties": false
+      },
       "ResultadoDaTagEmMassa": {
         "type": "object",
         "properties": {
@@ -16273,6 +17851,84 @@
           }
         },
         "required": ["oportunidade", "avisoDeProbabilidade"],
+        "additionalProperties": false
+      },
+      "ResumoDaGeolocalizacao": {
+        "type": "object",
+        "properties": {
+          "cnefeCarregado": {
+            "type": "boolean"
+          },
+          "uf": {
+            "type": "string"
+          },
+          "nominatimConfigurado": {
+            "type": "boolean"
+          },
+          "totalEmpresas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "exatas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "aproximadas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "semCoordenada": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "aConfirmar": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ajustadasAMao": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "cnefeCarregado",
+          "uf",
+          "nominatimConfigurado",
+          "totalEmpresas",
+          "exatas",
+          "aproximadas",
+          "semCoordenada",
+          "aConfirmar",
+          "ajustadasAMao"
+        ],
+        "additionalProperties": false
+      },
+      "SalvarRegiao": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "municipios": {
+            "minItems": 1,
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "required": ["nome", "municipios"],
         "additionalProperties": false
       },
       "Saude": {

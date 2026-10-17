@@ -44,12 +44,13 @@ export class WorkerFilas {
   consumir(
     nome: NomeDaFila,
     processador: Processador,
-    opcoes: { concorrencia?: number } = {},
+    opcoes: { concorrencia?: number; limitador?: { max: number; duration: number } } = {},
   ): Worker {
     const base = opcoesDeWorker(this.config, this.conexao())
     const worker = new Worker(nome, processador, {
       ...base,
       ...(opcoes.concorrencia ? { concurrency: opcoes.concorrencia } : {}),
+      ...(opcoes.limitador ? { limiter: opcoes.limitador } : {}),
     })
     worker.on('error', (erro) =>
       this.log.error({ fila: nome, erro: erro.message }, 'erro no worker'),

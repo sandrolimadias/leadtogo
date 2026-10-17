@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { cnpjValido, normalizarCnpj } from './cnpj.js'
 import { cpfValido, normalizarCpf } from './cpf.js'
+import { posicaoDaEmpresaSchema } from './geolocalizacao.js'
 import { regimeTributarioSchema } from './receita.js'
 
 // Empresa da carteira (cliente, prospect ou lead): schemas de entrada e saída de /v1/carteira/empresas.
@@ -201,6 +202,8 @@ export const empresaCarteiraSchema = z
         .nullable(),
       paisCodigo: z.number().int().nullable(),
     }),
+    /** Posição no mapa (G1): selo de precisão, origem e o que falta no endereço */
+    posicao: posicaoDaEmpresaSchema,
     observacoes: z.string().nullable(),
     origemCadastro: origemCadastroSchema,
     telefones: z.array(telefoneDaEmpresaSchema),
