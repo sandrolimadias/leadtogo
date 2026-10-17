@@ -41,6 +41,8 @@ type LinhaDaEmpresa = {
   geo_endereco_consultado: string | null
   geo_ajuste_manual: boolean
   geo_atualizado_em: Date | string | null
+  centro_lat?: number | null
+  centro_lon?: number | null
 }
 
 /** Posição das empresas: ajustar o pin, confirmar o endereço, refazer, resumo e fila "Confirmar endereço". */
@@ -119,7 +121,8 @@ export class GeolocalizacaoService {
     const [e] = await db.execute<LinhaDaEmpresa>(sql`
       SELECT e.vendedor_id, e.cep, e.tipo_logradouro, e.logradouro, e.numero, e.bairro, e.municipio_codigo,
              m.nome AS municipio_nome, e.pais_codigo, e.geo_precisao, e.geo_aproximacao, e.geo_origem,
-             e.geo_endereco_consultado, e.geo_ajuste_manual, e.geo_atualizado_em
+             e.geo_endereco_consultado, e.geo_ajuste_manual, e.geo_atualizado_em,
+             ST_Y(m.localizacao) AS centro_lat, ST_X(m.localizacao) AS centro_lon
       FROM empresas e LEFT JOIN municipios m ON m.codigo_ibge = e.municipio_codigo
       WHERE e.id = ${empresaId} AND e.excluido_em IS NULL`)
     const escopo = await escopoDaCarteira(this.ctx)
@@ -128,7 +131,14 @@ export class GeolocalizacaoService {
     }
     const tagId = await this.tagAConfirmar()
     const comTag = tagId ? (await tagsAtuaisDaEmpresa(db, empresaId)).has(tagId) : false
-    return montarPosicao(this.dados(e), await coordenadasDaEmpresa(db, empresaId), comTag)
+    return montarPosicao(
+      this.dados(e),
+      await coordenadasDaEmpresa(db, empresaId),
+      comTag,
+      e.centro_lat != null && e.centro_lon != null
+        ? { latitude: e.centro_lat, longitude: e.centro_lon }
+        : null,
+    )
   }
 
   /**

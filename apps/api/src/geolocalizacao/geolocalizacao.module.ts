@@ -9,5 +9,6 @@ import { RegioesGeoService } from './regioes.service.js'
 @Module({
   controllers: [GeolocalizacaoController],
   providers: [GeolocalizacaoService, LotesGeoService, RegioesGeoService],
+  exports: [RegioesGeoService],
 })
 export class GeolocalizacaoModule {}

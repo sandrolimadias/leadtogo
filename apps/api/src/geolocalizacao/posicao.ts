@@ -50,6 +50,7 @@ export function montarPosicao(
   d: DadosDaPosicao,
   coordenadas: { latitude: number; longitude: number } | null,
   comTagAConfirmar: boolean,
+  centroDoMunicipio: { latitude: number; longitude: number } | null = null,
 ): PosicaoDaEmpresa {
   const faltas = faltasNoEndereco(d)
   const exterior = d.paisCodigo !== null
@@ -81,6 +82,7 @@ export function montarPosicao(
       d.geoAjusteManual &&
       d.geoEnderecoConsultado !== null &&
       d.geoEnderecoConsultado !== textoAtual,
+    centroSugerido: coordenadas ?? centroDoMunicipio,
     faltas: aConfirmar ? faltas : [],
   }
 }

@@ -10935,6 +10935,833 @@
         "tags": ["Importação: perfis de regras"]
       }
     },
+    "/v1/mapa/base.pmtiles": {
+      "get": {
+        "description": "Qualquer membro logado. Aceita `Range` (206 com `Content-Range`); sem `Range`, o arquivo inteiro. Arquivo ainda não enviado ao Garage: 404 `mapa_indisponivel`. Segue o formato PMTiles v3 (https://docs.protomaps.com/pmtiles/).",
+        "operationId": "TilesDoMapaController_base",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "O arquivo inteiro (sem `Range`)"
+          },
+          "206": {
+            "description": "O trecho pedido"
+          },
+          "401": {
+            "description": "Sem login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Mapa ainda não enviado (`mapa_indisponivel`)"
+          }
+        },
+        "summary": "Mapa base (PMTiles do estado)",
+        "tags": ["Mapa"]
+      }
+    },
+    "/v1/mapa/cobertura": {
+      "get": {
+        "description": "Qualquer membro. Só a carteira (Cliente e Prospect) com coordenada, por município, com o ponto do centro dele para mostrar os números no mapa. O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.",
+        "operationId": "MapaController_cobertura",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoberturaDoMapa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cobertura por município: visitadas e quantas faltam",
+        "tags": ["Mapa"]
+      }
+    },
+    "/v1/mapa/legenda": {
+      "get": {
+        "description": "Qualquer membro. Uma entrada por tag de Status que aparece no mapa e os estados fixos `sem_visita` e `visita_tentada`. `cor` e `nome` são o que vale agora (o configurado pelo administrador ou o padrão).",
+        "operationId": "MapaController_legenda",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegendaDoMapa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Legenda do mapa (cores e nomes dos estados)",
+        "tags": ["Mapa"]
+      }
+    },
+    "/v1/mapa/legenda/{chave}": {
+      "put": {
+        "description": "Só administradores (403 `acesso_negado`). A cor vem da paleta de 12 cores dos tokens (400 se for outra). Nome vazio ou nulo volta ao padrão. A regra de cada estado não muda. Registra na auditoria.",
+        "operationId": "MapaController_alterarEntrada",
+        "parameters": [
+          {
+            "name": "chave",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarEntradaDaLegenda"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegendaDoMapa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Mudar a cor ou o nome de um estado da legenda",
+        "tags": ["Mapa"]
+      }
+    },
+    "/v1/mapa/legenda/restaurar": {
+      "post": {
+        "description": "Só administradores. Apaga todas as cores e nomes personalizados da legenda.",
+        "operationId": "MapaController_restaurar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegendaDoMapa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Restaurar a legenda padrão",
+        "tags": ["Mapa"]
+      }
+    },
+    "/v1/mapa/opcoes": {
+      "get": {
+        "description": "Qualquer membro. Os chips saem das tags de Status que aparecem no mapa (flag `apareceNoMapa`), com o total de empresas com coordenada; `ligadoAoAbrir` vem da flag `visivelAoAbrir`. Leads só entram por lote de importação (`lotesDeLeads`, até `limiteDeLeads` por vez). O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.",
+        "operationId": "MapaController_opcoes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcoesDoMapa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Opções do mapa: chips, legenda, filtros e onde abrir",
+        "tags": ["Mapa"]
+      }
+    },
+    "/v1/mapa/pontos": {
+      "get": {
+        "description": "Qualquer membro. `oeste,sul,leste,norte` e `zoom` descrevem a área; os filtros (`statusTagIds` separados por vírgula, `visitada`, `vendedorId`, `semVisitaDias`, `municipioCodigo`, `regiaoId`, `precisao`, `lotes`) limitam o que vem. Com até 400 empresas na área (1.500 de perto, zoom 14 ou mais) devolve os pontos; com mais, devolve `agrupamentos` (bolhas com o total). Sem nenhum Status em `statusTagIds`, nada vem; leads só vêm de um lote em `lotes`, até 500. O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.",
+        "operationId": "MapaController_pontos",
+        "parameters": [
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "statusTagIds",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "visitada",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["alguma_vez", "90_dias", "periodo", "nunca"]
+            }
+          },
+          {
+            "name": "visitaDe",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "visitaAte",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "vendedorId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "semVisitaDias",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            }
+          },
+          {
+            "name": "municipioCodigo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "regiaoId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          {
+            "name": "precisao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["exata", "aproximada"]
+            }
+          },
+          {
+            "name": "lotes",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxItems": 10,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "oeste",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          {
+            "name": "sul",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "leste",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          {
+            "name": "norte",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "zoom",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 24
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PontosDoMapa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Empresas da área visível do mapa",
+        "tags": ["Mapa"]
+      }
+    },
+    "/v1/mapa/proximas": {
+      "get": {
+        "description": "Qualquer membro. Em ordem de distância, até 500; `total` diz quantas há. Por padrão exclui as já visitadas (`incluirVisitadas=true` as inclui). Aceita os mesmos filtros do mapa (sem Status escolhido vale todos). O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.",
+        "operationId": "MapaController_proximas",
+        "parameters": [
+          {
+            "name": "latitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "longitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          {
+            "name": "raioKm",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "incluirVisitadas",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "excluirEmpresaId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "statusTagIds",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "visitada",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["alguma_vez", "90_dias", "periodo", "nunca"]
+            }
+          },
+          {
+            "name": "visitaDe",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "visitaAte",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "vendedorId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "semVisitaDias",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            }
+          },
+          {
+            "name": "municipioCodigo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "regiaoId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          {
+            "name": "precisao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["exata", "aproximada"]
+            }
+          },
+          {
+            "name": "lotes",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxItems": 10,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelecaoDoMapa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Empresas próximas de um ponto (2, 5, 10, 25 km...)",
+        "tags": ["Mapa"]
+      }
+    },
+    "/v1/mapa/selecao": {
+      "post": {
+        "description": "Qualquer membro. Devolve as empresas dentro da área (até 500, com o total) para listar, abrir ou aplicar tag (a aplicação usa o endpoint de tag em massa das empresas). Por padrão exclui as já visitadas. O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.",
+        "operationId": "MapaController_selecao",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelecaoDoMapaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelecaoDoMapa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Seleção por retângulo ou por raio",
+        "tags": ["Mapa"]
+      }
+    },
     "/v1/me": {
       "get": {
         "description": "Usuário, empresas em que é membro (com o papel em cada uma), empresa ativa e se falta ativar o 2FA (`doisFatoresPendente`: a regra da empresa ativa) ou se ele é obrigatório (`doisFatoresObrigatorio`: não pode desativar). Não exige empresa ativa e fica aberto a quem ainda não ativou o 2FA.",
@@ -11842,6 +12669,34 @@
         },
         "additionalProperties": false
       },
+      "AlterarEntradaDaLegenda": {
+        "type": "object",
+        "properties": {
+          "cor": {
+            "type": "string",
+            "enum": [
+              "verde",
+              "azul",
+              "ambar",
+              "laranja",
+              "vermelho",
+              "rosa",
+              "roxo",
+              "indigo",
+              "verde-agua",
+              "cinza",
+              "alerta",
+              "destaque"
+            ]
+          },
+          "nome": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarFunilEntrada": {
         "type": "object",
         "properties": {
@@ -12151,6 +13006,12 @@
             ]
           },
           "ativo": {
+            "type": "boolean"
+          },
+          "apareceNoMapa": {
+            "type": "boolean"
+          },
+          "visivelAoAbrir": {
             "type": "boolean"
           }
         },
@@ -12534,6 +13395,51 @@
         ],
         "additionalProperties": false
       },
+      "ChipDoMapa": {
+        "type": "object",
+        "properties": {
+          "tagId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "chave": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "cor": {
+            "type": "string",
+            "enum": [
+              "verde",
+              "azul",
+              "ambar",
+              "laranja",
+              "vermelho",
+              "rosa",
+              "roxo",
+              "indigo",
+              "verde-agua",
+              "cinza",
+              "alerta",
+              "destaque"
+            ]
+          },
+          "ligadoAoAbrir": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porLote": {
+            "type": "boolean"
+          }
+        },
+        "required": ["tagId", "chave", "nome", "cor", "ligadoAoAbrir", "total", "porLote"],
+        "additionalProperties": false
+      },
       "CnaesConferidos": {
         "type": "object",
         "properties": {
@@ -12600,6 +13506,60 @@
           }
         },
         "required": ["principal", "secundarios"],
+        "additionalProperties": false
+      },
+      "CoberturaDoMapa": {
+        "type": "object",
+        "properties": {
+          "municipios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigoIbge": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "latitude": {
+                  "type": "number"
+                },
+                "longitude": {
+                  "type": "number"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "visitadas": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "faltam": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "codigoIbge",
+                "nome",
+                "latitude",
+                "longitude",
+                "total",
+                "visitadas",
+                "faltam"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["municipios"],
         "additionalProperties": false
       },
       "ConcluirAtividadeEntrada": {
@@ -15089,6 +16049,74 @@
         },
         "additionalProperties": false
       },
+      "EntradaDaLegenda": {
+        "type": "object",
+        "properties": {
+          "chave": {
+            "type": "string"
+          },
+          "fixa": {
+            "type": "boolean"
+          },
+          "nomePadrao": {
+            "type": "string"
+          },
+          "corPadrao": {
+            "type": "string",
+            "enum": [
+              "verde",
+              "azul",
+              "ambar",
+              "laranja",
+              "vermelho",
+              "rosa",
+              "roxo",
+              "indigo",
+              "verde-agua",
+              "cinza",
+              "alerta",
+              "destaque"
+            ]
+          },
+          "nome": {
+            "type": "string"
+          },
+          "cor": {
+            "type": "string",
+            "enum": [
+              "verde",
+              "azul",
+              "ambar",
+              "laranja",
+              "vermelho",
+              "rosa",
+              "roxo",
+              "indigo",
+              "verde-agua",
+              "cinza",
+              "alerta",
+              "destaque"
+            ]
+          },
+          "personalizada": {
+            "type": "boolean"
+          },
+          "regra": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chave",
+          "fixa",
+          "nomePadrao",
+          "corPadrao",
+          "nome",
+          "cor",
+          "personalizada",
+          "regra"
+        ],
+        "additionalProperties": false
+      },
       "EntradaDoHistoricoDaEmpresa": {
         "type": "object",
         "properties": {
@@ -15766,6 +16794,19 @@
           }
         },
         "required": ["funil", "fases", "resumo", "suspensas"],
+        "additionalProperties": false
+      },
+      "LegendaDoMapa": {
+        "type": "object",
+        "properties": {
+          "entradas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntradaDaLegenda"
+            }
+          }
+        },
+        "required": ["entradas"],
         "additionalProperties": false
       },
       "LinhasDaImportacao": {
@@ -16676,6 +17717,136 @@
         "required": ["loginGoogle"],
         "additionalProperties": false
       },
+      "OpcoesDoMapa": {
+        "type": "object",
+        "properties": {
+          "uf": {
+            "type": "string"
+          },
+          "chips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChipDoMapa"
+            }
+          },
+          "legenda": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntradaDaLegenda"
+            }
+          },
+          "vendedores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome"],
+              "additionalProperties": false
+            }
+          },
+          "cidades": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigoIbge": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["codigoIbge", "nome"],
+              "additionalProperties": false
+            }
+          },
+          "regioes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome"],
+              "additionalProperties": false
+            }
+          },
+          "lotesDeLeads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "comCoordenada": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["id", "nome", "comCoordenada"],
+              "additionalProperties": false
+            }
+          },
+          "limiteDeLeads": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "centroInicial": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              },
+              "zoom": {
+                "type": "number"
+              }
+            },
+            "required": ["latitude", "longitude", "zoom"],
+            "additionalProperties": false
+          },
+          "mapaInstalado": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "uf",
+          "chips",
+          "legenda",
+          "vendedores",
+          "cidades",
+          "regioes",
+          "lotesDeLeads",
+          "limiteDeLeads",
+          "centroInicial",
+          "mapaInstalado"
+        ],
+        "additionalProperties": false
+      },
       "Oportunidade": {
         "type": "object",
         "properties": {
@@ -17361,6 +18532,107 @@
         ],
         "additionalProperties": false
       },
+      "PontosDoMapa": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pontos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "latitude": {
+                  "type": "number"
+                },
+                "longitude": {
+                  "type": "number"
+                },
+                "estado": {
+                  "type": "string"
+                },
+                "visitada": {
+                  "type": "boolean"
+                },
+                "precisao": {
+                  "type": "string",
+                  "enum": ["exata", "aproximada"]
+                },
+                "cidade": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "nome",
+                "latitude",
+                "longitude",
+                "estado",
+                "visitada",
+                "precisao",
+                "cidade"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "agrupamentos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "latitude": {
+                  "type": "number"
+                },
+                "longitude": {
+                  "type": "number"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["latitude", "longitude", "total"],
+              "additionalProperties": false
+            }
+          },
+          "leads": {
+            "type": "object",
+            "properties": {
+              "mostrados": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "total": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "limite": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["mostrados", "total", "limite"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["total", "pontos", "agrupamentos", "leads"],
+        "additionalProperties": false
+      },
       "PosicaoDaEmpresa": {
         "type": "object",
         "properties": {
@@ -17407,6 +18679,20 @@
           "enderecoMudouDepoisDoAjuste": {
             "type": "boolean"
           },
+          "centroSugerido": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            },
+            "required": ["latitude", "longitude"],
+            "additionalProperties": false
+          },
           "faltas": {
             "type": "array",
             "items": {
@@ -17426,6 +18712,7 @@
           "atualizadoEm",
           "ajusteManual",
           "enderecoMudouDepoisDoAjuste",
+          "centroSugerido",
           "faltas"
         ],
         "additionalProperties": false
@@ -17994,6 +19281,250 @@
         "required": ["status", "version", "checks"],
         "additionalProperties": false
       },
+      "SelecaoDoMapa": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "limite": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "cidade": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "latitude": {
+                  "type": "number"
+                },
+                "longitude": {
+                  "type": "number"
+                },
+                "estado": {
+                  "type": "string"
+                },
+                "visitada": {
+                  "type": "boolean"
+                },
+                "distanciaM": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "nome",
+                "cidade",
+                "latitude",
+                "longitude",
+                "estado",
+                "visitada",
+                "distanciaM"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["total", "limite", "itens"],
+        "additionalProperties": false
+      },
+      "SelecaoDoMapaEntrada": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "incluirVisitadas": {
+                "default": false,
+                "type": "boolean"
+              },
+              "filtros": {
+                "type": "object",
+                "properties": {
+                  "statusTagIds": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "visitada": {
+                    "type": "string",
+                    "enum": ["alguma_vez", "90_dias", "periodo", "nunca"]
+                  },
+                  "visitaDe": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "visitaAte": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "vendedorId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "semVisitaDias": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 3650
+                  },
+                  "municipioCodigo": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "regiaoId": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "precisao": {
+                    "type": "string",
+                    "enum": ["exata", "aproximada"]
+                  },
+                  "lotes": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "tipo": {
+                "type": "string",
+                "enum": ["retangulo"]
+              },
+              "oeste": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "sul": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "leste": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "norte": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              }
+            },
+            "required": ["tipo", "oeste", "sul", "leste", "norte"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "incluirVisitadas": {
+                "default": false,
+                "type": "boolean"
+              },
+              "filtros": {
+                "type": "object",
+                "properties": {
+                  "statusTagIds": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "visitada": {
+                    "type": "string",
+                    "enum": ["alguma_vez", "90_dias", "periodo", "nunca"]
+                  },
+                  "visitaDe": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "visitaAte": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "vendedorId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "semVisitaDias": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 3650
+                  },
+                  "municipioCodigo": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "regiaoId": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "precisao": {
+                    "type": "string",
+                    "enum": ["exata", "aproximada"]
+                  },
+                  "lotes": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "tipo": {
+                "type": "string",
+                "enum": ["raio"]
+              },
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "raioKm": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 100
+              }
+            },
+            "required": ["tipo", "latitude", "longitude", "raioKm"]
+          }
+        ]
+      },
       "Solucao": {
         "type": "object",
         "properties": {
@@ -18051,9 +19582,25 @@
           "chaveSistema": {
             "nullable": true,
             "type": "string"
+          },
+          "apareceNoMapa": {
+            "type": "boolean"
+          },
+          "visivelAoAbrir": {
+            "type": "boolean"
           }
         },
-        "required": ["id", "tagGrupoId", "nome", "cor", "ativo", "ordem", "chaveSistema"],
+        "required": [
+          "id",
+          "tagGrupoId",
+          "nome",
+          "cor",
+          "ativo",
+          "ordem",
+          "chaveSistema",
+          "apareceNoMapa",
+          "visivelAoAbrir"
+        ],
         "additionalProperties": false
       },
       "TagGrupo": {

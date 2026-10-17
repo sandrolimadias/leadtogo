@@ -22,6 +22,7 @@ export const TABELAS_PAGINADAS = [
   'atividades_ficha',
   'oportunidades',
   'oportunidades_ficha',
+  'geo_fila',
 ] as const
 export type TabelaPaginada = (typeof TABELAS_PAGINADAS)[number]
 

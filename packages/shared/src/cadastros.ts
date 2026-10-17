@@ -52,6 +52,10 @@ export const tagSchema = z
     ordem: z.number().int(),
     /** Identifica as tags das regras automáticas (`lead`, `cliente`, `visitada`...); null nas criadas pelo usuário */
     chaveSistema: z.string().nullable(),
+    /** Tags de Status: a empresa com esta tag aparece no mapa (Inativo nasce desligada) */
+    apareceNoMapa: z.boolean(),
+    /** Tags de Status: o chip já vem ligado ao abrir o mapa (Prospect e Inativo nascem desligados) */
+    visivelAoAbrir: z.boolean(),
   })
   .meta({ id: 'Tag' })
 export type Tag = z.infer<typeof tagSchema>
@@ -107,7 +111,13 @@ export const criarTagSchema = z
 export type CriarTagEntrada = z.input<typeof criarTagSchema>
 
 export const alterarTagSchema = z
-  .object({ nome: nomeDeCadastroSchema, cor: corDeTagSchema, ativo: z.boolean() })
+  .object({
+    nome: nomeDeCadastroSchema,
+    cor: corDeTagSchema,
+    ativo: z.boolean(),
+    apareceNoMapa: z.boolean(),
+    visivelAoAbrir: z.boolean(),
+  })
   .partial()
   .strict()
   .refine((d) => Object.keys(d).length > 0, 'informe ao menos um campo')

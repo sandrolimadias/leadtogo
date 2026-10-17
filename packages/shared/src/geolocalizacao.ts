@@ -43,6 +43,8 @@ export const posicaoDaEmpresaSchema = z
     ajusteManual: z.boolean(),
     /** O endereço mudou depois do ajuste manual: perguntar se mantém a posição ou refaz */
     enderecoMudouDepoisDoAjuste: z.boolean(),
+    /** Onde o mapa abre para ajustar: a posição atual ou, sem ela, o centro do município da empresa */
+    centroSugerido: z.object({ latitude: z.number(), longitude: z.number() }).nullable(),
     /** O que falta no endereço (rua, número, bairro, cidade) quando está "a confirmar" */
     faltas: z.array(z.enum(['logradouro', 'numero', 'bairro', 'cidade'])),
   })

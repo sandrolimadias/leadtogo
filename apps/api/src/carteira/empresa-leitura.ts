@@ -70,6 +70,7 @@ export async function lerEmpresa(
       porteDescricao: portes.descricao,
       municipioNome: municipios.nome,
       municipioUf: municipios.uf,
+      municipioCentro: municipios.localizacao,
     })
     .from(empresas)
     .innerJoin(membros, eq(membros.id, empresas.vendedorId))
@@ -205,7 +206,12 @@ export async function lerEmpresa(
           : null,
       paisCodigo: r.paisCodigo,
     },
-    posicao: montarPosicao({ ...r, municipioNome: e.municipioNome }, coordenadas, comTagAConfirmar),
+    posicao: montarPosicao(
+      { ...r, municipioNome: e.municipioNome },
+      coordenadas,
+      comTagAConfirmar,
+      e.municipioCentro ? { latitude: e.municipioCentro.y, longitude: e.municipioCentro.x } : null,
+    ),
     observacoes: r.observacoes,
     origemCadastro: r.origemCadastro,
     telefones: telefones.map((t) => ({

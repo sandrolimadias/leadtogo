@@ -75,3 +75,19 @@ export function criarApiClient(baseUrl: string, opcoes: { fetch?: typeof fetch }
 }
 
 export type ApiClient = ReturnType<typeof criarApiClient>
+
+// Geolocalização (G1)
+export type PosicaoDaEmpresa = Esquemas['PosicaoDaEmpresa']
+export type LoteGeo = Esquemas['LoteGeo']
+export type ListaDeLotesGeo = Esquemas['ListaDeLotesGeo']
+export type PreviaDoLoteGeo = Esquemas['PreviaDoLoteGeo']
+export type RegiaoGeo = Esquemas['RegiaoGeo']
+export type ResumoDaGeolocalizacao = Esquemas['ResumoDaGeolocalizacao']
+export type FilaConfirmarEndereco = Esquemas['FilaConfirmarEndereco']
+
+// Mapa (G2)
+export type OpcoesDoMapa = Esquemas['OpcoesDoMapa']
+export type LegendaDoMapa = Esquemas['LegendaDoMapa']
+export type PontosDoMapa = Esquemas['PontosDoMapa']
+export type SelecaoDoMapaResposta = Esquemas['SelecaoDoMapa']
+export type CoberturaDoMapa = Esquemas['CoberturaDoMapa']

@@ -2068,6 +2068,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/mapa/base.pmtiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mapa base (PMTiles do estado)
+         * @description Qualquer membro logado. Aceita `Range` (206 com `Content-Range`); sem `Range`, o arquivo inteiro. Arquivo ainda não enviado ao Garage: 404 `mapa_indisponivel`. Segue o formato PMTiles v3 (https://docs.protomaps.com/pmtiles/).
+         */
+        get: operations["TilesDoMapaController_base"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mapa/cobertura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobertura por município: visitadas e quantas faltam
+         * @description Qualquer membro. Só a carteira (Cliente e Prospect) com coordenada, por município, com o ponto do centro dele para mostrar os números no mapa. O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.
+         */
+        get: operations["MapaController_cobertura"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mapa/legenda": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Legenda do mapa (cores e nomes dos estados)
+         * @description Qualquer membro. Uma entrada por tag de Status que aparece no mapa e os estados fixos `sem_visita` e `visita_tentada`. `cor` e `nome` são o que vale agora (o configurado pelo administrador ou o padrão).
+         */
+        get: operations["MapaController_legenda"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mapa/legenda/{chave}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mudar a cor ou o nome de um estado da legenda
+         * @description Só administradores (403 `acesso_negado`). A cor vem da paleta de 12 cores dos tokens (400 se for outra). Nome vazio ou nulo volta ao padrão. A regra de cada estado não muda. Registra na auditoria.
+         */
+        put: operations["MapaController_alterarEntrada"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mapa/legenda/restaurar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restaurar a legenda padrão
+         * @description Só administradores. Apaga todas as cores e nomes personalizados da legenda.
+         */
+        post: operations["MapaController_restaurar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mapa/opcoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Opções do mapa: chips, legenda, filtros e onde abrir
+         * @description Qualquer membro. Os chips saem das tags de Status que aparecem no mapa (flag `apareceNoMapa`), com o total de empresas com coordenada; `ligadoAoAbrir` vem da flag `visivelAoAbrir`. Leads só entram por lote de importação (`lotesDeLeads`, até `limiteDeLeads` por vez). O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.
+         */
+        get: operations["MapaController_opcoes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mapa/pontos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Empresas da área visível do mapa
+         * @description Qualquer membro. `oeste,sul,leste,norte` e `zoom` descrevem a área; os filtros (`statusTagIds` separados por vírgula, `visitada`, `vendedorId`, `semVisitaDias`, `municipioCodigo`, `regiaoId`, `precisao`, `lotes`) limitam o que vem. Com até 400 empresas na área (1.500 de perto, zoom 14 ou mais) devolve os pontos; com mais, devolve `agrupamentos` (bolhas com o total). Sem nenhum Status em `statusTagIds`, nada vem; leads só vêm de um lote em `lotes`, até 500. O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.
+         */
+        get: operations["MapaController_pontos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mapa/proximas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Empresas próximas de um ponto (2, 5, 10, 25 km...)
+         * @description Qualquer membro. Em ordem de distância, até 500; `total` diz quantas há. Por padrão exclui as já visitadas (`incluirVisitadas=true` as inclui). Aceita os mesmos filtros do mapa (sem Status escolhido vale todos). O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.
+         */
+        get: operations["MapaController_proximas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mapa/selecao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Seleção por retângulo ou por raio
+         * @description Qualquer membro. Devolve as empresas dentro da área (até 500, com o total) para listar, abrir ou aplicar tag (a aplicação usa o endpoint de tag em massa das empresas). Por padrão exclui as já visitadas. O vendedor vê no mapa só o que já vê na carteira; administrador e gestor veem tudo.
+         */
+        post: operations["MapaController_selecao"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -2309,6 +2489,11 @@ export interface components {
             telefones?: components["schemas"]["TelefoneDaEmpresaEntrada"][];
             cnaes?: components["schemas"]["CnaesDaEmpresaEntrada"];
         };
+        AlterarEntradaDaLegenda: {
+            /** @enum {string} */
+            cor?: "verde" | "azul" | "ambar" | "laranja" | "vermelho" | "rosa" | "roxo" | "indigo" | "verde-agua" | "cinza" | "alerta" | "destaque";
+            nome?: string | null;
+        };
         AlterarFunilEntrada: {
             nome?: string;
             ativo?: boolean;
@@ -2402,6 +2587,8 @@ export interface components {
             nome?: string;
             cor?: components["schemas"]["CorDeTag"];
             ativo?: boolean;
+            apareceNoMapa?: boolean;
+            visivelAoAbrir?: boolean;
         };
         AlterarTagGrupoEntrada: {
             nome?: string;
@@ -2503,6 +2690,17 @@ export interface components {
             criadaEm: string;
             editavel: boolean;
         };
+        ChipDoMapa: {
+            /** Format: uuid */
+            tagId: string;
+            chave: string;
+            nome: string;
+            /** @enum {string} */
+            cor: "verde" | "azul" | "ambar" | "laranja" | "vermelho" | "rosa" | "roxo" | "indigo" | "verde-agua" | "cinza" | "alerta" | "destaque";
+            ligadoAoAbrir: boolean;
+            total: number;
+            porLote: boolean;
+        };
         CnaesConferidos: {
             validos: {
                 codigo: number;
@@ -2517,6 +2715,17 @@ export interface components {
         CnaesDaEmpresaEntrada: {
             principal: number | null;
             secundarios: number[];
+        };
+        CoberturaDoMapa: {
+            municipios: {
+                codigoIbge: number;
+                nome: string;
+                latitude: number;
+                longitude: number;
+                total: number;
+                visitadas: number;
+                faltam: number;
+            }[];
         };
         ConcluirAtividadeEntrada: {
             resultado: string;
@@ -3225,6 +3434,18 @@ export interface components {
             municipioCodigo?: number | null;
             paisCodigo?: number | null;
         };
+        EntradaDaLegenda: {
+            chave: string;
+            fixa: boolean;
+            nomePadrao: string;
+            /** @enum {string} */
+            corPadrao: "verde" | "azul" | "ambar" | "laranja" | "vermelho" | "rosa" | "roxo" | "indigo" | "verde-agua" | "cinza" | "alerta" | "destaque";
+            nome: string;
+            /** @enum {string} */
+            cor: "verde" | "azul" | "ambar" | "laranja" | "vermelho" | "rosa" | "roxo" | "indigo" | "verde-agua" | "cinza" | "alerta" | "destaque";
+            personalizada: boolean;
+            regra: string;
+        };
         EntradaDoHistoricoDaEmpresa: {
             id: string;
             em: string;
@@ -3408,6 +3629,9 @@ export interface components {
                 ponderado: number;
             };
             suspensas: number;
+        };
+        LegendaDoMapa: {
+            entradas: components["schemas"]["EntradaDaLegenda"][];
         };
         LinhasDaImportacao: {
             itens: {
@@ -3638,6 +3862,37 @@ export interface components {
         OpcoesDeAcesso: {
             loginGoogle: boolean;
         };
+        OpcoesDoMapa: {
+            uf: string;
+            chips: components["schemas"]["ChipDoMapa"][];
+            legenda: components["schemas"]["EntradaDaLegenda"][];
+            vendedores: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            }[];
+            cidades: {
+                codigoIbge: number;
+                nome: string;
+            }[];
+            regioes: {
+                id: string;
+                nome: string;
+            }[];
+            lotesDeLeads: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                comCoordenada: number;
+            }[];
+            limiteDeLeads: number;
+            centroInicial: {
+                latitude: number;
+                longitude: number;
+                zoom: number;
+            };
+            mapaInstalado: boolean;
+        };
         Oportunidade: {
             /** Format: uuid */
             id: string;
@@ -3835,6 +4090,31 @@ export interface components {
             acaoForaDoPerfil: "pular" | "importar_com_tag";
             ativo: boolean;
         };
+        PontosDoMapa: {
+            total: number;
+            pontos: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                latitude: number;
+                longitude: number;
+                estado: string;
+                visitada: boolean;
+                /** @enum {string} */
+                precisao: "exata" | "aproximada";
+                cidade: string | null;
+            }[];
+            agrupamentos: {
+                latitude: number;
+                longitude: number;
+                total: number;
+            }[];
+            leads: {
+                mostrados: number;
+                total: number;
+                limite: number;
+            };
+        };
         PosicaoDaEmpresa: {
             /** @enum {string} */
             estado: "exata" | "aproximada" | "sem_coordenada" | "a_confirmar";
@@ -3850,6 +4130,10 @@ export interface components {
             atualizadoEm: string | null;
             ajusteManual: boolean;
             enderecoMudouDepoisDoAjuste: boolean;
+            centroSugerido: {
+                latitude: number;
+                longitude: number;
+            } | null;
             faltas: ("logradouro" | "numero" | "bairro" | "cidade")[];
         };
         Preferencias: {
@@ -3996,6 +4280,73 @@ export interface components {
                 };
             };
         };
+        SelecaoDoMapa: {
+            total: number;
+            limite: number;
+            itens: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cidade: string | null;
+                latitude: number;
+                longitude: number;
+                estado: string;
+                visitada: boolean;
+                distanciaM: number | null;
+            }[];
+        };
+        SelecaoDoMapaEntrada: {
+            /** @default false */
+            incluirVisitadas: boolean;
+            filtros?: {
+                statusTagIds?: string[];
+                /** @enum {string} */
+                visitada?: "alguma_vez" | "90_dias" | "periodo" | "nunca";
+                /** Format: date */
+                visitaDe?: string;
+                /** Format: date */
+                visitaAte?: string;
+                /** Format: uuid */
+                vendedorId?: string;
+                semVisitaDias?: number;
+                municipioCodigo?: number;
+                regiaoId?: string;
+                /** @enum {string} */
+                precisao?: "exata" | "aproximada";
+                lotes?: string[];
+            };
+            /** @enum {string} */
+            tipo: "retangulo";
+            oeste: number;
+            sul: number;
+            leste: number;
+            norte: number;
+        } | {
+            /** @default false */
+            incluirVisitadas: boolean;
+            filtros?: {
+                statusTagIds?: string[];
+                /** @enum {string} */
+                visitada?: "alguma_vez" | "90_dias" | "periodo" | "nunca";
+                /** Format: date */
+                visitaDe?: string;
+                /** Format: date */
+                visitaAte?: string;
+                /** Format: uuid */
+                vendedorId?: string;
+                semVisitaDias?: number;
+                municipioCodigo?: number;
+                regiaoId?: string;
+                /** @enum {string} */
+                precisao?: "exata" | "aproximada";
+                lotes?: string[];
+            };
+            /** @enum {string} */
+            tipo: "raio";
+            latitude: number;
+            longitude: number;
+            raioKm: number;
+        };
         Solucao: {
             /** Format: uuid */
             id: string;
@@ -4015,6 +4366,8 @@ export interface components {
             ativo: boolean;
             ordem: number;
             chaveSistema: string | null;
+            apareceNoMapa: boolean;
+            visivelAoAbrir: boolean;
         };
         TagGrupo: {
             /** Format: uuid */
@@ -12693,6 +13046,511 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CnaesConferidos"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    TilesDoMapaController_base: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description O arquivo inteiro (sem `Range`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description O trecho pedido */
+            206: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Mapa ainda não enviado (`mapa_indisponivel`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MapaController_cobertura: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoberturaDoMapa"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MapaController_legenda: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegendaDoMapa"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MapaController_alterarEntrada: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chave: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarEntradaDaLegenda"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegendaDoMapa"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MapaController_restaurar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegendaDoMapa"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MapaController_opcoes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcoesDoMapa"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MapaController_pontos: {
+        parameters: {
+            query: {
+                busca?: string;
+                statusTagIds?: string[];
+                visitada?: "alguma_vez" | "90_dias" | "periodo" | "nunca";
+                visitaDe?: string;
+                visitaAte?: string;
+                vendedorId?: string;
+                semVisitaDias?: number;
+                municipioCodigo?: number;
+                regiaoId?: string;
+                precisao?: "exata" | "aproximada";
+                lotes?: string[];
+                oeste: number;
+                sul: number;
+                leste: number;
+                norte: number;
+                zoom: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PontosDoMapa"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MapaController_proximas: {
+        parameters: {
+            query: {
+                latitude: number;
+                longitude: number;
+                raioKm: number;
+                incluirVisitadas?: "true" | "false";
+                excluirEmpresaId?: string;
+                statusTagIds?: string[];
+                visitada?: "alguma_vez" | "90_dias" | "periodo" | "nunca";
+                visitaDe?: string;
+                visitaAte?: string;
+                vendedorId?: string;
+                semVisitaDias?: number;
+                municipioCodigo?: number;
+                regiaoId?: string;
+                precisao?: "exata" | "aproximada";
+                lotes?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelecaoDoMapa"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MapaController_selecao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelecaoDoMapaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelecaoDoMapa"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */

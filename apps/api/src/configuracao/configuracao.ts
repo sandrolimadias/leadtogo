@@ -128,6 +128,8 @@ const esquema = z
     BRASILAPI_CEP_URL: url(['http:', 'https:']).default('https://brasilapi.com.br/api/cep/v1'),
     /** Prazo de cada consulta de CEP, em milissegundos */
     CEP_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
+    /** Chave do arquivo PMTiles do estado no Garage (bucket privado), servido por `GET /v1/mapa/base.pmtiles` */
+    GEO_PMTILES_CHAVE: z.string().min(1).default('mapa/es.pmtiles'),
     /** Geocodificar sozinho a empresa nova ou com o endereço alterado (ligado em produção; os testes desligam) */
     GEO_AUTOMATICA: booleano.default(true),
     /** UF que o mapa e os lotes mostram por padrão (as microrregiões da lista); nada no código é fixo ao ES */

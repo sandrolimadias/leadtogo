@@ -22,6 +22,7 @@ import { FiltroDeExcecoes } from './http/filtro-excecoes.js'
 import { HealthModule } from './health/health.module.js'
 import { GeolocalizacaoModule } from './geolocalizacao/geolocalizacao.module.js'
 import { ImportacaoModule } from './importacao/importacao.module.js'
+import { MapaModule } from './mapa/mapa.module.js'
 import { InfraModule } from './infra/infra.module.js'
 import { LogModule } from './log/log.module.js'
 import { LimiteDeRequisicoesGuard } from './rate-limit/limite.guard.js'
@@ -58,6 +59,7 @@ export class AppModule {
         ConvitesModule,
         ImportacaoModule,
         GeolocalizacaoModule,
+        MapaModule,
         EmpresasModule,
         PrimeiroAcessoModule,
         ReceitaModule,

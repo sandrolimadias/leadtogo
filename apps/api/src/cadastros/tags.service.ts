@@ -33,6 +33,8 @@ const paraTag = (t: LinhaTag): Tag => ({
   ativo: t.ativo,
   ordem: t.ordem,
   chaveSistema: t.chaveSistema,
+  apareceNoMapa: t.apareceNoMapa,
+  visivelAoAbrir: t.visivelAoAbrir,
 })
 const paraGrupo = (g: LinhaGrupo, itens: LinhaTag[]): TagGrupo => ({
   id: g.id,
@@ -269,6 +271,8 @@ export class TagsService {
           ...(dados.nome !== undefined && { nome: dados.nome.trim() }),
           ...(dados.cor !== undefined && { cor: dados.cor }),
           ...(dados.ativo !== undefined && { ativo: dados.ativo }),
+          ...(dados.apareceNoMapa !== undefined && { apareceNoMapa: dados.apareceNoMapa }),
+          ...(dados.visivelAoAbrir !== undefined && { visivelAoAbrir: dados.visivelAoAbrir }),
           atualizadoPor: this.ctx.membro.id,
         })
         .where(eq(tags.id, id))
