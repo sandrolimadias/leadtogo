@@ -13,7 +13,7 @@
 | Normalização | Obrigatória antes de consultar (tipo de logradouro, "- ES", acentos, abreviações). Completar rua e bairro pelo CEP antes, quando o CEP não for único do município. |
 | Preparo pesado | Importação do Nominatim, `osrm-extract`, PMTiles e índice do CNEFE rodam **no ambiente do Ale, nunca na VPS**. Na VPS e no Garage só sobem os arquivos prontos. Atualização sob demanda: `docs/geo_atualizacao.md`. O CNEFE só muda a cada Censo. |
 | VPS | 4 CPUs ARM já perto de 50%. Geocodificação em lote com concorrência baixa e configurável, no worker, nunca na requisição da tela. Limite de memória nos containers novos (Nominatim: 1,5 GiB). |
-| A verificar no G1 | Licença de uso do CNEFE; tempo de consulta real na VPS (ARM); se o limite de 512 MiB do Garage aguenta a leitura por faixas (Range) do PMTiles. Resultados no relatório do módulo. |
+| A verificar no G1 | Licença de uso do CNEFE (**resolvido**, ver "Atribuições e licenças"); tempo de consulta real na VPS (ARM); se o limite de 512 MiB do Garage aguenta a leitura por faixas (Range) do PMTiles. Resultados no relatório do módulo. |
 | Portas para o G4 | Máximo de 150 paradas por pedido ao VROOM; ponto de partida padrão = posição atual do celular (pontos cadastrados como alternativa); otimização só pela ordem mais curta, sem janela de horário nem almoço. |
 
 ## 2. Decisões do plano (Ale, 16/10/2026)
@@ -91,3 +91,7 @@ Check-in com GPS, "Na rota" no painel, rotas e otimização (OSRM/VROOM), janela
 | 17/10/2026 | Seleção por retângulo em dois toques (funciona igual no celular); a posição do aparelho NÃO é usada no mapa (só no check-in do G3, LGPD) | Claude |
 | 17/10/2026 | Leads no mapa só por lote de importação (até 500, com contador); chip de leads sem lote escolhido mostra aviso | Plano do Ale |
 
+## Atribuições e licenças (Ale, 17/10/2026)
+
+- **OpenStreetMap (ODbL):** o mapa base (PMTiles da Protomaps, derivado do OSM) e o Nominatim exigem a citação **"© OpenStreetMap contributors"**, com link para `openstreetmap.org/copyright`. Ela fica **sempre visível** no canto do mapa (controle de atribuição do MapLibre, sem recolher), em toda tela que mostra o mapa.
+- **CNEFE 2022 (IBGE):** os metadados do IBGE **não trazem um campo explícito de licença** para o CNEFE. Adotamos a **citação da fonte**: **"Fonte: IBGE – CNEFE 2022"**, exibida no mapa quando algum pin visível tem coordenada vinda do CNEFE (`geo_origem = cnefe`). Se o IBGE publicar uma licença formal, revisar aqui.

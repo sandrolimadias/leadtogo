@@ -1,7 +1,7 @@
 # Geolocalização: preparar e atualizar os dados (passo a passo)
 
 > Para o Ale pedir de novo daqui a meses. Decisões em `plano_geolocalizacao.md`; medições em `geo_g0_relatorio.md`.
-> **Regra:** o preparo pesado (importar o Nominatim, recortar o mapa, indexar o CNEFE) roda **no seu ambiente (WSL ou outra máquina com Docker), nunca na VPS**. Na VPS e no Garage só sobem os arquivos prontos. A VPS tem 4 CPUs ARM já perto de 50%.
+> **Regra:** o preparo pesado (importar o Nominatim, recortar o mapa, indexar o CNEFE) roda **no seu ambiente (WSL ou outra máquina com Docker), nunca na VPS**. Na VPS e no Garage só sobem os arquivos prontos (para o Nominatim, um `pg_dump`, nunca a pasta do Postgres). A VPS tem 4 CPUs ARM já perto de 50%.
 
 ## Resumo: o que tem de dado e com que frequência atualizar
 
@@ -52,7 +52,27 @@ docker exec nominatim-es nominatim freeze
 docker exec -u postgres nominatim-es psql -d nominatim -c 'VACUUM FULL'
 ```
 
-Depois, compacte o volume `nominatim-es-pg` (`docker run --rm -v nominatim-es-pg:/v -v "$PWD":/o ubuntu tar czf /o/nominatim-es-pg.tgz -C /v .`, ~430 MB) e suba para a VPS (scp). O passo a passo do serviço no Coolify (imagem `mediagis/nominatim:4.5`, volume, limite de **1,5 GiB** de memória, variável `NOMINATIM_URL` na API e no worker) está em `runbook_e13.md`, seção "Geolocalização".
+**Como levar para a VPS (ARM): nunca copie a pasta do Postgres.** O diretório de dados do Postgres não é portável entre arquiteturas (x86 do WSL, ARM da VPS). Duas formas corretas:
+
+| | A. `pg_dump` / `pg_restore` (**recomendada**) | B. Importar na própria VPS |
+|---|---|---|
+| Como | Exporta o banco `nominatim` já importado e encolhido (formato lógico, independe da arquitetura) e restaura no container da VPS | Sobe o container na VPS com o `es.osm.pbf` e deixa o Nominatim importar |
+| Carga na VPS | Baixa: só a restauração (índices são recriados), minutos | Alta: dezenas de minutos de CPU e picos de memória |
+| Tempo (estimado, **não medido em ARM**) | Dump de ~0,3 GB vira ~100 a 200 MB; restauração em **~10 a 20 min** | No WSL (8 threads, 4 GiB) levou ~10 min; com 2 threads na VPS, estimo **40 a 90 min** |
+| Risco | Baixo, e dá para ensaiar a restauração no WSL antes | Pico passa do limite de 1,5 GiB do serviço e pode derrubar outros containers |
+
+**Recomendo a A**: a VPS já está perto de 50% de CPU e o limite do Nominatim é 1,5 GiB, abaixo do pico da importação (~4 GiB). A A move o custo para o seu WSL, onde o G0 já mediu. A B só serve se a A falhar, e então fora do horário de uso, com o limite de memória do container temporariamente maior e a tela de Configurações → Geolocalização avisando que o Nominatim está indisponível.
+
+```bash
+# No WSL, com o container nominatim-es já importado e encolhido (freeze + VACUUM FULL):
+docker exec -u postgres nominatim-es pg_dump -Fc -d nominatim -f /tmp/nominatim.dump
+docker cp nominatim-es:/tmp/nominatim.dump ./nominatim.dump && ls -lh nominatim.dump
+# Ensaio no WSL antes de subir: container novo (mesma imagem, mesma versão) + restauração + consulta de teste
+# Na VPS (imagem mediagis/nominatim:4.5, mesma versão e mesmo Postgres 16 do WSL):
+#   copie o .dump com scp, crie o banco vazio e rode: pg_restore -d nominatim --no-owner --jobs=2 nominatim.dump
+```
+
+Condições: **mesma versão do Nominatim e do Postgres** nos dois lados (imagem fixada em `4.5`), e a imagem precisa ter variante ARM (`docker manifest inspect mediagis/nominatim:4.5` lista `arm64`). Se faltar, vale a B ou uma imagem própria. O passo a passo do serviço no Coolify (imagem, volume, limite de **1,5 GiB**, variável `NOMINATIM_URL` na API e no worker) está em `runbook_e13.md`, seção "Geolocalização". O Nominatim só entra em produção depois do teste do Ale, e o ensaio de restauração fica registrado no relatório.
 
 ## 3. Mapa (PMTiles do ES)
 
