@@ -142,6 +142,10 @@ export const tags = pgTable(
     cor: corDeTag().notNull().default('gray'),
     /** Identifica as tags das regras automáticas (`lead`, `cliente`, `visitada`...), mesmo renomeadas */
     chaveSistema: text(),
+    /** Só vale nas tags de Status: a empresa com esta tag aparece no mapa (Inativo nasce desligada) */
+    apareceNoMapa: boolean().notNull().default(true),
+    /** Só vale nas tags de Status: o chip já vem ligado ao abrir o mapa (Prospect e Inativo nascem desligados) */
+    visivelAoAbrir: boolean().notNull().default(true),
   },
   (t) => [
     // O nome é único dentro do grupo (o mesmo nome pode existir em grupos diferentes)

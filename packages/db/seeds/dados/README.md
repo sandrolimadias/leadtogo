@@ -11,6 +11,7 @@ Para atualizar: rode o gerador, confira o `git diff` e atualize a data na tabela
 | `portes.json`         |         4 | Receita Federal, layout dos dados abertos do CNPJ (campo "porte da empresa"): 0, 1, 3 e 5                         | 06/10/2026  |
 | `cnaes.json`          |     1.332 | IBGE/CONCLA, API CNAE v2, subclasses (7 dígitos) com seção, divisão, grupo e classe: <https://servicodados.ibge.gov.br/api/v2/cnae/subclasses> | 06/10/2026  |
 | `municipios.json`     |     5.571 | Nome, UF e código IBGE: IBGE, API de Localidades <https://servicodados.ibge.gov.br/api/v1/localidades/municipios>. Código SIAFI/TOM: Tesouro Nacional, "Lista de municípios do SIAFI" (traz SIAFI e IBGE juntos): <https://www.tesourotransparente.gov.br/ckan/dataset/abb968cb-3710-4f85-89cf-875c91b9c7f6> (`tabmun.csv`, atualizada em 21/12/2021) | 06/10/2026  |
+| `microrregioes.json`  |       558 | Microrregiões do IBGE (código, nome e UF), da mesma API de Localidades (`municipios[].microrregiao`); usadas como regiões prontas da geolocalização | 16/10/2026  |
 | `municipios_correcoes.json` | 1 | Correções manuais versionadas (ver nota abaixo) | 06/10/2026  |
 | `qualificacoes_socio.json` |   79 | Tabela de qualificação do responsável/sócio da Receita, como publicada no projeto socios-brasil (ver nota abaixo) | 06/10/2026  |
 
@@ -43,7 +44,7 @@ Para atualizar: rode o gerador, confira o `git diff` e atualize a data na tabela
   e o gerador falha se isso acontecer. 33 municípios têm grafia diferente entre as fontes (ex.: Paraty ×
   PARATI, Assú × ACU), mas o mesmo código IBGE e a mesma UF; vale o nome do IBGE. Conferido o exemplo de
   `docs/modelagem_banco.md`: Serra, IBGE 3205002, SIAFI 5699. A linha "DEMAIS MUNICIPIOS" (IBGE 0) do Tesouro
-  é ignorada. `municipios.localizacao` fica vazia (carga futura dos centros).
+  é ignorada. **Desde 16/10/2026** o arquivo também traz `microrregiao_codigo` (da API de Localidades) e o centro de cada município (`latitude` e `longitude`, o centroide ponderado pela área do maior polígono da malha do IBGE: <https://servicodados.ibge.gov.br/api/v3/malhas/paises/BR?intrarregiao=municipio&qualidade=minima&formato=application/vnd.geo+json>), que o seed grava em `municipios.localizacao`. Boa Esperança do Norte (MT, instalado em 2025) não está na malha nem na lista de microrregiões: fica sem centro e sem microrregião.
 - **Reproduzir:** `node packages/db/seeds/gerar-dados.mjs` (com internet). Com `DADOS_LOCAIS=<pasta>` o
   gerador lê respostas já baixadas (`estados.json`, `subclasses.json`, `municipios.json`,
-  `tabmun.csv`, `qualificacao-socio.csv`). Os arquivos acima foram gerados e reconferidos assim.
+  `tabmun.csv`, `qualificacao-socio.csv`, `malha_municipios.json`). Os arquivos acima foram gerados e reconferidos assim.

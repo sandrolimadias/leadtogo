@@ -48,6 +48,15 @@ export const cnaes = pgTable('cnaes', {
   classe: varchar({ length: 5 }).notNull(),
 })
 
+/** Microrregiões oficiais do IBGE (dado público; regiões prontas da geolocalização). */
+export const microrregioes = pgTable('microrregioes', {
+  codigo: integer().primaryKey(),
+  nome: text().notNull(),
+  uf: char({ length: 2 })
+    .notNull()
+    .references(() => estados.uf),
+})
+
 /** O banco usa o código IBGE; o SIAFI/TOM (o da Receita) fica ao lado, para a prospecção. */
 export const municipios = pgTable(
   'municipios',
@@ -58,11 +67,14 @@ export const municipios = pgTable(
     uf: char({ length: 2 })
       .notNull()
       .references(() => estados.uf),
-    /** Centro do município (SRID 4326); carga futura */
+    /** Microrregião oficial do IBGE; nulo só no município sem enquadramento na API (instalado em 2025) */
+    microrregiaoCodigo: integer().references(() => microrregioes.codigo),
+    /** Centro do município (SRID 4326), do centroide da malha do IBGE; nulo onde a malha não tem o município */
     localizacao: geometry({ type: 'point', mode: 'xy', srid: 4326 }),
   },
   (t) => [
     index('municipios_uf_idx').on(t.uf),
+    index('municipios_microrregiao_idx').on(t.microrregiaoCodigo),
     index('municipios_localizacao_idx').using('gist', t.localizacao),
   ],
 )

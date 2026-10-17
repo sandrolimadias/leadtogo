@@ -20,7 +20,14 @@ import {
 import { tags, verticais } from './cadastros.js'
 import { membros, tenants } from './plataforma.js'
 import { cnaes, municipios, paises, portes, qualificacoesSocio } from './referencias.js'
-import { carimbos, chaveUuid } from './tipos.js'
+import {
+  carimbos,
+  chaveUuid,
+  geoAproximacao,
+  geoOrigem,
+  geoPrecisao,
+  geografiaPonto,
+} from './tipos.js'
 
 // Carteira de empresas (docs/modelagem_banco.md, seção 6): Módulo 2 do MVP.
 // RLS, FORCE, GRANTs e os índices trigram (com unaccent) ficam na migração.
@@ -86,6 +93,17 @@ export const empresas = pgTable(
     municipioCodigo: integer().references(() => municipios.codigoIbge),
     /** Nulo = Brasil; preenchido só para estabelecimento no exterior (código de país da Receita) */
     paisCodigo: smallint().references(() => paises.codigo),
+    /** Posição geográfica do endereço (G1); nula = sem coordenada */
+    localizacao: geografiaPonto(),
+    geoPrecisao: geoPrecisao(),
+    /** Tipo da aproximação (interpolada, rua, cep_cidade); nulo quando a posição é exata */
+    geoAproximacao: geoAproximacao(),
+    geoOrigem: geoOrigem(),
+    /** Texto normalizado que foi consultado ao geocodificar */
+    geoEnderecoConsultado: text(),
+    /** O usuário moveu o pin: preservado até ele confirmar a troca */
+    geoAjusteManual: boolean().notNull().default(false),
+    geoAtualizadoEm: timestamp({ withTimezone: true }),
     observacoes: text(),
     /** Lote de importação que criou a empresa (FK só no SQL da migração; ver importacao.ts) */
     importacaoId: uuid(),
@@ -110,6 +128,7 @@ export const empresas = pgTable(
       .where(sql`${t.documento} IS NOT NULL AND ${t.excluidoEm} IS NULL`),
     index('empresas_vendedor_idx').on(t.tenantId, t.vendedorId),
     index('empresas_municipio_idx').on(t.tenantId, t.municipioCodigo),
+    index('empresas_localizacao_idx').using('gist', t.localizacao),
     index('empresas_vertical_idx').on(t.tenantId, t.verticalId),
     index('empresas_raiz_idx').on(t.tenantId, t.cnpjRaiz),
     index('empresas_importacao_idx').on(t.tenantId, t.importacaoId),

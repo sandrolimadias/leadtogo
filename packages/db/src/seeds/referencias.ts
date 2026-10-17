@@ -1,4 +1,12 @@
-import { cnaes, estados, municipios, paises, portes, qualificacoesSocio } from '../schema/index.js'
+import {
+  cnaes,
+  estados,
+  microrregioes,
+  municipios,
+  paises,
+  portes,
+  qualificacoesSocio,
+} from '../schema/index.js'
 import { lerDados } from './dados.js'
 import { type Db, upsert } from './upsert.js'
 
@@ -11,6 +19,9 @@ interface MunicipioArquivo {
   codigo_siafi: number
   nome: string
   uf: string
+  microrregiao_codigo: number | null
+  latitude: number | null
+  longitude: number | null
 }
 
 export async function semearReferencias(db: Db): Promise<Record<string, number>> {
@@ -23,7 +34,14 @@ export async function semearReferencias(db: Db): Promise<Record<string, number>>
     estados.uf,
     ['nome', 'regiao'],
   )
-  // Depende de estados (FK de uf)
+  // Dependem de estados (FK de uf); as microrregiões antes dos municípios (FK de microrregiao_codigo)
+  total['microrregioes'] = await upsert(
+    db,
+    microrregioes,
+    await lerDados<typeof microrregioes.$inferInsert>('microrregioes'),
+    microrregioes.codigo,
+    ['nome', 'uf'],
+  )
   total['municipios'] = await upsert(
     db,
     municipios,
@@ -32,9 +50,12 @@ export async function semearReferencias(db: Db): Promise<Record<string, number>>
       codigoSiafi: m.codigo_siafi,
       nome: m.nome,
       uf: m.uf,
+      microrregiaoCodigo: m.microrregiao_codigo,
+      localizacao:
+        m.latitude === null || m.longitude === null ? null : { x: m.longitude, y: m.latitude },
     })),
     municipios.codigoIbge,
-    ['codigoSiafi', 'nome', 'uf'],
+    ['codigoSiafi', 'nome', 'uf', 'microrregiaoCodigo', 'localizacao'],
   )
   total['paises'] = await upsert(
     db,

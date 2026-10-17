@@ -183,6 +183,13 @@
       "when": 1792161469407,
       "tag": "0025_importacao_contatos_atividades",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792198854066,
+      "tag": "0026_geolocalizacao",
+      "breakpoints": true
     }
   ]
 }

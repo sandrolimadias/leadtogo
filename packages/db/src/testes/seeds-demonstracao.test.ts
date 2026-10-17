@@ -72,7 +72,15 @@ beforeAll(async () => {
 afterAll(async () => {
   await limpar()
   await owner`TRUNCATE empresas CASCADE` // as empresas de teste apontam para as referências (FK)
-  for (const t of ['municipios', 'cnaes', 'qualificacoes_socio', 'portes', 'paises', 'estados']) {
+  for (const t of [
+    'municipios',
+    'microrregioes',
+    'cnaes',
+    'qualificacoes_socio',
+    'portes',
+    'paises',
+    'estados',
+  ]) {
     await owner`DELETE FROM ${owner(t)}`
   }
   await owner.end()
@@ -120,14 +128,14 @@ describe('tenant de demonstração', () => {
         (tx) => tx<{ n: number }[]>`SELECT count(*)::int AS n FROM tags WHERE excluido_em IS NULL`,
       )
     await semearDemonstracao(db)
-    expect((await contarTags())[0]?.n).toBe(6)
+    expect((await contarTags())[0]?.n).toBe(7)
     await comTenant(
       owner,
       tenantId,
       (tx) => tx`UPDATE tags SET excluido_em = now() WHERE nome = 'Inativo'`,
     )
     await semearDemonstracao(db)
-    expect((await contarTags())[0]?.n).toBe(5)
+    expect((await contarTags())[0]?.n).toBe(6)
   })
 
   it('não mexe nas configurações que o usuário ajustou', async () => {

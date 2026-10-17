@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 
-import { criarPadroesDoTenant } from '../padroes.js'
+import { criarPadroesDoTenant, criarPadroesGeoDoTenant } from '../padroes.js'
 import { novoId } from '../id.js'
 import { comTenant, conectarDrizzleOwner, conectarOwner } from './conexoes.js'
 import { prepararTenants } from './fabricas.js'
@@ -31,6 +31,12 @@ const criar = (tenantId: string) =>
     return criarPadroesDoTenant(tx, tenantId)
   })
 
+const criarGeo = (tenantId: string) =>
+  db.transaction(async (tx) => {
+    await tx.execute(sqlTenant(tenantId))
+    return criarPadroesGeoDoTenant(tx, tenantId)
+  })
+
 const sqlTenant = (id: string) => sql`SELECT set_config('app.tenant_id', ${id}, true)`
 
 const contar = (tenantId: string, tabela: string, onde = '') =>
@@ -45,8 +51,8 @@ describe('criarPadroesDoTenant', () => {
   it('cria os padrões e marca a empresa', async () => {
     const t = await novoTenant()
     expect(await criar(t)).toBe(true)
-    expect(await contar(t, 'tag_grupos')).toBe(2)
-    expect(await contar(t, 'tags')).toBe(6)
+    expect(await contar(t, 'tag_grupos')).toBe(3)
+    expect(await contar(t, 'tags')).toBe(7)
     expect(await contar(t, 'tipos_atividade')).toBe(6)
     expect(await contar(t, 'funis')).toBe(1)
     expect(await contar(t, 'funil_fases')).toBe(4)
@@ -65,7 +71,7 @@ describe('criarPadroesDoTenant', () => {
     expect(m?.ok).toBe(true)
   })
 
-  it('traz os valores certos: Status único e obrigatório, Visitação automática, funil padrão', async () => {
+  it('traz os valores certos: Status único e obrigatório, Visitação e Cadastro automáticos, funil padrão', async () => {
     const t = await novoTenant()
     await criar(t)
     const grupos = await comTenant(
@@ -86,6 +92,13 @@ describe('criarPadroesDoTenant', () => {
       { nome: 'Status', selecao: 'unica', obrigatorio: true, automatico: false, sistema: true },
       {
         nome: 'Visitação',
+        selecao: 'multipla',
+        obrigatorio: false,
+        automatico: true,
+        sistema: true,
+      },
+      {
+        nome: 'Cadastro',
         selecao: 'multipla',
         obrigatorio: false,
         automatico: true,
@@ -137,7 +150,7 @@ describe('criarPadroesDoTenant', () => {
       (tx) => tx`UPDATE motivos SET excluido_em = now() WHERE nome = 'Preço'`,
     )
     expect(await criar(t)).toBe(false)
-    expect(await contar(t, 'tags')).toBe(5)
+    expect(await contar(t, 'tags')).toBe(6)
     expect(await contar(t, 'motivos')).toBe(11)
     expect(await contar(t, 'tags', "AND nome = 'Prospect'")).toBe(0)
   })
@@ -147,15 +160,15 @@ describe('criarPadroesDoTenant', () => {
     await criar(a)
     expect(await contar(b, 'tags')).toBe(0)
     await criar(b)
-    expect(await contar(a, 'tags')).toBe(6)
-    expect(await contar(b, 'tags')).toBe(6)
+    expect(await contar(a, 'tags')).toBe(7)
+    expect(await contar(b, 'tags')).toBe(7)
   })
 
   it('duas execuções simultâneas não duplicam (a marca é reservada antes)', async () => {
     const t = await novoTenant()
     const [x, y] = await Promise.all([criar(t), criar(t)])
     expect([x, y].filter(Boolean)).toHaveLength(1)
-    expect(await contar(t, 'tags')).toBe(6)
+    expect(await contar(t, 'tags')).toBe(7)
   })
 })
 
@@ -183,5 +196,73 @@ describe('app_tenants_sem_padroes()', () => {
     } finally {
       await app.end()
     }
+  })
+})
+
+describe('criarPadroesGeoDoTenant (G1)', () => {
+  it('cria o grupo Cadastro com a tag "Endereço a confirmar" e acerta as flags do mapa', async () => {
+    const t = await novoTenant()
+    await criar(t)
+    const tags = await comTenant(
+      owner,
+      t,
+      (tx) => tx<{ chave: string; mapa: boolean; aberto: boolean }[]>`
+        SELECT chave_sistema AS chave, aparece_no_mapa AS mapa, visivel_ao_abrir AS aberto
+        FROM tags WHERE chave_sistema IS NOT NULL ORDER BY chave_sistema`,
+    )
+    expect(tags.map((x) => `${x.chave}:${x.mapa}:${x.aberto}`)).toEqual([
+      'cliente:true:true',
+      'contactada:true:true',
+      'endereco_a_confirmar:false:false',
+      'inativo:false:false',
+      'lead:true:true',
+      'prospect:true:false',
+      'visitada:true:true',
+    ])
+    const [g] = await comTenant(
+      owner,
+      t,
+      (tx) => tx<{ chave: string; sistema: boolean }[]>`
+        SELECT chave_sistema AS chave, sistema FROM tag_grupos WHERE chave_sistema = 'cadastro'`,
+    )
+    expect(g).toEqual({ chave: 'cadastro', sistema: true })
+  })
+
+  it('é feito uma única vez e não duplica a tag', async () => {
+    const t = await novoTenant()
+    await criar(t)
+    expect(await criarGeo(t)).toBe(false)
+    expect(await contar(t, 'tags', "AND chave_sistema = 'endereco_a_confirmar'")).toBe(1)
+  })
+
+  it('empresa antiga (sem a marca): cria o grupo e acerta as flags', async () => {
+    const t = await novoTenant()
+    await criar(t)
+    await comTenant(owner, t, async (tx) => {
+      await tx`UPDATE tenant_configuracoes SET geo_padroes_criados_em = NULL`
+      await tx`DELETE FROM tags WHERE chave_sistema = 'endereco_a_confirmar'`
+      await tx`DELETE FROM tag_grupos WHERE chave_sistema = 'cadastro'`
+      await tx`UPDATE tags SET aparece_no_mapa = true, visivel_ao_abrir = true`
+    })
+    expect(await criarGeo(t)).toBe(true)
+    expect(await contar(t, 'tag_grupos', "AND chave_sistema = 'cadastro'")).toBe(1)
+    expect(await contar(t, 'tags', "AND chave_sistema = 'inativo' AND NOT aparece_no_mapa")).toBe(1)
+    expect(await contar(t, 'tags', "AND chave_sistema = 'prospect' AND NOT visivel_ao_abrir")).toBe(
+      1,
+    )
+  })
+
+  it('grupo "Cadastro" que o administrador já criou: o de sistema ganha outro nome', async () => {
+    const t = await novoTenant()
+    await comTenant(owner, t, async (tx) => {
+      await tx`INSERT INTO tag_grupos (id, tenant_id, nome) VALUES (${novoId()}, ${t}, 'cadastro')`
+    })
+    expect(await criarGeo(t)).toBe(true)
+    const nomes = await comTenant(
+      owner,
+      t,
+      (tx) => tx<{ nome: string }[]>`SELECT nome FROM tag_grupos ORDER BY nome COLLATE "C"`,
+    )
+    expect(nomes.map((n) => n.nome)).toEqual(['Cadastro (sistema)', 'cadastro'])
   })
 })

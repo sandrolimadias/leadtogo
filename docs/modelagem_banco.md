@@ -762,18 +762,21 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 
 ## Geolocalização (G1 e G2; migração 0026, ver `plano_geolocalizacao.md`)
 
-Só expansão. `empresas` ganha as colunas `geo_*` e `localizacao` descritas acima (`geography(Point,4326)` com índice GiST). Tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado**, colunas padrão e teste de isolamento:
+Só expansão. `empresas` ganha as colunas `geo_*` e `localizacao` descritas na seção da empresa (`geography(Point,4326)`, índice GiST `empresas_localizacao_idx`). Tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_tenant`), colunas padrão e teste de isolamento:
 
 | Tabela | Colunas principais | Observação |
 |---|---|---|
-| `geo_consultas` | empresa_id, provedor (`cnefe`/`nominatim`/`cep`), consulta (texto normalizado), resposta (jsonb), precisao, aproximacao, lat/lon, acionado_por (`membro_id` ou `sistema`), lote_id | Auditoria de cada consulta e cache para não repetir; única por `(tenant_id, provedor, consulta)` quando não há erro |
-| `geo_lotes` | escopo (cidade ou região), situacao, totais (total, já com coordenada, processadas, exatas, aproximadas, a confirmar, falhas), criado_por | Mesmo desenho do lote de importação: blocos curtos, idempotência por empresa, retomada |
-| `geo_regioes` | nome, ativo | Regiões criadas pelo admin |
-| `geo_regiao_municipios` | regiao_id, municipio_codigo (IBGE) | |
-| `mapa_legenda` | chave (`tag:<id>`, `visita_tentada`, `sem_visita`), cor (token da paleta), nome | Cores e nomes por tenant; ausente = padrão. Única por `(tenant_id, chave)` |
+| `geo_consultas` | empresa_id, lote_id, provedor (`cnefe`/`nominatim`/`cep`), consulta (texto normalizado), resultado (`achou`/`nao_achou`/`erro`), precisao, aproximacao, localizacao, resposta (jsonb), acionado_por (`membros`; nulo = o sistema) | Auditoria de cada consulta e cache: só `achou` e `nao_achou` valem como cache. Índices por empresa, por `(tenant, provedor, consulta)` e por lote |
+| `geo_lotes` | nome, escopo (texto), municipios (`integer[]`, o escopo no momento da criação), refazer_com_coordenada, situacao (`em_andamento`/`concluido`/`falhou`/`cancelado`), total_empresas, totais (jsonb), ultimo_progresso_em, iniciado_em, concluido_em | Mesmo desenho do lote de importação: blocos curtos, retomada, varredura de lote parado |
+| `geo_lote_empresas` | lote_id, empresa_id, resultado (`pendente`/`exata`/`aproximada`/`a_confirmar`/`ja_tinha`/`falhou`), motivo, processada_em | Idempotência por empresa e progresso; única por `(lote_id, empresa_id)` |
+| `geo_regioes` | nome, ativo | Regiões criadas pelo admin; nome único por tenant |
+| `geo_regiao_municipios` | regiao_id, municipio_codigo (IBGE) | Única por `(regiao_id, municipio_codigo)` |
+| `mapa_legenda` | chave (`tag:<id>`, `visita_tentada`, `sem_visita`), cor (chave da paleta), nome (nulo = padrão) | Única por `(tenant_id, chave)`; ausente = cor e nome padrão |
 
-Colunas novas: `tags.aparece_no_mapa` e `tags.visivel_ao_abrir` (boolean); `tag_grupos`: grupo de sistema **Cadastro** (`chave_sistema = 'cadastro'`) e tag **Endereço a confirmar** (`chave_sistema = 'endereco_a_confirmar'`), criados para os tenants existentes pela migração e para os novos pelo seed.
+**Colunas novas:** `tags.aparece_no_mapa` e `tags.visivel_ao_abrir` (boolean, padrão `true`; só valem nas tags de Status); `tenant_configuracoes.geo_padroes_criados_em` (marca de que o grupo "Cadastro" e as flags já foram criados). O grupo de sistema **Cadastro** (`chave_sistema = 'cadastro'`, automático) e a tag **Endereço a confirmar** (`chave_sistema = 'endereco_a_confirmar'`, fora do mapa) são criados pelo código no primeiro start depois da migração (backfill pela função `app_tenants_sem_padroes_geo()`, mesmo padrão das migrações 0016 e 0018) e pelo seed dos tenants novos; Inativo nasce com as duas flags desligadas e Prospect com "visível ao abrir" desligada.
 
-**Tabelas de referência (sem `tenant_id` e sem RLS, só leitura para o `leadtogo_app`):** `microrregioes` (código IBGE, nome, UF) e `municipios.microrregiao_codigo`.
+**Referências globais (sem `tenant_id` e sem RLS; leitura para o `leadtogo_app`, carga do owner no seed):** `microrregioes` (código IBGE, nome, UF; 558 linhas), `municipios.microrregiao_codigo` e `municipios.localizacao` (centro do município, do centroide da malha do IBGE; antes era nula).
 
-**Schema `referencia_geo` (fora do backup):** `cnefe_enderecos` (município IBGE, CEP, tipo e nome do logradouro, **logradouro normalizado** com índice `pg_trgm`, número, bairro, `localizacao`, nível de qualidade `NV_GEO_COORD` e espécie). Carregada por `scripts/geo/` (docs/geo_atualizacao.md); uma restauração do backup traz o schema vazio e exige recarregar. O `leadtogo_app` só lê.
+**Schema `referencia_geo` (CNEFE; fora do backup, ver `runbook_backup.md`, seção 5):** só o `leadtogo_app` com `SELECT`; a carga é do owner por `scripts/geo/`.
+- `cnefe_logradouros`: uma linha por rua e município: `logradouro_normalizado` (chave de busca: sem acento, maiúsculas, tipo removido, títulos expandidos), `logradouro` (como veio), `enderecos`, `latitude_centro` e `longitude_centro` (centro da rua). Única por `(municipio_codigo, logradouro_normalizado)`; **índice GIN `pg_trgm`** em `logradouro_normalizado` (busca aproximada de rua).
+- `cnefe_enderecos`: um registro por endereço com coordenada: município, CEP, localidade, rua normalizada, `numero` (nulo = S/N), modificador, latitude, longitude, `nivel_coordenada` (`NV_GEO_COORD`: 1 original, 2 modificada, 3 estimada, 4 face, 5 localidade, 6 setor) e `especie` (`COD_ESPECIE`). Índices `(municipio_codigo, logradouro_normalizado, numero)` e `(cep)`.

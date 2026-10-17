@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Gera os arquivos de seeds/dados/*.json a partir das fontes oficiais. Uso MANUAL, só para
 // atualizar os dados (os arquivos gerados são versionados); o `pnpm db:seed` nunca baixa nada.
-//   node packages/db/seeds/gerar-dados.mjs [estados] [paises] [portes] [qualificacoes] [cnaes] [municipios]
+//   node packages/db/seeds/gerar-dados.mjs [estados] [paises] [portes] [qualificacoes] [cnaes] [municipios] [microrregioes]
 // Sem argumentos, gera tudo. Fontes, URLs e datas: seeds/dados/README.md.
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -30,6 +30,34 @@ async function gravar(nome, dados) {
   await mkdir(DESTINO, { recursive: true })
   await writeFile(`${DESTINO}${nome}.json`, `${JSON.stringify(dados, null, 2)}\n`)
   console.log(`${nome}.json: ${dados.length} registros`)
+}
+
+// Centro de cada município a partir da malha do IBGE: centroide ponderado pela área do maior polígono
+// (os anéis internos são ignorados). Serve só para posicionar números no mapa, não para medir distância.
+function centroideDoAnel(anel) {
+  let area = 0
+  let cx = 0
+  let cy = 0
+  for (let i = 0; i < anel.length - 1; i++) {
+    const [x1, y1] = anel[i]
+    const [x2, y2] = anel[i + 1]
+    const f = x1 * y2 - x2 * y1
+    area += f
+    cx += (x1 + x2) * f
+    cy += (y1 + y2) * f
+  }
+  if (area === 0) return { area: 0, x: anel[0][0], y: anel[0][1] }
+  return { area: Math.abs(area / 2), x: cx / (3 * area), y: cy / (3 * area) }
+}
+
+function centroDaMalha(geometria) {
+  const poligonos = geometria.type === 'Polygon' ? [geometria.coordinates] : geometria.coordinates
+  let melhor = null
+  for (const poligono of poligonos) {
+    const c = centroideDoAnel(poligono[0])
+    if (!melhor || c.area > melhor.area) melhor = c
+  }
+  return melhor
 }
 
 const ufDe = (m) =>
@@ -105,6 +133,14 @@ const geradores = {
     const ibge = await buscar(`${IBGE}/v1/localidades/municipios`, 'json', 'municipios.json')
     const tesouro = await buscar(URL_TESOURO, 'latin1', 'tabmun.csv')
     const correcoes = JSON.parse(await readFile(`${DESTINO}municipios_correcoes.json`, 'utf8'))
+    const malha = await buscar(
+      `${IBGE}/v3/malhas/paises/BR?intrarregiao=municipio&qualidade=minima&formato=application/vnd.geo+json`,
+      'json',
+      'malha_municipios.json',
+    )
+    const centros = new Map(
+      malha.features.map((f) => [Number(f.properties.codarea), centroDaMalha(f.geometry)]),
+    )
 
     // tabmun.csv: SIAFI;CNPJ da prefeitura;NOME;UF;IBGE (a linha "DEMAIS MUNICIPIOS" tem IBGE 0)
     const siafiPorIbge = new Map()
@@ -130,7 +166,16 @@ const geradores = {
             )
           corrigidos += 1
         }
-        return { codigo_ibge: m.id, codigo_siafi: siafi, nome: m.nome, uf }
+        const centro = centros.get(m.id)
+        return {
+          codigo_ibge: m.id,
+          codigo_siafi: siafi,
+          nome: m.nome,
+          uf,
+          microrregiao_codigo: m.microrregiao?.id ?? null,
+          longitude: centro ? Number(centro.x.toFixed(5)) : null,
+          latitude: centro ? Number(centro.y.toFixed(5)) : null,
+        }
       })
       .sort((a, b) => a.codigo_ibge - b.codigo_ibge)
 
@@ -138,6 +183,24 @@ const geradores = {
     if (repetidos > 0) throw new Error(`${repetidos} códigos SIAFI repetidos`)
     console.log(`${corrigidos} município(s) vieram de municipios_correcoes.json`)
     await gravar('municipios', municipios)
+  },
+
+  // Microrregiões oficiais do IBGE (usadas como regiões prontas na geolocalização)
+  async microrregioes() {
+    const ibge = await buscar(`${IBGE}/v1/localidades/municipios`, 'json', 'municipios.json')
+    const porCodigo = new Map()
+    for (const m of ibge) {
+      if (!m.microrregiao) continue
+      porCodigo.set(m.microrregiao.id, {
+        codigo: m.microrregiao.id,
+        nome: m.microrregiao.nome,
+        uf: m.microrregiao.mesorregiao.UF.sigla,
+      })
+    }
+    await gravar(
+      'microrregioes',
+      [...porCodigo.values()].sort((a, b) => a.codigo - b.codigo),
+    )
   },
 
   // Tabela de qualificações do responsável/sócio da Receita, no CSV do projeto socios-brasil

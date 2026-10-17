@@ -449,3 +449,84 @@ fabricas['oportunidade_historico'] = definirFabrica<
     return id
   },
 })
+
+// Geolocalização (migração 0026)
+fabricas['geo_regioes'] = definirFabrica<string>({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO geo_regioes (id, tenant_id, nome) VALUES (${id}, ${tenantId}, ${`Região ${id}`})`
+    return id
+  },
+})
+
+fabricas['geo_regiao_municipios'] = definirFabrica<string>({
+  colunaAlteravel: 'municipio_codigo',
+  // O pai: uma região do tenant e o município (referência global, que o banco de teste não traz)
+  preparar: async (owner, tenantId) => {
+    await owner`INSERT INTO estados (uf, nome, regiao) VALUES ('ES', 'Espírito Santo', 'Sudeste') ON CONFLICT DO NOTHING`
+    await owner`INSERT INTO municipios (codigo_ibge, nome, uf) VALUES (3205309, 'VITORIA', 'ES') ON CONFLICT DO NOTHING`
+    return comTenant(owner, tenantId, async (tx) => {
+      const id = novoId()
+      await tx`INSERT INTO geo_regioes (id, tenant_id, nome) VALUES (${id}, ${tenantId}, ${`Região ${id}`})`
+      return id
+    })
+  },
+  criar: async (tx, tenantId, regiaoId) => {
+    const id = novoId()
+    await tx`INSERT INTO geo_regiao_municipios (id, tenant_id, regiao_id, municipio_codigo)
+      VALUES (${id}, ${tenantId}, ${regiaoId}, 3205309)`
+    return id
+  },
+})
+
+fabricas['geo_lotes'] = definirFabrica<string>({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO geo_lotes (id, tenant_id, nome, municipios, escopo)
+      VALUES (${id}, ${tenantId}, ${`Lote ${id}`}, ARRAY[3205309]::integer[], 'Vitória')`
+    return id
+  },
+})
+
+fabricas['geo_lote_empresas'] = definirFabrica<{ loteId: string; empresaId: string }>({
+  colunaAlteravel: 'motivo',
+  preparar: async (owner, tenantId) => {
+    const vendedorId = novoId()
+    const empresaId = novoId()
+    const loteId = novoId()
+    await comTenant(owner, tenantId, async (tx) => {
+      await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${vendedorId}, ${tenantId}, 'Vendedor de teste')`
+      await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id) VALUES (${empresaId}, ${tenantId}, 'Empresa de teste', ${vendedorId})`
+      await tx`INSERT INTO geo_lotes (id, tenant_id, nome, municipios, escopo)
+        VALUES (${loteId}, ${tenantId}, 'Lote de teste', ARRAY[3205309]::integer[], 'Vitória')`
+    })
+    return { loteId, empresaId }
+  },
+  criar: async (tx, tenantId, p) => {
+    const id = novoId()
+    await tx`INSERT INTO geo_lote_empresas (id, tenant_id, lote_id, empresa_id)
+      VALUES (${id}, ${tenantId}, ${p.loteId}, ${p.empresaId})`
+    return id
+  },
+})
+
+fabricas['geo_consultas'] = definirFabrica<string>({
+  colunaAlteravel: 'consulta',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO geo_consultas (id, tenant_id, provedor, consulta, resultado)
+      VALUES (${id}, ${tenantId}, 'cnefe', ${`consulta ${id}`}, 'nao_achou')`
+    return id
+  },
+})
+
+fabricas['mapa_legenda'] = definirFabrica<string>({
+  colunaAlteravel: 'cor',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO mapa_legenda (id, tenant_id, chave, cor) VALUES (${id}, ${tenantId}, 'sem_visita', 'vermelho')`
+    return id
+  },
+})

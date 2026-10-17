@@ -51,6 +51,7 @@ export const SEM_TENANT_ID = {
   globais: [
     'cnaes',
     'municipios',
+    'microrregioes',
     'estados',
     'paises',
     'portes',

@@ -6,10 +6,19 @@ import { conectarApp, conectarDrizzleOwner } from './conexoes.js'
 const { db, cliente: owner } = conectarDrizzleOwner()
 const app = conectarApp()
 
-const TABELAS = ['municipios', 'cnaes', 'qualificacoes_socio', 'portes', 'paises', 'estados']
+const TABELAS = [
+  'municipios',
+  'microrregioes',
+  'cnaes',
+  'qualificacoes_socio',
+  'portes',
+  'paises',
+  'estados',
+]
 async function limpar() {
   // empresas e filhas apontam para as referências (FK); o TRUNCATE ignora o RLS e esvazia a carteira de teste
   await owner`TRUNCATE empresas CASCADE`
+  await owner`TRUNCATE geo_regiao_municipios` // aponta para municipios (FK)
   for (const t of TABELAS) await owner`DELETE FROM ${owner(t)}`
 }
 async function contar(): Promise<Record<string, number>> {
@@ -29,10 +38,11 @@ afterAll(async () => {
 })
 
 describe('seed das referências', () => {
-  it('carrega estados, municípios, países, portes, qualificações e CNAEs', async () => {
+  it('carrega estados, municípios, microrregiões, países, portes, qualificações e CNAEs', async () => {
     const lidos = await semearReferencias(db)
     expect(lidos).toEqual({
       municipios: 5571,
+      microrregioes: 558,
       cnaes: 1332,
       estados: 27,
       paises: 255,
@@ -41,6 +51,7 @@ describe('seed das referências', () => {
     })
     expect(await contar()).toEqual({
       municipios: 5571,
+      microrregioes: 558,
       cnaes: 1332,
       estados: 27,
       paises: 255,
@@ -49,11 +60,30 @@ describe('seed das referências', () => {
     })
   })
 
+  it('os municípios trazem a microrregião e o centro (Vitória e Serra, na Grande Vitória)', async () => {
+    await semearReferencias(db)
+    const linhas = await owner<
+      { codigo_ibge: number; microrregiao_codigo: number; x: number; y: number }[]
+    >`SELECT codigo_ibge, microrregiao_codigo, ST_X(localizacao) AS x, ST_Y(localizacao) AS y
+      FROM municipios WHERE codigo_ibge IN (3205309, 3205002) ORDER BY codigo_ibge`
+    expect(linhas.map((l) => l.microrregiao_codigo)).toEqual([32009, 32009])
+    for (const l of linhas) {
+      expect(l.x).toBeGreaterThan(-40.5)
+      expect(l.x).toBeLessThan(-40.2)
+      expect(l.y).toBeGreaterThan(-20.4)
+      expect(l.y).toBeLessThan(-20.0)
+    }
+    const [es] = await owner<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM microrregioes WHERE uf = 'ES'`
+    expect(es?.n).toBe(13)
+  })
+
   it('rodar de novo não duplica nada (idempotente)', async () => {
     await semearReferencias(db)
     await semearReferencias(db)
     expect(await contar()).toEqual({
       municipios: 5571,
+      microrregioes: 558,
       cnaes: 1332,
       estados: 27,
       paises: 255,

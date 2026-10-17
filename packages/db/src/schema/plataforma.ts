@@ -127,6 +127,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   padroesCriadosEm: timestamp({ withTimezone: true }),
   /** Quando os papéis na decisão padrão foram criados (Módulo 3); preenchido, nunca mais se recria */
   papeisDecisaoCriadosEm: timestamp({ withTimezone: true }),
+  /** Quando o grupo de tags "Cadastro" e as flags do mapa foram criados (G1); preenchido, nunca mais se recria */
+  geoPadroesCriadosEm: timestamp({ withTimezone: true }),
   ...carimbos(),
 })
 

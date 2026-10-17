@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { novoId } from './id.js'
 import {
@@ -14,7 +14,7 @@ import {
 } from './schema/index.js'
 import type { Db } from './seeds/upsert.js'
 
-type Tx = Pick<Db, 'insert' | 'update'>
+type Tx = Pick<Db, 'insert' | 'update' | 'select'>
 
 type Cor = (typeof tags.$inferInsert)['cor']
 
@@ -120,6 +120,83 @@ export async function criarPapeisDoTenant(
       atualizadoPor: membroId,
     })),
   )
+  return true
+}
+
+/** Tag de sistema da geolocalização (G1): aplicada e retirada pelo sistema, sempre buscada por `chave_sistema`. */
+export const CHAVE_GRUPO_CADASTRO = 'cadastro'
+export const CHAVE_TAG_ENDERECO_A_CONFIRMAR = 'endereco_a_confirmar'
+
+/**
+ * Cria, UMA ÚNICA VEZ por empresa, o grupo de sistema "Cadastro" (tag "Endereço a confirmar") e acerta as
+ * flags do mapa das tags de Status (Inativo não aparece; Inativo e Prospect não vêm ligados ao abrir).
+ * Marca própria (`geo_padroes_criados_em`), à parte dos demais padrões, porque chegou depois (G1) e as
+ * empresas que já existiam também precisam. Devolve `true` se criou.
+ */
+export async function criarPadroesGeoDoTenant(
+  tx: Tx,
+  tenantId: string,
+  membroId: string | null = null,
+): Promise<boolean> {
+  const reservado = await tx
+    .update(tenantConfiguracoes)
+    .set({ geoPadroesCriadosEm: new Date() })
+    .where(
+      and(
+        eq(tenantConfiguracoes.tenantId, tenantId),
+        isNull(tenantConfiguracoes.geoPadroesCriadosEm),
+      ),
+    )
+    .returning({ tenantId: tenantConfiguracoes.tenantId })
+  if (reservado.length === 0) return false
+
+  const autoria = { tenantId, criadoPor: membroId, atualizadoPor: membroId }
+  const [ultimo] = await tx
+    .select({ ordem: sql<number>`coalesce(max(${tagGrupos.ordem}), -1)::int` })
+    .from(tagGrupos)
+    .where(and(eq(tagGrupos.tenantId, tenantId), isNull(tagGrupos.excluidoEm)))
+  const [homonimo] = await tx
+    .select({ id: tagGrupos.id })
+    .from(tagGrupos)
+    .where(
+      and(
+        eq(tagGrupos.tenantId, tenantId),
+        isNull(tagGrupos.excluidoEm),
+        sql`lower(${tagGrupos.nome}) = 'cadastro'`,
+      ),
+    )
+  const grupoId = novoId()
+  await tx.insert(tagGrupos).values({
+    ...autoria,
+    id: grupoId,
+    // Se o administrador já tinha criado um grupo "Cadastro", o de sistema não pode repetir o nome
+    nome: homonimo ? 'Cadastro (sistema)' : 'Cadastro',
+    ordem: (ultimo?.ordem ?? -1) + 1,
+    selecao: 'multipla',
+    sistema: true,
+    automatico: true,
+    chaveSistema: CHAVE_GRUPO_CADASTRO,
+  })
+  await tx.insert(tags).values({
+    ...autoria,
+    tagGrupoId: grupoId,
+    nome: 'Endereço a confirmar',
+    cor: 'purple',
+    chaveSistema: CHAVE_TAG_ENDERECO_A_CONFIRMAR,
+    ordem: 0,
+    // Não é status de venda: nunca vira chip do mapa
+    apareceNoMapa: false,
+    visivelAoAbrir: false,
+  })
+
+  await tx
+    .update(tags)
+    .set({ apareceNoMapa: false, visivelAoAbrir: false })
+    .where(and(eq(tags.tenantId, tenantId), eq(tags.chaveSistema, 'inativo')))
+  await tx
+    .update(tags)
+    .set({ visivelAoAbrir: false })
+    .where(and(eq(tags.tenantId, tenantId), inArray(tags.chaveSistema, ['prospect'])))
   return true
 }
 
@@ -235,5 +312,6 @@ export async function criarPadroesDoTenant(
       ),
     )
   await criarPapeisDoTenant(tx, tenantId, membroId)
+  await criarPadroesGeoDoTenant(tx, tenantId, membroId)
   return true
 }
