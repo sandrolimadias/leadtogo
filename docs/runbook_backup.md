@@ -218,3 +218,10 @@ Use `rclone copy r2:vps-backup/garage/leadtogo-arquivos` para o Garage, com **te
 ### 4.7 Pendência
 
 Teste real de restauração dos arquivos, pendente até existirem arquivos no bucket.
+
+## 5. Schema `referencia_geo` (CNEFE) fora do backup
+
+A tabela do CNEFE (`referencia_geo.cnefe_enderecos`, ~2,2 milhões de linhas, cerca de 500 MB) **não deve entrar no backup**: é dado público e recarregável, e inflaria cada dump. Decisão do Ale em 16/10/2026.
+
+- O backup do Coolify é um `pg_dumpall` (seção 2.0), que **não tem opção de excluir um schema**. **Como excluir ainda não está definido**: a confirmação com o Ale sobre o que o Coolify permite (por exemplo, listar só o banco `leadtogo` em "databases", o que ainda inclui todos os schemas; ou mover o CNEFE para um segundo banco fora da lista) está **pendente**. Até lá, a tabela fica **vazia** em produção (a migração só cria o schema e a tabela), e a carga dos dados só é feita **depois** dessa definição.
+- **Depois de qualquer restauração**, o schema volta vazio (ou ausente): recarregue o CNEFE com o passo a passo de `docs/geo_atualizacao.md`. Sem o CNEFE o sistema continua funcionando, mas a geocodificação perde a camada principal (cai no Nominatim e no CEP).

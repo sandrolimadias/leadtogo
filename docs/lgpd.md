@@ -29,6 +29,7 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 | **Membros** | `membros`, `convites` | nome, cargo, telefone, e-mail, foto, papel, gestor, preferências de interface; e-mail do convidado | **PD** |
 | **Contas e empresas clientes** | `contas`, `conta_administradores`, `tenants`, `tenant_configuracoes` | dados cadastrais da empresa cliente (CNPJ, endereço, contatos de cobrança), administradores da conta | PD (PJ) |
 | **Empresas-alvo** (carteira) | `empresas`, `empresa_telefones`, `empresa_cnaes`, `empresa_tags`, `empresa_socios` | CNPJ, razão social, endereço, telefones, nomes de sócios e qualificação (vindos da Receita ou digitados). O CPF mascarado do sócio **não é gravado** | PD (PJ) |
+| **Geolocalização** (G1/G2) | `empresas.localizacao` e `geo_*`, `geo_consultas`, `geo_lotes`, `mapa_legenda` | coordenada do **endereço da empresa-alvo** (PD (PJ), pode ser a residência do empresário individual), texto consultado e quem acionou. Consultas ao CNEFE e ao Nominatim são locais (nenhum endereço sai para terceiros); só o CEP vai à ViaCEP/BrasilAPI. **A posição do vendedor (GPS do aparelho) não é coletada nem gravada no G1 e no G2: só será gravada no check-in da visita (G3), com aviso ao usuário e base legal registrada aqui antes.** | PD (PJ) |
 | **Contatos** | `contatos`, `empresa_contatos`, `contato_telefones`, `contato_emails` | nome, cargo/papel de decisão, telefones, e-mails, LinkedIn, aniversário (**só dia e mês**), observações, consentimento (`aceita_whatsapp`, `aceita_email`, `consentimento_em`, `consentimento_origem`) | **PD** |
 | **Atividades** | `atividades` e complementares, `comentarios`, `arquivos` | descrição de visitas, ligações e tarefas, comentários e anexos (texto livre pode conter dados pessoais), participantes | **PD** (texto livre) |
 | **Oportunidades** | `oportunidades`, `oportunidade_itens`, `oportunidade_contatos`, `oportunidade_historico` | valores, fases, motivos, contatos envolvidos | PD indireto (via contatos) |
@@ -146,6 +147,8 @@ Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **re
 
 ## 9. Pendências para o MVP
 
+- [ ] **Geolocalização (G3):** antes de gravar a posição do vendedor no check-in, definir base legal, aviso ao usuário, retenção e quem acessa; registrar nas seções 2 e 5. Hoje o Leadtogo **não grava** a posição do vendedor.
+- [ ] **ViaCEP/BrasilAPI** (consulta de CEP, G1): incluir na tabela de suboperadores (seção 4) quando entrar em produção; só o CEP é enviado.
 - [ ] **Rotina de expurgo** dos registros com `excluido_em` (prazo a definir) e das partições antigas da auditoria.
 - [ ] **Exportação de dados por tenant** (atende portabilidade, acesso e saída do cliente).
 - [ ] **Anonimização/exclusão de usuário** (procedimento ou rotina), preservando a integridade da auditoria.

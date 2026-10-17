@@ -202,6 +202,18 @@ Gerar listas de leads a partir da base pública de CNPJs.
 
 ---
 
+## 3B. Geolocalização e mapa (G1 e G2; plano em `plano_geolocalizacao.md`)
+- **Geocodificação** do endereço da empresa em camadas (CNEFE do IBGE e Nominatim do ES, completando pelo CEP), parando na primeira que acerta. A posição é **exata** (número casado, raio 100 m) ou **aproximada** (interpolada ~300 m, rua ~1 km, CEP/cidade ~5 km); todo o resto fica "aproximada" com o tipo guardado.
+- **Quando roda:** sozinha, uma empresa por vez, ao criar a empresa ou alterar o endereço (a coordenada antiga é invalidada; o ajuste manual é preservado até o usuário confirmar a troca); e em **lote por cidade ou região** (admin e gestor), com total e quantas já têm coordenada, progresso e retomada. Sempre no worker, com concorrência baixa e configurável.
+- **Endereço incompleto** (sem rua, número, bairro ou cidade; "S/N" conta como número): completa pelo CEP; se continuar incompleto, a empresa recebe a tag de sistema **Endereço a confirmar** (grupo de sistema **Cadastro**) e entra na fila "Confirmar endereço". A tag sai quando o endereço fica completo e geocodificado, ou quando o usuário confirma a posição. Empresa incompleta nunca vira pin.
+- **Ficha:** selo de precisão (exata, aproximada, sem coordenada, a confirmar) com a origem, e **Ajustar posição** num mapa pequeno, com confirmação.
+- **Configurações → Geolocalização:** lotes, contagens, progresso, relatório, regiões (as microrregiões oficiais do ES, somente leitura, e as do admin, com nome e municípios) e, só para o **admin**, a **legenda do mapa** (cores e nomes dos estados, com prévia e "Restaurar padrão").
+- **Mapa:** tela cheia com MapLibre. Pins coloridos pela tag de Status; um visto marca "visitada alguma vez". Estados fixos: **visita tentada** (só alimentada pelo check-in do G3) e **sem visita há 60+ dias** (só carteira; vermelho por padrão; prevalece sobre a cor da tag). A tag de Status ganha as opções **aparece no mapa** (ligada, exceto Inativo) e **visível ao abrir** (ligada, exceto Prospect).
+- **Filtros:** busca (empresa, bairro, cidade), status, visitada (alguma vez, 90 dias, período), vendedor, sem visita há N dias, cidade, região e precisão. **Carregamento por área visível**, com agrupamento nos zooms afastados; leads entram por lote de importação, até 500 por vez.
+- **Painel da empresa** (Ligar, WhatsApp, Abrir ficha), **empresas próximas** (2, 5, 10 e 25 km; por padrão sem as já visitadas), **seleção por retângulo ou raio** (listar, abrir ou aplicar tag) e **cobertura por município**.
+- **Permissões:** o vendedor vê no mapa só o que já vê na carteira; admin e gestor veem tudo.
+- **Fora do G1+G2:** check-in com GPS (G3), "Na rota" e rotas (G4).
+
 ## 4. Contatos
 
 Um contato pode estar ligado a **várias empresas** (N:N).
@@ -748,7 +760,7 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 
 | Fase | Funcionalidade |
 |---|---|
-| 2 — Geolocalização | Geocodificação dos endereços, mapa da carteira (pins coloridos por tag), filtros por raio, check-in de visita com GPS |
+| 2 — Geolocalização | **G1 (geocodificação) e G2 (mapa) em andamento, ver `plano_geolocalizacao.md` e a seção 3B.** Check-in de visita com GPS (G3) fica depois |
 | 3 — Roteirização | Montar roteiro do dia com base em filtros (ex.: sem visita há 90 dias + cidade), otimização da ordem (VROOM) e navegação |
 | 4 — WhatsApp | Integração Evolution API: registro automático/manual de conversas, caixa de não identificados e, depois, envio pelo CRM (ver seção 13.1) |
 | 5 — n8n | Webhooks de saída, chaves de API e automações (ver seção 13.2) |

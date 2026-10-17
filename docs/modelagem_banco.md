@@ -340,8 +340,11 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 | municipio_codigo | int FK → `municipios` | **Cidade** + **Estado** (vêm do município) |
 | pais_codigo | smallint default 105 | **País** (código da Receita; 105 = Brasil) |
 | localizacao | geography(Point,4326) | **Geolocalização** (índice GiST) |
-| geo_precisao | enum(exata/rua/cep/cidade) | Qualidade da coordenada |
-| geo_origem | enum(google/nominatim/manual/checkin) | |
+| geo_precisao | enum(exata/aproximada) | **G1:** exata = número casado sem ambiguidade (raio 100 m); o resto é aproximada. Nulo = sem coordenada |
+| geo_aproximacao | enum(interpolada/rua/cep_cidade) null | **G1:** tipo da aproximação (~300 m, ~1 km, ~5 km). Nulo quando exata |
+| geo_origem | enum(cnefe/nominatim/cep/manual/checkin) | **G1:** quem deu a posição (o Google fica fora) |
+| geo_endereco_consultado | text | **G1:** texto normalizado que foi consultado |
+| geo_ajuste_manual | boolean default false | **G1:** o usuário moveu o pin; preservado até confirmar a troca |
 | geo_atualizado_em | timestamptz | |
 | faixa_funcionarios_id | uuid FK | **Número de Funcionários** (faixa) |
 | numero_funcionarios | int | Número exato (opcional) |
@@ -756,3 +759,21 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 1. ~~Validar esta modelagem~~ ✅ Aprovada em 05/10/2026. Novos ajustes entram como versões 1.x.
 2. Gerar o **schema Drizzle** + migrações + **políticas RLS** + seeds (tags, tipos de atividade, funil padrão, CNAEs e municípios).
 3. Montar o mapeamento **JSON Minha Receita → tabelas** (função de importação com testes usando o exemplo enviado).
+
+## Geolocalização (G1 e G2; migração 0026, ver `plano_geolocalizacao.md`)
+
+Só expansão. `empresas` ganha as colunas `geo_*` e `localizacao` descritas acima (`geography(Point,4326)` com índice GiST). Tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado**, colunas padrão e teste de isolamento:
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `geo_consultas` | empresa_id, provedor (`cnefe`/`nominatim`/`cep`), consulta (texto normalizado), resposta (jsonb), precisao, aproximacao, lat/lon, acionado_por (`membro_id` ou `sistema`), lote_id | Auditoria de cada consulta e cache para não repetir; única por `(tenant_id, provedor, consulta)` quando não há erro |
+| `geo_lotes` | escopo (cidade ou região), situacao, totais (total, já com coordenada, processadas, exatas, aproximadas, a confirmar, falhas), criado_por | Mesmo desenho do lote de importação: blocos curtos, idempotência por empresa, retomada |
+| `geo_regioes` | nome, ativo | Regiões criadas pelo admin |
+| `geo_regiao_municipios` | regiao_id, municipio_codigo (IBGE) | |
+| `mapa_legenda` | chave (`tag:<id>`, `visita_tentada`, `sem_visita`), cor (token da paleta), nome | Cores e nomes por tenant; ausente = padrão. Única por `(tenant_id, chave)` |
+
+Colunas novas: `tags.aparece_no_mapa` e `tags.visivel_ao_abrir` (boolean); `tag_grupos`: grupo de sistema **Cadastro** (`chave_sistema = 'cadastro'`) e tag **Endereço a confirmar** (`chave_sistema = 'endereco_a_confirmar'`), criados para os tenants existentes pela migração e para os novos pelo seed.
+
+**Tabelas de referência (sem `tenant_id` e sem RLS, só leitura para o `leadtogo_app`):** `microrregioes` (código IBGE, nome, UF) e `municipios.microrregiao_codigo`.
+
+**Schema `referencia_geo` (fora do backup):** `cnefe_enderecos` (município IBGE, CEP, tipo e nome do logradouro, **logradouro normalizado** com índice `pg_trgm`, número, bairro, `localizacao`, nível de qualidade `NV_GEO_COORD` e espécie). Carregada por `scripts/geo/` (docs/geo_atualizacao.md); uma restauração do backup traz o schema vazio e exige recarregar. O `leadtogo_app` só lê.

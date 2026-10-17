@@ -55,7 +55,7 @@
 5. Vale para listas, fichas, formulários, Configurações, importação, Dashboard e as telas futuras: use `PaginaDeTabela`/`AreaDaTabela`/`CorpoDaTabela` (`components/ui/pagina.tsx`) nas listas e um `<main>` comum nas demais.
 - Estrutura: `html`/`body` com `overflow: hidden`; casca `relative h-dvh overflow-hidden`; `#conteudo` com `min-h-0 flex-1 overflow-y-auto overflow-x-hidden` e, dentro, `mx-auto flex min-h-full w-full max-w-[1440px] flex-col`.
 - Teste que protege a regra: `apps/web/e2e/layout.spec.ts` (1920×1080, 1366×768 e 390×844: janela sem rolagem, menu e topo parados, uma única barra, cabeçalho das colunas grudado, 1440 px centralizado).
-6. **Única exceção: o quadro Kanban de Oportunidades** (largura toda, altura toda e rolagem por coluna), descrita na seção "Kanban" abaixo. Toda outra exceção precisa da aprovação do Ale e entra aqui.
+6. **Exceções aprovadas pelo Ale:** o **quadro Kanban de Oportunidades** (largura toda, altura toda e rolagem por coluna), descrito na seção "Kanban" abaixo, e a **tela Mapa** (G2, aprovada em 16/10/2026), descrita na seção "Mapa" abaixo. Toda outra exceção precisa da aprovação do Ale e entra aqui.
 
 ## Tabelas e paginação (regra para toda tabela de dados)
 - **Um componente só: `Paginacao`** (`components/ui/paginacao.tsx`), usado por todas as tabelas, inclusive as dos próximos módulos. Mostra "1–25 de 120", **Linhas por página (25, 50 ou 100)**, "Página N de M", Anterior e Próxima.
@@ -99,3 +99,12 @@ Os gráficos do app usam **Recharts**, no padrão do **shadcn/ui Charts**: um co
 1. Revisar o design system no artifact e pedir ajustes (cores, fonte, cantos, densidade).
 2. Prototipar as telas principais (Dashboard, Empresas, Ficha da empresa, Oportunidades, Tarefas, versões para celular) sobre este sistema.
 3. Definir o escopo do MVP.
+
+
+## Mapa (G2; exceção aprovada pelo Ale em 16/10/2026)
+**Exceção à regra de "Layout e rolagem", valendo só para a tela Mapa.** Referência visual: `docs/referencias/geo/mapa_referencia.png`.
+- O mapa (MapLibre + PMTiles) ocupa **a área central inteira**, sem o contêiner de 1440 px e sem título de página; menu lateral e barra do topo continuam. A página continua sem rolagem.
+- **Por cima do mapa:** barra de busca e chips de filtro no topo (chips gerados das tags de Status, com contagem), painel da empresa à esquerda (cartão `--surface`, 400 px), controles do mapa à direita (zoom, retângulo, raio, minha posição, camadas) e a **legenda** no canto inferior (visto = "visitada alguma vez"). O painel da direita da referência (editor de rota) é do G4 e **não entra** no G2.
+- **Pins:** cores vindas da legenda do tenant (`mapa_legenda`), de uma **paleta de ~12 cores dos tokens** com contraste garantido no tema claro e no escuro; o estado nunca depende só da cor (visto de "visitada", ícone próprio de "visita tentada" e de "sem visita 60+").
+- **Celular (390 px):** mapa em tela cheia, painel como **folha que sobe de baixo** e filtros numa **gaveta**.
+- Teste que protege a regra: `apps/web/e2e/mapa-layout.spec.ts` (1920×1080, 1366×768 e 390×844: janela sem rolagem, mapa ocupando a área central).
