@@ -154,7 +154,7 @@ O roteiro de implantação no Coolify (DNS, segredos, GHCR, banco, recursos, tok
 | Cancelamento | Na `main` nada é cancelado (um deploy nunca é interrompido); fora da `main` o run novo cancela o antigo | Igual |
 | Cache | pnpm (`setup-node`) e Turborepo (`actions/cache` em `.turbo`) | Igual (fica) |
 | Dependabot | **Mensal** (versões); alertas e atualizações de **segurança** seguem imediatos | Semanal, às segundas |
-| `pre-push` | Gate completo (lint, tipos e testes) **numa cópia limpa do commit que sobe** (`git worktree`, `scripts/pre-push.sh`), em todo push de código. Nunca `--no-verify` | Pode voltar a rodar na pasta de trabalho (opcional), já que o CI faz o gate completo |
+| `pre-push` | Gate completo (lint, tipos, **build do web com o `validar-dist`, como na imagem Docker (~5 s)** e testes) **numa cópia limpa do commit que sobe** (`git worktree`, `scripts/pre-push.sh`), em todo push de código. Nunca `--no-verify` | Pode voltar a rodar na pasta de trabalho (opcional), já que o CI faz o gate completo |
 
 **Como voltar ao normal** (quando o runner do homelab estiver pronto), num commit `ci:`:
 1. Em `.github/workflows/ci-cd.yml`, apague os trechos marcados com `TEMPORÁRIO`: o filtro `branches: [main]` do `push`, o `if: ... workflow_dispatch` dos jobs `test` e `security` e a condição do `build` que aceita `test` e `security` "skipped" (volte para `needs.escopo.outputs.codigo == 'true' && github.ref == 'refs/heads/main'`). Aponte `runs-on` dos jobs para o runner do homelab (`runs-on: [self-hosted, ...]`), conferindo antes Node, Docker, o Chromium do Playwright e o PostGIS.

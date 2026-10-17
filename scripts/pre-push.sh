@@ -26,6 +26,9 @@ for commit in "${commits[@]}"; do
   # Um comando por linha: com `a && b && c` o `set -e` não enxerga a falha de a ou b e o push passaria
   pnpm lint
   pnpm typecheck
+  # O build do web como na imagem Docker (vite build + validar-dist): pega o que lint, tipos e testes não veem,
+  # como um .js fora do precache do PWA (o push 3 do mapa só falhou aqui, na esteira). Leva ~30 s.
+  (cd apps/web && node scripts/sincronizar-design-system.mjs && pnpm exec vite build && node scripts/validar-dist.mjs)
   TURBO_CONCURRENCY=1 pnpm test
   limpar
   trap - EXIT
