@@ -158,7 +158,7 @@ describe('POST /v1/empresas', () => {
                (SELECT padroes_criados_em IS NOT NULL FROM tenant_configuracoes) AS marca`
       return l
     })
-    expect(n).toEqual({ tags: 6, tipos: 6, fases: 4, origens: 5, motivos: 12, marca: true })
+    expect(n).toEqual({ tags: 7, tipos: 6, fases: 4, origens: 5, motivos: 12, marca: true })
   })
 
   it('a auditoria da criação grava o IP do cliente (pelo proxy confiável)', async () => {

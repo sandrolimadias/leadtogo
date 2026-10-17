@@ -70,7 +70,7 @@ describe('iniciar() contra o banco de teste', () => {
       await iniciar({ DATABASE_MIGRATION_URL: urlOwner, SEMEAR_REFERENCIAS: 'false' }, deps),
     ).toBe(0)
     for (const id of [a, b]) {
-      expect(await contarDe(id, 'tags')).toBe(6)
+      expect(await contarDe(id, 'tags')).toBe(7)
       expect(await contarDe(id, 'tipos_atividade')).toBe(6)
       expect(await contarDe(id, 'funil_fases')).toBe(4)
       expect(await contarDe(id, 'origens')).toBe(5)
@@ -85,8 +85,8 @@ describe('iniciar() contra o banco de teste', () => {
     expect(
       await iniciar({ DATABASE_MIGRATION_URL: urlOwner, SEMEAR_REFERENCIAS: 'false' }, deps),
     ).toBe(0)
-    expect(await contarDe(a, 'tags')).toBe(5)
-    expect(await contarDe(b, 'tags')).toBe(6)
+    expect(await contarDe(a, 'tags')).toBe(6)
+    expect(await contarDe(b, 'tags')).toBe(7)
   })
 
   it('credencial errada: código 1, a API não é carregada e a senha não vai para a saída', async () => {

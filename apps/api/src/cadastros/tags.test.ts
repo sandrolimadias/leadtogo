@@ -50,7 +50,7 @@ describe('GET /v1/configuracoes/tag-grupos', () => {
     expect((await chamar('get', undefined, '/tag-grupos')).status).toBe(401)
     for (const cookie of [d.cookie, u.cookie]) {
       const g = await grupos(cookie)
-      expect(g.map((x) => x.nome)).toEqual(['Status', 'Visitação'])
+      expect(g.map((x) => x.nome)).toEqual(['Status', 'Visitação', 'Cadastro'])
       expect(g[0]).toMatchObject({ selecao: 'unica', obrigatorio: true, sistema: true })
       expect(g[0]?.tags.map((t) => `${t.nome}:${t.cor}`)).toEqual([
         'Lead:teal',
@@ -123,7 +123,7 @@ describe('grupos', () => {
       obrigatorio: false,
       sistema: false,
       automatico: false,
-      ordem: 2,
+      ordem: 3,
       tags: [],
     })
     const alt = await chamar('patch', d.cookie, `/tag-grupos/${g.id}`, {
@@ -201,13 +201,17 @@ describe('grupos', () => {
 
   it('reordena todos os grupos; lista incompleta, repetida ou alheia é 400 ordem_invalida', async () => {
     const { d } = await cenario()
-    const [status, visitacao] = (await grupos(d.cookie)) as [TagGrupo, TagGrupo]
+    const [status, visitacao, cadastro] = (await grupos(d.cookie)) as [TagGrupo, TagGrupo, TagGrupo]
     const ok = await chamar('put', d.cookie, '/tag-grupos/ordem', {
-      ids: [visitacao.id, status.id],
+      ids: [visitacao.id, status.id, cadastro.id],
     })
     expect(ok.status).toBe(200)
-    expect((await grupos(d.cookie)).map((x) => x.nome)).toEqual(['Visitação', 'Status'])
-    for (const ids of [[status.id], [status.id, status.id], [status.id, visitacao.id, status.id]]) {
+    expect((await grupos(d.cookie)).map((x) => x.nome)).toEqual(['Visitação', 'Status', 'Cadastro'])
+    for (const ids of [
+      [status.id],
+      [status.id, status.id, cadastro.id],
+      [status.id, visitacao.id, status.id],
+    ]) {
       const r = await chamar('put', d.cookie, '/tag-grupos/ordem', { ids })
       expect(r.status).toBe(400)
       expect(erroDe(r)).toBe('ordem_invalida')
