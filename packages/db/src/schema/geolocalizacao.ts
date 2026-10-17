@@ -198,8 +198,8 @@ export const mapaLegenda = pgTable(
 )
 
 // ---------------------------------------------------------------------------------------------
-// Schema `referencia_geo`: dado público recarregável, FORA do backup (docs/runbook_backup.md,
-// seção 5). Sem tenant e sem RLS; o `leadtogo_app` só lê. A carga é de `scripts/geo/`.
+// Schema `referencia_geo`: dado público, no banco principal e DENTRO do backup (docs/runbook_backup.md,
+// seção 5). Sem tenant e sem RLS; o `leadtogo_app` só lê. A carga (e a atualização) é de `scripts/geo/`.
 export const referenciaGeo = pgSchema('referencia_geo')
 
 /** Ruas do CNEFE por município, com a chave normalizada (busca aproximada por `pg_trgm`) e o centro da rua. */

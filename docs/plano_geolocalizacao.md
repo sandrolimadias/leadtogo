@@ -18,7 +18,7 @@
 
 ## 2. Decisões do plano (Ale, 16/10/2026)
 
-- **CNEFE no Postgres**, em tabela de referência **sem RLS**, num schema próprio (`referencia_geo`) **fora do backup**; `docs/geo_atualizacao.md` recarrega depois de uma restauração. Busca aproximada com `pg_trgm` no logradouro normalizado. Como excluir o schema do backup do Coolify: ver `runbook_backup.md`, seção 5.
+- **CNEFE no Postgres**, em tabela de referência **sem RLS**, num schema próprio (`referencia_geo`), **dentro do backup** do Coolify (decisão do Ale em 16/10/2026, caminho A): a restauração já traz o CNEFE e o script de carga só atualiza (novo Censo) ou recarrega se o schema estiver vazio. Na primeira carga em produção, medir e registrar o tamanho do schema, do dump antes e depois e o tempo de restauração; se o dump compactado crescer mais de 150 MB, parar e reavaliar (banco separado sem backup). A carga em produção só com o "pode carregar" do Ale, fora do horário de uso.
 - **Migração única 0026**, só de expansão, com um único Backup Now.
 - **Nominatim só em produção**; o ambiente de desenvolvimento usa só CNEFE e CEP. Os testes usam um provedor falso, com endereços fictícios.
 - **Tiles:** endpoint da API com suporte a `Range`, atrás de sessão, lendo o PMTiles do Garage (bucket privado).
@@ -55,7 +55,7 @@
 
 | Item | Onde | Observação |
 |---|---|---|
-| CNEFE do ES (2,22 milhões de endereços) | schema `referencia_geo` do Postgres | sem RLS, fora do backup, índice `pg_trgm`; recarga por `scripts/geo/` |
+| CNEFE do ES (2,22 milhões de endereços) | schema `referencia_geo` do Postgres | sem RLS, dentro do backup, índice `pg_trgm`; recarga por `scripts/geo/` |
 | Nominatim (só ES) | serviço novo no Coolify | 1,5 GiB de RAM no máximo; só produção |
 | PMTiles do ES (~227 MB, zoom até 14) | bucket privado do Garage | servido por endpoint da API com `Range`, atrás de sessão |
 | Tabelas novas (com `tenant_id`, RLS forçado e teste de isolamento) | Postgres | `geo_consultas`, `geo_lotes`, `geo_regioes`, `geo_regiao_municipios`, `mapa_legenda` |
@@ -85,5 +85,5 @@ Check-in com GPS, "Na rota" no painel, rotas e otimização (OSRM/VROOM), janela
 | Data | Decisão | Quem |
 |---|---|---|
 | 16/10/2026 | Fontes, camadas, precisão e normalização do G0 | Ale |
-| 16/10/2026 | CNEFE no Postgres fora do backup; migração única 0026; "visita tentada" só pelo check-in (G3) | Ale |
+| 16/10/2026 | CNEFE no Postgres, dentro do backup (caminho A); migração única 0026; "visita tentada" só pelo check-in (G3) | Ale |
 | 16/10/2026 | Nominatim só em produção; tiles por endpoint com Range atrás de sessão; `GEO_CONCORRENCIA` = 1; 1,5 GiB no Nominatim; pushes em 4 etapas | Ale (proposta do Claude) |

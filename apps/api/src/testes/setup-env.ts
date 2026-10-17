@@ -40,6 +40,9 @@ for (const [chave, valor] of Object.entries(padroes)) process.env[chave] ||= val
 // (ex.: EMAIL_ESPERA_MS=5000 no .env.example quebrava a asserção do backoff de 50 ms)
 process.env['OUTBOX_INTERVALO_MS'] = '200'
 process.env['EMAIL_ESPERA_MS'] = '50'
+// Os workers dos testes não geocodificam sozinhos: um worker de outro arquivo, rodando em paralelo,
+// pegaria os eventos `empresa.geocodificar` dos testes alheios e mexeria nas empresas deles
+process.env['GEO_AUTOMATICA'] = 'false'
 
 // O supertest registra um listener de 'error' no servidor a cada requisição; os testes que fazem
 // mais de 10 no mesmo app disparam o MaxListenersExceededWarning (todos os apps são fechados).

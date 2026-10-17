@@ -219,9 +219,10 @@ Use `rclone copy r2:vps-backup/garage/leadtogo-arquivos` para o Garage, com **te
 
 Teste real de restauração dos arquivos, pendente até existirem arquivos no bucket.
 
-## 5. Schema `referencia_geo` (CNEFE) fora do backup
+## 5. Schema `referencia_geo` (CNEFE) dentro do backup
 
-A tabela do CNEFE (`referencia_geo.cnefe_enderecos`, ~2,2 milhões de linhas, cerca de 500 MB) **não deve entrar no backup**: é dado público e recarregável, e inflaria cada dump. Decisão do Ale em 16/10/2026.
+A tabela do CNEFE (`referencia_geo.cnefe_enderecos`, ~2,2 milhões de linhas) **fica no banco principal e entra no backup**: o `pg_dumpall` do Coolify (seção 2.0) a leva junto, sem nenhuma mudança na configuração. Decisão do Ale em 16/10/2026 (caminho A; as alternativas, banco separado sem backup e script de backup próprio, ficaram descartadas por ora).
 
-- O backup do Coolify é um `pg_dumpall` (seção 2.0), que **não tem opção de excluir um schema**. **Como excluir ainda não está definido**: a confirmação com o Ale sobre o que o Coolify permite (por exemplo, listar só o banco `leadtogo` em "databases", o que ainda inclui todos os schemas; ou mover o CNEFE para um segundo banco fora da lista) está **pendente**. Até lá, a tabela fica **vazia** em produção (a migração só cria o schema e a tabela), e a carga dos dados só é feita **depois** dessa definição.
-- **Depois de qualquer restauração**, o schema volta vazio (ou ausente): recarregue o CNEFE com o passo a passo de `docs/geo_atualizacao.md`. Sem o CNEFE o sistema continua funcionando, mas a geocodificação perde a camada principal (cai no Nominatim e no CEP).
+- **Restauração:** o CNEFE volta junto; **não precisa recarregar** (`docs/geo_atualizacao.md`, seção 1). O script de carga só serve para atualizar (novo Censo) ou se o schema estiver vazio.
+- **Custo estimado (a medir):** ~200 MB de SQL, cerca de 40 a 60 MB compactado por cópia, ~1,2 a 1,8 GB no R2 com as 30 cópias. **Na primeira carga em produção** registrar o tamanho do schema, o tamanho do dump compactado antes e depois e o tempo de restauração. **Se o dump compactado crescer mais de 150 MB, parar e avisar o Ale** para reavaliar o caminho B (banco separado sem backup).
+- A migração 0026 só cria o schema e as tabelas **vazias**; a carga em produção é manual e só com o "pode carregar" do Ale, fora do horário de uso.

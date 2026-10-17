@@ -118,6 +118,27 @@ const esquema = z
     /** Prazo de cada consulta à Receita, em milissegundos */
     RECEITA_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
 
+    // Geolocalização (docs/plano_geolocalizacao.md). Sem NOMINATIM_URL (desenvolvimento) a cascata segue só
+    // com o CNEFE e o CEP. Os provedores de CEP são públicos; só o CEP sai do Leadtogo.
+    /** Nominatim local só do ES (serviço do Coolify, rede interna), ex.: http://nominatim:8080 */
+    NOMINATIM_URL: opcional(url(['http:', 'https:'])),
+    /** Prazo de cada consulta ao Nominatim, em milissegundos */
+    NOMINATIM_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
+    VIACEP_URL: url(['http:', 'https:']).default('https://viacep.com.br/ws'),
+    BRASILAPI_CEP_URL: url(['http:', 'https:']).default('https://brasilapi.com.br/api/cep/v1'),
+    /** Prazo de cada consulta de CEP, em milissegundos */
+    CEP_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
+    /** Geocodificar sozinho a empresa nova ou com o endereço alterado (ligado em produção; os testes desligam) */
+    GEO_AUTOMATICA: booleano.default(true),
+    /** UF que o mapa e os lotes mostram por padrão (as microrregiões da lista); nada no código é fixo ao ES */
+    GEO_UF: z.string().length(2).default('ES'),
+    /** Geocodificações ao mesmo tempo no worker (a VPS tem 4 CPUs ARM, já com carga): padrão 1 */
+    GEO_CONCORRENCIA: z.coerce.number().int().min(1).max(4).default(1),
+    /** No máximo quantas empresas geocodificar por minuto (protege os serviços de CEP e a CPU) */
+    GEO_LIMITE_POR_MINUTO: z.coerce.number().int().min(1).max(600).default(120),
+    /** Por quantos dias a resposta de uma consulta externa (Nominatim, CEP) vale como cache */
+    GEO_CACHE_DIAS: z.coerce.number().int().min(0).max(365).default(90),
+
     // Arquivos (Garage / S3)
     S3_ENDPOINT: url(['http:', 'https:']),
     S3_REGION: z.string().min(1).default('garage'),

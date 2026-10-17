@@ -777,6 +777,6 @@ Só expansão. `empresas` ganha as colunas `geo_*` e `localizacao` descritas na 
 
 **Referências globais (sem `tenant_id` e sem RLS; leitura para o `leadtogo_app`, carga do owner no seed):** `microrregioes` (código IBGE, nome, UF; 558 linhas), `municipios.microrregiao_codigo` e `municipios.localizacao` (centro do município, do centroide da malha do IBGE; antes era nula).
 
-**Schema `referencia_geo` (CNEFE; fora do backup, ver `runbook_backup.md`, seção 5):** só o `leadtogo_app` com `SELECT`; a carga é do owner por `scripts/geo/`.
+**Schema `referencia_geo` (CNEFE; dentro do backup do Coolify, ver `runbook_backup.md`, seção 5):** só o `leadtogo_app` com `SELECT`; a carga é do owner por `scripts/geo/`.
 - `cnefe_logradouros`: uma linha por rua e município: `logradouro_normalizado` (chave de busca: sem acento, maiúsculas, tipo removido, títulos expandidos), `logradouro` (como veio), `enderecos`, `latitude_centro` e `longitude_centro` (centro da rua). Única por `(municipio_codigo, logradouro_normalizado)`; **índice GIN `pg_trgm`** em `logradouro_normalizado` (busca aproximada de rua).
 - `cnefe_enderecos`: um registro por endereço com coordenada: município, CEP, localidade, rua normalizada, `numero` (nulo = S/N), modificador, latitude, longitude, `nivel_coordenada` (`NV_GEO_COORD`: 1 original, 2 modificada, 3 estimada, 4 face, 5 localidade, 6 setor) e `especie` (`COD_ESPECIE`). Índices `(municipio_codigo, logradouro_normalizado, numero)` e `(cep)`.

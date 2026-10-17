@@ -332,6 +332,17 @@ Fica **saudável** quando os consumidores das filas estão rodando e o Valkey e 
 
 ---
 
+### 5.4 `leadtogo-nominatim` (geolocalização, G1)
+
+Serviço **só de produção** (no desenvolvimento a API não usa o Nominatim). Decisões e medições: `plano_geolocalizacao.md` e `geo_g0_relatorio.md`. Preparo dos dados (fora da VPS): `geo_atualizacao.md`, seção 2.
+
+1. **Recurso:** Docker Image `mediagis/nominatim:4.5` (tem versão `arm64`), **sem porta pública** e sem domínio (só a rede interna do Coolify).
+2. **Volume:** `/var/lib/postgresql/16/main` com o banco já importado e congelado (o `nominatim-es-pg` da seção 2 do `geo_atualizacao.md`, ~430 MB compactado, ~1 GB de diretório). Extraia o `.tgz` no volume antes de subir.
+3. **Variáveis:** `NOMINATIM_PASSWORD` (qualquer valor: o banco do Nominatim não é exposto) e `PBF_PATH` **não** (a importação já foi feita; sem ela o container só serve).
+4. **Limites:** memória **1,5 GiB** (Resources → Limit Memory). Em uso fica perto de 1 GiB.
+5. **Saúde:** `GET /status` (porta 8080) responde `OK`.
+6. **Na API e no worker (`leadtogo-api` e `leadtogo-worker`):** `NOMINATIM_URL=http://<nome interno do recurso>:8080` (o nome vem do Coolify, como em 4.5). Reimplante os dois. Sem a variável, a cascata roda só com o CNEFE e o CEP.
+
 ## 6. Referências e primeira conta
 
 Antes da conta, confirme que as referências foram semeadas (terminal do `leadtogo-db`; esperado `1332`, `5571` e `27`):
