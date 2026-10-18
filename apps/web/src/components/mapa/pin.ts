@@ -14,13 +14,22 @@ export interface OpcoesDoPin {
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
+/**
+ * Zera o visual padrão do <button> SEM `all:unset`. O elemento do pin é o próprio elemento do Marker do MapLibre,
+ * e o CSS do MapLibre põe `position:absolute` na classe `.maplibregl-marker`: `all:unset` no estilo inline
+ * (mais forte que a classe) devolvia `position:static`, os pins se empilhavam em fila (30 px cada um) e só o
+ * primeiro caía no lugar. Nada aqui pode mexer em `position`, `top`, `left` nem `transform`.
+ */
+export const ZERAR_BOTAO =
+  'appearance:none;margin:0;padding:0;border:0;background:none;font:inherit;color:inherit;'
+
 export function criarPin(o: OpcoesDoPin): HTMLButtonElement {
   const botao = document.createElement('button')
   botao.type = 'button'
   botao.setAttribute('aria-label', o.rotulo)
   botao.title = o.rotulo
   const tamanho = o.selecionado || o.arrastavel ? 40 : 30
-  botao.style.cssText = `all:unset;cursor:${o.arrastavel ? 'grab' : 'pointer'};display:block;width:${tamanho}px;height:${tamanho}px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));`
+  botao.style.cssText = `${ZERAR_BOTAO}cursor:${o.arrastavel ? 'grab' : 'pointer'};display:block;width:${tamanho}px;height:${tamanho}px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));`
   const svg = document.createElementNS(SVG_NS, 'svg')
   svg.setAttribute('viewBox', '0 0 30 30')
   svg.setAttribute('width', String(tamanho))
@@ -65,7 +74,7 @@ export function criarBolha(
   botao.setAttribute('aria-label', rotulo)
   botao.title = rotulo
   const tamanho = total >= 1000 ? 52 : total >= 100 ? 44 : 36
-  botao.style.cssText = `all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:${tamanho}px;height:${tamanho}px;border-radius:50%;background:${cor};color:#fff;font:600 13px/1 var(--font-sans, system-ui);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.45);`
+  botao.style.cssText = `${ZERAR_BOTAO}cursor:pointer;display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:${tamanho}px;height:${tamanho}px;border-radius:50%;background:${cor};color:#fff;font:600 13px/1 var(--font-sans, system-ui);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.45);`
   botao.textContent = texto ?? (total >= 1000 ? `${Math.round(total / 100) / 10}k` : String(total))
   return botao
 }

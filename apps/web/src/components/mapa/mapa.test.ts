@@ -3,6 +3,26 @@ import { describe, expect, it } from 'vitest'
 import { estiloDoMapa, URL_DO_MAPA_BASE } from './estilo'
 import { circulo, criarBolha, criarPin } from './pin'
 
+describe('o elemento que vira Marker do MapLibre', () => {
+  // O CSS do MapLibre dá `position:absolute` à classe `.maplibregl-marker`; um `all:unset` inline a anulava e os
+  // pins se empilhavam em fila (bug de 18/10/2026). O estilo inline não pode mexer em posicionamento.
+  const elementos = {
+    pin: criarPin({ cor: '#000', rotulo: 'a' }),
+    'pin selecionado': criarPin({ cor: '#000', rotulo: 'a', selecionado: true }),
+    'pin arrastável': criarPin({ cor: '#000', rotulo: 'a', arrastavel: true }),
+    bolha: criarBolha(12, '#000', 'b'),
+  }
+  for (const [nome, el] of Object.entries(elementos)) {
+    it(`${nome}: sem all:unset e sem position, top, left nem transform inline`, () => {
+      expect(el.getAttribute('style') ?? '').not.toMatch(/\ball\s*:/)
+      expect(el.style.position).toBe('')
+      expect(el.style.top).toBe('')
+      expect(el.style.left).toBe('')
+      expect(el.style.transform).toBe('')
+    })
+  }
+})
+
 describe('pin e bolha do mapa', () => {
   it('o pin é um botão com rótulo acessível e a cor do estado', () => {
     const el = criarPin({ cor: '#17693b', rotulo: 'Alfa Ltda' })

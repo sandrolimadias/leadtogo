@@ -113,6 +113,7 @@ export function MapaBase(props: PropsDoMapa) {
     let cancelado = false
     let mapa: MapaDoMapLibre | null = null
     let cleanupTemporizador: (() => void) | undefined
+    let observador: ResizeObserver | undefined
     void (async () => {
       const [maplibre, { PMTiles, Protocol }, { estiloDoMapa }, { default: urlDoWorker }] =
         await Promise.all([
@@ -159,6 +160,14 @@ export function MapaBase(props: PropsDoMapa) {
         pitchWithRotate: false,
         touchPitch: false,
       })
+      // Leitura para os testes no navegador (posição dos pins x projeção); não é API do componente
+      Object.defineProperty(contenedor.current, '__mapa', { value: mapa, configurable: true })
+      // O contêiner pode ganhar o tamanho final depois de o mapa existir (layout da área central, menu lateral,
+      // painéis): sem isso o canvas fica com o tamanho antigo (faixa cinza) e a projeção dos pins sai errada
+      if (typeof ResizeObserver !== 'undefined') {
+        observador = new ResizeObserver(() => mapa?.resize())
+        observador.observe(contenedor.current)
+      }
       mapa.touchZoomRotate.disableRotation()
       if (!ultimas.current.semControles) {
         mapa.addControl(new maplibre.NavigationControl({ showCompass: false }), 'bottom-right')
@@ -199,6 +208,7 @@ export function MapaBase(props: PropsDoMapa) {
       }
       mapa.on('click', (e) => ultimas.current.aoClicarNoMapa?.(e.lngLat.lat, e.lngLat.lng))
       mapa.on('load', () => {
+        mapa?.resize()
         mapaRef.current = mapa
         setVersaoDoEstilo((v) => v + 1)
         const b = mapa?.getBounds()
@@ -216,6 +226,7 @@ export function MapaBase(props: PropsDoMapa) {
     return () => {
       cancelado = true
       cleanupTemporizador?.()
+      observador?.disconnect()
       for (const m of marcadores.current) m.remove()
       marcadores.current = []
       pinArrastavel.current?.remove()
