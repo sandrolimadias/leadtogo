@@ -53,7 +53,8 @@ export default defineConfig(({ command }) => ({
               ],
             },
             workbox: {
-              globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+              // `mjs`: o worker do MapLibre (publicado por `?url`), sem ele o mapa não desenha offline
+              globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2}'],
               navigateFallback: '/index.html',
               navigateFallbackDenylist: [/^\/v1\//, /^\/health/, /^\/docs/],
               // o service worker não precisa de mapa (e o dist não pode ter .map fora do upload ao GlitchTip)

@@ -51,7 +51,7 @@ if (!existsSync(sw)) {
       problemas.push(`precache: a revisão de ${url} não bate com o arquivo final`)
     }
   }
-  for (const arquivo of arquivos(join(dist, 'assets')).filter((a) => /\.(js|css)$/.test(a))) {
+  for (const arquivo of arquivos(join(dist, 'assets')).filter((a) => /\.(m?js|css)$/.test(a))) {
     const url = relative(dist, arquivo).split('\\').join('/')
     if (!listadas.has(url)) problemas.push(`precache: ${url} não está na lista`)
   }

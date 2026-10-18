@@ -80,7 +80,11 @@ export interface PropsDoMapa {
   rotulo: string
 }
 
-type Estado = 'carregando' | 'pronto' | 'indisponivel'
+/** `falhou`: o mapa base existe, mas não foi desenhado (worker não subiu, tiles ilegíveis ou sem resposta) */
+type Estado = 'carregando' | 'pronto' | 'indisponivel' | 'falhou'
+
+/** Quanto esperar pelo primeiro tile antes de avisar que o mapa não desenhou */
+const ESPERA_DO_PRIMEIRO_TILE_MS = 20_000
 
 /**
  * O mapa (MapLibre + PMTiles do estado, servido pela API). Carregado sob demanda (a biblioteca é pesada
@@ -95,6 +99,8 @@ export function MapaBase(props: PropsDoMapa) {
   const marcadores = useRef<Marker[]>([])
   const pinArrastavel = useRef<Marker | null>(null)
   const [estado, setEstado] = useState<Estado>('carregando')
+  // Quantos elementos da base foram desenhados na última vez que o mapa ficou parado (0 = nada desenhado)
+  const [desenhados, setDesenhados] = useState(0)
   const [versaoDoEstilo, setVersaoDoEstilo] = useState(0)
   // As funções mudam a cada render; o mapa lê sempre a última
   const ultimas = useRef(props)
@@ -106,15 +112,23 @@ export function MapaBase(props: PropsDoMapa) {
   useEffect(() => {
     let cancelado = false
     let mapa: MapaDoMapLibre | null = null
+    let cleanupTemporizador: (() => void) | undefined
     void (async () => {
-      const [maplibre, { PMTiles, Protocol }, { estiloDoMapa }] = await Promise.all([
-        import('maplibre-gl'),
-        import('pmtiles'),
-        import('./estilo'),
-        import('maplibre-gl/dist/maplibre-gl.css'),
-      ])
+      const [maplibre, { PMTiles, Protocol }, { estiloDoMapa }, { default: urlDoWorker }] =
+        await Promise.all([
+          import('maplibre-gl'),
+          import('pmtiles'),
+          import('./estilo'),
+          // O MapLibre 6 sobe o worker de um arquivo próprio (`maplibre-gl-worker.mjs`) que procura ao lado do
+          // JS da biblioteca; o Vite embute a biblioteca num chunk e NÃO copia esse arquivo, então o worker
+          // não subia em produção. `?url` publica o arquivo em /assets (mesma origem: `worker-src 'self'` da
+          // CSP basta, sem blob:) e `setWorkerUrl` aponta o MapLibre para ele.
+          import('maplibre-gl/dist/maplibre-gl-worker.mjs?url'),
+          import('maplibre-gl/dist/maplibre-gl.css'),
+        ])
       if (cancelado || !contenedor.current) return
       libRef.current = maplibre
+      maplibre.setWorkerUrl(urlDoWorker)
       const protocolo = new Protocol()
       maplibre.addProtocol('pmtiles', protocolo.tile)
       protocolo.add(new PMTiles(URL_DO_MAPA_BASE))
@@ -160,6 +174,29 @@ export function MapaBase(props: PropsDoMapa) {
           zoom: mapa.getZoom(),
         })
       })
+      // Aviso em vez de ficar cinza em silêncio: worker que não sobe, base ilegível ou nenhum tile no prazo
+      let temporizador: ReturnType<typeof setTimeout> | undefined
+      if (disponivel) {
+        temporizador = setTimeout(() => {
+          console.error('[mapa] nenhum tile da base foi desenhado no prazo')
+          setEstado((e) => (e === 'pronto' ? 'falhou' : e))
+        }, ESPERA_DO_PRIMEIRO_TILE_MS)
+        mapa.on('sourcedata', (e) => {
+          if (e.sourceId !== 'base' || !e.isSourceLoaded) return
+          clearTimeout(temporizador)
+          setEstado((anterior) => (anterior === 'falhou' ? 'pronto' : anterior))
+        })
+        mapa.on('error', (e) => {
+          const mensagem = e.error?.message ?? ''
+          const daBase = (e as { sourceId?: string }).sourceId === 'base'
+          if (!daBase && !/worker/i.test(mensagem)) return
+          console.error('[mapa] falha ao desenhar o mapa base:', mensagem)
+          clearTimeout(temporizador)
+          setEstado((anterior) => (anterior === 'pronto' ? 'falhou' : anterior))
+        })
+        mapa.on('idle', () => setDesenhados(mapa?.queryRenderedFeatures().length ?? 0))
+        cleanupTemporizador = () => clearTimeout(temporizador)
+      }
       mapa.on('click', (e) => ultimas.current.aoClicarNoMapa?.(e.lngLat.lat, e.lngLat.lng))
       mapa.on('load', () => {
         mapaRef.current = mapa
@@ -178,6 +215,7 @@ export function MapaBase(props: PropsDoMapa) {
     })()
     return () => {
       cancelado = true
+      cleanupTemporizador?.()
       for (const m of marcadores.current) m.remove()
       marcadores.current = []
       pinArrastavel.current?.remove()
@@ -358,7 +396,11 @@ export function MapaBase(props: PropsDoMapa) {
   }, [props.desenhando])
 
   return (
-    <div className={cn('relative isolate overflow-hidden bg-surface-sunken', props.className)}>
+    <div
+      data-mapa-estado={estado}
+      data-mapa-tiles={desenhados}
+      className={cn('relative isolate overflow-hidden bg-surface-sunken', props.className)}
+    >
       <div ref={contenedor} role="application" aria-label={props.rotulo} className="size-full" />
       {estado === 'indisponivel' && !props.semAvisoDeMapa ? (
         <p
@@ -371,6 +413,15 @@ export function MapaBase(props: PropsDoMapa) {
       {props.fonteDosDados ? (
         <p className="pointer-events-none absolute right-0 bottom-5 z-10 m-0 rounded-l-sm bg-surface/80 px-1.5 py-0.5 text-[10px] text-ink-muted">
           {props.fonteDosDados}
+        </p>
+      ) : null}
+      {estado === 'falhou' ? (
+        <p
+          role="alert"
+          className="absolute top-2 left-2 z-10 m-0 max-w-[80%] rounded-sm border border-danger bg-surface px-2.5 py-1.5 text-xs text-ink shadow-sm"
+        >
+          Não foi possível desenhar o mapa. Recarregue a página; se continuar, avise o suporte. Os
+          pontos continuam valendo.
         </p>
       ) : null}
       {estado === 'carregando' ? (
