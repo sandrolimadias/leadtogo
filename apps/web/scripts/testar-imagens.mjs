@@ -82,6 +82,105 @@ function codigoTotp(chave) {
   return String(n % 1_000_000).padStart(6, '0')
 }
 
+// --- posição dos pins: cada pin tem de cair onde a projeção do mapa manda, e o canvas ocupar o contêiner inteiro
+// (pegou o bug de 18/10/2026: mapa criado antes do tamanho final da área central, pins deslocados e faixa cinza).
+// A conta é independente do MapLibre (Mercator a partir do centro e do zoom + o tamanho REAL do contêiner no DOM).
+async function testarPosicaoDosPins(contexto, borda) {
+  const telas = [
+    { width: 1920, height: 1080 },
+    { width: 1366, height: 768 },
+    { width: 390, height: 844 },
+  ]
+  const esperados = [
+    { nome: 'Empresa do Mapa Ltda', lat: -14, lon: -52 },
+    { nome: 'Segunda do Mapa Ltda', lat: -14.05, lon: -51.9 },
+  ]
+  const estado = await contexto.storageState()
+  for (const tela of telas) {
+    const ctx = await contexto
+      .browser()
+      .newContext({ storageState: estado, viewport: tela, locale: 'pt-BR' })
+    const pagina = await ctx.newPage()
+    await pagina.goto(`${borda}/mapa`)
+    await pagina
+      .waitForFunction(
+        () =>
+          Number(document.querySelector('[data-mapa-estado]')?.getAttribute('data-mapa-tiles')) > 0,
+        null,
+        { timeout: 25_000 },
+      )
+      .catch(() => {})
+    await pagina
+      .locator('.maplibregl-marker')
+      .nth(1)
+      .waitFor({ timeout: 15_000 })
+      .catch(() => {})
+    // dá tempo de o layout assentar (menu lateral, painéis) e confere duas vezes: o bug aparecia na primeira
+    await pagina.waitForTimeout(1500)
+    const r = await pagina.evaluate((esperados) => {
+      const el = document.querySelector('[data-mapa-estado]')
+      const mapa = document.querySelector(
+        '[role="application"][aria-label="Mapa das empresas"]',
+      )?.__mapa
+      if (!mapa) return { erro: 'mapa não encontrado no DOM' }
+      const caixa = el.getBoundingClientRect()
+      const contenedor = mapa.getContainer().getBoundingClientRect()
+      const canvas = mapa.getCanvas().getBoundingClientRect()
+      const centro = mapa.getCenter()
+      const mundo = 512 * 2 ** mapa.getZoom()
+      const mx = (lon) => ((lon + 180) / 360) * mundo
+      const my = (lat) =>
+        (0.5 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI)) * mundo
+      const pins = esperados.map((e) => {
+        const botao = [...document.querySelectorAll('.maplibregl-marker')].find((b) =>
+          (b.getAttribute('aria-label') ?? '').includes(e.nome),
+        )
+        if (!botao) return { nome: e.nome, achou: false }
+        const b = botao.getBoundingClientRect()
+        const xEsperado = contenedor.left + contenedor.width / 2 + mx(e.lon) - mx(centro.lng)
+        const yEsperado = contenedor.top + contenedor.height / 2 + my(e.lat) - my(centro.lat)
+        const proj = mapa.project([e.lon, e.lat])
+        return {
+          nome: e.nome,
+          achou: true,
+          // a ponta da gota é o centro da base do botão
+          erroX: Math.round(b.left + b.width / 2 - xEsperado),
+          erroY: Math.round(b.bottom - yEsperado),
+          erroProjecao: Math.round(
+            Math.hypot(
+              b.left + b.width / 2 - (contenedor.left + proj.x),
+              b.bottom - (contenedor.top + proj.y),
+            ),
+          ),
+        }
+      })
+      return {
+        contenedor: [Math.round(contenedor.width), Math.round(contenedor.height)],
+        canvas: [Math.round(canvas.width), Math.round(canvas.height)],
+        caixa: [Math.round(caixa.width), Math.round(caixa.height)],
+        pins,
+      }
+    }, esperados)
+    const rotulo = `${tela.width}x${tela.height}`
+    if (r.erro) {
+      confere(false, `${rotulo}: ${r.erro}`)
+    } else {
+      confere(
+        Math.abs(r.canvas[0] - r.contenedor[0]) <= 1 &&
+          Math.abs(r.canvas[1] - r.contenedor[1]) <= 1,
+        `${rotulo}: o canvas ocupa o contêiner inteiro (canvas ${r.canvas.join('x')}, contêiner ${r.contenedor.join('x')})`,
+      )
+      for (const p of r.pins) {
+        confere(
+          p.achou && Math.abs(p.erroX) <= 3 && Math.abs(p.erroY) <= 3 && p.erroProjecao <= 3,
+          `${rotulo}: "${p.nome}" no lugar certo (erro x=${p.erroX} y=${p.erroY} px; contra a projeção: ${p.erroProjecao} px)`,
+        )
+      }
+    }
+    await ctx.close()
+  }
+}
+
 // --- o mapa: worker do MapLibre, CSP e tiles (o que o E2E de desenvolvimento não pega, porque não tem Caddy nem CSP)
 // O PMTiles de teste (docker/fixtures/mapa-teste.pmtiles) é enviado ao Garage por docker/imagens-testar.sh.
 async function testarMapa(page, contexto, borda, senha) {
@@ -124,6 +223,15 @@ async function testarMapa(page, contexto, borda, senha) {
     },
   )
   confere(posicao.ok(), `empresa com posição na área do mapa de teste (${posicao.status()})`)
+  const segunda = await contexto.request.post(`${borda}/v1/carteira/empresas`, {
+    data: { tipoDocumento: 'nenhum', razaoSocial: 'Segunda do Mapa Ltda', statusTagId: cliente.id },
+    headers: cabecalhos,
+  })
+  const { id: segundaId } = await segunda.json()
+  await contexto.request.post(`${borda}/v1/geolocalizacao/empresas/${segundaId}/posicao`, {
+    data: { latitude: -14.05, longitude: -51.9 },
+    headers: cabecalhos,
+  })
   const problemas = []
   const arquivos = []
   // ÚNICA violação tolerada: a sonda `Function('')` do zod 4 (util.allowsEval), no chunk principal. Ela só testa se
@@ -223,6 +331,7 @@ async function testarMapa(page, contexto, borda, senha) {
     'worker bloqueado: a tela avisa "Não foi possível desenhar o mapa" (não fica cinza em silêncio)',
   )
   await ctxSemWorker.close()
+  await testarPosicaoDosPins(contexto, borda)
 }
 
 // --- no navegador: primeiro acesso, cookie e login
