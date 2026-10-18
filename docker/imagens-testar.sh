@@ -88,6 +88,17 @@ for s in api worker web; do
   echo "   $s: $(docker inspect -f '{{.State.Health.Status}}' "$("${COMPOSE[@]}" ps -q "$s")")"
 done
 
+echo "==> PMTiles de teste no Garage (o mapa precisa de uma base para a verificação do navegador)"
+docker exec -i "$("${COMPOSE[@]}" ps -q api)" node --input-type=module -e '
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
+const partes = []
+for await (const p of process.stdin) partes.push(p)
+const s3 = new S3Client({ endpoint: process.env.S3_ENDPOINT, region: process.env.S3_REGION, forcePathStyle: true,
+  credentials: { accessKeyId: process.env.S3_ACCESS_KEY, secretAccessKey: process.env.S3_SECRET_KEY } })
+await s3.send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: process.env.GEO_PMTILES_CHAVE ?? "mapa/es.pmtiles", Body: Buffer.concat(partes) }))
+console.log("   enviado:", Buffer.concat(partes).length, "bytes")
+' < docker/fixtures/mapa-teste.pmtiles
+
 echo "==> Navegador (Playwright) pela borda http://localhost:${PORTA_BORDA}"
 BORDA_URL="http://localhost:${PORTA_BORDA}" API_URL="http://localhost:${PORTA_API}" VERSAO="$VERSAO" \
   node apps/web/scripts/testar-imagens.mjs
