@@ -1,12 +1,12 @@
 # Carga da geolocalização em produção: PMTiles e CNEFE (passo a passo do Ale)
 
-> Feito **no seu WSL**, **fora do horário de uso**, nesta ordem: (a) PMTiles no Garage, (b) CNEFE no Postgres. O Nominatim fica para depois do seu teste. Detalhes e motivos: `geo_atualizacao.md`.
-> Variáveis de exemplo: `<VPS>` = o endereço SSH da VPS; `<DATA>` = data recente do build do Protomaps (https://maps.protomaps.com/builds/, formato `AAAAMMDD`).
+> Feito **no seu WSL e no terminal do servidor no Coolify** (sem SSH, sem túnel), **fora do horário de uso**, nesta ordem: (a) PMTiles no Garage, (b) CNEFE no Postgres. O Nominatim fica para depois do seu teste. Detalhes e motivos: `geo_atualizacao.md`.
+> Variáveis de exemplo: `<DATA>` = data recente do build do Protomaps (https://maps.protomaps.com/builds/, formato `AAAAMMDD`).
 
 ## Antes de tudo
 
 1. O deploy dos três ajustes (atribuição do mapa) está no ar: `curl -s https://api.crm.aledias.com.br/health` com a versão do último commit.
-2. Foi feito um backup recente do banco no Coolify (Backups → "Backup Now") **antes** da carga, para medir o "antes" (passo b.1).
+2. Terminal do **servidor** no Coolify: *Servers → (seu servidor) → Terminal*. É o terminal da máquina, **não** o terminal de dentro de um recurso (esse não tem `docker`). Rode `whoami`: o Coolify conecta como o usuário configurado no servidor, normalmente `root` (é o mesmo `root` do `runbook_backup.md`). Se `docker ps` responder `permission denied`, coloque `sudo` na frente de cada `docker` abaixo.
 
 ---
 
@@ -22,26 +22,28 @@ docker run --rm -v "$PWD":/dados ghcr.io/protomaps/go-pmtiles extract \
 ls -lh es.pmtiles        # esperado: ~227 MB
 ```
 
-**a.2. Subir para o Garage** (bucket privado `leadtogo-arquivos`, chave `mapa/es.pmtiles`). Use a chave `leadtogo-app` (gerenciador de senhas; ou `/garage key info leadtogo-app --show-secret` no container `leadtogo-files`):
+**a.2. Subir para o Garage** (bucket privado `leadtogo-arquivos`, chave `mapa/es.pmtiles`). Use a chave `leadtogo-app` (gerenciador de senhas; ou `/garage key info leadtogo-app --show-secret` no container `leadtogo-files`). As chaves entram por `read -s`: não aparecem na tela nem no histórico.
 
 ```bash
-export AWS_ACCESS_KEY_ID='GK...'        # leadtogo-app
-export AWS_SECRET_ACCESS_KEY='...'
-export AWS_DEFAULT_REGION=garage
-docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
-  -v "$PWD":/d amazon/aws-cli --endpoint-url https://files.crm.aledias.com.br \
-  s3 cp /d/es.pmtiles s3://leadtogo-arquivos/mapa/es.pmtiles
+read -rsp 'AWS_ACCESS_KEY_ID (leadtogo-app): ' AWS_ACCESS_KEY_ID; echo
+read -rsp 'AWS_SECRET_ACCESS_KEY: ' AWS_SECRET_ACCESS_KEY; echo
+export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=garage
+# atalho para o aws-cli (as chaves vão por nome de variável, nunca por valor)
+s3() { docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
+  -v "$PWD":/d amazon/aws-cli --endpoint-url https://files.crm.aledias.com.br "$@"; }
+s3 s3 cp /d/es.pmtiles s3://leadtogo-arquivos/mapa/es.pmtiles
 ```
 
-**a.3. Conferir:**
+Na tela: uma barra de progresso e, no fim, `upload: ../d/es.pmtiles to s3://leadtogo-arquivos/mapa/es.pmtiles`.
+
+**a.3. Conferir** (mesmo terminal, com o `s3` e as chaves ainda carregados):
 
 ```bash
-docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION amazon/aws-cli \
-  --endpoint-url https://files.crm.aledias.com.br s3api head-object \
-  --bucket leadtogo-arquivos --key mapa/es.pmtiles      # ContentLength = tamanho do arquivo local
+s3 s3api head-object --bucket leadtogo-arquivos --key mapa/es.pmtiles   # ContentLength = tamanho local
 stat -c %s es.pmtiles
-unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
 ```
+
+Na tela: um JSON com `"ContentLength": <n>` igual ao número do `stat`. Mantenha a sessão aberta para a parte (b) (ou refaça o `read -s` depois).
 
 No app: abra **Mapa**. O fundo com ruas aparece (sem o aviso "O mapa base ainda não foi instalado") e o canto inferior direito mostra **© OpenStreetMap contributors** sempre visível. Dê zoom numa cidade e arraste: se travar ou falhar, **devolva** a mensagem do console do navegador (F12) e o resultado de `docker stats` do container `leadtogo-files` (limite de 512 MiB).
 
@@ -51,65 +53,164 @@ No app: abra **Mapa**. O fundo com ruas aparece (sem o aviso "O mapa base ainda 
 
 ## (b) CNEFE no Postgres (schema `referencia_geo`)
 
-**Pare e avise se o dump compactado crescer mais de 150 MB.**
+**Como funciona:** o WSL carrega o CNEFE no **Postgres local** e gera um arquivo SQL **só com dados** do schema `referencia_geo` (`pg_dump --data-only`). Esse arquivo vai para o Garage; o terminal do servidor baixa e aplica **numa única transação** (`TRUNCATE` + `COPY` + `ANALYZE`): ou tudo ou nada. Sem SSH e sem túnel.
 
-**b.1. Medir o "antes"** (tamanho do último dump no R2, na VPS como `root`):
+**Sem DDL, mesma migração.** O arquivo não cria nem altera nada: só `TRUNCATE`, `COPY` (com a lista de colunas), `setval` das sequências e `ANALYZE`. Por isso a produção precisa estar **na mesma versão de migração (0026)**, o que o passo b.6 confere (27 migrações aplicadas e as colunas do schema com a mesma "impressão digital" nos dois bancos) **antes** de aplicar. O passo b.2 confere que o arquivo não tem nenhum `CREATE/ALTER/DROP/GRANT`. Nenhuma migração depois da 0026 mexe em `referencia_geo`; se uma futura mexer, gere o arquivo de novo.
 
-```bash
-docker run --rm --env-file /root/backup-garage.env rclone/rclone:latest lsl r2:vps-backup/data \
-  | grep orq8miun4hoaqnvwbntlxzwt | sort -k2,3 | tail -n 2
-```
+**Limite:** o dump do Coolify (`pg_dumpall`) cresce quase o tamanho deste arquivo (os índices não entram no dump, só os dados). Se o arquivo gerado no b.2 passar de **150 MB**, **pare e avise** antes de subir.
 
-Anote o **tamanho em bytes** da linha mais recente (o backup "Backup Now" de antes de começar).
+### No WSL
 
-**b.2. Baixar o CSV** (no WSL, ~42 MB):
-
-```bash
-cd ~/geo
-curl -O https://ftp.ibge.gov.br/Cadastro_Nacional_de_Enderecos_para_Fins_Estatisticos/Censo_Demografico_2022/Arquivos_CNEFE/CSV/UF/32_ES.zip
-ls -lh 32_ES.zip
-```
-
-**b.3. Túnel SSH até o Postgres** (o banco não tem porta pública). Em um terminal, na VPS, descubra o IP do container e abra o túnel:
-
-```bash
-# na VPS:
-docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' \
-  $(docker ps --format '{{.Names}}' | grep orq8miun4hoaqnvwbntlxzwt)
-# no WSL, em outro terminal que fica aberto (troque <IP> pelo primeiro número):
-ssh -N -L 5433:<IP>:5432 root@<VPS>
-```
-
-**b.4. Carregar** (no repositório; use a URL do **owner** com o host trocado por `localhost:5433`; nunca a do app):
+**b.1. Baixar o CSV e carregar no Postgres local** (já com a migração 0026):
 
 ```bash
 cd ~/projetos/leadtogo && git pull
+pnpm dev:up                                   # sobe o Postgres local (docker/compose.dev.yml)
+pnpm db:migrate                               # aplica até a 0026 no banco local
 pnpm install --frozen-lockfile && pnpm --filter @leadtogo/shared build
-# monte a URL do owner (a mesma DATABASE_MIGRATION_URL do Coolify) trocando só o host e a porta por localhost:5433
-export URL_DO_OWNER='<DATABASE_MIGRATION_URL do Coolify, com host localhost e porta 5433>'
-time DATABASE_MIGRATION_URL="$URL_DO_OWNER" node scripts/geo/carregar-cnefe.mjs ~/geo/32_ES.zip
+mkdir -p ~/geo && cd ~/geo
+curl -O https://ftp.ibge.gov.br/Cadastro_Nacional_de_Enderecos_para_Fins_Estatisticos/Censo_Demografico_2022/Arquivos_CNEFE/CSV/UF/32_ES.zip
+ls -lh 32_ES.zip                              # ~42 MB
+cd ~/projetos/leadtogo
+set -a; source .env; set +a                   # DATABASE_MIGRATION_URL do banco LOCAL (localhost:5432)
+echo "$DATABASE_MIGRATION_URL" | sed 's#//[^@]*@#//***@#'   # confira: tem de ser localhost, nunca a produção
+time node scripts/geo/carregar-cnefe.mjs ~/geo/32_ES.zip
 ```
 
-A saída termina com `N endereços, M ruas, K municípios`. **Esperado:** ~2,22 milhões de endereços e 78 municípios. Anote o `real` do `time`. A carga é uma transação: se falhar, nada muda.
+Na tela: progresso `… linhas lidas…`, `Endereços: …`, `Ruas: …` e, no fim, `Pronto em N s: ~2.22x.xxx endereços, … ruas, 78 municípios.` Anote o `real` do `time` e os três números.
 
-**b.5. Conferir:**
+**b.2. Gerar o arquivo só de dados** (uma transação: esvazia, insere, atualiza estatísticas):
 
 ```bash
-psql "$URL_DO_OWNER" -c "SELECT pg_size_pretty(sum(pg_total_relation_size(c.oid))) AS tamanho_do_schema
-  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE n.nspname = 'referencia_geo' AND c.relkind IN ('r','i')"
-psql "$URL_DO_OWNER" -c "SELECT count(*) FROM referencia_geo.cnefe_enderecos"
-unset URL_DO_OWNER
+cd ~/geo
+PSQL="docker compose -f ~/projetos/leadtogo/docker/compose.dev.yml exec -T postgres"
+{
+  echo "TRUNCATE referencia_geo.cnefe_enderecos, referencia_geo.cnefe_logradouros RESTART IDENTITY;"
+  $PSQL pg_dump -U postgres -d leadtogo --data-only --schema=referencia_geo --no-owner --no-privileges
+  echo "ANALYZE referencia_geo.cnefe_enderecos;"
+  echo "ANALYZE referencia_geo.cnefe_logradouros;"
+} | gzip > cnefe-es.sql.gz
+
+ls -l cnefe-es.sql.gz                         # tamanho em bytes; limite: 150 MB (157286400)
+sha256sum cnefe-es.sql.gz                     # anote: será comparado no servidor
+# conferências do conteúdo:
+zcat cnefe-es.sql.gz | grep -vP '\t' | grep -Ec '^(CREATE|ALTER|DROP|GRANT|REVOKE)'   # tem de dar 0
+zcat cnefe-es.sql.gz | grep -c '^COPY '                                                 # tem de dar 2
+zcat cnefe-es.sql.gz | grep -c '^TRUNCATE '                                             # tem de dar 1
 ```
 
-No app: Configurações → Geolocalização, o aviso "CNEFE não carregado" some.
+Na tela: o tamanho, o hash, e `0`, `2`, `1` nas três conferências. Se alguma diferir, **não suba**.
 
-**b.6. Medir o "depois"** (Coolify → banco → Backups → "Backup Now", e repita o comando do b.1). Depois, o **tempo de restauração**: refaça o teste descartável de `runbook_backup.md` (seção 2) com o dump novo e anote o tempo com `time` na linha `gunzip | psql`. Faça fora do horário (a VPS está perto de 50% de CPU).
-
-**Desfazer, se precisar** (esvazia o CNEFE; as empresas já geocodificadas não mudam):
+**b.3. Subir para o Garage** (chave temporária `temporaria/cnefe-es.sql.gz`, mesmo `s3` da parte a; se a sessão fechou, refaça os `read -s` e a função `s3` do passo a.2):
 
 ```bash
-psql "$URL_DO_OWNER" -c "TRUNCATE referencia_geo.cnefe_enderecos, referencia_geo.cnefe_logradouros RESTART IDENTITY"
+cd ~/geo
+s3 s3 cp /d/cnefe-es.sql.gz s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz
+s3 s3api head-object --bucket leadtogo-arquivos --key temporaria/cnefe-es.sql.gz   # ContentLength = ls -l
+```
+
+> O espelho do Garage para o R2 roda às **3h30**. Se o arquivo ficar lá durante a execução, uma cópia pode ficar em `garage-alterados/` por 90 dias depois que você o apagar. São dados públicos do IBGE, sem problema, mas prefira terminar antes das 3h30.
+
+### No terminal do servidor (Coolify)
+
+Cole os blocos nesta ordem. Para o `read -s` e o `s3` valem os mesmos de antes.
+
+**b.4. Achar o container e o usuário (sem expor senha):**
+
+```bash
+whoami                                                    # root (se não, use sudo nos docker)
+C=$(docker ps --format '{{.Names}}' | grep orq8miun4hoaqnvwbntlxzwt); echo "$C"
+SU=$(docker exec "$C" printenv POSTGRES_USER); echo "$SU"
+OWNER=$(docker exec "$C" psql -U "$SU" -d leadtogo -Atc "SELECT tableowner FROM pg_tables WHERE schemaname='referencia_geo' LIMIT 1"); echo "$OWNER"
+```
+
+Na tela: o nome do container (**uma** linha só, com o código `orq8miun4hoaqnvwbntlxzwt`; se vierem duas, use a que é o Postgres, a que não tem `helper`/`backup` no nome), o superusuário (provavelmente `postgres`) e o dono das tabelas (`leadtogo_owner`). Nenhuma senha é lida: dentro do container o `psql` entra pelo socket local, que na imagem padrão do Postgres é de confiança (`local all all trust`). Se o `psql -U "$OWNER"` do b.8 responder `password authentication failed`, use `-U "$SU"` no lugar: o resultado é o mesmo (a carga não muda o dono das tabelas).
+
+**b.5. Medir o "antes"** (o mesmo `pg_dumpall` compactado do backup do Coolify, medido em bytes; pesa na CPU, faça fora do horário):
+
+```bash
+time docker exec "$C" sh -c 'pg_dumpall -U "$POSTGRES_USER" | gzip' | wc -c
+```
+
+Na tela: um número (bytes) e o `real`. Anote como **ANTES**.
+
+**b.6. Conferir que a produção está na mesma migração do arquivo:**
+
+```bash
+CONF="SELECT md5(string_agg(table_name||'.'||column_name||':'||data_type||':'||is_identity, ',' ORDER BY table_name, ordinal_position)) FROM information_schema.columns WHERE table_schema='referencia_geo'"
+docker exec "$C" psql -U "$OWNER" -d leadtogo -Atc "SELECT count(*) FROM drizzle.__drizzle_migrations"
+docker exec "$C" psql -U "$OWNER" -d leadtogo -Atc "$CONF"
+```
+
+Na tela: `27` e um hash (32 caracteres). No **WSL**, rode o mesmo contra o banco local e compare:
+
+```bash
+$PSQL psql -U postgres -d leadtogo -Atc "SELECT count(*) FROM drizzle.__drizzle_migrations"
+$PSQL psql -U postgres -d leadtogo -Atc "$CONF"     # (defina CONF no WSL com o mesmo texto acima)
+```
+
+`27` e o **mesmo hash** nos dois lados. Se diferir, **pare**: a produção não está na 0026 (ou o schema divergiu) e o arquivo não deve ser aplicado.
+
+**b.7. Baixar do Garage e conferir o hash:**
+
+```bash
+mkdir -p /root/cnefe-tmp && cd /root/cnefe-tmp
+read -rsp 'AWS_ACCESS_KEY_ID (leadtogo-app): ' AWS_ACCESS_KEY_ID; echo
+read -rsp 'AWS_SECRET_ACCESS_KEY: ' AWS_SECRET_ACCESS_KEY; echo
+export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=garage
+s3() { docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
+  -v "$PWD":/d amazon/aws-cli --endpoint-url https://files.crm.aledias.com.br "$@"; }
+s3 s3 cp s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz /d/cnefe-es.sql.gz
+ls -l cnefe-es.sql.gz && sha256sum cnefe-es.sql.gz        # igual ao do WSL (b.2)
+gzip -t cnefe-es.sql.gz && echo "gzip ok"
+```
+
+Na tela: o `download: …`, o tamanho e o hash **idênticos** aos do WSL, e `gzip ok`. Se o hash diferir, baixe de novo.
+
+**b.8. Aplicar (uma transação, para no primeiro erro).** Em segundo plano, para a conexão do navegador não derrubar a carga; ela continua mesmo se a página fechar:
+
+```bash
+nohup bash -c 'time (gunzip -c /root/cnefe-tmp/cnefe-es.sql.gz | docker exec -i "'"$C"'" psql -U "'"$OWNER"'" -d leadtogo --single-transaction -v ON_ERROR_STOP=1); echo "FIM: código $?"' > /root/cnefe-tmp/carga.log 2>&1 &
+sleep 5; tail -f /root/cnefe-tmp/carga.log      # Ctrl+C sai do tail sem parar a carga
+```
+
+Na tela, ao terminar, nesta ordem: várias linhas `SET`, uma tabela do `set_config`, `TRUNCATE TABLE`, `COPY <~2,22 milhões>`, uma tabela do `setval`, `COPY <nº de ruas, igual ao "Ruas:" do b.1>`, `ANALYZE` duas vezes, o `real` do `time` e **`FIM: código 0`**. Qualquer outro código ou linha `ERROR:`: a transação foi **desfeita** e o CNEFE continua como estava; me mande o log (`cat /root/cnefe-tmp/carga.log`).
+
+**b.9. Conferir (contagem e tamanho):**
+
+```bash
+Q() { docker exec "$C" psql -U "$OWNER" -d leadtogo -Atc "$1"; }
+Q "SELECT count(*) FROM referencia_geo.cnefe_enderecos"
+Q "SELECT count(*) FROM referencia_geo.cnefe_logradouros"
+Q "SELECT count(DISTINCT municipio_codigo) FROM referencia_geo.cnefe_enderecos"
+Q "SELECT pg_size_pretty(sum(pg_total_relation_size(c.oid))) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='referencia_geo' AND c.relkind IN ('r','i')"
+```
+
+Na tela: ~2,22 milhões, o nº de ruas do b.1, `78` e o tamanho do schema (anote). No app: Configurações → Geolocalização, o aviso "CNEFE não carregado" some.
+
+**b.10. Medir o "depois"** (repita o b.5):
+
+```bash
+time docker exec "$C" sh -c 'pg_dumpall -U "$POSTGRES_USER" | gzip' | wc -c
+```
+
+Anote como **DEPOIS**. Diferença = DEPOIS − ANTES. **Se passar de 150 MB (157286400 bytes), pare e me avise.** Este número é o do mesmo tipo de dump do Coolify; o tempo do `time` e o do b.8 dão a ordem de grandeza da restauração (a COPY dos dados domina). O teste real de restauração continua sendo o do `runbook_backup.md`, seção 2, que você pode repetir depois com o backup noturno.
+
+**b.11. Limpar** (arquivo temporário do Garage e da máquina):
+
+```bash
+s3 s3 rm s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz
+s3 s3 ls s3://leadtogo-arquivos/temporaria/         # não deve listar nada
+cd / && rm -rf /root/cnefe-tmp
+unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; unset -f s3
+```
+
+Na tela: `delete: s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz` e nenhuma linha no `ls`. No WSL, faça o mesmo `unset` (o `cnefe-es.sql.gz` local pode ficar em `~/geo`, fora do repositório).
+
+**Desfazer, se precisar** (esvazia o CNEFE; empresas já geocodificadas não mudam), no servidor:
+
+```bash
+docker exec "$C" psql -U "$OWNER" -d leadtogo -c "TRUNCATE referencia_geo.cnefe_enderecos, referencia_geo.cnefe_logradouros RESTART IDENTITY"
 ```
 
 ---
@@ -119,8 +220,8 @@ psql "$URL_DO_OWNER" -c "TRUNCATE referencia_geo.cnefe_enderecos, referencia_geo
 | Medida | Onde pegar |
 |---|---|
 | Tamanho do `es.pmtiles` e velocidade do mapa | a.1, a.3 |
-| Tempo da carga do CNEFE (`real`) e a linha final `N endereços, M ruas, K municípios` | b.4 |
-| Tamanho do schema `referencia_geo` | b.5 |
-| Dump compactado **antes** e **depois** (bytes) e a diferença (limite: +150 MB) | b.1, b.6 |
-| Tempo de restauração do dump novo | b.6 |
+| Tempo da carga local (`real`) e a linha final `N endereços, M ruas, K municípios` | b.1 |
+| Tamanho do `cnefe-es.sql.gz` e o `real` e o `FIM: código` da aplicação em produção | b.2, b.8 |
+| Tamanho do schema `referencia_geo` | b.9 |
+| Dump compactado **antes** e **depois** (bytes, e o `real` de cada) e a diferença (limite: +150 MB) | b.5, b.10 |
 | Qualquer erro, com a mensagem completa | todos |
