@@ -27,6 +27,9 @@ x-api: &api
     TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?}
     SMTP_HOST: mailpit
     SMTP_PORT: '1025'
+    # chave própria do PMTiles de teste no Garage de desenvolvimento (compartilhado com os testes da API, que
+    # esperam `mapa/es.pmtiles` ausente); docker/imagens-testar.sh envia o arquivo e o apaga na limpeza
+    GEO_PMTILES_CHAVE: mapa/teste-${BANCO:?}.pmtiles
     VERIFICACAO_EMAIL: 'false'
     PRIMEIRO_ACESSO: aberto
 

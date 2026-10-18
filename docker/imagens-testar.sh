@@ -37,6 +37,13 @@ DEV=(docker compose --env-file .env -f docker/compose.dev.yml)
 limpar() {
   local codigo=$?
   echo; echo "==> Limpando (containers, banco temporário e Valkey 6)"
+  # o PMTiles de teste sai do Garage de desenvolvimento (a API ainda está de pé neste ponto)
+  docker exec "$("${COMPOSE[@]}" ps -q api 2>/dev/null)" node --input-type=module -e '
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3"
+const s3 = new S3Client({ endpoint: process.env.S3_ENDPOINT, region: process.env.S3_REGION, forcePathStyle: true,
+  credentials: { accessKeyId: process.env.S3_ACCESS_KEY, secretAccessKey: process.env.S3_SECRET_KEY } })
+await s3.send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: process.env.GEO_PMTILES_CHAVE }))
+' >/dev/null 2>&1 || true
   "${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
   "${DEV[@]}" exec -T -e PGUSER=postgres postgres psql -X -q -d postgres -c "DROP DATABASE IF EXISTS \"${BANCO}\" WITH (FORCE)" >/dev/null 2>&1 || true
   "${DEV[@]}" exec -T valkey valkey-cli -n 6 FLUSHDB >/dev/null 2>&1 || true
@@ -95,7 +102,7 @@ const partes = []
 for await (const p of process.stdin) partes.push(p)
 const s3 = new S3Client({ endpoint: process.env.S3_ENDPOINT, region: process.env.S3_REGION, forcePathStyle: true,
   credentials: { accessKeyId: process.env.S3_ACCESS_KEY, secretAccessKey: process.env.S3_SECRET_KEY } })
-await s3.send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: process.env.GEO_PMTILES_CHAVE ?? "mapa/es.pmtiles", Body: Buffer.concat(partes) }))
+await s3.send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: process.env.GEO_PMTILES_CHAVE, Body: Buffer.concat(partes) }))
 console.log("   enviado:", Buffer.concat(partes).length, "bytes")
 ' < docker/fixtures/mapa-teste.pmtiles
 
