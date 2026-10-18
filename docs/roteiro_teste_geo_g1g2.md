@@ -47,7 +47,7 @@
 |---|---|
 | Check-in da visita, "visita tentada" alimentada, posição do vendedor | É o G3; a posição do aparelho só será gravada no check-in (LGPD) |
 | "Na rota", montar e otimizar rotas, link do Google Maps/Waze | É o G4 |
-| Carga do CNEFE, subir o Nominatim e o PMTiles em produção | Dependem de arquivos preparados fora da VPS e do seu "pode carregar" |
+| Subir o Nominatim e o PMTiles em produção | Dependem de arquivos preparados fora da VPS; o Nominatim fica para depois do seu teste. (O CNEFE foi carregado em 18/10/2026, ver "Cargas em produção".) |
 | Lote por região com microrregiões de **outros estados** na tela | A tela mostra a UF de `GEO_UF` (padrão ES); outra UF é só trocar a variável e recarregar o CNEFE |
 | Varredura automática de lote parado (como na importação) | O botão Cancelar/Retomar cobre; reavaliar se algum lote travar |
 | Teste real em ARM e leitura do PMTiles pelo Garage de 512 MiB em produção | Só dá para medir depois do arquivo no Garage; medição pedida no relatório |
@@ -56,3 +56,9 @@
 ## Decisões
 - **Do Ale (plano aprovado):** fontes, camadas, precisão, normalização, preparo fora da VPS, CNEFE no banco principal e dentro do backup, migração única 0026, Nominatim só em produção, tiles pela API com `Range`, concorrência 1, pushes em 4 etapas, "visita tentada" só pelo G3.
 - **Do Claude (revise no teste):** "sem visita há 60+ dias" só para o Status Cliente (como na tela de referência); "visitada" = última visita preenchida; seleção por retângulo em dois toques (serve igual no celular); chips do mapa gerados das tags de Status (as tags "Cadastro" e as automáticas não viram chip); lote de geocodificação por empresa com tabela própria (retomada e progresso); `GEO_AUTOMATICA` desliga a geocodificação automática (testes); consultas externas (Nominatim e CEP) guardadas por 90 dias; MapLibre 6 (a 5 tinha aviso crítico).
+
+## Cargas em produção
+- **CNEFE (18/10/2026, madrugada):** carregado pelo roteiro de dump via Garage (`roteiro_carga_geo_producao.md`). **2.221.348 endereços, 47.644 ruas, 78 municípios**; schema `referencia_geo` com **529 MB** (com índices); arquivo `cnefe-es.sql.gz` com **28.908.400 bytes**; conferências do arquivo (0 DDL, 2 `COPY`, 1 `TRUNCATE`) ok; **27 migrações e o mesmo hash do schema** nos dois bancos.
+- **Desvios do roteiro:** (1) o `aws-cli` falha no terminal do servidor atrás do Traefik (`GetObject`/`DeleteObject`: `signed header content-length is not present`; `HeadObject` só com as variáveis `*_CHECKSUM_*=when_required`); o download foi por link pré-assinado (gerado no WSL, 15 min) + `curl`, e a exclusão pelo WSL. (2) O antes/depois do `pg_dumpall` **não foi medido na hora**.
+- **Pendente:** medir o crescimento do dump pelo backup noturno do Coolify (comparar o último arquivo antes da carga com o primeiro depois, no R2; comando em `roteiro_carga_geo_producao.md`). **Limite: +150 MB**; se passar, avisar o Ale. Também falta registrar o tempo de restauração (teste do `runbook_backup.md`, seção 2).
+- **Mapa (worker, 18/10/2026):** o mapa abria cinza porque o worker do MapLibre 6 não era publicado no build (404); corrigido e coberto por teste nas imagens de produção (`esteira_deploy.md`). O PMTiles real ainda precisa estar no Garage para o mapa ter ruas.

@@ -29,7 +29,7 @@
    DATABASE_MIGRATION_URL="$URL_DO_OWNER" \
      node scripts/geo/carregar-cnefe.mjs 32_ES.zip
    ```
-   Para produção **não há túnel nem SSH** (o banco não tem porta pública e o acesso é só pelo terminal do Coolify): carregue no Postgres **local**, gere um dump só de dados e aplique no servidor numa transação. Passo a passo em `roteiro_carga_geo_producao.md`. A carga do ES leva alguns minutos e usa uma transação: ou carrega tudo ou nada, e quem consulta nunca vê a tabela pela metade.
+   Para produção **não há túnel nem SSH** (o banco não tem porta pública e o acesso é só pelo terminal do Coolify): carregue no Postgres **local**, gere um dump só de dados e aplique no servidor numa transação. Passo a passo em `roteiro_carga_geo_producao.md`. O arquivo sobe para o Garage pelo WSL, o servidor o baixa por **link pré-assinado + `curl`** (o `aws-cli` falha atrás do Traefik no terminal do servidor) e a exclusão do arquivo temporário é feita pelo WSL. Primeira carga em produção: 18/10/2026 (2.221.348 endereços, 47.644 ruas, 78 municípios, schema de 529 MB com índices, arquivo de 28.908.400 bytes). A carga do ES leva alguns minutos e usa uma transação: ou carrega tudo ou nada, e quem consulta nunca vê a tabela pela metade.
 3. Confira: o script termina com `N endereços, M ruas, K municípios` (ES: ~2,22 milhões de endereços, 78 municípios). Na tela Configurações → Geolocalização o aviso "CNEFE não carregado" some.
 
 ## 2. Nominatim (serviço novo no Coolify)

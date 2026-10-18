@@ -1,6 +1,7 @@
 # Carga da geolocalização em produção: PMTiles e CNEFE (passo a passo do Ale)
 
 > Feito **no seu WSL e no terminal do servidor no Coolify** (sem SSH, sem túnel), **fora do horário de uso**, nesta ordem: (a) PMTiles no Garage, (b) CNEFE no Postgres. O Nominatim fica para depois do seu teste. Detalhes e motivos: `geo_atualizacao.md`.
+> **O aws-cli NÃO funciona no terminal do servidor** (atrás do Traefik, `GetObject` e `DeleteObject` respondem `InvalidRequest: signed header content-length is not present`; ver "Nota sobre o aws-cli" no fim). O Garage é usado só pelo WSL (upload, presign e exclusão); o servidor só baixa por **link pré-assinado + `curl`**. Validado na carga de 18/10/2026.
 > Variáveis de exemplo: `<DATA>` = data recente do build do Protomaps (https://maps.protomaps.com/builds/, formato `AAAAMMDD`).
 
 ## Antes de tudo
@@ -101,19 +102,23 @@ zcat cnefe-es.sql.gz | grep -c '^TRUNCATE '                                     
 
 Na tela: o tamanho, o hash, e `0`, `2`, `1` nas três conferências. Se alguma diferir, **não suba**.
 
-**b.3. Subir para o Garage** (chave temporária `temporaria/cnefe-es.sql.gz`, mesmo `s3` da parte a; se a sessão fechou, refaça os `read -s` e a função `s3` do passo a.2):
+**b.3. Subir para o Garage pelo WSL** (chave temporária `temporaria/cnefe-es.sql.gz`, mesmo `s3` da parte a; se a sessão fechou, refaça os `read -s` e a função `s3` do passo a.2):
 
 ```bash
 cd ~/geo
 s3 s3 cp /d/cnefe-es.sql.gz s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz
 s3 s3api head-object --bucket leadtogo-arquivos --key temporaria/cnefe-es.sql.gz   # ContentLength = ls -l
+# link pré-assinado de 15 min para o servidor baixar (o servidor não tem chaves nem aws-cli)
+s3 s3 presign s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz --expires-in 900
 ```
+
+Na tela do `presign`: **uma URL longa** (`https://files.crm.aledias.com.br/leadtogo-arquivos/temporaria/cnefe-es.sql.gz?X-Amz-Algorithm=…&X-Amz-Signature=…`). Copie inteira; ela vale 15 min e dá leitura só desse arquivo. Gere-a pouco antes do b.7 (ou gere outra se vencer).
 
 > O espelho do Garage para o R2 roda às **3h30**. Se o arquivo ficar lá durante a execução, uma cópia pode ficar em `garage-alterados/` por 90 dias depois que você o apagar. São dados públicos do IBGE, sem problema, mas prefira terminar antes das 3h30.
 
 ### No terminal do servidor (Coolify)
 
-Cole os blocos nesta ordem. Para o `read -s` e o `s3` valem os mesmos de antes.
+Cole os blocos nesta ordem. **Sem chaves e sem aws-cli aqui**: o download usa o link pré-assinado do b.3.
 
 **b.4. Achar o container e o usuário (sem expor senha):**
 
@@ -126,7 +131,7 @@ OWNER=$(docker exec "$C" psql -U "$SU" -d leadtogo -Atc "SELECT tableowner FROM 
 
 Na tela: o nome do container (**uma** linha só, com o código `orq8miun4hoaqnvwbntlxzwt`; se vierem duas, use a que é o Postgres, a que não tem `helper`/`backup` no nome), o superusuário (provavelmente `postgres`) e o dono das tabelas (`leadtogo_owner`). Nenhuma senha é lida: dentro do container o `psql` entra pelo socket local, que na imagem padrão do Postgres é de confiança (`local all all trust`). Se o `psql -U "$OWNER"` do b.8 responder `password authentication failed`, use `-U "$SU"` no lugar: o resultado é o mesmo (a carga não muda o dono das tabelas).
 
-**b.5. Medir o "antes"** (o mesmo `pg_dumpall` compactado do backup do Coolify, medido em bytes; pesa na CPU, faça fora do horário):
+**b.5. Medir o "antes"** (opcional; na carga de 18/10/2026 **não foi feito** e a medição saiu do backup noturno, ver "Medir pelo backup noturno" abaixo. O mesmo `pg_dumpall` compactado do backup do Coolify, medido em bytes; pesa na CPU, faça fora do horário):
 
 ```bash
 time docker exec "$C" sh -c 'pg_dumpall -U "$POSTGRES_USER" | gzip' | wc -c
@@ -151,21 +156,17 @@ $PSQL psql -U postgres -d leadtogo -Atc "$CONF"     # (defina CONF no WSL com o 
 
 `27` e o **mesmo hash** nos dois lados. Se diferir, **pare**: a produção não está na 0026 (ou o schema divergiu) e o arquivo não deve ser aplicado.
 
-**b.7. Baixar do Garage e conferir o hash:**
+**b.7. Baixar com o link pré-assinado e conferir o hash:**
 
 ```bash
 mkdir -p /root/cnefe-tmp && cd /root/cnefe-tmp
-read -rsp 'AWS_ACCESS_KEY_ID (leadtogo-app): ' AWS_ACCESS_KEY_ID; echo
-read -rsp 'AWS_SECRET_ACCESS_KEY: ' AWS_SECRET_ACCESS_KEY; echo
-export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=garage
-s3() { docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
-  -v "$PWD":/d amazon/aws-cli --endpoint-url https://files.crm.aledias.com.br "$@"; }
-s3 s3 cp s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz /d/cnefe-es.sql.gz
+read -rsp 'URL pré-assinada (do b.3): ' URL; echo       # cole a URL inteira; não aparece na tela nem no histórico
+curl -fSL --retry 3 -o cnefe-es.sql.gz "$URL"; unset URL
 ls -l cnefe-es.sql.gz && sha256sum cnefe-es.sql.gz        # igual ao do WSL (b.2)
 gzip -t cnefe-es.sql.gz && echo "gzip ok"
 ```
 
-Na tela: o `download: …`, o tamanho e o hash **idênticos** aos do WSL, e `gzip ok`. Se o hash diferir, baixe de novo.
+Na tela: a barra do `curl`, o tamanho e o hash **idênticos** aos do WSL, e `gzip ok`. Se vier `403` ou `SignatureDoesNotMatch`, o link venceu ou foi colado cortado: gere outro no WSL. Se o hash diferir, baixe de novo.
 
 **b.8. Aplicar (uma transação, para no primeiro erro).** Em segundo plano, para a conexão do navegador não derrubar a carga; ela continua mesmo se a página fechar:
 
@@ -196,16 +197,21 @@ time docker exec "$C" sh -c 'pg_dumpall -U "$POSTGRES_USER" | gzip' | wc -c
 
 Anote como **DEPOIS**. Diferença = DEPOIS − ANTES. **Se passar de 150 MB (157286400 bytes), pare e me avise.** Este número é o do mesmo tipo de dump do Coolify; o tempo do `time` e o do b.8 dão a ordem de grandeza da restauração (a COPY dos dados domina). O teste real de restauração continua sendo o do `runbook_backup.md`, seção 2, que você pode repetir depois com o backup noturno.
 
-**b.11. Limpar** (arquivo temporário do Garage e da máquina):
+**b.11. Limpar.** No **servidor** (só o arquivo local; não há chaves nem aws-cli aqui):
+
+```bash
+cd / && rm -rf /root/cnefe-tmp
+```
+
+No **WSL** (a exclusão do Garage é feita por lá, com o `s3` da parte a):
 
 ```bash
 s3 s3 rm s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz
 s3 s3 ls s3://leadtogo-arquivos/temporaria/         # não deve listar nada
-cd / && rm -rf /root/cnefe-tmp
 unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; unset -f s3
 ```
 
-Na tela: `delete: s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz` e nenhuma linha no `ls`. No WSL, faça o mesmo `unset` (o `cnefe-es.sql.gz` local pode ficar em `~/geo`, fora do repositório).
+Na tela: `delete: s3://leadtogo-arquivos/temporaria/cnefe-es.sql.gz` e nenhuma linha no `ls`. O `cnefe-es.sql.gz` local pode ficar em `~/geo`, fora do repositório.
 
 **Desfazer, se precisar** (esvazia o CNEFE; empresas já geocodificadas não mudam), no servidor:
 
@@ -225,3 +231,20 @@ docker exec "$C" psql -U "$OWNER" -d leadtogo -c "TRUNCATE referencia_geo.cnefe_
 | Tamanho do schema `referencia_geo` | b.9 |
 | Dump compactado **antes** e **depois** (bytes, e o `real` de cada) e a diferença (limite: +150 MB) | b.5, b.10 |
 | Qualquer erro, com a mensagem completa | todos |
+
+---
+
+## Medir pelo backup noturno (quando o antes/depois não foi medido na hora)
+
+O Coolify faz o backup às 3h. Compare o último arquivo **anterior** à carga com o primeiro **posterior** (na VPS, como `root`, no terminal do servidor):
+
+```bash
+docker run --rm --env-file /root/backup-garage.env rclone/rclone:latest lsl r2:vps-backup/data \
+  | grep orq8miun4hoaqnvwbntlxzwt | sort -k2,3 | tail -n 4
+```
+
+Na tela: quatro linhas `<bytes> <data> <hora> <caminho>`. Anote o tamanho do arquivo imediatamente anterior à carga e o do primeiro depois dela; a diferença é o crescimento. **Se passar de 150 MB (157286400 bytes), avise o Ale** (reavaliar: banco separado sem backup).
+
+## Nota sobre o aws-cli no servidor (18/10/2026)
+
+No terminal do servidor, o `amazon/aws-cli:latest` falha atrás do Traefik: `HeadObject` dá 400 (resolvido com `AWS_REQUEST_CHECKSUM_CALCULATION=when_required` e `AWS_RESPONSE_CHECKSUM_VALIDATION=when_required`), mas `GetObject` e `DeleteObject` dão `InvalidRequest: signed header content-length is not present`. Do WSL, o mesmo aws-cli funciona (upload, presign e exclusão). Testado em 18/10/2026 contra o Garage de desenvolvimento **direto, sem Traefik** (aws-cli 2.37.9): `cp` nos dois sentidos, `rm` e `presign` funcionam. Logo o defeito está no caminho do servidor até o Garage, não no Garage nem no aws-cli sozinhos. Não resolvido; o caminho acima (presign + `curl`) evita o problema.
