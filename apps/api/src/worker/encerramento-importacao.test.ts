@@ -28,8 +28,8 @@ import { criarFila, FILAS } from './filas.js'
 
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
 const banco = criarConexao(process.env['DATABASE_URL'] ?? '', { max: 2 })
-// 30 linhas a ~0,5 s cada (Receita falsa + espera entre consultas): o importe dura ~15 s, o bastante para o
-// SIGTERM e o SIGKILL caírem no meio (eram 40 linhas a ~0,8 s: 85 s nos dois testes)
+// 30 linhas a ~0,7 s cada (Receita falsa de 200 ms + espera mínima de 500 ms entre consultas): a importação dura ~21 s, o bastante para o
+// SIGTERM e o SIGKILL caírem no meio (eram 40 linhas a ~0,8 s: 85 s nos dois testes; a espera mínima do banco é 500 ms)
 const LINHAS = 30
 
 let app: INestApplication<Server>
@@ -53,7 +53,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await limparLimitesAuth(valkey)
   app = await criarAppComRotas([], configuracaoDeTeste({ TRUST_PROXY: '1' }))
-  // A "Receita" demora um pouco por consulta: a importação leva cerca de 15 s no total
+  // A "Receita" demora um pouco por consulta: a importação leva cerca de 21 s no total
   receita = await subirServidorFalso((caminho) => ({
     status: 200,
     corpo: respostaDaReceita(caminho.replace('/', '')),
@@ -141,7 +141,7 @@ async function prepararImportacao() {
   // a espera entre consultas é fixa na API (3 s); o teste usa um ajuste interno curto para não levar minutos
   await noTenant(
     d.tenantId,
-    (tx) => tx`UPDATE importacoes SET intervalo_ms = 300 WHERE id = ${lote.id}`,
+    (tx) => tx`UPDATE importacoes SET intervalo_ms = 500 WHERE id = ${lote.id}`,
   )
 
   const processadas = () =>
@@ -198,7 +198,7 @@ describe('worker: SIGTERM com dois consumidores ativos (e-mail/teste e importaç
     const saida = await w1.aguardarSaida(25_000)
     expect(saida.codigo).toBe(0)
     // saiu logo depois de o job comum terminar (4 s) e a importação fechar o bloco na linha, bem antes
-    // do prazo de 20 s e de a importação inteira (cerca de 15 s)
+    // do prazo de 20 s e de a importação inteira (cerca de 21 s)
     expect(saida.emMs).toBeLessThan(12_000)
     expect(w1.saida()).toContain('"noPrazo":true')
 
