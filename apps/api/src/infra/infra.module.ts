@@ -5,6 +5,7 @@ import { Redis } from 'ioredis'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+import { MonitorDoPool } from './monitor-do-pool.js'
 import { criarClienteS3 } from './s3.js'
 
 /** Conexão Drizzle + postgres.js como `leadtogo_app` (sujeita ao RLS). */
@@ -24,8 +25,18 @@ export const ARMAZENAMENTO_SAUDE = Symbol('ARMAZENAMENTO_SAUDE')
     {
       provide: BANCO,
       inject: [CONFIGURACAO],
-      useFactory: (config: Configuracao) => criarConexao(config.DATABASE_URL, { max: 10 }),
+      useFactory: (config: Configuracao) =>
+        criarConexao(config.DATABASE_URL, {
+          max: config.DB_POOL_MAX,
+          // Rede de segurança no Postgres (parâmetros de início da conexão): transação esquecida e consulta
+          // presa são derrubadas pelo servidor, e não seguram uma conexão do pool para sempre
+          connection: {
+            statement_timeout: config.DB_STATEMENT_TIMEOUT_MS,
+            idle_in_transaction_session_timeout: config.DB_IDLE_TX_TIMEOUT_MS,
+          },
+        }),
     },
+    MonitorDoPool,
     {
       provide: VALKEY,
       inject: [CONFIGURACAO],
@@ -69,7 +80,7 @@ export const ARMAZENAMENTO_SAUDE = Symbol('ARMAZENAMENTO_SAUDE')
       useFactory: (config: Configuracao) => criarClienteS3(config, { maxSockets: 2 }),
     },
   ],
-  exports: [BANCO, VALKEY, ARMAZENAMENTO, BANCO_SAUDE, ARMAZENAMENTO_SAUDE],
+  exports: [BANCO, VALKEY, ARMAZENAMENTO, BANCO_SAUDE, ARMAZENAMENTO_SAUDE, MonitorDoPool],
 })
 export class InfraModule implements OnModuleDestroy {
   constructor(

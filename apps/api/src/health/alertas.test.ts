@@ -9,6 +9,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { criarApp } from '../app.js'
 import { carregarConfiguracao } from '../configuracao/configuracao.js'
+import { MonitorDoPool } from '../infra/monitor-do-pool.js'
 import { FILAS } from '../worker/filas.js'
 import { dono, empresaDeOutraConta } from '../testes/mundo.js'
 import { tokenConfere } from './alertas.controller.js'
@@ -49,7 +50,13 @@ afterAll(async () => {
   await dono.end()
 })
 
-async function consultar(opcoes: { token?: string | null; env?: Record<string, string> } = {}) {
+async function consultar(
+  opcoes: {
+    token?: string | null
+    env?: Record<string, string>
+    aoCriar?: (app: INestApplication<Server>) => void
+  } = {},
+) {
   const config = carregarConfiguracao({
     ...process.env,
     LOG_LEVEL: 'silent',
@@ -59,6 +66,7 @@ async function consultar(opcoes: { token?: string | null; env?: Record<string, s
   })
   app = await criarApp(config)
   await app.init()
+  opcoes.aoCriar?.(app)
   const pedido = request(app.getHttpServer()).get('/health/alertas')
   const token = opcoes.token === undefined ? TOKEN : opcoes.token
   if (token !== null) void pedido.set('X-Alertas-Token', token)
@@ -127,6 +135,7 @@ describe('GET /health/alertas: situação', () => {
       jobs_falhos: Object.fromEntries(FILAS_MONITORADAS.map((f) => [f, 0])),
       jobs_falhos_total: 0,
       limite_jobs_falhos: 1,
+      pool_banco: { pico_pct: 0, limite_pct: 80 },
     })
   })
 
@@ -143,8 +152,24 @@ describe('GET /health/alertas: situação', () => {
       'jobs_falhos',
       'jobs_falhos_total',
       'limite_jobs_falhos',
+      'pool_banco',
       'status',
     ])
+  })
+
+  it('503 quando o pico do pool do banco passa de 80% (e 200 em 80%)', async () => {
+    const ocupar = (n: number) => (a: INestApplication<Server>) => {
+      const monitor = a.get(MonitorDoPool)
+      for (let i = 0; i < n; i++) monitor.iniciar()
+    }
+    const env = { DB_POOL_MAX: '10' }
+    const limite = await consultar({ env, aoCriar: ocupar(8) })
+    expect(limite.status).toBe(200)
+    expect(limite.body).toMatchObject({ pool_banco: { pico_pct: 80, limite_pct: 80 } })
+    await app?.close()
+    const alto = await consultar({ env, aoCriar: ocupar(9) })
+    expect(alto.status).toBe(503)
+    expect(alto.body).toMatchObject({ status: 'alerta', pool_banco: { pico_pct: 90 } })
   })
 
   it('o evento tratado (descartado) deixa de acender o alerta', async () => {

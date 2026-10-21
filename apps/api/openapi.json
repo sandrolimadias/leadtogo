@@ -10935,6 +10935,57 @@
         "tags": ["Importação: perfis de regras"]
       }
     },
+    "/v1/mapa/base": {
+      "get": {
+        "description": "Qualquer membro logado. Com `MAPA_BASE_URL` configurada, devolve a URL pública do PMTiles versionado (bucket público do Garage, sem passar pela API); sem ela, o caminho da própria API (`/v1/mapa/base.pmtiles`, transitório).",
+        "operationId": "TilesDoMapaController_origemDaBase",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseDoMapa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "De onde ler o mapa base",
+        "tags": ["Mapa"]
+      }
+    },
     "/v1/mapa/base.pmtiles": {
       "get": {
         "description": "Qualquer membro logado. Aceita `Range` (206 com `Content-Range`); sem `Range`, o arquivo inteiro. Arquivo ainda não enviado ao Garage: 404 `mapa_indisponivel`. Segue o formato PMTiles v3 (https://docs.protomaps.com/pmtiles/).",
@@ -12458,6 +12509,23 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "pool_banco": {
+            "type": "object",
+            "properties": {
+              "pico_pct": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "limite_pct": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["pico_pct", "limite_pct"],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -12465,7 +12533,8 @@
           "eventos_esgotados",
           "jobs_falhos",
           "jobs_falhos_total",
-          "limite_jobs_falhos"
+          "limite_jobs_falhos",
+          "pool_banco"
         ],
         "additionalProperties": false
       },
@@ -13393,6 +13462,21 @@
           "criadaEm",
           "editavel"
         ],
+        "additionalProperties": false
+      },
+      "BaseDoMapa": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "origem": {
+            "type": "string",
+            "enum": ["publica", "api"]
+          }
+        },
+        "required": ["url", "origem"],
         "additionalProperties": false
       },
       "ChipDoMapa": {

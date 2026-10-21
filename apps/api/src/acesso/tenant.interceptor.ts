@@ -12,6 +12,7 @@ import { type Observable, from, lastValueFrom } from 'rxjs'
 
 import { ErroApi } from '../http/erro-api.js'
 import { BANCO } from '../infra/infra.module.js'
+import { MonitorDoPool } from '../infra/monitor-do-pool.js'
 import { CHAVE_SEM_TRANSACAO, CHAVE_TRANSACAO_SOB_DEMANDA } from './acesso.decorators.js'
 import { ContextoTenantService, type ContextoDaRequisicao } from './contexto-tenant.service.js'
 import type { PapelMembro, RequisicaoAutenticada } from './requisicao.js'
@@ -31,6 +32,7 @@ export class TenantInterceptor implements NestInterceptor {
     @Inject(BANCO) private readonly banco: Conexao,
     private readonly contexto: ContextoTenantService,
     private readonly reflector: Reflector,
+    private readonly monitor: MonitorDoPool,
   ) {}
 
   intercept(execucao: ExecutionContext, proximo: CallHandler): Observable<unknown> {
@@ -45,51 +47,54 @@ export class TenantInterceptor implements NestInterceptor {
     if (!dados || dados.acesso.tipo === 'sem-empresa') return proximo.handle()
     const { acesso, sessao } = dados
 
-    // Abre a transação define o tenant e entrega o contexto ao `fn`.
+    // Abre a transação (conta no monitor do pool), define o tenant e entrega o contexto ao `fn`.
     // Se o `fn` falhar, desfaz tudo.
     const abrir = <T>(fn: (ctx: ContextoDaRequisicao) => Promise<T>): Promise<T> => {
-      return this.banco.db.transaction(
-        async (tx) => {
-          await tx.execute(sql`SELECT set_config('app.user_id', ${sessao.usuarioId}, true)`)
-          const ctx: ContextoDaRequisicao = { usuarioId: sessao.usuarioId, tx, ip: req.ip }
+      this.monitor.iniciar()
+      return this.banco.db
+        .transaction(
+          async (tx) => {
+            await tx.execute(sql`SELECT set_config('app.user_id', ${sessao.usuarioId}, true)`)
+            const ctx: ContextoDaRequisicao = { usuarioId: sessao.usuarioId, tx, ip: req.ip }
 
-          if (acesso.tipo === 'empresa') {
-            await tx.execute(sql`SELECT set_config('app.tenant_id', ${acesso.tenantId}, true)`)
-            ctx.tenantId = acesso.tenantId
-            // Já sob RLS: confere de novo o que o guard viu antes da transação (corridas)
-            const membros = await tx.execute<{ id: string; papel: PapelMembro }>(sql`
+            if (acesso.tipo === 'empresa') {
+              await tx.execute(sql`SELECT set_config('app.tenant_id', ${acesso.tenantId}, true)`)
+              ctx.tenantId = acesso.tenantId
+              // Já sob RLS: confere de novo o que o guard viu antes da transação (corridas)
+              const membros = await tx.execute<{ id: string; papel: PapelMembro }>(sql`
               SELECT id, papel FROM membros
               WHERE usuario_id = ${sessao.usuarioId} AND excluido_em IS NULL AND ativo`)
-            const membro = membros[0]
-            if (!membro) {
-              throw new ErroApi(
-                'empresa_ativa_invalida',
-                'Você não tem acesso à empresa ativa. Escolha outra.',
-                403,
+              const membro = membros[0]
+              if (!membro) {
+                throw new ErroApi(
+                  'empresa_ativa_invalida',
+                  'Você não tem acesso à empresa ativa. Escolha outra.',
+                  403,
+                )
+              }
+              const empresas = await tx.execute<{ situacao: string }>(
+                sql`SELECT situacao FROM tenants`,
               )
-            }
-            const empresas = await tx.execute<{ situacao: string }>(
-              sql`SELECT situacao FROM tenants`,
-            )
-            if (!['teste', 'ativo'].includes(empresas[0]?.situacao ?? '')) {
-              throw new ErroApi(
-                'empresa_indisponivel',
-                'Esta empresa está suspensa ou cancelada.',
-                403,
+              if (!['teste', 'ativo'].includes(empresas[0]?.situacao ?? '')) {
+                throw new ErroApi(
+                  'empresa_indisponivel',
+                  'Esta empresa está suspensa ou cancelada.',
+                  403,
+                )
+              }
+              ctx.membro = { id: membro.id, papel: membro.papel }
+            } else {
+              await tx.execute(
+                sql`SELECT set_config('app.tenant_ids', ${`{${acesso.tenantIds.join(',')}}`}, true)`,
               )
+              ctx.tenantIds = acesso.tenantIds
             }
-            ctx.membro = { id: membro.id, papel: membro.papel }
-          } else {
-            await tx.execute(
-              sql`SELECT set_config('app.tenant_ids', ${`{${acesso.tenantIds.join(',')}}`}, true)`,
-            )
-            ctx.tenantIds = acesso.tenantIds
-          }
 
-          return fn(ctx)
-        },
-        acesso.tipo === 'consolidado' ? { accessMode: 'read only' } : undefined,
-      )
+            return fn(ctx)
+          },
+          acesso.tipo === 'consolidado' ? { accessMode: 'read only' } : undefined,
+        )
+        .finally(() => this.monitor.terminar())
     }
 
     const rodarHandler = (ctx: ContextoDaRequisicao) =>

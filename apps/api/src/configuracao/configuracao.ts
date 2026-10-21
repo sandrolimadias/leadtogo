@@ -148,6 +148,14 @@ const esquema = z
     /** Por quantos dias a resposta de uma consulta externa (Nominatim, CEP) vale como cache */
     GEO_CACHE_DIAS: z.coerce.number().int().min(0).max(365).default(90),
 
+    // Banco (docs/runbook_observabilidade.md, "Trava do mapa"). O pool é por processo (API e worker).
+    /** Conexões do pool do banco da API (o worker usa 10) */
+    DB_POOL_MAX: z.coerce.number().int().min(2).max(100).default(20),
+    /** Uma consulta que passa disto é cancelada pelo Postgres (rede de segurança contra consulta presa) */
+    DB_STATEMENT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(15_000),
+    /** Conexão parada dentro de transação além disto é derrubada pelo Postgres (transação esquecida) */
+    DB_IDLE_TX_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(30_000),
+
     // Arquivos (Garage / S3)
     S3_ENDPOINT: url(['http:', 'https:']),
     S3_REGION: z.string().min(1).default('garage'),

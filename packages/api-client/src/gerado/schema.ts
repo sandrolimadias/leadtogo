@@ -2068,6 +2068,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/mapa/base": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * De onde ler o mapa base
+         * @description Qualquer membro logado. Com `MAPA_BASE_URL` configurada, devolve a URL pública do PMTiles versionado (bucket público do Garage, sem passar pela API); sem ela, o caminho da própria API (`/v1/mapa/base.pmtiles`, transitório).
+         */
+        get: operations["TilesDoMapaController_origemDaBase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/mapa/base.pmtiles": {
         parameters: {
             query?: never;
@@ -2434,6 +2454,10 @@ export interface components {
             };
             jobs_falhos_total: number;
             limite_jobs_falhos: number;
+            pool_banco: {
+                pico_pct: number;
+                limite_pct: number;
+            };
         };
         AlterarAtividadeEntrada: {
             /** Format: uuid */
@@ -2689,6 +2713,11 @@ export interface components {
             origem: "manual" | "whatsapp" | "email" | "agenda" | "api" | "recorrencia" | "importacao";
             criadaEm: string;
             editavel: boolean;
+        };
+        BaseDoMapa: {
+            url: string;
+            /** @enum {string} */
+            origem: "publica" | "api";
         };
         ChipDoMapa: {
             /** Format: uuid */
@@ -13057,6 +13086,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    TilesDoMapaController_origemDaBase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BaseDoMapa"];
                 };
             };
             /** @description Sem login (`nao_autenticado`) ou sessão expirada */

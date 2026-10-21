@@ -45,6 +45,8 @@ export const alertasSchema = z
     jobs_falhos: z.record(z.string(), z.number().int().nullable()),
     jobs_falhos_total: z.number().int(),
     limite_jobs_falhos: z.number().int(),
+    /** Pool do banco da API: maior ocupação nos últimos 5 minutos (transações em andamento ÷ conexões do pool) */
+    pool_banco: z.object({ pico_pct: z.number().int(), limite_pct: z.number().int() }),
   })
   .meta({ id: 'Alertas' })
 export type Alertas = z.infer<typeof alertasSchema>

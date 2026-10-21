@@ -5,14 +5,18 @@ import { NestFactory } from '@nestjs/core'
 import type { Redis } from 'ioredis'
 import { pino } from 'pino'
 
-import { carregarConfiguracao, ErroConfiguracao } from './configuracao/configuracao.js'
+import {
+  carregarConfiguracao,
+  type Configuracao,
+  ErroConfiguracao,
+} from './configuracao/configuracao.js'
 import { BANCO, VALKEY } from './infra/infra.module.js'
 import { iniciarObservabilidade } from './observabilidade/erros.js'
 import { iniciarWorker } from './worker/iniciar.js'
 import { WorkerModule } from './worker.module.js'
 
 // Processo worker: mesma imagem da API, iniciado com `node dist/worker.js` (docs/configuracao_tecnologia.md, seção 11.3).
-let config
+let config: Configuracao
 try {
   config = carregarConfiguracao()
 } catch (erro) {
@@ -21,6 +25,15 @@ try {
     process.exit(1)
   }
   throw erro
+}
+
+// O worker faz lotes e cargas: pool menor e prazos do Postgres mais folgados que os da API (a rede de
+// segurança contra transação esquecida e consulta presa vale igual, só com mais folga)
+config = {
+  ...config,
+  DB_POOL_MAX: 10,
+  DB_STATEMENT_TIMEOUT_MS: Math.max(config.DB_STATEMENT_TIMEOUT_MS, 120_000),
+  DB_IDLE_TX_TIMEOUT_MS: Math.max(config.DB_IDLE_TX_TIMEOUT_MS, 60_000),
 }
 
 iniciarObservabilidade(config, 'worker')
