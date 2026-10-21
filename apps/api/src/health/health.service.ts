@@ -5,7 +5,7 @@ import type { Redis } from 'ioredis'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
-import { ARMAZENAMENTO, BANCO, VALKEY } from '../infra/infra.module.js'
+import { ARMAZENAMENTO_SAUDE, BANCO_SAUDE, VALKEY } from '../infra/infra.module.js'
 
 export type StatusCheck = 'ok' | 'erro'
 export interface ResultadoCheck {
@@ -19,7 +19,10 @@ export interface RelatorioSaude {
   checks: { database: ResultadoCheck; valkey: ResultadoCheck; garage: ResultadoCheck }
 }
 
-/** Cada verificação tem no máximo este tempo; o /health nunca fica pendurado. */
+/**
+ * Cada verificação tem no máximo este tempo, com relógio e conexão PRÓPRIOS (banco, Valkey e Garage rodam em
+ * paralelo e nenhum espera pelo outro nem pela fila do tráfego); o /health nunca fica pendurado.
+ */
 export const TEMPO_LIMITE_MS = 2000
 
 @Injectable()
@@ -28,9 +31,9 @@ export class HealthService {
 
   constructor(
     @Inject(CONFIGURACAO) private readonly config: Configuracao,
-    @Inject(BANCO) private readonly banco: Conexao,
+    @Inject(BANCO_SAUDE) private readonly banco: Conexao,
     @Inject(VALKEY) private readonly valkey: Redis,
-    @Inject(ARMAZENAMENTO) private readonly s3: S3Client,
+    @Inject(ARMAZENAMENTO_SAUDE) private readonly s3: S3Client,
   ) {}
 
   async verificar(): Promise<RelatorioSaude> {

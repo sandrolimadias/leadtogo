@@ -77,6 +77,8 @@ O **Backup do Uptime Kuma** é um export manual em *Settings → Backup* (o banc
 
 **Lição (PWA em cache):** depois de um deploy, o PWA serve a versão em cache. Para testar o web, atualize o service worker (DevTools → Application → Service Workers → *Update*) e recarregue com `Ctrl+Shift+R`.
 
+**Trava do mapa (19/10/2026) e o que mudou no `/health`:** pedidos de faixa do `base.pmtiles` abortados pelo navegador deixavam o corpo do Garage aberto; os 50 sockets do `S3Client` ficaram presos, e cada pedido novo esperava na fila do Garage **dentro da transação do banco** (o `TenantInterceptor` abre uma por requisição), esgotando o pool de 10 conexões: o `SELECT 1` do `/health` e o `HeadBucket` esgotaram juntos. Correção: o corpo é destruído quando o navegador fecha (`stream.pipeline` + `AbortSignal`), a rota do mapa não abre transação (`@SemTransacao`), o cliente do Garage tem `maxSockets`, `connectionTimeout` (3 s) e `requestTimeout` (15 s) explícitos, e o `/health` usa **conexão do banco e cliente do Garage próprios** (1 conexão e 2 sockets), cada verificação com o prazo de 2 s em paralelo: um serviço lento não derruba o resultado do outro nem espera pela fila do tráfego. Teste: `apps/api/src/mapa/tiles-trava.test.ts`.
+
 O banco não tem porta pública (de propósito): não há monitor TCP direto. Se o Postgres cair, `database` vira `erro` no `/health` e o monitor da API alerta.
 
 ## 4. Notificações do Coolify (e-mail)

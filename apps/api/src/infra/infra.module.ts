@@ -1,10 +1,11 @@
-import { S3Client } from '@aws-sdk/client-s3'
+import type { S3Client } from '@aws-sdk/client-s3'
 import { Global, Inject, Logger, Module, type OnModuleDestroy } from '@nestjs/common'
 import { criarConexao, type Conexao } from '@leadtogo/db'
 import { Redis } from 'ioredis'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+import { criarClienteS3 } from './s3.js'
 
 /** Conexão Drizzle + postgres.js como `leadtogo_app` (sujeita ao RLS). */
 export const BANCO = Symbol('BANCO')
@@ -12,6 +13,9 @@ export const BANCO = Symbol('BANCO')
 export const VALKEY = Symbol('VALKEY')
 /** Cliente S3 do Garage (estilo de caminho). */
 export const ARMAZENAMENTO = Symbol('ARMAZENAMENTO')
+/** Conexão e cliente S3 reservados ao /health (independentes do tráfego). */
+export const BANCO_SAUDE = Symbol('BANCO_SAUDE')
+export const ARMAZENAMENTO_SAUDE = Symbol('ARMAZENAMENTO_SAUDE')
 
 /** Conexões de infraestrutura, criadas uma vez e fechadas no encerramento da aplicação. */
 @Global()
@@ -50,27 +54,37 @@ export const ARMAZENAMENTO = Symbol('ARMAZENAMENTO')
     {
       provide: ARMAZENAMENTO,
       inject: [CONFIGURACAO],
-      useFactory: (config: Configuracao) =>
-        new S3Client({
-          endpoint: config.S3_ENDPOINT,
-          region: config.S3_REGION,
-          forcePathStyle: config.S3_FORCE_PATH_STYLE,
-          credentials: { accessKeyId: config.S3_ACCESS_KEY, secretAccessKey: config.S3_SECRET_KEY },
-        }),
+      useFactory: (config: Configuracao) => criarClienteS3(config),
+    },
+    // Só para o /health: pool e agente PRÓPRIOS (1 conexão do banco, 2 sockets do Garage), para que a
+    // verificação meça o serviço e não a fila do tráfego; um serviço lento não derruba o resultado do outro
+    {
+      provide: BANCO_SAUDE,
+      inject: [CONFIGURACAO],
+      useFactory: (config: Configuracao) => criarConexao(config.DATABASE_URL, { max: 1 }),
+    },
+    {
+      provide: ARMAZENAMENTO_SAUDE,
+      inject: [CONFIGURACAO],
+      useFactory: (config: Configuracao) => criarClienteS3(config, { maxSockets: 2 }),
     },
   ],
-  exports: [BANCO, VALKEY, ARMAZENAMENTO],
+  exports: [BANCO, VALKEY, ARMAZENAMENTO, BANCO_SAUDE, ARMAZENAMENTO_SAUDE],
 })
 export class InfraModule implements OnModuleDestroy {
   constructor(
     @Inject(BANCO) private readonly banco: Conexao,
     @Inject(VALKEY) private readonly valkey: Redis,
     @Inject(ARMAZENAMENTO) private readonly s3: S3Client,
+    @Inject(BANCO_SAUDE) private readonly bancoSaude: Conexao,
+    @Inject(ARMAZENAMENTO_SAUDE) private readonly s3Saude: S3Client,
   ) {}
 
   async onModuleDestroy(): Promise<void> {
     await this.banco.cliente.end({ timeout: 5 })
+    await this.bancoSaude.cliente.end({ timeout: 5 })
     this.valkey.disconnect()
     this.s3.destroy()
+    this.s3Saude.destroy()
   }
 }

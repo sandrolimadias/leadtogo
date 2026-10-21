@@ -7,9 +7,11 @@ import {
   Injectable,
   type NestInterceptor,
 } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
 import { type Observable, from, lastValueFrom } from 'rxjs'
 
 import { ErroApi } from '../http/erro-api.js'
+import { CHAVE_SEM_TRANSACAO } from './acesso.decorators.js'
 import { BANCO } from '../infra/infra.module.js'
 import { ContextoTenantService, type ContextoDaRequisicao } from './contexto-tenant.service.js'
 import type { PapelMembro, RequisicaoAutenticada } from './requisicao.js'
@@ -28,9 +30,18 @@ export class TenantInterceptor implements NestInterceptor {
   constructor(
     @Inject(BANCO) private readonly banco: Conexao,
     private readonly contexto: ContextoTenantService,
+    private readonly reflector: Reflector,
   ) {}
 
   intercept(execucao: ExecutionContext, proximo: CallHandler): Observable<unknown> {
+    if (
+      this.reflector.getAllAndOverride<boolean | undefined>(CHAVE_SEM_TRANSACAO, [
+        execucao.getHandler(),
+        execucao.getClass(),
+      ])
+    ) {
+      return proximo.handle()
+    }
     const req = execucao.switchToHttp().getRequest<RequisicaoAutenticada>()
     const dados = req.dadosDeAcesso
     if (!dados || dados.acesso.tipo === 'sem-empresa') return proximo.handle()

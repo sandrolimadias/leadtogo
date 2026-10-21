@@ -2,10 +2,11 @@ import { GetObjectCommand, type S3Client } from '@aws-sdk/client-s3'
 import { Controller, Get, Inject, Logger, Req, Res } from '@nestjs/common'
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import type { Request, Response } from 'express'
-import type { Readable } from 'node:stream'
+import { type Readable, pipeline } from 'node:stream'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+import { SemTransacao } from '../acesso/acesso.decorators.js'
 import { ARMAZENAMENTO } from '../infra/infra.module.js'
 import { Limite, SemLimite } from '../rate-limit/limite.decorator.js'
 
@@ -15,12 +16,17 @@ const naoExiste = (e: unknown): boolean => {
   return x.name === 'NoSuchKey' || x.name === 'NotFound' || x.$metadata?.httpStatusCode === 404
 }
 
+/** Prazo para o Garage começar a responder; depois disso o pedido é cancelado (504). */
+const PRAZO_DO_GARAGE_MS = 10_000
+
 /**
  * Os tiles do mapa (PMTiles do estado, no bucket PRIVADO do Garage) servidos pela API, atrás da sessão,
  * com suporte a `Range`: o MapLibre lê só os pedaços do arquivo de que precisa (cabeçalho, diretórios e
  * tiles), nunca o arquivo inteiro. Sem URL pública nem credencial do Garage no navegador.
  */
 @ApiTags('Mapa')
+// Só repassa bytes do Garage: sem transação do banco aberta durante a espera (ver SemTransacao)
+@SemTransacao()
 @SemLimite()
 // Muitos pedaços por movimento do mapa: limite próprio, bem acima do global (300/min)
 @Limite({ nome: 'mapa-tiles', max: 6000, janelaS: 60 })
@@ -49,6 +55,11 @@ export class TilesDoMapaController {
   @Get('base.pmtiles')
   async base(@Req() req: Request, @Res() res: Response): Promise<void> {
     const range = typeof req.headers.range === 'string' ? req.headers.range : undefined
+    // O navegador aborta pedidos o tempo todo (cada movimento do mapa cancela os anteriores): fechou a
+    // conexão, o pedido ao Garage é cancelado e o corpo destruído, devolvendo o socket ao pool do S3Client
+    const controle = new AbortController()
+    res.once('close', () => controle.abort())
+    const prazo = setTimeout(() => controle.abort(), PRAZO_DO_GARAGE_MS)
     try {
       const saida = await this.s3.send(
         new GetObjectCommand({
@@ -56,7 +67,14 @@ export class TilesDoMapaController {
           Key: this.config.GEO_PMTILES_CHAVE,
           ...(range ? { Range: range } : {}),
         }),
+        { abortSignal: controle.signal },
       )
+      clearTimeout(prazo)
+      const corpo = saida.Body as Readable | undefined
+      if (controle.signal.aborted || res.destroyed) {
+        corpo?.destroy()
+        return
+      }
       res.status(range && saida.ContentRange ? 206 : 200)
       res.setHeader('Content-Type', 'application/octet-stream')
       res.setHeader('Accept-Ranges', 'bytes')
@@ -65,17 +83,25 @@ export class TilesDoMapaController {
       if (saida.ETag) res.setHeader('ETag', saida.ETag)
       if (saida.ContentLength !== undefined) res.setHeader('Content-Length', saida.ContentLength)
       if (saida.ContentRange) res.setHeader('Content-Range', saida.ContentRange)
-      const corpo = saida.Body as Readable | undefined
       if (!corpo) {
         res.end()
         return
       }
-      corpo.on('error', (e: Error) => {
-        this.log.warn(`Garage: ${e.message}`)
-        res.destroy(e)
+      // pipeline destrói os dois lados quando qualquer um fecha ou falha (o `pipe` solto deixava o corpo do
+      // Garage parado e o socket preso para sempre)
+      pipeline(corpo, res, (erro) => {
+        if (erro && erro.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+          this.log.warn(`Garage: ${erro.message}`)
+        }
       })
-      corpo.pipe(res)
     } catch (e) {
+      clearTimeout(prazo)
+      // o navegador já foi embora: nada a responder
+      if (res.destroyed || res.writableEnded) return
+      if (controle.signal.aborted) {
+        res.status(504).json({ erro: 'garage_lento', mensagem: 'O mapa demorou para responder.' })
+        return
+      }
       if (naoExiste(e)) {
         res
           .status(404)
