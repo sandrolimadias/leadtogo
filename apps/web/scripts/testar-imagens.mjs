@@ -23,7 +23,8 @@ confere(
   raiz.ok && (await raiz.text()).includes('<div id="root">'),
   'a borda entrega o index.html do web em /',
 )
-// O único domínio externo permitido é o GlitchTip (envio de erros do navegador, connect-src)
+// Os únicos domínios externos permitidos no connect-src: o GlitchTip (envio de erros do navegador) e o bucket
+// público do mapa base (PMTiles, só leitura, sem dado de cliente)
 const hostsExternos = [...cabecalho('content-security-policy').matchAll(/https?:\/\/[^\s;]+/g)].map(
   (m) => m[0],
 )
@@ -430,3 +431,5 @@ if (falhas.length > 0) {
   process.exit(1)
 }
 console.log('\nImagens OK no navegador.')
+// Sem isto o processo só encerrava uns 100 s depois (uma conexão ainda aberta): custava ~1m40 em todo job `imagens`
+process.exit(0)

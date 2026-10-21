@@ -57,8 +57,13 @@ tamanhos() {
     local descompactada comp
     # `docker image ls` mostra o tamanho em disco (descompactado); `docker save | gzip` aproxima o que a VPS baixa
     descompactada=$(docker image ls --format '{{.Size}}' "$img")
-    comp=$(docker save "$img" | gzip -c | wc -c)
-    printf '   %-26s descompactada %-8s · compactada ~%d MB\n' "$img" "$descompactada" $((comp / 1000000))
+    if [ "${MEDIR_COMPACTADA:-0}" = 1 ]; then
+      # `docker save | gzip` leva ~14 s: só quando pedido (MEDIR_COMPACTADA=1), não em todo push
+      comp=$(docker save "$img" | gzip -c | wc -c)
+      printf '   %-26s descompactada %-8s · compactada ~%d MB\n' "$img" "$descompactada" $((comp / 1000000))
+    else
+      printf '   %-26s descompactada %s\n' "$img" "$descompactada"
+    fi
   done
 }
 
