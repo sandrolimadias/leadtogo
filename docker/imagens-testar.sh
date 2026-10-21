@@ -5,16 +5,22 @@
 #   pnpm imagens:testar                 constrói as imagens e testa (amd64 nativo)
 #   pnpm imagens:testar --sem-build     usa as imagens leadtogo-api:teste e leadtogo-web:teste já construídas
 #   pnpm imagens:testar --arm64         constrói e testa como linux/arm64 (emulação do Docker Desktop)
+#   pnpm imagens:testar --carga [antes|depois]   em vez dos testes: 6.000 empresas e 2 min de arrastar/zoom no mapa
+#                                       (apps/web/scripts/carga-mapa.mjs); resultado em CARGA_SAIDA (JSON)
 # Pré-requisito: pnpm dev:up (Postgres, Valkey, Garage e Mailpit locais de pé).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BUILD=1
 ARM=0
+CARGA=0
+ROTULO_DA_CARGA=medicao
 for a in "$@"; do
   case "$a" in
     --sem-build) BUILD=0 ;;
     --arm64) ARM=1 ;;
+    --carga) CARGA=1 ;;
+    antes|depois) ROTULO_DA_CARGA="$a" ;;
     *) echo "Uso: pnpm imagens:testar [--sem-build] [--arm64]" >&2; exit 2 ;;
   esac
 done
@@ -110,6 +116,15 @@ const s3 = new S3Client({ endpoint: process.env.S3_ENDPOINT, region: process.env
 await s3.send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: process.env.GEO_PMTILES_CHAVE, Body: Buffer.concat(partes) }))
 console.log("   enviado:", Buffer.concat(partes).length, "bytes")
 ' < docker/fixtures/mapa-teste.pmtiles
+
+if [ "$CARGA" = 1 ]; then
+  echo "==> Carga do mapa (${ROTULO_DA_CARGA}): 6.000 empresas, ${CARGA_SEGUNDOS:-120} s de arrastar e zoom"
+  BORDA_URL="http://localhost:${PORTA_BORDA}" API_URL="http://localhost:${PORTA_API}" BANCO="$BANCO" \
+    API_CONTAINER="$("${COMPOSE[@]}" ps -q api)" PG_CONTAINER="$("${DEV[@]}" ps -q postgres)" \
+    ALERTAS_TOKEN="token-de-alertas-da-carga-com-32-caracteres" CARGA_ROTULO="$ROTULO_DA_CARGA" \
+    node apps/web/scripts/carga-mapa.mjs
+  exit 0
+fi
 
 echo "==> Navegador (Playwright) pela borda http://localhost:${PORTA_BORDA}"
 BORDA_URL="http://localhost:${PORTA_BORDA}" API_URL="http://localhost:${PORTA_API}" VERSAO="$VERSAO" \

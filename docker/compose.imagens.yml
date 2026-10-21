@@ -31,6 +31,8 @@ x-api: &api
     # esperam `mapa/es.pmtiles` ausente); docker/imagens-testar.sh envia o arquivo e o apaga na limpeza
     GEO_PMTILES_CHAVE: mapa/teste-${BANCO:?}.pmtiles
     VERIFICACAO_EMAIL: 'false'
+    # só para a carga do mapa (pnpm imagens:testar --carga): o /health/alertas mostra o pool do banco
+    ALERTAS_TOKEN: token-de-alertas-da-carga-com-32-caracteres
     PRIMEIRO_ACESSO: aberto
 
 services:
