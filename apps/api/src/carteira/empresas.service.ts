@@ -98,6 +98,8 @@ export interface OpcoesDeCriacao {
    * importação não consulta (sem regras, sem bloqueio e com os dados da planilha).
    */
   consulta?: ConsultaDeCnpj | 'nenhuma'
+  /** O chamador já tentou a Receita e ela estava fora do ar: salva com o selo "situação não verificada" */
+  receitaIndisponivel?: boolean
   /** Tags a juntar ao Status (ex.: "Fora do perfil") */
   tagsExtras?: string[]
 }
@@ -116,6 +118,24 @@ export class EmpresasDaCarteiraService {
     const empresa = await lerEmpresa(this.ctx.db(), escopo, id)
     if (!empresa) throw naoEncontrada()
     return empresa
+  }
+
+  /**
+   * Cadastro pela API: a Receita (até 16 s com as duas fontes lentas) é consultada ANTES da transação, para a
+   * espera não segurar uma conexão do banco; depois `criar` roda na transação, com a consulta pronta.
+   */
+  async cadastrar(dados: CriarEmpresaCarteira): Promise<EmpresaCarteira> {
+    const previa: OpcoesDeCriacao = {}
+    if (dados.tipoDocumento === 'cnpj' && dados.documento) {
+      try {
+        previa.consulta = await this.receita.consultar(dados.documento)
+      } catch (erro) {
+        if (erro instanceof ErroApi && erro.codigo === 'receita_indisponivel') {
+          previa.receitaIndisponivel = true
+        } else throw erro
+      }
+    }
+    return this.ctx.transacao(() => this.criar(dados, previa))
   }
 
   async criar(dados: CriarEmpresaCarteira, opcoes: OpcoesDeCriacao = {}): Promise<EmpresaCarteira> {
@@ -140,6 +160,8 @@ export class EmpresasDaCarteiraService {
     if (dados.tipoDocumento === 'cnpj' && documento && opcoes.consulta !== 'nenhuma') {
       if (opcoes.consulta) {
         consulta = opcoes.consulta
+      } else if (opcoes.receitaIndisponivel) {
+        naoVerificada = true
       } else {
         try {
           consulta = await this.receita.consultar(documento)

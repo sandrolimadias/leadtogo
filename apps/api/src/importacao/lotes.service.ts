@@ -102,7 +102,6 @@ export class LotesDeImportacaoService {
     }
     const planilha = await lerPlanilha(corpo)
 
-    const db = this.ctx.db()
     const tenantId = this.ctx.tenantId
     const membroId = this.ctx.membro.id
     const arquivoId = crypto.randomUUID()
@@ -125,53 +124,57 @@ export class LotesDeImportacaoService {
     }
 
     try {
-      const [arquivo] = await db
-        .insert(arquivos)
-        .values({
-          tenantId,
-          chaveArquivo: chave,
-          nome: consulta.arquivo,
-          mime: MIME[planilha.formato],
-          tamanho: corpo.length,
-          entidadeTipo: 'importacao',
-          enviadoPor: membroId,
-        })
-        .returning()
-      if (!arquivo) throw new Error('INSERT de arquivo sem retorno')
-      const [lote] = await db
-        .insert(importacoes)
-        .values({
-          tenantId,
-          tipo: consulta.tipo,
-          nome: consulta.nome ?? semExtensao(consulta.arquivo),
-          arquivoId: arquivo.id,
-          nomeArquivo: consulta.arquivo,
-          mapeamento: { colunas: planilha.colunas, campos: {} },
-          totalLinhas: planilha.linhas.length,
-          criadoPor: membroId,
-          atualizadoPor: membroId,
-        })
-        .returning()
-      if (!lote) throw new Error('INSERT de importacao sem retorno')
-      await db.update(arquivos).set({ entidadeId: lote.id }).where(eq(arquivos.id, arquivo.id))
-
-      for (let i = 0; i < planilha.linhas.length; i += LINHAS_POR_LOTE) {
-        await db.insert(importacaoLinhas).values(
-          planilha.linhas.slice(i, i + LINHAS_POR_LOTE).map((valores, j) => ({
+      // O Garage (acima) fica fora da transação: a espera não segura conexão do banco
+      return await this.ctx.transacao(async () => {
+        const db = this.ctx.db()
+        const [arquivo] = await db
+          .insert(arquivos)
+          .values({
             tenantId,
-            importacaoId: lote.id,
-            numero: i + j + 1,
-            dados: Object.fromEntries(planilha.colunas.map((c, k) => [c, valores[k] ?? ''])),
-          })),
-        )
-      }
-      await this.auditoria.registrar({
-        entidade: 'importacao',
-        entidadeId: lote.id,
-        acao: 'criar',
-        alteracoes: { nomeArquivo: consulta.arquivo, linhas: planilha.linhas.length },
+            chaveArquivo: chave,
+            nome: consulta.arquivo,
+            mime: MIME[planilha.formato],
+            tamanho: corpo.length,
+            entidadeTipo: 'importacao',
+            enviadoPor: membroId,
+          })
+          .returning()
+        if (!arquivo) throw new Error('INSERT de arquivo sem retorno')
+        const [lote] = await db
+          .insert(importacoes)
+          .values({
+            tenantId,
+            tipo: consulta.tipo,
+            nome: consulta.nome ?? semExtensao(consulta.arquivo),
+            arquivoId: arquivo.id,
+            nomeArquivo: consulta.arquivo,
+            mapeamento: { colunas: planilha.colunas, campos: {} },
+            totalLinhas: planilha.linhas.length,
+            criadoPor: membroId,
+            atualizadoPor: membroId,
+          })
+          .returning()
+        if (!lote) throw new Error('INSERT de importacao sem retorno')
+        await db.update(arquivos).set({ entidadeId: lote.id }).where(eq(arquivos.id, arquivo.id))
+
+        for (let i = 0; i < planilha.linhas.length; i += LINHAS_POR_LOTE) {
+          await db.insert(importacaoLinhas).values(
+            planilha.linhas.slice(i, i + LINHAS_POR_LOTE).map((valores, j) => ({
+              tenantId,
+              importacaoId: lote.id,
+              numero: i + j + 1,
+              dados: Object.fromEntries(planilha.colunas.map((c, k) => [c, valores[k] ?? ''])),
+            })),
+          )
+        }
+        await this.auditoria.registrar({
+          entidade: 'importacao',
+          entidadeId: lote.id,
+          acao: 'criar',
+          alteracoes: { nomeArquivo: consulta.arquivo, linhas: planilha.linhas.length },
+        })
+        return this.paraDto(lote, planilha.colunas, planilha.linhas.slice(0, LINHAS_DE_AMOSTRA))
       })
-      return this.paraDto(lote, planilha.colunas, planilha.linhas.slice(0, LINHAS_DE_AMOSTRA))
     } catch (e) {
       // O banco desfaz tudo (transação da requisição); o objeto no Garage não: tira o que sobrou
       await this.s3

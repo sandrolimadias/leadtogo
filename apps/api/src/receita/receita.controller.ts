@@ -4,6 +4,7 @@ import { Controller, Get, Param, Query } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 
+import { TransacaoSobDemanda } from '../acesso/acesso.decorators.js'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
@@ -30,17 +31,21 @@ export class ReceitaController {
     erros: [400, 401, 403, 404, 409, 429, 503],
   })
   @Get('cnpj/:cnpj')
+  @TransacaoSobDemanda()
   @Limite({ nome: 'receita-consulta', max: 20, janelaS: 60 })
   async consultar(
     @Param('cnpj') cnpj: string,
     @Query(new ZodPipe(consultaSchema)) consulta: z.infer<typeof consultaSchema>,
   ): Promise<ConsultaReceita> {
     const r = await this.servico.consultar(cnpj, { forcar: consulta.forcar === 'true' })
-    const [config] = await this.ctx
-      .db()
-      .execute<{ bloquear: boolean }>(
-        sql`SELECT bloquear_empresa_nao_ativa AS bloquear FROM tenant_configuracoes WHERE tenant_id = ${this.ctx.tenantId}`,
-      )
+    // a consulta externa acima roda sem transação; só a leitura da configuração abre uma, curta
+    const [config] = await this.ctx.transacao(() =>
+      this.ctx
+        .db()
+        .execute<{ bloquear: boolean }>(
+          sql`SELECT bloquear_empresa_nao_ativa AS bloquear FROM tenant_configuracoes WHERE tenant_id = ${this.ctx.tenantId}`,
+        ),
+    )
     return {
       dados: r.dados,
       fonte: r.fonte,

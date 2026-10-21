@@ -10,6 +10,7 @@ export const CHAVE_SEM_EMPRESA = Symbol('acesso:sem-empresa')
 export const CHAVE_CONSOLIDADO = Symbol('acesso:consolidado')
 export const CHAVE_SEM_2FA = Symbol('acesso:permite-sem-2fa')
 export const CHAVE_SEM_TRANSACAO = Symbol('acesso:sem-transacao')
+export const CHAVE_TRANSACAO_SOB_DEMANDA = Symbol('acesso:transacao-sob-demanda')
 
 /** Sem login: health, rotas do Better Auth (que checam a sessão sozinhas), primeiro acesso, aceite de convite. */
 export const Publica = () => SetMetadata(CHAVE_PUBLICA, true)
@@ -33,3 +34,10 @@ export const PermiteSem2fa = () => SetMetadata(CHAVE_SEM_2FA, true)
  * continuam conferidas pelo guard.
  */
 export const SemTransacao = () => SetMetadata(CHAVE_SEM_TRANSACAO, true)
+
+/**
+ * A rota faz chamada externa lenta (Receita, Garage...) e também usa o banco: o TenantInterceptor NÃO deixa a
+ * transação aberta durante o handler (só confere acesso e empresa, numa transação curta) e o código abre a
+ * transação onde precisa, com `ctx.transacao(() => ...)`, antes e depois da chamada externa.
+ */
+export const TransacaoSobDemanda = () => SetMetadata(CHAVE_TRANSACAO_SOB_DEMANDA, true)

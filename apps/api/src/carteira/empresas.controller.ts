@@ -52,6 +52,7 @@ import { z } from 'zod'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
+import { TransacaoSobDemanda } from '../acesso/acesso.decorators.js'
 import { AtualizarPelaReceitaService } from './atualizar-receita.service.js'
 import { ConverterSocioService } from './converter-socio.service.js'
 import { EmpresasDaCarteiraService } from './empresas.service.js'
@@ -123,11 +124,12 @@ export class EmpresasDaCarteiraController {
     erros: [400, 401, 403, 409, 429, 503],
   })
   @Post()
+  @TransacaoSobDemanda()
   @Limite({ nome: 'carteira-empresas-criar', max: 60, janelaS: 60 })
   criar(
     @Body(new ZodPipe(criarEmpresaCarteiraSchema)) dados: CriarEmpresaCarteira,
   ): Promise<EmpresaCarteira> {
-    return this.servico.criar(dados)
+    return this.servico.cadastrar(dados)
   }
 
   @Documenta({
@@ -238,6 +240,7 @@ export class EmpresasDaCarteiraController {
     erros: [400, 401, 403, 404, 409, 429, 503],
   })
   @Post(':id/receita/consultar')
+  @TransacaoSobDemanda()
   @HttpCode(200)
   @Limite({ nome: 'carteira-empresa-receita', max: 20, janelaS: 60 })
   consultarReceita(
@@ -255,6 +258,7 @@ export class EmpresasDaCarteiraController {
     erros: [400, 401, 403, 404, 409, 429, 503],
   })
   @Post(':id/receita/aplicar')
+  @TransacaoSobDemanda()
   @HttpCode(200)
   @Limite({ nome: 'carteira-empresa-receita', max: 20, janelaS: 60 })
   aplicarReceita(

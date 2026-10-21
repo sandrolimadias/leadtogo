@@ -1,11 +1,13 @@
 import type { Server } from 'node:http'
 
 import { completarCnpj, type ConsultaReceita } from '@leadtogo/shared'
+import type { Conexao } from '@leadtogo/db'
 import type { INestApplication } from '@nestjs/common'
 import { Redis } from 'ioredis'
 import request from 'supertest'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { BANCO } from '../infra/infra.module.js'
 import type { RespostaDeErro } from '../http/filtro-excecoes.js'
 import { configuracaoDeTeste, criarAppComRotas } from '../testes/app-teste.js'
 import { limparLimitesAuth } from '../testes/auth-teste.js'
@@ -70,6 +72,31 @@ const consultar = (cookie: string | undefined, cnpj: string, consulta = '') => {
 }
 const corpo = (r: request.Response) => r.body as ConsultaReceita
 const erroDe = (r: request.Response) => (r.body as RespostaDeErro).erro
+
+describe('Receita lenta não segura conexão do banco', () => {
+  it('8 consultas lentas ao mesmo tempo com o pool de 3: o banco segue livre e todas respondem', async () => {
+    await app.close()
+    await primaria.fechar()
+    await alternativa.fechar()
+    await subir({ DB_POOL_MAX: '3', RECEITA_TIMEOUT_MS: '5000' })
+    primaria.responder((caminho) => ({
+      status: 200,
+      corpo: respostaDaReceita(caminho.replace('/', '')),
+      atrasoMs: 1500,
+    }))
+    const d = await novoDono(app)
+    const banco = app.get<Conexao>(BANCO)
+    const consultas = Array.from({ length: 8 }, () =>
+      consultar(d.cookie, cnpjNovo()).then((r) => r.status),
+    )
+    // todas já dentro da espera da Receita (antes: 3 seguravam o pool inteiro e as outras 5 ficavam na fila)
+    await new Promise((resolver) => setTimeout(resolver, 500))
+    const inicio = Date.now()
+    await banco.cliente`SELECT 1`
+    expect(Date.now() - inicio).toBeLessThan(500)
+    expect(await Promise.all(consultas)).toEqual(Array.from({ length: 8 }, () => 200))
+  }, 30_000)
+})
 
 describe('GET /v1/receita/cnpj/:cnpj', () => {
   it('sem sessão 401; CNPJ inválido 400 sem chamar a Receita', async () => {

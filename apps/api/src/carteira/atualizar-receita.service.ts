@@ -13,7 +13,7 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService, type Transacao } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
-import { ReceitaService } from '../receita/receita.service.js'
+import { type ConsultaDeCnpj, ReceitaService } from '../receita/receita.service.js'
 import { situacaoDaReceita } from './empresa-leitura.js'
 import { EmpresasDaCarteiraService } from './empresas.service.js'
 import { type EscopoDaCarteira, escopoDaCarteira, podeEditar } from './regras-de-carteira.js'
@@ -78,11 +78,25 @@ export class AtualizarPelaReceitaService {
 
   /** Passo 1: reconsulta (sem cache), registra a situação e a data e devolve a comparação. */
   async consultar(id: string): Promise<ConsultaDaReceitaDaEmpresa> {
+    // A Receita pode levar até 16 s: a consulta fica FORA da transação (não segura conexão do banco).
+    // A situação anterior é lida antes, porque a consulta renova o cache de onde ela vem.
+    const previo = await this.ctx.transacao(async () => {
+      const db = this.ctx.db()
+      const { empresa } = await this.empresaEditavel(db, id)
+      const documento = empresa.documento ?? ''
+      return { documento, anterior: await situacaoDaReceita(db, documento) }
+    })
+    const consulta = await this.consultarAgora(previo.documento)
+    return this.ctx.transacao(() => this.registrarConsulta(id, consulta, previo.anterior))
+  }
+
+  private async registrarConsulta(
+    id: string,
+    consulta: ConsultaDeCnpj,
+    anterior: Awaited<ReturnType<typeof situacaoDaReceita>>,
+  ): Promise<ConsultaDaReceitaDaEmpresa> {
     const db = this.ctx.db()
     const { empresa, escopo } = await this.empresaEditavel(db, id)
-    const anterior = await situacaoDaReceita(db, empresa.documento ?? '')
-    const consulta = await this.consultarAgora(empresa.documento ?? '')
-
     await db
       .update(empresas)
       .set({
@@ -123,11 +137,22 @@ export class AtualizarPelaReceitaService {
 
   /** Passo 2: "Aplicar alterações". Sem `campos`, aplica tudo o que a comparação apontou. */
   async aplicar(id: string, dados: AplicarDaReceita): Promise<EmpresaCarteira> {
+    const documento = await this.ctx.transacao(
+      async () => (await this.empresaEditavel(this.ctx.db(), id)).empresa.documento ?? '',
+    )
+    // O passo 1 acabou de renovar o cache: esta leitura vem dele, sem nova chamada à Receita (e, se vier a
+    // chamar, fica fora da transação)
+    const consulta = await this.receita.consultar(documento)
+    return this.ctx.transacao(() => this.aplicarNaTransacao(id, dados, consulta.dados))
+  }
+
+  private async aplicarNaTransacao(
+    id: string,
+    dados: AplicarDaReceita,
+    dadosReceita: DadosDaReceita,
+  ): Promise<EmpresaCarteira> {
     const db = this.ctx.db()
     const { empresa, escopo } = await this.empresaEditavel(db, id)
-    // O passo 1 acabou de renovar o cache: esta leitura vem dele, sem nova chamada à Receita
-    const consulta = await this.receita.consultar(empresa.documento ?? '')
-    const dadosReceita = consulta.dados
     const apontadas = await this.comparar(db, empresa, dadosReceita)
     const escolhidas = new Set<CampoDaReceita>(dados.campos ?? CAMPOS_DA_RECEITA)
     const aplicar = apontadas.filter((m) => escolhidas.has(m.chave))

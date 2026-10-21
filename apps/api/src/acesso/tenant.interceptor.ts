@@ -11,8 +11,8 @@ import { Reflector } from '@nestjs/core'
 import { type Observable, from, lastValueFrom } from 'rxjs'
 
 import { ErroApi } from '../http/erro-api.js'
-import { CHAVE_SEM_TRANSACAO } from './acesso.decorators.js'
 import { BANCO } from '../infra/infra.module.js'
+import { CHAVE_SEM_TRANSACAO, CHAVE_TRANSACAO_SOB_DEMANDA } from './acesso.decorators.js'
 import { ContextoTenantService, type ContextoDaRequisicao } from './contexto-tenant.service.js'
 import type { PapelMembro, RequisicaoAutenticada } from './requisicao.js'
 
@@ -34,21 +34,21 @@ export class TenantInterceptor implements NestInterceptor {
   ) {}
 
   intercept(execucao: ExecutionContext, proximo: CallHandler): Observable<unknown> {
-    if (
-      this.reflector.getAllAndOverride<boolean | undefined>(CHAVE_SEM_TRANSACAO, [
+    const marca = (chave: symbol) =>
+      this.reflector.getAllAndOverride<boolean | undefined>(chave, [
         execucao.getHandler(),
         execucao.getClass(),
       ])
-    ) {
-      return proximo.handle()
-    }
+    if (marca(CHAVE_SEM_TRANSACAO)) return proximo.handle()
     const req = execucao.switchToHttp().getRequest<RequisicaoAutenticada>()
     const dados = req.dadosDeAcesso
     if (!dados || dados.acesso.tipo === 'sem-empresa') return proximo.handle()
     const { acesso, sessao } = dados
 
-    const rodar = () =>
-      this.banco.db.transaction(
+    // Abre a transação define o tenant e entrega o contexto ao `fn`.
+    // Se o `fn` falhar, desfaz tudo.
+    const abrir = <T>(fn: (ctx: ContextoDaRequisicao) => Promise<T>): Promise<T> => {
+      return this.banco.db.transaction(
         async (tx) => {
           await tx.execute(sql`SELECT set_config('app.user_id', ${sessao.usuarioId}, true)`)
           const ctx: ContextoDaRequisicao = { usuarioId: sessao.usuarioId, tx, ip: req.ip }
@@ -86,13 +86,26 @@ export class TenantInterceptor implements NestInterceptor {
             ctx.tenantIds = acesso.tenantIds
           }
 
-          return this.contexto.executar(ctx, () =>
-            lastValueFrom(proximo.handle() as Observable<unknown>, { defaultValue: undefined }),
-          )
+          return fn(ctx)
         },
         acesso.tipo === 'consolidado' ? { accessMode: 'read only' } : undefined,
       )
+    }
 
-    return from(rodar())
+    const rodarHandler = (ctx: ContextoDaRequisicao) =>
+      this.contexto.executar(ctx, () =>
+        lastValueFrom(proximo.handle() as Observable<unknown>, { defaultValue: undefined }),
+      )
+
+    if (!marca(CHAVE_TRANSACAO_SOB_DEMANDA)) return from(abrir(rodarHandler))
+
+    // Sob demanda: uma transação CURTA só para conferir o acesso e obter o membro; o handler roda sem
+    // transação aberta e abre as dele com `ctx.transacao()`
+    return from(
+      (async () => {
+        const conferido = await abrir((ctx) => Promise.resolve(ctx))
+        return rodarHandler({ ...conferido, tx: undefined, abrirTransacao: abrir })
+      })(),
+    )
   }
 }

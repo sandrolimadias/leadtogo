@@ -1,3 +1,4 @@
+import { TransacaoSobDemanda } from '../acesso/acesso.decorators.js'
 import {
   type AlterarLoteEntrada,
   alterarLoteSchema,
@@ -82,6 +83,7 @@ export class LotesDeImportacaoController {
   @ApiConsumes('application/octet-stream')
   @ApiBody({ schema: { type: 'string', format: 'binary' } })
   @Post('lotes')
+  @TransacaoSobDemanda()
   criar(
     @Query(new ZodPipe(consultaDoEnvioSchema)) consulta: ConsultaDoEnvio,
     @Req() req: Request,

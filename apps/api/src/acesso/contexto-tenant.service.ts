@@ -11,7 +11,10 @@ export type Transacao = Parameters<Parameters<Conexao['db']['transaction']>[0]>[
 
 export interface ContextoDaRequisicao {
   usuarioId: string
-  tx: Transacao
+  /** Ausente nas rotas `@TransacaoSobDemanda`, fora do bloco `transacao()` */
+  tx?: Transacao | undefined
+  /** Rotas `@TransacaoSobDemanda`: abre a transação (com o tenant definido) só pelo tempo do bloco */
+  abrirTransacao?: <T>(fn: (ctx: ContextoDaRequisicao) => Promise<T>) => Promise<T>
   /** Empresa ativa (ausente no consolidado) */
   tenantId?: string
   /** Empresas do consolidado (só leitura) */
@@ -45,7 +48,25 @@ export class ContextoTenantService {
 
   /** Transação da requisição: use no lugar da conexão geral para ler e gravar dados da empresa. */
   db(): Transacao {
-    return this.atual().tx
+    const { tx } = this.atual()
+    if (!tx) {
+      // Erro de programação: rota @TransacaoSobDemanda usando o banco fora de ctx.transacao()
+      throw new Error('Sem transação aberta: use ctx.transacao() nesta rota (@TransacaoSobDemanda)')
+    }
+    return tx
+  }
+
+  /**
+   * Rotas `@TransacaoSobDemanda`: roda `fn` numa transação nova, já com o tenant definido, e a fecha ao
+   * terminar. A chamada externa (Receita, Garage...) fica ANTES ou DEPOIS do bloco, nunca dentro dele:
+   * assim a espera não segura uma conexão do pool do banco.
+   */
+  transacao<T>(fn: () => Promise<T>): Promise<T> {
+    const { abrirTransacao } = this.atual()
+    if (!abrirTransacao) {
+      throw new Error('ctx.transacao() só existe em rotas @TransacaoSobDemanda')
+    }
+    return abrirTransacao((ctx) => this.executar(ctx, fn))
   }
 
   get usuarioId(): string {
