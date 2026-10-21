@@ -7,10 +7,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { empresaDeTeste } from '@/telas/empresas/fixtures'
 import { falha, meDeAdmin, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 
-// O mapa de verdade (WebGL) não roda no jsdom: este falso lista os pins e as bolhas como botões.
+// O mapa de verdade (WebGL) não roda no jsdom: este falso lista os pins e as bolhas como botões. O ponto da API
+// não traz o nome (só o mínimo para desenhar): o falso rotula o botão pelo nome que o teste registra por id.
+const rotulos = vi.hoisted(() => new Map<string, string>())
 vi.mock('@/components/mapa/mapa-base', () => ({
   MapaBase: (p: {
-    pins?: { id: string; rotulo: string; cor: string; visitada?: boolean; selecionado?: boolean }[]
+    pins?: { id: string; cor: string; visitada?: boolean; selecionado?: boolean }[]
     bolhas?: { id: string; total: number; rotulo?: string; texto?: string }[]
     areas?: unknown[]
     fonteDosDados?: string
@@ -42,7 +44,7 @@ vi.mock('@/components/mapa/mapa-base', () => ({
             data-selecionado={String(x.selecionado ?? false)}
             onClick={() => p.aoClicarNoPin?.(x.id)}
           >
-            {`pin ${x.rotulo}`}
+            {`pin ${rotulos.get(x.id) ?? x.id}`}
           </button>
         ))}
         {(p.bolhas ?? []).map((b) => (
@@ -168,33 +170,31 @@ const opcoes = (extra: Partial<OpcoesDoMapa> = {}): OpcoesDoMapa => ({
   ...extra,
 })
 
+rotulos.set(id(100), 'Alfa Ltda, Vitória')
+rotulos.set(id(101), 'Beta Ltda, Serra')
+
 const pontos = (extra: Partial<PontosDoMapa> = {}): PontosDoMapa => ({
   total: 2,
   pontos: [
     {
       id: id(100),
-      nome: 'Alfa Ltda',
       latitude: -20.3,
       longitude: -40.3,
-      estado: `tag:${TAG_CLIENTE}`,
+      estado: 0,
       visitada: true,
-      precisao: 'exata',
-      origem: 'cnefe',
-      cidade: 'Vitória',
     },
     {
       id: id(101),
-      nome: 'Beta Ltda',
       latitude: -20.31,
       longitude: -40.31,
-      estado: 'sem_visita',
+      estado: 1,
       visitada: false,
-      precisao: 'aproximada',
-      origem: 'nominatim',
-      cidade: 'Serra',
     },
   ],
-  agrupamentos: [],
+  estados: [`tag:${TAG_CLIENTE}`, 'sem_visita'],
+  truncado: false,
+  limite: 5000,
+  comCnefe: true,
   leads: { mostrados: 0, total: 0, limite: 500 },
   ...extra,
 })
@@ -210,7 +210,7 @@ function servicos(
       alterar: vi.fn(async () => ok({ entradas: opcoes().legenda })),
       restaurar: vi.fn(async () => ok({ entradas: opcoes().legenda })),
     },
-    pontos: vi.fn(async (_c: unknown) => ok(pontos())),
+    pontos: vi.fn(async (_c: unknown, _sinal?: AbortSignal) => ok(pontos())),
     proximas: vi.fn(async (_c: unknown) =>
       ok({
         total: 2,
@@ -408,9 +408,7 @@ describe('Mapa: chips, pins e legenda', () => {
 
   it('sem pin do CNEFE, a fonte não aparece', async () => {
     const x = servicos()
-    x.m.pontos.mockResolvedValue(
-      ok(pontos({ pontos: pontos().pontos.map((q) => ({ ...q, origem: 'nominatim' as const })) })),
-    )
+    x.m.pontos.mockResolvedValue(ok(pontos({ comCnefe: false })))
     await abrir(x)
     await screen.findByRole('button', { name: 'pin Alfa Ltda, Vitória' })
     expect(screen.queryByText(/CNEFE 2022/)).toBeNull()
@@ -509,25 +507,23 @@ describe('Mapa: chips, pins e legenda', () => {
     expect(within(g).queryByLabelText('Vendedor')).not.toBeInTheDocument()
   })
 
-  it('muitas empresas viram bolhas; sem o mapa base há um aviso', async () => {
+  it('área com mais empresas que o limite do pedido avisa para aproximar; sem o mapa base há outro aviso', async () => {
     const x = servicos('gestor', {
       opcoes: vi.fn(async () => ok(opcoes({ mapaInstalado: false }))),
     })
-    x.m.pontos.mockResolvedValue(
-      ok(
-        pontos({
-          total: 900,
-          pontos: [],
-          agrupamentos: [
-            { latitude: -20.3, longitude: -40.3, total: 450 },
-            { latitude: -20.1, longitude: -40.1, total: 450 },
-          ],
-        }),
-      ),
-    )
+    x.m.pontos.mockResolvedValue(ok(pontos({ total: 7000, truncado: true, limite: 5000 })))
     await abrir(x)
-    expect(await screen.findAllByRole('button', { name: 'bolha 450' })).toHaveLength(2)
+    expect(
+      await screen.findByText(/Mostrando 5\.000 de 7\.000 empresas desta área/),
+    ).toBeInTheDocument()
     expect(screen.getByText(/O mapa base ainda não foi instalado/)).toBeInTheDocument()
+  })
+
+  it('o pedido de pontos leva um sinal de cancelamento (o anterior é cancelado quando o mapa mexe)', async () => {
+    const x = servicos()
+    await abrir(x)
+    await screen.findByRole('button', { name: 'pin Alfa Ltda, Vitória' })
+    expect(x.m.pontos.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal)
   })
 
   it('erro ao carregar as empresas da área mostra "Tentar de novo"', async () => {

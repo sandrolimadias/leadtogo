@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { estiloDoMapa, URL_DO_MAPA_BASE } from './estilo'
-import { circulo, criarBolha, criarPin } from './pin'
+import { limitarArea } from './area'
+import { geojsonDaCobertura, geojsonDosPins } from './dados'
+import { desenharPin, idDoIcone, lerIdDoIcone } from './icone'
+import { circulo, criarPin } from './pin'
 
 describe('o elemento que vira Marker do MapLibre', () => {
   // O CSS do MapLibre dá `position:absolute` à classe `.maplibregl-marker`; um `all:unset` inline a anulava e os
@@ -10,7 +13,6 @@ describe('o elemento que vira Marker do MapLibre', () => {
     pin: criarPin({ cor: '#000', rotulo: 'a' }),
     'pin selecionado': criarPin({ cor: '#000', rotulo: 'a', selecionado: true }),
     'pin arrastável': criarPin({ cor: '#000', rotulo: 'a', arrastavel: true }),
-    bolha: criarBolha(12, '#000', 'b'),
   }
   for (const [nome, el] of Object.entries(elementos)) {
     it(`${nome}: sem all:unset e sem position, top, left nem transform inline`, () => {
@@ -23,7 +25,7 @@ describe('o elemento que vira Marker do MapLibre', () => {
   }
 })
 
-describe('pin e bolha do mapa', () => {
+describe('pin do mapa', () => {
   it('o pin é um botão com rótulo acessível e a cor do estado', () => {
     const el = criarPin({ cor: '#17693b', rotulo: 'Alfa Ltda' })
     expect(el.tagName).toBe('BUTTON')
@@ -48,12 +50,6 @@ describe('pin e bolha do mapa', () => {
     expect(grande.style.width).toBe('40px')
     expect(arrasta.style.width).toBe('40px')
     expect(arrasta.style.cssText).toContain('grab')
-  })
-
-  it('a bolha mostra o total (e "k" a partir de mil) com rótulo acessível', () => {
-    expect(criarBolha(12, '#000', '12 empresas').textContent).toBe('12')
-    expect(criarBolha(2500, '#000', '2500 empresas').textContent).toBe('2.5k')
-    expect(criarBolha(7, '#000', '7 empresas').getAttribute('aria-label')).toBe('7 empresas')
   })
 })
 
@@ -88,5 +84,87 @@ describe('estilo do mapa', () => {
     const estilo = estiloDoMapa('claro')
     expect(estilo.sprite).toBeUndefined()
     expect(JSON.stringify(estilo.layers)).not.toContain('icon-image')
+  })
+})
+
+describe('área visível enviada à API', () => {
+  it('afastado além do mundo, a longitude e a latitude ficam nos limites (a API recusava com 400)', () => {
+    expect(
+      limitarArea({ oeste: -258.7, sul: -85.05, leste: 306.5, norte: 85.05, zoom: 0.47 }),
+    ).toEqual({
+      oeste: -180,
+      sul: -85.05,
+      leste: 180,
+      norte: 85.05,
+      zoom: 0.47,
+    })
+    expect(limitarArea({ oeste: -41, sul: -92, leste: -40, norte: 91, zoom: 12 })).toMatchObject({
+      sul: -85.0511,
+      norte: 85.0511,
+    })
+  })
+
+  it('o que já está dentro dos limites não muda', () => {
+    const a = { oeste: -40.6, sul: -20.6, leste: -40, norte: -19.9, zoom: 12.3 }
+    expect(limitarArea(a)).toEqual(a)
+  })
+})
+
+describe('ícone do pin na camada do mapa', () => {
+  it('o nome da imagem carrega cor, visto e seleção, e volta igual', () => {
+    const o = { cor: 'rgb(10, 20, 30)', visitada: true, selecionado: false }
+    expect(idDoIcone(o)).toBe('pin|rgb(10, 20, 30)|1|0')
+    expect(lerIdDoIcone(idDoIcone(o))).toEqual(o)
+    expect(lerIdDoIcone('outra-imagem')).toBeNull()
+  })
+
+  it('só desenha com canvas (o jsdom não tem): a função existe para o navegador', () => {
+    expect(typeof desenharPin).toBe('function')
+  })
+})
+
+describe('dados GeoJSON das camadas do mapa', () => {
+  const token = (c: string) => `resolvida(${c})`
+
+  it('cada pin vira um ponto [lon, lat] com o ícone da cor, do visto e da seleção', () => {
+    const r = geojsonDosPins(
+      [
+        { id: 'a', latitude: -20.3, longitude: -40.3, cor: '--tag-green-fg', visitada: true },
+        { id: 'b', latitude: -20.4, longitude: -40.4, cor: '#112233', selecionado: true },
+      ],
+      token,
+    )
+    expect(r.features.map((f) => f.geometry.coordinates)).toEqual([
+      [-40.3, -20.3],
+      [-40.4, -20.4],
+    ])
+    expect(r.features[0]?.properties).toEqual({
+      id: 'a',
+      icone: 'pin|resolvida(--tag-green-fg)|1|0',
+      z: 0,
+    })
+    // cor CSS passa direto; o selecionado desenha por cima (z maior)
+    expect(r.features[1]?.properties).toEqual({ id: 'b', icone: 'pin|#112233|0|1', z: 1 })
+  })
+
+  it('as bolhas da cobertura levam o texto (o total quando não há), a cor resolvida e o rótulo', () => {
+    const r = geojsonDaCobertura(
+      [
+        { id: 'm1', latitude: -20, longitude: -40, total: 7, cor: '--warning', texto: '3' },
+        { id: 'm2', latitude: -21, longitude: -41, total: 9, cor: '#fff' },
+      ],
+      token,
+    )
+    expect(r.features[0]?.properties).toEqual({
+      id: 'm1',
+      texto: '3',
+      cor: 'resolvida(--warning)',
+      rotulo: '',
+    })
+    expect(r.features[1]?.properties['texto']).toBe('9')
+  })
+
+  it('sem pins, a coleção é vazia (a camada some do mapa)', () => {
+    expect(geojsonDosPins([], token).features).toEqual([])
   })
 })

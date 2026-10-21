@@ -84,9 +84,12 @@ function codigoTotp(chave) {
   return String(n % 1_000_000).padStart(6, '0')
 }
 
-// --- posição dos pins: cada pin tem de cair onde a projeção do mapa manda, e o canvas ocupar o contêiner inteiro
-// (pegou o bug de 18/10/2026: mapa criado antes do tamanho final da área central, pins deslocados e faixa cinza).
-// A conta é independente do MapLibre (Mercator a partir do centro e do zoom + o tamanho REAL do contêiner no DOM).
+// --- posição dos pins: cada pin (um símbolo desenhado na GPU, não um elemento DOM) tem de cair onde a projeção do
+// mapa manda, e o canvas ocupar o contêiner inteiro (pegou o bug de 18/10/2026: mapa criado antes do tamanho final da
+// área central, pins deslocados e faixa cinza). Para cada empresa: o mapa voa até ela com zoom 16 (fora do
+// agrupamento), a projeção tem de cair no CENTRO do contêiner (conta independente: Mercator + tamanho real do DOM),
+// o teste de acerto da camada `pins` no corpo da gota tem de achar o pin, e o pixel ali na tela tem de ser o do pin
+// (diferente do fundo ao lado).
 async function testarPosicaoDosPins(contexto, borda) {
   const telas = [
     { width: 1920, height: 1080 },
@@ -112,72 +115,84 @@ async function testarPosicaoDosPins(contexto, borda) {
         { timeout: 25_000 },
       )
       .catch(() => {})
-    await pagina
-      .locator('.maplibregl-marker')
-      .nth(1)
-      .waitFor({ timeout: 15_000 })
-      .catch(() => {})
     // dá tempo de o layout assentar (menu lateral, painéis) e confere duas vezes: o bug aparecia na primeira
     await pagina.waitForTimeout(1500)
-    const r = await pagina.evaluate((esperados) => {
-      const el = document.querySelector('[data-mapa-estado]')
+    const rotulo = `${tela.width}x${tela.height}`
+    const geral = await pagina.evaluate(() => {
       const mapa = document.querySelector(
         '[role="application"][aria-label="Mapa das empresas"]',
       )?.__mapa
       if (!mapa) return { erro: 'mapa não encontrado no DOM' }
-      const caixa = el.getBoundingClientRect()
       const contenedor = mapa.getContainer().getBoundingClientRect()
       const canvas = mapa.getCanvas().getBoundingClientRect()
-      const centro = mapa.getCenter()
-      const mundo = 512 * 2 ** mapa.getZoom()
-      const mx = (lon) => ((lon + 180) / 360) * mundo
-      const my = (lat) =>
-        (0.5 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI)) * mundo
-      const pins = esperados.map((e) => {
-        const botao = [...document.querySelectorAll('.maplibregl-marker')].find((b) =>
-          (b.getAttribute('aria-label') ?? '').includes(e.nome),
-        )
-        if (!botao) return { nome: e.nome, achou: false }
-        const b = botao.getBoundingClientRect()
-        const xEsperado = contenedor.left + contenedor.width / 2 + mx(e.lon) - mx(centro.lng)
-        const yEsperado = contenedor.top + contenedor.height / 2 + my(e.lat) - my(centro.lat)
-        const proj = mapa.project([e.lon, e.lat])
-        return {
-          nome: e.nome,
-          achou: true,
-          // a ponta da gota é o centro da base do botão
-          erroX: Math.round(b.left + b.width / 2 - xEsperado),
-          erroY: Math.round(b.bottom - yEsperado),
-          erroProjecao: Math.round(
-            Math.hypot(
-              b.left + b.width / 2 - (contenedor.left + proj.x),
-              b.bottom - (contenedor.top + proj.y),
-            ),
-          ),
-        }
-      })
       return {
         contenedor: [Math.round(contenedor.width), Math.round(contenedor.height)],
         canvas: [Math.round(canvas.width), Math.round(canvas.height)],
-        caixa: [Math.round(caixa.width), Math.round(caixa.height)],
-        pins,
       }
-    }, esperados)
-    const rotulo = `${tela.width}x${tela.height}`
-    if (r.erro) {
-      confere(false, `${rotulo}: ${r.erro}`)
-    } else {
-      confere(
-        Math.abs(r.canvas[0] - r.contenedor[0]) <= 1 &&
-          Math.abs(r.canvas[1] - r.contenedor[1]) <= 1,
-        `${rotulo}: o canvas ocupa o contêiner inteiro (canvas ${r.canvas.join('x')}, contêiner ${r.contenedor.join('x')})`,
-      )
-      for (const p of r.pins) {
-        confere(
-          p.achou && Math.abs(p.erroX) <= 3 && Math.abs(p.erroY) <= 3 && p.erroProjecao <= 3,
-          `${rotulo}: "${p.nome}" no lugar certo (erro x=${p.erroX} y=${p.erroY} px; contra a projeção: ${p.erroProjecao} px)`,
+    })
+    if (geral.erro) {
+      confere(false, `${rotulo}: ${geral.erro}`)
+      await ctx.close()
+      continue
+    }
+    confere(
+      Math.abs(geral.canvas[0] - geral.contenedor[0]) <= 1 &&
+        Math.abs(geral.canvas[1] - geral.contenedor[1]) <= 1,
+      `${rotulo}: o canvas ocupa o contêiner inteiro (canvas ${geral.canvas.join('x')}, contêiner ${geral.contenedor.join('x')})`,
+    )
+    for (const e of esperados) {
+      await pagina.evaluate(({ lat, lon }) => {
+        const mapa = document.querySelector(
+          '[role="application"][aria-label="Mapa das empresas"]',
+        ).__mapa
+        mapa.jumpTo({ center: [lon, lat], zoom: 16 })
+      }, e)
+      // espera a camada `pins` ter o pin desenhado (a área nova é pedida à API depois de ~300 ms)
+      await pagina
+        .waitForFunction(
+          () =>
+            document
+              .querySelector('[role="application"][aria-label="Mapa das empresas"]')
+              .__mapa.queryRenderedFeatures({ layers: ['pins'] }).length > 0,
+          null,
+          { timeout: 15_000 },
         )
-      }
+        .catch(() => {})
+      await pagina.waitForTimeout(600)
+      const r = await pagina.evaluate(({ lat, lon }) => {
+        const mapa = document.querySelector(
+          '[role="application"][aria-label="Mapa das empresas"]',
+        ).__mapa
+        const c = mapa.getContainer().getBoundingClientRect()
+        const mundo = 512 * 2 ** mapa.getZoom()
+        const mx = (v) => ((v + 180) / 360) * mundo
+        const my = (v) =>
+          (0.5 - Math.log(Math.tan(Math.PI / 4 + (v * Math.PI) / 360)) / (2 * Math.PI)) * mundo
+        const centro = mapa.getCenter()
+        // onde a conta independente manda o pin, em coordenadas da página
+        const x = c.left + c.width / 2 + mx(lon) - mx(centro.lng)
+        const y = c.top + c.height / 2 + my(lat) - my(centro.lat)
+        const proj = mapa.project([lon, lat])
+        // o corpo da gota fica ~12 px acima da ponta (a ponta é a coordenada)
+        const achados = mapa.queryRenderedFeatures([proj.x, proj.y - 12], { layers: ['pins'] })
+        return {
+          erroProjecao: Math.round(Math.hypot(c.left + proj.x - x, c.top + proj.y - y)),
+          acertos: achados.length,
+          x: Math.round(c.left + proj.x),
+          y: Math.round(c.top + proj.y),
+        }
+      }, e)
+      // o pixel no corpo da gota (na tela) tem de ser diferente do fundo 60 px ao lado
+      const pixel = async (dx, dy) =>
+        (
+          await pagina.screenshot({ clip: { x: r.x + dx, y: r.y + dy, width: 1, height: 1 } })
+        ).toString('base64')
+      const noPin = await pixel(0, -12)
+      const fundo = await pixel(60, -12)
+      confere(
+        r.erroProjecao <= 3 && r.acertos >= 1 && noPin !== fundo,
+        `${rotulo}: "${e.nome}" no lugar certo (projeção ${r.erroProjecao} px; pin achado na camada: ${r.acertos}; pixel do pin ${noPin !== fundo ? 'difere' : 'IGUAL'} do fundo)`,
+      )
     }
     await ctx.close()
   }

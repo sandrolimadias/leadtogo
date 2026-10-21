@@ -31,6 +31,8 @@ export const ARMAZENAMENTO_SAUDE = Symbol('ARMAZENAMENTO_SAUDE')
           // Rede de segurança no Postgres (parâmetros de início da conexão): transação esquecida e consulta
           // presa são derrubadas pelo servidor, e não seguram uma conexão do pool para sempre
           connection: {
+            // sem JIT: o compilador do Postgres custa dezenas a centenas de ms numa consulta que dura poucos
+            jit: 'off',
             statement_timeout: config.DB_STATEMENT_TIMEOUT_MS,
             idle_in_transaction_session_timeout: config.DB_IDLE_TX_TIMEOUT_MS,
           },

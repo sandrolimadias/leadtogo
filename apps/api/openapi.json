@@ -18633,9 +18633,6 @@
                   "type": "string",
                   "format": "uuid"
                 },
-                "nome": {
-                  "type": "string"
-                },
                 "latitude": {
                   "type": "number"
                 },
@@ -18643,59 +18640,34 @@
                   "type": "number"
                 },
                 "estado": {
-                  "type": "string"
-                },
-                "visitada": {
-                  "type": "boolean"
-                },
-                "precisao": {
-                  "type": "string",
-                  "enum": ["exata", "aproximada"]
-                },
-                "origem": {
-                  "nullable": true,
-                  "type": "string",
-                  "enum": ["cnefe", "nominatim", "cep", "manual", "checkin"]
-                },
-                "cidade": {
-                  "nullable": true,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "nome",
-                "latitude",
-                "longitude",
-                "estado",
-                "visitada",
-                "precisao",
-                "origem",
-                "cidade"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "agrupamentos": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "latitude": {
-                  "type": "number"
-                },
-                "longitude": {
-                  "type": "number"
-                },
-                "total": {
                   "type": "integer",
                   "minimum": -9007199254740991,
                   "maximum": 9007199254740991
+                },
+                "visitada": {
+                  "type": "boolean"
                 }
               },
-              "required": ["latitude", "longitude", "total"],
+              "required": ["id", "latitude", "longitude", "estado", "visitada"],
               "additionalProperties": false
             }
+          },
+          "estados": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "truncado": {
+            "type": "boolean"
+          },
+          "limite": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "comCnefe": {
+            "type": "boolean"
           },
           "leads": {
             "type": "object",
@@ -18720,7 +18692,7 @@
             "additionalProperties": false
           }
         },
-        "required": ["total", "pontos", "agrupamentos", "leads"],
+        "required": ["total", "pontos", "estados", "truncado", "limite", "comCnefe", "leads"],
         "additionalProperties": false
       },
       "PosicaoDaEmpresa": {

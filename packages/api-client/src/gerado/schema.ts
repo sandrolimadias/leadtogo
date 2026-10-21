@@ -4124,22 +4124,15 @@ export interface components {
             pontos: {
                 /** Format: uuid */
                 id: string;
-                nome: string;
                 latitude: number;
                 longitude: number;
-                estado: string;
+                estado: number;
                 visitada: boolean;
-                /** @enum {string} */
-                precisao: "exata" | "aproximada";
-                /** @enum {string|null} */
-                origem: "cnefe" | "nominatim" | "cep" | "manual" | "checkin" | null;
-                cidade: string | null;
             }[];
-            agrupamentos: {
-                latitude: number;
-                longitude: number;
-                total: number;
-            }[];
+            estados: string[];
+            truncado: boolean;
+            limite: number;
+            comCnefe: boolean;
             leads: {
                 mostrados: number;
                 total: number;

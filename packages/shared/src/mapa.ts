@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { origemGeoSchema, precisaoGeoSchema } from './geolocalizacao.js'
+import { precisaoGeoSchema } from './geolocalizacao.js'
 
 // Mapa (G2): contratos da API entre o web e a API (docs/plano_geolocalizacao.md, seção 4).
 
@@ -165,37 +165,34 @@ export const consultaDePontosSchema = filtrosDoMapaSchema
   .strict()
 export type ConsultaDePontos = z.infer<typeof consultaDePontosSchema>
 
+/**
+ * O mínimo para desenhar o pin: o nome, a cidade e o resto vêm do painel da empresa (`GET /carteira/empresas/:id`)
+ * quando alguém toca no pin. Cada ponto pesa ~110 bytes; um pedido traz no máximo `limite` deles.
+ */
 export const pontoDoMapaSchema = z.object({
   id: z.uuid(),
-  nome: z.string(),
   latitude: z.number(),
   longitude: z.number(),
-  /** Entrada da legenda que pinta o pin (`tag:<id>`, `sem_visita` ou `visita_tentada`) */
-  estado: z.string(),
+  /** Posição em `estados` da entrada da legenda que pinta o pin (o texto se repetia em cada ponto: 70% do peso) */
+  estado: z.number().int(),
   /** Visitada alguma vez: o pin ganha o visto */
   visitada: z.boolean(),
-  precisao: precisaoGeoSchema,
-  /** De onde veio a coordenada (a atribuição do CNEFE aparece quando algum pin vem dele) */
-  origem: origemGeoSchema.nullable(),
-  cidade: z.string().nullable(),
 })
 export type PontoDoMapa = z.infer<typeof pontoDoMapaSchema>
-
-export const agrupamentoDoMapaSchema = z.object({
-  latitude: z.number(),
-  longitude: z.number(),
-  total: z.number().int(),
-})
-export type AgrupamentoDoMapa = z.infer<typeof agrupamentoDoMapaSchema>
 
 export const pontosDoMapaSchema = z
   .object({
     /** Quantas empresas há na área, com os filtros */
     total: z.number().int(),
-    /** Pontos individuais (poucos o bastante para desenhar) */
+    /** Os pontos da área (o agrupamento em bolhas é feito no navegador) */
     pontos: z.array(pontoDoMapaSchema),
-    /** No zoom afastado, com muitos pontos: bolhas com o total */
-    agrupamentos: z.array(agrupamentoDoMapaSchema),
+    /** As entradas da legenda usadas pelos pontos (`tag:<id>`, `sem_visita` ou `visita_tentada`); cada ponto aponta uma */
+    estados: z.array(z.string()),
+    /** O pedido tem no máximo `limite` pontos: com `truncado`, a área tem mais do que veio (aproxime o mapa) */
+    truncado: z.boolean(),
+    limite: z.number().int(),
+    /** Algum ponto da área tem a coordenada do CNEFE (a atribuição do IBGE aparece no mapa) */
+    comCnefe: z.boolean(),
     /** Leads: quantos aparecem e quantos o lote tem (o limite é por vez) */
     leads: z.object({
       mostrados: z.number().int(),

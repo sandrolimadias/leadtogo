@@ -1,9 +1,12 @@
-import type { Map as MapaDoMapLibre, Marker } from 'maplibre-gl'
+import type { GeoJSONSource, Map as MapaDoMapLibre, Marker } from 'maplibre-gl'
 import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 
-import { circulo, criarBolha, criarPin } from './pin'
+import { areaVisivel } from './area'
+import { geojsonDaCobertura, geojsonDosPins } from './dados'
+import { circulo, criarPin } from './pin'
+import { desenharPin, lerIdDoIcone } from './icone'
 import { corDoToken, temaAtual, useTema } from './tema'
 
 export interface PinDoMapa {
@@ -14,7 +17,6 @@ export interface PinDoMapa {
   cor: string
   visitada?: boolean
   selecionado?: boolean
-  rotulo: string
 }
 
 export interface BolhaDoMapa {
@@ -47,7 +49,9 @@ export interface PropsDoMapa {
   centro: [number, number]
   zoom?: number
   className?: string
+  /** Pins das empresas: desenhados pela GPU (camada do MapLibre) e agrupados em bolhas no navegador */
   pins?: PinDoMapa[]
+  /** Bolhas da cobertura por município (as do agrupamento dos pins são do próprio mapa) */
   bolhas?: BolhaDoMapa[]
   /** Clique num pin ou bolha */
   aoClicarNoPin?: (id: string) => void
@@ -79,6 +83,89 @@ export interface PropsDoMapa {
   rotulo: string
 }
 
+const CAMADAS_CLICAVEIS = ['pins', 'empresas-bolhas', 'cobertura-bolhas']
+const FONTE_DOS_ROTULOS = ['Noto Sans Medium']
+const VAZIO = { type: 'FeatureCollection' as const, features: [] }
+
+/** Cria (se ainda não existirem) as fontes e camadas dos pins, das bolhas e da cobertura; some com o `setStyle`. */
+function garantirCamadas(mapa: MapaDoMapLibre) {
+  if (!mapa.getSource('empresas')) {
+    mapa.addSource('empresas', {
+      type: 'geojson',
+      data: VAZIO,
+      cluster: true,
+      clusterRadius: 48,
+      clusterMaxZoom: 14,
+    })
+  }
+  if (!mapa.getLayer('empresas-bolhas')) {
+    mapa.addLayer({
+      id: 'empresas-bolhas',
+      type: 'circle',
+      source: 'empresas',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': corDoToken('--accent'),
+        'circle-radius': ['step', ['get', 'point_count'], 16, 100, 22, 1000, 27],
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 2,
+      },
+    })
+    mapa.addLayer({
+      id: 'empresas-bolhas-total',
+      type: 'symbol',
+      source: 'empresas',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-font': FONTE_DOS_ROTULOS,
+        'text-size': 13,
+        'text-allow-overlap': true,
+      },
+      paint: { 'text-color': '#ffffff' },
+    })
+    mapa.addLayer({
+      id: 'pins',
+      type: 'symbol',
+      source: 'empresas',
+      filter: ['!', ['has', 'point_count']],
+      layout: {
+        'icon-image': ['get', 'icone'],
+        'icon-anchor': 'bottom',
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+        'symbol-sort-key': ['get', 'z'],
+      },
+    })
+  }
+  if (!mapa.getSource('cobertura')) {
+    mapa.addSource('cobertura', { type: 'geojson', data: VAZIO })
+    mapa.addLayer({
+      id: 'cobertura-bolhas',
+      type: 'circle',
+      source: 'cobertura',
+      paint: {
+        'circle-color': ['get', 'cor'],
+        'circle-radius': 18,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 2,
+      },
+    })
+    mapa.addLayer({
+      id: 'cobertura-total',
+      type: 'symbol',
+      source: 'cobertura',
+      layout: {
+        'text-field': ['get', 'texto'],
+        'text-font': FONTE_DOS_ROTULOS,
+        'text-size': 13,
+        'text-allow-overlap': true,
+      },
+      paint: { 'text-color': '#ffffff' },
+    })
+  }
+}
+
 /** `falhou`: o mapa base existe, mas não foi desenhado (worker não subiu, tiles ilegíveis ou sem resposta) */
 type Estado = 'carregando' | 'pronto' | 'indisponivel' | 'falhou'
 
@@ -95,7 +182,6 @@ export function MapaBase(props: PropsDoMapa) {
   const contenedor = useRef<HTMLDivElement>(null)
   const mapaRef = useRef<MapaDoMapLibre | null>(null)
   const libRef = useRef<typeof import('maplibre-gl') | null>(null)
-  const marcadores = useRef<Marker[]>([])
   const pinArrastavel = useRef<Marker | null>(null)
   const [estado, setEstado] = useState<Estado>('carregando')
   // Quantos elementos da base foram desenhados na última vez que o mapa ficou parado (0 = nada desenhado)
@@ -151,6 +237,8 @@ export function MapaBase(props: PropsDoMapa) {
           ? estiloDoMapa(temaAtual(), urlDaBase)
           : {
               version: 8,
+              // os rótulos das bolhas precisam dos glifos mesmo sem o mapa base
+              glyphs: '/mapa/fontes/{fontstack}/{range}.pbf',
               sources: {},
               layers: [
                 {
@@ -180,15 +268,7 @@ export function MapaBase(props: PropsDoMapa) {
         mapa.addControl(new maplibre.NavigationControl({ showCompass: false }), 'bottom-right')
       }
       mapa.on('moveend', () => {
-        const b = mapa?.getBounds()
-        if (!b || !mapa) return
-        ultimas.current.aoMover?.({
-          oeste: b.getWest(),
-          sul: b.getSouth(),
-          leste: b.getEast(),
-          norte: b.getNorth(),
-          zoom: mapa.getZoom(),
-        })
+        if (mapa) ultimas.current.aoMover?.(areaVisivel(mapa))
       })
       // Aviso em vez de ficar cinza em silêncio: worker que não sobe, base ilegível ou nenhum tile no prazo
       let temporizador: ReturnType<typeof setTimeout> | undefined
@@ -213,29 +293,54 @@ export function MapaBase(props: PropsDoMapa) {
         mapa.on('idle', () => setDesenhados(mapa?.queryRenderedFeatures().length ?? 0))
         cleanupTemporizador = () => clearTimeout(temporizador)
       }
-      mapa.on('click', (e) => ultimas.current.aoClicarNoMapa?.(e.lngLat.lat, e.lngLat.lng))
+      // Pins e bolhas são camadas do mapa (não há elemento DOM por empresa): o clique descobre o que está embaixo
+      mapa.on('styleimagemissing', (e) => {
+        const o = lerIdDoIcone(e.id)
+        if (!o || !mapa) return
+        mapa.addImage(e.id, desenharPin(o, corDoToken('--ink')), { pixelRatio: 2 })
+      })
+      mapa.on('click', (e) => {
+        const camadas = CAMADAS_CLICAVEIS.filter((id) => mapa?.getLayer(id))
+        const achados =
+          camadas.length > 0
+            ? (mapa?.queryRenderedFeatures(e.point, { layers: camadas }) ?? [])
+            : []
+        const topo = achados[0]
+        const id = topo?.layer.id
+        if (id === 'pins') {
+          ultimas.current.aoClicarNoPin?.(String(topo?.properties['id']))
+        } else if (id === 'empresas-bolhas' && topo) {
+          const fonte = mapa?.getSource<GeoJSONSource>('empresas')
+          const centro = (topo.geometry as { coordinates: [number, number] }).coordinates
+          void fonte
+            ?.getClusterExpansionZoom(Number(topo.properties['cluster_id']))
+            .then((zoom) => {
+              mapa?.easeTo({ center: centro, zoom: zoom + 0.5 })
+            })
+        } else if (id === 'cobertura-bolhas') {
+          ultimas.current.aoClicarNaBolha?.(String(topo?.properties['id']))
+        } else {
+          ultimas.current.aoClicarNoMapa?.(e.lngLat.lat, e.lngLat.lng)
+        }
+      })
+      mapa.on('mousemove', (e) => {
+        const camadas = CAMADAS_CLICAVEIS.filter((id) => mapa?.getLayer(id))
+        const emCima =
+          camadas.length > 0 &&
+          (mapa?.queryRenderedFeatures(e.point, { layers: camadas }).length ?? 0) > 0
+        if (mapa) mapa.getCanvas().style.cursor = emCima ? 'pointer' : ''
+      })
       mapa.on('load', () => {
         mapa?.resize()
         mapaRef.current = mapa
         setVersaoDoEstilo((v) => v + 1)
-        const b = mapa?.getBounds()
-        if (b && mapa) {
-          ultimas.current.aoMover?.({
-            oeste: b.getWest(),
-            sul: b.getSouth(),
-            leste: b.getEast(),
-            norte: b.getNorth(),
-            zoom: mapa.getZoom(),
-          })
-        }
+        if (mapa) ultimas.current.aoMover?.(areaVisivel(mapa))
       })
     })()
     return () => {
       cancelado = true
       cleanupTemporizador?.()
       observador?.disconnect()
-      for (const m of marcadores.current) m.remove()
-      marcadores.current = []
       pinArrastavel.current?.remove()
       pinArrastavel.current = null
       mapaRef.current = null
@@ -253,46 +358,17 @@ export function MapaBase(props: PropsDoMapa) {
     })
   }, [tema, estado])
 
-  // Pins e bolhas
+  // Pins e bolhas: duas fontes GeoJSON e camadas (nada de elemento DOM por empresa). A fonte das empresas
+  // agrupa em bolhas no próprio navegador (cluster do MapLibre); a da cobertura mostra "faltam N" por município.
   const { pins, bolhas } = props
   useEffect(() => {
     const mapa = mapaRef.current
-    const lib = libRef.current
-    if (!mapa || !lib) return
-    for (const m of marcadores.current) m.remove()
-    marcadores.current = []
-    for (const p of pins ?? []) {
-      const el = criarPin({
-        cor: p.cor.startsWith('--') ? corDoToken(p.cor) : p.cor,
-        visitada: p.visitada ?? false,
-        selecionado: p.selecionado ?? false,
-        rotulo: p.rotulo,
-      })
-      el.addEventListener('click', (ev) => {
-        ev.stopPropagation()
-        ultimas.current.aoClicarNoPin?.(p.id)
-      })
-      marcadores.current.push(
-        new lib.Marker({ element: el, anchor: 'bottom' })
-          .setLngLat([p.longitude, p.latitude])
-          .addTo(mapa),
-      )
-    }
-    for (const b of bolhas ?? []) {
-      const el = criarBolha(
-        b.total,
-        b.cor.startsWith('--') ? corDoToken(b.cor) : b.cor,
-        b.rotulo ?? `${b.total} empresas nesta área`,
-        b.texto,
-      )
-      el.addEventListener('click', (ev) => {
-        ev.stopPropagation()
-        ultimas.current.aoClicarNaBolha?.(b.id)
-      })
-      marcadores.current.push(
-        new lib.Marker({ element: el }).setLngLat([b.longitude, b.latitude]).addTo(mapa),
-      )
-    }
+    if (!mapa || !mapa.isStyleLoaded()) return
+    garantirCamadas(mapa)
+    void mapa.getSource<GeoJSONSource>('empresas')?.setData(geojsonDosPins(pins ?? [], corDoToken))
+    void mapa
+      .getSource<GeoJSONSource>('cobertura')
+      ?.setData(geojsonDaCobertura(bolhas ?? [], corDoToken))
   }, [pins, bolhas, versaoDoEstilo, tema])
 
   // Pin arrastável e o círculo de incerteza

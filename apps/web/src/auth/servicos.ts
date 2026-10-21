@@ -562,10 +562,11 @@ export const servicosReais: ServicosDeAcesso = {
         ),
       restaurar: () => protegido(async () => daApi(await api.POST('/v1/mapa/legenda/restaurar'))),
     },
-    pontos: (consulta) =>
+    pontos: (consulta, signal) =>
       protegido(async () =>
         daApi(
           await api.GET('/v1/mapa/pontos', {
+            ...(signal ? { signal } : {}),
             params: {
               query: {
                 ...consulta,

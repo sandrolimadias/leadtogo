@@ -1,4 +1,4 @@
-import type { EmpresaCarteira } from '@leadtogo/api-client'
+import type { EmpresaCarteira, PontosDoMapa } from '@leadtogo/api-client'
 import { type AreaVisivel, MapaBase, type PinDoMapa } from '@/components/mapa/mapa-base'
 import { useQuery } from '@tanstack/react-query'
 import { Layers, PenLine, RectangleHorizontal, X } from 'lucide-react'
@@ -91,7 +91,7 @@ export function TelaDoMapa() {
 
   const filtrosApi = efetivos ? { ...filtrosDaApi(efetivos), busca: buscaAdiada } : null
 
-  const pontos = useQuery({
+  const pontos = useQuery<PontosDoMapa>({
     queryKey: [
       'mapa',
       'pontos',
@@ -107,13 +107,18 @@ export function TelaDoMapa() {
     enabled: Boolean(areaAdiada && filtrosApi),
     retry: false,
     placeholderData: (anterior) => anterior,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!areaAdiada || !filtrosApi) throw new Error('sem área')
-      const r = await servicos.mapa.pontos({
-        ...areaAdiada,
-        ...filtrosApi,
-        busca: filtrosApi.busca || undefined,
-      })
+      // o `signal` cancela este pedido se o mapa mexer de novo (a área muda a chave): a API não termina trabalho
+      // que ninguém mais espera
+      const r = await servicos.mapa.pontos(
+        {
+          ...areaAdiada,
+          ...filtrosApi,
+          busca: filtrosApi.busca || undefined,
+        },
+        signal,
+      )
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -181,22 +186,14 @@ export function TelaDoMapa() {
         id: p.id,
         latitude: p.latitude,
         longitude: p.longitude,
-        cor: tokenDoEstado(legenda, p.estado),
+        cor: tokenDoEstado(legenda, pontos.data?.estados[p.estado] ?? ''),
         visitada: p.visitada,
         selecionado: p.id === selecionada,
-        rotulo: `${p.nome}${p.cidade ? `, ${p.cidade}` : ''}`,
       })),
     [pontos.data, legenda, selecionada],
   )
   const bolhas = useMemo(
     () => [
-      ...(pontos.data?.agrupamentos ?? []).map((g, i) => ({
-        id: `g${i}`,
-        latitude: g.latitude,
-        longitude: g.longitude,
-        total: g.total,
-        cor: '--accent',
-      })),
       ...(mostraCobertura
         ? (cobertura.data?.municipios ?? []).map((m) => ({
             id: `m${m.codigoIbge}`,
@@ -209,7 +206,7 @@ export function TelaDoMapa() {
           }))
         : []),
     ],
-    [pontos.data, cobertura.data, mostraCobertura],
+    [cobertura.data, mostraCobertura],
   )
 
   const areas = useMemo(
@@ -316,9 +313,7 @@ export function TelaDoMapa() {
         areas={areas}
         desenhando={ferramenta !== null}
         semAvisoDeMapa
-        {...(pontos.data?.pontos.some((p) => p.origem === 'cnefe')
-          ? { fonteDosDados: 'Fonte: IBGE – CNEFE 2022' }
-          : {})}
+        {...(pontos.data?.comCnefe ? { fonteDosDados: 'Fonte: IBGE – CNEFE 2022' } : {})}
         {...(foco ? { foco } : {})}
         aoMover={setArea}
         aoClicarNoPin={abrirEmpresa}
@@ -356,6 +351,7 @@ export function TelaDoMapa() {
 
       {/* Avisos (mapa base e leads): empilhados abaixo da barra, nunca por cima dela */}
       {(!o.mapaInstalado ||
+        pontos.data?.truncado ||
         (leadsLigados && o.lotesDeLeads.length > 0 && efetivos.lotes.length === 0)) &&
       !(celular && painelAberto) ? (
         <div
@@ -371,6 +367,16 @@ export function TelaDoMapa() {
             >
               O mapa base ainda não foi instalado (docs/geo_atualizacao.md, seção 3). Os pins
               aparecem sobre um fundo liso.
+            </p>
+          ) : null}
+          {pontos.data?.truncado ? (
+            <p
+              role="status"
+              className="m-0 rounded-md border border-border bg-surface px-3 py-2 text-xs shadow-md"
+            >
+              Mostrando {pontos.data.limite.toLocaleString('pt-BR')} de{' '}
+              {pontos.data.total.toLocaleString('pt-BR')} empresas desta área. Aproxime o mapa ou
+              use os filtros para ver as outras.
             </p>
           ) : null}
           {leadsLigados && o.lotesDeLeads.length > 0 && efetivos.lotes.length === 0 ? (

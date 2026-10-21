@@ -61,6 +61,9 @@ const noTenant = <T>(tenantId: string, fn: (tx: typeof dono) => Promise<T>) =>
 
 const AREA = 'oeste=-40.6&sul=-20.6&leste=-40.0&norte=-19.9'
 
+// O ponto do mapa só traz o mínimo (sem nome): o teste guarda o nome de cada empresa que cria para conferir
+const nomes = new Map<string, string>()
+
 async function cenario() {
   const d = await novoDono(app)
   const gestor = await usuarioSimples(app)
@@ -101,6 +104,7 @@ async function cenario() {
     precisao?: 'exata' | 'aproximada'
   }) {
     const id = novoId()
+    nomes.set(id, o.nome)
     await noTenant(d.tenantId, async (tx) => {
       await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id, municipio_codigo, importacao_id,
           localizacao, geo_precisao, geo_origem, ultima_visita_em)
@@ -124,8 +128,19 @@ async function cenario() {
   }
 }
 
-const pontos = async (cookie: string, extra = '', zoom = 12) =>
-  (await chamar('get', cookie, `/pontos?${AREA}&zoom=${zoom}${extra}`)).body as PontosDoMapa
+const pontos = async (cookie: string, extra = '', zoom = 12) => {
+  const r = (await chamar('get', cookie, `/pontos?${AREA}&zoom=${zoom}${extra}`))
+    .body as PontosDoMapa
+  return {
+    ...r,
+    pontos: r.pontos.map((p) => ({
+      ...p,
+      nome: nomes.get(p.id),
+      // o ponto traz a posição do estado na lista `estados`: o teste confere o texto
+      estado: r.estados[p.estado] ?? '?',
+    })),
+  }
+}
 
 describe('GET /v1/mapa/opcoes', () => {
   it('chips das tags de Status que aparecem no mapa (sem Inativo), ligados ao abrir (sem Prospect), com totais', async () => {
@@ -227,7 +242,21 @@ describe('GET /v1/mapa/pontos', () => {
     expect(por[nunca]).toMatchObject({ estado: 'sem_visita', visitada: false })
     // só carteira de Clientes ganha o vermelho: o Prospect mantém a cor do Status
     expect(por[prospect]).toMatchObject({ estado: `tag:${tags.prospect}`, visitada: true })
-    expect(p.agrupamentos).toEqual([])
+    expect(p.truncado).toBe(false)
+    expect(p.comCnefe).toBe(true)
+    // só o mínimo para desenhar o pin: o nome, a cidade e a precisão ficam no painel da empresa
+    const bruto = (await chamar('get', d.cookie, `/pontos?${AREA}&zoom=12${todos}`))
+      .body as PontosDoMapa
+    expect(bruto.estados.sort()).toEqual(
+      [`tag:${tags.cliente}`, `tag:${tags.prospect}`, 'sem_visita'].sort(),
+    )
+    expect(Object.keys(bruto.pontos[0] ?? {}).sort()).toEqual([
+      'estado',
+      'id',
+      'latitude',
+      'longitude',
+      'visitada',
+    ])
   })
 
   it('nenhum chip ligado = nada; busca, visitada, vendedor, cidade e precisão filtram', async () => {
@@ -334,14 +363,31 @@ describe('GET /v1/mapa/pontos', () => {
         SELECT ${d.tenantId}, id, ${t?.id as string}::uuid FROM empresas WHERE razao_social LIKE 'Em massa %'`
     })
     const cli = `&statusTagIds=${tags.cliente}`
+    // o agrupamento em bolhas é do navegador: a API devolve os pontos em qualquer zoom
     const longe = await pontos(d.cookie, cli, 9)
     expect(longe.total).toBe(450)
-    expect(longe.pontos).toEqual([])
-    expect(longe.agrupamentos.reduce((s, g) => s + g.total, 0)).toBe(450)
-    const perto = await pontos(d.cookie, cli, 14)
-    expect(perto.pontos).toHaveLength(450)
-    expect(perto.agrupamentos).toEqual([])
+    expect(longe.pontos).toHaveLength(450)
+    expect(longe.truncado).toBe(false)
+    expect((await pontos(d.cookie, cli, 14)).pontos).toHaveLength(450)
   })
+
+  it('passou do limite do pedido: vem uma parte e `truncado` avisa para aproximar o mapa', async () => {
+    const { d, tags } = await cenario()
+    await noTenant(d.tenantId, async (tx) => {
+      const [m] = await tx<{ id: string }[]>`SELECT id FROM membros LIMIT 1`
+      await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id, municipio_codigo, localizacao, geo_precisao)
+        SELECT gen_random_uuid(), ${d.tenantId}, 'Muitas ' || n, ${m?.id as string}, 3205309,
+               ST_SetSRID(ST_MakePoint(-40.5 + (n % 100) * 0.004, -20.5 + (n / 100) * 0.0004), 4326)::geography, 'exata'
+        FROM generate_series(1, 5200) n`
+      await tx`INSERT INTO empresa_tags (tenant_id, empresa_id, tag_id)
+        SELECT ${d.tenantId}, id, ${tags.cliente}::uuid FROM empresas WHERE razao_social LIKE 'Muitas %'`
+    })
+    const r = await pontos(d.cookie, `&statusTagIds=${tags.cliente}`, 9)
+    expect(r.total).toBe(5200)
+    expect(r.limite).toBe(5000)
+    expect(r.pontos).toHaveLength(5000)
+    expect(r.truncado).toBe(true)
+  }, 30_000)
 
   it('consulta inválida é 400; sem sessão 401', async () => {
     const { d } = await cenario()

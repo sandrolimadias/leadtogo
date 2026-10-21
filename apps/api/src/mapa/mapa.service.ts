@@ -1,7 +1,6 @@
 import { HeadObjectCommand, type S3Client } from '@aws-sdk/client-s3'
 import { novoId, sql } from '@leadtogo/db'
 import {
-  type AgrupamentoDoMapa,
   type AlterarEntradaDaLegenda,
   CHAVE_SEM_VISITA,
   CHAVE_VISITA_TENTADA,
@@ -19,7 +18,6 @@ import {
   type ListaDeSelecao,
   type OpcoesDoMapa,
   PALETA_DO_MAPA,
-  type OrigemGeo,
   type PontoDoMapa,
   type PontosDoMapa,
   type SelecaoDoMapa,
@@ -37,15 +35,22 @@ import { ARMAZENAMENTO } from '../infra/infra.module.js'
 import {
   condicoesDosFiltros,
   DAS_EMPRESAS_DO_MAPA,
+  DAS_EMPRESAS_DA_AREA,
+  empresasNaArea,
   ESTADO_DO_PIN,
   LIMITE_DE_LEADS,
   visivelAoUsuario,
 } from './filtros.js'
 
-/** Até quantos pontos individuais a API devolve numa área; acima disso, vira bolhas (até o zoom 14). */
-const LIMITE_DE_PONTOS = 400
-const LIMITE_DE_PONTOS_NO_ZOOM_PERTO = 1500
-const ZOOM_PERTO = 14
+/**
+ * Até quantos pontos a API devolve por pedido (~110 bytes cada: ~0,5 MB no máximo). O navegador os agrupa em
+ * bolhas; acima disso, `truncado` avisa para aproximar o mapa.
+ */
+const LIMITE_DE_PONTOS = 5000
+/** Até quantas empresas na caixa o plano parte da caixa (índice espacial); acima disso, o plano clássico... */
+const CAIXA_PEQUENA_MINIMA = 3000
+/** ...ou até esta fração da tabela (estimativa do Postgres): a busca por empresa custa ~2,5x o plano clássico por linha. */
+const CAIXA_PEQUENA_FRACAO = 0.4
 const LIMITE_DA_SELECAO = 500
 
 const NOME_DOS_FIXOS: Record<string, { nome: string; cor: CorDoMapa; regra: string }> = {
@@ -280,82 +285,85 @@ export class MapaService {
     const escopo = await escopoDaCarteira(this.ctx)
     const filtros = condicoesDosFiltros(consulta, escopo, await this.municipiosDaRegiao(consulta))
     const area = sql`e.localizacao && ST_MakeEnvelope(${consulta.oeste}, ${consulta.sul}, ${consulta.leste}, ${consulta.norte}, 4326)::geography`
-    const [t] = await db.execute<{ n: number }>(
-      sql`SELECT count(*)::int AS n ${DAS_EMPRESAS_DO_MAPA} WHERE ${filtros} AND ${area}`,
+    // Quantas empresas estão na caixa (sem joins: o índice espacial responde rápido). Define o plano:
+    // caixa pequena = parte da CAIXA (índice espacial) e busca o Status de cada empresa pela chave; caixa grande
+    // (o estado todo) = o plano clássico, com joins por hash, que aí é mais rápido que milhares de buscas.
+    const [pre] = await db.execute<{ n: number; tabela: number }>(
+      sql`SELECT count(*)::int AS n,
+                 (SELECT greatest(reltuples, 0)::float8 FROM pg_class WHERE oid = 'public.empresas'::regclass) AS tabela
+          FROM empresas e
+          WHERE e.excluido_em IS NULL AND e.localizacao IS NOT NULL AND e.pais_codigo IS NULL AND ${area}`,
     )
-    const total = t?.n ?? 0
+    const caixaPequena =
+      (pre?.n ?? 0) <= Math.max(CAIXA_PEQUENA_MINIMA, CAIXA_PEQUENA_FRACAO * (pre?.tabela ?? 0))
+    const [com, de] = caixaPequena
+      ? [empresasNaArea(area), DAS_EMPRESAS_DA_AREA]
+      : [sql``, sql`${DAS_EMPRESAS_DO_MAPA}`]
+    const ondeArea = caixaPequena ? sql`TRUE` : area
 
-    // Quantos leads o lote escolhido tem na área (o limite é por vez)
-    const [l] = await db.execute<{ total: number }>(
-      sql`SELECT count(*)::int AS total ${DAS_EMPRESAS_DO_MAPA} WHERE ${filtros} AND ${area} AND t.chave_sistema = 'lead'`,
+    // Uma consulta só: os pontos (com o limite) e, nas mesmas linhas, os totais da área inteira por janela
+    // (empresas, leads e se há coordenada do CNEFE). Eram duas consultas com os mesmos joins; juntas, cada
+    // pedido gasta metade do tempo no banco. O ponto traz só o que o pin precisa (id, posição, estado e visto);
+    // o agrupamento em bolhas é do navegador. Passou do limite do pedido: vem uma amostra espalhada (ordem por
+    // hash do id: estável entre pedidos, sem favorecer as empresas mais antigas) e `truncado` avisa para
+    // aproximar o mapa.
+    const colunas = sql`e.id, ST_Y(e.localizacao::geometry) AS lat, ST_X(e.localizacao::geometry) AS lon,
+               ${ESTADO_DO_PIN} AS estado, e.ultima_visita_em IS NOT NULL AS visitada,
+               t.chave_sistema = 'lead' AS lead,
+               (count(*) OVER ())::int AS total,
+               (count(*) FILTER (WHERE t.chave_sistema = 'lead') OVER ())::int AS leads_total,
+               bool_or(e.geo_origem = 'cnefe') OVER () AS cnefe`
+    // Sem lote escolhido não há lead nenhum no resultado (a condição dos filtros os exclui): dispensa a janela
+    // que numera os leads
+    const linhas = await db.execute<{
+      id: string
+      lat: number
+      lon: number
+      estado: string
+      visitada: boolean
+      lead: boolean
+      total: number
+      leads_total: number
+      cnefe: boolean
+    }>(
+      consulta.lotes.length === 0
+        ? sql`${com}
+              SELECT ${colunas} ${de} WHERE ${filtros} AND ${ondeArea}
+              ORDER BY hashtext(e.id::text), e.id LIMIT ${LIMITE_DE_PONTOS}`
+        : sql`${com}
+      SELECT id, lat, lon, estado, visitada, lead, total, leads_total, cnefe FROM (
+        SELECT ${colunas},
+               row_number() OVER (PARTITION BY (t.chave_sistema = 'lead') ORDER BY e.id) AS ordem_lead
+        ${de}
+        WHERE ${filtros} AND ${ondeArea}
+      ) x
+      WHERE NOT lead OR ordem_lead <= ${LIMITE_DE_LEADS}
+      ORDER BY hashtext(id::text), id
+      LIMIT ${LIMITE_DE_PONTOS}`,
     )
-    const leadsTotal = l?.total ?? 0
-
-    const maximo = consulta.zoom >= ZOOM_PERTO ? LIMITE_DE_PONTOS_NO_ZOOM_PERTO : LIMITE_DE_PONTOS
-    if (total <= maximo) {
-      const linhas = await db.execute<{
-        id: string
-        nome: string
-        lat: number
-        lon: number
-        estado: string
-        visitada: boolean
-        precisao: 'exata' | 'aproximada'
-        origem: OrigemGeo | null
-        cidade: string | null
-        lead: boolean
-        ordem_lead: number
-      }>(sql`
-        SELECT * FROM (
-          SELECT e.id, coalesce(e.nome_fantasia, e.razao_social) AS nome,
-                 ST_Y(e.localizacao::geometry) AS lat, ST_X(e.localizacao::geometry) AS lon,
-                 ${ESTADO_DO_PIN} AS estado, e.ultima_visita_em IS NOT NULL AS visitada,
-                 e.geo_precisao AS precisao, e.geo_origem AS origem, m.nome AS cidade, t.chave_sistema = 'lead' AS lead,
-                 row_number() OVER (PARTITION BY (t.chave_sistema = 'lead') ORDER BY e.id) AS ordem_lead
-          ${DAS_EMPRESAS_DO_MAPA}
-          WHERE ${filtros} AND ${area}
-        ) x
-        WHERE NOT lead OR ordem_lead <= ${LIMITE_DE_LEADS}
-        ORDER BY nome`)
-      const pontos: PontoDoMapa[] = linhas.map((r) => ({
-        id: r.id,
-        nome: r.nome,
-        latitude: r.lat,
-        longitude: r.lon,
-        estado: r.estado,
-        visitada: r.visitada,
-        precisao: r.precisao,
-        origem: r.origem,
-        cidade: r.cidade,
-      }))
+    const total = linhas[0]?.total ?? 0
+    const leadsTotal = linhas[0]?.leads_total ?? 0
+    // Peso do pedido: a posição com 6 casas (11 cm) e o estado como posição numa lista curta
+    const estados: string[] = []
+    const arredondar = (v: number) => Math.round(v * 1e6) / 1e6
+    const pontos: PontoDoMapa[] = linhas.map((r) => {
+      let i = estados.indexOf(r.estado)
+      if (i < 0) i = estados.push(r.estado) - 1
       return {
-        total,
-        pontos,
-        agrupamentos: [],
-        leads: {
-          mostrados: linhas.filter((r) => r.lead).length,
-          total: leadsTotal,
-          limite: LIMITE_DE_LEADS,
-        },
+        id: r.id,
+        latitude: arredondar(r.lat),
+        longitude: arredondar(r.lon),
+        estado: i,
+        visitada: r.visitada,
       }
-    }
-
-    // Muitos pontos: bolhas por célula de ~70 px (a malha acompanha o zoom)
-    const celula = 49.2 / 2 ** consulta.zoom
-    const grupos = await db.execute<{ lat: number; lon: number; n: number }>(sql`
-      SELECT avg(ST_Y(e.localizacao::geometry)) AS lat, avg(ST_X(e.localizacao::geometry)) AS lon, count(*)::int AS n
-      ${DAS_EMPRESAS_DO_MAPA}
-      WHERE ${filtros} AND ${area}
-      GROUP BY ST_SnapToGrid(e.localizacao::geometry, ${celula})`)
-    const agrupamentos: AgrupamentoDoMapa[] = grupos.map((g) => ({
-      latitude: g.lat,
-      longitude: g.lon,
-      total: g.n,
-    }))
+    })
     return {
       total,
-      pontos: [],
-      agrupamentos,
+      pontos,
+      estados,
+      truncado: total - Math.max(0, leadsTotal - LIMITE_DE_LEADS) > pontos.length,
+      limite: LIMITE_DE_PONTOS,
+      comCnefe: linhas[0]?.cnefe ?? false,
       leads: {
         mostrados: Math.min(leadsTotal, LIMITE_DE_LEADS),
         total: leadsTotal,

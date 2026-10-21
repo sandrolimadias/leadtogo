@@ -15,7 +15,8 @@ async function capturar(page: Page, nome: string) {
   await page.screenshot({ path: `${CAPTURAS}/${nome}.png` })
 }
 
-async function preparar(page: Page, nome: string) {
+/** Cria as três empresas e devolve o id do "Mercado do Centro" (o pin que o teste toca). */
+async function preparar(page: Page, nome: string): Promise<string> {
   const { api } = await administradorComSessao(nome)
   await page.context().addCookies((await api.storageState()).cookies)
   await limparLimites()
@@ -28,16 +29,47 @@ async function preparar(page: Page, nome: string) {
     ['Padaria da Praia', -20.31, -40.29],
     ['Oficina Norte', -20.29, -40.31],
   ] as const
+  let idDoMercado = ''
   for (const [razaoSocial, latitude, longitude] of pontos) {
     const r = await api.post('/v1/carteira/empresas', {
       data: { tipoDocumento: 'nenhum', razaoSocial, statusTagId: cliente.id },
     })
     const { id } = (await r.json()) as { id: string }
+    if (razaoSocial === 'Mercado do Centro') idDoMercado = id
     const p = await api.post(`/v1/geolocalizacao/empresas/${id}/posicao`, {
       data: { latitude, longitude },
     })
     expect(p.status()).toBe(200)
   }
+  return idDoMercado
+}
+
+/** O pedaço do mapa do MapLibre que o teste usa (o mapa fica exposto no contêiner, como em testar-imagens.mjs). */
+interface MapaTeste {
+  jumpTo: (o: { center: [number, number]; zoom: number }) => void
+  queryRenderedFeatures: (o: { layers: string[] }) => { properties: Record<string, unknown> }[]
+  project: (c: [number, number]) => { x: number; y: number }
+  getContainer: () => HTMLElement
+}
+
+/** Os pins são símbolos desenhados pelo MapLibre (sem elemento DOM): o teste fala com o mapa. */
+function noMapa<R>(page: Page, fn: (mapa: MapaTeste) => R): Promise<R | null> {
+  return page.evaluate((corpo) => {
+    const contenedor = document.querySelector('[aria-label="Mapa das empresas"]') as unknown as {
+      __mapa?: unknown
+    } | null
+    const mapa = contenedor?.__mapa
+    // o mapa ainda não existe (carregando): quem consulta tenta de novo
+    if (!mapa) return null
+    try {
+      // o corpo da função vem de `fn.toString()` (código do próprio teste), só para ele rodar dentro da página
+      // eslint-disable-next-line @typescript-eslint/no-implied-eval
+      return (new Function('mapa', `return (${corpo})(mapa)`) as (m: unknown) => unknown)(mapa)
+    } catch {
+      // a camada ainda não existe (o estilo está carregando): quem consulta tenta de novo
+      return null
+    }
+  }, fn.toString()) as Promise<R | null>
 }
 
 const medidas = (page: Page) =>
@@ -63,7 +95,7 @@ for (const tela of [
     page,
   }) => {
     test.setTimeout(120_000)
-    await preparar(page, `mapa${tela.width}`)
+    const idDoMercado = await preparar(page, `mapa${tela.width}`)
     await page.setViewportSize({ width: tela.width, height: tela.height })
     await page.goto('/mapa')
     await expect(page.getByRole('application', { name: 'Mapa das empresas' })).toBeVisible()
@@ -72,9 +104,29 @@ for (const tela of [
       'aria-pressed',
       'true',
     )
-    // os pins são botões DOM sobre o mapa (WebGL no Chromium sem GPU: pode demorar)
-    const pin = page.getByRole('button', { name: /Mercado do Centro/ }).first()
-    await expect(pin).toBeVisible({ timeout: 30_000 })
+    // as três empresas estão juntas: no zoom de abertura viram UMA bolha com o total (agrupamento no navegador)
+    await expect
+      .poll(
+        () =>
+          noMapa(page, (mapa) =>
+            mapa
+              .queryRenderedFeatures({ layers: ['empresas-bolhas'] })
+              .map((f) => f.properties['point_count']),
+          ),
+        { timeout: 30_000 },
+      )
+      .toContain(3)
+    // aproxima: a bolha se desfaz nos pins (WebGL no Chromium sem GPU: pode demorar)
+    await noMapa(page, (mapa) => mapa.jumpTo({ center: [-40.3, -20.3], zoom: 16 }))
+    await expect
+      .poll(
+        () =>
+          noMapa(page, (mapa) =>
+            mapa.queryRenderedFeatures({ layers: ['pins'] }).map((f) => f.properties['id']),
+          ),
+        { timeout: 30_000 },
+      )
+      .toContain(idDoMercado)
     await page.waitForTimeout(400)
 
     const m = await medidas(page)
@@ -89,7 +141,13 @@ for (const tela of [
     }
     await capturar(page, `mapa-${tela.nome}-pins`)
 
-    await pin.click()
+    // toca no corpo da gota do pin (a ponta é a coordenada, ~12 px abaixo)
+    const ponto = await noMapa(page, (mapa) => {
+      const c = mapa.getContainer().getBoundingClientRect()
+      const p = mapa.project([-40.3, -20.3])
+      return { x: c.left + p.x, y: c.top + p.y - 12 }
+    })
+    await page.mouse.click(ponto!.x, ponto!.y)
     const painel = page.getByRole('complementary', { name: 'Empresa selecionada' })
     await expect(painel.getByRole('heading', { name: 'Mercado do Centro' })).toBeVisible()
     await expect(painel.getByText('Posição exata')).toBeVisible()

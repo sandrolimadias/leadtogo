@@ -332,7 +332,8 @@ export interface ServicosDoMapa {
     restaurar: () => Promise<Resultado<LegendaDoMapa>>
   }
   /** As empresas da área visível, com os filtros; acima de 400, vêm como bolhas */
-  pontos: (consulta: ConsultaDePontos) => Promise<Resultado<PontosDoMapa>>
+  /** `signal` cancela o pedido anterior quando o mapa mexe de novo (a API para de trabalhar nele) */
+  pontos: (consulta: ConsultaDePontos, signal?: AbortSignal) => Promise<Resultado<PontosDoMapa>>
   proximas: (consulta: ConsultaDeProximas) => Promise<Resultado<SelecaoDoMapaResposta>>
   selecao: (dados: SelecaoDoMapa) => Promise<Resultado<SelecaoDoMapaResposta>>
   cobertura: () => Promise<Resultado<CoberturaDoMapa>>

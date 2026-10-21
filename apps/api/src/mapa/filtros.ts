@@ -23,6 +23,36 @@ export const DAS_EMPRESAS_DO_MAPA = sql`
   JOIN tag_grupos g ON g.id = t.tag_grupo_id AND g.chave_sistema = 'status'
   LEFT JOIN municipios m ON m.codigo_ibge = e.municipio_codigo`
 
+/**
+ * A caixa primeiro: as empresas da área saem pelo índice espacial (GiST de `localizacao`) numa CTE MATERIALIZED, e só
+ * elas entram nos joins de `DAS_EMPRESAS_DA_AREA`. Sem isto o Postgres começava pelas tags (metade da carteira),
+ * ordenava tudo e provava a caixa empresa por empresa: custo proporcional à carteira inteira, mesmo numa caixa de um
+ * bairro (360 ms com 100 mil empresas, 14 ms com 6 mil). `MATERIALIZED` fixa a ordem (o `OFFSET 0` não fixava: o
+ * Postgres relia a tabela a cada linha das tags). O RLS continua valendo (a CTE lê `empresas`).
+ */
+export const empresasNaArea = (area: SQL): SQL => sql`
+  WITH na_area AS MATERIALIZED (
+    SELECT * FROM empresas e
+    WHERE e.excluido_em IS NULL AND e.localizacao IS NOT NULL AND e.pais_codigo IS NULL AND ${area})`
+
+/**
+ * Os joins das empresas da CTE `na_area` (usar depois de `empresasNaArea`). A tag de Status entra por LATERAL: para
+ * cada empresa da CAIXA, uma busca pela chave (empresa_id, tag_id). O Postgres estima 1 linha para `empresa_tags`
+ * (a política de RLS, com `OR`, esconde a seletividade) e, sem isto, relia a CTE inteira a cada linha das tags. O
+ * `LIMIT 1` (a empresa tem um Status só) impede o Postgres de desfazer o LATERAL e voltar a essa ordem.
+ */
+export const DAS_EMPRESAS_DA_AREA = sql`
+  FROM na_area e
+  JOIN LATERAL (
+    SELECT t.id, t.chave_sistema
+    FROM empresa_tags st
+    JOIN tags t ON t.id = st.tag_id AND t.aparece_no_mapa AND t.ativo AND t.excluido_em IS NULL
+    JOIN tag_grupos g ON g.id = t.tag_grupo_id AND g.chave_sistema = 'status'
+    WHERE st.empresa_id = e.id
+    LIMIT 1
+  ) t ON TRUE
+  LEFT JOIN municipios m ON m.codigo_ibge = e.municipio_codigo`
+
 const BASE = sql`e.excluido_em IS NULL AND e.localizacao IS NOT NULL AND e.pais_codigo IS NULL`
 
 /** O estado que pinta o pin: "sem visita há 60+ dias" prevalece sobre a cor da tag (só Clientes). */
