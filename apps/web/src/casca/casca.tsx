@@ -23,6 +23,7 @@ import {
   BarraSuperior,
   CabecalhoDoCelular,
   FolhaDePerfil,
+  FolhaMais,
   PularParaOConteudo,
   VersaoDoApp,
 } from './partes'
@@ -44,12 +45,14 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
   const caminho = useRouterState({ select: (s) => s.location.pathname })
   const { prefs, alterar } = usePreferencias(me.empresaAtivaId)
   const [perfilAberto, setPerfilAberto] = useState(false)
+  const [maisAberto, setMaisAberto] = useState(false)
 
   if (me.precisaEscolherEmpresa) return <SeletorDeEmpresa me={me} />
 
   const ativa = me.empresas.find((e) => e.ativa)
   const sair = async () => {
     setPerfilAberto(false)
+    setMaisAberto(false)
     await servicos.sair()
     await queryClient.invalidateQueries({ queryKey: chaveDoMe })
     await navegar({ to: '/login', search: { redirect: undefined } })
@@ -81,7 +84,15 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
                 {children}
               </div>
             </div>
-            <BarraInferior caminho={caminho} aoAbrirPerfil={() => setPerfilAberto(true)} />
+            <BarraInferior caminho={caminho} aoAbrirMais={() => setMaisAberto(true)} />
+            <FolhaMais
+              aberta={maisAberto}
+              aoFechar={() => setMaisAberto(false)}
+              me={me}
+              caminho={caminho}
+              aoTrocarEmpresa={(id) => void trocarEmpresa(id).then(() => setMaisAberto(false))}
+              aoSair={() => void sair()}
+            />
             <FolhaDePerfil
               aberta={perfilAberto}
               aoFechar={() => setPerfilAberto(false)}

@@ -101,6 +101,12 @@ Os gráficos do app usam **Recharts**, no padrão do **shadcn/ui Charts**: um co
 3. Definir o escopo do MVP.
 
 
+## Celular: barra inferior, folha "Mais" e aviso de nova versão (21/10/2026)
+- **Barra inferior** (68 px, 5 colunas): Início, Empresas, Funil, Atividades e **Mais** (`TELAS_DA_BARRA_INFERIOR` em `casca/navegacao.ts`). A barra não mudou.
+- **Folha "Mais"** (`FolhaMais`, `Sheet` de baixo, sem cabeçalho visível, título "Mais" para o leitor de tela): linhas de 48 px com ícone e nome, **geradas de `TELAS`** (todas as que não estão na barra, filtradas por `telaVisivel`, na ordem do menu lateral; tela nova entra sozinha), depois **Meu perfil** (→ Segurança), **Trocar de empresa** (só com mais de uma empresa; a ativa vem marcada) e **Sair**. A tela atual fica destacada (`aria-current="page"`, fundo `--surface-selected`, texto `--brand`, peso 600). Fecha ao navegar, ao trocar de empresa, com Esc ou tocando fora. Testes: `casca/navegacao.test.ts` (a lista gerada de `TELAS`), `casca/casca.test.tsx` e `e2e/casca.spec.ts` (390×844, abrindo o Mapa pelo "Mais").
+- **Avatar do cabeçalho** continua abrindo a folha de perfil (usuário, empresa ativa, tema, versão).
+- **Aviso "Nova versão disponível · Atualizar"** (`pwa/aviso-de-nova-versao.tsx`): faixa discreta (`--surface`, borda e sombra `md`, texto de 13 px, "Atualizar" em `--brand` sublinhado), centralizada no rodapé e **acima da barra inferior** no celular. Só aparece com versão nova esperando; só recarrega no clique.
+
 ## Mapa (G2; exceção aprovada pelo Ale em 16/10/2026)
 **Exceção à regra de "Layout e rolagem", valendo só para a tela Mapa.** Referência visual: `docs/referencias/geo/mapa_referencia.png`.
 - O mapa (MapLibre + PMTiles) ocupa **a área central inteira**, sem o contêiner de 1440 px e sem título de página; menu lateral e barra do topo continuam. A página continua sem rolagem.

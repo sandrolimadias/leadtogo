@@ -52,8 +52,19 @@ export const TELAS: TelaDoApp[] = [
   },
 ]
 
-/** Itens da barra inferior do celular (além de "Mais", que abre o perfil). */
+/** Itens da barra inferior do celular (além de "Mais", que abre a folha com todo o resto). */
 export const TELAS_DA_BARRA_INFERIOR = ['/', '/empresas', '/oportunidades', '/atividades']
+
+/**
+ * Telas da folha "Mais" do celular: todas as de `TELAS` que não estão na barra inferior e que esta pessoa
+ * pode ver, na ordem do menu lateral (a ordem de `TELAS`). Gerada da lista: tela nova entra sozinha.
+ */
+export function telasDoMais(pessoa: {
+  administradorDeConta: boolean
+  papelNaEmpresaAtiva: PapelMembro | null
+}): TelaDoApp[] {
+  return TELAS.filter((t) => !TELAS_DA_BARRA_INFERIOR.includes(t.caminho) && telaVisivel(t, pessoa))
+}
 
 export function tituloDoCaminho(caminho: string): string {
   if (caminho === '/') return 'Início'

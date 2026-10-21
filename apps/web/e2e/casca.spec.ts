@@ -129,10 +129,26 @@ test.describe('casca do app', () => {
 
     await page.getByRole('button', { name: 'Mais' }).click()
     await page
-      .getByRole('dialog', { name: 'Meu perfil' })
-      .getByRole('link', { name: 'Meu perfil → Segurança' })
+      .getByRole('dialog', { name: 'Mais' })
+      .getByRole('link', { name: 'Meu perfil' })
       .click()
     await expect(page.getByRole('heading', { name: 'Segurança' })).toBeVisible()
     await expect(page).toHaveURL(/\/perfil\/seguranca$/)
+    await expect(page.getByRole('dialog', { name: 'Mais' })).toHaveCount(0)
+
+    // o Mapa só existe no "Mais" (fora da barra): abre por ali e a folha fecha ao navegar
+    await page.getByRole('button', { name: 'Mais' }).click()
+    const mais = page.getByRole('dialog', { name: 'Mais' })
+    await expect(mais.getByRole('link', { name: 'Mapa' })).not.toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    await mais.getByRole('link', { name: 'Mapa' }).click()
+    await expect(page).toHaveURL(/\/mapa$/)
+    await expect(page.getByRole('dialog', { name: 'Mais' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Mais' }).click()
+    await expect(
+      page.getByRole('dialog', { name: 'Mais' }).getByRole('link', { name: 'Mapa' }),
+    ).toHaveAttribute('aria-current', 'page')
   })
 })

@@ -378,16 +378,62 @@ describe('casca no celular e no tablet', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Meu perfil' })).toBeNull())
   })
 
-  it('celular: "Mais" abre a folha, o tema muda e "Sair" encerra', async () => {
+  it('celular: o avatar abre a folha de perfil, o tema muda e "Sair" encerra', async () => {
     largura(390)
     const servicos = servicosDaCasca(meComDuasEmpresas())
     renderizar(servicos, '/')
-    await userEvent.click(await screen.findByRole('button', { name: 'Mais' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir perfil' }))
     const folha = await screen.findByRole('dialog', { name: 'Meu perfil' })
     await userEvent.click(within(folha).getByRole('button', { name: 'Escuro' }))
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
     expect(within(folha).getByText(/versão/)).toBeInTheDocument()
     await userEvent.click(within(folha).getByRole('button', { name: 'Sair' }))
+    await waitFor(() => expect(servicos.sair).toHaveBeenCalled())
+  })
+
+  it('celular: "Mais" lista as telas fora da barra, o perfil, a troca de empresa e Sair', async () => {
+    largura(390)
+    const servicos = servicosDaCasca(meComDuasEmpresas())
+    renderizar(servicos, '/contatos')
+    await userEvent.click(await screen.findByRole('button', { name: 'Mais' }))
+    const folha = await screen.findByRole('dialog', { name: 'Mais' })
+    const nomes = within(folha)
+      .getAllByRole('link')
+      .map((l) => l.textContent)
+    expect(nomes.slice(0, 2)).toEqual(['Contatos', 'Mapa'])
+    expect(nomes.at(-1)).toBe('Meu perfil')
+    expect(within(folha).getByRole('link', { name: 'Contatos' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(within(folha).getByRole('link', { name: 'Mapa' })).not.toHaveAttribute('aria-current')
+    expect(within(folha).queryByRole('link', { name: 'Empresas' })).toBeNull()
+    expect(within(folha).getByRole('button', { name: /Aurora Móveis/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await userEvent.click(within(folha).getByRole('button', { name: /Borealis Logística/ }))
+    await waitFor(() => expect(servicos.trocarEmpresa).toHaveBeenCalledWith(B))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Mais' })).toBeNull())
+  })
+
+  it('celular: escolher uma tela no "Mais" navega e fecha a folha; Sair encerra', async () => {
+    largura(390)
+    const servicos = servicosDaCasca(meComDuasEmpresas())
+    renderizar(servicos, '/')
+    await userEvent.click(await screen.findByRole('button', { name: 'Mais' }))
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Mais' })).getByRole('link', {
+        name: 'Mapa',
+      }),
+    )
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Mais' })).toBeNull())
+    await userEvent.click(screen.getByRole('button', { name: 'Mais' }))
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Mais' })).getByRole('button', {
+        name: 'Sair',
+      }),
+    )
     await waitFor(() => expect(servicos.sair).toHaveBeenCalled())
   })
 

@@ -23,6 +23,7 @@ import {
   TELAS_DA_BARRA_INFERIOR,
   estaAtiva,
   telaVisivel,
+  telasDoMais,
 } from './navegacao'
 import { useRegistrarAtividade } from '@/telas/atividades/registro-contexto'
 import { avisarEmBreve, nomeDaEmpresa } from './utilidades'
@@ -160,13 +161,13 @@ export function CabecalhoDoCelular({
   )
 }
 
-/** Barra inferior do celular: Início, Empresas, Funil, Atividades e Mais (perfil). */
+/** Barra inferior do celular: Início, Empresas, Funil, Atividades e Mais (abre a folha "Mais"). */
 export function BarraInferior({
   caminho,
-  aoAbrirPerfil,
+  aoAbrirMais,
 }: {
   caminho: string
-  aoAbrirPerfil: () => void
+  aoAbrirMais: () => void
 }) {
   const itens = TELAS.filter((t) => TELAS_DA_BARRA_INFERIOR.includes(t.caminho))
   const classe =
@@ -187,7 +188,7 @@ export function BarraInferior({
           {t.rotuloCurto ?? t.titulo}
         </Link>
       ))}
-      <button type="button" className={classe} onClick={aoAbrirPerfil}>
+      <button type="button" className={classe} onClick={aoAbrirMais}>
         <Icon icon={Ellipsis} size={20} />
         Mais
       </button>
@@ -196,9 +197,93 @@ export function BarraInferior({
 }
 
 /**
- * Folha de perfil do celular (como no protótipo): usuário, empresa ativa (lista para trocar) e "Mais"
+ * Folha "Mais" do celular: as telas que não cabem na barra inferior (geradas de `TELAS`, só as que a pessoa
+ * vê, na ordem do menu lateral), seguidas de Meu perfil, troca de empresa e Sair. A tela ativa fica
+ * destacada e a folha fecha ao navegar.
+ */
+export function FolhaMais({
+  aberta,
+  aoFechar,
+  me,
+  caminho,
+  aoTrocarEmpresa,
+  aoSair,
+}: {
+  aberta: boolean
+  aoFechar: () => void
+  me: Me
+  caminho: string
+  aoTrocarEmpresa: (id: string) => void
+  aoSair: () => void
+}) {
+  const ativa = me.empresas.find((e) => e.ativa)
+  const telas = telasDoMais({
+    administradorDeConta: me.administradorDeConta,
+    papelNaEmpresaAtiva: ativa?.papel ?? null,
+  })
+  const linha =
+    'flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-sm border-0 bg-transparent px-2 text-left text-base text-ink no-underline hover:bg-surface-hover aria-[current=page]:bg-surface-selected aria-[current=page]:font-semibold aria-[current=page]:text-brand'
+  const rotulo =
+    'm-0 px-1 pt-3 pb-1 text-[11px] font-semibold tracking-[.06em] text-ink-subtle uppercase'
+  const perfilAtivo = caminho.startsWith('/perfil')
+  return (
+    <Sheet open={aberta} onOpenChange={(o) => !o && aoFechar()} title="Mais" semCabecalho>
+      <div className="flex flex-col gap-1 overflow-y-auto px-4 pb-4">
+        {telas.map((t) => (
+          <Link
+            key={t.caminho}
+            to={t.caminho as '/'}
+            onClick={aoFechar}
+            aria-current={estaAtiva(t, caminho) ? 'page' : undefined}
+            className={linha}
+          >
+            <Icon icon={t.icone} size={18} />
+            {t.titulo}
+          </Link>
+        ))}
+        <Link
+          to="/perfil/seguranca"
+          onClick={aoFechar}
+          aria-current={perfilAtivo ? 'page' : undefined}
+          className={cn(linha, 'mt-1 border-t border-border')}
+        >
+          <Icon icon={ShieldCheck} size={18} />
+          Meu perfil
+        </Link>
+        {me.empresas.length > 1 ? (
+          <section className="flex flex-col gap-1" aria-label="Trocar de empresa">
+            <h3 className={rotulo}>Trocar de empresa</h3>
+            {me.empresas.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                aria-pressed={e.ativa}
+                onClick={() => (e.ativa ? aoFechar() : aoTrocarEmpresa(e.id))}
+                className={cn(
+                  linha,
+                  'justify-between',
+                  e.ativa && 'bg-surface-selected font-semibold text-brand',
+                )}
+              >
+                <span className="truncate">{nomeDaEmpresa(e)}</span>
+                {e.ativa ? <Icon icon={Check} size={16} /> : null}
+              </button>
+            ))}
+          </section>
+        ) : null}
+        <button type="button" onClick={aoSair} className={cn(linha, 'mt-1 border-t border-border')}>
+          <Icon icon={LogOut} size={18} />
+          Sair
+        </button>
+      </div>
+    </Sheet>
+  )
+}
+
+/**
+ * Folha de perfil do celular (como no protótipo): usuário, empresa ativa (lista para trocar) e atalhos
  * (Contatos, Prospecção, Painel consolidado, Configurações, Meu perfil → Segurança, tema e Sair), com a
- * versão no fim. O seletor de empresa do celular fica aqui.
+ * versão no fim. Abre pelo avatar do cabeçalho; o "Mais" da barra inferior abre a `FolhaMais`.
  */
 export function FolhaDePerfil({
   aberta,
