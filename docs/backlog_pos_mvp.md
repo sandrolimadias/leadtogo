@@ -141,6 +141,9 @@
 | Migrar o ambiente de desenvolvimento para o homelab (VM Ubuntu 24.04 com Tailscale e VS Code Remote-SSH) | Previsto para depois do MVP; hoje o desenvolvimento é no WSL2 | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
 | Runner próprio do GitHub Actions nessa VM | Depende da VM; resolve a falta de minutos (ver a primeira linha desta tabela) | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
 
+| **Vector tiles dos pins no banco** (`ST_AsMVT`, servidos como tiles) | **Gatilho: uma empresa (tenant) passar de ~50 mil pins.** Até lá, fonte GeoJSON com agrupamento no navegador (Etapa 3 da trava do mapa) basta | Decisão do Ale (21/10/2026) |
+| **Agrupamento no servidor para visão nacional** | Gatilho: mapa mostrando o Brasil inteiro (multi-UF); hoje o agrupamento é no navegador | Decisão do Ale (21/10/2026) |
+| **PgBouncer e ajuste fino do Postgres** (`shared_buffers`, `work_mem`, `max_connections`) | **Gatilho: dezenas de empresas ativas.** Hoje: API 20 + worker 10 conexões de ~100 (`runbook_observabilidade.md`, seção 9) | Decisão do Ale (21/10/2026) |
 | **Geolocalização multi-UF.** **Gatilho: primeiro cliente fora do ES.** Hoje o CNEFE, o PMTiles e o Nominatim cobrem só o ES (`GEO_UF`). Ao chegar: (1) CNEFE em **banco separado, fora do backup** (hoje o schema `referencia_geo` tem 529 MB dentro do dump); (2) carga **por UF**; (3) `GEO_UF` vira **lista**; (4) PMTiles **do Brasil ou por região**; (5) **Nominatim e OSRM fora da VPS atual**; (6) **rever o limite do backup** (+150 MB do dump já medido na carga do ES) | Decisão do Ale (21/10/2026); depende de haver cliente fora do ES | `plano_geolocalizacao.md`, `geo_atualizacao.md`, `roteiro_carga_geo_producao.md` |
 
 ## Segurança e LGPD
