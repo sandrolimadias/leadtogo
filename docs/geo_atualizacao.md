@@ -9,7 +9,7 @@
 |---|---|---|---|
 | **CNEFE 2022** (endereços com coordenada) | Postgres, schema `referencia_geo` (**dentro do backup** do Coolify) | IBGE, Censo 2022 | Só no próximo Censo, ou se o schema estiver vazio (seção 1). **A restauração do backup já o traz** |
 | **Nominatim** (ruas e portas do OpenStreetMap, só o ES) | serviço no Coolify (1,5 GiB de RAM no máximo) | Geofabrik + recorte do ES | A cada 6 a 12 meses, ou quando o OSM do ES melhorar muito (seção 2) |
-| **Mapa (PMTiles do ES)** | Garage (bucket privado, lido pela API com `Range`) | Protomaps | A cada 6 a 12 meses (seção 3) |
+| **Mapa (PMTiles do ES)** | Garage, **bucket público só do mapa** (`leadtogo-mapa`, domínio `mapa.crm.aledias.com.br`, nome versionado), lido pelo navegador direto | Protomaps | A cada 6 a 12 meses (seção 3) |
 | Microrregiões e centro dos municípios | Postgres (seed) | IBGE | Só se o IBGE criar município (`node packages/db/seeds/gerar-dados.mjs municipios microrregioes`) |
 
 ## 1. CNEFE (no Postgres)
@@ -81,7 +81,7 @@ Condições: **mesma versão do Nominatim e do Postgres** nos dois lados (imagem
 docker run --rm -v "$PWD":/dados ghcr.io/protomaps/go-pmtiles extract https://build.protomaps.com/AAAAMMDD.pmtiles /dados/es.pmtiles --bbox=-41.9,-21.35,-39.6,-17.85 --maxzoom=14
 ```
 
-Troque `AAAAMMDD` por uma data recente (https://maps.protomaps.com/builds/). Suba `es.pmtiles` para o Garage (bucket `leadtogo-arquivos`, chave `mapa/es.pmtiles`, privado). Outro estado: ajuste a caixa (`--bbox=oeste,sul,leste,norte`).
+Troque `AAAAMMDD` por uma data recente (https://maps.protomaps.com/builds/). Suba o arquivo com **nome versionado** (`es-AAAAMMDD.pmtiles`) para o **bucket público do mapa** (`leadtogo-mapa`), com `Cache-Control` imutável, e aponte a `MAPA_BASE_URL` da API para ele: passo a passo em `roteiro_mapa_publico.md`. (O caminho antigo, bucket privado `leadtogo-arquivos`, chave `mapa/es.pmtiles`, lido pela API em `/v1/mapa/base.pmtiles`, é transitório e sai depois que o mapa abrir pela URL nova.) Outro estado: ajuste a caixa (`--bbox=oeste,sul,leste,norte`).
 
 ## 4. Depois de qualquer atualização
 

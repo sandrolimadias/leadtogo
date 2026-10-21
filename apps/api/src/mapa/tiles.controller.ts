@@ -1,11 +1,13 @@
 import { GetObjectCommand, type S3Client } from '@aws-sdk/client-s3'
 import { Controller, Get, Inject, Logger, Req, Res } from '@nestjs/common'
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { type BaseDoMapa, baseDoMapaSchema } from '@leadtogo/shared'
 import type { Request, Response } from 'express'
 import { type Readable, pipeline } from 'node:stream'
 
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+import { Documenta } from '../documentacao/documenta.js'
 import { SemTransacao } from '../acesso/acesso.decorators.js'
 import { ARMAZENAMENTO } from '../infra/infra.module.js'
 import { Limite, SemLimite } from '../rate-limit/limite.decorator.js'
@@ -38,6 +40,21 @@ export class TilesDoMapaController {
     @Inject(CONFIGURACAO) private readonly config: Configuracao,
     @Inject(ARMAZENAMENTO) private readonly s3: S3Client,
   ) {}
+
+  @Documenta({
+    resumo: 'De onde ler o mapa base',
+    descricao:
+      'Qualquer membro logado. Com `MAPA_BASE_URL` configurada, devolve a URL pública do PMTiles versionado (bucket público do Garage, sem passar pela API); sem ela, o caminho da própria API (`/v1/mapa/base.pmtiles`, transitório).',
+    resposta: baseDoMapaSchema,
+    erros: [401, 403, 409],
+  })
+  @Get('base')
+  origemDaBase(): BaseDoMapa {
+    const publica = this.config.MAPA_BASE_URL
+    return publica
+      ? { url: publica, origem: 'publica' }
+      : { url: '/v1/mapa/base.pmtiles', origem: 'api' }
+  }
 
   @ApiOperation({
     summary: 'Mapa base (PMTiles do estado)',

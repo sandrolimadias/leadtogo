@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 
-import { URL_DO_MAPA_BASE } from './estilo'
 import { circulo, criarBolha, criarPin } from './pin'
 import { corDoToken, temaAtual, useTema } from './tema'
 
@@ -102,6 +101,8 @@ export function MapaBase(props: PropsDoMapa) {
   // Quantos elementos da base foram desenhados na última vez que o mapa ficou parado (0 = nada desenhado)
   const [desenhados, setDesenhados] = useState(0)
   const [versaoDoEstilo, setVersaoDoEstilo] = useState(0)
+  // De onde vem o PMTiles (URL pública do bucket do mapa ou, transitório, a API): a API informa ao abrir
+  const urlDaBaseRef = useRef('/v1/mapa/base.pmtiles')
   // As funções mudam a cada render; o mapa lê sempre a última
   const ultimas = useRef(props)
   useEffect(() => {
@@ -115,25 +116,31 @@ export function MapaBase(props: PropsDoMapa) {
     let cleanupTemporizador: (() => void) | undefined
     let observador: ResizeObserver | undefined
     void (async () => {
-      const [maplibre, { PMTiles, Protocol }, { estiloDoMapa }, { default: urlDoWorker }] =
-        await Promise.all([
-          import('maplibre-gl'),
-          import('pmtiles'),
-          import('./estilo'),
-          // O MapLibre 6 sobe o worker de um arquivo próprio (`maplibre-gl-worker.mjs`) que procura ao lado do
-          // JS da biblioteca; o Vite embute a biblioteca num chunk e NÃO copia esse arquivo, então o worker
-          // não subia em produção. `?url` publica o arquivo em /assets (mesma origem: `worker-src 'self'` da
-          // CSP basta, sem blob:) e `setWorkerUrl` aponta o MapLibre para ele.
-          import('maplibre-gl/dist/maplibre-gl-worker.mjs?url'),
-          import('maplibre-gl/dist/maplibre-gl.css'),
-        ])
+      const [
+        maplibre,
+        { PMTiles, Protocol },
+        { estiloDoMapa, urlDoMapaBase },
+        { default: urlDoWorker },
+      ] = await Promise.all([
+        import('maplibre-gl'),
+        import('pmtiles'),
+        import('./estilo'),
+        // O MapLibre 6 sobe o worker de um arquivo próprio (`maplibre-gl-worker.mjs`) que procura ao lado do
+        // JS da biblioteca; o Vite embute a biblioteca num chunk e NÃO copia esse arquivo, então o worker
+        // não subia em produção. `?url` publica o arquivo em /assets (mesma origem: `worker-src 'self'` da
+        // CSP basta, sem blob:) e `setWorkerUrl` aponta o MapLibre para ele.
+        import('maplibre-gl/dist/maplibre-gl-worker.mjs?url'),
+        import('maplibre-gl/dist/maplibre-gl.css'),
+      ])
       if (cancelado || !contenedor.current) return
       libRef.current = maplibre
       maplibre.setWorkerUrl(urlDoWorker)
+      const urlDaBase = await urlDoMapaBase()
+      urlDaBaseRef.current = urlDaBase
       const protocolo = new Protocol()
       maplibre.addProtocol('pmtiles', protocolo.tile)
-      protocolo.add(new PMTiles(URL_DO_MAPA_BASE))
-      const disponivel = await fetch(URL_DO_MAPA_BASE, { headers: { Range: 'bytes=0-0' } })
+      protocolo.add(new PMTiles(urlDaBase))
+      const disponivel = await fetch(urlDaBase, { headers: { Range: 'bytes=0-0' } })
         .then((r) => r.ok || r.status === 206)
         .catch(() => false)
       if (cancelado || !contenedor.current) return
@@ -141,7 +148,7 @@ export function MapaBase(props: PropsDoMapa) {
       mapa = new maplibre.Map({
         container: contenedor.current,
         style: disponivel
-          ? estiloDoMapa(temaAtual())
+          ? estiloDoMapa(temaAtual(), urlDaBase)
           : {
               version: 8,
               sources: {},
@@ -241,7 +248,7 @@ export function MapaBase(props: PropsDoMapa) {
     const mapa = mapaRef.current
     if (!mapa || estado !== 'pronto') return
     void import('./estilo').then(({ estiloDoMapa }) => {
-      mapa.setStyle(estiloDoMapa(tema), { diff: true })
+      mapa.setStyle(estiloDoMapa(tema, urlDaBaseRef.current), { diff: true })
       void mapa.once('styledata', () => setVersaoDoEstilo((v) => v + 1))
     })
   }, [tema, estado])

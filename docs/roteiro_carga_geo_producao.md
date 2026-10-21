@@ -23,6 +23,8 @@ docker run --rm -v "$PWD":/dados ghcr.io/protomaps/go-pmtiles extract \
 ls -lh es.pmtiles        # esperado: ~227 MB
 ```
 
+> **Atualização (21/10/2026):** o mapa base passou para o **bucket público** `leadtogo-mapa`, lido direto pelo navegador (a API travou com o tráfego de faixas). O upload novo, versionado, está em `roteiro_mapa_publico.md`. O passo abaixo (bucket privado) é o caminho transitório e vale só até esse roteiro ser concluído.
+
 **a.2. Subir para o Garage** (bucket privado `leadtogo-arquivos`, chave `mapa/es.pmtiles`). Use a chave `leadtogo-app` (gerenciador de senhas; ou `/garage key info leadtogo-app --show-secret` no container `leadtogo-files`). As chaves entram por `read -s`: não aparecem na tela nem no histórico.
 
 ```bash

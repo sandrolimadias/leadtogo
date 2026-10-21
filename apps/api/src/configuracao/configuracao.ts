@@ -130,6 +130,13 @@ const esquema = z
     CEP_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
     /** Chave do arquivo PMTiles do estado no Garage (bucket privado), servido por `GET /v1/mapa/base.pmtiles` */
     GEO_PMTILES_CHAVE: z.string().min(1).default('mapa/es.pmtiles'),
+    /**
+     * URL pública do mapa base (PMTiles do estado, bucket público só-leitura do Garage, servido em
+     * mapa.crm.aledias.com.br), com o nome versionado: `https://mapa.crm.aledias.com.br/es-20261018.pmtiles`.
+     * A API entrega esta URL ao app (`GET /v1/mapa/base`), então trocar de versão é só mudar a variável.
+     * Sem ela, o app lê o mapa pela API (`/v1/mapa/base.pmtiles`, transitório).
+     */
+    MAPA_BASE_URL: opcional(url(['http:', 'https:'])),
     /** Geocodificar sozinho a empresa nova ou com o endereço alterado (ligado em produção; os testes desligam) */
     GEO_AUTOMATICA: booleano.default(true),
     /** UF que o mapa e os lotes mostram por padrão (as microrregiões da lista); nada no código é fixo ao ES */

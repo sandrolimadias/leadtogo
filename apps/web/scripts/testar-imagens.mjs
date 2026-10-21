@@ -29,9 +29,10 @@ const hostsExternos = [...cabecalho('content-security-policy').matchAll(/https?:
 )
 confere(
   cabecalho('content-security-policy').includes("connect-src 'self'") &&
-    hostsExternos.length === 1 &&
-    hostsExternos[0] === 'https://erros.crm.aledias.com.br',
-  "CSP com connect-src 'self' e só o GlitchTip como domínio externo",
+    hostsExternos.length === 2 &&
+    hostsExternos.includes('https://erros.crm.aledias.com.br') &&
+    hostsExternos.includes('https://mapa.crm.aledias.com.br'),
+  "CSP com connect-src 'self' e só o GlitchTip e o bucket público do mapa como domínios externos",
 )
 confere(cabecalho('strict-transport-security').includes('max-age=31536000'), 'HSTS')
 confere(cabecalho('x-content-type-options') === 'nosniff', 'X-Content-Type-Options: nosniff')

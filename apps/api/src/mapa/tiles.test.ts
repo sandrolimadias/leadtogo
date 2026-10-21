@@ -59,6 +59,33 @@ const pedir = (cookie: string | undefined, range?: string) => {
   return range ? r.set('Range', range) : r
 }
 
+describe('GET /v1/mapa/base (de onde ler o mapa)', () => {
+  it('sem MAPA_BASE_URL aponta para a própria API (transitório)', async () => {
+    const d = await novoDono(app)
+    const r = await request(app.getHttpServer()).get('/v1/mapa/base').set('Cookie', d.cookie)
+    expect(r.status).toBe(200)
+    expect(r.body).toEqual({ url: '/v1/mapa/base.pmtiles', origem: 'api' })
+  })
+
+  it('com MAPA_BASE_URL devolve a URL pública versionada; sem sessão é 401', async () => {
+    const publica = await criarAppComRotas(
+      [],
+      configuracaoDeTeste({ MAPA_BASE_URL: 'https://mapa.crm.exemplo.com.br/es-20261018.pmtiles' }),
+    )
+    try {
+      expect((await request(publica.getHttpServer()).get('/v1/mapa/base')).status).toBe(401)
+      const d = await novoDono(publica)
+      const r = await request(publica.getHttpServer()).get('/v1/mapa/base').set('Cookie', d.cookie)
+      expect(r.body).toEqual({
+        url: 'https://mapa.crm.exemplo.com.br/es-20261018.pmtiles',
+        origem: 'publica',
+      })
+    } finally {
+      await publica.close()
+    }
+  })
+})
+
 describe('GET /v1/mapa/base.pmtiles', () => {
   it('sem sessão é 401', async () => {
     expect((await pedir(undefined)).status).toBe(401)
