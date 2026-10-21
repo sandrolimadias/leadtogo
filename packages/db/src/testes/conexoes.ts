@@ -51,3 +51,27 @@ export async function comTenant<T>(
 export function conectarDrizzleOwner() {
   return criarConexao(url('TEST_DATABASE_MIGRATION_URL'), { max: 2, onnotice: () => {} })
 }
+
+/** Tabelas de referência globais, na ordem em que podem ser apagadas (quem aponta para quem vem antes). */
+const REFERENCIAS_GLOBAIS = [
+  'municipios',
+  'microrregioes',
+  'cnaes',
+  'qualificacoes_socio',
+  'portes',
+  'paises',
+  'estados',
+]
+
+/**
+ * Deixa as referências globais vazias, sem depender do que outro arquivo de teste deixou: o que aponta para
+ * elas (empresas e filhas, regiões com municípios) é esvaziado antes. Os arquivos rodam em sequência no mesmo
+ * banco e a ORDEM muda de uma execução para outra (o vitest põe os que falharam e os mais lentos primeiro),
+ * então nenhum teste pode supor o que o anterior limpou.
+ */
+export async function esvaziarReferencias(owner: Sql): Promise<void> {
+  await owner`TRUNCATE empresas CASCADE` // ignora o RLS; as filhas apontam para as referências (FK)
+  await owner`TRUNCATE geo_regiao_municipios`
+  await owner`UPDATE tenants SET municipio_codigo = NULL WHERE municipio_codigo IS NOT NULL`
+  for (const tabela of REFERENCIAS_GLOBAIS) await owner`DELETE FROM ${owner(tabela)}`
+}

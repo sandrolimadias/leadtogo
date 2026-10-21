@@ -32,7 +32,8 @@ describe('tabelas de referência', () => {
   })
 
   it.each(GLOBAIS_SO_LEITURA)('%s: o app lê, mas não escreve', async (tabela) => {
-    expect(await app`SELECT * FROM ${app(tabela)}`).toHaveLength(0)
+    // lê (sem supor que a tabela está vazia: o que os outros arquivos deixaram não importa)
+    await expect(app`SELECT * FROM ${app(tabela)} LIMIT 1`).resolves.toBeDefined()
     await expect(app`DELETE FROM ${app(tabela)}`).rejects.toThrow(/permission denied/)
     await expect(app`UPDATE ${app(tabela)} SET codigo = codigo`).rejects.toThrow(
       /permission denied|does not exist/,

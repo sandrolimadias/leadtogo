@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { semearReferencias } from '../seeds/index.js'
-import { conectarApp, conectarDrizzleOwner } from './conexoes.js'
+import { conectarApp, conectarDrizzleOwner, esvaziarReferencias } from './conexoes.js'
 
 const { db, cliente: owner } = conectarDrizzleOwner()
 const app = conectarApp()
@@ -16,10 +16,7 @@ const TABELAS = [
   'estados',
 ]
 async function limpar() {
-  // empresas e filhas apontam para as referências (FK); o TRUNCATE ignora o RLS e esvazia a carteira de teste
-  await owner`TRUNCATE empresas CASCADE`
-  await owner`TRUNCATE geo_regiao_municipios` // aponta para municipios (FK)
-  for (const t of TABELAS) await owner`DELETE FROM ${owner(t)}`
+  await esvaziarReferencias(owner)
 }
 async function contar(): Promise<Record<string, number>> {
   const total: Record<string, number> = {}

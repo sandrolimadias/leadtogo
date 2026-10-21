@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest'
 
 import { novoId } from '../id.js'
-import { conectarApp, conectarOwner } from './conexoes.js'
+import { conectarApp, conectarOwner, esvaziarReferencias } from './conexoes.js'
 import { fabricas, prepararTenants } from './fabricas.js'
 import {
   problemasDeCatalogo,
@@ -15,6 +15,10 @@ import {
 const app = conectarApp()
 const owner = conectarOwner()
 afterAll(async () => {
+  // Cada tabela criou dois tenants com dados (e as fábricas de geolocalização, o município e o estado de
+  // referência): apaga tudo, para os outros arquivos não herdarem nada
+  await owner`TRUNCATE tenants, contas CASCADE`
+  await esvaziarReferencias(owner)
   await app.end()
   await owner.end()
 })

@@ -7,7 +7,7 @@ import {
   semearDemonstracao,
   semearReferencias,
 } from '../seeds/index.js'
-import { comTenant, conectarApp, conectarDrizzleOwner } from './conexoes.js'
+import { comTenant, conectarApp, conectarDrizzleOwner, esvaziarReferencias } from './conexoes.js'
 import { prepararTenants } from './fabricas.js'
 
 const { db, cliente: owner } = conectarDrizzleOwner()
@@ -71,18 +71,7 @@ beforeAll(async () => {
 })
 afterAll(async () => {
   await limpar()
-  await owner`TRUNCATE empresas CASCADE` // as empresas de teste apontam para as referências (FK)
-  for (const t of [
-    'municipios',
-    'microrregioes',
-    'cnaes',
-    'qualificacoes_socio',
-    'portes',
-    'paises',
-    'estados',
-  ]) {
-    await owner`DELETE FROM ${owner(t)}`
-  }
+  await esvaziarReferencias(owner)
   await owner.end()
   await app.end()
 })

@@ -171,7 +171,9 @@ describe('papéis na decisão', () => {
     const { tenantId } = await novoTenant()
     expect(await papeis(tenantId)).toEqual([])
     const r = await criarPadroesPendentesPorUrl(urlOwnerDeTeste())
-    expect(r.falhas).toEqual([])
+    // só as falhas DESTA empresa contam: o start percorre todas as empresas do banco, inclusive as que
+    // outros arquivos de teste deixaram (a ordem dos arquivos muda de uma execução para outra)
+    expect(r.falhas.filter((f) => f.tenantId === tenantId)).toEqual([])
     expect(await papeis(tenantId)).toHaveLength(5)
     // repetir não duplica
     await criarPadroesPendentesPorUrl(urlOwnerDeTeste())
