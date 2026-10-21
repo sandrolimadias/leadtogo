@@ -326,7 +326,7 @@ Reaproveita o assistente, o worker em blocos curtos com idempotência por linha,
 ### Transversal (entra junto dos módulos em que fizer sentido)
 - **Busca global** (empresas, contatos, oportunidades).
 - **Auditoria nas fichas** (aba Histórico).
-- Aviso **"Nova versão disponível"** no PWA.
+- ~~Aviso **"Nova versão disponível"** no PWA~~ — entregue em 21/10/2026 (ver `esteira_deploy.md`, seção do PWA).
 
 ### Trilha técnica — antes do primeiro cliente externo
 (Origem: `plano_implantacao.md`, seção 6; não bloqueia o uso do Ale.)

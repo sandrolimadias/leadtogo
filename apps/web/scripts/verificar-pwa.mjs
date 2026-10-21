@@ -143,7 +143,7 @@ try {
     'meta theme-color presente',
   )
 
-  // service worker (atualização automática: skipWaiting + clientsClaim)
+  // service worker (atualização por aviso: a versão nova espera; clientsClaim só na primeira instalação)
   const sw = await page.evaluate(async () => {
     const r = await navigator.serviceWorker.ready
     // `ready` resolve quando o worker está "activating"; espera terminar de ativar

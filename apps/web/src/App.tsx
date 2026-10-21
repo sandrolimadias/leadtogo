@@ -8,6 +8,7 @@ import { ServicosProvider } from './auth/contexto'
 import { servicosReais } from './auth/servicos'
 import type { ServicosDeAcesso } from './auth/tipos'
 import { useDispositivo } from './casca/dispositivo'
+import { AvisoDeNovaVersao } from './pwa/aviso-de-nova-versao'
 import { Toaster } from './components/ui/toaster'
 import { TooltipProvider } from './components/ui/tooltip'
 
@@ -33,6 +34,7 @@ export function App({
         <TooltipProvider>
           <RouterProvider router={roteador} />
           <AvisosDaTela />
+          <AvisoDaVersao />
           <DensidadePorDispositivo />
         </TooltipProvider>
       </ServicosProvider>
@@ -43,6 +45,10 @@ export function App({
 /** Os avisos sobem acima da barra inferior no celular. */
 function AvisosDaTela() {
   return <Toaster celular={useDispositivo() === 'celular'} />
+}
+
+function AvisoDaVersao() {
+  return <AvisoDeNovaVersao celular={useDispositivo() === 'celular'} />
 }
 
 /**

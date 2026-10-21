@@ -766,7 +766,6 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 | 5 — n8n | Webhooks de saída, chaves de API e automações (ver seção 13.2) |
 | 6 — E-mail | Conexão Google/Microsoft + BCC, registro automático, envio pelo CRM com modelos, rastreamento de abertura/cliques (ver seção 13.3) |
 | 7 — Agendas | Sincronização com Google Agenda e Microsoft, convites, Meet/Teams, disponibilidade (ver seção 13.4) |
-| Futuro (MVP) | Aviso "Nova versão disponível, clique para atualizar" no PWA: hoje o usuário continua na versão antiga até recarregar |
 | Futuro | Propostas/orçamentos em PDF, metas por vendedor, link público de agendamento, relatórios avançados |
 
 > O **Status da oportunidade** e o **histórico de fases e status** já deixam a base pronta para metas, relatórios de conversão e automações.

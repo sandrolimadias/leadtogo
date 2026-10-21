@@ -26,7 +26,8 @@ export default defineConfig(({ command }) => ({
     ...(command === 'build'
       ? [
           VitePWA({
-            registerType: 'autoUpdate',
+            // 'prompt': a versão nova espera e o app avisa (src/pwa); nunca recarrega sozinho
+            registerType: 'prompt',
             includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
             manifest: {
               name: 'Leadtogo',
@@ -61,7 +62,6 @@ export default defineConfig(({ command }) => ({
               sourcemap: false,
               cleanupOutdatedCaches: true,
               clientsClaim: true,
-              skipWaiting: true,
             },
           }),
         ]
@@ -93,6 +93,15 @@ export default defineConfig(({ command }) => ({
     // pacotes internos do monorepo são lidos direto do código-fonte (sem build) no dev e nos testes
     conditions: ['@leadtogo/source'],
     alias: [
+      // o registro do service worker (virtual do vite-plugin-pwa) só existe no build; fora dele, um módulo vazio
+      ...(command === 'build'
+        ? []
+        : [
+            {
+              find: 'virtual:pwa-register',
+              replacement: fileURLToPath(new URL('./src/pwa/registro.stub.ts', import.meta.url)),
+            },
+          ]),
       // o catálogo de componentes só existe em desenvolvimento: no build vira um módulo vazio
       ...(command === 'build'
         ? [
