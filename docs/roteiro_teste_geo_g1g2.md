@@ -33,7 +33,7 @@
 3. Toque num pin: o **painel da empresa** abre (tags, selo de precisão, carteira, última visita, próxima atividade, Ligar, WhatsApp, Abrir ficha e as abas Atividades, Oportunidades e Contatos).
 4. **Filtros**: busca (empresa, bairro, cidade), visitada (alguma vez, 90 dias, período, nunca), vendedor, cidade, região, precisão, "Clientes sem visita 60+ dias".
 5. **Leads**: ligue o chip de Leads e escolha um **lote de importação** nos Filtros: aparecem até 500, com o contador "leads: N de M".
-6. Com muitas empresas na tela, o mapa mostra **bolhas** com o total; toque numa bolha para aproximar.
+6. Com muitas empresas na tela, o mapa mostra **bolhas** com o total (o agrupamento é feito pelo navegador); toque numa bolha para aproximar. Acima de 5.000 empresas na área aparece o aviso "Mostrando 5.000 de N" (aproxime ou filtre).
 7. **Empresas próximas** (no painel): barra com **2, 5, 10 e 25 km**; por padrão **sem as já visitadas** ("Incluir já visitadas" as traz). Lista em ordem de distância.
 8. **Selecionar por retângulo** (dois toques nos cantos) e **por raio** (toque no centro): lista as empresas, abre cada uma e **aplica uma tag a todas**.
 9. **Cobertura por município** (botão de camadas): bolha em cada cidade com quantas **faltam** visitar, e a lista "N de M visitadas".

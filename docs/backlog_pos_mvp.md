@@ -141,6 +141,7 @@
 | Migrar o ambiente de desenvolvimento para o homelab (VM Ubuntu 24.04 com Tailscale e VS Code Remote-SSH) | Previsto para depois do MVP; hoje o desenvolvimento é no WSL2 | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
 | Runner próprio do GitHub Actions nessa VM | Depende da VM; resolve a falta de minutos (ver a primeira linha desta tabela) | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
 
+| **Índice espacial composto** (`btree_gist` em `(tenant_id, localizacao)`, migração com extensão) | **Gatilho: a tabela `empresas` passar de ~500 mil linhas com várias empresas-clientes densas na mesma região.** O índice atual devolve as linhas de todas as empresas-clientes na caixa e o RLS filtra depois; com poucos clientes por região o `EXPLAIN ANALYZE` não mostra ganho (`runbook_observabilidade.md`, seção 9) | Decisão do Ale (21/10/2026) |
 | **Vector tiles dos pins no banco** (`ST_AsMVT`, servidos como tiles) | **Gatilho: uma empresa (tenant) passar de ~50 mil pins.** Até lá, fonte GeoJSON com agrupamento no navegador (Etapa 3 da trava do mapa) basta | Decisão do Ale (21/10/2026) |
 | **Agrupamento no servidor para visão nacional** | Gatilho: mapa mostrando o Brasil inteiro (multi-UF); hoje o agrupamento é no navegador | Decisão do Ale (21/10/2026) |
 | **PgBouncer e ajuste fino do Postgres** (`shared_buffers`, `work_mem`, `max_connections`) | **Gatilho: dezenas de empresas ativas.** Hoje: API 20 + worker 10 conexões de ~100 (`runbook_observabilidade.md`, seção 9) | Decisão do Ale (21/10/2026) |
