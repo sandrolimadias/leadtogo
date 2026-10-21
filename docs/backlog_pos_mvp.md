@@ -137,10 +137,11 @@
 | Dependabot de volta a semanal | Mensal enquanto a cota está curta | `esteira_deploy.md`, seção 5.4 |
 | Helper único de erros (as telas e a API repetem o tratamento) e, depois dele, atualizar o `nodemailer` para a 10.1.0 | Pendência técnica combinada com o Ale; a atualização espera o helper | Pendência técnica (16/10/2026) |
 | `better-call` preso na versão que o Better Auth exige (1.4.0) | Só sobe junto com o Better Auth | Pendência técnica (16/10/2026) |
-| Aviso "Nova versão disponível" no PWA | Transversal ainda não entregue | Transversal (`escopo_mvp.md`) |
 | Exportação de dados por empresa (LGPD) | Pendência de produto antes do primeiro cliente externo | `lgpd.md` |
 | Migrar o ambiente de desenvolvimento para o homelab (VM Ubuntu 24.04 com Tailscale e VS Code Remote-SSH) | Previsto para depois do MVP; hoje o desenvolvimento é no WSL2 | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
 | Runner próprio do GitHub Actions nessa VM | Depende da VM; resolve a falta de minutos (ver a primeira linha desta tabela) | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+
+| **Geolocalização multi-UF.** **Gatilho: primeiro cliente fora do ES.** Hoje o CNEFE, o PMTiles e o Nominatim cobrem só o ES (`GEO_UF`). Ao chegar: (1) CNEFE em **banco separado, fora do backup** (hoje o schema `referencia_geo` tem 529 MB dentro do dump); (2) carga **por UF**; (3) `GEO_UF` vira **lista**; (4) PMTiles **do Brasil ou por região**; (5) **Nominatim e OSRM fora da VPS atual**; (6) **rever o limite do backup** (+150 MB do dump já medido na carga do ES) | Decisão do Ale (21/10/2026); depende de haver cliente fora do ES | `plano_geolocalizacao.md`, `geo_atualizacao.md`, `roteiro_carga_geo_producao.md` |
 
 ## Segurança e LGPD
 | Item | Motivo de ter ficado fora | Origem |
@@ -158,6 +159,7 @@
 ## Feito
 | Item | Feito em | Onde |
 |---|---|---|
+| **Aviso "Nova versão disponível · Atualizar" no PWA** (checa ao voltar ao primeiro plano e a cada hora; nunca recarrega sozinho) | 21/10/2026 | `apps/web/src/pwa`; registro em `design_system.md` e `esteira_deploy.md` |
 | Regra "só se exclui o que nunca foi usado" para tipos de atividade, motivos, origens e soluções (a verificação que ficou pendente nos Módulos 5 e 6) | 16/10/2026 | commit `fix: cadastros usados só se inativam` (Módulo 7) |
 
 | **Importação de contatos por planilha** (e, junto, **de atividades**), com a alternância Empresas / Contatos / Atividades no assistente | 16/10/2026 | `979bb5f` (API de contatos), `5142fe9` (API de atividades), `cc851a8` (telas) e a migração 0025 em `68caf55`/`1a7f861`; roteiro em `roteiro_teste_importacao_contatos_atividades.md` |
