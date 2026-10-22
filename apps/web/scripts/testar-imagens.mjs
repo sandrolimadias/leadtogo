@@ -7,7 +7,7 @@ import { createHmac } from 'node:crypto'
 
 import { chromium } from 'playwright'
 
-import { servirMapaDeTeste } from './mapa-de-teste.mjs'
+import { subirMapaDeTeste } from './mapa-de-teste.mjs'
 
 const borda = process.env.BORDA_URL ?? 'http://localhost:8080'
 const apiDireta = process.env.API_URL ?? 'http://localhost:3300'
@@ -104,10 +104,12 @@ async function testarPosicaoDosPins(contexto, borda) {
   ]
   const estado = await contexto.storageState()
   for (const tela of telas) {
-    const ctx = await contexto
-      .browser()
-      .newContext({ storageState: estado, viewport: tela, locale: 'pt-BR' })
-    await servirMapaDeTeste(ctx, new URL(borda).origin)
+    const ctx = await contexto.browser().newContext({
+      storageState: estado,
+      viewport: tela,
+      locale: 'pt-BR',
+      ignoreHTTPSErrors: true,
+    })
     const pagina = await ctx.newPage()
     await pagina.goto(`${borda}/mapa`)
     await pagina
@@ -338,8 +340,8 @@ async function testarMapa(page, contexto, borda, senha) {
     storageState: await contexto.storageState(),
     serviceWorkers: 'block',
     locale: 'pt-BR',
+    ignoreHTTPSErrors: true,
   })
-  await servirMapaDeTeste(ctxSemWorker, new URL(borda).origin)
   const semWorker = await ctxSemWorker.newPage()
   await semWorker.route(/maplibre-gl-worker-[\w-]+\.mjs/, (rota) => rota.abort())
   semWorker.on('console', (m) => console.log('   [sem worker]', m.type(), m.text().slice(0, 200)))
@@ -365,12 +367,12 @@ async function testarMapa(page, contexto, borda, senha) {
 }
 
 // --- no navegador: primeiro acesso, cookie e login
-const navegador = await chromium.launch()
+const mapaDeTeste = await subirMapaDeTeste(new URL(borda).origin)
+const navegador = await chromium.launch({ args: mapaDeTeste.argsDoChromium })
 const email = `imagens-${Date.now().toString(36)}@exemplo.com.br`
 const senha = 'senha-forte-imagens-1'
 try {
-  const contexto = await navegador.newContext({ locale: 'pt-BR' })
-  await servirMapaDeTeste(contexto, new URL(borda).origin)
+  const contexto = await navegador.newContext({ locale: 'pt-BR', ignoreHTTPSErrors: true })
   const page = await contexto.newPage()
   const origem = new URL(borda).origin
   const externas = []
@@ -424,7 +426,7 @@ try {
   confere(csp.length === 0, `nenhuma violação de CSP${csp.length ? `: ${csp[0]}` : ''}`)
 
   // login em um navegador novo (sem cookie)
-  const novo = await navegador.newContext({ locale: 'pt-BR' })
+  const novo = await navegador.newContext({ locale: 'pt-BR', ignoreHTTPSErrors: true })
   const p2 = await novo.newPage()
   await p2.goto(`${borda}/login`)
   await p2.getByLabel('E-mail').fill(email)
@@ -433,7 +435,7 @@ try {
   await p2.getByRole('heading', { name: 'Ative a verificação em duas etapas' }).waitFor()
   confere(true, 'login pelo navegador (sessão pela borda)')
   // senha errada: em outro navegador novo (neste a sessão já está aberta e o login redireciona)
-  const outro = await navegador.newContext({ locale: 'pt-BR' })
+  const outro = await navegador.newContext({ locale: 'pt-BR', ignoreHTTPSErrors: true })
   const errado = await outro.newPage()
   await errado.goto(`${borda}/login`)
   await errado.getByLabel('E-mail').fill(email)
@@ -454,6 +456,7 @@ try {
   await contexto.close()
 } finally {
   await navegador.close()
+  mapaDeTeste.parar()
 }
 if (falhas.length > 0) {
   console.error(`\n${falhas.length} verificação(ões) falharam.`)

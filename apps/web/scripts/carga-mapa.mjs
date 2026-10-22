@@ -12,7 +12,7 @@ import { writeFileSync } from 'node:fs'
 
 import { chromium } from 'playwright'
 
-import { servirMapaDeTeste } from './mapa-de-teste.mjs'
+import { subirMapaDeTeste } from './mapa-de-teste.mjs'
 
 const borda = process.env.BORDA_URL ?? 'http://localhost:8080'
 const apiDireta = process.env.API_URL ?? 'http://localhost:3300'
@@ -67,12 +67,13 @@ const percentil = (v, p) => {
 // --- conta, empresa e 2FA (o mesmo caminho do testar-imagens.mjs, só pela API)
 const email = `carga-${Date.now().toString(36)}@exemplo.com.br`
 const senha = 'senha-forte-carga-1'
-const navegador = await chromium.launch()
+const mapaDeTeste = await subirMapaDeTeste(origem)
+const navegador = await chromium.launch({ args: mapaDeTeste.argsDoChromium })
 const contexto = await navegador.newContext({
   locale: 'pt-BR',
+  ignoreHTTPSErrors: true,
   viewport: { width: 1366, height: 768 },
 })
-await servirMapaDeTeste(contexto, origem)
 {
   const page0 = await contexto.newPage()
   await page0.goto(`${borda}/primeiro-acesso`)
@@ -185,6 +186,8 @@ const duracoes = []
 let abortados = 0
 let erros = 0
 let pedidosPontos = 0
+const maisLentos = []
+const ultimoTamanho = new Map()
 const statusDeErro = {}
 const amostrasDeErro = []
 let bytesPontos = 0
@@ -207,8 +210,20 @@ page.on('requestfinished', async (r) => {
       )
   } else {
     const t = r.timing()
-    duracoes.push(t.responseEnd >= 0 ? t.responseEnd : Date.now() - pedidos.get(r))
-    bytesPontos += (await resp.body().catch(() => Buffer.alloc(0))).length
+    const ms = t.responseEnd >= 0 ? t.responseEnd : Date.now() - pedidos.get(r)
+    duracoes.push(ms)
+    maisLentos.push({
+      ms: Math.round(ms),
+      zoom: Number(new URL(r.url()).searchParams.get('zoom')).toFixed(1),
+      // fila no navegador antes de enviar, espera pelo 1º byte (servidor) e download
+      fila: Math.round(t.requestStart),
+      servidorEPrimeiroByte: Math.round(t.responseStart - t.requestStart),
+      download: Math.round(t.responseEnd - t.responseStart),
+      bytes: (await r.sizes().catch(() => null))?.responseBodySize ?? 0,
+    })
+    const tam = await r.sizes().catch(() => null)
+    bytesPontos += tam?.responseBodySize ?? 0
+    ultimoTamanho.set(r, tam?.responseBodySize ?? 0)
   }
 })
 page.on('requestfailed', (r) => {
@@ -335,6 +350,7 @@ try {
 }
 const saude = await (await fetch(`${apiDireta}/health`)).json()
 await navegador.close()
+mapaDeTeste.parar()
 
 const mem = amostras.map((a) => a.memMiB)
 const estab = amostras.map((a) => a.tcpEstab)
@@ -353,6 +369,7 @@ const resultado = {
     comErro: erros,
     statusDeErro,
     amostrasDeErro,
+    maisLentos: maisLentos.sort((a, b) => b.ms - a.ms).slice(0, 5),
     p50: percentil(duracoes, 50),
     p95: percentil(duracoes, 95),
     p99: percentil(duracoes, 99),
