@@ -161,6 +161,35 @@ describe('POST /v1/empresas', () => {
     expect(n).toEqual({ tags: 7, tipos: 6, fases: 4, origens: 5, motivos: 12, marca: true })
   })
 
+  it('a empresa nova já nasce com os perfis de acesso de sistema e o criador no Administrador', async () => {
+    const d = await novoDono(app)
+    const r = await criar(d.cookie, { razaoSocial: nomeUnico() })
+    expect(r.status).toBe(201)
+    const id = (r.body as EmpresaCriada).empresa.id
+    const lido = await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${id}, true)`
+      return {
+        perfis: await tx<{ chave: string; exige_2fa: boolean; n: number }[]>`
+          SELECT p.chave_sistema::text AS chave, p.exige_2fa,
+            (SELECT count(*)::int FROM perfil_permissoes pp WHERE pp.perfil_id = p.id) AS n
+          FROM perfis_acesso p ORDER BY p.chave_sistema`,
+        criador: await tx<{ chave: string }[]>`
+          SELECT p.chave_sistema::text AS chave FROM membros m JOIN perfis_acesso p ON p.id = m.perfil_id`,
+        marca: await tx<
+          { ok: boolean }[]
+        >`SELECT perfis_criados_em IS NOT NULL AS ok FROM tenant_configuracoes`,
+      }
+    })
+    expect(lido.perfis.map((p) => [p.chave, p.exige_2fa])).toEqual([
+      ['admin', true],
+      ['gestor', false],
+      ['vendedor', false],
+    ])
+    expect(lido.perfis.every((p) => p.n > 0)).toBe(true)
+    expect(lido.criador).toEqual([{ chave: 'admin' }])
+    expect(lido.marca).toEqual([{ ok: true }])
+  })
+
   it('a auditoria da criação grava o IP do cliente (pelo proxy confiável)', async () => {
     const d = await novoDono(app)
     const r = await criar(d.cookie, { razaoSocial: nomeUnico() }).set(

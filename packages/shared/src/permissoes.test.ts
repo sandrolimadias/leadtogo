@@ -6,6 +6,7 @@ import {
   EXIGE_2FA_PADRAO,
   PERMISSOES_PADRAO,
   PERMISSOES_PROTEGIDAS_DO_ADMIN,
+  VERSAO_DO_CATALOGO,
   alcanceMaisAmplo,
   exige2faDaPoliticaAntiga,
   linhasDasPermissoes,
@@ -59,6 +60,13 @@ describe('catálogo de permissões', () => {
     expect(v['empresas.transferir']).toBeUndefined()
     expect(v['contatos.criar_sem_empresa']).toBeUndefined()
     expect(v['atividades.atribuir_responsavel']).toBeUndefined()
+  })
+})
+
+describe('versão do catálogo', () => {
+  it('a versão 1 tem exatamente estas permissões: acrescentar exige subir a versão e sincronizar', () => {
+    expect(VERSAO_DO_CATALOGO).toBe(1)
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(30)
   })
 })
 

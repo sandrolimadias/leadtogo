@@ -85,11 +85,16 @@ describe('POST /v1/primeiro-acesso', () => {
         status: await tx`SELECT nome FROM tags WHERE chave_sistema = 'cliente'`,
         tipos: await tx`SELECT 1 FROM tipos_atividade`,
         funis: await tx<{ nome: string }[]>`SELECT nome FROM funis WHERE padrao`,
+        administrador: await tx<{ chave: string }[]>`
+          SELECT p.chave_sistema::text AS chave FROM membros m JOIN perfis_acesso p ON p.id = m.perfil_id`,
+        perfis: await tx`SELECT 1 FROM perfis_acesso WHERE sistema`,
       }
     })
     expect(lido.status).toHaveLength(1)
     expect(lido.tipos).toHaveLength(6)
     expect(lido.funis.map((f) => f.nome)).toEqual(['Vendas'])
+    expect(lido.perfis).toHaveLength(3)
+    expect(lido.administrador).toEqual([{ chave: 'admin' }])
   })
 
   it('cria usuário, conta dona, vínculo dono, empresa, configurações e membro admin', async () => {

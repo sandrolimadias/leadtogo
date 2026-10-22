@@ -85,6 +85,14 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
   p('carteira', 'configurar', 'Configurar as regras da carteira'),
 ]
 
+/**
+ * Versão do catálogo. A versão 1 é a que a criação dos perfis grava (backfill e empresa nova). Quem
+ * acrescentar permissão sobe a versão e entrega, na mesma fase, a sincronização dos perfis de sistema
+ * das empresas existentes (marca por empresa + função de listagem do owner, numa migração de expansão;
+ * ver docs/backlog_pos_mvp.md). Perfis criados pela empresa nunca recebem permissão automaticamente.
+ */
+export const VERSAO_DO_CATALOGO = 1
+
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
 
 const PORCHAVE = new Map(CATALOGO_DE_PERMISSOES.map((d) => [d.chave, d]))

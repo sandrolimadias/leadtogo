@@ -1,4 +1,11 @@
-import { type Conexao, criarPadroesDoTenant, novoId, schema, sql } from '@leadtogo/db'
+import {
+  type Conexao,
+  criarPadroesDoTenant,
+  criarPerfisDoTenant,
+  novoId,
+  schema,
+  sql,
+} from '@leadtogo/db'
 import type { CriarEmpresa, EmpresaCriada } from '@leadtogo/shared'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
@@ -6,6 +13,7 @@ import type { DadosDeAcesso } from '../acesso/requisicao.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { BANCO } from '../infra/infra.module.js'
+import { padroesDosPerfis } from '../perfis/padroes-dos-perfis.js'
 
 const { membros, tenantConfiguracoes, tenants } = schema
 
@@ -54,6 +62,7 @@ export class EmpresasService {
         .insert(membros)
         .values({ id: membroId, tenantId, usuarioId, nome, email, papel: 'admin' })
       await criarPadroesDoTenant(tx, tenantId, membroId)
+      await criarPerfisDoTenant(tx, tenantId, padroesDosPerfis, membroId)
       await this.auditoria.registrarEm(tx, tenantId, membroId, {
         entidade: 'empresa',
         entidadeId: tenantId,

@@ -1,6 +1,7 @@
 import { criarPadroesPendentesPorUrl, semearReferenciasPorUrl } from '@leadtogo/db'
 
 import { migrar } from '../migracao/migrar.js'
+import { padroesDosPerfis } from '../perfis/padroes-dos-perfis.js'
 
 export type Papel = 'api' | 'worker'
 
@@ -9,7 +10,7 @@ export interface Dependencias {
   migrar: (env: NodeJS.ProcessEnv) => Promise<void>
   /** Semeia as referências globais com a URL do dono das tabelas */
   semear: (url: string) => Promise<Record<string, number>>
-  /** Cria os cadastros padrão das empresas que ainda não os tiveram (backfill; idempotente) */
+  /** Cria os cadastros padrão e os perfis de acesso das empresas que ainda não os tiveram (backfill; idempotente) */
   criarPadroes: (
     url: string,
   ) => Promise<{ criados: number; falhas: { tenantId: string; erro: string }[] }>
@@ -107,7 +108,7 @@ export async function iniciar(env: NodeJS.ProcessEnv, deps: Dependencias): Promi
 export const dependenciasReais: Dependencias = {
   migrar,
   semear: semearReferenciasPorUrl,
-  criarPadroes: criarPadroesPendentesPorUrl,
+  criarPadroes: (url) => criarPadroesPendentesPorUrl(url, padroesDosPerfis),
   carregar: (papel) => (papel === 'api' ? import('../main.js') : import('../worker.js')),
   info: (linha) => console.log(linha),
   erro: (linha) => console.error(linha),

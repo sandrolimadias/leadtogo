@@ -1,5 +1,5 @@
 import type { Conexao } from '@leadtogo/db'
-import { criarPadroesDoTenant, novoId, schema, sql } from '@leadtogo/db'
+import { criarPadroesDoTenant, criarPerfisDoTenant, novoId, schema, sql } from '@leadtogo/db'
 import type { PrimeiroAcesso, PrimeiroAcessoResultado } from '@leadtogo/shared'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
@@ -9,6 +9,7 @@ import { verificacaoEmailObrigatoria } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { BANCO } from '../infra/infra.module.js'
 import { identificarNoLog } from '../log/contexto-log.js'
+import { padroesDosPerfis } from '../perfis/padroes-dos-perfis.js'
 
 export interface OpcoesCriarConta {
   /** E-mail já confirmado (o comando do terminal confirma; o endpoint segue a flag de verificação) */
@@ -78,6 +79,7 @@ export class PrimeiroAcessoService {
           papel: 'admin',
         })
         await criarPadroesDoTenant(tx, tenantId, membroId)
+        await criarPerfisDoTenant(tx, tenantId, padroesDosPerfis, membroId)
       })
     } catch (erro) {
       // Desfaz o usuário criado antes da transação (as contas e sessões dele caem em cascata)

@@ -4,6 +4,7 @@ import postgres from 'postgres'
 
 import * as schema from './schema/index.js'
 import { criarPadroesDoTenant, criarPadroesGeoDoTenant, criarPapeisDoTenant } from './padroes.js'
+import { criarPerfisDoTenant, type PadroesDosPerfis } from './perfis.js'
 import { semearReferencias } from './seeds/referencias.js'
 import type { Db } from './seeds/upsert.js'
 
@@ -38,10 +39,12 @@ export async function semearReferenciasPorUrl(url: string): Promise<Record<strin
  * falhar, as outras seguem e a falha é devolvida em `falhas` (a marca fica vazia e o próximo start
  * tenta de novo). Idempotente: empresa com a marca preenchida nunca é tocada. Faz o mesmo, com marca
  * própria (`papeis_decisao_criados_em`), para os papéis na decisão e (`geo_padroes_criados_em`) para o
- * grupo "Cadastro" e as flags do mapa.
+ * grupo "Cadastro" e as flags do mapa e (`perfis_criados_em`, quando a API passa os `perfis`) para os
+ * perfis de acesso de sistema, ligando membros e convites.
  */
 export async function criarPadroesPendentesPorUrl(
   url: string,
+  perfis?: PadroesDosPerfis,
 ): Promise<{ criados: number; falhas: { tenantId: string; erro: string }[] }> {
   const { db, cliente } = criarConexao(url, { max: 1, onnotice: () => {} })
   try {
@@ -90,6 +93,22 @@ export async function criarPadroesPendentesPorUrl(
         falhas.push({ tenantId, erro: e instanceof Error ? e.message : String(e) })
       }
     }
+    // Perfis de acesso (Fase 1): os três de sistema, com membros e convites ligados pelo papel
+    if (perfis) {
+      const semPerfis = await cliente<
+        { tenant_id: string }[]
+      >`SELECT tenant_id FROM app_tenants_sem_perfis()`
+      for (const { tenant_id: tenantId } of semPerfis) {
+        try {
+          await db.transaction(async (tx) => {
+            await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)
+            await criarPerfisDoTenant(tx, tenantId, perfis)
+          })
+        } catch (e) {
+          falhas.push({ tenantId, erro: e instanceof Error ? e.message : String(e) })
+        }
+      }
+    }
     return { criados, falhas }
   } finally {
     await cliente.end()
@@ -104,5 +123,12 @@ export { aplicarMigracoes, pastaMigracoes } from './migrar.js'
 export { and, asc, desc, eq, gt, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 export { alias } from 'drizzle-orm/pg-core'
 export { criarPadroesDoTenant, criarPadroesGeoDoTenant, criarPapeisDoTenant }
+export { criarPerfisDoTenant, membrosSemPerfil } from './perfis.js'
+export type {
+  AlcanceGravado,
+  ChavePerfilSistema,
+  PadroesDosPerfis,
+  PoliticaAntiga,
+} from './perfis.js'
 export { CHAVE_GRUPO_CADASTRO, CHAVE_TAG_ENDERECO_A_CONFIRMAR } from './padroes.js'
 export type { Db }
