@@ -57,12 +57,14 @@ VERSAO=es-$(date +%Y%m%d).pmtiles ; echo "$VERSAO"
 read -rsp 'AWS_ACCESS_KEY_ID (mapa-escrita): ' AWS_ACCESS_KEY_ID; echo
 read -rsp 'AWS_SECRET_ACCESS_KEY: ' AWS_SECRET_ACCESS_KEY; echo
 export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=garage
-s3() { docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \\
+# as duas variáveis *_CHECKSUM_* = when_required são o padrão: o aws-cli novo calcula checksums que o Garage não aceita
+s3() { docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
+  -e AWS_REQUEST_CHECKSUM_CALCULATION=when_required -e AWS_RESPONSE_CHECKSUM_VALIDATION=when_required \
   -v "$PWD":/d amazon/aws-cli --endpoint-url https://files.crm.aledias.com.br "$@"; }
-s3 s3 cp /d/es.pmtiles "s3://leadtogo-mapa/$VERSAO" \\
+s3 s3 cp /d/es.pmtiles "s3://leadtogo-mapa/$VERSAO" \
   --cache-control "public, max-age=31536000, immutable" --content-type application/octet-stream
 ```
-Na tela: a barra de progresso e `upload: ... to s3://leadtogo-mapa/es-AAAAMMDD.pmtiles`. (Se o `aws-cli` falhar com `signed header content-length is not present`, é o mesmo desvio da carga do CNEFE: use `AWS_REQUEST_CHECKSUM_CALCULATION=when_required` e `AWS_RESPONSE_CHECKSUM_VALIDATION=when_required` nas variáveis do `docker run`.)
+Na tela: a barra de progresso e `upload: ... to s3://leadtogo-mapa/es-AAAAMMDD.pmtiles`. (O `s3()` acima já leva `AWS_REQUEST_CHECKSUM_CALCULATION` e `AWS_RESPONSE_CHECKSUM_VALIDATION` como `when_required`; sem elas o `aws-cli` novo falha no Garage com `signed header content-length is not present`.)
 
 ## 6. CORS (só para o app) e apagar a chave temporária
 ```bash
@@ -83,8 +85,8 @@ Depois, no Terminal do container: `/garage key delete --yes mapa-admin`.
 ```bash
 U=https://mapa.crm.aledias.com.br/$VERSAO
 curl -sI -H 'Range: bytes=0-126' -H 'Origin: https://crm.aledias.com.br' "$U"
-curl -s -o /dev/null -w 'raiz: %{http_code}\\n' https://mapa.crm.aledias.com.br/
-curl -s -o /dev/null -w 'S3 sem chave: %{http_code}\\n' https://files.crm.aledias.com.br/leadtogo-mapa/$VERSAO
+curl -s -o /dev/null -w 'raiz: %{http_code}\n' https://mapa.crm.aledias.com.br/
+curl -s -o /dev/null -w 'S3 sem chave: %{http_code}\n' https://files.crm.aledias.com.br/leadtogo-mapa/$VERSAO
 ```
 Esperado: `HTTP/2 206`, `content-range: bytes 0-126/<tamanho>`, `cache-control: public, max-age=31536000, immutable`, `access-control-allow-origin: https://crm.aledias.com.br`; raiz `404`; S3 sem chave `403`. Se o certificado do `mapa` ainda não saiu, espere 1 a 2 minutos.
 
