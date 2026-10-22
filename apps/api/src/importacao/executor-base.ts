@@ -1,6 +1,7 @@
 import { type Conexao, schema, sql } from '@leadtogo/db'
 import { documentoDaPlanilha, type ResultadoDaLinha } from '@leadtogo/shared'
 
+import { carregarPermissoes } from '../acesso/permissoes-do-membro.js'
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
 import type { PapelMembro } from '../acesso/requisicao.js'
 import type { ReceitaService } from '../receita/receita.service.js'
@@ -172,9 +173,16 @@ export abstract class ExecutorBase<Estado> {
         })
         .from(membros)
         .where(sql`${membros.id} = ${lote.criadoPor}`)
-      return m
+      if (!m) return undefined
+      // o perfil de quem iniciou, lido de novo a cada bloco: tirar a permissão para a importação
+      const { permissoes } = await carregarPermissoes(tx, {
+        id: m.id,
+        papel: m.papel,
+        perfil_id: m.perfilId,
+      })
+      return { ...m, importa: permissoes['importacao.executar'] !== undefined }
     })
-    if (!importador?.ativo || (importador.papel !== 'admin' && importador.papel !== 'gestor')) {
+    if (!importador?.ativo || !importador.importa) {
       await this.encerrar(
         tenantId,
         lote,

@@ -1,16 +1,4 @@
-import type { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { ErroApi } from '../http/erro-api.js'
-
-/** Escrever nos cadastros auxiliares é do administrador da empresa ativa; ler é de qualquer membro. */
-export function exigirAdmin(ctx: ContextoTenantService): void {
-  if (ctx.membro.papel !== 'admin') {
-    throw new ErroApi(
-      'acesso_negado',
-      'Só administradores da empresa podem alterar os cadastros.',
-      403,
-    )
-  }
-}
 
 /**
  * Confere que a nova ordem traz exatamente os itens do escopo (nem a mais, nem a menos, sem repetir):

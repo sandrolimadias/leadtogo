@@ -26,9 +26,6 @@ export class PreviaDaImportacaoService {
   constructor(private readonly ctx: ContextoTenantService) {}
 
   async calcular(id: string): Promise<PreviaDaImportacao> {
-    if (this.ctx.membro.papel !== 'admin' && this.ctx.membro.papel !== 'gestor') {
-      throw new ErroApi('acesso_negado', 'Só administradores e gestores importam planilhas.', 403)
-    }
     const db = this.ctx.db()
     const [lote] = await db.select().from(importacoes).where(eq(importacoes.id, id))
     if (!lote || lote.excluidoEm) {

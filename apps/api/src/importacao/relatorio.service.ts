@@ -36,11 +36,7 @@ export class RelatorioDaImportacaoService {
     private readonly lotes: LotesDeImportacaoService,
   ) {}
 
-  private exigirQuemImporta(): void {
-    if (this.ctx.membro.papel !== 'admin' && this.ctx.membro.papel !== 'gestor') {
-      throw new ErroApi('acesso_negado', 'Só administradores e gestores importam planilhas.', 403)
-    }
-  }
+  private exigirQuemImporta(): void {}
 
   /** Os lotes da empresa, do mais novo para o mais antigo. */
   async listarLotes(consulta: ConsultaDosLotes): Promise<ListaDeLotes> {

@@ -10,7 +10,7 @@ import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
-import { diferencas, exigirAdmin } from '../cadastros/cadastros.base.js'
+import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ehViolacaoDeUnicidade } from '../http/sqlstate.js'
 
@@ -56,7 +56,6 @@ export class PerfisDeImportacaoService {
   }
 
   async criar(dados: CriarPerfilDeImportacaoEntrada): Promise<PerfilDeImportacao> {
-    exigirAdmin(this.ctx)
     await this.exigirCnaesExistentes(dados.cnaes)
     const [linha] = await this.gravando(() =>
       this.ctx
@@ -81,7 +80,6 @@ export class PerfisDeImportacaoService {
   }
 
   async alterar(id: string, dados: AlterarPerfilDeImportacaoEntrada): Promise<PerfilDeImportacao> {
-    exigirAdmin(this.ctx)
     const atual = await this.achar(id)
     if (dados.cnaes) await this.exigirCnaesExistentes(dados.cnaes)
     const mudancas = diferencas(atual, dados)
@@ -109,7 +107,6 @@ export class PerfisDeImportacaoService {
 
   /** Exclusão lógica. Só se exclui o que nunca foi usado: perfil de algum lote só se inativa. */
   async excluir(id: string): Promise<void> {
-    exigirAdmin(this.ctx)
     const atual = await this.achar(id)
     const [usado] = await this.ctx
       .db()

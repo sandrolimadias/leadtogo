@@ -48,13 +48,6 @@ const MIME = {
   csv: 'text/csv',
 } as const
 
-/** Quem importa: administrador e gestor. O vendedor não leva carteira para outro nome (regra de carteira). */
-function exigirQuemImporta(ctx: ContextoTenantService): void {
-  if (ctx.membro.papel !== 'admin' && ctx.membro.papel !== 'gestor') {
-    throw new ErroApi('acesso_negado', 'Só administradores e gestores importam planilhas.', 403)
-  }
-}
-
 /** "Carteira 2026.xlsx" → "Carteira 2026" (o nome sugerido do lote). */
 const semExtensao = (nome: string) => nome.replace(/\.[^./\\]+$/, '').trim() || nome
 
@@ -92,7 +85,6 @@ export class LotesDeImportacaoService {
 
   /** Lê o arquivo, guarda o original no Garage e cria o lote (rascunho) com uma linha por registro. */
   async criar(consulta: ConsultaDoEnvio, corpo: unknown): Promise<LoteDeImportacao> {
-    exigirQuemImporta(this.ctx)
     if (!Buffer.isBuffer(corpo) || corpo.length === 0) {
       throw new ErroApi(
         'arquivo_vazio',
@@ -186,7 +178,6 @@ export class LotesDeImportacaoService {
 
   /** O lote da empresa ativa, com a amostra lida do banco (o RLS esconde o de outra empresa: 404). */
   async detalhar(id: string): Promise<LoteDeImportacao> {
-    exigirQuemImporta(this.ctx)
     const db = this.ctx.db()
     const lote = await this.achar(id)
     const colunas = colunasDe(lote)
@@ -209,7 +200,6 @@ export class LotesDeImportacaoService {
    * Só lote em rascunho ou pronta se altera: depois de importar, o que foi feito fica registrado.
    */
   async alterar(id: string, dados: AlterarLoteEntrada): Promise<LoteDeImportacao> {
-    exigirQuemImporta(this.ctx)
     const db = this.ctx.db()
     const atual = await this.achar(id)
     if (atual.situacao !== 'rascunho' && atual.situacao !== 'pronta') {
@@ -411,7 +401,6 @@ export class LotesDeImportacaoService {
    * (o que a pessoa apontou, ou o tipo de mesmo nome). É a lista do passo "Mapear colunas".
    */
   async valoresDoTipo(id: string, colunaEscolhida?: string): Promise<ValoresDoTipo> {
-    exigirQuemImporta(this.ctx)
     const db = this.ctx.db()
     const lote = await this.achar(id)
     if (lote.tipo !== 'atividades') {

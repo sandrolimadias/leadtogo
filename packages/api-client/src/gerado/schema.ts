@@ -1761,13 +1761,13 @@ export interface paths {
         };
         /**
          * Listar as importações
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Do lote mais novo para o mais antigo, com a contagem por resultado de cada um.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Do lote mais novo para o mais antigo, com a contagem por resultado de cada um.
          */
         get: operations["LotesDeImportacaoController_listar"];
         put?: never;
         /**
          * Enviar a planilha de uma importação
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). O arquivo (.xlsx ou CSV, até 10 MB e 10.000 linhas) vai nos bytes do corpo, com `Content-Type: application/octet-stream`; o nome do arquivo vai em `arquivo` na consulta. Lê os títulos e as linhas, guarda o original e cria o lote em rascunho. Erros de leitura: 400 `arquivo_vazio`, `sem_cabecalho`, `colunas_repetidas`, `arquivo_invalido`; 413 `limite_de_linhas` e `arquivo_grande_demais`; 415 `formato_nao_suportado`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). O arquivo (.xlsx ou CSV, até 10 MB e 10.000 linhas) vai nos bytes do corpo, com `Content-Type: application/octet-stream`; o nome do arquivo vai em `arquivo` na consulta. Lê os títulos e as linhas, guarda o original e cria o lote em rascunho. Erros de leitura: 400 `arquivo_vazio`, `sem_cabecalho`, `colunas_repetidas`, `arquivo_invalido`; 413 `limite_de_linhas` e `arquivo_grande_demais`; 415 `formato_nao_suportado`.
          */
         post: operations["LotesDeImportacaoController_criar"];
         delete?: never;
@@ -1785,7 +1785,7 @@ export interface paths {
         };
         /**
          * Ver um lote de importação
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Lote de outra empresa: 404 `importacao_nao_encontrada`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Lote de outra empresa: 404 `importacao_nao_encontrada`.
          */
         get: operations["LotesDeImportacaoController_detalhar"];
         put?: never;
@@ -1795,7 +1795,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar as escolhas de um lote
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só os campos enviados mudam. `campos` troca o mapeamento inteiro (campo → título da coluna; 400 `mapeamento_invalido` se a coluna não existe ou serve a dois campos). `perfilId` nulo é "Sem regras"; o lote guarda uma cópia das regras do perfil. Vendedor, Status, origem e vertical precisam estar ativos (400 `escolha_invalida`). O lote vira `pronta` quando não falta nada (veja `pendencias`) e volta a `rascunho` se algo deixar de valer. Lote já iniciado: 409 `importacao_nao_editavel`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Só os campos enviados mudam. `campos` troca o mapeamento inteiro (campo → título da coluna; 400 `mapeamento_invalido` se a coluna não existe ou serve a dois campos). `perfilId` nulo é "Sem regras"; o lote guarda uma cópia das regras do perfil. Vendedor, Status, origem e vertical precisam estar ativos (400 `escolha_invalida`). O lote vira `pronta` quando não falta nada (veja `pendencias`) e volta a `rascunho` se algo deixar de valer. Lote já iniciado: 409 `importacao_nao_editavel`.
          */
         patch: operations["LotesDeImportacaoController_alterar"];
         trace?: never;
@@ -1809,7 +1809,7 @@ export interface paths {
         };
         /**
          * Acompanhar a importação
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Situação, quantas linhas já têm resultado e quantas há em cada resultado. Para a barra de progresso (consulta repetida a cada poucos segundos).
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Situação, quantas linhas já têm resultado e quantas há em cada resultado. Para a barra de progresso (consulta repetida a cada poucos segundos).
          */
         get: operations["LotesDeImportacaoController_andamento"];
         put?: never;
@@ -1831,7 +1831,7 @@ export interface paths {
         put?: never;
         /**
          * Cancelar a importação em andamento
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). O worker para antes da próxima linha; o que já foi importado fica (use desfazer para tirar). Dá para retomar com `iniciar`. Fora de andamento: 409 `importacao_nao_cancelavel`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). O worker para antes da próxima linha; o que já foi importado fica (use desfazer para tirar). Dá para retomar com `iniciar`. Fora de andamento: 409 `importacao_nao_cancelavel`.
          */
         post: operations["LotesDeImportacaoController_cancelar"];
         delete?: never;
@@ -1851,7 +1851,7 @@ export interface paths {
         put?: never;
         /**
          * Desfazer a importação
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote `concluida` ou `cancelada`, até 7 dias depois de terminar (`desfazerAte`; o prazo é `DIAS_PARA_DESFAZER`). Saem da carteira (exclusão lógica, como a manual) as empresas que o lote criou e que ninguém alterou depois; ficam as que tiveram qualquer alteração (editar, tags, Receita), têm contato vinculado ou têm atividade registrada, e a contagem vem em `desfeito` (`removidas` e `mantidas`). As que já estavam na carteira antes não são tocadas, e o relatório continua. Fora de um lote concluído ou cancelado: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Só num lote `concluida` ou `cancelada`, até 7 dias depois de terminar (`desfazerAte`; o prazo é `DIAS_PARA_DESFAZER`). Saem da carteira (exclusão lógica, como a manual) as empresas que o lote criou e que ninguém alterou depois; ficam as que tiveram qualquer alteração (editar, tags, Receita), têm contato vinculado ou têm atividade registrada, e a contagem vem em `desfeito` (`removidas` e `mantidas`). As que já estavam na carteira antes não são tocadas, e o relatório continua. Fora de um lote concluído ou cancelado: 409 `importacao_nao_desfazivel`; depois do prazo: 409 `prazo_de_desfazer_vencido`.
          */
         post: operations["LotesDeImportacaoController_desfazer"];
         delete?: never;
@@ -1871,7 +1871,7 @@ export interface paths {
         put?: never;
         /**
          * Importar mesmo assim (as linhas fora do perfil)
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só num lote concluído (409 `importacao_nao_concluida`). As linhas fora do perfil (todas, ou as de `linhaIds`) voltam a pendentes e o worker as cadastra com a tag "Fora do perfil". O bloqueio de empresa não ativa continua valendo. Sem linhas assim: 409 `sem_linhas_fora_do_perfil`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Só num lote concluído (409 `importacao_nao_concluida`). As linhas fora do perfil (todas, ou as de `linhaIds`) voltam a pendentes e o worker as cadastra com a tag "Fora do perfil". O bloqueio de empresa não ativa continua valendo. Sem linhas assim: 409 `sem_linhas_fora_do_perfil`.
          */
         post: operations["LotesDeImportacaoController_importarForaDoPerfil"];
         delete?: never;
@@ -1891,7 +1891,7 @@ export interface paths {
         put?: never;
         /**
          * Iniciar (ou retomar) a importação
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). O lote precisa estar `pronta` (veja `pendencias`); também retoma um lote que `falhou` ou foi `cancelada`, fazendo só as linhas pendentes. A execução roda no worker, uma linha por vez, com o intervalo escolhido entre consultas à Receita. Lote incompleto: 409 `importacao_incompleta`; já em andamento: 409 `importacao_em_andamento`; encerrado: 409 `importacao_encerrada`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). O lote precisa estar `pronta` (veja `pendencias`); também retoma um lote que `falhou` ou foi `cancelada`, fazendo só as linhas pendentes. A execução roda no worker, uma linha por vez, com o intervalo escolhido entre consultas à Receita. Lote incompleto: 409 `importacao_incompleta`; já em andamento: 409 `importacao_em_andamento`; encerrado: 409 `importacao_encerrada`.
          */
         post: operations["LotesDeImportacaoController_iniciar"];
         delete?: never;
@@ -1909,7 +1909,7 @@ export interface paths {
         };
         /**
          * Ver as linhas de uma importação (relatório)
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Uma página de linhas com o resultado e o motivo de cada uma; `resultado` filtra (criada, fora_do_perfil, pulada_sem_cnpj, pulada_duplicada, pulada_nao_ativa, erro...).
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Uma página de linhas com o resultado e o motivo de cada uma; `resultado` filtra (criada, fora_do_perfil, pulada_sem_cnpj, pulada_duplicada, pulada_nao_ativa, erro...).
          */
         get: operations["LotesDeImportacaoController_linhas"];
         put?: never;
@@ -1929,7 +1929,7 @@ export interface paths {
         };
         /**
          * Ver a prévia de um lote
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Mostra o que a importação vai fazer, sem consultar a Receita nem gravar nada: linhas sem CNPJ válido, CNPJs repetidos na planilha, CNPJs que já estão na carteira, quantas consultas à Receita serão de verdade (fora do cache de 30 dias) e o tempo estimado com o intervalo escolhido. Sem a coluna do CNPJ mapeada: 409 `mapeamento_incompleto`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Mostra o que a importação vai fazer, sem consultar a Receita nem gravar nada: linhas sem CNPJ válido, CNPJs repetidos na planilha, CNPJs que já estão na carteira, quantas consultas à Receita serão de verdade (fora do cache de 30 dias) e o tempo estimado com o intervalo escolhido. Sem a coluna do CNPJ mapeada: 409 `mapeamento_incompleto`.
          */
         get: operations["LotesDeImportacaoController_verPrevia"];
         put?: never;
@@ -1949,7 +1949,7 @@ export interface paths {
         };
         /**
          * Baixar o que não entrou (CSV)
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um CSV (`;`, UTF-8 com BOM) com linha, resultado, motivo e as colunas originais das linhas que não entraram na carteira, para corrigir a planilha e importar de novo. `resultado` restringe a um tipo.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Um CSV (`;`, UTF-8 com BOM) com linha, resultado, motivo e as colunas originais das linhas que não entraram na carteira, para corrigir a planilha e importar de novo. `resultado` restringe a um tipo.
          */
         get: operations["LotesDeImportacaoController_problemas"];
         put?: never;
@@ -1969,7 +1969,7 @@ export interface paths {
         };
         /**
          * Valores da coluna Tipo (atividades)
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Só no lote de atividades: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Sem `coluna`, vale a coluna do Tipo já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Só no lote de atividades: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Sem `coluna`, vale a coluna do Tipo já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.
          */
         get: operations["LotesDeImportacaoController_valoresDoTipo"];
         put?: never;
@@ -1989,7 +1989,7 @@ export interface paths {
         };
         /**
          * Baixar a planilha modelo
-         * @description Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.
          */
         get: operations["LotesDeImportacaoController_modelo"];
         put?: never;
@@ -2015,7 +2015,7 @@ export interface paths {
         put?: never;
         /**
          * Criar perfil de importação
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os perfis (409 `nome_duplicado`). CNAE que não existe na tabela: 400 `cnaes_invalidos`.
+         * @description Exige `cadastros.gerir` (403 `acesso_negado` sem ela). Registra na auditoria. Nome único entre os perfis (409 `nome_duplicado`). CNAE que não existe na tabela: 400 `cnaes_invalidos`.
          */
         post: operations["PerfisDeImportacaoController_criar"];
         delete?: never;
@@ -2036,14 +2036,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir perfil de importação
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre. Só se exclui o que nunca foi usado: perfil de algum lote dá 409 `perfil_em_uso`: só inativar.
+         * @description Exige `cadastros.gerir` (403 `acesso_negado` sem ela). Registra na auditoria. Exclusão lógica; o nome fica livre. Só se exclui o que nunca foi usado: perfil de algum lote dá 409 `perfil_em_uso`: só inativar.
          */
         delete: operations["PerfisDeImportacaoController_excluir"];
         options?: never;
         head?: never;
         /**
          * Alterar perfil de importação
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. As importações já feitas guardam a cópia das regras.
+         * @description Exige `cadastros.gerir` (403 `acesso_negado` sem ela). Registra na auditoria. Só os campos enviados mudam. As importações já feitas guardam a cópia das regras.
          */
         patch: operations["PerfisDeImportacaoController_alterar"];
         trace?: never;

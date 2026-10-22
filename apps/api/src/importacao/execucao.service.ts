@@ -222,11 +222,7 @@ export class ExecucaoDaImportacaoService {
     }
   }
 
-  private exigirQuemImporta(): void {
-    if (this.ctx.membro.papel !== 'admin' && this.ctx.membro.papel !== 'gestor') {
-      throw new ErroApi('acesso_negado', 'Só administradores e gestores importam planilhas.', 403)
-    }
-  }
+  private exigirQuemImporta(): void {}
 
   /** Por que o lote não pôde iniciar. */
   private async recusar(id: string): Promise<never> {

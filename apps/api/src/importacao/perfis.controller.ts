@@ -25,6 +25,7 @@ import {
 import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 
+import { Permissao, TodoMembro } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { PerfisDeImportacaoService } from './perfis.service.js'
@@ -33,8 +34,7 @@ const consultaSchema = z
   .object({ incluirInativos: z.enum(['true', 'false']).default('false') })
   .strict()
 
-const ESCRITA =
-  'Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria.'
+const ESCRITA = 'Exige `cadastros.gerir` (403 `acesso_negado` sem ela). Registra na auditoria.'
 
 /** Perfis de regras da importação da empresa ativa. Ler é de qualquer membro; escrever, do administrador. */
 @ApiTags('Importação: perfis de regras')
@@ -50,6 +50,7 @@ export class PerfisDeImportacaoController {
     resposta: z.array(perfilDeImportacaoSchema),
     erros: [400, 401, 403, 409],
   })
+  @TodoMembro()
   @Get()
   listar(
     @Query(new ZodPipe(consultaSchema)) consulta: z.infer<typeof consultaSchema>,
@@ -66,6 +67,7 @@ export class PerfisDeImportacaoController {
     status: 200,
     erros: [400, 401, 403, 409],
   })
+  @TodoMembro()
   @Post('cnaes/conferir')
   @HttpCode(200)
   conferirCnaes(
@@ -84,6 +86,7 @@ export class PerfisDeImportacaoController {
     status: 201,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('cadastros.gerir')
   @Post()
   criar(
     @Body(new ZodPipe(criarPerfilDeImportacaoSchema)) dados: CriarPerfilDeImportacaoEntrada,
@@ -100,6 +103,7 @@ export class PerfisDeImportacaoController {
     resposta: perfilDeImportacaoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Patch(':id')
   alterar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -116,6 +120,7 @@ export class PerfisDeImportacaoController {
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Delete(':id')
   @HttpCode(204)
   excluir(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

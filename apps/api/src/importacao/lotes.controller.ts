@@ -1,4 +1,4 @@
-import { TransacaoSobDemanda } from '../acesso/acesso.decorators.js'
+import { Permissao, TransacaoSobDemanda } from '../acesso/acesso.decorators.js'
 import {
   type AlterarLoteEntrada,
   alterarLoteSchema,
@@ -47,9 +47,7 @@ import { z } from 'zod'
 import type { Request } from 'express'
 import ExcelJS from 'exceljs'
 
-import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { Documenta } from '../documentacao/documenta.js'
-import { ErroApi } from '../http/erro-api.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { ExecucaoDaImportacaoService } from './execucao.service.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
@@ -57,17 +55,17 @@ import { PreviaDaImportacaoService } from './previa.service.js'
 import { RelatorioDaImportacaoService } from './relatorio.service.js'
 
 /** Quem importa: administrador e gestor (ver `LotesDeImportacaoService`). */
-const QUEM = 'Só administradores e gestores da empresa ativa (403 `acesso_negado` para o vendedor).'
+const QUEM = 'Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela).'
 
 @ApiTags('Importação: lotes')
 @Controller('importacao')
+@Permissao('importacao.executar')
 export class LotesDeImportacaoController {
   constructor(
     private readonly servico: LotesDeImportacaoService,
     private readonly previa: PreviaDaImportacaoService,
     private readonly execucao: ExecucaoDaImportacaoService,
     private readonly relatorio: RelatorioDaImportacaoService,
-    private readonly ctx: ContextoTenantService,
   ) {}
 
   @Documenta({
@@ -293,9 +291,6 @@ export class LotesDeImportacaoController {
       tipo: TipoDeImportacao
     },
   ): Promise<StreamableFile> {
-    if (this.ctx.membro.papel !== 'admin' && this.ctx.membro.papel !== 'gestor') {
-      throw new ErroApi('acesso_negado', 'Só administradores e gestores importam planilhas.', 403)
-    }
     const modelo = MODELOS[consulta.tipo]
     const livro = new ExcelJS.Workbook()
     const folha = livro.addWorksheet(modelo.aba)
