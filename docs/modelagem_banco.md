@@ -175,6 +175,10 @@ Pode ser preenchido pela mesma consulta à Minha Receita.
 | status_cliente_ao_conquistar | boolean default true | Ao conquistar, muda tag Status → Cliente |
 | rastreio_email_padrao | boolean default false | 🔮 |
 | whatsapp_modo_importacao | enum | 🔮 automático · manual · desligado |
+| checkin_modo | enum `modo_checkin` NOT NULL default `avisar` | `avisar` · `bloquear` · `so_gravar` (G3a, migração 0028) |
+| checkin_limite_m | int NOT NULL default 300 | Distância máxima do check-in, em metros (CHECK 10 a 50.000) |
+| lembrete_relatorios_hora | time NOT NULL default 17:30 | Hora (no fuso da empresa) do lembrete dos relatórios de visita pendentes |
+| visitas_padroes_criados_em | timestamptz null | Marca do modelo padrão e dos seis resultados de visita (backfill na partida, `app_tenants_sem_padroes_visita()`) |
 | dois_fatores_exigido | enum `politica_dois_fatores` NOT NULL default `admin` | Quem é obrigado a ter 2FA nesta empresa: `admin` · `admin_gestor` · `todos` (migração 0011, de expansão; ver funcionalidades.md, "Segurança e acesso") |
 | padroes_criados_em | timestamptz null | Quando os cadastros padrão (seção 5) foram criados. **Preenchido, nunca mais se recria**: um padrão que o administrador excluiu não volta (migração 0016, de expansão) |
 | preferencias | jsonb | Demais ajustes |
@@ -365,7 +369,7 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 | geo_ajuste_manual | boolean default false | **G1:** o usuário moveu o pin; preservado até confirmar a troca |
 | geo_atualizado_em | timestamptz | |
 | faixa_funcionarios_id | uuid FK | **Número de Funcionários** (faixa) |
-| numero_funcionarios | int | Número exato (opcional) |
+| numero_funcionarios | int | Número exato (opcional). **Criada na migração 0028 (G3a)**, para o campo "dados da empresa" do relatório de visita |
 | faixa_faturamento_id | uuid FK | **Faixa de Faturamento** |
 | observacoes | text | **Observações** |
 | campos_extras | jsonb | Campos personalizados |
@@ -390,7 +394,7 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 - `(tenant_id, ultima_visita_em)`, `(tenant_id, ultimo_contato_em)`
 
 > **Implementação (Módulo 2, migração 0017):** criadas `empresas`, `empresa_telefones`, `empresa_cnaes`, `empresa_socios`, `empresa_tags` e `empresa_tags_historico`, todas com RLS forçado e fábrica no teste de isolamento. Diferenças em relação à tabela acima:
-> - **Fora do MVP (entram depois, por expansão):** `faixa_funcionarios_id`, `faixa_faturamento_id`, `numero_funcionarios`, `campos_extras` e a geolocalização (`localizacao`, `geo_*`).
+> - **Fora do MVP (entram depois, por expansão):** `faixa_funcionarios_id`, `faixa_faturamento_id`, `campos_extras` (`numero_funcionarios` entrou na 0028) e a geolocalização (`localizacao`, `geo_*`).
 > - `pais_codigo` é **nulo para o Brasil** e só se preenche para estabelecimento no exterior (código de país da Receita). Sem o padrão 105, a empresa brasileira não depende de a tabela `paises` estar carregada.
 > - `situacao_nao_verificada boolean`: a empresa foi salva sem poder consultar a Receita (as duas fontes fora do ar); o worker reconsulta depois. A **situação cadastral** em si continua sendo lida de `receita_consultas`, não de um campo da empresa.
 > - `proxima_atividade_id` é só `uuid` por enquanto; a FK para `atividades` entrou no Módulo 5 (migração 0023). `cnpj_raiz` é coluna **gerada** (só para CNPJ).
@@ -798,3 +802,19 @@ Só expansão. `empresas` ganha as colunas `geo_*` e `localizacao` descritas na 
 **Schema `referencia_geo` (CNEFE; dentro do backup do Coolify, ver `runbook_backup.md`, seção 5):** só o `leadtogo_app` com `SELECT`; a carga é do owner por `scripts/geo/`.
 - `cnefe_logradouros`: uma linha por rua e município: `logradouro_normalizado` (chave de busca: sem acento, maiúsculas, tipo removido, títulos expandidos), `logradouro` (como veio), `enderecos`, `latitude_centro` e `longitude_centro` (centro da rua). Única por `(municipio_codigo, logradouro_normalizado)`; **índice GIN `pg_trgm`** em `logradouro_normalizado` (busca aproximada de rua).
 - `cnefe_enderecos`: um registro por endereço com coordenada: município, CEP, localidade, rua normalizada, `numero` (nulo = S/N), modificador, latitude, longitude, `nivel_coordenada` (`NV_GEO_COORD`: 1 original, 2 modificada, 3 estimada, 4 face, 5 localidade, 6 setor) e `especie` (`COD_ESPECIE`). Índices `(municipio_codigo, logradouro_normalizado, numero)` e `(cep)`.
+
+## Visitas: construtor e configurações (G3a; migração 0028, ver `plano_geolocalizacao.md`, seção 9)
+
+Só expansão. Tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_tenant`), colunas padrão (`criado_em`, `atualizado_em`, `criado_por`, `atualizado_por`, `excluido_em`) e teste de isolamento:
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `visita_modelos` | nome, padrao (boolean), ativo, ordem, versao_atual_id (FK `visita_modelo_versoes`, nula só durante a criação) | Nome único por empresa entre os não excluídos; no máximo um `padrao` por empresa |
+| `visita_modelo_versoes` | modelo_id, numero (int), campos (jsonb) | Única por `(modelo_id, numero)`. **Versão publicada nunca é alterada**: editar um modelo com relatório cria a versão N+1; sem relatório, a versão atual é editada no lugar |
+| `visita_resultados` | nome, chave_sistema (`chave_resultado_visita`: `nao_localizada` · `encerrada`; nula nos demais), modelo_id, ativo, ordem | Nome único por empresa entre os não excluídos; `(tenant_id, chave_sistema)` único. Os de sistema só se renomeiam e trocam de modelo |
+
+**`campos` (jsonb, validado pelo Zod compartilhado `campoDeVisitaSchema`):** lista de `{ id, rotulo, tipo, obrigatorio, ordem, opcoes?, tag_id?, campo_empresa? }`. `id` é estável (uuid gerado no construtor, nunca reaproveitado). `tipo`: `texto_curto`, `texto_longo`, `numero`, `data`, `sim_nao`, `escolha_unica`, `multipla_escolha`, `nota`, `contato`, `proximo_passo`, `tag`, `dados_empresa`. `opcoes` (lista de `{id, rotulo}`) só nas escolhas; `tag_id` só no `tag`; `campo_empresa` (`nome_fantasia` · `website` · `vertical_id` · `numero_funcionarios`) só no `dados_empresa`. Sem índice GIN por enquanto (entra quando houver relatório por campo).
+
+**Colunas novas:** em `tenant_configuracoes`, `checkin_modo`, `checkin_limite_m`, `lembrete_relatorios_hora` e `visitas_padroes_criados_em` (seção 3.2); em `empresas`, `numero_funcionarios` (seção 6.1).
+
+**Padrões:** `criarPadroesVisitaDoTenant` (`packages/db/src/padroes.ts`) reserva a marca e cria o modelo "Relatório de visita" (versão 1) e os seis resultados; roda junto dos cadastros padrão das empresas novas e, para as existentes, no backfill da partida pela função `app_tenants_sem_padroes_visita()` (mesmo padrão das 0016, 0026 e 0027).

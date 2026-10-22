@@ -1,6 +1,6 @@
 # Plano — Geolocalização e rotas (G1 e G2)
 
-> Módulo pós-MVP. Base: `docs/geo_g0_relatorio.md` (medições do G0, aprovado pelo Ale em 16/10/2026) e o plano mestre "Leadtogo — Plano de implementação: Geolocalização e rotas". Plano do G1+G2 **aprovado pelo Ale em 16/10/2026**. G3 (check-in) e G4 (rotas) ficam para depois.
+> Módulo pós-MVP. Base: `docs/geo_g0_relatorio.md` (medições do G0, aprovado pelo Ale em 16/10/2026) e o plano mestre "Leadtogo — Plano de implementação: Geolocalização e rotas". Plano do G1+G2 **aprovado pelo Ale em 16/10/2026**. Plano do **G3 (check-in e relatório de visita) aprovado em 22/10/2026**, na seção 9. G4 (rotas) fica para depois.
 > Tela de referência do mapa: `docs/referencias/geo/mapa_referencia.png` (não faz parte do protótipo congelado; o editor de rota à direita é do G4 e é ignorado no G2).
 
 ## 1. Decisões do G0 (valem para o G1)
@@ -78,7 +78,7 @@ Pushes: (1) commits 1–2; (2) commits 3–5; (3) commits 6–7; (4) commits 8�
 
 ## 7. Fora deste plano (G3+)
 
-Check-in com GPS, "Na rota" no painel, rotas e otimização (OSRM/VROOM), janela de horário e almoço.
+Check-in com GPS (G3, plano na seção 9), "Na rota" no painel, rotas e otimização (OSRM/VROOM), janela de horário e almoço (G4).
 
 ## 8. Decisões
 
@@ -96,3 +96,82 @@ Check-in com GPS, "Na rota" no painel, rotas e otimização (OSRM/VROOM), janela
 
 - **OpenStreetMap (ODbL):** o mapa base (PMTiles da Protomaps, derivado do OSM) e o Nominatim exigem a citação **"© OpenStreetMap contributors"**, com link para `openstreetmap.org/copyright`. Ela fica **sempre visível** no canto do mapa (controle de atribuição do MapLibre, sem recolher), em toda tela que mostra o mapa.
 - **CNEFE 2022 (IBGE):** os metadados do IBGE **não trazem um campo explícito de licença** para o CNEFE. Adotamos a **citação da fonte**: **"Fonte: IBGE – CNEFE 2022"**, exibida no mapa quando algum pin visível tem coordenada vinda do CNEFE (`geo_origem = cnefe`). Se o IBGE publicar uma licença formal, revisar aqui.
+
+## 9. G3 — Check-in e relatório de visita (plano aprovado pelo Ale em 22/10/2026)
+
+Duas entregas, com o teste do Ale entre elas: **G3a** (construtor e configurações, migração 0028) e **G3b** (campo: check-in, relatório e offline, migração 0029). Cada migração para antes do push para o Backup Now; push só com autorização do Ale. Ao fim de cada entrega: roteiro, o que ficou de fora, decisões e hashes.
+
+### 9.1 G3a — Construtor e configurações (migração 0028)
+
+**Tabelas novas** (todas com `tenant_id`, RLS forçado, colunas padrão e teste de isolamento; detalhe em `modelagem_banco.md`):
+- `visita_resultados`: nome, `chave_sistema` (nula, `nao_localizada` ou `encerrada`), `modelo_id`, ordem, ativo. Os dois de sistema só se renomeiam (e trocam de modelo). Os demais só se **inativam** quando já usados; sem uso, se **excluem** (lógico), como os demais cadastros.
+- `visita_modelos`: nome, `padrao` (um por empresa), ativo, `versao_atual_id`.
+- `visita_modelo_versoes`: modelo, número e `campos` (jsonb). **Versão publicada nunca é alterada.**
+- `tenant_configuracoes`: + `checkin_modo` (`avisar` | `bloquear` | `so_gravar`, padrão `avisar`), `checkin_limite_m` (padrão 300), `lembrete_relatorios_hora` (padrão 17:30) e a marca `visitas_padroes_criados_em`.
+- `empresas`: + `numero_funcionarios` (int, opcional; já previsto na modelagem como "entra depois, por expansão"), para o campo "dados da empresa" do modelo padrão.
+
+**Campos do modelo (jsonb):** cada campo com **id estável**, rótulo, tipo, obrigatório, ordem e opções; um schema Zod compartilhado valida por tipo. Tipos: texto curto, texto longo, número, data, sim/não, escolha única, múltipla escolha, nota 1 a 5, e os de CRM: **contato** (confirma ou cria e vincula), **próximo passo** (cria atividade ou retorno), **tag** (o admin fixa a tag no construtor; o vendedor marca sim/não; sim aplica) e **dados da empresa** (o admin escolhe um campo da ficha numa lista fixa de colunas editáveis: nome fantasia, site, vertical e número de funcionários; nunca CNPJ nem razão social). Fora: campos condicionais e fotos.
+
+**Versionamento:** editar um modelo que já tem relatório cria a versão N+1; modelo sem uso é editado no lugar (a mesma versão).
+
+**Resultado** é campo de sistema, fora do modelo: o resultado escolhido define o modelo do formulário, e o construtor mostra o resultado fixo no topo.
+
+**Padrões e backfill:** o modelo padrão e os seis resultados são criados para as empresas novas junto com os tipos de atividade; para as que já existem, pelo backfill na partida da API com a marca `visitas_padroes_criados_em` e a função `app_tenants_sem_padroes_visita()` (mesmo padrão das 0016, 0026 e 0027: o RLS forçado impede o dono de listar as empresas, por isso não é um INSERT … SELECT dentro da migração). Idempotente e só expansão.
+- **Modelo padrão de fábrica** ("Relatório de visita"): contato (CRM), número de funcionários (dados da empresa), interesse (escolha única: Alto, Médio, Baixo, Nenhum), demandas (texto longo), ações feitas (múltipla: WhatsApp, e-mail, material), próximo passo (CRM) e resumo (texto longo).
+- **Seis resultados**, todos apontando para ele: Visita realizada, Retornar depois, Sem interesse, Responsável ausente, **Não localizada** (sistema) e **Empresa encerrada** (sistema).
+
+**Telas:** Configurações → **Visitas**, com as abas **Resultados**, **Modelos** (construtor ordenável com prévia) e **Check-in** (modo, limite e horário do lembrete). Quem configura: permissão `cadastros.gerir` (por padrão só o Administrador; decisão do Ale, 22/10/2026).
+
+**Sequência:** (a) docs; (b) migração 0028, schema e testes de isolamento: **PARA antes do push para o Backup Now**; (c) API (resultados, modelos, versões, configuração); (d) telas; (e) roteiro (`roteiro_teste_geo_g3a.md`) e relatório. Pushes: um com (a)+(b) depois do Backup Now; outro com (c)–(e).
+
+### 9.2 G3b — Campo (migração 0029)
+
+**Tabelas e colunas:**
+- `relatorios_visita`: empresa, atividade, responsável, `sem_checkin`, `checkin_em`, `checkin_local`, `distancia_m`, `fora_do_limite`, situação (`rascunho` | `concluido`), resultado, `modelo_versao_id`, `respostas` jsonb (`{campo_id, rótulo da época, valor}`) e o id gerado no aparelho.
+- `empresas`: + `visita_tentada_em`.
+- `atividades`: + `conta_visita` boolean default true.
+- Catálogo de permissões v2: + `visitas.ver_localizacao` (Administrador e Gestor), com a sincronização dos perfis de sistema das empresas existentes (marca por empresa e função de listagem do owner).
+
+**Fluxo online:**
+- **Check-in** na ficha e no painel do mapa: lê o GPS, calcula no PostGIS a distância até `empresas.localizacao` e aplica o modo configurado. Cria a atividade Visita **em execução** com relatório pendente. Longe do endereço, oferece "atualizar a posição da empresa" (`geo_origem = checkin`).
+- **Visita sem check-in:** "registrar depois", marcada `sem_checkin`, sem posição, com selo visível a quem vê os relatórios da equipe.
+- **Relatório:** formulário montado pelo modelo do resultado escolhido, rascunho salvo a cada alteração. Ao concluir, a atividade vira **Realizada** e o recálculo do Módulo 5 roda.
+
+**Efeitos:**
+- **Não localizada (decisão do Ale):** a atividade fica Realizada e **conta como atividade em tudo que mede esforço** (Dashboard, indicadores e lista de atividades do vendedor, histórico): houve deslocamento e tentativa, explicados no relatório. Ela **não marca a empresa como visitada**: `conta_visita = false` vale só para o efeito na empresa (última visita, tag Visitada, estado do mapa), **nunca** para tirar a atividade das contagens. Grava `visita_tentada_em` e aplica **Endereço a confirmar**. No mapa vira "visita tentada" e só volta ao grupo das nunca visitadas se a empresa nunca teve visita real.
+- **Empresa encerrada:** confirmação "mudar para Inativo?".
+- **Demais:** visitada e última visita, pela regra do Módulo 5.
+- Os campos de CRM aplicam seus efeitos na mesma transação do "concluir".
+
+**Permissões:** o relatório segue o alcance de `atividades.ver` (o vendedor vê os dele; gestor e admin, todos). `checkin_local` e a distância só aparecem para quem tem `visitas.ver_localizacao`; o vendedor só vê o aviso de distância na hora do check-in.
+
+**Relatórios pendentes:** lista no celular e card no Dashboard.
+
+**Offline (PWA):**
+- IndexedDB com as empresas abertas recentemente + **"Levar para offline"** de uma seleção do mapa ou da lista, **até 300 empresas por vez**, validade de **7 dias**.
+- Cache mínimo: nome, endereço, coordenada, telefone, tags, contatos ativos, modelos, resultados e configuração. Sem CNPJ, observações nem histórico.
+- Check-in, rascunho e relatório numa fila de operações com id gerado no aparelho (uuid v7).
+- **Sync:** `PUT /visitas/:id` idempotente (upsert no id do cliente; reenviar não duplica), disparado no evento `online` e ao abrir o app, sem depender de Background Sync.
+- Check-in offline no modo "bloquear": o aparelho aplica a regra com a coordenada em cache; o servidor recalcula e marca `fora_do_limite`.
+- **Proteção do aparelho:** (a) dados mínimos; (b) validade de 7 dias; (c) limpeza total ao sair da conta; (d) limpeza no login de outro usuário; (e) contatos e posição cifrados com AES-GCM, chave não extraível do WebCrypto. O limite da cifra fica documentado com franqueza no `lgpd.md` (protege contra leitura casual, não contra navegador desbloqueado). Fora desta fase: apagar remotamente um aparelho perdido (só revogar a sessão e limpar no próximo contato).
+- **Lembrete** dos relatórios pendentes às 17:30 (horário configurável): notificação local se permitida, senão aviso ao abrir. Sem Web Push nesta fase (backlog, junto com a central de notificações).
+- `lgpd.md`: posição gravada só no check-in, base legal, quem vê, retenção.
+
+**Testes:** API (idempotência, permissões, efeitos, isolamento); componente do formulário; E2E com `context.setOffline(true)` → check-in → relatório depois → volta o sinal → aparece uma vez só na ficha, com carteira e tags certas; reenvio duplicado.
+
+**Sequência:** (a) docs; (b) migração 0029 e isolamento: **PARA antes do push para o Backup Now**; (c) API; (d) check-in e relatório online; (e) offline e sync; (f) pendentes e lembrete; (g) E2E, roteiro e relatório.
+
+**Para o futuro (não agora):** as respostas em jsonb devem permitir relatórios por campo (ex.: interesse por região). O id de campo estável já resolve; índice GIN só quando houver o relatório.
+
+### 9.3 Decisões do G3
+
+| Data | Decisão | Quem |
+|---|---|---|
+| 22/10/2026 | "Não localizada" conta como atividade (esforço) e não marca a empresa como visitada; `conta_visita` só para o efeito na empresa | Ale |
+| 22/10/2026 | Campo "tag": o admin fixa a tag, o vendedor marca sim/não | Ale |
+| 22/10/2026 | Lembrete às 17:30, configurável; sem Web Push nesta fase | Ale |
+| 22/10/2026 | "Levar para offline": até 300 empresas, validade de 7 dias; proteção do aparelho (a–e) | Ale |
+| 22/10/2026 | Permissões: G3a usa `cadastros.gerir`; o relatório segue `atividades.ver`; G3b cria `visitas.ver_localizacao` (catálogo v2) | Ale (proposta do Claude) |
+| 22/10/2026 | Migrações 0028 (G3a) e 0029 (G3b): a 0027 ficou com os perfis de acesso | Claude |
+| 22/10/2026 | Backfill dos padrões de visita na partida da API (marca + função do owner), não INSERT … SELECT na migração, por causa do RLS forçado | Claude |
+| 22/10/2026 | Nomes dos quatro resultados livres (Visita realizada, Retornar depois, Sem interesse, Responsável ausente), opções do "interesse" e a lista fixa de "dados da empresa" (nome fantasia, site, vertical, número de funcionários; `empresas.numero_funcionarios` entra na 0028) | Claude (Ale revisa no teste) |

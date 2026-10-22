@@ -212,7 +212,35 @@ Gerar listas de leads a partir da base pública de CNPJs.
 - **Filtros:** busca (empresa, bairro, cidade), status, visitada (alguma vez, 90 dias, período), vendedor, sem visita há N dias, cidade, região e precisão. **Carregamento por área visível**, com agrupamento nos zooms afastados; leads entram por lote de importação, até 500 por vez.
 - **Painel da empresa** (Ligar, WhatsApp, Abrir ficha), **empresas próximas** (2, 5, 10 e 25 km; por padrão sem as já visitadas), **seleção por retângulo ou raio** (listar, abrir ou aplicar tag) e **cobertura por município**.
 - **Permissões:** o vendedor vê no mapa só o que já vê na carteira; admin e gestor veem tudo.
-- **Fora do G1+G2:** check-in com GPS (G3), "Na rota" e rotas (G4).
+- **Fora do G1+G2:** check-in com GPS e relatório de visita (G3, seção 3C), "Na rota" e rotas (G4).
+
+## 3C. Visitas: check-in e relatório (G3; plano em `plano_geolocalizacao.md`, seção 9)
+
+### Configurações → Visitas (G3a)
+Quem configura: permissão **Gerir cadastros** (`cadastros.gerir`; por padrão só o Administrador). Três abas:
+- **Resultados:** o resultado da visita é um campo de sistema, fora do modelo, e **escolhe o modelo** do relatório. Cada resultado tem nome, modelo e ordem. Padrões de toda empresa: **Visita realizada**, **Retornar depois**, **Sem interesse**, **Responsável ausente**, **Não localizada** e **Empresa encerrada**. Os dois últimos são de sistema: só se renomeiam e trocam de modelo, nunca se inativam nem se excluem. Os demais seguem a regra de exclusão da seção 11 (usado só se inativa; sem uso, se exclui).
+- **Modelos:** construtor ordenável com prévia, com o resultado fixo no topo. Um modelo é **padrão** (o primeiro sugerido para um resultado novo). Tipos de campo: texto curto, texto longo, número, data, sim/não, escolha única, múltipla escolha, nota de 1 a 5, e os de CRM:
+  - **Contato:** o vendedor confirma um contato da empresa ou cria um novo, que fica vinculado.
+  - **Próximo passo:** cria a próxima atividade ou um retorno.
+  - **Tag:** o admin fixa a tag no construtor; o vendedor marca sim/não, e "sim" aplica a tag na empresa.
+  - **Dados da empresa:** o admin escolhe um campo da ficha numa lista fixa (nome fantasia, site, vertical, número de funcionários); o valor respondido atualiza a ficha. **Nunca** CNPJ nem razão social.
+
+  Cada campo tem rótulo, obrigatório e ordem, e um **id estável** que não muda quando o rótulo muda (base para relatórios por campo no futuro). Fora: campos condicionais e fotos.
+  **Versões:** editar um modelo que já tem relatório publica uma **versão nova**; os relatórios antigos continuam mostrando a versão com que foram preenchidos. Modelo ainda sem relatório é editado no lugar.
+  **Modelo de fábrica** ("Relatório de visita"): contato, número de funcionários, interesse (Alto, Médio, Baixo, Nenhum), demandas, ações feitas (WhatsApp, e-mail, material), próximo passo e resumo. Os seis resultados padrão apontam para ele.
+- **Check-in:** modo **Avisar** (padrão: mostra a distância e deixa seguir), **Bloquear** (não deixa fazer check-in além do limite) ou **Só gravar** (não avisa; grava a distância); **limite** em metros (padrão 300); **horário do lembrete** dos relatórios pendentes (padrão 17:30).
+
+### Check-in e relatório no campo (G3b)
+- **Check-in** na ficha e no painel do mapa: lê a posição do aparelho, calcula a distância até a posição da empresa e aplica o modo configurado. Cria a atividade **Visita** em execução com o relatório pendente. Longe do endereço, oferece atualizar a posição da empresa com a do check-in.
+- **Visita sem check-in** ("registrar depois"): fica marcada como sem check-in e sem posição, com um selo visível a quem vê os relatórios da equipe.
+- **Relatório:** formulário montado pelo modelo do resultado escolhido; o rascunho é salvo a cada alteração. Ao concluir, a atividade vira **Realizada** e a carteira é recalculada como no Módulo 5; os campos de CRM aplicam seus efeitos na mesma transação.
+- **Efeito do resultado na empresa:**
+  - **Não localizada (decisão do Ale, 22/10/2026):** a atividade fica **Realizada** e **conta como atividade em tudo que mede esforço**: Dashboard, indicadores, lista de atividades do vendedor e histórico. Houve deslocamento e tentativa, explicados no relatório. O que ela **não** faz é marcar a **empresa** como visitada: não atualiza a última visita, não aplica a tag Visitada e não muda o estado "visitada" do mapa. A empresa recebe **Endereço a confirmar** e a data da visita tentada, e no mapa aparece como **visita tentada**; volta ao grupo das nunca visitadas só se nunca teve visita real. (No banco, `atividades.conta_visita = false` serve **só** para esse efeito na empresa, **nunca** para tirar a atividade das contagens.)
+  - **Empresa encerrada:** pergunta "mudar o Status para Inativo?".
+  - **Demais resultados:** visitada e última visita, pela regra do Módulo 5.
+- **Quem vê:** o relatório segue o alcance de **Ver atividades** (o vendedor vê os dele; gestor e admin, todos). A posição e a distância do check-in só aparecem para quem tem **Ver a localização dos check-ins** (Administrador e Gestor por padrão); o vendedor vê apenas o aviso de distância na hora do check-in.
+- **Pendentes:** lista no celular e card no Dashboard; lembrete no horário configurado (notificação do aparelho se permitida, senão aviso ao abrir). Sem Web Push nesta fase.
+- **Offline:** as empresas abertas recentemente e as levadas com **"Levar para offline"** (até 300 por vez, válidas por 7 dias) ficam no aparelho com dados mínimos; check-in e relatório entram numa fila e sobem ao voltar o sinal, sem duplicar. Proteções do aparelho em `lgpd.md`.
 
 ## 4. Contatos
 
@@ -271,7 +299,7 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 | **Recorrência** | Diária, semanal, mensal, anual ou personalizada; editar "só esta / esta e próximas / todas" |
 | Checklist e etiquetas | Subitens e etiquetas coloridas (usados principalmente em tarefas) |
 | Resultado | Texto ao concluir (o que aconteceu) |
-| Localização | Fase futura: check-in com GPS na visita |
+| Localização | Check-in com GPS na visita (G3, seção 3C) |
 | Origem | Manual · WhatsApp · Integração/API (preenchido pelo sistema) |
 | Anexos | Arquivos e fotos (Garage); mídias do WhatsApp no futuro |
 
@@ -610,6 +638,7 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 | Modelos de e-mail | Admin / Gestor (modelos da empresa); cada usuário pode ter os seus |
 | Contas conectadas (visão geral) | Admin (vê quem conectou e pode revogar) |
 | Preferências do tenant | Admin (visão de carteira, validade das tags de visitação, automação de status, dias de "sem contato") |
+| Visitas (resultados, modelos de relatório e check-in) | Gerir cadastros (Admin por padrão; G3, seção 3C) |
 | Segurança | Admin (**política de 2FA** da empresa: administradores, administradores e gestores, ou todos; ver "Segurança e acesso") |
 | E-mail (SMTP próprio) 🔮 | Admin (servidor de envio da empresa; ver abaixo). **Funcionalidade futura, ainda não implementada** |
 
@@ -794,7 +823,7 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 
 | Fase | Funcionalidade |
 |---|---|
-| 2 — Geolocalização | **G1 (geocodificação) e G2 (mapa) ✅ testados e aprovados pelo Ale em 22/10/2026, ver `plano_geolocalizacao.md` e a seção 3B.** Check-in de visita com GPS (G3) fica depois |
+| 2 — Geolocalização | **G1 (geocodificação) e G2 (mapa) ✅ testados e aprovados pelo Ale em 22/10/2026, ver `plano_geolocalizacao.md` e a seção 3B.** Check-in de visita com GPS e relatório (G3) **em implementação** (plano aprovado em 22/10/2026; seção 3C) |
 | 3 — Roteirização | Montar roteiro do dia com base em filtros (ex.: sem visita há 90 dias + cidade), otimização da ordem (VROOM) e navegação |
 | 4 — WhatsApp | Integração Evolution API: registro automático/manual de conversas, caixa de não identificados e, depois, envio pelo CRM (ver seção 13.1) |
 | 5 — n8n | Webhooks de saída, chaves de API e automações (ver seção 13.2) |
