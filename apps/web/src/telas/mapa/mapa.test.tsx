@@ -1,4 +1,5 @@
 import type { OpcoesDoMapa, PontosDoMapa } from '@leadtogo/api-client'
+import { ZOOM_DOS_NIVEIS_DO_MAPA } from '@leadtogo/shared'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useEffect } from 'react'
@@ -15,6 +16,8 @@ vi.mock('@/components/mapa/mapa-base', () => ({
     pins?: { id: string; cor: string; visitada?: boolean; selecionado?: boolean }[]
     bolhas?: { id: string; total: number; rotulo?: string; texto?: string }[]
     areas?: unknown[]
+    foco?: unknown
+    revelar?: { latitude: number; longitude: number }
     fonteDosDados?: string
     aoMover?: (a: {
       oeste: number
@@ -33,7 +36,13 @@ vi.mock('@/components/mapa/mapa-base', () => ({
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
     return (
-      <div role="application" aria-label="Mapa das empresas" data-areas={(p.areas ?? []).length}>
+      <div
+        role="application"
+        aria-label="Mapa das empresas"
+        data-areas={(p.areas ?? []).length}
+        data-foco={JSON.stringify(p.foco ?? null)}
+        data-revelar={JSON.stringify(p.revelar ? [p.revelar.latitude, p.revelar.longitude] : null)}
+      >
         {p.fonteDosDados ? <p>{p.fonteDosDados}</p> : null}
         {(p.pins ?? []).map((x) => (
           <button
@@ -175,6 +184,8 @@ rotulos.set(id(101), 'Beta Ltda, Serra')
 
 const pontos = (extra: Partial<PontosDoMapa> = {}): PontosDoMapa => ({
   total: 2,
+  nivel: 'pins',
+  agrupamentos: [],
   pontos: [
     {
       id: id(100),
@@ -524,6 +535,108 @@ describe('Mapa: chips, pins e legenda', () => {
     await abrir(x)
     await screen.findByRole('button', { name: 'pin Alfa Ltda, Vitória' })
     expect(x.m.pontos.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal)
+  })
+
+  const foco = () =>
+    JSON.parse(
+      screen.getByRole('application', { name: 'Mapa das empresas' }).getAttribute('data-foco') ??
+        'null',
+    ) as {
+      caixa?: { oeste: number; sul: number; leste: number; norte: number }
+      zoomMinimo?: number
+      zoom?: number
+    } | null
+
+  it('de longe vêm bolhas por município; o clique enquadra as empresas dela e pede o nível dos bairros', async () => {
+    const x = servicos()
+    x.m.pontos.mockResolvedValue(
+      ok(
+        pontos({
+          nivel: 'municipio',
+          total: 5,
+          pontos: [],
+          estados: [],
+          agrupamentos: [
+            {
+              id: '3205309',
+              rotulo: 'Vitória',
+              total: 4,
+              latitude: -20.3,
+              longitude: -40.3,
+              oeste: -40.34,
+              sul: -20.32,
+              leste: -40.27,
+              norte: -20.26,
+            },
+            {
+              id: '3205002',
+              rotulo: 'Serra',
+              total: 1,
+              latitude: -20.13,
+              longitude: -40.3,
+              oeste: -40.3,
+              sul: -20.13,
+              leste: -40.3,
+              norte: -20.13,
+            },
+          ],
+        }),
+      ),
+    )
+    await abrir(x)
+    expect(await screen.findByRole('button', { name: 'Serra: 1 empresas' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^pin / })).toBeNull()
+    expect(foco()).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Vitória: 4 empresas' }))
+    await waitFor(() => expect(foco()).not.toBeNull())
+    // a caixa das empresas do município, e o zoom não fica abaixo do início do nível dos bairros
+    expect(foco()?.caixa).toEqual({ oeste: -40.34, sul: -20.32, leste: -40.27, norte: -20.26 })
+    expect(foco()?.zoomMinimo).toBeCloseTo(ZOOM_DOS_NIVEIS_DO_MAPA.municipioAte + 0.01)
+  })
+
+  it('bolha de bairro pede ao menos o zoom dos pins', async () => {
+    const x = servicos()
+    x.m.pontos.mockResolvedValue(
+      ok(
+        pontos({
+          nivel: 'bairro',
+          total: 2,
+          pontos: [],
+          estados: [],
+          agrupamentos: [
+            {
+              id: '3205309:JARDIM CAMBURI',
+              rotulo: 'Jardim Camburi',
+              total: 2,
+              latitude: -20.27,
+              longitude: -40.28,
+              oeste: -40.29,
+              sul: -20.28,
+              leste: -40.27,
+              norte: -20.26,
+            },
+          ],
+        }),
+      ),
+    )
+    await abrir(x)
+    await userEvent.click(await screen.findByRole('button', { name: 'Jardim Camburi: 2 empresas' }))
+    await waitFor(() => expect(foco()).not.toBeNull())
+    expect(foco()?.zoomMinimo).toBeCloseTo(ZOOM_DOS_NIVEIS_DO_MAPA.bairroAte + 0.01)
+  })
+
+  it('clicar numa empresa abre o painel e destaca o pin, mas NÃO aproxima nem centraliza (só desliza se esconder)', async () => {
+    const x = servicos()
+    await abrir(x)
+    await userEvent.click(await screen.findByRole('button', { name: 'pin Alfa Ltda, Vitória' }))
+    await screen.findByRole('complementary', { name: 'Empresa selecionada' })
+    expect(foco()).toBeNull()
+    const mapa = screen.getByRole('application', { name: 'Mapa das empresas' })
+    expect(JSON.parse(mapa.getAttribute('data-revelar') ?? 'null')).toEqual([-20.3, -40.3])
+    expect(screen.getByRole('button', { name: 'pin Alfa Ltda, Vitória' })).toHaveAttribute(
+      'data-selecionado',
+      'true',
+    )
   })
 
   it('erro ao carregar as empresas da área mostra "Tentar de novo"', async () => {

@@ -1,4 +1,4 @@
-import { novoId, sql } from '@leadtogo/db'
+import { novoId, sql, type SQL } from '@leadtogo/db'
 import {
   type AlterarEntradaDaLegenda,
   CHAVE_SEM_VISITA,
@@ -19,6 +19,7 @@ import {
   PALETA_DO_MAPA,
   type PontoDoMapa,
   type PontosDoMapa,
+  nivelDoZoom,
   type SelecaoDoMapa,
 } from '@leadtogo/shared'
 import { Inject, Injectable } from '@nestjs/common'
@@ -28,6 +29,7 @@ import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { escopoDaCarteira } from '../carteira/regras-de-carteira.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
+import { bolhasDeBairro, bolhasDeMunicipio, type LinhaAgregada } from './agrupar.js'
 import { RegioesGeoService } from '../geolocalizacao/regioes.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import {
@@ -45,6 +47,9 @@ import {
  * bolhas; acima disso, `truncado` avisa para aproximar o mapa.
  */
 const LIMITE_DE_PONTOS = 5000
+/** Bolhas por pedido nos níveis município e bairro (as maiores primeiro) e linhas lidas antes de juntar as grafias. */
+const LIMITE_DE_BOLHAS = 1500
+const LIMITE_DE_LINHAS_AGREGADAS = 20_000
 /** Até quantas empresas na caixa o plano parte da caixa (índice espacial); acima disso, o plano clássico... */
 const CAIXA_PEQUENA_MINIMA = 3000
 /** ...ou até esta fração da tabela (estimativa do Postgres): a busca por empresa custa ~2,5x o plano clássico por linha. */
@@ -289,6 +294,11 @@ export class MapaService {
       : [sql``, sql`${DAS_EMPRESAS_DO_MAPA}`]
     const ondeArea = caixaPequena ? sql`TRUE` : area
 
+    const nivel = nivelDoZoom(consulta.zoom)
+    if (nivel !== 'pins') {
+      return this.agrupamentos(nivel, { com, de, filtros, ondeArea })
+    }
+
     // Uma consulta só: os pontos (com o limite) e, nas mesmas linhas, os totais da área inteira por janela
     // (empresas, leads e se há coordenada do CNEFE). Eram duas consultas com os mesmos joins; juntas, cada
     // pedido gasta metade do tempo no banco. O ponto traz só o que o pin precisa (id, posição, estado e visto);
@@ -346,12 +356,85 @@ export class MapaService {
       }
     })
     return {
+      nivel,
       total,
       pontos,
+      agrupamentos: [],
       estados,
       truncado: total - Math.max(0, leadsTotal - LIMITE_DE_LEADS) > pontos.length,
       limite: LIMITE_DE_PONTOS,
       comCnefe: linhas[0]?.cnefe ?? false,
+      leads: {
+        mostrados: Math.min(leadsTotal, LIMITE_DE_LEADS),
+        total: leadsTotal,
+        limite: LIMITE_DE_LEADS,
+      },
+    }
+  }
+
+  /**
+   * Os níveis município e bairro: as bolhas são contadas no servidor (com os mesmos filtros e a mesma regra de
+   * carteira dos pins). O município agrupa pelo código IBGE; o bairro, pelo bairro digitado dentro do município,
+   * e as variações de escrita se juntam depois (`chaveDoBairroNoMapa`). A posição de cada bolha é o centro das
+   * empresas dela, e a caixa serve para o clique aproximar até elas.
+   */
+  private async agrupamentos(
+    nivel: 'municipio' | 'bairro',
+    sqls: { com: SQL; de: SQL; filtros: SQL; ondeArea: SQL },
+  ): Promise<PontosDoMapa> {
+    const db = this.ctx.db()
+    const { com, de, filtros, ondeArea } = sqls
+    const colunaDoBairro = nivel === 'bairro' ? sql`, e.bairro AS bairro` : sql``
+    const agrupar = nivel === 'bairro' ? sql`e.municipio_codigo, e.bairro` : sql`e.municipio_codigo`
+    const linhas = await db.execute<{
+      municipio: number | null
+      nome: string | null
+      bairro?: string | null
+      total: number
+      leads: number
+      cnefe: boolean
+      soma_lat: number
+      soma_lon: number
+      oeste: number
+      sul: number
+      leste: number
+      norte: number
+    }>(sql`${com}
+      SELECT e.municipio_codigo AS municipio, min(m.nome) AS nome${colunaDoBairro},
+             count(*)::int AS total,
+             (count(*) FILTER (WHERE t.chave_sistema = 'lead'))::int AS leads,
+             bool_or(e.geo_origem = 'cnefe') AS cnefe,
+             sum(ST_Y(e.localizacao::geometry))::float8 AS soma_lat,
+             sum(ST_X(e.localizacao::geometry))::float8 AS soma_lon,
+             min(ST_X(e.localizacao::geometry))::float8 AS oeste, min(ST_Y(e.localizacao::geometry))::float8 AS sul,
+             max(ST_X(e.localizacao::geometry))::float8 AS leste, max(ST_Y(e.localizacao::geometry))::float8 AS norte
+      ${de} WHERE ${filtros} AND ${ondeArea}
+      GROUP BY ${agrupar}
+      LIMIT ${LIMITE_DE_LINHAS_AGREGADAS}`)
+    const agregadas: LinhaAgregada[] = linhas.map((l) => ({
+      municipio: l.municipio,
+      nomeDoMunicipio: l.nome,
+      ...(nivel === 'bairro' ? { bairro: l.bairro ?? null } : {}),
+      total: l.total,
+      somaLat: l.soma_lat,
+      somaLon: l.soma_lon,
+      oeste: l.oeste,
+      sul: l.sul,
+      leste: l.leste,
+      norte: l.norte,
+    }))
+    const todas = nivel === 'bairro' ? bolhasDeBairro(agregadas) : bolhasDeMunicipio(agregadas)
+    const total = linhas.reduce((n, l) => n + l.total, 0)
+    const leadsTotal = linhas.reduce((n, l) => n + l.leads, 0)
+    return {
+      nivel,
+      total,
+      pontos: [],
+      agrupamentos: todas.slice(0, LIMITE_DE_BOLHAS),
+      estados: [],
+      truncado: todas.length > LIMITE_DE_BOLHAS || linhas.length >= LIMITE_DE_LINHAS_AGREGADAS,
+      limite: LIMITE_DE_BOLHAS,
+      comCnefe: linhas.some((l) => l.cnefe),
       leads: {
         mostrados: Math.min(leadsTotal, LIMITE_DE_LEADS),
         total: leadsTotal,

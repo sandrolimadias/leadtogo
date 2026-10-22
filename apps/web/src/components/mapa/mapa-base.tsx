@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/cn'
 
 import { areaVisivel } from './area'
-import { geojsonDaCobertura, geojsonDosPins } from './dados'
+import { geojsonDasBolhas, geojsonDosPins } from './dados'
+import { deslocamentoMinimo, type Retangulo } from './revelar'
 import { circulo, criarPin } from './pin'
 import { desenharPin, lerIdDoIcone } from './icone'
 import { corDoToken, temaAtual, useTema } from './tema'
@@ -51,7 +52,7 @@ export interface PropsDoMapa {
   className?: string
   /** Pins das empresas: desenhados pela GPU (camada do MapLibre) e agrupados em bolhas no navegador */
   pins?: PinDoMapa[]
-  /** Bolhas da cobertura por município (as do agrupamento dos pins são do próprio mapa) */
+  /** Bolhas: as de município e de bairro (contadas no servidor) e as da cobertura por município */
   bolhas?: BolhaDoMapa[]
   /** Clique num pin ou bolha */
   aoClicarNoPin?: (id: string) => void
@@ -71,7 +72,26 @@ export interface PropsDoMapa {
   /** Sem os controles de zoom (mapa pequeno da ficha) */
   semControles?: boolean
   /** Leva o mapa até aqui quando `chave` muda (voar para uma empresa, cidade ou área) */
-  foco?: { chave: number; latitude: number; longitude: number; zoom?: number }
+  foco?: {
+    chave: number
+    latitude: number
+    longitude: number
+    zoom?: number
+    /** Enquadra esta caixa (as empresas de uma bolha) em vez de ir para um ponto */
+    caixa?: { oeste: number; sul: number; leste: number; norte: number }
+    /** Com `caixa`: o zoom não fica abaixo disto (o início do nível seguinte, para a bolha se desfazer) */
+    zoomMinimo?: number
+  }
+  /**
+   * Garante que o pin não fique escondido atrás dos painéis: se ficar, o mapa desliza o MÍNIMO para mostrá-lo, sem
+   * mudar o zoom (e nunca centraliza). `bloqueios` devolve os retângulos (da janela) que cobrem o mapa.
+   */
+  revelar?: {
+    chave: number
+    latitude: number
+    longitude: number
+    bloqueios: () => Retangulo[]
+  }
   /** Áreas da seleção (retângulo e raio) desenhadas por cima */
   areas?: AreaDesenhada[]
   /** O cursor vira uma cruz (modo de desenhar a área) */
@@ -83,52 +103,19 @@ export interface PropsDoMapa {
   rotulo: string
 }
 
-const CAMADAS_CLICAVEIS = ['pins', 'empresas-bolhas', 'cobertura-bolhas']
+const CAMADAS_CLICAVEIS = ['pins', 'bolhas-circulos']
 const FONTE_DOS_ROTULOS = ['Noto Sans Medium']
 const VAZIO = { type: 'FeatureCollection' as const, features: [] }
 
-/** Cria (se ainda não existirem) as fontes e camadas dos pins, das bolhas e da cobertura; some com o `setStyle`. */
+/** Cria (se ainda não existirem) as fontes e camadas dos pins e das bolhas; somem com o `setStyle`. */
 function garantirCamadas(mapa: MapaDoMapLibre) {
   if (!mapa.getSource('empresas')) {
-    mapa.addSource('empresas', {
-      type: 'geojson',
-      data: VAZIO,
-      cluster: true,
-      clusterRadius: 48,
-      clusterMaxZoom: 14,
-    })
-  }
-  if (!mapa.getLayer('empresas-bolhas')) {
-    mapa.addLayer({
-      id: 'empresas-bolhas',
-      type: 'circle',
-      source: 'empresas',
-      filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': corDoToken('--accent'),
-        'circle-radius': ['step', ['get', 'point_count'], 16, 100, 22, 1000, 27],
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 2,
-      },
-    })
-    mapa.addLayer({
-      id: 'empresas-bolhas-total',
-      type: 'symbol',
-      source: 'empresas',
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': ['get', 'point_count_abbreviated'],
-        'text-font': FONTE_DOS_ROTULOS,
-        'text-size': 13,
-        'text-allow-overlap': true,
-      },
-      paint: { 'text-color': '#ffffff' },
-    })
+    // sem cluster: o agrupamento é por município e por bairro, contado no servidor (os pins só vêm de perto)
+    mapa.addSource('empresas', { type: 'geojson', data: VAZIO })
     mapa.addLayer({
       id: 'pins',
       type: 'symbol',
       source: 'empresas',
-      filter: ['!', ['has', 'point_count']],
       layout: {
         'icon-image': ['get', 'icone'],
         'icon-anchor': 'bottom',
@@ -138,23 +125,23 @@ function garantirCamadas(mapa: MapaDoMapLibre) {
       },
     })
   }
-  if (!mapa.getSource('cobertura')) {
-    mapa.addSource('cobertura', { type: 'geojson', data: VAZIO })
+  if (!mapa.getSource('bolhas')) {
+    mapa.addSource('bolhas', { type: 'geojson', data: VAZIO })
     mapa.addLayer({
-      id: 'cobertura-bolhas',
+      id: 'bolhas-circulos',
       type: 'circle',
-      source: 'cobertura',
+      source: 'bolhas',
       paint: {
         'circle-color': ['get', 'cor'],
-        'circle-radius': 18,
+        'circle-radius': ['get', 'raio'],
         'circle-stroke-color': '#ffffff',
         'circle-stroke-width': 2,
       },
     })
     mapa.addLayer({
-      id: 'cobertura-total',
+      id: 'bolhas-total',
       type: 'symbol',
-      source: 'cobertura',
+      source: 'bolhas',
       layout: {
         'text-field': ['get', 'texto'],
         'text-font': FONTE_DOS_ROTULOS,
@@ -296,10 +283,13 @@ export function MapaBase(props: PropsDoMapa) {
         cleanupTemporizador = () => clearTimeout(temporizador)
       }
       // Pins e bolhas são camadas do mapa (não há elemento DOM por empresa): o clique descobre o que está embaixo
-      mapa.on('styleimagemissing', (e) => {
-        const o = lerIdDoIcone(e.id)
-        if (!o || !mapa) return
-        mapa.addImage(e.id, desenharPin(o, corDoToken('--ink')), { pixelRatio: 2 })
+      // MapLibre 6: as imagens que faltam são pedidas ao "resolvedor" (o evento `styleimagemissing` só avisa
+      // depois, tarde demais para o símbolo já posicionado). Cada variação do pin (cor, visto, seleção) é
+      // desenhada uma vez num canvas.
+      mapa.setMissingStyleImageResolver((id) => {
+        const o = lerIdDoIcone(id)
+        if (!o || !mapa || mapa.hasImage(id)) return
+        mapa.addImage(id, desenharPin(o, corDoToken('--ink')), { pixelRatio: 2 })
       })
       mapa.on('click', (e) => {
         const camadas = CAMADAS_CLICAVEIS.filter((id) => mapa?.getLayer(id))
@@ -311,15 +301,7 @@ export function MapaBase(props: PropsDoMapa) {
         const id = topo?.layer.id
         if (id === 'pins') {
           ultimas.current.aoClicarNoPin?.(String(topo?.properties['id']))
-        } else if (id === 'empresas-bolhas' && topo) {
-          const fonte = mapa?.getSource<GeoJSONSource>('empresas')
-          const centro = (topo.geometry as { coordinates: [number, number] }).coordinates
-          void fonte
-            ?.getClusterExpansionZoom(Number(topo.properties['cluster_id']))
-            .then((zoom) => {
-              mapa?.easeTo({ center: centro, zoom: zoom + 0.5 })
-            })
-        } else if (id === 'cobertura-bolhas') {
+        } else if (id === 'bolhas-circulos') {
           ultimas.current.aoClicarNaBolha?.(String(topo?.properties['id']))
         } else {
           ultimas.current.aoClicarNoMapa?.(e.lngLat.lat, e.lngLat.lng)
@@ -370,8 +352,8 @@ export function MapaBase(props: PropsDoMapa) {
     garantirCamadas(mapa)
     void mapa.getSource<GeoJSONSource>('empresas')?.setData(geojsonDosPins(pins ?? [], corDoToken))
     void mapa
-      .getSource<GeoJSONSource>('cobertura')
-      ?.setData(geojsonDaCobertura(bolhas ?? [], corDoToken))
+      .getSource<GeoJSONSource>('bolhas')
+      ?.setData(geojsonDasBolhas(bolhas ?? [], corDoToken))
   }, [pins, bolhas, versaoDoEstilo, tema])
 
   // Pin arrastável e o círculo de incerteza
@@ -426,22 +408,69 @@ export function MapaBase(props: PropsDoMapa) {
     }
   }, [alvoLatitude, alvoLongitude, raioM, versaoDoEstilo])
 
-  // Voar para um ponto
+  // Ir para um ponto, ou enquadrar a caixa de uma bolha (aproxima até o nível seguinte)
   const focoChave = props.foco?.chave
-  const focoLat = props.foco?.latitude
-  const focoLon = props.foco?.longitude
-  const focoZoom = props.foco?.zoom
+  const focoAplicado = useRef<number | undefined>(undefined)
   useEffect(() => {
     const mapa = mapaRef.current
-    if (!mapa || focoChave === undefined || focoLat === undefined || focoLon === undefined) return
+    const foco = ultimas.current.foco
+    if (!mapa || focoChave === undefined || !foco || focoAplicado.current === focoChave) return
+    focoAplicado.current = focoChave
+    if (foco.caixa) {
+      const { oeste, sul, leste, norte } = foco.caixa
+      const camera = mapa.cameraForBounds(
+        [
+          [oeste, sul],
+          [leste, norte],
+        ],
+        { padding: 80, maxZoom: 16 },
+      )
+      const zoom = Math.max(camera?.zoom ?? mapa.getZoom(), foco.zoomMinimo ?? 0)
+      mapa.flyTo({
+        center: camera?.center ?? [foco.longitude, foco.latitude],
+        zoom,
+        essential: true,
+      })
+      return
+    }
     mapa.flyTo({
-      center: [focoLon, focoLat],
-      ...(focoZoom !== undefined ? { zoom: focoZoom } : {}),
+      center: [foco.longitude, foco.latitude],
+      ...(foco.zoom !== undefined ? { zoom: foco.zoom } : {}),
       essential: true,
     })
-    // só quando a chave muda
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focoChave, versaoDoEstilo])
+
+  // Pin escondido atrás do painel: desliza o mínimo (sem mudar o zoom, sem centralizar)
+  const revelarChave = props.revelar?.chave
+  useEffect(() => {
+    const mapa = mapaRef.current
+    const r = ultimas.current.revelar
+    if (!mapa || revelarChave === undefined || !r) return
+    const deslizar = () => {
+      const c = mapa.getContainer().getBoundingClientRect()
+      const p = mapa.project([r.longitude, r.latitude])
+      const bloqueios = r.bloqueios().map((b) => ({
+        esquerda: b.esquerda - c.left,
+        direita: b.direita - c.left,
+        topo: b.topo - c.top,
+        base: b.base - c.top,
+      }))
+      const { dx, dy } = deslocamentoMinimo(
+        { x: p.x, y: p.y },
+        { largura: c.width, altura: c.height },
+        bloqueios,
+      )
+      // panBy anda o CENTRO do mapa: para o pin ir à direita, o centro vai à esquerda
+      if (dx !== 0 || dy !== 0) mapa.panBy([-dx, -dy], { duration: 300, essential: true })
+    }
+    // o painel acaba de abrir: mede depois do desenho e de novo quando o conteúdo (altura) assentou
+    const a = requestAnimationFrame(deslizar)
+    const b = setTimeout(deslizar, 450)
+    return () => {
+      cancelAnimationFrame(a)
+      clearTimeout(b)
+    }
+  }, [revelarChave])
 
   // Áreas da seleção
   const areas = props.areas

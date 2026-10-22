@@ -1,6 +1,7 @@
 import type { Server } from 'node:http'
 
 import { novoId } from '@leadtogo/db'
+import { ZOOM_DOS_NIVEIS_DO_MAPA } from '@leadtogo/shared'
 import type {
   CoberturaDoMapa,
   LegendaDoMapa,
@@ -100,16 +101,17 @@ async function cenario() {
     vendedorId?: string
     visitadaHaDias?: number | null
     municipio?: number
+    bairro?: string | null
     importacaoId?: string
     precisao?: 'exata' | 'aproximada'
   }) {
     const id = novoId()
     nomes.set(id, o.nome)
     await noTenant(d.tenantId, async (tx) => {
-      await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id, municipio_codigo, importacao_id,
+      await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id, municipio_codigo, bairro, importacao_id,
           localizacao, geo_precisao, geo_origem, ultima_visita_em)
         VALUES (${id}, ${d.tenantId}, ${o.nome}, ${o.vendedorId ?? idDe(d.usuarioId)}, ${o.municipio ?? 3205309},
-          ${o.importacaoId ?? null},
+          ${o.bairro ?? null}, ${o.importacaoId ?? null},
           ST_SetSRID(ST_MakePoint(${o.lon}, ${o.lat}), 4326)::geography, ${o.precisao ?? 'exata'}::geo_precisao, 'cnefe',
           ${o.visitadaHaDias == null ? null : tx`now() - make_interval(days => ${o.visitadaHaDias})`})`
       await tx`INSERT INTO empresa_tags (tenant_id, empresa_id, tag_id) VALUES (${d.tenantId}, ${id}, ${tags[o.status]})`
@@ -128,7 +130,8 @@ async function cenario() {
   }
 }
 
-const pontos = async (cookie: string, extra = '', zoom = 12) => {
+// zoom 14 = o nível dos pins (abaixo dele a API devolve bolhas de bairro ou de município)
+const pontos = async (cookie: string, extra = '', zoom = 14) => {
   const r = (await chamar('get', cookie, `/pontos?${AREA}&zoom=${zoom}${extra}`))
     .body as PontosDoMapa
   return {
@@ -245,7 +248,7 @@ describe('GET /v1/mapa/pontos', () => {
     expect(p.truncado).toBe(false)
     expect(p.comCnefe).toBe(true)
     // só o mínimo para desenhar o pin: o nome, a cidade e a precisão ficam no painel da empresa
-    const bruto = (await chamar('get', d.cookie, `/pontos?${AREA}&zoom=12${todos}`))
+    const bruto = (await chamar('get', d.cookie, `/pontos?${AREA}&zoom=14${todos}`))
       .body as PontosDoMapa
     expect(bruto.estados.sort()).toEqual(
       [`tag:${tags.cliente}`, `tag:${tags.prospect}`, 'sem_visita'].sort(),
@@ -350,7 +353,7 @@ describe('GET /v1/mapa/pontos', () => {
     expect((await pontos(vendedor.cookie, cli)).total).toBe(2)
   })
 
-  it('muitas empresas viram bolhas no zoom afastado e pontos de perto', async () => {
+  it('os pins vêm em qualquer quantidade até o limite do pedido', async () => {
     const { d, tags } = await cenario()
     await noTenant(d.tenantId, async (tx) => {
       const [m] = await tx<{ id: string }[]>`SELECT id FROM membros LIMIT 1`
@@ -362,13 +365,12 @@ describe('GET /v1/mapa/pontos', () => {
       await tx`INSERT INTO empresa_tags (tenant_id, empresa_id, tag_id)
         SELECT ${d.tenantId}, id, ${t?.id as string}::uuid FROM empresas WHERE razao_social LIKE 'Em massa %'`
     })
-    const cli = `&statusTagIds=${tags.cliente}`
-    // o agrupamento em bolhas é do navegador: a API devolve os pontos em qualquer zoom
-    const longe = await pontos(d.cookie, cli, 9)
-    expect(longe.total).toBe(450)
-    expect(longe.pontos).toHaveLength(450)
-    expect(longe.truncado).toBe(false)
-    expect((await pontos(d.cookie, cli, 14)).pontos).toHaveLength(450)
+    const r = await pontos(d.cookie, `&statusTagIds=${tags.cliente}`)
+    expect(r.nivel).toBe('pins')
+    expect(r.total).toBe(450)
+    expect(r.pontos).toHaveLength(450)
+    expect(r.agrupamentos).toEqual([])
+    expect(r.truncado).toBe(false)
   })
 
   it('passou do limite do pedido: vem uma parte e `truncado` avisa para aproximar o mapa', async () => {
@@ -382,7 +384,7 @@ describe('GET /v1/mapa/pontos', () => {
       await tx`INSERT INTO empresa_tags (tenant_id, empresa_id, tag_id)
         SELECT ${d.tenantId}, id, ${tags.cliente}::uuid FROM empresas WHERE razao_social LIKE 'Muitas %'`
     })
-    const r = await pontos(d.cookie, `&statusTagIds=${tags.cliente}`, 9)
+    const r = await pontos(d.cookie, `&statusTagIds=${tags.cliente}`, 14)
     expect(r.total).toBe(5200)
     expect(r.limite).toBe(5000)
     expect(r.pontos).toHaveLength(5000)
@@ -596,5 +598,181 @@ describe('legenda do mapa', () => {
       nome: 'Sem visita há 60+ dias',
       personalizada: false,
     })
+  })
+})
+
+describe('GET /v1/mapa/pontos: níveis por zoom (município, bairro, pins)', () => {
+  /** Vitória: 2 no Jardim Camburi (escritas diferentes), 1 no Centro, 1 sem bairro; Serra: 1 no Centro. */
+  async function cidades() {
+    const c = await cenario()
+    const { empresa } = c
+    await empresa({
+      nome: 'Camburi A',
+      status: 'cliente',
+      lat: -20.26,
+      lon: -40.27,
+      bairro: 'Jd. Camburi',
+    })
+    await empresa({
+      nome: 'Camburi B',
+      status: 'cliente',
+      lat: -20.28,
+      lon: -40.29,
+      bairro: 'JARDIM  CAMBURÍ',
+    })
+    await empresa({
+      nome: 'Centro VIX',
+      status: 'prospect',
+      lat: -20.32,
+      lon: -40.34,
+      bairro: 'Centro',
+    })
+    await empresa({ nome: 'Sem bairro', status: 'cliente', lat: -20.3, lon: -40.3, bairro: null })
+    await empresa({
+      nome: 'Centro Serra',
+      status: 'cliente',
+      lat: -20.13,
+      lon: -40.3,
+      municipio: 3205002,
+      bairro: 'centro',
+    })
+    return c
+  }
+  const todos = (t: { cliente: string; prospect: string }) =>
+    `&statusTagIds=${t.cliente},${t.prospect}`
+
+  it('o nível sai do zoom (os limites estão em ZOOM_DOS_NIVEIS_DO_MAPA)', async () => {
+    const { d, tags } = await cidades()
+    const nivel = async (zoom: number) => (await pontos(d.cookie, todos(tags), zoom)).nivel
+    const { municipioAte, bairroAte } = ZOOM_DOS_NIVEIS_DO_MAPA
+    expect(await nivel(municipioAte - 0.01)).toBe('municipio')
+    expect(await nivel(municipioAte)).toBe('bairro')
+    expect(await nivel(bairroAte - 0.01)).toBe('bairro')
+    expect(await nivel(bairroAte)).toBe('pins')
+  })
+
+  it('de longe: uma bolha por município, com o total, o centro das empresas e a caixa delas', async () => {
+    const { d, tags } = await cidades()
+    const r = await pontos(d.cookie, todos(tags), ZOOM_DOS_NIVEIS_DO_MAPA.municipioAte - 1)
+    expect(r.nivel).toBe('municipio')
+    expect(r.pontos).toEqual([])
+    expect(r.total).toBe(5)
+    expect(r.agrupamentos.map((g) => [g.id, g.rotulo, g.total])).toEqual([
+      ['3205309', 'Vitória', 4],
+      ['3205002', 'Serra', 1],
+    ])
+    const vix = r.agrupamentos[0]
+    expect(vix?.latitude).toBeCloseTo((-20.26 - 20.28 - 20.32 - 20.3) / 4, 4)
+    expect(vix?.longitude).toBeCloseTo((-40.27 - 40.29 - 40.34 - 40.3) / 4, 4)
+    expect([vix?.oeste, vix?.sul, vix?.leste, vix?.norte]).toEqual([-40.34, -20.32, -40.27, -20.26])
+  })
+
+  it('aproximando: uma bolha por bairro DENTRO do município; grafias diferentes juntam, "sem bairro" é um grupo', async () => {
+    const { d, tags } = await cidades()
+    const r = await pontos(d.cookie, todos(tags), ZOOM_DOS_NIVEIS_DO_MAPA.bairroAte - 1)
+    expect(r.nivel).toBe('bairro')
+    expect(r.pontos).toEqual([])
+    expect(r.agrupamentos.map((g) => [g.id, g.rotulo, g.total])).toEqual([
+      ['3205309:JARDIM CAMBURI', 'Jardim Camburi', 2],
+      ['3205002:CENTRO', 'Centro', 1],
+      ['3205309:', 'Sem bairro', 1],
+      ['3205309:CENTRO', 'Centro', 1],
+    ])
+    const camburi = r.agrupamentos[0]
+    expect(camburi?.latitude).toBeCloseTo(-20.27, 4)
+    expect(camburi?.longitude).toBeCloseTo(-40.28, 4)
+    expect([camburi?.oeste, camburi?.sul, camburi?.leste, camburi?.norte]).toEqual([
+      -40.29, -20.28, -40.27, -20.26,
+    ])
+  })
+
+  it('perto: os pins das empresas, sem bolhas', async () => {
+    const { d, tags } = await cidades()
+    const r = await pontos(d.cookie, todos(tags), ZOOM_DOS_NIVEIS_DO_MAPA.bairroAte)
+    expect(r.nivel).toBe('pins')
+    expect(r.agrupamentos).toEqual([])
+    expect(r.pontos.map((p) => p.nome).sort()).toEqual([
+      'Camburi A',
+      'Camburi B',
+      'Centro Serra',
+      'Centro VIX',
+      'Sem bairro',
+    ])
+  })
+
+  it('as bolhas respeitam os filtros: só o chip ligado e a busca contam', async () => {
+    const { d, tags } = await cidades()
+    const zoom = ZOOM_DOS_NIVEIS_DO_MAPA.municipioAte - 1
+    const cliente = await pontos(d.cookie, `&statusTagIds=${tags.cliente}`, zoom)
+    expect(cliente.agrupamentos.map((g) => [g.rotulo, g.total])).toEqual([
+      ['Vitória', 3],
+      ['Serra', 1],
+    ])
+    const prospect = await pontos(d.cookie, `&statusTagIds=${tags.prospect}`, zoom)
+    expect(prospect.agrupamentos.map((g) => [g.rotulo, g.total])).toEqual([['Vitória', 1]])
+    const busca = await pontos(
+      d.cookie,
+      `${todos(tags)}&busca=camburi`,
+      ZOOM_DOS_NIVEIS_DO_MAPA.bairroAte - 1,
+    )
+    expect(busca.agrupamentos.map((g) => [g.rotulo, g.total])).toEqual([['Jardim Camburi', 2]])
+    expect((await pontos(d.cookie, '', zoom)).agrupamentos).toEqual([])
+  })
+
+  it('a regra de carteira vale nas bolhas: o vendedor conta só as empresas dele', async () => {
+    const { d, vendedor, vendedorId, tags, empresa } = await cenario()
+    await empresa({
+      nome: 'Minha 1',
+      status: 'cliente',
+      lat: -20.3,
+      lon: -40.3,
+      vendedorId,
+      bairro: 'Centro',
+    })
+    await empresa({
+      nome: 'Minha 2',
+      status: 'cliente',
+      lat: -20.31,
+      lon: -40.31,
+      vendedorId,
+      bairro: 'Centro',
+    })
+    await empresa({ nome: 'Alheia', status: 'cliente', lat: -20.32, lon: -40.32, bairro: 'Centro' })
+    const zoom = ZOOM_DOS_NIVEIS_DO_MAPA.municipioAte - 1
+    const cli = `&statusTagIds=${tags.cliente}`
+    expect((await pontos(vendedor.cookie, cli, zoom)).agrupamentos.map((g) => g.total)).toEqual([2])
+    expect((await pontos(d.cookie, cli, zoom)).agrupamentos.map((g) => g.total)).toEqual([3])
+    await noTenant(
+      d.tenantId,
+      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+    )
+    expect((await pontos(vendedor.cookie, cli, zoom)).agrupamentos.map((g) => g.total)).toEqual([3])
+  })
+
+  it('isolamento: outra empresa-cliente (tenant) não entra nas bolhas', async () => {
+    const a = await cenario()
+    const b = await cenario()
+    await a.empresa({ nome: 'De A', status: 'cliente', lat: -20.3, lon: -40.3, bairro: 'Centro' })
+    await b.empresa({ nome: 'De B 1', status: 'cliente', lat: -20.3, lon: -40.3, bairro: 'Centro' })
+    await b.empresa({
+      nome: 'De B 2',
+      status: 'cliente',
+      lat: -20.31,
+      lon: -40.31,
+      bairro: 'Centro',
+    })
+    for (const nivelZoom of [
+      ZOOM_DOS_NIVEIS_DO_MAPA.municipioAte - 1,
+      ZOOM_DOS_NIVEIS_DO_MAPA.bairroAte - 1,
+    ]) {
+      const ra = await pontos(a.d.cookie, `&statusTagIds=${a.tags.cliente}`, nivelZoom)
+      const rb = await pontos(b.d.cookie, `&statusTagIds=${b.tags.cliente}`, nivelZoom)
+      expect(ra.total).toBe(1)
+      expect(rb.total).toBe(2)
+      expect(ra.agrupamentos.map((g) => g.total)).toEqual([1])
+      expect(rb.agrupamentos.map((g) => g.total)).toEqual([2])
+      // os chips de B não existem para A: os tags de Status são de cada empresa-cliente
+      expect((await pontos(a.d.cookie, `&statusTagIds=${b.tags.cliente}`, nivelZoom)).total).toBe(0)
+    }
   })
 })

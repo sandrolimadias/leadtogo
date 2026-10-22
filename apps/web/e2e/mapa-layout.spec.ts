@@ -24,15 +24,22 @@ async function preparar(page: Page, nome: string): Promise<string> {
     tags: { id: string; chaveSistema: string | null }[]
   }[]
   const cliente = grupos.flatMap((g) => g.tags).find((t) => t.chaveSistema === 'cliente')!
+  // Vitória (3205309): Centro e dois do Jardim Camburi (escritos de jeitos diferentes); Serra (3205002): Centro
   const pontos = [
-    ['Mercado do Centro', -20.3, -40.3],
-    ['Padaria da Praia', -20.31, -40.29],
-    ['Oficina Norte', -20.29, -40.31],
+    ['Mercado do Centro', -20.3, -40.3, 3205309, 'Centro'],
+    ['Padaria da Praia', -20.15, -40.15, 3205309, 'Jd. Camburi'],
+    ['Oficina Norte', -20.151, -40.151, 3205309, 'JARDIM CAMBURÍ'],
+    ['Loja da Serra', -20.13, -40.3, 3205002, 'Centro'],
   ] as const
   let idDoMercado = ''
-  for (const [razaoSocial, latitude, longitude] of pontos) {
+  for (const [razaoSocial, latitude, longitude, municipioCodigo, bairro] of pontos) {
     const r = await api.post('/v1/carteira/empresas', {
-      data: { tipoDocumento: 'nenhum', razaoSocial, statusTagId: cliente.id },
+      data: {
+        tipoDocumento: 'nenhum',
+        razaoSocial,
+        statusTagId: cliente.id,
+        endereco: { municipioCodigo, bairro },
+      },
     })
     const { id } = (await r.json()) as { id: string }
     if (razaoSocial === 'Mercado do Centro') idDoMercado = id
@@ -104,18 +111,19 @@ for (const tela of [
       'aria-pressed',
       'true',
     )
-    // as três empresas estão juntas: no zoom de abertura viram UMA bolha com o total (agrupamento no navegador)
+    // no zoom de abertura (de longe) o servidor devolve uma bolha por município: Vitória (3) e Serra (1)
     await expect
       .poll(
         () =>
           noMapa(page, (mapa) =>
             mapa
-              .queryRenderedFeatures({ layers: ['empresas-bolhas'] })
-              .map((f) => f.properties['point_count']),
+              .queryRenderedFeatures({ layers: ['bolhas-circulos'] })
+              .map((f) => f.properties['texto'])
+              .sort(),
           ),
         { timeout: 30_000 },
       )
-      .toContain(3)
+      .toEqual(['1', '3'])
     // aproxima: a bolha se desfaz nos pins (WebGL no Chromium sem GPU: pode demorar)
     await noMapa(page, (mapa) => mapa.jumpTo({ center: [-40.3, -20.3], zoom: 16 }))
     await expect

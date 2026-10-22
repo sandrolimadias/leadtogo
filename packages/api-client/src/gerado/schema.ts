@@ -4099,6 +4099,8 @@ export interface components {
         };
         PontosDoMapa: {
             total: number;
+            /** @enum {string} */
+            nivel: "municipio" | "bairro" | "pins";
             pontos: {
                 /** Format: uuid */
                 id: string;
@@ -4106,6 +4108,17 @@ export interface components {
                 longitude: number;
                 estado: number;
                 visitada: boolean;
+            }[];
+            agrupamentos: {
+                id: string;
+                rotulo: string;
+                total: number;
+                latitude: number;
+                longitude: number;
+                oeste: number;
+                sul: number;
+                leste: number;
+                norte: number;
             }[];
             estados: string[];
             truncado: boolean;

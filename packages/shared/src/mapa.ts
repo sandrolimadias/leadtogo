@@ -166,6 +166,30 @@ export const consultaDePontosSchema = filtrosDoMapaSchema
 export type ConsultaDePontos = z.infer<typeof consultaDePontosSchema>
 
 /**
+ * Os níveis do mapa por zoom: de longe, uma bolha por MUNICÍPIO; aproximando, uma por BAIRRO; perto, os PINS das
+ * empresas. São estes dois números (ajuste aqui; a API e o app leem os mesmos): abaixo de `municipioAte` o nível é
+ * município, abaixo de `bairroAte` é bairro, e daí para cima são pins.
+ */
+export const ZOOM_DOS_NIVEIS_DO_MAPA = { municipioAte: 10, bairroAte: 13 } as const
+
+export const nivelDoMapaSchema = z.enum(['municipio', 'bairro', 'pins'])
+export type NivelDoMapa = z.infer<typeof nivelDoMapaSchema>
+
+/** O nível que o mapa mostra neste zoom. */
+export function nivelDoZoom(zoom: number): NivelDoMapa {
+  if (zoom < ZOOM_DOS_NIVEIS_DO_MAPA.municipioAte) return 'municipio'
+  if (zoom < ZOOM_DOS_NIVEIS_DO_MAPA.bairroAte) return 'bairro'
+  return 'pins'
+}
+
+/** O zoom mínimo do nível seguinte (o que um clique numa bolha precisa alcançar): bairros ou pins. */
+export function zoomDoNivelSeguinte(nivel: NivelDoMapa): number | null {
+  if (nivel === 'municipio') return ZOOM_DOS_NIVEIS_DO_MAPA.municipioAte
+  if (nivel === 'bairro') return ZOOM_DOS_NIVEIS_DO_MAPA.bairroAte
+  return null
+}
+
+/**
  * O mínimo para desenhar o pin: o nome, a cidade e o resto vêm do painel da empresa (`GET /carteira/empresas/:id`)
  * quando alguém toca no pin. Cada ponto pesa ~110 bytes; um pedido traz no máximo `limite` deles.
  */
@@ -180,15 +204,37 @@ export const pontoDoMapaSchema = z.object({
 })
 export type PontoDoMapa = z.infer<typeof pontoDoMapaSchema>
 
+/** Uma bolha do nível município ou bairro: o total de empresas, o centro delas e a caixa que as enquadra. */
+export const agrupamentoDoMapaSchema = z.object({
+  /** Município: o código IBGE; bairro: `<código IBGE>:<chave do bairro>` (vazia = sem bairro). Estável entre pedidos. */
+  id: z.string(),
+  /** "Vitória" ou "Jardim Camburi" (ou "Sem bairro") */
+  rotulo: z.string(),
+  total: z.number().int(),
+  /** O centro das empresas do grupo */
+  latitude: z.number(),
+  longitude: z.number(),
+  /** A caixa que enquadra as empresas do grupo (o clique aproxima até ela) */
+  oeste: z.number(),
+  sul: z.number(),
+  leste: z.number(),
+  norte: z.number(),
+})
+export type AgrupamentoDoMapa = z.infer<typeof agrupamentoDoMapaSchema>
+
 export const pontosDoMapaSchema = z
   .object({
     /** Quantas empresas há na área, com os filtros */
     total: z.number().int(),
-    /** Os pontos da área (o agrupamento em bolhas é feito no navegador) */
+    /** O que o zoom pediu: bolhas de município, bolhas de bairro ou os pins das empresas */
+    nivel: nivelDoMapaSchema,
+    /** Só no nível `pins`: os pontos da área */
     pontos: z.array(pontoDoMapaSchema),
+    /** Só nos níveis `municipio` e `bairro`: as bolhas da área, contadas no servidor */
+    agrupamentos: z.array(agrupamentoDoMapaSchema),
     /** As entradas da legenda usadas pelos pontos (`tag:<id>`, `sem_visita` ou `visita_tentada`); cada ponto aponta uma */
     estados: z.array(z.string()),
-    /** O pedido tem no máximo `limite` pontos: com `truncado`, a área tem mais do que veio (aproxime o mapa) */
+    /** O pedido tem no máximo `limite` pontos (ou bolhas): com `truncado`, a área tem mais do que veio (aproxime o mapa) */
     truncado: z.boolean(),
     limite: z.number().int(),
     /** Algum ponto da área tem a coordenada do CNEFE (a atribuição do IBGE aparece no mapa) */

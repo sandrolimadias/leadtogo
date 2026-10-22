@@ -1,4 +1,5 @@
 import type { EmpresaCarteira, PontosDoMapa } from '@leadtogo/api-client'
+import { zoomDoNivelSeguinte } from '@leadtogo/shared'
 import { type AreaVisivel, MapaBase, type PinDoMapa } from '@/components/mapa/mapa-base'
 import { useQuery } from '@tanstack/react-query'
 import { Layers, PenLine, RectangleHorizontal, X } from 'lucide-react'
@@ -68,7 +69,11 @@ export function TelaDoMapa() {
     latitude: number
     longitude: number
     zoom?: number
+    caixa?: { oeste: number; sul: number; leste: number; norte: number }
+    zoomMinimo?: number
   }>()
+  // Abrir uma empresa NUNCA aproxima nem centraliza: o mapa só desliza o mínimo se o painel esconder o pin
+  const [revelar, setRevelar] = useState<{ chave: number; latitude: number; longitude: number }>()
   const [gavetaAberta, setGavetaAberta] = useState(false)
 
   const [ferramenta, setFerramenta] = useState<Ferramenta>(null)
@@ -180,20 +185,45 @@ export function TelaDoMapa() {
   })
 
   const legenda = useMemo(() => opcoes.data?.legenda ?? [], [opcoes.data])
-  const pins = useMemo<PinDoMapa[]>(
-    () =>
-      (pontos.data?.pontos ?? []).map((p) => ({
-        id: p.id,
-        latitude: p.latitude,
-        longitude: p.longitude,
-        cor: tokenDoEstado(legenda, pontos.data?.estados[p.estado] ?? ''),
-        visitada: p.visitada,
-        selecionado: p.id === selecionada,
-      })),
-    [pontos.data, legenda, selecionada],
-  )
+  const pins = useMemo<PinDoMapa[]>(() => {
+    const dosPontos = (pontos.data?.pontos ?? []).map((p) => ({
+      id: p.id,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      cor: tokenDoEstado(legenda, pontos.data?.estados[p.estado] ?? ''),
+      visitada: p.visitada,
+      selecionado: p.id === selecionada,
+    }))
+    // a empresa aberta pela lista (ou com o mapa afastado, em bolhas) também fica destacada no mapa
+    if (selecionada && !dosPontos.some((p) => p.id === selecionada)) {
+      const item = [
+        ...(proximas.data?.itens ?? []),
+        ...(retanguloResultado.data?.itens ?? []),
+      ].find((i) => i.id === selecionada)
+      if (item) {
+        dosPontos.push({
+          id: item.id,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          cor: tokenDoEstado(legenda, item.estado),
+          visitada: item.visitada,
+          selecionado: true,
+        })
+      }
+    }
+    return dosPontos
+  }, [pontos.data, legenda, selecionada, proximas.data, retanguloResultado.data])
   const bolhas = useMemo(
     () => [
+      // as bolhas de município e de bairro (contadas no servidor): o clique aproxima até as empresas delas
+      ...(pontos.data?.agrupamentos ?? []).map((g) => ({
+        id: `g:${g.id}`,
+        latitude: g.latitude,
+        longitude: g.longitude,
+        total: g.total,
+        cor: '--accent',
+        rotulo: `${g.rotulo}: ${g.total} empresas`,
+      })),
       ...(mostraCobertura
         ? (cobertura.data?.municipios ?? []).map((m) => ({
             id: `m${m.codigoIbge}`,
@@ -206,7 +236,7 @@ export function TelaDoMapa() {
           }))
         : []),
     ],
-    [cobertura.data, mostraCobertura],
+    [pontos.data, cobertura.data, mostraCobertura],
   )
 
   const areas = useMemo(
@@ -273,8 +303,33 @@ export function TelaDoMapa() {
       (i) => i.id === id,
     )
     const alvo = ponto ?? item
-    if (alvo)
-      setFoco({ chave: Date.now(), latitude: alvo.latitude, longitude: alvo.longitude, zoom: 16 })
+    if (alvo) setRevelar({ chave: Date.now(), latitude: alvo.latitude, longitude: alvo.longitude })
+  }
+
+  /** Clique numa bolha: aproxima até as empresas dela e mostra o nível seguinte (bairros ou pins). */
+  function abrirBolha(id: string) {
+    const g = pontos.data?.agrupamentos.find((x) => `g:${x.id}` === id)
+    if (g) {
+      const seguinte = zoomDoNivelSeguinte(pontos.data?.nivel ?? 'pins')
+      setFoco({
+        chave: Date.now(),
+        latitude: g.latitude,
+        longitude: g.longitude,
+        caixa: { oeste: g.oeste, sul: g.sul, leste: g.leste, norte: g.norte },
+        ...(seguinte !== null ? { zoomMinimo: seguinte + 0.01 } : {}),
+      })
+      return
+    }
+    // bolha da cobertura por município: aproxima dois níveis de zoom
+    const b = bolhas.find((x) => x.id === id)
+    if (b) {
+      setFoco({
+        chave: Date.now(),
+        latitude: b.latitude,
+        longitude: b.longitude,
+        zoom: (area?.zoom ?? 9) + 2,
+      })
+    }
   }
 
   if (opcoes.isPending) {
@@ -315,18 +370,21 @@ export function TelaDoMapa() {
         semAvisoDeMapa
         {...(pontos.data?.comCnefe ? { fonteDosDados: 'Fonte: IBGE – CNEFE 2022' } : {})}
         {...(foco ? { foco } : {})}
+        {...(revelar
+          ? {
+              revelar: {
+                ...revelar,
+                bloqueios: () =>
+                  [...document.querySelectorAll('[aria-label="Empresa selecionada"]')].map((e) => {
+                    const r = e.getBoundingClientRect()
+                    return { esquerda: r.left, topo: r.top, direita: r.right, base: r.bottom }
+                  }),
+              },
+            }
+          : {})}
         aoMover={setArea}
         aoClicarNoPin={abrirEmpresa}
-        aoClicarNaBolha={(id) => {
-          const b = bolhas.find((x) => x.id === id)
-          if (b)
-            setFoco({
-              chave: Date.now(),
-              latitude: b.latitude,
-              longitude: b.longitude,
-              zoom: (area?.zoom ?? 9) + 2,
-            })
-        }}
+        aoClicarNaBolha={abrirBolha}
         aoClicarNoMapa={aoClicarNoMapa}
       />
 

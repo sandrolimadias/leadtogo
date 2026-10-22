@@ -18591,6 +18591,10 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "nivel": {
+            "type": "string",
+            "enum": ["municipio", "bairro", "pins"]
+          },
           "pontos": {
             "type": "array",
             "items": {
@@ -18616,6 +18620,55 @@
                 }
               },
               "required": ["id", "latitude", "longitude", "estado", "visitada"],
+              "additionalProperties": false
+            }
+          },
+          "agrupamentos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "rotulo": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "latitude": {
+                  "type": "number"
+                },
+                "longitude": {
+                  "type": "number"
+                },
+                "oeste": {
+                  "type": "number"
+                },
+                "sul": {
+                  "type": "number"
+                },
+                "leste": {
+                  "type": "number"
+                },
+                "norte": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "id",
+                "rotulo",
+                "total",
+                "latitude",
+                "longitude",
+                "oeste",
+                "sul",
+                "leste",
+                "norte"
+              ],
               "additionalProperties": false
             }
           },
@@ -18659,7 +18712,17 @@
             "additionalProperties": false
           }
         },
-        "required": ["total", "pontos", "estados", "truncado", "limite", "comCnefe", "leads"],
+        "required": [
+          "total",
+          "nivel",
+          "pontos",
+          "agrupamentos",
+          "estados",
+          "truncado",
+          "limite",
+          "comCnefe",
+          "leads"
+        ],
         "additionalProperties": false
       },
       "PosicaoDaEmpresa": {

@@ -4,7 +4,7 @@ import { estiloDoMapa } from './estilo'
 
 const URL_DO_MAPA_BASE = 'https://mapa.crm.exemplo.com.br/es-20261021.pmtiles'
 import { limitarArea } from './area'
-import { geojsonDaCobertura, geojsonDosPins } from './dados'
+import { geojsonDasBolhas, geojsonDosPins, raioDaBolha, textoDaBolha } from './dados'
 import { desenharPin, idDoIcone, lerIdDoIcone } from './icone'
 import { circulo, criarPin } from './pin'
 
@@ -152,21 +152,27 @@ describe('dados GeoJSON das camadas do mapa', () => {
     expect(r.features[1]?.properties).toEqual({ id: 'b', icone: 'pin|#112233|0|1', z: 1 })
   })
 
-  it('as bolhas da cobertura levam o texto (o total quando não há), a cor resolvida e o rótulo', () => {
-    const r = geojsonDaCobertura(
+  it('as bolhas levam o texto (o total abreviado quando não há), o raio, a cor resolvida e o rótulo', () => {
+    const r = geojsonDasBolhas(
       [
         { id: 'm1', latitude: -20, longitude: -40, total: 7, cor: '--warning', texto: '3' },
-        { id: 'm2', latitude: -21, longitude: -41, total: 9, cor: '#fff' },
+        { id: 'g2', latitude: -21, longitude: -41, total: 1234, cor: '#fff' },
       ],
       token,
     )
     expect(r.features[0]?.properties).toEqual({
       id: 'm1',
       texto: '3',
+      raio: 16,
       cor: 'resolvida(--warning)',
       rotulo: '',
     })
-    expect(r.features[1]?.properties['texto']).toBe('9')
+    expect(r.features[1]?.properties).toMatchObject({ texto: '1,2 mil', raio: 30, cor: '#fff' })
+  })
+
+  it('o raio cresce com o total e o texto abrevia a partir de mil', () => {
+    expect([1, 10, 100, 1000].map(raioDaBolha)).toEqual([16, 20, 25, 30])
+    expect([5, 999, 1000, 15500].map(textoDaBolha)).toEqual(['5', '999', '1 mil', '15,5 mil'])
   })
 
   it('sem pins, a coleção é vazia (a camada some do mapa)', () => {
