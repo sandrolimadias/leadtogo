@@ -7706,6 +7706,1055 @@
         "tags": ["Cadastros: verticais"]
       }
     },
+    "/v1/configuracoes/visitas/checkin": {
+      "get": {
+        "description": "Qualquer membro da empresa ativa (o check-in usa). `checkinModo`: `avisar` (padrão), `bloquear` ou `so_gravar`; `checkinLimiteM` (padrão 300, de 10 a 50.000); `lembreteRelatoriosHora` \"HH:MM\" no fuso da empresa (padrão 17:30).",
+        "operationId": "ConfiguracaoDeVisitasController_obter",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDeVisitas"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Configuração do check-in",
+        "tags": ["Visitas: check-in"]
+      },
+      "put": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Corpo completo. Vale na próxima requisição de cada pessoa.",
+        "operationId": "ConfiguracaoDeVisitasController_alterar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfiguracaoDeVisitas"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDeVisitas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar a configuração do check-in",
+        "tags": ["Visitas: check-in"]
+      }
+    },
+    "/v1/configuracoes/visitas/modelos": {
+      "get": {
+        "description": "Qualquer membro da empresa ativa. Cada modelo traz a versão atual (com os campos), quantos resultados o usam e se já tem relatório (`emUso`).",
+        "operationId": "ModelosDeVisitaController_listar",
+        "parameters": [
+          {
+            "name": "incluirInativos",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModeloDeVisita"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar modelos do relatório de visita",
+        "tags": ["Visitas: modelos"]
+      },
+      "post": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Cria a versão 1 com os campos. Campo `tag`: tag ativa da empresa, de grupo não automático (400 `tag_invalida`). Nome repetido: 409 `nome_duplicado`.",
+        "operationId": "ModelosDeVisitaController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarModeloDeVisitaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModeloDeVisita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar modelo do relatório de visita",
+        "tags": ["Visitas: modelos"]
+      }
+    },
+    "/v1/configuracoes/visitas/modelos/{id}": {
+      "get": {
+        "description": "Qualquer membro da empresa ativa.",
+        "operationId": "ModelosDeVisitaController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModeloDeVisita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Obter um modelo do relatório de visita",
+        "tags": ["Visitas: modelos"]
+      },
+      "patch": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só o que vier muda. `campos`: se o modelo já tem relatório, publica a versão N+1 (a anterior nunca muda); senão, edita a atual. `padrao: true` torna este o padrão. O padrão não se inativa e o modelo usado por resultado ativo também não (409 `modelo_padrao`, `modelo_usado_por_resultado`).",
+        "operationId": "ModelosDeVisitaController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarModeloDeVisitaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModeloDeVisita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar modelo do relatório de visita",
+        "tags": ["Visitas: modelos"]
+      },
+      "delete": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. Não se exclui o padrão, o usado por algum resultado nem o que já tem relatório (409 `modelo_padrao`, `modelo_usado_por_resultado`, `modelo_em_uso`).",
+        "operationId": "ModelosDeVisitaController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir modelo do relatório de visita",
+        "tags": ["Visitas: modelos"]
+      }
+    },
+    "/v1/configuracoes/visitas/modelos/{id}/versoes": {
+      "get": {
+        "description": "Qualquer membro da empresa ativa. Da mais nova para a mais antiga.",
+        "operationId": "ModelosDeVisitaController_versoes",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VersaoDoModeloDeVisita"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Versões de um modelo",
+        "tags": ["Visitas: modelos"]
+      }
+    },
+    "/v1/configuracoes/visitas/modelos/ordem": {
+      "put": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os modelos não excluídos, na ordem desejada.",
+        "operationId": "ModelosDeVisitaController_reordenar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NovaOrdemEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModeloDeVisita"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reordenar modelos",
+        "tags": ["Visitas: modelos"]
+      }
+    },
+    "/v1/configuracoes/visitas/resultados": {
+      "get": {
+        "description": "Qualquer membro da empresa ativa. Em ordem de exibição; sem `incluirInativos=true`, esconde os inativados.",
+        "operationId": "ResultadosDeVisitaController_listar",
+        "parameters": [
+          {
+            "name": "incluirInativos",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResultadoDeVisita"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar resultados da visita",
+        "tags": ["Visitas: resultados"]
+      },
+      "post": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O `modeloId` é o modelo do relatório desse resultado (ativo, da empresa; 404 `modelo_nao_encontrado`, 409 `modelo_inativo`). Nome repetido: 409 `nome_duplicado`.",
+        "operationId": "ResultadosDeVisitaController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarResultadoDeVisitaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDeVisita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar resultado da visita",
+        "tags": ["Visitas: resultados"]
+      }
+    },
+    "/v1/configuracoes/visitas/resultados/{id}": {
+      "patch": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. \"Não localizada\" e \"Empresa encerrada\" (`chaveSistema`) só se renomeiam e trocam de modelo (409 `resultado_de_sistema`).",
+        "operationId": "ResultadosDeVisitaController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarResultadoDeVisitaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDeVisita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar resultado da visita",
+        "tags": ["Visitas: resultados"]
+      },
+      "delete": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. Os resultados de sistema não se excluem (409 `resultado_de_sistema`).",
+        "operationId": "ResultadosDeVisitaController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir resultado da visita",
+        "tags": ["Visitas: resultados"]
+      }
+    },
+    "/v1/configuracoes/visitas/resultados/ordem": {
+      "put": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida`).",
+        "operationId": "ResultadosDeVisitaController_reordenar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NovaOrdemEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResultadoDeVisita"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reordenar resultados da visita",
+        "tags": ["Visitas: resultados"]
+      }
+    },
     "/v1/convites": {
       "post": {
         "description": "Exige `equipe.gerir` e `perfis.gerir` (convidar com um perfil é atribuí-lo). O perfil vem em `perfilId` (ou, pelo legado, o de sistema do `papel`); perfil inativo dá 409. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.",
@@ -13457,6 +14506,31 @@
         },
         "additionalProperties": false
       },
+      "AlterarModeloDeVisitaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "padrao": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "campos": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoDeVisita"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarMotivoEntrada": {
         "type": "object",
         "properties": {
@@ -13601,6 +14675,24 @@
           "acaoForaDoPerfil": {
             "type": "string",
             "enum": ["pular", "importar_com_tag"]
+          },
+          "ativo": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlterarResultadoDeVisitaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "modeloId": {
+            "type": "string",
+            "format": "uuid"
           },
           "ativo": {
             "type": "boolean"
@@ -14062,6 +15154,127 @@
         "required": ["url"],
         "additionalProperties": false
       },
+      "CampoDeVisita": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "rotulo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "obrigatorio": {
+                "type": "boolean"
+              },
+              "tipo": {
+                "type": "string",
+                "enum": [
+                  "texto_curto",
+                  "texto_longo",
+                  "numero",
+                  "data",
+                  "sim_nao",
+                  "nota",
+                  "contato",
+                  "proximo_passo"
+                ]
+              }
+            },
+            "required": ["id", "rotulo", "obrigatorio", "tipo"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "rotulo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "obrigatorio": {
+                "type": "boolean"
+              },
+              "tipo": {
+                "type": "string",
+                "enum": ["escolha_unica", "multipla_escolha"]
+              },
+              "opcoes": {
+                "minItems": 2,
+                "maxItems": 30,
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OpcaoDoCampoDeVisita"
+                }
+              }
+            },
+            "required": ["id", "rotulo", "obrigatorio", "tipo", "opcoes"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "rotulo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "obrigatorio": {
+                "type": "boolean"
+              },
+              "tipo": {
+                "type": "string",
+                "enum": ["tag"]
+              },
+              "tagId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["id", "rotulo", "obrigatorio", "tipo", "tagId"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "rotulo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "obrigatorio": {
+                "type": "boolean"
+              },
+              "tipo": {
+                "type": "string",
+                "enum": ["dados_empresa"]
+              },
+              "campoEmpresa": {
+                "type": "string",
+                "enum": ["nome_fantasia", "website", "vertical_id", "numero_funcionarios"]
+              }
+            },
+            "required": ["id", "rotulo", "obrigatorio", "tipo", "campoEmpresa"],
+            "additionalProperties": false
+          }
+        ]
+      },
       "ChipDoMapa": {
         "type": "object",
         "properties": {
@@ -14329,6 +15542,26 @@
           }
         },
         "required": ["perfis"],
+        "additionalProperties": false
+      },
+      "ConfiguracaoDeVisitas": {
+        "type": "object",
+        "properties": {
+          "checkinModo": {
+            "type": "string",
+            "enum": ["avisar", "bloquear", "so_gravar"]
+          },
+          "checkinLimiteM": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 50000
+          },
+          "lembreteRelatoriosHora": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          }
+        },
+        "required": ["checkinModo", "checkinLimiteM", "lembreteRelatoriosHora"],
         "additionalProperties": false
       },
       "ConfirmarEndereco": {
@@ -15297,6 +16530,25 @@
         "required": ["escopo"],
         "additionalProperties": false
       },
+      "CriarModeloDeVisitaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "campos": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoDeVisita"
+            }
+          }
+        },
+        "required": ["nome", "campos"],
+        "additionalProperties": false
+      },
       "CriarMotivoEntrada": {
         "type": "object",
         "properties": {
@@ -15492,6 +16744,22 @@
           }
         },
         "required": ["nome"],
+        "additionalProperties": false
+      },
+      "CriarResultadoDeVisitaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "modeloId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["nome", "modeloId"],
         "additionalProperties": false
       },
       "CriarSolucaoEntrada": {
@@ -18471,6 +19739,51 @@
         ],
         "additionalProperties": false
       },
+      "ModeloDeVisita": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "padrao": {
+            "type": "boolean"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "ordem": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "versaoAtual": {
+            "$ref": "#/components/schemas/VersaoDoModeloDeVisita"
+          },
+          "resultados": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "emUso": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "padrao",
+          "ativo",
+          "ordem",
+          "versaoAtual",
+          "resultados",
+          "emUso"
+        ],
+        "additionalProperties": false
+      },
       "Motivo": {
         "type": "object",
         "properties": {
@@ -18525,6 +19838,22 @@
           }
         },
         "required": ["ids"],
+        "additionalProperties": false
+      },
+      "OpcaoDoCampoDeVisita": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rotulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": ["id", "rotulo"],
         "additionalProperties": false
       },
       "OpcoesDaLista": {
@@ -20129,6 +21458,37 @@
         "required": ["aplicadas", "semMudanca", "ignoradas"],
         "additionalProperties": false
       },
+      "ResultadoDeVisita": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "chaveSistema": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["nao_localizada", "encerrada"]
+          },
+          "modeloId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "ordem": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["id", "nome", "chaveSistema", "modeloId", "ativo", "ordem"],
+        "additionalProperties": false
+      },
       "ResultadoDoMovimento": {
         "type": "object",
         "properties": {
@@ -20783,6 +22143,31 @@
           }
         },
         "required": ["itens"],
+        "additionalProperties": false
+      },
+      "VersaoDoModeloDeVisita": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoDeVisita"
+            }
+          },
+          "criadoEm": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "numero", "campos", "criadoEm"],
         "additionalProperties": false
       },
       "Vertical": {

@@ -14,6 +14,7 @@ type TabelaCadastro =
   | typeof schema.motivos
   | typeof schema.tiposAtividade
   | typeof schema.papeisDecisao
+  | typeof schema.visitaResultados
 /** As colunas que os cadastros têm em comum (o que este serviço usa). */
 type TabelaComum = typeof schema.verticais
 

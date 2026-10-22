@@ -27,6 +27,7 @@ import { MapaModule } from './mapa/mapa.module.js'
 import { InfraModule } from './infra/infra.module.js'
 import { LogModule } from './log/log.module.js'
 import { LimiteDeRequisicoesGuard } from './rate-limit/limite.guard.js'
+import { VisitasModule } from './visitas/visitas.module.js'
 
 export interface OpcoesApp {
   /** Destino dos logs (padrão: stdout). Os testes usam para capturar as linhas. */
@@ -56,6 +57,7 @@ export class AppModule {
         MeModule,
         ConfiguracoesModule,
         CadastrosModule,
+        VisitasModule,
         CarteiraModule,
         ConvitesModule,
         PerfisModule,
