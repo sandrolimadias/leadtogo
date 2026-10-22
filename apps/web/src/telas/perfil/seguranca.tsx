@@ -134,8 +134,9 @@ function motivoEmTexto(me: Me | null | undefined): string {
   }
   const empresa = me?.empresas.find((e) => e.id === m.empresaId)
   const nome = empresa ? nomeDaEmpresa(empresa) : 'da sua empresa'
-  const papel = m.papel ? ROTULO_DO_PAPEL[m.papel].toLowerCase() : 'membro'
-  return `A política de segurança da empresa ${nome} exige a verificação em duas etapas de quem tem o papel de ${papel} nela.`
+  // o perfil de acesso que a pessoa tem lá (o rótulo do papel, se ainda não houver perfil)
+  const perfil = empresa?.perfil?.nome ?? (m.papel ? ROTULO_DO_PAPEL[m.papel] : 'membro')
+  return `A segurança da empresa ${nome} exige a verificação em duas etapas de quem tem o perfil ${perfil} nela.`
 }
 
 function NovosCodigos() {

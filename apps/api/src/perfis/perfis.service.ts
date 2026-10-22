@@ -18,6 +18,7 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { perfilEfetivo, permissoesDoCatalogo } from '../acesso/permissoes-do-membro.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
+import { ADMIN_EXIGE_2FA } from '../configuracoes/seguranca.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ehDonoDaConta, exigirQuemGerePerfis, travar } from './guarda-de-perfis.js'
 
@@ -141,6 +142,7 @@ export class PerfisService {
       }
       await this.exigirSemUso(id, 'inativar')
     }
+    if (antes.chaveSistema === 'admin' && !depois.exige2fa) throw ADMIN_EXIGE_2FA()
     if (antes.chaveSistema === 'admin') {
       const faltando = PERMISSOES_PROTEGIDAS_DO_ADMIN.filter(
         (c) => depois.permissoes[c] === undefined,

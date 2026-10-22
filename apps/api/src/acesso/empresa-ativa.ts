@@ -11,7 +11,7 @@ export async function escolherEmpresaAtiva(
   usuarioId: string,
 ): Promise<string | null> {
   const vinculos = await banco.cliente<{ tenant_id: string }[]>`
-    SELECT tenant_id FROM app_vinculos_com_politica(${usuarioId})`
+    SELECT tenant_id FROM app_vinculos_com_perfil(${usuarioId})`
   if (vinculos.length === 0) return null
   const ids = vinculos.map((v) => v.tenant_id)
 

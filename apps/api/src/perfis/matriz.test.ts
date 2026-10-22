@@ -81,12 +81,18 @@ describe('matriz de permissão por módulo', () => {
         .set('Cookie', u.cookie)
         .set('Origin', ORIGEM_DO_FRONT)
         .send({ bloquearEmpresaNaoAtiva: false })
+    const perfis = (
+      (await chamar('get', '/v1/configuracoes/seguranca', u.cookie)).body as {
+        perfis: { id: string; chaveSistema: string | null }[]
+      }
+    ).perfis
+    const vendedor = perfis.find((p) => p.chaveSistema === 'vendedor')?.id ?? ''
     const seguranca = () =>
       request(app.getHttpServer())
         .patch('/v1/configuracoes/seguranca')
         .set('Cookie', u.cookie)
         .set('Origin', ORIGEM_DO_FRONT)
-        .send({ doisFatoresExigido: 'admin' })
+        .send({ perfis: { [vendedor]: false } })
     expect((await carteira()).status).toBe(403)
     expect((await seguranca()).status).toBe(403)
     await usarPerfil({ 'carteira.configurar': null, 'seguranca.gerir': null })

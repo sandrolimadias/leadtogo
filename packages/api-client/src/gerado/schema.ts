@@ -1041,7 +1041,7 @@ export interface paths {
         };
         /**
          * Segurança da empresa ativa
-         * @description Hoje: `doisFatoresExigido`, a política de 2FA da empresa: `admin` (padrão), `admin_gestor` ou `todos`. Quem entra na empresa sem 2FA e a política exige para o papel dele é levado à ativação (`2fa_obrigatorio` nas rotas dela).
+         * @description Os perfis de acesso da empresa e se cada um exige a verificação em duas etapas (`exige2fa`). Quem entra na empresa sem 2FA e o perfil dele exige é levado à ativação (`2fa_obrigatorio` nas rotas dela). Quem ainda não tem perfil segue a política antiga por papel (transição).
          */
         get: operations["SegurancaController_obter"];
         put?: never;
@@ -1051,7 +1051,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar a segurança da empresa ativa
-         * @description Exige `seguranca.gerir` (403 `acesso_negado` para os demais). Vale na próxima requisição de cada pessoa da empresa.
+         * @description Exige `seguranca.gerir` (403 `acesso_negado` para os demais). Corpo: `{ perfis: { [perfilId]: exige2fa } }`. O perfil Administrador sempre exige (409 `admin_exige_2fa`); perfil de outra empresa ou excluído, 404. Vale na próxima requisição de cada pessoa da empresa. Registra na auditoria.
          */
         patch: operations["SegurancaController_alterar"];
         trace?: never;
@@ -2865,12 +2865,22 @@ export interface components {
             bloquearEmpresaNaoAtiva?: boolean;
         };
         ConfiguracaoDeSeguranca: {
-            /** @enum {string} */
-            doisFatoresExigido: "admin" | "admin_gestor" | "todos";
+            perfis: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                sistema: boolean;
+                /** @enum {string|null} */
+                chaveSistema: "admin" | "gestor" | "vendedor" | null;
+                ativo: boolean;
+                membros: number;
+                exige2fa: boolean;
+            }[];
         };
         ConfiguracaoDeSegurancaEntrada: {
-            /** @enum {string} */
-            doisFatoresExigido: "admin" | "admin_gestor" | "todos";
+            perfis: {
+                [key: string]: boolean;
+            };
         };
         ConfirmarEndereco: {
             /** @enum {string} */
@@ -9151,6 +9161,15 @@ export interface operations {
             };
             /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

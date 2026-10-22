@@ -278,13 +278,9 @@ export const servicosReais: ServicosDeAcesso = {
       }),
   },
   seguranca: () => protegido(async () => daApi(await api.GET('/v1/configuracoes/seguranca'))),
-  alterarPoliticaDeDoisFatores: (politica) =>
+  alterarDoisFatoresDosPerfis: (perfis) =>
     protegido(async () =>
-      daApi(
-        await api.PATCH('/v1/configuracoes/seguranca', {
-          body: { doisFatoresExigido: politica },
-        }),
-      ),
+      daApi(await api.PATCH('/v1/configuracoes/seguranca', { body: { perfis } })),
     ),
 
   contatos: {

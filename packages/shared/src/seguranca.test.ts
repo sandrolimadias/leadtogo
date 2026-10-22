@@ -23,12 +23,16 @@ describe('política de 2FA', () => {
     }
   })
 
-  it('o PATCH aceita só um valor válido e nenhum campo extra', () => {
-    expect(segurancaPatchSchema.safeParse({ doisFatoresExigido: 'todos' }).success).toBe(true)
+  it('o PATCH aceita o 2FA de cada perfil (id → sim/não) e nada mais', () => {
+    const id = '0192f0a0-0000-7000-8000-0000000000f3'
+    expect(segurancaPatchSchema.safeParse({ perfis: { [id]: true } }).success).toBe(true)
     for (const ruim of [
       {},
-      { doisFatoresExigido: 'ninguem' },
-      { doisFatoresExigido: 'admin', x: 1 },
+      { perfis: {} },
+      { perfis: { [id]: 'sim' } },
+      { perfis: { 'nao-e-uuid': true } },
+      { perfis: { [id]: true }, x: 1 },
+      { doisFatoresExigido: 'todos' },
     ]) {
       expect(segurancaPatchSchema.safeParse(ruim).success).toBe(false)
     }

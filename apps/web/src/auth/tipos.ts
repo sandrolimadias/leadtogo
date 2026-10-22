@@ -118,7 +118,6 @@ import type {
   CriarVerticalEntrada,
   CriarPerfilDeImportacaoEntrada,
   AlterarPerfilDeImportacaoEntrada,
-  PoliticaDoisFatores,
   PrimeiroAcessoEntrada,
   PrimeiroAcessoResultado,
   Tag,
@@ -464,7 +463,8 @@ export interface ServicosDeAcesso {
   // Perfis de acesso (Fase 1): `perfis.gerir`
   perfis: ServicosDePerfis
   seguranca: () => Promise<Resultado<Seguranca>>
-  alterarPoliticaDeDoisFatores: (politica: PoliticaDoisFatores) => Promise<Resultado<Seguranca>>
+  /** Liga e desliga o 2FA de cada perfil (`seguranca.gerir`): `{ [perfilId]: exige2fa }` */
+  alterarDoisFatoresDosPerfis: (perfis: Record<string, boolean>) => Promise<Resultado<Seguranca>>
 
   // Regras da carteira (Configurações → Carteira): só o administrador altera
   configuracaoDaCarteira: () => Promise<Resultado<ConfiguracaoDaCarteira>>

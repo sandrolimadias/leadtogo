@@ -7,6 +7,7 @@ import {
   falha,
   meDeAdmin,
   ok,
+  perfisDeSeguranca,
   perfisDeSistema,
   renderizar,
   servicosFalsos,
@@ -372,25 +373,32 @@ describe('Convidar pessoa', () => {
   })
 })
 
-describe('Configurações → Segurança da empresa', () => {
-  it('mostra a política atual, só habilita Salvar ao mudar e salva', async () => {
-    const alterarPoliticaDeDoisFatores = vi.fn(async (p: string) =>
-      ok({ doisFatoresExigido: p as 'todos' }),
+describe('Configurações → Segurança da empresa (2FA por perfil)', () => {
+  it('lista os perfis com o interruptor; o Administrador fica travado; só habilita Salvar ao mudar', async () => {
+    const alterarDoisFatoresDosPerfis = vi.fn(async (mudancas: Record<string, boolean>) =>
+      ok({
+        perfis: perfisDeSeguranca().map((p) => ({ ...p, exige2fa: mudancas[p.id] ?? p.exige2fa })),
+      }),
     )
     renderizar(
-      servicosFalsos({ me: async () => meComPapel('admin'), alterarPoliticaDeDoisFatores }),
+      servicosFalsos({ me: async () => meComPapel('admin'), alterarDoisFatoresDosPerfis }),
       '/configuracoes/seguranca',
     )
-    const admins = await screen.findByRole('radio', {
-      name: /^Administradores\s*Só os administradores/,
-    })
-    expect(admins).toBeChecked()
+    const admin = await screen.findByRole('switch', { name: 'Exige a verificação: Administrador' })
+    expect(admin).toBeChecked()
+    expect(admin).toBeDisabled()
+    const vendedor = screen.getByRole('switch', { name: 'Exige a verificação: Vendedor' })
+    expect(vendedor).not.toBeChecked()
     const salvar = screen.getByRole('button', { name: 'Salvar' })
     expect(salvar).toBeDisabled()
-    await userEvent.click(screen.getByRole('radio', { name: /Todos os membros/ }))
+    await userEvent.click(vendedor)
     await userEvent.click(salvar)
-    await waitFor(() => expect(alterarPoliticaDeDoisFatores).toHaveBeenCalledWith('todos'))
-    expect(await screen.findByRole('radio', { name: /Todos os membros/ })).toBeChecked()
+    await waitFor(() =>
+      expect(alterarDoisFatoresDosPerfis).toHaveBeenCalledWith({ [VENDEDOR?.id ?? '']: true }),
+    )
+    expect(
+      await screen.findByRole('switch', { name: 'Exige a verificação: Vendedor' }),
+    ).toBeChecked()
     expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled()
   })
 
@@ -398,24 +406,26 @@ describe('Configurações → Segurança da empresa', () => {
     const seguranca = vi
       .fn()
       .mockResolvedValueOnce(falha('x', 'Sem conexão com o servidor.', 0))
-      .mockResolvedValue(ok({ doisFatoresExigido: 'admin' as const }))
-    const alterarPoliticaDeDoisFatores = vi.fn(async () =>
-      falha('acesso_negado', 'Só administradores da empresa podem alterar a segurança.', 403),
+      .mockResolvedValue(ok({ perfis: perfisDeSeguranca() }))
+    const alterarDoisFatoresDosPerfis = vi.fn(async () =>
+      falha('acesso_negado', 'Seu perfil de acesso não permite esta ação.', 403),
     )
     renderizar(
       servicosFalsos({
         me: async () => meComPapel('admin'),
         seguranca,
-        alterarPoliticaDeDoisFatores,
+        alterarDoisFatoresDosPerfis,
       }),
       '/configuracoes/seguranca',
     )
     expect(await screen.findByText('Sem conexão com o servidor.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-    await userEvent.click(await screen.findByRole('radio', { name: /Todos os membros/ }))
+    await userEvent.click(
+      await screen.findByRole('switch', { name: 'Exige a verificação: Gestor' }),
+    )
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(
-      await screen.findByText('Só administradores da empresa podem alterar a segurança.'),
+      await screen.findByText('Seu perfil de acesso não permite esta ação.'),
     ).toBeInTheDocument()
   })
 })

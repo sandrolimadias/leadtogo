@@ -18,6 +18,7 @@ import type { RespostaDeErro } from '../http/filtro-excecoes.js'
 import { configuracaoDeTeste } from '../testes/app-teste.js'
 import { entrar, limparLimitesAuth, ORIGEM_DO_FRONT, SENHA_PADRAO } from '../testes/auth-teste.js'
 import {
+  auditoriaDe,
   dono,
   ligar2fa,
   novaEmpresa,
@@ -212,110 +213,110 @@ describe('motivo da obrigatoriedade no /me', () => {
   })
 })
 
-describe('PATCH /v1/configuracoes/seguranca (só o administrador da empresa)', () => {
-  it('GET devolve o padrão; o admin altera para cada valor e o GET reflete', async () => {
+/** Os perfis da empresa com o flag de 2FA (GET /v1/configuracoes/seguranca). */
+type PerfilDeSeguranca = Seguranca['perfis'][number]
+const perfisDe = async (cookie: string) =>
+  ((await get('/v1/configuracoes/seguranca', cookie)).body as Seguranca).perfis
+const doSistema = (perfis: PerfilDeSeguranca[], chave: string) =>
+  perfis.find((p) => p.chaveSistema === chave) as PerfilDeSeguranca
+
+/** Usuário SEM 2FA ligado ao perfil de sistema da chave (com perfil_id, como depois do backfill). */
+async function usuarioComPerfil(tenantId: string, chave: 'admin' | 'gestor' | 'vendedor') {
+  const u = await usuarioSimples(app)
+  const membroId = await vincular(tenantId, u.id, chave)
+  await dono.begin(async (tx) => {
+    await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+    await tx`UPDATE membros SET perfil_id = (SELECT id FROM perfis_acesso WHERE chave_sistema = ${chave}::chave_perfil_sistema)
+      WHERE id = ${membroId}`
+  })
+  await ativar(u.id, tenantId)
+  return u
+}
+
+describe('2FA por perfil de acesso (Configurações → Segurança)', () => {
+  it('GET lista os perfis com o flag; os de sistema nascem com a política antiga convertida (admin)', async () => {
     const d = await mundo()
-    await ativar(d.usuarioId, d.tenantId)
-    expect((await get('/v1/configuracoes/seguranca', d.cookie)).body).toEqual({
-      doisFatoresExigido: 'admin',
-    } satisfies Seguranca)
-    for (const valor of ['admin_gestor', 'todos', 'admin'] as const) {
-      const r = await escrever('patch', '/v1/configuracoes/seguranca', d.cookie, {
-        doisFatoresExigido: valor,
-      })
-      expect(r.status).toBe(200)
-      expect(r.body).toEqual({ doisFatoresExigido: valor })
-      expect((await get('/v1/configuracoes/seguranca', d.cookie)).body).toEqual({
-        doisFatoresExigido: valor,
-      })
-    }
+    const perfis = await perfisDe(d.cookie)
+    expect(perfis.map((p) => [p.chaveSistema, p.exige2fa])).toEqual([
+      ['admin', true],
+      ['gestor', false],
+      ['vendedor', false],
+    ])
   })
 
-  it('a mudança vale na próxima requisição de quem já estava dentro', async () => {
+  it('ligar o 2FA de um perfil barra quem tem o perfil sem 2FA, na próxima requisição; desligar libera', async () => {
     const d = await mundo()
-    await ativar(d.usuarioId, d.tenantId)
-    const vendedor = await usuarioNaEmpresa(d.tenantId, 'vendedor')
-    expect((await rotaComum(vendedor.cookie)).status).toBe(200)
-    await escrever('patch', '/v1/configuracoes/seguranca', d.cookie, {
-      doisFatoresExigido: 'todos',
-    }).expect(200)
-    expect(erroDe(await rotaComum(vendedor.cookie)).erro).toBe('2fa_obrigatorio')
-    // o próprio admin tem 2FA e segue trabalhando
-    expect((await rotaComum(d.cookie)).status).toBe(200)
-  })
-
-  it('gestor e vendedor recebem 403 acesso_negado e a política não muda', async () => {
-    const d = await mundo()
-    for (const papel of ['gestor', 'vendedor'] as const) {
-      const u = await usuarioNaEmpresa(d.tenantId, papel)
-      await ligar2fa(u.id)
-      const r = await escrever('patch', '/v1/configuracoes/seguranca', u.cookie, {
-        doisFatoresExigido: 'todos',
-      })
-      expect(r.status).toBe(403)
-      expect(erroDe(r).erro).toBe('acesso_negado')
-    }
-    await ativar(d.usuarioId, d.tenantId)
-    expect((await get('/v1/configuracoes/seguranca', d.cookie)).body).toEqual({
-      doisFatoresExigido: 'admin',
-    })
-  })
-
-  it('valor inválido ou campo extra: 400; sem login: 401', async () => {
-    const d = await mundo()
-    await ativar(d.usuarioId, d.tenantId)
-    for (const corpo of [
-      { doisFatoresExigido: 'ninguem' },
-      {},
-      { doisFatoresExigido: 'todos', x: 1 },
-    ]) {
-      const r = await escrever('patch', '/v1/configuracoes/seguranca', d.cookie, corpo)
-      expect(r.status).toBe(400)
-      expect(erroDe(r).erro).toBe('validacao_invalida')
-    }
-    expect((await request(app.getHttpServer()).get('/v1/configuracoes/seguranca')).status).toBe(401)
-  })
-
-  it('isolamento: a política de uma empresa não muda a de outra, nem é vista por ela', async () => {
-    const a = await mundo()
-    const b = await mundo()
-    await ativar(a.usuarioId, a.tenantId)
-    await ativar(b.usuarioId, b.tenantId)
-    await escrever('patch', '/v1/configuracoes/seguranca', a.cookie, {
-      doisFatoresExigido: 'todos',
-    }).expect(200)
-    expect((await get('/v1/configuracoes/seguranca', b.cookie)).body).toEqual({
-      doisFatoresExigido: 'admin',
-    })
-    const [linha] = await dono.begin(async (tx) => {
-      await tx`SELECT set_config('app.tenant_id', ${b.tenantId}, true)`
-      return tx<
-        { dois_fatores_exigido: string }[]
-      >`SELECT dois_fatores_exigido FROM tenant_configuracoes`
-    })
-    expect(linha?.dois_fatores_exigido).toBe('admin')
-  })
-
-  it('empresa sem linha de configuração: o PATCH a cria (upsert)', async () => {
-    const d = await mundo()
-    const semConfig = await novaEmpresa(d.contaId)
-    // sem perfil não há permissão: a empresa ganha o Administrador de sistema (sem a linha de configuração)
-    await dono.begin(async (tx) => {
-      await tx`SELECT set_config('app.tenant_id', ${semConfig}, true)`
-      const [p] = await tx<{ id: string }[]>`
-        INSERT INTO perfis_acesso (id, tenant_id, nome, sistema, chave_sistema)
-        VALUES (gen_random_uuid(), ${semConfig}, 'Administrador', true, 'admin') RETURNING id`
-      await tx`INSERT INTO perfil_permissoes (tenant_id, perfil_id, permissao) VALUES (${semConfig}, ${p?.id ?? ''}, 'seguranca.gerir')`
-    })
-    const u = await usuarioNaEmpresa(semConfig, 'admin')
-    await ligar2fa(u.id)
-    const r = await escrever('patch', '/v1/configuracoes/seguranca', u.cookie, {
-      doisFatoresExigido: 'admin_gestor',
+    const v = await usuarioComPerfil(d.tenantId, 'vendedor')
+    expect((await rotaComum(v.cookie)).status).toBe(200)
+    const vendedor = doSistema(await perfisDe(d.cookie), 'vendedor')
+    const r = await escrever('patch', '/v1/configuracoes/seguranca', d.cookie, {
+      perfis: { [vendedor.id]: true },
     })
     expect(r.status).toBe(200)
-    expect((await get('/v1/configuracoes/seguranca', u.cookie)).body).toEqual({
-      doisFatoresExigido: 'admin_gestor',
+    expect(doSistema((r.body as Seguranca).perfis, 'vendedor').exige2fa).toBe(true)
+    expect(erroDe(await rotaComum(v.cookie)).erro).toBe('2fa_obrigatorio')
+    const motivo = ((await get('/v1/me', v.cookie)).body as MeResposta).doisFatoresMotivo
+    expect(motivo).toMatchObject({ origem: 'empresa', empresaId: d.tenantId })
+    await escrever('patch', '/v1/configuracoes/seguranca', d.cookie, {
+      perfis: { [vendedor.id]: false },
     })
+    expect((await rotaComum(v.cookie)).status).toBe(200)
+    // registra na auditoria quem mudou o quê
+    const registro = (await auditoriaDe(d.tenantId)).find(
+      (a) => a.acao === 'alterar_2fa_dos_perfis',
+    )
+    expect(registro?.alteracoes).toMatchObject({
+      [vendedor.id]: { perfil: 'Vendedor', de: false, para: true },
+    })
+  })
+
+  it('o perfil vale no lugar da política antiga: política "todos", mas o perfil não exige, passa', async () => {
+    const d = await mundo()
+    await definirPolitica(d.tenantId, 'todos')
+    const v = await usuarioComPerfil(d.tenantId, 'vendedor')
+    expect((await rotaComum(v.cookie)).status).toBe(200)
+  })
+
+  it('o Administrador sempre exige 2FA (409), aqui e no editor de perfis', async () => {
+    const d = await mundo()
+    const admin = doSistema(await perfisDe(d.cookie), 'admin')
+    const r = await escrever('patch', '/v1/configuracoes/seguranca', d.cookie, {
+      perfis: { [admin.id]: false },
+    })
+    expect(r.status).toBe(409)
+    expect(erroDe(r).erro).toBe('admin_exige_2fa')
+    const p = await escrever('patch', `/v1/perfis/${admin.id}`, d.cookie, { exige2fa: false })
+    expect(p.status).toBe(409)
+  })
+
+  it('sem seguranca.gerir: 403 e nada muda; corpo inválido 400; perfil de outra empresa 404', async () => {
+    const d = await mundo()
+    const g = await usuarioComPerfil(d.tenantId, 'gestor')
+    await ligar2fa(g.id)
+    const vendedor = doSistema(await perfisDe(d.cookie), 'vendedor')
+    const negado = await escrever('patch', '/v1/configuracoes/seguranca', g.cookie, {
+      perfis: { [vendedor.id]: true },
+    })
+    expect(negado.status).toBe(403)
+    expect(erroDe(negado).erro).toBe('acesso_negado')
+    expect(doSistema(await perfisDe(d.cookie), 'vendedor').exige2fa).toBe(false)
+    for (const corpo of [
+      {},
+      { perfis: {} },
+      { perfis: { [vendedor.id]: 'sim' } },
+      { doisFatoresExigido: 'todos' },
+    ]) {
+      expect((await escrever('patch', '/v1/configuracoes/seguranca', d.cookie, corpo)).status).toBe(
+        400,
+      )
+    }
+    const outro = await novoDono(app)
+    const deOutra = doSistema(await perfisDe(outro.cookie), 'vendedor')
+    const r = await escrever('patch', '/v1/configuracoes/seguranca', d.cookie, {
+      perfis: { [deOutra.id]: true },
+    })
+    expect(r.status).toBe(404)
+    expect(doSistema(await perfisDe(outro.cookie), 'vendedor').exige2fa).toBe(false)
   })
 })
 

@@ -21,7 +21,7 @@ export class SegurancaController {
   @Documenta({
     resumo: 'Segurança da empresa ativa',
     descricao:
-      'Hoje: `doisFatoresExigido`, a política de 2FA da empresa: `admin` (padrão), `admin_gestor` ou `todos`. Quem entra na empresa sem 2FA e a política exige para o papel dele é levado à ativação (`2fa_obrigatorio` nas rotas dela).',
+      'Os perfis de acesso da empresa e se cada um exige a verificação em duas etapas (`exige2fa`). Quem entra na empresa sem 2FA e o perfil dele exige é levado à ativação (`2fa_obrigatorio` nas rotas dela). Quem ainda não tem perfil segue a política antiga por papel (transição).',
     resposta: segurancaSchema,
     erros: [401, 403, 409],
   })
@@ -34,10 +34,10 @@ export class SegurancaController {
   @Documenta({
     resumo: 'Alterar a segurança da empresa ativa',
     descricao:
-      'Exige `seguranca.gerir` (403 `acesso_negado` para os demais). Vale na próxima requisição de cada pessoa da empresa.',
+      'Exige `seguranca.gerir` (403 `acesso_negado` para os demais). Corpo: `{ perfis: { [perfilId]: exige2fa } }`. O perfil Administrador sempre exige (409 `admin_exige_2fa`); perfil de outra empresa ou excluído, 404. Vale na próxima requisição de cada pessoa da empresa. Registra na auditoria.',
     corpo: segurancaPatchSchema,
     resposta: segurancaSchema,
-    erros: [400, 401, 403, 409],
+    erros: [400, 401, 403, 404, 409],
   })
   @Patch()
   @Permissao('seguranca.gerir')

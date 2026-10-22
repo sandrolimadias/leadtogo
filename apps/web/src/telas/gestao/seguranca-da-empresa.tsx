@@ -1,37 +1,23 @@
-import type { PoliticaDoisFatores } from '@leadtogo/shared'
+import type { Seguranca } from '@leadtogo/api-client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/exibicao'
 import { Alert, Skeleton } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
-import { cn } from '@/lib/cn'
 import { useEnvio } from '@/telas/acesso/comum'
-
-const OPCOES: { valor: PoliticaDoisFatores; titulo: string; quem: string }[] = [
-  {
-    valor: 'admin',
-    titulo: 'Administradores',
-    quem: 'Só os administradores da empresa precisam da verificação em duas etapas.',
-  },
-  {
-    valor: 'admin_gestor',
-    titulo: 'Administradores e gestores',
-    quem: 'Administradores e gestores precisam; vendedores usam se quiserem.',
-  },
-  {
-    valor: 'todos',
-    titulo: 'Todos os membros',
-    quem: 'Administradores, gestores e vendedores precisam da verificação em duas etapas.',
-  },
-]
 
 const chaveDaSegurancaDaEmpresa = ['seguranca-da-empresa'] as const
 
+const usuarios = (n: number) => (n === 1 ? '1 usuário' : `${n} usuários`)
+
 /**
- * Configurações → Segurança: a política de 2FA da empresa ativa (quem é obrigado a ter a verificação em
- * duas etapas). Só o administrador altera; vale na próxima requisição de cada pessoa.
+ * Configurações → Segurança: quem precisa da verificação em duas etapas, perfil por perfil (o flag
+ * `exige2fa` do perfil de acesso). Altera quem tem `seguranca.gerir`; vale na próxima requisição de
+ * cada pessoa. O Administrador sempre exige.
  */
 export function TelaDeSegurancaDaEmpresa() {
   const servicos = useServicos()
@@ -46,7 +32,7 @@ export function TelaDeSegurancaDaEmpresa() {
       return r.dados
     },
   })
-  const [escolhida, setEscolhida] = useState<PoliticaDoisFatores | undefined>()
+  const [mudancas, setMudancas] = useState<Record<string, boolean>>({})
   const [falha, setFalha] = useState<string | undefined>()
 
   const cabecalho = (
@@ -85,19 +71,25 @@ export function TelaDeSegurancaDaEmpresa() {
     )
   }
 
-  const atual = consulta.data.doisFatoresExigido
-  const selecionada = escolhida ?? atual
+  const perfis: Seguranca['perfis'] = consulta.data.perfis
+  const exige = (id: string, atual: boolean) => mudancas[id] ?? atual
+  const mudou = perfis.some((p) => exige(p.id, p.exige2fa) !== p.exige2fa)
   const salvar = () =>
     void executar(async () => {
       setFalha(undefined)
-      const r = await servicos.alterarPoliticaDeDoisFatores(selecionada)
+      const alteradas = Object.fromEntries(
+        perfis
+          .filter((p) => exige(p.id, p.exige2fa) !== p.exige2fa)
+          .map((p) => [p.id, exige(p.id, p.exige2fa)]),
+      )
+      const r = await servicos.alterarDoisFatoresDosPerfis(alteradas)
       if (!r.ok) {
         setFalha(r.erro.mensagem)
         return
       }
       queryClient.setQueryData(chaveDaSegurancaDaEmpresa, r.dados)
-      setEscolhida(undefined)
-      toast.success('Política de segurança salva', {
+      setMudancas({})
+      toast.success('Segurança salva', {
         description: 'Vale na próxima requisição de cada pessoa.',
       })
     })
@@ -105,35 +97,38 @@ export function TelaDeSegurancaDaEmpresa() {
   return (
     <div className="flex flex-col gap-4">
       {cabecalho}
-      <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-        <legend className="sr-only">Quem precisa da verificação em duas etapas</legend>
-        {OPCOES.map((o) => (
-          <label
-            key={o.valor}
-            className={cn(
-              'flex cursor-pointer items-start gap-3 rounded-md border bg-surface p-3',
-              selecionada === o.valor ? 'border-brand bg-surface-selected' : 'border-border',
-            )}
+      <ul
+        aria-label="Verificação em duas etapas por perfil"
+        className="m-0 flex list-none flex-col overflow-hidden rounded-lg border border-border bg-surface p-0"
+      >
+        {perfis.map((p) => (
+          <li
+            key={p.id}
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-4 py-3 last:border-b-0"
           >
-            <input
-              type="radio"
-              name="politica-2fa"
-              value={o.valor}
-              checked={selecionada === o.valor}
-              onChange={() => setEscolhida(o.valor)}
-              className="mt-1 accent-(--brand)"
+            <div className="flex min-w-[200px] flex-1 flex-col">
+              <span className="flex items-center gap-2 font-semibold">
+                {p.nome}
+                {p.ativo ? null : <Badge tone="neutral">Inativo</Badge>}
+              </span>
+              <span className="text-xs text-ink-muted">
+                {usuarios(p.membros)}
+                {p.chaveSistema === 'admin' ? ' · o Administrador sempre exige' : ''}
+              </span>
+            </div>
+            <Switch
+              label={`Exige a verificação: ${p.nome}`}
+              checked={exige(p.id, p.exige2fa)}
+              disabled={p.chaveSistema === 'admin'}
+              onChange={(e) => setMudancas((m) => ({ ...m, [p.id]: e.target.checked }))}
             />
-            <span className="flex flex-col">
-              <span className="text-[15px] font-semibold">{o.titulo}</span>
-              <span className="text-[13px] text-ink-muted">{o.quem}</span>
-            </span>
-          </label>
+          </li>
         ))}
-      </fieldset>
+      </ul>
       <Alert tone="info" title="Como a regra é aplicada">
-        Quem entra na empresa sem a verificação ativa é levado à ativação e fica barrado nas demais
-        telas até concluir. Administradores da conta precisam dela sempre, qualquer que seja a
-        política.
+        Quem entra na empresa sem a verificação ativa e tem um perfil que a exige é levado à
+        ativação e fica barrado nas demais telas até concluir. Administradores da conta precisam
+        dela sempre. Os perfis ficam em Configurações → Perfis de acesso.
       </Alert>
       {falha ? (
         <Alert tone="danger" title="Não foi possível salvar">
@@ -141,12 +136,7 @@ export function TelaDeSegurancaDaEmpresa() {
         </Alert>
       ) : null}
       <div className="flex justify-end">
-        <Button
-          variant="primary"
-          loading={enviando}
-          disabled={selecionada === atual}
-          onClick={salvar}
-        >
+        <Button variant="primary" loading={enviando} disabled={!mudou} onClick={salvar}>
           Salvar
         </Button>
       </div>

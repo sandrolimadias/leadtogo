@@ -5730,7 +5730,7 @@
     },
     "/v1/configuracoes/seguranca": {
       "get": {
-        "description": "Hoje: `doisFatoresExigido`, a política de 2FA da empresa: `admin` (padrão), `admin_gestor` ou `todos`. Quem entra na empresa sem 2FA e a política exige para o papel dele é levado à ativação (`2fa_obrigatorio` nas rotas dela).",
+        "description": "Os perfis de acesso da empresa e se cada um exige a verificação em duas etapas (`exige2fa`). Quem entra na empresa sem 2FA e o perfil dele exige é levado à ativação (`2fa_obrigatorio` nas rotas dela). Quem ainda não tem perfil segue a política antiga por papel (transição).",
         "operationId": "SegurancaController_obter",
         "parameters": [],
         "responses": {
@@ -5779,7 +5779,7 @@
         "tags": ["Configurações"]
       },
       "patch": {
-        "description": "Exige `seguranca.gerir` (403 `acesso_negado` para os demais). Vale na próxima requisição de cada pessoa da empresa.",
+        "description": "Exige `seguranca.gerir` (403 `acesso_negado` para os demais). Corpo: `{ perfis: { [perfilId]: exige2fa } }`. O perfil Administrador sempre exige (409 `admin_exige_2fa`); perfil de outra empresa ou excluído, 404. Vale na próxima requisição de cada pessoa da empresa. Registra na auditoria.",
         "operationId": "SegurancaController_alterar",
         "parameters": [],
         "requestBody": {
@@ -5825,6 +5825,16 @@
           },
           "403": {
             "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
             "content": {
               "application/json": {
                 "schema": {
@@ -14268,23 +14278,57 @@
       "ConfiguracaoDeSeguranca": {
         "type": "object",
         "properties": {
-          "doisFatoresExigido": {
-            "type": "string",
-            "enum": ["admin", "admin_gestor", "todos"]
+          "perfis": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "sistema": {
+                  "type": "boolean"
+                },
+                "chaveSistema": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": ["admin", "gestor", "vendedor"]
+                },
+                "ativo": {
+                  "type": "boolean"
+                },
+                "membros": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "exige2fa": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "nome", "sistema", "chaveSistema", "ativo", "membros", "exige2fa"],
+              "additionalProperties": false
+            }
           }
         },
-        "required": ["doisFatoresExigido"],
+        "required": ["perfis"],
         "additionalProperties": false
       },
       "ConfiguracaoDeSegurancaEntrada": {
         "type": "object",
         "properties": {
-          "doisFatoresExigido": {
-            "type": "string",
-            "enum": ["admin", "admin_gestor", "todos"]
+          "perfis": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
           }
         },
-        "required": ["doisFatoresExigido"],
+        "required": ["perfis"],
         "additionalProperties": false
       },
       "ConfirmarEndereco": {

@@ -13,7 +13,7 @@ const comoVendedor = (extra: Record<string, unknown> = {}) =>
   })
 
 describe('Meu perfil → Segurança', () => {
-  it('diz o motivo real: a política da empresa X para o papel dele', async () => {
+  it('diz o motivo real: a segurança da empresa X para o perfil dele', async () => {
     renderizar(
       servicosFalsos({
         me: async () =>
@@ -39,9 +39,9 @@ describe('Meu perfil → Segurança', () => {
       }),
       '/perfil/seguranca',
     )
-    expect(
-      await screen.findByText(/política de segurança da empresa Aurora Móveis exige/),
-    ).toHaveTextContent('papel de vendedor')
+    expect(await screen.findByText(/segurança da empresa Aurora Móveis exige/)).toHaveTextContent(
+      'perfil Vendedor',
+    )
   })
 
   it('quem não tem 2FA ativa pelo mesmo fluxo da ativação obrigatória e volta ao status', async () => {

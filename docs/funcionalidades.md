@@ -576,7 +576,8 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 
 - **Ativação voluntária:** em **Meu perfil → Segurança** (folha de perfil no celular), qualquer usuário (admin, gestor ou vendedor) ativa o 2FA lendo um QR code (ou digitando a chave) e confirmando com um código; recebe **códigos de recuperação** de uso único, mostrados uma vez.
 - **Desativar:** pede a **senha e um código atual** do app. Não é possível enquanto alguma regra exigir o 2FA daquele usuário (ver abaixo). A mesma tela **gera novos códigos de recuperação** (pede a senha; os antigos deixam de valer).
-- **Exigência por empresa (política):** cada empresa define **quem é obrigado** a ter 2FA, em `tenant_configuracoes.dois_fatores_exigido`:
+- **Exigência por perfil de acesso (Fase 1):** cada **perfil** tem o flag **`exige_2fa`**; quem tem um perfil que o exige é obrigado a ter 2FA naquela empresa. Configurações → **Segurança** mostra os perfis com um interruptor cada (`seguranca.gerir`; `PATCH /v1/configuracoes/seguranca` com `{ perfis: { [perfilId]: exige2fa } }`, registrado na auditoria); o editor de perfis também muda o flag. O perfil **Administrador sempre exige** (409 `admin_exige_2fa`), como em toda política antiga. O membro que ainda não tem perfil (transição até a contração) segue a **política antiga** por papel, abaixo. Na migração, cada empresa teve a política convertida para os perfis de sistema (`admin` → Administrador; `admin_gestor` → também Gestor; `todos` → os três).
+- **Política antiga por empresa (só para quem ainda não tem perfil):** em `tenant_configuracoes.dois_fatores_exigido`:
 
 | Valor | Obriga |
 |---|---|
@@ -584,10 +585,10 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 | `admin_gestor` | administradores e gestores |
 | `todos` | todos os membros (admin, gestor e vendedor) |
 
-- **Como a regra é aplicada:** vale a política da **empresa ativa**, para o **papel que a pessoa tem nela**. Quem entra numa empresa que o exige e ainda não tem 2FA é levado à **ativação** e fica barrado nas demais telas e rotas (`403 2fa_obrigatorio`) até ativar. **Ao trocar de empresa vale a regra da nova:** a troca sempre é permitida, e o mesmo usuário pode estar livre numa empresa e barrado em outra. A mudança da política vale na próxima requisição de cada pessoa.
+- **Como a regra é aplicada:** vale o **perfil que a pessoa tem na empresa ativa** (ou, sem perfil, a política antiga para o papel). Quem entra numa empresa que o exige e ainda não tem 2FA é levado à **ativação** e fica barrado nas demais telas e rotas (`403 2fa_obrigatorio`) até ativar. **Ao trocar de empresa vale a regra da nova:** a troca sempre é permitida, e o mesmo usuário pode estar livre numa empresa e barrado em outra. A mudança da política vale na próxima requisição de cada pessoa.
 - **Administradores da conta** (dono ou administrador, painel consolidado) precisam de 2FA sempre, qualquer que seja a política.
 - **Quem não pode desativar:** administradores da conta e qualquer usuário a quem a política de **alguma** das empresas dele obriga (o administrador não desativa enquanto a regra exigir).
-- **Quem altera a política:** só o **administrador** da empresa, pela tela **Configurações → Segurança** (e pela API, `PATCH /v1/configuracoes/seguranca`).
+- **Quem altera:** quem tem `seguranca.gerir` (por padrão, o Administrador), pela tela **Configurações → Segurança**, perfil por perfil; ou `perfis.gerir`, no editor do perfil.
 - **Outras regras de acesso:** login com e-mail e senha (mínimo de 10 caracteres), mensagens que **não revelam** se um e-mail existe (login e recuperação de senha), recuperação por link de 1 hora e uso único, confirmação de e-mail, convite de 7 dias e uso único, **sessão de 7 dias** renovada por uso. Google só entra para quem já tem conta (e só se a flag estiver ligada).
 
 ---

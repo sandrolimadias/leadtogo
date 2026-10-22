@@ -45,6 +45,18 @@ export const perfisDeSistema = (): PerfilDeAcesso[] =>
     permissoes: { ...PERMISSOES_PADRAO[chave] },
   }))
 
+/** Os perfis de sistema como a tela Segurança os recebe (GET /v1/configuracoes/seguranca) */
+export const perfisDeSeguranca = () =>
+  perfisDeSistema().map(({ id, nome, sistema, chaveSistema, ativo, membros, exige2fa }) => ({
+    id,
+    nome,
+    sistema,
+    chaveSistema,
+    ativo,
+    membros,
+    exige2fa,
+  }))
+
 export const comPerfil = (e: EmpresaDeTeste): EmpresaDoMe => ({ ...perfilDoPapel(e.papel), ...e })
 
 export const meDeAdmin = ({
@@ -164,9 +176,11 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       editar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       excluir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
-    seguranca: vi.fn(async () => ok({ doisFatoresExigido: 'admin' as const })),
-    alterarPoliticaDeDoisFatores: vi.fn(async (p: string) =>
-      ok({ doisFatoresExigido: p as 'admin' | 'admin_gestor' | 'todos' }),
+    seguranca: vi.fn(async () => ok({ perfis: perfisDeSeguranca() })),
+    alterarDoisFatoresDosPerfis: vi.fn(async (mudancas: Record<string, boolean>) =>
+      ok({
+        perfis: perfisDeSeguranca().map((p) => ({ ...p, exige2fa: mudancas[p.id] ?? p.exige2fa })),
+      }),
     ),
     contatos: {
       listar: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 25 })),

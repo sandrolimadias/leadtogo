@@ -28,8 +28,10 @@ export interface Sessao {
 export interface Vinculo {
   tenantId: string
   papel: PapelMembro
-  /** Política de 2FA da empresa (`tenant_configuracoes.dois_fatores_exigido`) */
+  /** Política ANTIGA de 2FA da empresa: só vale para quem ainda não tem perfil (transição) */
   doisFatoresExigido: PoliticaDoisFatores
+  /** O perfil de acesso do membro exige 2FA? `null` = o membro ainda não tem perfil */
+  perfilExige2fa: boolean | null
 }
 
 /** O que o TenantGuard decidiu para a requisição; o interceptor o executa. */

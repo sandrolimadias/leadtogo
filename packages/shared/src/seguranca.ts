@@ -3,8 +3,9 @@ import { z } from 'zod'
 import type { PapelMembro } from './me.js'
 
 /**
- * Quem a empresa obriga a ter 2FA (`tenant_configuracoes.dois_fatores_exigido`):
- * `admin` (padrão), `admin_gestor` ou `todos`.
+ * Política ANTIGA de 2FA por papel (`tenant_configuracoes.dois_fatores_exigido`): `admin` (padrão),
+ * `admin_gestor` ou `todos`. Desde a Fase 1 vale o flag `exige_2fa` do perfil de acesso; a política só
+ * decide para o membro que ainda não tem perfil (transição até a contração).
  */
 export const politicaDoisFatoresSchema = z.enum(['admin', 'admin_gestor', 'todos'])
 export type PoliticaDoisFatores = z.infer<typeof politicaDoisFatoresSchema>
@@ -16,15 +17,32 @@ export function politicaExige(politica: PoliticaDoisFatores, papel: PapelMembro)
   return papel === 'admin'
 }
 
-/** GET /v1/configuracoes/seguranca. */
+/** GET /v1/configuracoes/seguranca: quem precisa de 2FA, perfil por perfil. */
 export const segurancaSchema = z
-  .object({ doisFatoresExigido: politicaDoisFatoresSchema })
+  .object({
+    perfis: z.array(
+      z.object({
+        id: z.uuid(),
+        nome: z.string(),
+        sistema: z.boolean(),
+        chaveSistema: z.enum(['admin', 'gestor', 'vendedor']).nullable(),
+        ativo: z.boolean(),
+        /** Membros não excluídos com o perfil */
+        membros: z.number().int(),
+        exige2fa: z.boolean(),
+      }),
+    ),
+  })
   .meta({ id: 'ConfiguracaoDeSeguranca' })
 export type Seguranca = z.infer<typeof segurancaSchema>
 
-/** PATCH /v1/configuracoes/seguranca (somente administrador da empresa ativa). */
+/** PATCH /v1/configuracoes/seguranca (`seguranca.gerir`): `{ perfis: { [perfilId]: exige2fa } }`. */
 export const segurancaPatchSchema = z
-  .object({ doisFatoresExigido: politicaDoisFatoresSchema })
+  .object({
+    perfis: z
+      .record(z.uuid(), z.boolean())
+      .refine((v) => Object.keys(v).length > 0, 'informe ao menos um perfil'),
+  })
   .strict()
   .meta({ id: 'ConfiguracaoDeSegurancaEntrada' })
 export type SegurancaPatch = z.infer<typeof segurancaPatchSchema>

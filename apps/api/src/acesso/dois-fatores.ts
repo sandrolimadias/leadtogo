@@ -2,12 +2,16 @@ import type { Conexao } from '@leadtogo/db'
 import { politicaExige } from '@leadtogo/shared'
 
 import type { Vinculo } from './requisicao.js'
+import { vinculosComPerfil } from './vinculos.service.js'
 
 /**
- * Regras de 2FA (política por empresa). Quem a regra alcança:
+ * Regras de 2FA. Quem a regra alcança:
  *  - dono ou administrador de conta: SEMPRE (vê o consolidado de todas as empresas);
- *  - os demais: conforme a política da empresa em que estão, para o papel que têm nela.
+ *  - os demais: o flag `exige_2fa` do perfil de acesso que têm em cada empresa (Fase 1); quem ainda não
+ *    tem perfil (transição), a política antiga da empresa para o papel.
  */
+export const exige2fa = (v: Vinculo): boolean =>
+  v.perfilExige2fa ?? politicaExige(v.doisFatoresExigido, v.papel)
 
 /** Falta 2FA agora? Vale a regra da EMPRESA ATIVA (e a de administrador de conta). */
 export function doisFatoresPendente(dados: {
@@ -19,7 +23,7 @@ export function doisFatoresPendente(dados: {
   if (dados.twoFactorEnabled) return false
   if (dados.administradorDeConta) return true
   const ativa = dados.vinculos.find((v) => v.tenantId === dados.empresaAtivaId)
-  return ativa ? politicaExige(ativa.doisFatoresExigido, ativa.papel) : false
+  return ativa ? exige2fa(ativa) : false
 }
 
 /** Alguma regra exige 2FA deste usuário (em qualquer empresa dele)? Se sim, ele não pode desativar. */
@@ -27,10 +31,7 @@ export function doisFatoresObrigatorio(dados: {
   administradorDeConta: boolean
   vinculos: Vinculo[]
 }): boolean {
-  return (
-    dados.administradorDeConta ||
-    dados.vinculos.some((v) => politicaExige(v.doisFatoresExigido, v.papel))
-  )
+  return dados.administradorDeConta || dados.vinculos.some(exige2fa)
 }
 
 /**
@@ -47,7 +48,7 @@ export function motivoDoisFatores(dados: {
   papel: Vinculo['papel'] | null
 } | null {
   if (dados.administradorDeConta) return { origem: 'conta', empresaId: null, papel: null }
-  const exigentes = dados.vinculos.filter((v) => politicaExige(v.doisFatoresExigido, v.papel))
+  const exigentes = dados.vinculos.filter(exige2fa)
   const v = exigentes.find((e) => e.tenantId === dados.empresaAtivaId) ?? exigentes[0]
   return v ? { origem: 'empresa', empresaId: v.tenantId, papel: v.papel } : null
 }
@@ -58,20 +59,7 @@ export async function obrigatorioParaUsuario(banco: Conexao, usuarioId: string):
     banco.cliente`
       SELECT 1 FROM conta_administradores
       WHERE usuario_id = ${usuarioId} AND papel IN ('dono', 'administrador') LIMIT 1`,
-    banco.cliente<
-      {
-        tenant_id: string
-        papel: Vinculo['papel']
-        dois_fatores_exigido: Vinculo['doisFatoresExigido']
-      }[]
-    >`SELECT tenant_id, papel, dois_fatores_exigido FROM app_vinculos_com_politica(${usuarioId})`,
+    vinculosComPerfil(banco, usuarioId),
   ])
-  return doisFatoresObrigatorio({
-    administradorDeConta: administra.length > 0,
-    vinculos: vinculos.map((l) => ({
-      tenantId: l.tenant_id,
-      papel: l.papel,
-      doisFatoresExigido: l.dois_fatores_exigido,
-    })),
-  })
+  return doisFatoresObrigatorio({ administradorDeConta: administra.length > 0, vinculos })
 }
