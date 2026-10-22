@@ -10,7 +10,7 @@
 
 # ---- 1. build: compila o TypeScript. Roda na arquitetura de QUEM CONSTRÓI ($BUILDPLATFORM); o JavaScript
 # resultante é o mesmo para qualquer arquitetura de destino.
-FROM --platform=$BUILDPLATFORM node:24-alpine AS build
+FROM --platform=$BUILDPLATFORM node:25-alpine AS build
 WORKDIR /repo
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY docker/pnpm-fixo.sh /tmp/pnpm-fixo.sh
@@ -30,7 +30,7 @@ RUN pnpm --filter "@leadtogo/api..." run build
 
 # ---- 2. deps: só as dependências de PRODUÇÃO, instaladas na arquitetura de DESTINO (sem drizzle-kit, sem
 # TypeScript, sem ferramentas de teste) e podadas (mapas, tipos, documentação e testes dos pacotes).
-FROM node:24-alpine AS deps
+FROM node:25-alpine AS deps
 WORKDIR /repo
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY docker/pnpm-fixo.sh /tmp/pnpm-fixo.sh
@@ -52,7 +52,7 @@ RUN --mount=type=cache,id=pnpm-store-prod,target=/root/.local/share/pnpm/store \
 #   (`@sentry/node/bundler-plugin/*`), que a API nunca importa; o teste de imagens confere que o SDK inicia sem eles.
 
 # ---- 3. final: a imagem oficial do node (recebe as correções de segurança), com tini e sem npm/yarn/corepack
-FROM node:24-alpine AS final
+FROM node:25-alpine AS final
 ARG APP_VERSION=dev
 ARG GIT_SHA=desconhecido
 ARG SOURCE=https://github.com/sandrolimadias/leadtogo
