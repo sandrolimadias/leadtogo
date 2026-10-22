@@ -602,6 +602,12 @@ describe('legenda do mapa', () => {
 })
 
 describe('GET /v1/mapa/pontos: níveis por zoom (município, bairro, pins)', () => {
+  // o nome do município é o do cadastro de referência, que outros arquivos de teste também inserem ("VITORIA"):
+  // o teste lê o nome do banco em vez de supor a grafia
+  const nomeDoMunicipio = async (codigo: number) =>
+    (await dono<{ nome: string }[]>`SELECT nome FROM municipios WHERE codigo_ibge = ${codigo}`)[0]
+      ?.nome as string
+
   /** Vitória: 2 no Jardim Camburi (escritas diferentes), 1 no Centro, 1 sem bairro; Serra: 1 no Centro. */
   async function cidades() {
     const c = await cenario()
@@ -658,8 +664,8 @@ describe('GET /v1/mapa/pontos: níveis por zoom (município, bairro, pins)', () 
     expect(r.pontos).toEqual([])
     expect(r.total).toBe(5)
     expect(r.agrupamentos.map((g) => [g.id, g.rotulo, g.total])).toEqual([
-      ['3205309', 'Vitória', 4],
-      ['3205002', 'Serra', 1],
+      ['3205309', await nomeDoMunicipio(3205309), 4],
+      ['3205002', await nomeDoMunicipio(3205002), 1],
     ])
     const vix = r.agrupamentos[0]
     expect(vix?.latitude).toBeCloseTo((-20.26 - 20.28 - 20.32 - 20.3) / 4, 4)
@@ -705,11 +711,13 @@ describe('GET /v1/mapa/pontos: níveis por zoom (município, bairro, pins)', () 
     const zoom = ZOOM_DOS_NIVEIS_DO_MAPA.municipioAte - 1
     const cliente = await pontos(d.cookie, `&statusTagIds=${tags.cliente}`, zoom)
     expect(cliente.agrupamentos.map((g) => [g.rotulo, g.total])).toEqual([
-      ['Vitória', 3],
-      ['Serra', 1],
+      [await nomeDoMunicipio(3205309), 3],
+      [await nomeDoMunicipio(3205002), 1],
     ])
     const prospect = await pontos(d.cookie, `&statusTagIds=${tags.prospect}`, zoom)
-    expect(prospect.agrupamentos.map((g) => [g.rotulo, g.total])).toEqual([['Vitória', 1]])
+    expect(prospect.agrupamentos.map((g) => [g.rotulo, g.total])).toEqual([
+      [await nomeDoMunicipio(3205309), 1],
+    ])
     const busca = await pontos(
       d.cookie,
       `${todos(tags)}&busca=camburi`,
