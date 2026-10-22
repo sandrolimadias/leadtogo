@@ -31,7 +31,7 @@ import type { PapelMembro, RequisicaoAutenticada } from './requisicao.js'
  * Tudo que o handler gravar ou ler passa por `ContextoTenantService.db()`, a mesma transação; se
  * o handler falhar, desfaz tudo.
  * Na empresa, carrega também o perfil de acesso e as permissões do membro e confere a marca
- * `@Permissao` da rota (403 `sem_permissao`). Rota com `@Permissao` fora de uma empresa ativa (sem
+ * `@Permissao` da rota (403 `acesso_negado`). Rota com `@Permissao` fora de uma empresa ativa (sem
  * transação, sem empresa, consolidado) é negada: não há perfil para conferir.
  */
 @Injectable()
@@ -56,7 +56,7 @@ export class TenantInterceptor implements NestInterceptor {
     const req = execucao.switchToHttp().getRequest<RequisicaoAutenticada>()
     const dados = req.dadosDeAcesso
     if (requeridas && (marca(CHAVE_SEM_TRANSACAO) || dados?.acesso.tipo !== 'empresa')) {
-      throw new ErroApi('sem_permissao', 'Seu perfil de acesso não permite esta ação.', 403)
+      throw new ErroApi('acesso_negado', 'Seu perfil de acesso não permite esta ação.', 403)
     }
     if (marca(CHAVE_SEM_TRANSACAO)) return proximo.handle()
     if (!dados || dados.acesso.tipo === 'sem-empresa') return proximo.handle()
@@ -104,7 +104,7 @@ export class TenantInterceptor implements NestInterceptor {
               ctx.membro = await carregarPermissoes(tx, membro)
               if (requeridas && !atendeAlguma(ctx.membro.permissoes, requeridas)) {
                 throw new ErroApi(
-                  'sem_permissao',
+                  'acesso_negado',
                   'Seu perfil de acesso não permite esta ação.',
                   403,
                 )

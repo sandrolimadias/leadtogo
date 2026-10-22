@@ -28,7 +28,7 @@ export class PermissaoService {
   }
 
   exigir(chave: string, mensagem = 'Seu perfil de acesso não permite esta ação.'): void {
-    if (!this.pode(chave)) throw new ErroApi('sem_permissao', mensagem, 403)
+    if (!this.pode(chave)) throw new ErroApi('acesso_negado', mensagem, 403)
   }
 
   /** Ids do próprio membro e de todos os subordinados (diretos e indiretos), sem travar em ciclo. */

@@ -12,6 +12,7 @@ export const CHAVE_SEM_2FA = Symbol('acesso:permite-sem-2fa')
 export const CHAVE_SEM_TRANSACAO = Symbol('acesso:sem-transacao')
 export const CHAVE_TRANSACAO_SOB_DEMANDA = Symbol('acesso:transacao-sob-demanda')
 export const CHAVE_PERMISSAO = Symbol('acesso:permissao')
+export const CHAVE_TODO_MEMBRO = Symbol('acesso:todo-membro')
 
 /** Sem login: health, rotas do Better Auth (que checam a sessão sozinhas), primeiro acesso, aceite de convite. */
 export const Publica = () => SetMetadata(CHAVE_PUBLICA, true)
@@ -46,7 +47,14 @@ export const TransacaoSobDemanda = () => SetMetadata(CHAVE_TRANSACAO_SOB_DEMANDA
 /**
  * Permissão do perfil de acesso exigida pela rota (chaves do catálogo em packages/shared/src/permissoes.ts).
  * Com mais de uma chave, basta ter UMA. Conferida no TenantInterceptor, depois de carregar o perfil do
- * membro na transação da requisição (o guard roda antes dela); sem a permissão, 403 `sem_permissao`.
+ * membro na transação da requisição (o guard roda antes dela); sem a permissão, 403 `acesso_negado`.
  * O alcance (própria, equipe, todas) é decidido no serviço, pelo `PermissaoService`.
  */
 export const Permissao = (...chaves: [string, ...string[]]) => SetMetadata(CHAVE_PERMISSAO, chaves)
+
+/**
+ * A rota é de qualquer membro da empresa ativa, sem permissão do perfil (ex.: ler os cadastros
+ * auxiliares). É uma decisão declarada: o teste "nenhuma rota sem decisão" exige, em toda rota de
+ * negócio, `@Permissao` ou esta marca. O alcance (própria, equipe, todas), quando houver, é do serviço.
+ */
+export const TodoMembro = () => SetMetadata(CHAVE_TODO_MEMBRO, true)

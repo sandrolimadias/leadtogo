@@ -14,7 +14,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ehViolacaoDeUnicidade } from '../http/sqlstate.js'
-import { conferirNovaOrdem, diferencas, exigirAdmin } from './cadastros.base.js'
+import { conferirNovaOrdem, diferencas } from './cadastros.base.js'
 
 const { funilFases, funis } = schema
 type LinhaFunil = typeof funis.$inferSelect
@@ -71,7 +71,6 @@ export class FunisService {
   }
 
   async criar(dados: CriarFunilEntrada): Promise<Funil> {
-    exigirAdmin(this.ctx)
     if (dados.fases.length > MAX_FASES_ATIVAS_POR_FUNIL) throw limiteDeFases()
     const db = this.ctx.db()
     const existentes = await db
@@ -123,7 +122,6 @@ export class FunisService {
   }
 
   async alterar(id: string, dados: AlterarFunilEntrada): Promise<Funil> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     if (dados.padrao) {
       // Duas trocas de padrão ao mesmo tempo são feitas uma de cada vez (o índice único também
@@ -188,7 +186,6 @@ export class FunisService {
 
   /** Exclusão lógica do funil e das fases dele. O funil padrão não se exclui. */
   async excluir(id: string): Promise<void> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     const atual = await this.funil(id)
     if (atual.padrao) {
@@ -224,7 +221,6 @@ export class FunisService {
   }
 
   async reordenar(ids: string[]): Promise<Funil[]> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     const atuais = await db.select({ id: funis.id }).from(funis).where(isNull(funis.excluidoEm))
     conferirNovaOrdem(
@@ -241,7 +237,6 @@ export class FunisService {
   // ---- fases ----
 
   async criarFase(funilId: string, dados: CriarFaseEntrada): Promise<Funil> {
-    exigirAdmin(this.ctx)
     const funil = await this.funil(funilId)
     const existentes = await this.fasesDe(funilId)
     if (existentes.filter((f) => f.ativo).length >= MAX_FASES_ATIVAS_POR_FUNIL)
@@ -275,7 +270,6 @@ export class FunisService {
   }
 
   async alterarFase(faseId: string, dados: AlterarFaseEntrada): Promise<Funil> {
-    exigirAdmin(this.ctx)
     const fase = await this.fase(faseId)
     const funil = await this.funil(fase.funilId)
     const mudancas = diferencas(fase, dados)
@@ -318,7 +312,6 @@ export class FunisService {
 
   /** Exclusão lógica. O funil nunca fica sem fase. */
   async excluirFase(faseId: string): Promise<Funil> {
-    exigirAdmin(this.ctx)
     const fase = await this.fase(faseId)
     const funil = await this.funil(fase.funilId)
     if ((await this.fasesDe(funil.id)).length <= 1) {
@@ -351,7 +344,6 @@ export class FunisService {
   }
 
   async reordenarFases(funilId: string, ids: string[]): Promise<Funil> {
-    exigirAdmin(this.ctx)
     const funil = await this.funil(funilId)
     conferirNovaOrdem(
       (await this.fasesDe(funilId)).map((f) => f.id),

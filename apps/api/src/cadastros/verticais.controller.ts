@@ -24,6 +24,7 @@ import {
 import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 
+import { Permissao, TodoMembro } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { VerticaisService } from './cadastros-simples.services.js'
@@ -33,9 +34,9 @@ const consultaSchema = z
   .strict()
 
 const ESCRITA =
-  'Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria.'
+  'Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria.'
 
-/** Verticais da empresa ativa. Ler é de qualquer membro; escrever, do administrador. */
+/** Verticais da empresa ativa. Ler é de qualquer membro; escrever exige `cadastros.gerir`. */
 @ApiTags('Cadastros: verticais')
 @Controller('configuracoes/verticais')
 export class VerticaisController {
@@ -49,6 +50,7 @@ export class VerticaisController {
     resposta: z.array(verticalSchema),
     erros: [400, 401, 403, 409],
   })
+  @TodoMembro()
   @Get()
   listar(
     @Query(new ZodPipe(consultaSchema)) consulta: z.infer<typeof consultaSchema>,
@@ -64,6 +66,7 @@ export class VerticaisController {
     status: 201,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('cadastros.gerir')
   @Post()
   criar(@Body(new ZodPipe(criarVerticalSchema)) dados: CriarVerticalEntrada): Promise<Vertical> {
     return this.servico.criar(dados)
@@ -78,6 +81,7 @@ export class VerticaisController {
     resposta: z.array(verticalSchema),
     erros: [400, 401, 403, 409],
   })
+  @Permissao('cadastros.gerir')
   @Put('ordem')
   reordenar(@Body(new ZodPipe(novaOrdemSchema)) dados: NovaOrdemEntrada): Promise<Vertical[]> {
     return this.servico.reordenar(dados.ids)
@@ -90,6 +94,7 @@ export class VerticaisController {
     resposta: verticalSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Patch(':id')
   alterar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -106,6 +111,7 @@ export class VerticaisController {
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Delete(':id')
   @HttpCode(204)
   excluir(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

@@ -5,7 +5,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ehViolacaoDeUnicidade } from '../http/sqlstate.js'
-import { conferirNovaOrdem, diferencas, exigirAdmin } from './cadastros.base.js'
+import { conferirNovaOrdem, diferencas } from './cadastros.base.js'
 
 type TabelaCadastro =
   | typeof schema.verticais
@@ -75,7 +75,6 @@ export abstract class CadastroSimplesService<
   }
 
   async criar(dados: Criar): Promise<Dto> {
-    exigirAdmin(this.ctx)
     const { t } = this
     const existentes = await this.ctx
       .db()
@@ -108,7 +107,6 @@ export abstract class CadastroSimplesService<
   }
 
   async alterar(id: string, dados: Alterar): Promise<Dto> {
-    exigirAdmin(this.ctx)
     const { t } = this
     const atual = await this.achar(id)
     const valores = this.cfg.valoresAlterar(dados)
@@ -135,7 +133,6 @@ export abstract class CadastroSimplesService<
 
   /** Exclusão lógica. Cada cadastro confere, em `conferirExclusao`, se o item já foi usado (só se exclui o que nunca foi usado). */
   async excluir(id: string): Promise<void> {
-    exigirAdmin(this.ctx)
     const { t } = this
     const atual = await this.achar(id)
     await this.cfg.conferirExclusao?.(atual)
@@ -153,7 +150,6 @@ export abstract class CadastroSimplesService<
   }
 
   async reordenar(ids: string[]): Promise<Dto[]> {
-    exigirAdmin(this.ctx)
     const { t } = this
     const db = this.ctx.db()
     const atuais = await db.select({ id: t.id }).from(t).where(isNull(t.excluidoEm))

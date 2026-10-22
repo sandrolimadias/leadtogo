@@ -121,11 +121,11 @@ async function cenario() {
 }
 
 describe('@Permissao no interceptor', () => {
-  it('sem a permissão, 403 sem_permissao; com ela, 200', async () => {
+  it('sem a permissão, 403 acesso_negado; com ela, 200', async () => {
     const { d, u } = await cenario()
     const negado = await get('/v1/teste-permissao/excluir', u.cookie)
     expect(negado.status).toBe(403)
-    expect((negado.body as RespostaDeErro).erro).toBe('sem_permissao')
+    expect((negado.body as RespostaDeErro).erro).toBe('acesso_negado')
     expect((await get('/v1/teste-permissao/excluir', d.cookie)).status).toBe(200)
   })
 

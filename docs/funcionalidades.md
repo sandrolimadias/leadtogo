@@ -530,6 +530,7 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 - **Perfil efetivo do membro:** o do membro (`perfil_id`); enquanto o membro não tem perfil (transição até a contração), o perfil de **sistema do papel** dele, a mesma regra do backfill; sem perfil de sistema, **nenhuma permissão**. Perfil **inativo ou excluído = nenhuma permissão** (não volta para o do papel). Chave fora do catálogo é ignorada.
 - **`GET /v1/me`** traz, em cada empresa, o `perfil` (`{id, nome}` ou nulo) e as `permissoes` (`chave → alcance` ou `true`); o `papel` continua no payload até a contração.
 - **Até o fim da migração dos módulos** (commit 6 da Fase 1), rota sem `@Permissao` segue com a regra antiga do papel.
+- **Módulos já decididos pelo perfil** (recusa: 403 `acesso_negado`, o mesmo código de antes): **cadastros auxiliares** (escrever exige `cadastros.gerir`; ler é de todo membro, marca `@TodoMembro`).
 - **Transição:** o `papel` antigo continua gravado como legado, mas nenhuma regra nova lê o papel. A contração (remover `papel`, `perfil_id NOT NULL`, remover o interruptor) fica para depois de duas semanas de uso real (`backlog_pos_mvp.md`).
 
 > Até a Fase 1 ser entregue e aprovada, valem as descrições por papel abaixo e nas demais seções.

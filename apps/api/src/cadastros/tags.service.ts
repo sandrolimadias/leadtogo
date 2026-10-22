@@ -14,7 +14,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ehViolacaoDeUnicidade } from '../http/sqlstate.js'
 import { ErroApi } from '../http/erro-api.js'
-import { conferirNovaOrdem, diferencas, exigirAdmin } from './cadastros.base.js'
+import { conferirNovaOrdem, diferencas } from './cadastros.base.js'
 
 const { tagGrupos, tags } = schema
 
@@ -80,7 +80,6 @@ export class TagsService {
   }
 
   async criarGrupo(dados: CriarTagGrupoEntrada): Promise<TagGrupo> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     const existentes = await db
       .select({ ordem: tagGrupos.ordem })
@@ -112,7 +111,6 @@ export class TagsService {
   }
 
   async alterarGrupo(id: string, dados: AlterarTagGrupoEntrada): Promise<TagGrupo> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     const grupo = await this.grupo(id)
     if (grupo.sistema) {
@@ -155,7 +153,6 @@ export class TagsService {
 
   /** Exclusão lógica do grupo e de suas tags. Grupo do sistema não se exclui. */
   async excluirGrupo(id: string): Promise<void> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     const grupo = await this.grupo(id)
     if (grupo.sistema) {
@@ -190,7 +187,6 @@ export class TagsService {
   }
 
   async reordenarGrupos(ids: string[]): Promise<TagGrupo[]> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     const atuais = await db
       .select({ id: tagGrupos.id })
@@ -212,7 +208,6 @@ export class TagsService {
   }
 
   async criarTag(dados: CriarTagEntrada): Promise<Tag> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     const grupo = await this.grupo(dados.tagGrupoId)
     if (grupo.automatico) {
@@ -252,7 +247,6 @@ export class TagsService {
   }
 
   async alterarTag(id: string, dados: AlterarTagEntrada): Promise<Tag> {
-    exigirAdmin(this.ctx)
     const tag = await this.tag(id)
     if (comRegra(tag) && dados.ativo === false) {
       throw new ErroApi(
@@ -289,7 +283,6 @@ export class TagsService {
   }
 
   async excluirTag(id: string): Promise<void> {
-    exigirAdmin(this.ctx)
     const tag = await this.tag(id)
     if (comRegra(tag)) {
       throw new ErroApi(
@@ -319,7 +312,6 @@ export class TagsService {
   }
 
   async reordenarTags(grupoId: string, ids: string[]): Promise<TagGrupo> {
-    exigirAdmin(this.ctx)
     const db = this.ctx.db()
     const grupo = await this.grupo(grupoId)
     const atuais = await db

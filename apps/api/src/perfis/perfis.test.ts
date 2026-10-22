@@ -86,7 +86,7 @@ describe('perfis de acesso: leitura', () => {
     const { d, vend, admin, gestor, vendedor } = await cenario()
     const negado = await get('/v1/perfis', vend.cookie)
     expect(negado.status).toBe(403)
-    expect(erro(negado)).toBe('sem_permissao')
+    expect(erro(negado)).toBe('acesso_negado')
     const perfis = (await get('/v1/perfis', d.cookie)).body as PerfilDeAcesso[]
     expect(perfis.slice(0, 3).map((p) => p.chaveSistema)).toEqual(['admin', 'gestor', 'vendedor'])
     expect(admin.membros).toBe(2) // o dono e a segunda admin (esta ainda pelo papel)

@@ -24,6 +24,7 @@ import {
 import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 
+import { Permissao, TodoMembro } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { PapeisDecisaoService } from './cadastros-simples.services.js'
@@ -33,9 +34,9 @@ const consultaSchema = z
   .strict()
 
 const ESCRITA =
-  'Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria.'
+  'Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria.'
 
-/** Papéis na decisão da empresa ativa (Decisor, Influenciador...). Ler é de qualquer membro; escrever, do administrador. */
+/** Papéis na decisão da empresa ativa (Decisor, Influenciador...). Ler é de qualquer membro; escrever exige `cadastros.gerir`. */
 @ApiTags('Cadastros: papéis na decisão')
 @Controller('configuracoes/papeis-decisao')
 export class PapeisDecisaoController {
@@ -49,6 +50,7 @@ export class PapeisDecisaoController {
     resposta: z.array(papelDecisaoSchema),
     erros: [400, 401, 403, 409],
   })
+  @TodoMembro()
   @Get()
   listar(
     @Query(new ZodPipe(consultaSchema)) consulta: z.infer<typeof consultaSchema>,
@@ -64,6 +66,7 @@ export class PapeisDecisaoController {
     status: 201,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('cadastros.gerir')
   @Post()
   criar(
     @Body(new ZodPipe(criarPapelDecisaoSchema)) dados: CriarPapelDecisaoEntrada,
@@ -80,6 +83,7 @@ export class PapeisDecisaoController {
     resposta: z.array(papelDecisaoSchema),
     erros: [400, 401, 403, 409],
   })
+  @Permissao('cadastros.gerir')
   @Put('ordem')
   reordenar(@Body(new ZodPipe(novaOrdemSchema)) dados: NovaOrdemEntrada): Promise<PapelDecisao[]> {
     return this.servico.reordenar(dados.ids)
@@ -92,6 +96,7 @@ export class PapeisDecisaoController {
     resposta: papelDecisaoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Patch(':id')
   alterar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -108,6 +113,7 @@ export class PapeisDecisaoController {
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Delete(':id')
   @HttpCode(204)
   excluir(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

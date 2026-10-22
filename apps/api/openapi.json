@@ -3939,7 +3939,7 @@
         "tags": ["Cadastros: funis"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`. Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`. Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.",
         "operationId": "FunisController_criar",
         "parameters": [],
         "requestBody": {
@@ -4010,7 +4010,7 @@
     },
     "/v1/configuracoes/funis/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Renomear, inativar/reativar e tornar padrão (`padrao: true`; o padrão anterior deixa de ser). O funil padrão não pode ser inativado (409 `funil_padrao`) e um funil inativo não pode virar padrão (409 `funil_inativo`). Não existe \"desmarcar\" o padrão: escolha outro funil.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Renomear, inativar/reativar e tornar padrão (`padrao: true`; o padrão anterior deixa de ser). O funil padrão não pode ser inativado (409 `funil_padrao`) e um funil inativo não pode virar padrão (409 `funil_inativo`). Não existe \"desmarcar\" o padrão: escolha outro funil.",
         "operationId": "FunisController_alterar",
         "parameters": [
           {
@@ -4098,7 +4098,7 @@
         "tags": ["Cadastros: funis"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do funil e das fases dele. O funil padrão não se exclui (409 `funil_padrao`).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do funil e das fases dele. O funil padrão não se exclui (409 `funil_padrao`).",
         "operationId": "FunisController_excluir",
         "parameters": [
           {
@@ -4171,7 +4171,7 @@
     },
     "/v1/configuracoes/funis/{id}/fases": {
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`). Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`). Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.",
         "operationId": "FunisController_criarFase",
         "parameters": [
           {
@@ -4261,7 +4261,7 @@
     },
     "/v1/configuracoes/funis/{id}/fases/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODAS as fases não excluídas do funil, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir alguma). Devolve o funil completo.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODAS as fases não excluídas do funil, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir alguma). Devolve o funil completo.",
         "operationId": "FunisController_reordenarFases",
         "parameters": [
           {
@@ -4351,7 +4351,7 @@
     },
     "/v1/configuracoes/funis/fases/{faseId}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo. Reativar (`ativo: true`) uma fase com o funil já em 6 ativas é 409 `limite_de_fases_ativas`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo. Reativar (`ativo: true`) uma fase com o funil já em 6 ativas é 409 `limite_de_fases_ativas`.",
         "operationId": "FunisController_alterarFase",
         "parameters": [
           {
@@ -4439,7 +4439,7 @@
         "tags": ["Cadastros: funis"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. A última fase do funil não se exclui (409 `ultima_fase`). Devolve o funil completo.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. A última fase do funil não se exclui (409 `ultima_fase`). Devolve o funil completo.",
         "operationId": "FunisController_excluirFase",
         "parameters": [
           {
@@ -4519,7 +4519,7 @@
     },
     "/v1/configuracoes/funis/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os funis não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os funis não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
         "operationId": "FunisController_reordenar",
         "parameters": [],
         "requestBody": {
@@ -4666,7 +4666,7 @@
         "tags": ["Cadastros: motivos"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os motivos; `aplicaA` lista os status em que o motivo vale (`perdido`, `cancelado`, `suspenso`; ao menos um). Nome repetido: 409 `nome_duplicado`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os motivos; `aplicaA` lista os status em que o motivo vale (`perdido`, `cancelado`, `suspenso`; ao menos um). Nome repetido: 409 `nome_duplicado`.",
         "operationId": "MotivosController_criar",
         "parameters": [],
         "requestBody": {
@@ -4737,7 +4737,7 @@
     },
     "/v1/configuracoes/motivos/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.",
         "operationId": "MotivosController_alterar",
         "parameters": [
           {
@@ -4825,7 +4825,7 @@
         "tags": ["Cadastros: motivos"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.",
         "operationId": "MotivosController_excluir",
         "parameters": [
           {
@@ -4898,7 +4898,7 @@
     },
     "/v1/configuracoes/motivos/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
         "operationId": "MotivosController_reordenar",
         "parameters": [],
         "requestBody": {
@@ -5045,7 +5045,7 @@
         "tags": ["Cadastros: origens"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as origens. Nome repetido: 409 `nome_duplicado`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as origens. Nome repetido: 409 `nome_duplicado`.",
         "operationId": "OrigensController_criar",
         "parameters": [],
         "requestBody": {
@@ -5116,7 +5116,7 @@
     },
     "/v1/configuracoes/origens/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. A origem do sistema (`chaveSistema` `importacao`) pode ser renomeada, mas não inativada nem excluída (409 `origem_de_sistema`).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. A origem do sistema (`chaveSistema` `importacao`) pode ser renomeada, mas não inativada nem excluída (409 `origem_de_sistema`).",
         "operationId": "OrigensController_alterar",
         "parameters": [
           {
@@ -5204,7 +5204,7 @@
         "tags": ["Cadastros: origens"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. A origem do sistema (`chaveSistema` `importacao`) pode ser renomeada, mas não inativada nem excluída (409 `origem_de_sistema`).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. A origem do sistema (`chaveSistema` `importacao`) pode ser renomeada, mas não inativada nem excluída (409 `origem_de_sistema`).",
         "operationId": "OrigensController_excluir",
         "parameters": [
           {
@@ -5277,7 +5277,7 @@
     },
     "/v1/configuracoes/origens/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
         "operationId": "OrigensController_reordenar",
         "parameters": [],
         "requestBody": {
@@ -5424,7 +5424,7 @@
         "tags": ["Cadastros: papéis na decisão"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os papéis. Nome repetido: 409 `nome_duplicado`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os papéis. Nome repetido: 409 `nome_duplicado`.",
         "operationId": "PapeisDecisaoController_criar",
         "parameters": [],
         "requestBody": {
@@ -5495,7 +5495,7 @@
     },
     "/v1/configuracoes/papeis-decisao/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.",
         "operationId": "PapeisDecisaoController_alterar",
         "parameters": [
           {
@@ -5583,7 +5583,7 @@
         "tags": ["Cadastros: papéis na decisão"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: papel de algum contato dá 409 `papel_em_uso`: só inativar.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: papel de algum contato dá 409 `papel_em_uso`: só inativar.",
         "operationId": "PapeisDecisaoController_excluir",
         "parameters": [
           {
@@ -5656,7 +5656,7 @@
     },
     "/v1/configuracoes/papeis-decisao/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
         "operationId": "PapeisDecisaoController_reordenar",
         "parameters": [],
         "requestBody": {
@@ -5923,7 +5923,7 @@
         "tags": ["Cadastros: soluções"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as soluções. Nome repetido: 409 `nome_duplicado`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as soluções. Nome repetido: 409 `nome_duplicado`.",
         "operationId": "SolucoesController_criar",
         "parameters": [],
         "requestBody": {
@@ -5994,7 +5994,7 @@
     },
     "/v1/configuracoes/solucoes/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.",
         "operationId": "SolucoesController_alterar",
         "parameters": [
           {
@@ -6082,7 +6082,7 @@
         "tags": ["Cadastros: soluções"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.",
         "operationId": "SolucoesController_excluir",
         "parameters": [
           {
@@ -6155,7 +6155,7 @@
     },
     "/v1/configuracoes/solucoes/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
         "operationId": "SolucoesController_reordenar",
         "parameters": [],
         "requestBody": {
@@ -6302,7 +6302,7 @@
         "tags": ["Cadastros: tags"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os grupos (409 `nome_duplicado`).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os grupos (409 `nome_duplicado`).",
         "operationId": "TagsController_criarGrupo",
         "parameters": [],
         "requestBody": {
@@ -6373,7 +6373,7 @@
     },
     "/v1/configuracoes/tag-grupos/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no \"obrigatório\" ou inativar dá 409 `grupo_de_sistema`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no \"obrigatório\" ou inativar dá 409 `grupo_de_sistema`.",
         "operationId": "TagsController_alterarGrupo",
         "parameters": [
           {
@@ -6461,7 +6461,7 @@
         "tags": ["Cadastros: tags"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do grupo e das tags dele. Grupo do sistema não se exclui (409 `grupo_de_sistema`). Só se exclui o que nunca foi usado: se alguma tag do grupo já esteve em uma empresa (inclusive no histórico de Status), 409 `grupo_em_uso`: só inativar.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do grupo e das tags dele. Grupo do sistema não se exclui (409 `grupo_de_sistema`). Só se exclui o que nunca foi usado: se alguma tag do grupo já esteve em uma empresa (inclusive no histórico de Status), 409 `grupo_em_uso`: só inativar.",
         "operationId": "TagsController_excluirGrupo",
         "parameters": [
           {
@@ -6534,7 +6534,7 @@
     },
     "/v1/configuracoes/tag-grupos/{id}/tags/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODAS as tags não excluídas do grupo, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir alguma).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODAS as tags não excluídas do grupo, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir alguma).",
         "operationId": "TagsController_reordenarTags",
         "parameters": [
           {
@@ -6624,7 +6624,7 @@
     },
     "/v1/configuracoes/tag-grupos/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os grupos não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os grupos não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
         "operationId": "TagsController_reordenarGrupos",
         "parameters": [],
         "requestBody": {
@@ -6698,7 +6698,7 @@
     },
     "/v1/configuracoes/tags": {
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único dentro do grupo (409 `nome_duplicado`). Grupo automático (Visitação) não aceita tags novas (409 `grupo_automatico`).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único dentro do grupo (409 `nome_duplicado`). Grupo automático (Visitação) não aceita tags novas (409 `grupo_automatico`).",
         "operationId": "TagsController_criarTag",
         "parameters": [],
         "requestBody": {
@@ -6779,7 +6779,7 @@
     },
     "/v1/configuracoes/tags/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Tag usada pelas regras do sistema (Lead, Cliente, Visitada...) pode ser renomeada e recolorida, mas não inativada (409 `tag_de_sistema`).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Tag usada pelas regras do sistema (Lead, Cliente, Visitada...) pode ser renomeada e recolorida, mas não inativada (409 `tag_de_sistema`).",
         "operationId": "TagsController_alterarTag",
         "parameters": [
           {
@@ -6867,7 +6867,7 @@
         "tags": ["Cadastros: tags"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. Tag usada pelas regras do sistema não se exclui (409 `tag_de_sistema`). Só se exclui o que nunca foi usado: tag que já esteve em uma empresa (atual ou no histórico de Status) dá 409 `tag_em_uso`: só inativar.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. Tag usada pelas regras do sistema não se exclui (409 `tag_de_sistema`). Só se exclui o que nunca foi usado: tag que já esteve em uma empresa (atual ou no histórico de Status) dá 409 `tag_em_uso`: só inativar.",
         "operationId": "TagsController_excluirTag",
         "parameters": [
           {
@@ -7013,7 +7013,7 @@
         "tags": ["Cadastros: tipos de atividade"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os tipos; `contaComo` (`visita`, `contato` ou `nenhum`) alimenta o controle de visitadas e contactadas; `icone` é um nome Lucide em kebab-case. Nome repetido: 409 `nome_duplicado`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os tipos; `contaComo` (`visita`, `contato` ou `nenhum`) alimenta o controle de visitadas e contactadas; `icone` é um nome Lucide em kebab-case. Nome repetido: 409 `nome_duplicado`.",
         "operationId": "TiposAtividadeController_criar",
         "parameters": [],
         "requestBody": {
@@ -7084,7 +7084,7 @@
     },
     "/v1/configuracoes/tipos-atividade/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. O tipo Tarefa (`chaveSistema` `tarefa`) pode ser renomeado, mudar ícone e cor, mas não ser inativado nem excluído, e continua sem empresa obrigatória e sem contar como visita ou contato (409 `tipo_de_sistema`).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. O tipo Tarefa (`chaveSistema` `tarefa`) pode ser renomeado, mudar ícone e cor, mas não ser inativado nem excluído, e continua sem empresa obrigatória e sem contar como visita ou contato (409 `tipo_de_sistema`).",
         "operationId": "TiposAtividadeController_alterar",
         "parameters": [
           {
@@ -7172,7 +7172,7 @@
         "tags": ["Cadastros: tipos de atividade"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. O tipo Tarefa (`chaveSistema` `tarefa`) pode ser renomeado, mudar ícone e cor, mas não ser inativado nem excluído, e continua sem empresa obrigatória e sem contar como visita ou contato (409 `tipo_de_sistema`).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. O tipo Tarefa (`chaveSistema` `tarefa`) pode ser renomeado, mudar ícone e cor, mas não ser inativado nem excluído, e continua sem empresa obrigatória e sem contar como visita ou contato (409 `tipo_de_sistema`).",
         "operationId": "TiposAtividadeController_excluir",
         "parameters": [
           {
@@ -7245,7 +7245,7 @@
     },
     "/v1/configuracoes/tipos-atividade/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
         "operationId": "TiposAtividadeController_reordenar",
         "parameters": [],
         "requestBody": {
@@ -7392,7 +7392,7 @@
         "tags": ["Cadastros: verticais"]
       },
       "post": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as verticais. Nome repetido: 409 `nome_duplicado`.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as verticais. Nome repetido: 409 `nome_duplicado`.",
         "operationId": "VerticaisController_criar",
         "parameters": [],
         "requestBody": {
@@ -7463,7 +7463,7 @@
     },
     "/v1/configuracoes/verticais/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.",
         "operationId": "VerticaisController_alterar",
         "parameters": [
           {
@@ -7551,7 +7551,7 @@
         "tags": ["Cadastros: verticais"]
       },
       "delete": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: vertical de alguma empresa dá 409 `vertical_em_uso`: só inativar.",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: vertical de alguma empresa dá 409 `vertical_em_uso`: só inativar.",
         "operationId": "VerticaisController_excluir",
         "parameters": [
           {
@@ -7624,7 +7624,7 @@
     },
     "/v1/configuracoes/verticais/ordem": {
       "put": {
-        "description": "Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).",
         "operationId": "VerticaisController_reordenar",
         "parameters": [],
         "requestBody": {

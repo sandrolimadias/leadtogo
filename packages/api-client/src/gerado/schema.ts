@@ -711,7 +711,7 @@ export interface paths {
         put?: never;
         /**
          * Criar funil
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`. Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O funil nasce com as fases do corpo (ao menos uma, na ordem enviada). O primeiro funil da empresa é o padrão; os demais nascem comuns. Nome de funil ou de fase repetido: 409 `nome_duplicado`. Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.
          */
         post: operations["FunisController_criar"];
         delete?: never;
@@ -732,14 +732,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir funil
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do funil e das fases dele. O funil padrão não se exclui (409 `funil_padrao`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do funil e das fases dele. O funil padrão não se exclui (409 `funil_padrao`).
          */
         delete: operations["FunisController_excluir"];
         options?: never;
         head?: never;
         /**
          * Alterar funil
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Renomear, inativar/reativar e tornar padrão (`padrao: true`; o padrão anterior deixa de ser). O funil padrão não pode ser inativado (409 `funil_padrao`) e um funil inativo não pode virar padrão (409 `funil_inativo`). Não existe "desmarcar" o padrão: escolha outro funil.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Renomear, inativar/reativar e tornar padrão (`padrao: true`; o padrão anterior deixa de ser). O funil padrão não pode ser inativado (409 `funil_padrao`) e um funil inativo não pode virar padrão (409 `funil_inativo`). Não existe "desmarcar" o padrão: escolha outro funil.
          */
         patch: operations["FunisController_alterar"];
         trace?: never;
@@ -755,7 +755,7 @@ export interface paths {
         put?: never;
         /**
          * Criar fase no funil
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`). Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. A fase entra no fim do funil. Devolve o funil completo. Nome único dentro do funil (409 `nome_duplicado`). Um funil tem no máximo 6 fases ATIVAS (as inativas não contam): passar disso é 409 `limite_de_fases_ativas`.
          */
         post: operations["FunisController_criarFase"];
         delete?: never;
@@ -774,7 +774,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar as fases de um funil
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODAS as fases não excluídas do funil, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir alguma). Devolve o funil completo.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODAS as fases não excluídas do funil, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir alguma). Devolve o funil completo.
          */
         put: operations["FunisController_reordenarFases"];
         post?: never;
@@ -796,14 +796,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir fase
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. A última fase do funil não se exclui (409 `ultima_fase`). Devolve o funil completo.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. A última fase do funil não se exclui (409 `ultima_fase`). Devolve o funil completo.
          */
         delete: operations["FunisController_excluirFase"];
         options?: never;
         head?: never;
         /**
          * Alterar fase
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo. Reativar (`ativo: true`) uma fase com o funil já em 6 ativas é 409 `limite_de_fases_ativas`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam: nome, cor, probabilidade padrão (0 a 100) e dias para o alerta de parada (null = sem alerta). Devolve o funil completo. Reativar (`ativo: true`) uma fase com o funil já em 6 ativas é 409 `limite_de_fases_ativas`.
          */
         patch: operations["FunisController_alterarFase"];
         trace?: never;
@@ -818,7 +818,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar os funis
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os funis não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os funis não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
          */
         put: operations["FunisController_reordenar"];
         post?: never;
@@ -843,7 +843,7 @@ export interface paths {
         put?: never;
         /**
          * Criar motivo
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os motivos; `aplicaA` lista os status em que o motivo vale (`perdido`, `cancelado`, `suspenso`; ao menos um). Nome repetido: 409 `nome_duplicado`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os motivos; `aplicaA` lista os status em que o motivo vale (`perdido`, `cancelado`, `suspenso`; ao menos um). Nome repetido: 409 `nome_duplicado`.
          */
         post: operations["MotivosController_criar"];
         delete?: never;
@@ -864,14 +864,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir motivo
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.
          */
         delete: operations["MotivosController_excluir"];
         options?: never;
         head?: never;
         /**
          * Alterar motivo
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.
          */
         patch: operations["MotivosController_alterar"];
         trace?: never;
@@ -886,7 +886,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar motivos
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
          */
         put: operations["MotivosController_reordenar"];
         post?: never;
@@ -911,7 +911,7 @@ export interface paths {
         put?: never;
         /**
          * Criar origem
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as origens. Nome repetido: 409 `nome_duplicado`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as origens. Nome repetido: 409 `nome_duplicado`.
          */
         post: operations["OrigensController_criar"];
         delete?: never;
@@ -932,14 +932,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir origem
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. A origem do sistema (`chaveSistema` `importacao`) pode ser renomeada, mas não inativada nem excluída (409 `origem_de_sistema`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. A origem do sistema (`chaveSistema` `importacao`) pode ser renomeada, mas não inativada nem excluída (409 `origem_de_sistema`).
          */
         delete: operations["OrigensController_excluir"];
         options?: never;
         head?: never;
         /**
          * Alterar origem
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. A origem do sistema (`chaveSistema` `importacao`) pode ser renomeada, mas não inativada nem excluída (409 `origem_de_sistema`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. A origem do sistema (`chaveSistema` `importacao`) pode ser renomeada, mas não inativada nem excluída (409 `origem_de_sistema`).
          */
         patch: operations["OrigensController_alterar"];
         trace?: never;
@@ -954,7 +954,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar origens
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
          */
         put: operations["OrigensController_reordenar"];
         post?: never;
@@ -979,7 +979,7 @@ export interface paths {
         put?: never;
         /**
          * Criar papel na decisão
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os papéis. Nome repetido: 409 `nome_duplicado`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os papéis. Nome repetido: 409 `nome_duplicado`.
          */
         post: operations["PapeisDecisaoController_criar"];
         delete?: never;
@@ -1000,14 +1000,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir papel na decisão
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: papel de algum contato dá 409 `papel_em_uso`: só inativar.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: papel de algum contato dá 409 `papel_em_uso`: só inativar.
          */
         delete: operations["PapeisDecisaoController_excluir"];
         options?: never;
         head?: never;
         /**
          * Alterar papel na decisão
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.
          */
         patch: operations["PapeisDecisaoController_alterar"];
         trace?: never;
@@ -1022,7 +1022,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar papéis na decisão
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
          */
         put: operations["PapeisDecisaoController_reordenar"];
         post?: never;
@@ -1071,7 +1071,7 @@ export interface paths {
         put?: never;
         /**
          * Criar solução
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as soluções. Nome repetido: 409 `nome_duplicado`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as soluções. Nome repetido: 409 `nome_duplicado`.
          */
         post: operations["SolucoesController_criar"];
         delete?: never;
@@ -1092,14 +1092,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir solução
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item.
          */
         delete: operations["SolucoesController_excluir"];
         options?: never;
         head?: never;
         /**
          * Alterar solução
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.
          */
         patch: operations["SolucoesController_alterar"];
         trace?: never;
@@ -1114,7 +1114,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar soluções
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
          */
         put: operations["SolucoesController_reordenar"];
         post?: never;
@@ -1139,7 +1139,7 @@ export interface paths {
         put?: never;
         /**
          * Criar grupo de tags
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os grupos (409 `nome_duplicado`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os grupos (409 `nome_duplicado`).
          */
         post: operations["TagsController_criarGrupo"];
         delete?: never;
@@ -1160,14 +1160,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir grupo de tags
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do grupo e das tags dele. Grupo do sistema não se exclui (409 `grupo_de_sistema`). Só se exclui o que nunca foi usado: se alguma tag do grupo já esteve em uma empresa (inclusive no histórico de Status), 409 `grupo_em_uso`: só inativar.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica do grupo e das tags dele. Grupo do sistema não se exclui (409 `grupo_de_sistema`). Só se exclui o que nunca foi usado: se alguma tag do grupo já esteve em uma empresa (inclusive no histórico de Status), 409 `grupo_em_uso`: só inativar.
          */
         delete: operations["TagsController_excluirGrupo"];
         options?: never;
         head?: never;
         /**
          * Alterar grupo de tags
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no "obrigatório" ou inativar dá 409 `grupo_de_sistema`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no "obrigatório" ou inativar dá 409 `grupo_de_sistema`.
          */
         patch: operations["TagsController_alterarGrupo"];
         trace?: never;
@@ -1182,7 +1182,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar as tags de um grupo
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODAS as tags não excluídas do grupo, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir alguma).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODAS as tags não excluídas do grupo, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir alguma).
          */
         put: operations["TagsController_reordenarTags"];
         post?: never;
@@ -1202,7 +1202,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar os grupos de tags
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os grupos não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os grupos não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
          */
         put: operations["TagsController_reordenarGrupos"];
         post?: never;
@@ -1223,7 +1223,7 @@ export interface paths {
         put?: never;
         /**
          * Criar tag
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único dentro do grupo (409 `nome_duplicado`). Grupo automático (Visitação) não aceita tags novas (409 `grupo_automatico`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único dentro do grupo (409 `nome_duplicado`). Grupo automático (Visitação) não aceita tags novas (409 `grupo_automatico`).
          */
         post: operations["TagsController_criarTag"];
         delete?: never;
@@ -1244,14 +1244,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir tag
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. Tag usada pelas regras do sistema não se exclui (409 `tag_de_sistema`). Só se exclui o que nunca foi usado: tag que já esteve em uma empresa (atual ou no histórico de Status) dá 409 `tag_em_uso`: só inativar.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica. Tag usada pelas regras do sistema não se exclui (409 `tag_de_sistema`). Só se exclui o que nunca foi usado: tag que já esteve em uma empresa (atual ou no histórico de Status) dá 409 `tag_em_uso`: só inativar.
          */
         delete: operations["TagsController_excluirTag"];
         options?: never;
         head?: never;
         /**
          * Alterar tag
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Tag usada pelas regras do sistema (Lead, Cliente, Visitada...) pode ser renomeada e recolorida, mas não inativada (409 `tag_de_sistema`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Tag usada pelas regras do sistema (Lead, Cliente, Visitada...) pode ser renomeada e recolorida, mas não inativada (409 `tag_de_sistema`).
          */
         patch: operations["TagsController_alterarTag"];
         trace?: never;
@@ -1271,7 +1271,7 @@ export interface paths {
         put?: never;
         /**
          * Criar tipo de atividade
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os tipos; `contaComo` (`visita`, `contato` ou `nenhum`) alimenta o controle de visitadas e contactadas; `icone` é um nome Lucide em kebab-case. Nome repetido: 409 `nome_duplicado`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os tipos; `contaComo` (`visita`, `contato` ou `nenhum`) alimenta o controle de visitadas e contactadas; `icone` é um nome Lucide em kebab-case. Nome repetido: 409 `nome_duplicado`.
          */
         post: operations["TiposAtividadeController_criar"];
         delete?: never;
@@ -1292,14 +1292,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir tipo de atividade
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. O tipo Tarefa (`chaveSistema` `tarefa`) pode ser renomeado, mudar ícone e cor, mas não ser inativado nem excluído, e continua sem empresa obrigatória e sem contar como visita ou contato (409 `tipo_de_sistema`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. O tipo Tarefa (`chaveSistema` `tarefa`) pode ser renomeado, mudar ícone e cor, mas não ser inativado nem excluído, e continua sem empresa obrigatória e sem contar como visita ou contato (409 `tipo_de_sistema`).
          */
         delete: operations["TiposAtividadeController_excluir"];
         options?: never;
         head?: never;
         /**
          * Alterar tipo de atividade
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. O tipo Tarefa (`chaveSistema` `tarefa`) pode ser renomeado, mudar ícone e cor, mas não ser inativado nem excluído, e continua sem empresa obrigatória e sem contar como visita ou contato (409 `tipo_de_sistema`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam. O tipo Tarefa (`chaveSistema` `tarefa`) pode ser renomeado, mudar ícone e cor, mas não ser inativado nem excluído, e continua sem empresa obrigatória e sem contar como visita ou contato (409 `tipo_de_sistema`).
          */
         patch: operations["TiposAtividadeController_alterar"];
         trace?: never;
@@ -1314,7 +1314,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar tipos de atividade
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
          */
         put: operations["TiposAtividadeController_reordenar"];
         post?: never;
@@ -1339,7 +1339,7 @@ export interface paths {
         put?: never;
         /**
          * Criar vertical
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as verticais. Nome repetido: 409 `nome_duplicado`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre as verticais. Nome repetido: 409 `nome_duplicado`.
          */
         post: operations["VerticaisController_criar"];
         delete?: never;
@@ -1360,14 +1360,14 @@ export interface paths {
         post?: never;
         /**
          * Excluir vertical
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: vertical de alguma empresa dá 409 `vertical_em_uso`: só inativar.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; o nome fica livre para um novo item. Só se exclui o que nunca foi usado: vertical de alguma empresa dá 409 `vertical_em_uso`: só inativar.
          */
         delete: operations["VerticaisController_excluir"];
         options?: never;
         head?: never;
         /**
          * Alterar vertical
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam.
          */
         patch: operations["VerticaisController_alterar"];
         trace?: never;
@@ -1382,7 +1382,7 @@ export interface paths {
         get?: never;
         /**
          * Reordenar verticais
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. O corpo traz os ids de TODOS os itens não excluídos, na ordem desejada (400 `ordem_invalida` se faltar, sobrar ou repetir algum).
          */
         put: operations["VerticaisController_reordenar"];
         post?: never;

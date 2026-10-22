@@ -30,6 +30,7 @@ import {
 import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 
+import { Permissao, TodoMembro } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { TagsService } from './tags.service.js'
@@ -39,9 +40,9 @@ const consultaSchema = z
   .strict()
 
 const ESCRITA =
-  'Só administradores da empresa ativa (403 `acesso_negado` para os demais). Registra na auditoria.'
+  'Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria.'
 
-/** Grupos de tags e tags da empresa ativa. Ler é de qualquer membro; escrever, do administrador. */
+/** Grupos de tags e tags da empresa ativa. Ler é de qualquer membro; escrever exige `cadastros.gerir`. */
 @ApiTags('Cadastros: tags')
 @Controller('configuracoes')
 export class TagsController {
@@ -55,6 +56,7 @@ export class TagsController {
     resposta: z.array(tagGrupoSchema),
     erros: [400, 401, 403, 409],
   })
+  @TodoMembro()
   @Get('tag-grupos')
   listar(
     @Query(new ZodPipe(consultaSchema)) consulta: z.infer<typeof consultaSchema>,
@@ -70,6 +72,7 @@ export class TagsController {
     status: 201,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('cadastros.gerir')
   @Post('tag-grupos')
   criarGrupo(
     @Body(new ZodPipe(criarTagGrupoSchema)) dados: CriarTagGrupoEntrada,
@@ -84,6 +87,7 @@ export class TagsController {
     resposta: z.array(tagGrupoSchema),
     erros: [400, 401, 403, 409],
   })
+  @Permissao('cadastros.gerir')
   @Put('tag-grupos/ordem')
   reordenarGrupos(
     @Body(new ZodPipe(novaOrdemSchema)) dados: NovaOrdemEntrada,
@@ -98,6 +102,7 @@ export class TagsController {
     resposta: tagGrupoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Patch('tag-grupos/:id')
   alterarGrupo(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -112,6 +117,7 @@ export class TagsController {
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Delete('tag-grupos/:id')
   @HttpCode(204)
   excluirGrupo(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
@@ -125,6 +131,7 @@ export class TagsController {
     resposta: tagGrupoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Put('tag-grupos/:id/tags/ordem')
   reordenarTags(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -141,6 +148,7 @@ export class TagsController {
     status: 201,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Post('tags')
   criarTag(@Body(new ZodPipe(criarTagSchema)) dados: CriarTagEntrada): Promise<Tag> {
     return this.servico.criarTag(dados)
@@ -153,6 +161,7 @@ export class TagsController {
     resposta: tagSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Patch('tags/:id')
   alterarTag(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -167,6 +176,7 @@ export class TagsController {
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('cadastros.gerir')
   @Delete('tags/:id')
   @HttpCode(204)
   excluirTag(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
