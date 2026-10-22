@@ -1401,13 +1401,13 @@ export interface paths {
         };
         /**
          * Convites pendentes
-         * @description Só administradores da empresa ativa. Lista os convites ainda não aceitos nem cancelados (os vencidos aparecem como `expirado`). Nunca inclui o token.
+         * @description Exige `equipe.gerir`. Lista os convites ainda não aceitos nem cancelados (os vencidos aparecem como `expirado`). Nunca inclui o token.
          */
         get: operations["ConvitesController_listar"];
         put?: never;
         /**
          * Convidar um membro
-         * @description Só administradores da empresa ativa. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.
+         * @description Exige `equipe.gerir` e `perfis.gerir` (convidar com um perfil é atribuí-lo). O perfil vem em `perfilId` (ou, pelo legado, o de sistema do `papel`); perfil inativo dá 409. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.
          */
         post: operations["ConvitesController_criar"];
         delete?: never;
@@ -1428,7 +1428,7 @@ export interface paths {
         post?: never;
         /**
          * Cancelar um convite
-         * @description Só administradores da empresa ativa. O convite de outra empresa (ou inexistente) dá 404.
+         * @description Exige `equipe.gerir`. O convite de outra empresa (ou inexistente) dá 404.
          */
         delete: operations["ConvitesController_revogar"];
         options?: never;
@@ -2301,7 +2301,7 @@ export interface paths {
         };
         /**
          * Equipe da empresa ativa
-         * @description Membros não excluídos da empresa ativa. O e-mail só aparece para administradores e gestores.
+         * @description Qualquer membro. Membros não excluídos da empresa ativa, com o perfil de acesso efetivo. O e-mail só aparece com `equipe.ver_emails`; o último acesso, com `equipe.gerir`.
          */
         get: operations["MembrosController_listar"];
         put?: never;
@@ -2326,8 +2326,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Alterar papel ou situação de um membro
-         * @description Só administradores da empresa ativa. Muda o papel e/ou ativa e desativa (desativar vale na próxima requisição da pessoa e mantém o histórico). Recusa: alterar a si mesmo (403) e o dono da conta (403); a empresa nunca fica sem administrador (quem altera é sempre outro administrador ativo). Membro de outra empresa dá 404. Registra na auditoria.
+         * Alterar situação (ou papel, legado) de um membro
+         * @description Ativa e desativa com `equipe.gerir` (desativar vale na próxima requisição da pessoa e mantém o histórico). `papel` é o legado: troca para o perfil de sistema dele e exige `perfis.gerir` (o novo é PUT /v1/membros/:id/perfil). Recusa: alterar a si mesmo (403) e o dono da conta (403); a empresa nunca fica sem quem gere os perfis de acesso (409). Membro de outra empresa dá 404. Registra na auditoria.
          */
         patch: operations["MembrosController_alterar"];
         trace?: never;
@@ -3007,6 +3007,7 @@ export interface components {
             email: string;
             /** @enum {string} */
             papel: "admin" | "gestor" | "vendedor";
+            perfil: string | null;
             /** Format: date-time */
             expiraEm: string;
             contaExistente: boolean;
@@ -3017,6 +3018,11 @@ export interface components {
             email: string;
             /** @enum {string} */
             papel: "admin" | "gestor" | "vendedor";
+            perfil: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
             /** Format: date-time */
             expiraEm: string;
             /** Format: date-time */
@@ -3031,6 +3037,11 @@ export interface components {
             email: string;
             /** @enum {string} */
             papel: "admin" | "gestor" | "vendedor";
+            perfil: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
             /** Format: date-time */
             expiraEm: string;
             /** Format: date-time */
@@ -3086,8 +3097,10 @@ export interface components {
         };
         CriarConviteEntrada: {
             email: string;
+            /** Format: uuid */
+            perfilId?: string;
             /** @enum {string} */
-            papel: "admin" | "gestor" | "vendedor";
+            papel?: "admin" | "gestor" | "vendedor";
         };
         CriarEmpresaDaCarteiraEntrada: {
             /** @enum {string} */
@@ -3945,6 +3958,11 @@ export interface components {
             email?: string | null;
             /** @enum {string} */
             papel: "admin" | "gestor" | "vendedor";
+            perfil: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
             ativo: boolean;
             temLogin: boolean;
             cor: string | null;
@@ -10781,6 +10799,15 @@ export interface operations {
                     "application/json": components["schemas"]["Erro"];
                 };
             };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
                 headers: {
@@ -14033,6 +14060,15 @@ export interface operations {
             };
             /** @description Não encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

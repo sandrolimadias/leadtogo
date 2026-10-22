@@ -137,7 +137,7 @@ describe('POST /v1/convites (administrador)', () => {
       expect(JSON.stringify(convite)).not.toContain(token)
       expect(mensagem.Subject).toMatch(/^Convite para a .+ no Leadtogo$/)
       expect(mensagem.Text).toContain('Dono de Teste convidou você')
-      expect(mensagem.Text).toContain('como gestor')
+      expect(mensagem.Text).toContain('com o perfil Gestor')
       expect(mensagem.Text).toContain('7 dias')
       const linha = await linhaDoConvite(convite.id, d.tenantId)
       expect(linha?.token_hash).toBe(hash(token)) // só o hash
@@ -470,7 +470,7 @@ describe('auditoria dos convites', () => {
     expect(registros.map((r) => r.acao)).toEqual(['convidar', 'cancelar_convite'])
     expect(registros[0]).toMatchObject({
       entidade_id: convite.id,
-      alteracoes: { email, papel: 'gestor' },
+      alteracoes: { email, perfil: { nome: 'Gestor' } },
       origem: 'app',
     })
     expect(registros[0]?.membro_id).toBeTruthy()
@@ -569,5 +569,86 @@ describe('GET /v1/membros', () => {
     await ativar(d.usuarioId, b)
     const naB = (await com(http().get('/v1/membros'), d.cookie)).body as MembroDaEquipe[]
     expect(naB.map((m) => m.nome).sort()).toEqual(['Eu na B', 'Só da B'])
+  })
+})
+
+describe('convites com perfil de acesso', () => {
+  const perfilDaEmpresa = async (cookie: string, nome: string, permissoes: object = {}) =>
+    (
+      await com(http().post('/v1/perfis').set('Origin', ORIGEM_DO_FRONT), cookie).send({
+        nome,
+        permissoes,
+      })
+    ).body as { id: string }
+
+  it(
+    'convida com um perfil da empresa: e-mail com o nome do perfil, e o membro nasce com ele',
+    async () => {
+      const d = await adminPronto()
+      const perfil = await perfilDaEmpresa(d.cookie, 'Externo', { 'empresas.ver': 'propria' })
+      const email = emailUnico('externo')
+      const r = await convidar(d.cookie, { email, perfilId: perfil.id })
+      expect(r.status, JSON.stringify(r.body)).toBe(201)
+      expect((r.body as ConviteCriado).perfil).toEqual({ id: perfil.id, nome: 'Externo' })
+      const mensagem = await aguardarMensagem(email)
+      expect(mensagem.Text).toContain('com o perfil Externo')
+      const token = new URL(primeiroLink(mensagem)).searchParams.get('token') ?? ''
+      expect(((await consultar(token)).body as { perfil: string }).perfil).toBe('Externo')
+
+      const aceito = (await aceitar({ token, nome: 'Edu Externo', senha: 'senha-do-edu-123' }))
+        .body as ConviteAceito
+      const membro = await dono.begin(async (tx) => {
+        await tx`SELECT set_config('app.tenant_id', ${d.tenantId}, true)`
+        return (
+          await tx<{ papel: string; perfil_id: string }[]>`
+            SELECT papel, perfil_id FROM membros WHERE id = ${aceito.membroId}`
+        )[0]
+      })
+      // o papel antigo fica como legado: `vendedor` nos perfis da empresa
+      expect(membro).toEqual({ papel: 'vendedor', perfil_id: perfil.id })
+    },
+    PRAZO_DO_TESTE_COM_EMAIL_MS,
+  )
+
+  it('quem gere a equipe mas não os perfis não convida (403): convidar é atribuir um perfil', async () => {
+    const d = await adminPronto()
+    const perfil = await perfilDaEmpresa(d.cookie, 'Só equipe', { 'equipe.gerir': true })
+    const u = await usuarioSimples(app)
+    const membroId = await vincular(d.tenantId, u.id, 'vendedor', 'Recrutadora')
+    await com(
+      http().put(`/v1/membros/${membroId}/perfil`).set('Origin', ORIGEM_DO_FRONT),
+      d.cookie,
+    ).send({
+      perfilId: perfil.id,
+    })
+    await ativar(u.id, d.tenantId)
+    expect((await com(http().get('/v1/convites'), u.cookie)).status).toBe(200)
+    const r = await convidar(u.cookie, { email: emailUnico('nao'), papel: 'vendedor' })
+    expect(r.status).toBe(403)
+    expect(erroDe(r).erro).toBe('acesso_negado')
+  })
+
+  it('perfil inativo (409) e perfil de outra empresa (404)', async () => {
+    const d = await adminPronto()
+    const parado = await perfilDaEmpresa(d.cookie, 'Parado')
+    await com(
+      http().patch(`/v1/perfis/${parado.id}`).set('Origin', ORIGEM_DO_FRONT),
+      d.cookie,
+    ).send({
+      ativo: false,
+    })
+    expect(
+      erroDe(await convidar(d.cookie, { email: emailUnico('x'), perfilId: parado.id })).erro,
+    ).toBe('perfil_inativo')
+    const outra = await novaEmpresa(d.contaId)
+    const deOutra = await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${outra}, true)`
+      const [p] = await tx<{ id: string }[]>`
+        INSERT INTO perfis_acesso (id, tenant_id, nome) VALUES (gen_random_uuid(), ${outra}, 'De lá') RETURNING id`
+      return p?.id ?? ''
+    })
+    expect((await convidar(d.cookie, { email: emailUnico('y'), perfilId: deOutra })).status).toBe(
+      404,
+    )
   })
 })

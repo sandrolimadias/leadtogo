@@ -69,13 +69,18 @@ export function emailConvite(dados: {
   empresa: string
   convidadoPor: string
   papel: string
+  /** Nome do perfil de acesso; sem ele, vale o rótulo do papel (legado) */
+  perfil?: string | null
   link: string
 }): ModeloDeEmail {
+  const como = dados.perfil
+    ? `com o perfil ${dados.perfil}`
+    : `como ${ROTULO_PAPEL[dados.papel] ?? dados.papel}`
   return montar(
     `Convite para a ${dados.empresa} no Leadtogo`,
     'Olá!',
     [
-      `${dados.convidadoPor} convidou você para a equipe da empresa ${dados.empresa} no Leadtogo, como ${ROTULO_PAPEL[dados.papel] ?? dados.papel}.`,
+      `${dados.convidadoPor} convidou você para a equipe da empresa ${dados.empresa} no Leadtogo, ${como}.`,
       'O convite vale por 7 dias e só pode ser usado uma vez.',
     ],
     { texto: 'Aceitar convite', link: dados.link },

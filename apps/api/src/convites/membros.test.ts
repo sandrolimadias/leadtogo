@@ -214,3 +214,60 @@ describe('PATCH /v1/membros/:id', () => {
     expect((await auditoriaDe(b.d.tenantId)).filter((x) => x.entidade === 'membro')).toEqual([])
   })
 })
+
+describe('PATCH /v1/membros/:id com perfis de acesso', () => {
+  /** Dá à pessoa (já vinculada) um perfil da empresa com estas permissões, direto no banco */
+  const darPerfil = (tenantId: string, membroId: string, permissoes: string[]) =>
+    dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+      const [p] = await tx<{ id: string }[]>`
+        INSERT INTO perfis_acesso (id, tenant_id, nome)
+        VALUES (gen_random_uuid(), ${tenantId}, ${`P ${membroId.slice(-6)}`}) RETURNING id`
+      for (const permissao of permissoes) {
+        await tx`INSERT INTO perfil_permissoes (tenant_id, perfil_id, permissao) VALUES (${tenantId}, ${p?.id ?? ''}, ${permissao})`
+      }
+      await tx`UPDATE membros SET perfil_id = ${p?.id ?? ''} WHERE id = ${membroId}`
+    })
+
+  it('com só equipe.gerir: desativa e reativa, mas não troca o papel (perfis.gerir)', async () => {
+    const { d, u, membroId } = await equipe('vendedor')
+    await darPerfil(d.tenantId, membroId, ['equipe.gerir'])
+    const outra = await usuarioSimples(app)
+    const outraId = await vincular(d.tenantId, outra.id, 'vendedor', 'Colega')
+    expect((await alterar(u.cookie, outraId, { ativo: false })).status).toBe(200)
+    expect((await alterar(u.cookie, outraId, { ativo: true })).status).toBe(200)
+    const r = await alterar(u.cookie, outraId, { papel: 'gestor' })
+    expect(r.status).toBe(403)
+    expect(erroDe(r)).toBe('acesso_negado')
+  })
+
+  it('a empresa nunca fica sem quem gere os perfis: desativar o último dá 409 e nada muda', async () => {
+    const { d, u, membroId, donoMembroId } = await equipe('vendedor')
+    // o dono perde a gestão dos perfis (direto no banco); sobra uma administradora
+    await darPerfil(d.tenantId, donoMembroId, ['empresas.criar'])
+    const adm = await usuarioSimples(app)
+    const admId = await vincular(d.tenantId, adm.id, 'admin', 'Administradora')
+    // quem age só gere a equipe
+    await darPerfil(d.tenantId, membroId, ['equipe.gerir'])
+    const r = await alterar(u.cookie, admId, { ativo: false })
+    expect(r.status).toBe(409)
+    expect(erroDe(r)).toBe('sem_administrador')
+    const [linha] = await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${d.tenantId}, true)`
+      return tx<{ ativo: boolean }[]>`SELECT ativo FROM membros WHERE id = ${admId}`
+    })
+    expect(linha?.ativo).toBe(true)
+  })
+
+  it('trocar o papel (legado) leva ao perfil de sistema dele', async () => {
+    const { d, membroId } = await equipe('vendedor')
+    expect((await alterar(d.cookie, membroId, { papel: 'gestor' })).status).toBe(200)
+    const [linha] = await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${d.tenantId}, true)`
+      return tx<{ chave: string }[]>`
+        SELECT p.chave_sistema::text AS chave FROM membros m JOIN perfis_acesso p ON p.id = m.perfil_id
+        WHERE m.id = ${membroId}`
+    })
+    expect(linha?.chave).toBe('gestor')
+  })
+})

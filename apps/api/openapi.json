@@ -7698,7 +7698,7 @@
     },
     "/v1/convites": {
       "post": {
-        "description": "Só administradores da empresa ativa. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.",
+        "description": "Exige `equipe.gerir` e `perfis.gerir` (convidar com um perfil é atribuí-lo). O perfil vem em `perfilId` (ou, pelo legado, o de sistema do `papel`); perfil inativo dá 409. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.",
         "operationId": "ConvitesController_criar",
         "parameters": [],
         "requestBody": {
@@ -7752,6 +7752,16 @@
               }
             }
           },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
             "content": {
@@ -7777,7 +7787,7 @@
         "tags": ["Equipe e convites"]
       },
       "get": {
-        "description": "Só administradores da empresa ativa. Lista os convites ainda não aceitos nem cancelados (os vencidos aparecem como `expirado`). Nunca inclui o token.",
+        "description": "Exige `equipe.gerir`. Lista os convites ainda não aceitos nem cancelados (os vencidos aparecem como `expirado`). Nunca inclui o token.",
         "operationId": "ConvitesController_listar",
         "parameters": [],
         "responses": {
@@ -7831,7 +7841,7 @@
     },
     "/v1/convites/{id}": {
       "delete": {
-        "description": "Só administradores da empresa ativa. O convite de outra empresa (ou inexistente) dá 404.",
+        "description": "Exige `equipe.gerir`. O convite de outra empresa (ou inexistente) dá 404.",
         "operationId": "ConvitesController_revogar",
         "parameters": [
           {
@@ -11936,7 +11946,7 @@
     },
     "/v1/membros": {
       "get": {
-        "description": "Membros não excluídos da empresa ativa. O e-mail só aparece para administradores e gestores.",
+        "description": "Qualquer membro. Membros não excluídos da empresa ativa, com o perfil de acesso efetivo. O e-mail só aparece com `equipe.ver_emails`; o último acesso, com `equipe.gerir`.",
         "operationId": "MembrosController_listar",
         "parameters": [
           {
@@ -12011,7 +12021,7 @@
     },
     "/v1/membros/{id}": {
       "patch": {
-        "description": "Só administradores da empresa ativa. Muda o papel e/ou ativa e desativa (desativar vale na próxima requisição da pessoa e mantém o histórico). Recusa: alterar a si mesmo (403) e o dono da conta (403); a empresa nunca fica sem administrador (quem altera é sempre outro administrador ativo). Membro de outra empresa dá 404. Registra na auditoria.",
+        "description": "Ativa e desativa com `equipe.gerir` (desativar vale na próxima requisição da pessoa e mantém o histórico). `papel` é o legado: troca para o perfil de sistema dele e exige `perfis.gerir` (o novo é PUT /v1/membros/:id/perfil). Recusa: alterar a si mesmo (403) e o dono da conta (403); a empresa nunca fica sem quem gere os perfis de acesso (409). Membro de outra empresa dá 404. Registra na auditoria.",
         "operationId": "MembrosController_alterar",
         "parameters": [
           {
@@ -12083,9 +12093,19 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
           }
         },
-        "summary": "Alterar papel ou situação de um membro",
+        "summary": "Alterar situação (ou papel, legado) de um membro",
         "tags": ["Equipe e convites"]
       }
     },
@@ -14755,6 +14775,10 @@
             "type": "string",
             "enum": ["admin", "gestor", "vendedor"]
           },
+          "perfil": {
+            "nullable": true,
+            "type": "string"
+          },
           "expiraEm": {
             "type": "string",
             "format": "date-time"
@@ -14763,7 +14787,7 @@
             "type": "boolean"
           }
         },
-        "required": ["empresa", "email", "papel", "expiraEm", "contaExistente"],
+        "required": ["empresa", "email", "papel", "perfil", "expiraEm", "contaExistente"],
         "additionalProperties": false
       },
       "ConviteCriado": {
@@ -14779,6 +14803,21 @@
           "papel": {
             "type": "string",
             "enum": ["admin", "gestor", "vendedor"]
+          },
+          "perfil": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
           },
           "expiraEm": {
             "type": "string",
@@ -14796,7 +14835,16 @@
             "type": "boolean"
           }
         },
-        "required": ["id", "email", "papel", "expiraEm", "criadoEm", "situacao", "emailEnviado"],
+        "required": [
+          "id",
+          "email",
+          "papel",
+          "perfil",
+          "expiraEm",
+          "criadoEm",
+          "situacao",
+          "emailEnviado"
+        ],
         "additionalProperties": false
       },
       "ConviteResumo": {
@@ -14813,6 +14861,21 @@
             "type": "string",
             "enum": ["admin", "gestor", "vendedor"]
           },
+          "perfil": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
           "expiraEm": {
             "type": "string",
             "format": "date-time"
@@ -14826,7 +14889,7 @@
             "enum": ["pendente", "expirado"]
           }
         },
-        "required": ["id", "email", "papel", "expiraEm", "criadoEm", "situacao"],
+        "required": ["id", "email", "papel", "perfil", "expiraEm", "criadoEm", "situacao"],
         "additionalProperties": false
       },
       "CorDeTag": {
@@ -14987,12 +15050,16 @@
             "type": "string",
             "maxLength": 254
           },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "papel": {
             "type": "string",
             "enum": ["admin", "gestor", "vendedor"]
           }
         },
-        "required": ["email", "papel"],
+        "required": ["email"],
         "additionalProperties": false
       },
       "CriarEmpresaDaCarteiraEntrada": {
@@ -18228,6 +18295,21 @@
             "type": "string",
             "enum": ["admin", "gestor", "vendedor"]
           },
+          "perfil": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
           "ativo": {
             "type": "boolean"
           },
@@ -18244,7 +18326,7 @@
             "format": "date"
           }
         },
-        "required": ["id", "nome", "cargo", "papel", "ativo", "temLogin", "cor"],
+        "required": ["id", "nome", "cargo", "papel", "perfil", "ativo", "temLogin", "cor"],
         "additionalProperties": false
       },
       "MembroDoPerfil": {

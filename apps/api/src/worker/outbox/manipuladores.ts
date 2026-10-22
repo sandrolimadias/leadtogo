@@ -50,15 +50,18 @@ export function manipuladoresPadrao(
     const [convite] = await tx.execute<{
       email: string
       papel: string
+      perfil: string | null
       convidado_por: string
       razao_social: string
       nome_fantasia: string | null
       convidante: string | null
     }>(sql`
-      SELECT c.email, c.papel, c.convidado_por, t.razao_social, t.nome_fantasia, m.nome AS convidante
+      SELECT c.email, c.papel, p.nome AS perfil, c.convidado_por, t.razao_social, t.nome_fantasia,
+        m.nome AS convidante
       FROM convites c
       JOIN tenants t ON t.id = c.tenant_id
       LEFT JOIN membros m ON m.id = c.convidado_por
+      LEFT JOIN perfis_acesso p ON p.id = c.perfil_id AND p.tenant_id = c.tenant_id
       WHERE c.id = ${conviteId} AND c.aceito_em IS NULL AND c.revogado_em IS NULL AND c.expira_em > now()
       FOR UPDATE OF c`)
     if (!convite) return // cancelado, aceito, substituído ou vencido antes do envio: nada a enviar
@@ -74,6 +77,7 @@ export function manipuladoresPadrao(
           empresa: convite.nome_fantasia ?? convite.razao_social,
           convidadoPor: convite.convidante ?? 'Um administrador',
           papel: convite.papel,
+          perfil: convite.perfil,
           link,
         }),
       )

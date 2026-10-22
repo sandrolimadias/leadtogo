@@ -19,6 +19,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { perfilEfetivo, permissoesDoCatalogo } from '../acesso/permissoes-do-membro.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { ehDonoDaConta, exigirQuemGerePerfis, travar } from './guarda-de-perfis.js'
 
 type LinhaPerfil = {
   id: string
@@ -41,7 +42,7 @@ const naoEncontrado = () => new ErroApi('perfil_nao_encontrado', 'Perfil não en
  *  - perfil com membros (ou convite pendente) não se exclui nem se inativa;
  *  - ninguém troca o próprio perfil nem tira `perfis.gerir` do perfil que usa;
  *  - a empresa nunca fica sem um membro ativo, com login, que tenha `perfis.gerir` (409).
- * Toda mudança é serializada por empresa (trava transacional) e registrada na auditoria.
+ * Toda mudança é serializada por empresa (guarda-de-perfis.ts) e registrada na auditoria.
  */
 @Injectable()
 export class PerfisService {
@@ -79,7 +80,7 @@ export class PerfisService {
   }
 
   async criar(dados: CriarPerfilEntrada): Promise<PerfilDeAcesso> {
-    await this.travar()
+    await travar(this.ctx, 'perfis.gerir')
     await this.exigirNomeLivre(dados.nome)
     const id = novoId()
     await this.ctx.db().execute(sql`
@@ -118,7 +119,7 @@ export class PerfisService {
   }
 
   async editar(id: string, dados: EditarPerfilEntrada): Promise<PerfilDeAcesso> {
-    await this.travar()
+    await travar(this.ctx, 'perfis.gerir')
     const antes = await this.obter(id)
     const depois = {
       nome: dados.nome ?? antes.nome,
@@ -172,7 +173,7 @@ export class PerfisService {
       await this.ctx.db().execute(sql`DELETE FROM perfil_permissoes WHERE perfil_id = ${id}`)
       await this.gravarPermissoes(id, depois.permissoes)
     }
-    await this.exigirAdministrador()
+    await exigirQuemGerePerfis(this.ctx)
 
     const alteracoes: Record<string, unknown> = {}
     for (const campo of ['nome', 'descricao', 'exige2fa', 'ativo'] as const) {
@@ -193,7 +194,7 @@ export class PerfisService {
   }
 
   async excluir(id: string): Promise<void> {
-    await this.travar()
+    await travar(this.ctx, 'perfis.gerir')
     const perfil = await this.obter(id)
     if (perfil.sistema) {
       throw new ErroApi(
@@ -216,7 +217,7 @@ export class PerfisService {
 
   /** Troca o perfil de um membro (substitui a troca de papel). */
   async atribuir(membroId: string, dados: AtribuirPerfilEntrada): Promise<PerfilDoMembro> {
-    await this.travar()
+    await travar(this.ctx, 'perfis.gerir')
     if (membroId === this.ctx.membro.id) {
       throw new ErroApi(
         'alterar_a_si_mesmo',
@@ -248,7 +249,7 @@ export class PerfisService {
     if (alvo.perfil_id === novo.id) {
       return { membroId, perfil: { id: novo.id, nome: novo.nome } }
     }
-    if (alvo.usuario_id && (await this.ehDonoDaConta(alvo.usuario_id))) {
+    if (alvo.usuario_id && (await ehDonoDaConta(this.ctx, alvo.usuario_id))) {
       throw new ErroApi(
         'dono_da_conta',
         'O perfil do dono da conta não pode ser trocado por outro administrador.',
@@ -261,7 +262,7 @@ export class PerfisService {
       SET perfil_id = ${novo.id}, papel = ${novo.chave_sistema ?? 'vendedor'}::papel_membro,
         atualizado_em = now(), atualizado_por = ${this.ctx.membro.id}
       WHERE id = ${membroId}`)
-    await this.exigirAdministrador()
+    await exigirQuemGerePerfis(this.ctx)
     await this.auditoria.registrar({
       entidade: 'membro',
       entidadeId: membroId,
@@ -272,32 +273,6 @@ export class PerfisService {
       },
     })
     return { membroId, perfil: { id: novo.id, nome: novo.nome } }
-  }
-
-  /**
-   * A empresa nunca fica sem ao menos um membro ativo, com login, cujo perfil efetivo tenha
-   * `perfis.gerir`. Roda depois da mudança, na mesma transação: se falhar, tudo é desfeito.
-   */
-  private async exigirAdministrador(): Promise<void> {
-    const [linha] = await this.ctx.db().execute<{ n: number }>(sql`
-      SELECT count(*)::int AS n FROM membros m
-      JOIN perfis_acesso p ON ${perfilEfetivo(sql`m`, sql`p`)}
-      JOIN perfil_permissoes pp ON pp.perfil_id = p.id AND pp.permissao = 'perfis.gerir'
-      WHERE m.excluido_em IS NULL AND m.ativo AND m.usuario_id IS NOT NULL`)
-    if ((linha?.n ?? 0) === 0) {
-      throw new ErroApi(
-        'sem_administrador',
-        'A empresa precisa de ao menos uma pessoa ativa que possa gerir os perfis de acesso.',
-        409,
-      )
-    }
-  }
-
-  /** Serializa as mudanças de perfis e de perfil dos membros da empresa (evita corrida no 409 acima). */
-  private async travar(): Promise<void> {
-    await this.ctx
-      .db()
-      .execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`perfis:${this.ctx.tenantId}`}))`)
   }
 
   private async exigirNomeLivre(nome: string, exceto?: string): Promise<void> {
@@ -377,16 +352,6 @@ export class PerfisService {
       membros: p.membros,
       permissoes,
     }
-  }
-
-  /** O usuário é o dono da conta a que esta empresa pertence. */
-  private async ehDonoDaConta(usuarioId: string): Promise<boolean> {
-    const linhas = await this.ctx.db().execute(sql`
-      SELECT 1 FROM conta_administradores ca
-      JOIN tenants t ON t.conta_id = ca.conta_id
-      WHERE t.id = ${this.ctx.tenantId} AND ca.usuario_id = ${usuarioId} AND ca.papel = 'dono'
-      LIMIT 1`)
-    return linhas.length > 0
   }
 }
 

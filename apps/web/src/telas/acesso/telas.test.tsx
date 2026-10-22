@@ -184,6 +184,7 @@ const conviteNovo = {
   },
   email: 'mariana@diasautomacao.com.br',
   papel: 'vendedor' as const,
+  perfil: 'Vendedor',
   expiraEm: '2026-10-20T12:00:00.000Z',
   contaExistente: false,
 }

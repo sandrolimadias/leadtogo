@@ -6,13 +6,21 @@ import { SENHA_MAX, SENHA_MIN } from './primeiro-acesso.js'
 /** Token do convite: aleatório (32 bytes em base64url = 43 caracteres), enviado só por e-mail. */
 const tokenSchema = z.string().trim().min(20, 'convite inválido').max(200, 'convite inválido')
 
-/** POST /v1/convites (administrador): convida um e-mail para a empresa ativa com um papel. */
+/** Perfil de acesso como aparece na equipe e nos convites. */
+const perfilResumidoSchema = z.object({ id: z.uuid(), nome: z.string() })
+
+/**
+ * POST /v1/convites (`equipe.gerir` e `perfis.gerir`): convida um e-mail para a empresa ativa com um
+ * perfil de acesso. `papel` é o legado (até a contração): sem `perfilId`, vale o perfil de sistema dele.
+ */
 export const criarConviteSchema = z
   .object({
     email: z.string().trim().toLowerCase().max(254).pipe(z.email('e-mail inválido')),
-    papel: papelMembroSchema,
+    perfilId: z.uuid().optional(),
+    papel: papelMembroSchema.optional(),
   })
   .strict()
+  .refine((v) => v.perfilId !== undefined || v.papel !== undefined, 'informe o perfil de acesso')
   .meta({ id: 'CriarConviteEntrada' })
 export type CriarConviteEntrada = z.infer<typeof criarConviteSchema>
 
@@ -46,7 +54,9 @@ export const conviteResumoSchema = z
   .object({
     id: z.uuid(),
     email: z.string(),
+    /** Legado até a contração dos perfis de acesso */
     papel: papelMembroSchema,
+    perfil: perfilResumidoSchema.nullable(),
     expiraEm: z.iso.datetime(),
     criadoEm: z.iso.datetime(),
     /** `expirado` ainda aparece na lista para o administrador reenviar ou cancelar */
@@ -70,6 +80,8 @@ export const conviteConsultaSchema = z
     empresa: z.object({ razaoSocial: z.string(), nomeFantasia: z.string().nullable() }),
     email: z.string(),
     papel: papelMembroSchema,
+    /** Nome do perfil de acesso que o convidado terá */
+    perfil: z.string().nullable(),
     expiraEm: z.iso.datetime(),
     /** Já existe conta com este e-mail: o convidado entra e aceita; senão, informa nome e senha */
     contaExistente: z.boolean(),
@@ -89,28 +101,34 @@ export const conviteAceitoSchema = z
   .meta({ id: 'ConviteAceito' })
 export type ConviteAceito = z.infer<typeof conviteAceitoSchema>
 
-/** Item de GET /v1/membros. O e-mail só aparece para administradores e gestores. */
+/** Item de GET /v1/membros. O e-mail só aparece para quem tem `equipe.ver_emails`. */
 export const membroDaEquipeSchema = z
   .object({
     id: z.uuid(),
     nome: z.string(),
     cargo: z.string().nullable(),
     email: z.string().nullable().optional(),
+    /** Legado até a contração dos perfis de acesso */
     papel: papelMembroSchema,
+    /** Perfil de acesso efetivo (null = nenhum) */
+    perfil: perfilResumidoSchema.nullable(),
     ativo: z.boolean(),
     /** Tem acesso ao sistema (false = vendedor externo, sem login) */
     temLogin: z.boolean(),
     cor: z.string().nullable(),
     /**
      * Data (AAAA-MM-DD, fuso de São Paulo) da sessão mais recente da pessoa: aproximada (a sessão só
-     * se atualiza uma vez por dia). Só para administradores; null se nunca entrou ou sem login.
+     * se atualiza uma vez por dia). Só para quem tem `equipe.gerir`; null se nunca entrou ou sem login.
      */
     ultimoAcesso: z.iso.date().nullable().optional(),
   })
   .meta({ id: 'MembroDaEquipe' })
 export type MembroDaEquipe = z.infer<typeof membroDaEquipeSchema>
 
-/** PATCH /v1/membros/:id (administrador): muda o papel e/ou ativa e desativa o membro. */
+/**
+ * PATCH /v1/membros/:id: ativa e desativa (`equipe.gerir`). `papel` é o legado: troca para o perfil de
+ * sistema dele e exige `perfis.gerir` (o novo é PUT /v1/membros/:id/perfil).
+ */
 export const alterarMembroSchema = z
   .object({ papel: papelMembroSchema.optional(), ativo: z.boolean().optional() })
   .strict()

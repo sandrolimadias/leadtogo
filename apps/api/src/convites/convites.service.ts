@@ -15,6 +15,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { Request } from 'express'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
+import { PermissaoService } from '../acesso/permissao.service.js'
+import { perfilEfetivo } from '../acesso/permissoes-do-membro.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { AuthService } from '../auth/auth.service.js'
 import { EmailService } from '../email/email.service.js'
@@ -32,6 +34,8 @@ type LinhaConvite = {
   id: string
   email: string
   papel: PapelMembro
+  perfil_id: string | null
+  perfil_nome: string | null
   // SQL cru do Drizzle devolve timestamptz como texto ISO (ou Date, conforme o driver): sempre via `emData`
   expira_em: string | Date
   criado_em: string | Date
@@ -52,26 +56,53 @@ export class ConvitesService {
   constructor(
     @Inject(BANCO) private readonly banco: Conexao,
     private readonly ctx: ContextoTenantService,
+    private readonly permissao: PermissaoService,
     private readonly auditoria: AuditoriaService,
     private readonly auth: AuthService,
     private readonly email: EmailService,
   ) {}
 
-  // ---------------------------------------------------------------- administrador (empresa ativa)
+  // ------------------------------------------------- equipe.gerir (empresa ativa; na rota, @Permissao)
 
-  /** Só administradores da empresa convidam, listam e cancelam convites. */
-  private exigirAdministrador(): void {
-    if (this.ctx.membro.papel !== 'admin') {
+  /**
+   * O perfil que o convidado terá: o pedido (ativo, desta empresa) ou, pelo legado, o de sistema do
+   * papel. Convidar com um perfil é atribuí-lo: exige também `perfis.gerir` (senão quem só gere a
+   * equipe daria a outra pessoa mais acesso do que tem).
+   */
+  private async perfilDoConvite(
+    dados: CriarConviteEntrada,
+  ): Promise<{ id: string; nome: string; papel: PapelMembro }> {
+    this.permissao.exigir(
+      'perfis.gerir',
+      'Convidar com um perfil de acesso exige poder gerir os perfis.',
+    )
+    const [perfil] = await this.ctx.db().execute<{
+      id: string
+      nome: string
+      ativo: boolean
+      chave_sistema: PapelMembro | null
+    }>(sql`
+      SELECT id, nome, ativo, chave_sistema::text AS chave_sistema FROM perfis_acesso
+      WHERE excluido_em IS NULL AND ${
+        dados.perfilId
+          ? sql`id = ${dados.perfilId}`
+          : sql`chave_sistema = ${dados.papel ?? 'vendedor'}::chave_perfil_sistema`
+      }
+      LIMIT 1`)
+    if (!perfil) throw new ErroApi('perfil_nao_encontrado', 'Perfil não encontrado.', 404)
+    if (!perfil.ativo) {
       throw new ErroApi(
-        'acesso_negado',
-        'Só administradores da empresa podem gerenciar convites.',
-        403,
+        'perfil_inativo',
+        'Este perfil está inativo. Ative-o antes de convidar.',
+        409,
       )
     }
+    // O papel antigo fica como legado: o do perfil de sistema, ou `vendedor` nos da empresa
+    return { id: perfil.id, nome: perfil.nome, papel: perfil.chave_sistema ?? 'vendedor' }
   }
 
   async criar(dados: CriarConviteEntrada): Promise<ConviteCriado> {
-    this.exigirAdministrador()
+    const perfil = await this.perfilDoConvite(dados)
     const db = this.ctx.db()
 
     const jaMembro = await db.execute(sql`
@@ -92,11 +123,12 @@ export class ConvitesService {
     // de um valor aleatório que ninguém conhece, ou seja, o convite ainda não pode ser aceito.
     const id = novoId()
     const [linha] = await db.execute<LinhaConvite>(sql`
-      INSERT INTO convites (id, tenant_id, email, papel, token_hash, expira_em, convidado_por)
-      VALUES (${id}, ${this.ctx.tenantId}, ${dados.email}, ${dados.papel},
+      INSERT INTO convites (id, tenant_id, email, papel, perfil_id, token_hash, expira_em, convidado_por)
+      VALUES (${id}, ${this.ctx.tenantId}, ${dados.email}, ${perfil.papel}, ${perfil.id},
               ${randomBytes(32).toString('hex')},
               now() + ${`${DIAS_DE_VALIDADE} days`}::interval, ${this.ctx.membro.id})
-      RETURNING id, email, papel, expira_em, criado_em, aceito_em, revogado_em, convidado_por`)
+      RETURNING id, email, papel, perfil_id, ${perfil.nome}::text AS perfil_nome, expira_em, criado_em,
+        aceito_em, revogado_em, convidado_por`)
     if (!linha) throw new Error('convite não foi gravado')
 
     // Pedido de envio no outbox, na mesma transação do convite: ou os dois existem, ou nenhum.
@@ -108,23 +140,23 @@ export class ConvitesService {
       entidade: 'convite',
       entidadeId: id,
       acao: 'convidar',
-      alteracoes: { email: dados.email, papel: dados.papel },
+      alteracoes: { email: dados.email, perfil: { id: perfil.id, nome: perfil.nome } },
     })
     const emailEnviado = this.email.configurado
     return { ...resumoDe(linha), emailEnviado }
   }
 
   async listar(): Promise<ConviteResumo[]> {
-    this.exigirAdministrador()
     const linhas = await this.ctx.db().execute<LinhaConvite>(sql`
-      SELECT id, email, papel, expira_em, criado_em, aceito_em, revogado_em, convidado_por
-      FROM convites WHERE aceito_em IS NULL AND revogado_em IS NULL ORDER BY criado_em DESC`)
+      SELECT c.id, c.email, c.papel, c.perfil_id, p.nome AS perfil_nome, c.expira_em, c.criado_em,
+        c.aceito_em, c.revogado_em, c.convidado_por
+      FROM convites c LEFT JOIN perfis_acesso p ON p.id = c.perfil_id AND p.excluido_em IS NULL
+      WHERE c.aceito_em IS NULL AND c.revogado_em IS NULL ORDER BY c.criado_em DESC`)
     return [...linhas].map(resumoDe)
   }
 
   /** Cancela um convite pendente DESTA empresa; o de outra empresa (ou inexistente) dá 404 igual. */
   async revogar(id: string): Promise<void> {
-    this.exigirAdministrador()
     const feito = await this.ctx.db().execute<{ email: string; papel: PapelMembro }>(sql`
       UPDATE convites SET revogado_em = now(), atualizado_em = now()
       WHERE id = ${id} AND aceito_em IS NULL AND revogado_em IS NULL
@@ -139,10 +171,10 @@ export class ConvitesService {
     })
   }
 
-  /** Equipe da empresa ativa. O e-mail só aparece para administradores e gestores. */
+  /** Equipe da empresa ativa (todo membro). E-mail com `equipe.ver_emails`; último acesso com `equipe.gerir`. */
   async equipe(incluirInativos: boolean): Promise<MembroDaEquipe[]> {
-    const veEmail = this.ctx.membro.papel === 'admin' || this.ctx.membro.papel === 'gestor'
-    const veAcesso = this.ctx.membro.papel === 'admin'
+    const veEmail = this.permissao.pode('equipe.ver_emails')
+    const veAcesso = this.permissao.pode('equipe.gerir')
     const linhas = await this.ctx.db().execute<{
       id: string
       nome: string
@@ -153,11 +185,14 @@ export class ConvitesService {
       tem_login: boolean
       cor: string | null
       ultimo_acesso: string | null
+      perfil_id: string | null
+      perfil_nome: string | null
     }>(sql`
       SELECT m.id, m.nome, m.cargo, m.email, m.papel, m.ativo, (m.usuario_id IS NOT NULL) AS tem_login, m.cor,
              (SELECT to_char(max(s.updated_at) AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD')
-              FROM auth.session s WHERE s.user_id = m.usuario_id) AS ultimo_acesso
-      FROM membros m
+              FROM auth.session s WHERE s.user_id = m.usuario_id) AS ultimo_acesso,
+             p.id AS perfil_id, p.nome AS perfil_nome
+      FROM membros m LEFT JOIN perfis_acesso p ON ${perfilEfetivo(sql`m`, sql`p`)}
       WHERE m.excluido_em IS NULL AND (${incluirInativos} OR m.ativo)
       ORDER BY lower(m.nome), m.id`)
     return [...linhas].map((m) => ({
@@ -166,6 +201,7 @@ export class ConvitesService {
       cargo: m.cargo,
       ...(veEmail ? { email: m.email } : {}),
       papel: m.papel,
+      perfil: m.perfil_id ? { id: m.perfil_id, nome: m.perfil_nome ?? '' } : null,
       ativo: m.ativo,
       temLogin: m.tem_login,
       cor: m.cor,
@@ -193,8 +229,10 @@ export class ConvitesService {
     if (!achado) return null
     const convite = await this.noTenant(achado.tenant_id, async (tx) => {
       const [c] = await tx.execute<LinhaConvite>(sql`
-        SELECT id, email, papel, expira_em, criado_em, aceito_em, revogado_em, convidado_por
-        FROM convites WHERE id = ${achado.id} AND aceito_em IS NULL AND revogado_em IS NULL AND expira_em > now()`)
+        SELECT c.id, c.email, c.papel, c.perfil_id, p.nome AS perfil_nome, c.expira_em, c.criado_em,
+          c.aceito_em, c.revogado_em, c.convidado_por
+        FROM convites c LEFT JOIN perfis_acesso p ON p.id = c.perfil_id AND p.excluido_em IS NULL
+        WHERE c.id = ${achado.id} AND c.aceito_em IS NULL AND c.revogado_em IS NULL AND c.expira_em > now()`)
       return c
     })
     return convite ? { tenantId: achado.tenant_id, convite } : null
@@ -220,6 +258,7 @@ export class ConvitesService {
       },
       email: convite.email,
       papel: convite.papel,
+      perfil: convite.perfil_nome,
       expiraEm: emData(convite.expira_em).toISOString(),
       contaExistente: usuarios.length > 0,
     }
@@ -297,9 +336,9 @@ export class ConvitesService {
         if (jaMembro.length > 0)
           throw new ErroApi('ja_e_membro', 'Você já faz parte desta empresa.', 409)
         await tx.execute(sql`
-          INSERT INTO membros (id, tenant_id, nome, usuario_id, email, papel, criado_por, atualizado_por)
+          INSERT INTO membros (id, tenant_id, nome, usuario_id, email, papel, perfil_id, criado_por, atualizado_por)
           VALUES (${membroId}, ${tenantId}, ${nome}, ${usuarioId}, ${convite.email}, ${convite.papel},
-                  ${convite.convidado_por}, ${convite.convidado_por})`)
+                  ${convite.perfil_id}, ${convite.convidado_por}, ${convite.convidado_por})`)
         await tx.execute(
           sql`UPDATE convites SET aceito_em = now(), atualizado_em = now() WHERE id = ${convite.id}`,
         )
@@ -323,6 +362,7 @@ function resumoDe(l: LinhaConvite): ConviteResumo {
     id: l.id,
     email: l.email,
     papel: l.papel,
+    perfil: l.perfil_id ? { id: l.perfil_id, nome: l.perfil_nome ?? '' } : null,
     expiraEm: emData(l.expira_em).toISOString(),
     criadoEm: emData(l.criado_em).toISOString(),
     situacao: emData(l.expira_em).getTime() > Date.now() ? 'pendente' : 'expirado',

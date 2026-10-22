@@ -33,11 +33,13 @@ import { Publica } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
+import { Permissao } from '../acesso/acesso.decorators.js'
 import { ConvitesService } from './convites.service.js'
 
-/** Gestão de convites (administrador da empresa ativa). */
+/** Gestão de convites (`equipe.gerir` na empresa ativa). */
 @ApiTags('Equipe e convites')
 @Controller('convites')
+@Permissao('equipe.gerir')
 export class ConvitesController {
   constructor(private readonly servico: ConvitesService) {}
 
@@ -45,11 +47,11 @@ export class ConvitesController {
   @Documenta({
     resumo: 'Convidar um membro',
     descricao:
-      'Só administradores da empresa ativa. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.',
+      'Exige `equipe.gerir` e `perfis.gerir` (convidar com um perfil é atribuí-lo). O perfil vem em `perfilId` (ou, pelo legado, o de sistema do `papel`); perfil inativo dá 409. Envia um e-mail com o link do convite (validade de 7 dias, uso único). O token vai SÓ por e-mail: a resposta nunca o traz e o banco guarda apenas o hash. Reenviar cancela o convite pendente anterior.',
     corpo: criarConviteSchema,
     resposta: conviteCriadoSchema,
     status: 201,
-    erros: [400, 401, 403, 409, 429],
+    erros: [400, 401, 403, 404, 409, 429],
   })
   @Post()
   @Limite({ nome: 'convites', max: 30, janelaS: 3600 })
@@ -60,7 +62,7 @@ export class ConvitesController {
   @Documenta({
     resumo: 'Convites pendentes',
     descricao:
-      'Só administradores da empresa ativa. Lista os convites ainda não aceitos nem cancelados (os vencidos aparecem como `expirado`). Nunca inclui o token.',
+      'Exige `equipe.gerir`. Lista os convites ainda não aceitos nem cancelados (os vencidos aparecem como `expirado`). Nunca inclui o token.',
     resposta: z.array(conviteResumoSchema),
     erros: [401, 403, 409],
   })
@@ -71,8 +73,7 @@ export class ConvitesController {
 
   @Documenta({
     resumo: 'Cancelar um convite',
-    descricao:
-      'Só administradores da empresa ativa. O convite de outra empresa (ou inexistente) dá 404.',
+    descricao: 'Exige `equipe.gerir`. O convite de outra empresa (ou inexistente) dá 404.',
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
