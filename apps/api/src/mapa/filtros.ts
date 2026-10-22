@@ -1,16 +1,16 @@
 import { sql, type SQL } from '@leadtogo/db'
 import { CHAVE_SEM_VISITA, DIAS_SEM_VISITA_DO_ESTADO, type FiltrosDoMapa } from '@leadtogo/shared'
 
-import type { EscopoDaCarteira } from '../carteira/regras-de-carteira.js'
+import { condicaoDeResponsaveis, type EscopoDaCarteira } from '../carteira/regras-de-carteira.js'
 import { arraySql } from '../importacao/sql-array.js'
 import { inteirosSql } from '../geolocalizacao/sql-inteiros.js'
 
 /** Máximo de leads mostrados por vez (docs/plano_geolocalizacao.md, G2). */
 export const LIMITE_DE_LEADS = 500
 
-/** A visibilidade da carteira: o vendedor vê o que já vê na lista de empresas; admin e gestor, tudo. */
+/** A visibilidade da carteira: o mesmo alcance de `empresas.ver` da lista de empresas. */
 export const visivelAoUsuario = (escopo: EscopoDaCarteira): SQL =>
-  escopo.veTodas ? sql`TRUE` : sql`e.vendedor_id = ${escopo.membroId}`
+  condicaoDeResponsaveis(escopo.empresas.ver, sql`e.vendedor_id`) ?? sql`TRUE`
 
 /**
  * Empresas que podem ir ao mapa: com coordenada, no Brasil, e com uma tag de Status que "aparece no

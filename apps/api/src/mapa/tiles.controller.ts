@@ -2,7 +2,7 @@ import { type BaseDoMapa, baseDoMapaSchema } from '@leadtogo/shared'
 import { Controller, Get, Inject } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
-import { SemTransacao } from '../acesso/acesso.decorators.js'
+import { SemTransacao, TodoMembro } from '../acesso/acesso.decorators.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { Documenta } from '../documentacao/documenta.js'
@@ -30,6 +30,7 @@ export class TilesDoMapaController {
     resposta: baseDoMapaSchema,
     erros: [401, 403, 409],
   })
+  @TodoMembro()
   @Get('base')
   origemDaBase(): BaseDoMapa {
     return { url: this.config.MAPA_BASE_URL ?? null }

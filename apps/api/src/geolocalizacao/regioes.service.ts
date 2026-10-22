@@ -26,12 +26,6 @@ export class RegioesGeoService {
     private readonly auditoria: AuditoriaService,
   ) {}
 
-  private exigirAdmin(): void {
-    if (this.ctx.membro.papel !== 'admin') {
-      throw new ErroApi('acesso_negado', 'Só administradores criam regiões.', 403)
-    }
-  }
-
   private agrupar(linhas: LinhaDeMunicipio[], tipo: RegiaoGeo['tipo'], prefixo = ''): RegiaoGeo[] {
     const porRegiao = new Map<string, RegiaoGeo>()
     for (const l of linhas) {
@@ -107,7 +101,6 @@ export class RegioesGeoService {
   }
 
   async criar(dados: SalvarRegiao): Promise<RegiaoGeo> {
-    this.exigirAdmin()
     const municipios = await this.exigirMunicipios(dados.municipios)
     await this.exigirNomeLivre(dados.nome)
     const id = novoId()
@@ -125,7 +118,6 @@ export class RegioesGeoService {
   }
 
   async alterar(id: string, dados: SalvarRegiao): Promise<RegiaoGeo> {
-    this.exigirAdmin()
     await this.detalhar(id)
     const municipios = await this.exigirMunicipios(dados.municipios)
     await this.exigirNomeLivre(dados.nome, id)
@@ -143,7 +135,6 @@ export class RegioesGeoService {
   }
 
   async excluir(id: string): Promise<void> {
-    this.exigirAdmin()
     await this.detalhar(id)
     await this.ctx.db().execute(sql`
       UPDATE geo_regioes SET excluido_em = now(), atualizado_por = ${this.ctx.membro.id} WHERE id = ${id}`)

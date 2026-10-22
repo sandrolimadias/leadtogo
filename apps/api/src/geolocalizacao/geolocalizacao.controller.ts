@@ -45,14 +45,15 @@ import {
 import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 
+import { Permissao, TodoMembro } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { GeolocalizacaoService } from './geolocalizacao.service.js'
 import { LotesGeoService } from './lotes-geo.service.js'
 import { RegioesGeoService } from './regioes.service.js'
 
-const ADMIN_E_GESTOR = 'Só administradores e gestores (403 `acesso_negado` para o vendedor).'
-const ADMIN = 'Só administradores (403 `acesso_negado` para os demais). Registra na auditoria.'
+const ADMIN_E_GESTOR = 'Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela).'
+const ADMIN = 'Exige `geolocalizacao.regioes` (403 `acesso_negado` sem ela). Registra na auditoria.'
 
 @ApiTags('Geolocalização')
 @Controller('geolocalizacao')
@@ -70,6 +71,7 @@ export class GeolocalizacaoController {
     resposta: resumoDaGeolocalizacaoSchema,
     erros: [401, 403, 409],
   })
+  @Permissao('empresas.ver')
   @Get('resumo')
   resumo(): Promise<ResumoDaGeolocalizacao> {
     return this.servico.resumo()
@@ -83,6 +85,7 @@ export class GeolocalizacaoController {
     resposta: listaDaFilaSchema,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('empresas.ver')
   @Get('fila')
   fila(@Query(new ZodPipe(consultaDaFilaSchema)) consulta: ConsultaDaFila): Promise<ListaDaFila> {
     return this.servico.fila(consulta)
@@ -98,6 +101,7 @@ export class GeolocalizacaoController {
     resposta: z.array(regiaoSchema),
     erros: [400, 401, 403, 409],
   })
+  @TodoMembro()
   @Get('regioes')
   listarRegioes(
     @Query(new ZodPipe(consultaDeRegioesSchema)) consulta: ConsultaDeRegioes,
@@ -113,6 +117,7 @@ export class GeolocalizacaoController {
     status: 201,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('geolocalizacao.regioes')
   @Post('regioes')
   criarRegiao(@Body(new ZodPipe(salvarRegiaoSchema)) dados: SalvarRegiao): Promise<RegiaoGeo> {
     return this.regioes.criar(dados)
@@ -125,6 +130,7 @@ export class GeolocalizacaoController {
     resposta: regiaoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('geolocalizacao.regioes')
   @Put('regioes/:id')
   alterarRegiao(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -140,6 +146,7 @@ export class GeolocalizacaoController {
     erros: [401, 403, 404, 409],
   })
   @HttpCode(204)
+  @Permissao('geolocalizacao.regioes')
   @Delete('regioes/:id')
   async excluirRegiao(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
     await this.regioes.excluir(id)
@@ -155,6 +162,7 @@ export class GeolocalizacaoController {
     erros: [400, 401, 403, 409],
   })
   @HttpCode(200)
+  @Permissao('geolocalizacao.lotes')
   @Post('lotes/previa')
   previa(@Body(new ZodPipe(escopoDoLoteSchema)) escopo: EscopoDoLote): Promise<PreviaDoLote> {
     return this.lotes.previa(escopo)
@@ -168,6 +176,7 @@ export class GeolocalizacaoController {
     status: 201,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('geolocalizacao.lotes')
   @Post('lotes')
   criarLote(@Body(new ZodPipe(criarLoteGeoSchema)) dados: CriarLoteGeo): Promise<LoteGeo> {
     return this.lotes.criar(dados)
@@ -180,6 +189,7 @@ export class GeolocalizacaoController {
     resposta: listaDeLotesGeoSchema,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('geolocalizacao.lotes')
   @Get('lotes')
   listarLotes(
     @Query(new ZodPipe(consultaDeLotesGeoSchema)) consulta: ConsultaDeLotesGeo,
@@ -193,6 +203,7 @@ export class GeolocalizacaoController {
     resposta: loteGeoSchema,
     erros: [401, 403, 404, 409],
   })
+  @Permissao('geolocalizacao.lotes')
   @Get('lotes/:id')
   detalharLote(@Param('id', new ParseUUIDPipe()) id: string): Promise<LoteGeo> {
     return this.lotes.detalhar(id)
@@ -205,6 +216,7 @@ export class GeolocalizacaoController {
     erros: [401, 403, 404, 409],
   })
   @HttpCode(200)
+  @Permissao('geolocalizacao.lotes')
   @Post('lotes/:id/cancelar')
   cancelarLote(@Param('id', new ParseUUIDPipe()) id: string): Promise<LoteGeo> {
     return this.lotes.cancelar(id)
@@ -217,6 +229,7 @@ export class GeolocalizacaoController {
     erros: [401, 403, 404, 409],
   })
   @HttpCode(200)
+  @Permissao('geolocalizacao.lotes')
   @Post('lotes/:id/retomar')
   retomarLote(@Param('id', new ParseUUIDPipe()) id: string): Promise<LoteGeo> {
     return this.lotes.retomar(id)
@@ -231,6 +244,7 @@ export class GeolocalizacaoController {
     resposta: posicaoDaEmpresaSchema,
     erros: [401, 403, 404, 409],
   })
+  @Permissao('empresas.ver')
   @Get('empresas/:id/posicao')
   posicao(@Param('id', new ParseUUIDPipe()) id: string): Promise<PosicaoDaEmpresa> {
     return this.servico.posicao(id)
@@ -245,6 +259,7 @@ export class GeolocalizacaoController {
     erros: [400, 401, 403, 404, 409],
   })
   @HttpCode(200)
+  @Permissao('empresas.editar')
   @Post('empresas/:id/posicao')
   ajustar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -262,6 +277,7 @@ export class GeolocalizacaoController {
     erros: [400, 401, 403, 404, 409],
   })
   @HttpCode(200)
+  @Permissao('empresas.editar')
   @Post('empresas/:id/confirmar-endereco')
   confirmar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -278,6 +294,7 @@ export class GeolocalizacaoController {
     erros: [401, 403, 404, 409],
   })
   @HttpCode(200)
+  @Permissao('empresas.editar')
   @Post('empresas/:id/geocodificar')
   geocodificar(@Param('id', new ParseUUIDPipe()) id: string): Promise<PosicaoDaEmpresa> {
     return this.servico.geocodificarDeNovo(id)

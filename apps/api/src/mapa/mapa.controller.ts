@@ -21,6 +21,7 @@ import {
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
+import { Permissao, TodoMembro } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { MapaService } from './mapa.service.js'
@@ -39,6 +40,7 @@ export class MapaController {
     resposta: opcoesDoMapaSchema,
     erros: [401, 403, 409],
   })
+  @TodoMembro()
   @Get('opcoes')
   opcoes(): Promise<OpcoesDoMapa> {
     return this.servico.opcoes()
@@ -51,6 +53,7 @@ export class MapaController {
     resposta: legendaDoMapaSchema,
     erros: [401, 403, 409],
   })
+  @TodoMembro()
   @Get('legenda')
   legenda(): Promise<LegendaDoMapa> {
     return this.servico.legenda()
@@ -59,11 +62,12 @@ export class MapaController {
   @Documenta({
     resumo: 'Mudar a cor ou o nome de um estado da legenda',
     descricao:
-      'Só administradores (403 `acesso_negado`). A cor vem da paleta de 12 cores dos tokens (400 se for outra). Nome vazio ou nulo volta ao padrão. A regra de cada estado não muda. Registra na auditoria.',
+      'Exige `geolocalizacao.legenda` (403 `acesso_negado`). A cor vem da paleta de 12 cores dos tokens (400 se for outra). Nome vazio ou nulo volta ao padrão. A regra de cada estado não muda. Registra na auditoria.',
     corpo: alterarEntradaDaLegendaSchema,
     resposta: legendaDoMapaSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('geolocalizacao.legenda')
   @Put('legenda/:chave')
   alterarEntrada(
     @Param('chave') chave: string,
@@ -74,11 +78,13 @@ export class MapaController {
 
   @Documenta({
     resumo: 'Restaurar a legenda padrão',
-    descricao: 'Só administradores. Apaga todas as cores e nomes personalizados da legenda.',
+    descricao:
+      'Exige `geolocalizacao.legenda`. Apaga todas as cores e nomes personalizados da legenda.',
     resposta: legendaDoMapaSchema,
     erros: [401, 403, 409],
   })
   @HttpCode(200)
+  @Permissao('geolocalizacao.legenda')
   @Post('legenda/restaurar')
   restaurar(): Promise<LegendaDoMapa> {
     return this.servico.restaurarLegenda()
@@ -91,6 +97,7 @@ export class MapaController {
     resposta: pontosDoMapaSchema,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('empresas.ver')
   @Get('pontos')
   pontos(
     @Query(new ZodPipe(consultaDePontosSchema)) consulta: ConsultaDePontos,
@@ -105,6 +112,7 @@ export class MapaController {
     resposta: listaDeSelecaoSchema,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('empresas.ver')
   @Get('proximas')
   proximas(
     @Query(new ZodPipe(consultaDeProximasSchema)) consulta: ConsultaDeProximas,
@@ -120,6 +128,7 @@ export class MapaController {
     erros: [400, 401, 403, 409],
   })
   @HttpCode(200)
+  @Permissao('empresas.ver')
   @Post('selecao')
   selecao(@Body(new ZodPipe(selecaoDoMapaSchema)) dados: SelecaoDoMapa): Promise<ListaDeSelecao> {
     return this.servico.selecao(dados)
@@ -131,6 +140,7 @@ export class MapaController {
     resposta: coberturaDoMapaSchema,
     erros: [401, 403, 409],
   })
+  @Permissao('empresas.ver')
   @Get('cobertura')
   cobertura(): Promise<CoberturaDoMapa> {
     return this.servico.cobertura()

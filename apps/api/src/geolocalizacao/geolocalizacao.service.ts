@@ -14,7 +14,12 @@ import { Inject, Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { gravarDiferencaDeTags, tagsAtuaisDaEmpresa } from '../carteira/empresa-tags.js'
-import { escopoDaCarteira, podeEditar, podeVer } from '../carteira/regras-de-carteira.js'
+import {
+  condicaoDeResponsaveis,
+  escopoDaCarteira,
+  podeEditar,
+  podeVer,
+} from '../carteira/regras-de-carteira.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { ErroApi } from '../http/erro-api.js'
@@ -245,7 +250,7 @@ export class GeolocalizacaoService {
              count(*) FILTER (WHERE e.geo_ajuste_manual)::int AS manuais
       FROM empresas e
       WHERE e.excluido_em IS NULL AND e.pais_codigo IS NULL
-        ${escopo.veTodas ? sql`` : sql`AND e.vendedor_id = ${escopo.membroId}`}`)
+        AND ${condicaoDeResponsaveis(escopo.empresas.ver, sql`e.vendedor_id`) ?? sql`true`}`)
     return {
       cnefeCarregado: await new ProvedorCnefe(db).carregado(),
       uf: this.config.GEO_UF.toUpperCase(),
@@ -263,7 +268,7 @@ export class GeolocalizacaoService {
   async fila(consulta: ConsultaDaFila): Promise<ListaDaFila> {
     const db = this.ctx.db()
     const escopo = await escopoDaCarteira(this.ctx)
-    const visivel = escopo.veTodas ? sql`` : sql`AND e.vendedor_id = ${escopo.membroId}`
+    const visivel = sql`AND ${condicaoDeResponsaveis(escopo.empresas.ver, sql`e.vendedor_id`) ?? sql`true`}`
     const base = sql`
       FROM empresas e
       JOIN empresa_tags et ON et.empresa_id = e.id

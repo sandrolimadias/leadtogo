@@ -30,11 +30,6 @@ export interface EscopoDaCarteira {
   /** Escolher outro responsável na oportunidade / na atividade */
   atribuirOportunidade: boolean
   atribuirAtividade: boolean
-  /**
-   * Vê as empresas de todos (`empresas.ver` = todas). Só para o mapa e a geolocalização, até eles
-   * passarem a usar `empresas.ver` (commit 6f da Fase 1); com `equipe`, fica `false` (mais restrito).
-   */
-  veTodas: boolean
   /** Bloqueia o cadastro de CNPJ que não esteja ativo na Receita */
   bloquearNaoAtiva: boolean
   /** Conquistar uma oportunidade muda a empresa para Cliente, salvo se a pessoa desligar no fechamento */
@@ -87,7 +82,6 @@ export async function escopoDaCarteira(ctx: ContextoTenantService): Promise<Esco
     contatoSemEmpresa: permissao.pode('contatos.criar_sem_empresa'),
     atribuirOportunidade: permissao.pode('oportunidades.atribuir_responsavel'),
     atribuirAtividade: permissao.pode('atividades.atribuir_responsavel'),
-    veTodas: alcances('empresas.ver') === 'todas',
     bloquearNaoAtiva: config?.bloquear ?? true,
     clienteAoConquistar: config?.clienteAoConquistar ?? true,
   }

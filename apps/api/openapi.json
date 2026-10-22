@@ -8561,7 +8561,7 @@
     },
     "/v1/geolocalizacao/lotes": {
       "post": {
-        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor). Um lote em andamento por vez (409 `lote_em_andamento`); sem empresas para fazer, 409 `lote_vazio`. O worker executa em blocos curtos, com concorrência baixa; acompanhe em `GET /geolocalizacao/lotes/{id}`.",
+        "description": "Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela). Um lote em andamento por vez (409 `lote_em_andamento`); sem empresas para fazer, 409 `lote_vazio`. O worker executa em blocos curtos, com concorrência baixa; acompanhe em `GET /geolocalizacao/lotes/{id}`.",
         "operationId": "GeolocalizacaoController_criarLote",
         "parameters": [],
         "requestBody": {
@@ -8630,7 +8630,7 @@
         "tags": ["Geolocalização"]
       },
       "get": {
-        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor).",
+        "description": "Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela).",
         "operationId": "GeolocalizacaoController_listarLotes",
         "parameters": [
           {
@@ -8714,7 +8714,7 @@
     },
     "/v1/geolocalizacao/lotes/{id}": {
       "get": {
-        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor). Lote de outra empresa: 404 `lote_nao_encontrado`.",
+        "description": "Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela). Lote de outra empresa: 404 `lote_nao_encontrado`.",
         "operationId": "GeolocalizacaoController_detalharLote",
         "parameters": [
           {
@@ -8784,7 +8784,7 @@
     },
     "/v1/geolocalizacao/lotes/{id}/cancelar": {
       "post": {
-        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor). Vale antes da próxima empresa; o que já foi feito fica. 409 `lote_nao_cancelavel`.",
+        "description": "Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela). Vale antes da próxima empresa; o que já foi feito fica. 409 `lote_nao_cancelavel`.",
         "operationId": "GeolocalizacaoController_cancelarLote",
         "parameters": [
           {
@@ -8854,7 +8854,7 @@
     },
     "/v1/geolocalizacao/lotes/{id}/retomar": {
       "post": {
-        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor). Só faz as empresas que faltam (e as que falharam). 409 `lote_nao_retomavel` ou `lote_em_andamento`.",
+        "description": "Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela). Só faz as empresas que faltam (e as que falharam). 409 `lote_nao_retomavel` ou `lote_em_andamento`.",
         "operationId": "GeolocalizacaoController_retomarLote",
         "parameters": [
           {
@@ -8924,7 +8924,7 @@
     },
     "/v1/geolocalizacao/lotes/previa": {
       "post": {
-        "description": "Só administradores e gestores (403 `acesso_negado` para o vendedor).",
+        "description": "Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela).",
         "operationId": "GeolocalizacaoController_previa",
         "parameters": [],
         "requestBody": {
@@ -9080,7 +9080,7 @@
         "tags": ["Geolocalização"]
       },
       "post": {
-        "description": "Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Nome único (409 `regiao_repetida`); municípios por código IBGE (400 `municipio_invalido`).",
+        "description": "Exige `geolocalizacao.regioes` (403 `acesso_negado` sem ela). Registra na auditoria. Nome único (409 `regiao_repetida`); municípios por código IBGE (400 `municipio_invalido`).",
         "operationId": "GeolocalizacaoController_criarRegiao",
         "parameters": [],
         "requestBody": {
@@ -9151,7 +9151,7 @@
     },
     "/v1/geolocalizacao/regioes/{id}": {
       "put": {
-        "description": "Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Troca o nome e a lista de municípios inteira.",
+        "description": "Exige `geolocalizacao.regioes` (403 `acesso_negado` sem ela). Registra na auditoria. Troca o nome e a lista de municípios inteira.",
         "operationId": "GeolocalizacaoController_alterarRegiao",
         "parameters": [
           {
@@ -9239,7 +9239,7 @@
         "tags": ["Geolocalização"]
       },
       "delete": {
-        "description": "Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; lotes já feitos não mudam.",
+        "description": "Exige `geolocalizacao.regioes` (403 `acesso_negado` sem ela). Registra na auditoria. Exclusão lógica; lotes já feitos não mudam.",
         "operationId": "GeolocalizacaoController_excluirRegiao",
         "parameters": [
           {
@@ -11100,7 +11100,7 @@
     },
     "/v1/mapa/legenda/{chave}": {
       "put": {
-        "description": "Só administradores (403 `acesso_negado`). A cor vem da paleta de 12 cores dos tokens (400 se for outra). Nome vazio ou nulo volta ao padrão. A regra de cada estado não muda. Registra na auditoria.",
+        "description": "Exige `geolocalizacao.legenda` (403 `acesso_negado`). A cor vem da paleta de 12 cores dos tokens (400 se for outra). Nome vazio ou nulo volta ao padrão. A regra de cada estado não muda. Registra na auditoria.",
         "operationId": "MapaController_alterarEntrada",
         "parameters": [
           {
@@ -11190,7 +11190,7 @@
     },
     "/v1/mapa/legenda/restaurar": {
       "post": {
-        "description": "Só administradores. Apaga todas as cores e nomes personalizados da legenda.",
+        "description": "Exige `geolocalizacao.legenda`. Apaga todas as cores e nomes personalizados da legenda.",
         "operationId": "MapaController_restaurar",
         "parameters": [],
         "responses": {

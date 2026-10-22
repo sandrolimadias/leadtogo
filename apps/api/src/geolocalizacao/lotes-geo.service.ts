@@ -19,13 +19,6 @@ import { inteirosSql } from './sql-inteiros.js'
 
 const TAMANHO_DO_INSERT = 1000
 
-/** Quem roda lotes de geocodificação: administrador e gestor. */
-export function exigirQuemGeocodifica(ctx: ContextoTenantService): void {
-  if (ctx.membro.papel !== 'admin' && ctx.membro.papel !== 'gestor') {
-    throw new ErroApi('acesso_negado', 'Só administradores e gestores geocodificam em lote.', 403)
-  }
-}
-
 type LinhaDoLote = {
   id: string
   nome: string
@@ -60,7 +53,6 @@ export class LotesGeoService {
   }
 
   async previa(escopo: EscopoDoLote): Promise<PreviaDoLote> {
-    exigirQuemGeocodifica(this.ctx)
     const r = await this.regioes.resolverEscopo(escopo)
     const [c] = await this.ctx.db().execute<{
       total: number
@@ -84,7 +76,6 @@ export class LotesGeoService {
   }
 
   async criar(dados: CriarLoteGeo): Promise<LoteGeo> {
-    exigirQuemGeocodifica(this.ctx)
     const db = this.ctx.db()
     const tenantId = this.ctx.tenantId
     const r = await this.regioes.resolverEscopo(dados.escopo)
@@ -167,7 +158,6 @@ export class LotesGeoService {
   }
 
   async detalhar(id: string): Promise<LoteGeo> {
-    exigirQuemGeocodifica(this.ctx)
     const db = this.ctx.db()
     const [l] = await db.execute<LinhaDoLote>(
       sql`SELECT * FROM geo_lotes WHERE id = ${id} AND excluido_em IS NULL`,
@@ -177,7 +167,6 @@ export class LotesGeoService {
   }
 
   async listar(consulta: ConsultaDeLotesGeo): Promise<ListaDeLotesGeo> {
-    exigirQuemGeocodifica(this.ctx)
     const db = this.ctx.db()
     const [t] = await db.execute<{ n: number }>(
       sql`SELECT count(*)::int AS n FROM geo_lotes WHERE excluido_em IS NULL`,
@@ -191,7 +180,6 @@ export class LotesGeoService {
   }
 
   async cancelar(id: string): Promise<LoteGeo> {
-    exigirQuemGeocodifica(this.ctx)
     const l = await this.ctx.db().execute(sql`
       UPDATE geo_lotes SET situacao = 'cancelado', atualizado_por = ${this.ctx.membro.id}, atualizado_em = now()
       WHERE id = ${id} AND situacao = 'em_andamento' AND excluido_em IS NULL RETURNING id`)
@@ -205,7 +193,6 @@ export class LotesGeoService {
 
   /** Retoma um lote cancelado ou que falhou: as que falharam voltam a pendentes; as feitas ficam. */
   async retomar(id: string): Promise<LoteGeo> {
-    exigirQuemGeocodifica(this.ctx)
     const db = this.ctx.db()
     const [ativo] = await db.execute(
       sql`SELECT 1 FROM geo_lotes WHERE situacao = 'em_andamento' AND excluido_em IS NULL LIMIT 1`,

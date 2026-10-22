@@ -1589,13 +1589,13 @@ export interface paths {
         };
         /**
          * Lotes de geocodificação, do mais novo ao mais antigo
-         * @description Só administradores e gestores (403 `acesso_negado` para o vendedor).
+         * @description Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela).
          */
         get: operations["GeolocalizacaoController_listarLotes"];
         put?: never;
         /**
          * Criar e iniciar um lote de geocodificação
-         * @description Só administradores e gestores (403 `acesso_negado` para o vendedor). Um lote em andamento por vez (409 `lote_em_andamento`); sem empresas para fazer, 409 `lote_vazio`. O worker executa em blocos curtos, com concorrência baixa; acompanhe em `GET /geolocalizacao/lotes/{id}`.
+         * @description Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela). Um lote em andamento por vez (409 `lote_em_andamento`); sem empresas para fazer, 409 `lote_vazio`. O worker executa em blocos curtos, com concorrência baixa; acompanhe em `GET /geolocalizacao/lotes/{id}`.
          */
         post: operations["GeolocalizacaoController_criarLote"];
         delete?: never;
@@ -1613,7 +1613,7 @@ export interface paths {
         };
         /**
          * Andamento de um lote
-         * @description Só administradores e gestores (403 `acesso_negado` para o vendedor). Lote de outra empresa: 404 `lote_nao_encontrado`.
+         * @description Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela). Lote de outra empresa: 404 `lote_nao_encontrado`.
          */
         get: operations["GeolocalizacaoController_detalharLote"];
         put?: never;
@@ -1635,7 +1635,7 @@ export interface paths {
         put?: never;
         /**
          * Cancelar um lote em andamento
-         * @description Só administradores e gestores (403 `acesso_negado` para o vendedor). Vale antes da próxima empresa; o que já foi feito fica. 409 `lote_nao_cancelavel`.
+         * @description Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela). Vale antes da próxima empresa; o que já foi feito fica. 409 `lote_nao_cancelavel`.
          */
         post: operations["GeolocalizacaoController_cancelarLote"];
         delete?: never;
@@ -1655,7 +1655,7 @@ export interface paths {
         put?: never;
         /**
          * Retomar um lote cancelado ou que falhou
-         * @description Só administradores e gestores (403 `acesso_negado` para o vendedor). Só faz as empresas que faltam (e as que falharam). 409 `lote_nao_retomavel` ou `lote_em_andamento`.
+         * @description Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela). Só faz as empresas que faltam (e as que falharam). 409 `lote_nao_retomavel` ou `lote_em_andamento`.
          */
         post: operations["GeolocalizacaoController_retomarLote"];
         delete?: never;
@@ -1675,7 +1675,7 @@ export interface paths {
         put?: never;
         /**
          * Prévia de um lote: quantas empresas e quantas já têm coordenada
-         * @description Só administradores e gestores (403 `acesso_negado` para o vendedor).
+         * @description Exige `geolocalizacao.lotes` (403 `acesso_negado` sem ela).
          */
         post: operations["GeolocalizacaoController_previa"];
         delete?: never;
@@ -1699,7 +1699,7 @@ export interface paths {
         put?: never;
         /**
          * Criar região
-         * @description Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Nome único (409 `regiao_repetida`); municípios por código IBGE (400 `municipio_invalido`).
+         * @description Exige `geolocalizacao.regioes` (403 `acesso_negado` sem ela). Registra na auditoria. Nome único (409 `regiao_repetida`); municípios por código IBGE (400 `municipio_invalido`).
          */
         post: operations["GeolocalizacaoController_criarRegiao"];
         delete?: never;
@@ -1718,13 +1718,13 @@ export interface paths {
         get?: never;
         /**
          * Alterar região
-         * @description Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Troca o nome e a lista de municípios inteira.
+         * @description Exige `geolocalizacao.regioes` (403 `acesso_negado` sem ela). Registra na auditoria. Troca o nome e a lista de municípios inteira.
          */
         put: operations["GeolocalizacaoController_alterarRegiao"];
         post?: never;
         /**
          * Excluir região
-         * @description Só administradores (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; lotes já feitos não mudam.
+         * @description Exige `geolocalizacao.regioes` (403 `acesso_negado` sem ela). Registra na auditoria. Exclusão lógica; lotes já feitos não mudam.
          */
         delete: operations["GeolocalizacaoController_excluirRegiao"];
         options?: never;
@@ -2138,7 +2138,7 @@ export interface paths {
         get?: never;
         /**
          * Mudar a cor ou o nome de um estado da legenda
-         * @description Só administradores (403 `acesso_negado`). A cor vem da paleta de 12 cores dos tokens (400 se for outra). Nome vazio ou nulo volta ao padrão. A regra de cada estado não muda. Registra na auditoria.
+         * @description Exige `geolocalizacao.legenda` (403 `acesso_negado`). A cor vem da paleta de 12 cores dos tokens (400 se for outra). Nome vazio ou nulo volta ao padrão. A regra de cada estado não muda. Registra na auditoria.
          */
         put: operations["MapaController_alterarEntrada"];
         post?: never;
@@ -2159,7 +2159,7 @@ export interface paths {
         put?: never;
         /**
          * Restaurar a legenda padrão
-         * @description Só administradores. Apaga todas as cores e nomes personalizados da legenda.
+         * @description Exige `geolocalizacao.legenda`. Apaga todas as cores e nomes personalizados da legenda.
          */
         post: operations["MapaController_restaurar"];
         delete?: never;

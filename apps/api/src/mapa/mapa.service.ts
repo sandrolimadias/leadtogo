@@ -78,8 +78,6 @@ type LinhaDeTag = {
   visivel_ao_abrir: boolean
 }
 
-const eAdmin = (ctx: ContextoTenantService) => ctx.membro.papel === 'admin'
-
 /** O mapa (G2): opções e legenda, pontos por área, próximas, seleção e cobertura por município. */
 @Injectable()
 export class MapaService {
@@ -151,11 +149,8 @@ export class MapaService {
     return { entradas }
   }
 
-  /** Cor e nome de um estado da legenda (só o administrador). Nome vazio volta ao padrão. */
+  /** Cor e nome de um estado da legenda (`geolocalizacao.legenda`, na rota). Nome vazio volta ao padrão. */
   async alterarEntrada(chave: string, dados: AlterarEntradaDaLegenda): Promise<LegendaDoMapa> {
-    if (!eAdmin(this.ctx)) {
-      throw new ErroApi('acesso_negado', 'Só administradores mudam a legenda do mapa.', 403)
-    }
     const atual = (await this.legenda()).entradas.find((e) => e.chave === chave)
     if (!atual) throw new ErroApi('estado_nao_encontrado', 'Estado da legenda não encontrado.', 404)
     const cor = dados.cor ?? atual.cor
@@ -181,9 +176,6 @@ export class MapaService {
 
   /** "Restaurar padrão": apaga todas as personalizações da legenda do tenant. */
   async restaurarLegenda(): Promise<LegendaDoMapa> {
-    if (!eAdmin(this.ctx)) {
-      throw new ErroApi('acesso_negado', 'Só administradores mudam a legenda do mapa.', 403)
-    }
     await this.ctx.db().execute(sql`DELETE FROM mapa_legenda`)
     await this.auditoria.registrar({ entidade: 'mapa_legenda', acao: 'restaurar_padrao' })
     return this.legenda()
@@ -219,11 +211,13 @@ export class MapaService {
         porLote: t.chave_sistema === 'lead',
       }
     })
-    const vendedores = escopo.veTodas
-      ? await db.execute<{ id: string; nome: string }>(
-          sql`SELECT id, nome FROM membros WHERE ativo AND excluido_em IS NULL ORDER BY nome`,
-        )
-      : []
+    // o filtro de vendedor só para quem vê a carteira de todos (como antes)
+    const vendedores =
+      escopo.empresas.ver === null
+        ? await db.execute<{ id: string; nome: string }>(
+            sql`SELECT id, nome FROM membros WHERE ativo AND excluido_em IS NULL ORDER BY nome`,
+          )
+        : []
     const cidades = await db.execute<{ codigo_ibge: number; nome: string }>(sql`
       SELECT DISTINCT m.codigo_ibge, m.nome
       FROM empresas e JOIN municipios m ON m.codigo_ibge = e.municipio_codigo
