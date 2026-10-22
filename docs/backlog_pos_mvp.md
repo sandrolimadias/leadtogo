@@ -150,6 +150,8 @@
 ## Segurança e LGPD
 | Item | Motivo de ter ficado fora | Origem |
 |---|---|---|
+| **Contração dos perfis de acesso** (remover `papel` de `membros` e `convites` e o enum `papel_membro`, `perfil_id NOT NULL`, remover `vendedor_ve_todas_empresas` e `dois_fatores_exigido`, e a função `app_vinculos_com_politica` antiga) | Migração destrutiva: só depois de **duas semanas de uso real** da Fase 1, com aviso ao Ale e commit `BREAKING-DB:` | Perfis de acesso, Fase 1 |
+| Permissões de chamados e do portal do cliente, visão Equipe, permissões por campo, múltiplos perfis por usuário | Fora da Fase 1; cada fase futura acrescenta as suas ao catálogo | Perfis de acesso, Fase 1 |
 | `acessos_log` com retenção de 6 meses (partição mensal descartada pelo job) | Decidido, **ainda não implementado** | Trilha antes do primeiro cliente externo / `lgpd.md` 5.1 |
 | Limpeza de sessões expiradas | Trilha técnica | Trilha antes do primeiro cliente externo |
 | Retenção da auditoria (prazo e descarte das partições antigas) | Hoje o job só cria partições e nunca descarta: retenção ilimitada | `lgpd.md`, seção 5 |

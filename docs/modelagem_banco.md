@@ -188,6 +188,22 @@ O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verifi
 - `user.ultima_empresa_id` → `tenants.id` (`ON DELETE SET NULL`, migração 0012): a última empresa que a pessoa usou; gravada a cada troca de empresa ativa
 - Tabelas em `auth`: `user` (e-mail em `citext`, único), `session`, `account` (senha em hash scrypt), `verification` e `two_factor`, todas com id `uuid` v7. Sem RLS (nada é por tenant); o `leadtogo_app` tem DML, sem DDL.
 
+### 3.4A `perfis_acesso` e `perfil_permissoes` 🏢 — Perfis de acesso (Fase 1, a migrar)
+
+| `perfis_acesso` | Tipo | Observação |
+|---|---|---|
+| id, tenant_id | uuid v7 | |
+| nome, descricao | text | Único `(tenant_id, nome)` entre não excluídos |
+| sistema | boolean | Perfis de sistema não se excluem |
+| chave_sistema | text null | `admin` \| `gestor` \| `vendedor`, ou nulo (perfil da empresa). Sempre usada no lugar do nome |
+| exige_2fa | boolean | Substitui a política `dois_fatores_exigido` por papel |
+| ativo | boolean | |
+| colunas padrão | | `criado_em`, `atualizado_em`, `criado_por`, `atualizado_por`, `excluido_em` |
+
+`perfil_permissoes`: `tenant_id`, `perfil_id`, `permissao` (chave do catálogo em `packages/shared/src/permissoes.ts`), `alcance` (nulo \| `propria` \| `equipe` \| `todas`); PK `(perfil_id, permissao)`. As duas tabelas têm RLS habilitado e forçado e teste de isolamento.
+
+`membros.perfil_id` e `convites.perfil_id` entram **nulos** (expandir). O `papel` antigo fica como legado: nenhuma regra nova o lê; perfis da empresa gravam `vendedor` nele só por compatibilidade. `tenant_configuracoes.vendedor_ve_todas_empresas` e `tenant_configuracoes.dois_fatores_exigido` ficam no banco até a contração (a função `app_vinculos_com_politica` ganha uma versão nova que devolve `perfil_id` e `exige_2fa`, em migração de expansão) (fora da Fase 1). O backfill é idempotente, feito na partida da API (depois do migrate): cria os três perfis de sistema por empresa, converte o interruptor e a política de 2FA e liga membros e convites.
+
 ### 3.5 `convites` 🏢 — Convite de membro
 | Coluna | Tipo | Observação |
 |---|---|---|

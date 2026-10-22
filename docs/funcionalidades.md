@@ -503,7 +503,34 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 
 ## 10. Usuários, papéis e carteira
 
-### Papéis padrão
+### Perfis de acesso (Fase 1, em implementação)
+
+O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configuráveis por empresa: **permissões por módulo e ação, com alcance**. Base da futura central de chamados e do portal do cliente (que não entram agora).
+
+- **Nome e confusões a evitar:** "perfil de acesso" não é o *papel na decisão* do contato, nem o *perfil de regras* da importação, nem o `papel_conta` (dono, administrador, financeiro), que **não muda**.
+- **Um perfil por membro por empresa** (`membros.perfil_id`). Sem múltiplos perfis.
+- **Perfis de sistema:** **Administrador, Gestor e Vendedor** nascem com a empresa, são editáveis e **nunca se excluem**. O perfil Administrador não perde `perfis.gerir` nem `equipe.gerir`. Perfil criado pela empresa só se exclui sem membros. Há **duplicar**.
+- **Catálogo:** chaves `modulo.acao` (ex.: `empresas.excluir`, `atividades.atribuir_responsavel`), versionado em `packages/shared/src/permissoes.ts`, só com módulos que existem hoje. Na partida da API, os perfis de sistema recebem as permissões novas padrão; **perfis da empresa nunca recebem permissão automaticamente**.
+- **Alcance** (empresas, contatos, oportunidades e atividades): `propria`, `equipe` ou `todas`. *Equipe* = o próprio membro + subordinados diretos e indiretos pelo `gestor_id` (com proteção contra ciclo). O alcance é **por ação**, não por módulo: o Vendedor com "ver todas" fica com `ver = todas` e `editar = propria`.
+- **Padrões dos perfis de sistema** (reproduzem os papéis antigos):
+
+| Perfil | Acesso |
+|---|---|
+| **Administrador** | Todas as permissões, alcance `todas` |
+| **Gestor** | Ver, criar, editar, excluir e transferir em toda a carteira; importação; geocodificação em lote; atribuir responsável; ver e-mail da equipe. **Sem** cadastros, regiões, legenda, equipe, perfis, segurança e regras da carteira |
+| **Vendedor** | Ver, criar e editar **só a própria carteira**; sem excluir, transferir, importar, atribuir responsável nem cadastrar contato sem empresa |
+
+- **Migração do interruptor** "Vendedores podem ver todas as empresas": ligado → perfil Vendedor da empresa com `ver = todas` e `editar = propria`; desligado → `propria` nas duas. O interruptor sai da tela Configurações → Carteira.
+- **2FA** passa a ser o flag `exige_2fa` de cada perfil (Configurações → Segurança edita por perfil). A política antiga é convertida: `admin` → só o Administrador; `admin_gestor` → também o Gestor; `todos` → os três. Administrador de conta continua sempre exigido.
+- **Proteções:** a empresa nunca fica sem um membro ativo com `perfis.gerir` (409); ninguém altera o próprio perfil nem tira `perfis.gerir` de si.
+- **Tela** Configurações → Perfis de acesso: lista, matriz módulos × ações com seletor de alcance, aba "Usuários do perfil", duplicar, aviso de impacto ao salvar ("N usuários serão afetados") e visão "quem pode o quê". Em Equipe e convites, o seletor de perfil substitui o papel.
+- **Auditoria:** criar e editar perfis (permissões antes/depois) e trocar o perfil de um membro.
+- **O servidor sempre decide;** o front só esconde (`pode(chave)`, `alcanceDe(chave)`).
+- **Transição:** o `papel` antigo continua gravado como legado, mas nenhuma regra nova lê o papel. A contração (remover `papel`, `perfil_id NOT NULL`, remover o interruptor) fica para depois de duas semanas de uso real (`backlog_pos_mvp.md`).
+
+> Até a Fase 1 ser entregue e aprovada, valem as descrições por papel abaixo e nas demais seções.
+
+### Papéis padrão (anterior à Fase 1)
 | Papel | Acesso |
 |---|---|
 | **Admin** | Tudo, incluindo configurações, usuários e funis |
@@ -512,7 +539,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 
 ### Regras de carteira
 - Cada empresa tem **um responsável**.
-- Configuração do tenant: **"Vendedores podem ver todas as empresas"** (ligado/desligado). Quando ligado, o vendedor vê tudo, mas edita só a própria carteira.
+- Configuração do tenant: **"Vendedores podem ver todas as empresas"** (ligado/desligado) *(sai na Fase 1: vira o alcance de `ver` do perfil Vendedor)*. Quando ligado, o vendedor vê tudo, mas edita só a própria carteira.
 - **Transferência de carteira:** o gestor ou admin move empresas (individual ou em massa) para outro responsável, com opção de levar junto as oportunidades e atividades abertas.
 - Toda alteração relevante fica registrada no **log de auditoria**.
 
