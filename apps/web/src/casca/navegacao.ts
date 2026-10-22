@@ -14,6 +14,8 @@ import {
 
 import type { PapelMembro } from '@leadtogo/shared'
 
+import { type Permissoes, podeCom } from '@/auth/permissoes'
+
 /** Telas do app: o menu lateral, a barra inferior do celular e o título do cabeçalho saem desta lista. */
 export interface TelaDoApp {
   caminho: string
@@ -22,19 +24,49 @@ export interface TelaDoApp {
   /** Rótulo curto da barra inferior do celular */
   rotuloCurto?: string
   grupo?: 'carteira'
-  /** Só aparece para quem tem o papel (admin/gestor) ou administra a conta */
-  quem?: 'administrador-da-conta' | 'administrador'
+  /** Só para quem administra a conta (Painel consolidado) */
+  quem?: 'administrador-da-conta'
+  /** Só para quem tem ao menos uma destas permissões do perfil de acesso na empresa ativa */
+  permissoes?: readonly string[]
 }
+
+/** As permissões que abrem alguma seção das Configurações (cada seção tem a sua). */
+export const PERMISSOES_DAS_CONFIGURACOES = [
+  'equipe.gerir',
+  'perfis.gerir',
+  'cadastros.gerir',
+  'carteira.configurar',
+  'geolocalizacao.regioes',
+  'geolocalizacao.legenda',
+  'seguranca.gerir',
+] as const
 
 export const TELAS: TelaDoApp[] = [
   { caminho: '/', titulo: 'Dashboard', icone: LayoutDashboard, rotuloCurto: 'Início' },
-  { caminho: '/empresas', titulo: 'Empresas', icone: Building2 },
-  { caminho: '/contatos', titulo: 'Contatos', icone: Users },
-  { caminho: '/oportunidades', titulo: 'Oportunidades', icone: Handshake, rotuloCurto: 'Funil' },
-  { caminho: '/atividades', titulo: 'Atividades', icone: CalendarCheck },
-  { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone },
+  { caminho: '/empresas', titulo: 'Empresas', icone: Building2, permissoes: ['empresas.ver'] },
+  { caminho: '/contatos', titulo: 'Contatos', icone: Users, permissoes: ['contatos.ver'] },
+  {
+    caminho: '/oportunidades',
+    titulo: 'Oportunidades',
+    icone: Handshake,
+    rotuloCurto: 'Funil',
+    permissoes: ['oportunidades.ver'],
+  },
+  {
+    caminho: '/atividades',
+    titulo: 'Atividades',
+    icone: CalendarCheck,
+    permissoes: ['atividades.ver'],
+  },
+  { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone, permissoes: ['empresas.ver'] },
   { caminho: '/prospeccao', titulo: 'Prospecção', icone: Target, grupo: 'carteira' },
-  { caminho: '/geolocalizacao', titulo: 'Geolocalização', icone: MapPin, grupo: 'carteira' },
+  {
+    caminho: '/geolocalizacao',
+    titulo: 'Geolocalização',
+    icone: MapPin,
+    grupo: 'carteira',
+    permissoes: ['empresas.ver'],
+  },
   // Rotas é da Fase 3: item de fase futura fica fora do menu até existir
   {
     caminho: '/consolidado',
@@ -48,7 +80,7 @@ export const TELAS: TelaDoApp[] = [
     titulo: 'Configurações',
     icone: Settings,
     grupo: 'carteira',
-    quem: 'administrador',
+    permissoes: PERMISSOES_DAS_CONFIGURACOES,
   },
 ]
 
@@ -61,7 +93,7 @@ export const TELAS_DA_BARRA_INFERIOR = ['/', '/empresas', '/oportunidades', '/at
  */
 export function telasDoMais(pessoa: {
   administradorDeConta: boolean
-  papelNaEmpresaAtiva: PapelMembro | null
+  permissoes: Permissoes
 }): TelaDoApp[] {
   return TELAS.filter((t) => !TELAS_DA_BARRA_INFERIOR.includes(t.caminho) && telaVisivel(t, pessoa))
 }
@@ -76,14 +108,16 @@ export function tituloDoCaminho(caminho: string): string {
   return achada?.titulo ?? 'Leadtogo'
 }
 
-/** A tela aparece para esta pessoa? (Painel consolidado: administrador da conta; Configurações: administrador.) */
+/**
+ * A tela aparece para esta pessoa? Painel consolidado: administrador da conta; as demais com
+ * `permissoes`: quem tem ao menos uma delas no perfil de acesso da empresa ativa (a API decide).
+ */
 export function telaVisivel(
   tela: TelaDoApp,
-  pessoa: { administradorDeConta: boolean; papelNaEmpresaAtiva: PapelMembro | null },
+  pessoa: { administradorDeConta: boolean; permissoes: Permissoes },
 ): boolean {
   if (tela.quem === 'administrador-da-conta') return pessoa.administradorDeConta
-  // Configurações: só o administrador DA EMPRESA ativa (a API recusa os demais, inclusive quem só administra a conta)
-  if (tela.quem === 'administrador') return pessoa.papelNaEmpresaAtiva === 'admin'
+  if (tela.permissoes) return podeCom(pessoa.permissoes, tela.permissoes)
   return true
 }
 
@@ -93,6 +127,7 @@ export function estaAtiva(tela: TelaDoApp, caminho: string): boolean {
     : caminho === tela.caminho || caminho.startsWith(`${tela.caminho}/`)
 }
 
+/** Rótulo do papel legado: só onde o perfil de acesso ainda não chega (sem perfil). */
 export const ROTULO_DO_PAPEL: Record<PapelMembro, string> = {
   admin: 'Administrador',
   gestor: 'Gestor',

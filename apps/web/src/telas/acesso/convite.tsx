@@ -80,11 +80,12 @@ export function TelaDeConvite({ token }: { token?: string | undefined }) {
   const convite = consulta.data
   const empresa = convite.empresa.nomeFantasia ?? convite.empresa.razaoSocial
   const me = sessao.data
-  const papel = PAPEL[convite.papel] ?? convite.papel
+  // o perfil de acesso que a pessoa terá (o rótulo do papel, em convite antigo sem perfil)
+  const perfil = convite.perfil ?? PAPEL[convite.papel] ?? convite.papel
 
   const aoAceitar = async () => {
     toast.success(`Bem-vindo(a) à ${empresa}`, {
-      description: `Você entrou como ${papel.toLowerCase()}.`,
+      description: `Você entrou com o perfil ${perfil}.`,
     })
     await queryClient.invalidateQueries({ queryKey: chaveDoMe })
     await navegar({ to: '/' })
@@ -100,7 +101,9 @@ export function TelaDeConvite({ token }: { token?: string | undefined }) {
       </span>
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{empresa}</span>
-        <span className="text-[13px] text-ink-muted">Convite para entrar como {papel}</span>
+        <span className="text-[13px] text-ink-muted">
+          Convite para entrar com o perfil {perfil}
+        </span>
       </div>
     </div>
   )

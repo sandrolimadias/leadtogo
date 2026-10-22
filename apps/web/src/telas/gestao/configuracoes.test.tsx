@@ -3,7 +3,14 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { falha, meDeAdmin, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
+import {
+  falha,
+  meDeAdmin,
+  ok,
+  perfisDeSistema,
+  renderizar,
+  servicosFalsos,
+} from '@/testes/servicos-falsos'
 
 const A = '01a111e8-f08a-70b7-b5f3-52998ced0a3a'
 const empresa = (papel: 'admin' | 'gestor' | 'vendedor') => ({
@@ -24,13 +31,15 @@ const meComPapel = (papel: 'admin' | 'gestor' | 'vendedor', extra = {}) =>
   })
 
 const id = (n: number) => `0192f0a0-0000-7000-8000-${String(n).padStart(12, '0')}`
+const [ADMIN, GESTOR, VENDEDOR] = perfisDeSistema()
+const perfilDe = (p: typeof ADMIN) => ({ id: p?.id ?? '', nome: p?.nome ?? '' })
 const membro = (n: number, extra: Partial<MembroDaEquipe> = {}): MembroDaEquipe => ({
   id: id(n),
   nome: `Pessoa ${n}`,
   cargo: null,
   email: `pessoa${n}@exemplo.com.br`,
   papel: 'vendedor',
-  perfil: null,
+  perfil: perfilDe(VENDEDOR),
   ativo: true,
   temLogin: true,
   cor: null,
@@ -41,6 +50,7 @@ const eu = membro(1, {
   nome: 'Alessandro Dias',
   email: 'alessandro@exemplo.com.br',
   papel: 'admin',
+  perfil: perfilDe(ADMIN),
   ultimoAcesso: '2026-10-12',
 })
 const convite = (n: number, extra: Partial<ConviteResumo> = {}): ConviteResumo => ({
@@ -99,6 +109,58 @@ describe('Configurações: proteção por papel', () => {
   })
 })
 
+describe('Configurações por perfil de acesso', () => {
+  it('um perfil só com cadastros.gerir abre as Configurações nos cadastros, sem Usuários nem Segurança', async () => {
+    const me = meDeAdmin({
+      empresas: [
+        {
+          ...empresa('vendedor'),
+          perfil: { id: id(500), nome: 'Cadastrista' },
+          permissoes: { 'cadastros.gerir': true },
+        },
+      ],
+      empresaAtivaId: A,
+      administradorDeConta: false,
+      doisFatoresObrigatorio: false,
+    })
+    const { historico } = renderizar(servicosFalsos({ me: async () => me }), '/configuracoes')
+    await waitFor(() => expect(historico.location.pathname).toBe('/configuracoes/tags'))
+    const menu = await screen.findByRole('navigation', { name: 'Configurações' })
+    expect(within(menu).getByRole('link', { name: /Tags/ })).toBeInTheDocument()
+    expect(within(menu).queryByRole('link', { name: /Usuários/ })).toBeNull()
+    expect(within(menu).queryByRole('link', { name: /Segurança/ })).toBeNull()
+    expect(within(menu).queryByRole('link', { name: /Carteira/ })).toBeNull()
+  })
+
+  it('quem gere a equipe mas não os perfis vê a equipe sem trocar perfis nem convidar', async () => {
+    const me = meDeAdmin({
+      empresas: [
+        {
+          ...empresa('vendedor'),
+          perfil: { id: id(501), nome: 'Recrutadora' },
+          permissoes: { 'equipe.gerir': true },
+        },
+      ],
+      empresaAtivaId: A,
+      administradorDeConta: false,
+      doisFatoresObrigatorio: false,
+    })
+    renderizar(
+      servicosFalsos({
+        me: async () => me,
+        equipe: vi.fn(async () => ok([eu, membro(2)])),
+        convitesPendentes: vi.fn(async () => ok([])),
+      }),
+      '/configuracoes/usuarios',
+    )
+    const linha = await linhaDe('Pessoa 2')
+    expect(within(linha).queryByRole('combobox')).toBeNull()
+    expect(within(linha).getByText('Vendedor')).toBeInTheDocument()
+    expect(within(linha).getByRole('button', { name: 'Desativar' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Convidar pessoa' })).toBeNull()
+  })
+})
+
 describe('Usuários: estados', () => {
   it('carrega mostrando o esqueleto', async () => {
     renderizar(
@@ -143,9 +205,9 @@ describe('Usuários: estados', () => {
     const eul = await linhaDe('Alessandro Dias')
     expect(await within(eul).findByText('(você)')).toBeInTheDocument()
     expect(within(eul).getByText('Acesso em 12/10/2026')).toBeInTheDocument()
-    // a própria pessoa não se desativa nem muda o próprio papel
+    // a própria pessoa não se desativa nem muda o próprio perfil
     expect(within(eul).queryByRole('button')).toBeNull()
-    expect(within(eul).getByRole('combobox', { name: /Papel de/ })).toBeDisabled()
+    expect(within(eul).getByRole('combobox', { name: /Perfil de/ })).toBeDisabled()
 
     const bruno = screen.getByRole('listitem', { name: 'Bruno Sossai' })
     expect(within(bruno).getByText('Inativo')).toBeInTheDocument()
@@ -172,19 +234,22 @@ describe('Usuários: estados', () => {
 })
 
 describe('Usuários: ações', () => {
-  it('muda o papel de um vendedor na hora', async () => {
-    const alterarMembro = vi.fn(async () => ok(membro(2, { papel: 'gestor' })))
+  it('muda o perfil de um vendedor na hora', async () => {
+    const atribuirPerfil = vi.fn(async () => ok({ membroId: id(2), perfil: perfilDe(GESTOR) }))
     renderizar(
-      servicosDeUsuarios([eu, membro(2)], [], { alterarMembro }),
+      servicosDeUsuarios([eu, membro(2)], [], { atribuirPerfil }),
       '/configuracoes/usuarios',
     )
     const linha = await linhaDe('Pessoa 2')
-    await userEvent.selectOptions(within(linha).getByRole('combobox'), 'gestor')
-    await waitFor(() => expect(alterarMembro).toHaveBeenCalledWith(id(2), { papel: 'gestor' }))
+    await userEvent.selectOptions(
+      await within(linha).findByRole('combobox', { name: 'Perfil de Pessoa 2' }),
+      GESTOR?.id ?? '',
+    )
+    await waitFor(() => expect(atribuirPerfil).toHaveBeenCalledWith(id(2), GESTOR?.id))
   })
 
-  it('rebaixar um administrador pede confirmação; o erro da API aparece no diálogo', async () => {
-    const alterarMembro = vi
+  it('tirar de alguém a gestão dos perfis pede confirmação; o erro da API aparece no diálogo', async () => {
+    const atribuirPerfil = vi
       .fn()
       .mockResolvedValue(
         falha(
@@ -194,17 +259,22 @@ describe('Usuários: ações', () => {
         ),
       )
     renderizar(
-      servicosDeUsuarios([eu, membro(2, { nome: 'Dono Da Conta', papel: 'admin' })], [], {
-        alterarMembro,
-      }),
+      servicosDeUsuarios(
+        [eu, membro(2, { nome: 'Dono Da Conta', papel: 'admin', perfil: perfilDe(ADMIN) })],
+        [],
+        { atribuirPerfil },
+      ),
       '/configuracoes/usuarios',
     )
     const linha = await linhaDe('Dono Da Conta')
-    await userEvent.selectOptions(within(linha).getByRole('combobox'), 'gestor')
-    const dialogo = await screen.findByRole('dialog', { name: 'Mudar o papel de Dono Da Conta?' })
-    expect(alterarMembro).not.toHaveBeenCalled()
-    await userEvent.click(within(dialogo).getByRole('button', { name: 'Mudar papel' }))
-    await waitFor(() => expect(alterarMembro).toHaveBeenCalledWith(id(2), { papel: 'gestor' }))
+    await userEvent.selectOptions(
+      await within(linha).findByRole('combobox', { name: 'Perfil de Dono Da Conta' }),
+      GESTOR?.id ?? '',
+    )
+    const dialogo = await screen.findByRole('dialog', { name: 'Mudar o perfil de Dono Da Conta?' })
+    expect(atribuirPerfil).not.toHaveBeenCalled()
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Mudar perfil' }))
+    await waitFor(() => expect(atribuirPerfil).toHaveBeenCalledWith(id(2), GESTOR?.id))
     expect(await within(dialogo).findByRole('alert')).toHaveTextContent('dono da conta')
   })
 
@@ -258,7 +328,7 @@ describe('Usuários: ações', () => {
 })
 
 describe('Convidar pessoa', () => {
-  it('valida o e-mail, envia com o papel escolhido e fecha', async () => {
+  it('valida o e-mail, envia com o perfil escolhido e fecha', async () => {
     const convidar = vi.fn(async () =>
       ok({ ...convite(9), email: 'nova@exemplo.com.br', emailEnviado: true }),
     )
@@ -273,10 +343,13 @@ describe('Convidar pessoa', () => {
     expect(convidar).not.toHaveBeenCalled()
 
     await userEvent.type(within(dialogo).getByLabelText(/E-mail/), '  nova@exemplo.com.br ')
-    await userEvent.selectOptions(within(dialogo).getByLabelText('Papel'), 'gestor')
+    await userEvent.selectOptions(
+      within(dialogo).getByLabelText('Perfil de acesso'),
+      GESTOR?.id ?? '',
+    )
     await userEvent.click(within(dialogo).getByRole('button', { name: 'Enviar convite' }))
     await waitFor(() =>
-      expect(convidar).toHaveBeenCalledWith({ email: 'nova@exemplo.com.br', papel: 'gestor' }),
+      expect(convidar).toHaveBeenCalledWith({ email: 'nova@exemplo.com.br', perfilId: GESTOR?.id }),
     )
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: 'Convidar pessoa' })).toBeNull(),

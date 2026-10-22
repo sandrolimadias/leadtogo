@@ -5,8 +5,8 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Check, ChevronRight, Search } from 'lucide-react'
 import { useState } from 'react'
 
+import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
-import { chaveDoMe } from '@/auth/guardas'
 import { useDispositivo } from '@/casca/dispositivo'
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/campos'
@@ -77,8 +77,7 @@ export function NovaEmpresa() {
 
   const mudar = (patch: Partial<Formulario>) => setF((atual) => ({ ...atual, ...patch }))
 
-  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data
-  const papel = me?.empresas.find((e) => e.ativa)?.papel
+  const { pode } = usePermissoes()
   const opcoes = useQuery({
     queryKey: ['carteira', 'opcoes'],
     retry: false,
@@ -115,7 +114,8 @@ export function NovaEmpresa() {
   // O Status começa em Lead (decisão do cadastro)
   const statusEscolhido = f.statusTagId || idDoLead
 
-  const mostraVendedor = opcoes ? !opcoes.unicoMembro && papel !== 'vendedor' : false
+  // escolher outro responsável é passar a carteira (`empresas.transferir`)
+  const mostraVendedor = opcoes ? !opcoes.unicoMembro && pode('empresas.transferir') : false
   const vendedores = mostraVendedor
     ? (opcoes?.vendedores ?? []).map((v) => ({ value: v.id, label: v.nome }))
     : null

@@ -42,6 +42,9 @@ import type {
   ValoresDoTipoDaImportacao,
   Me,
   MembroDaEquipe,
+  MembroDoPerfil,
+  PerfilDeAcesso,
+  PerfilDoMembro,
   OpcoesDaLista,
   OpcoesDaListaDeContatos,
   PapelDecisao,
@@ -456,6 +459,10 @@ export interface ServicosDeAcesso {
   convidar: (dados: CriarConviteEntrada) => Promise<Resultado<ConviteCriado>>
   cancelarConvite: (id: string) => Promise<Resultado>
   alterarMembro: (id: string, dados: AlterarMembroEntrada) => Promise<Resultado<MembroDaEquipe>>
+  /** Troca o perfil de acesso de um membro (`perfis.gerir`) */
+  atribuirPerfil: (membroId: string, perfilId: string) => Promise<Resultado<PerfilDoMembro>>
+  // Perfis de acesso (Fase 1): `perfis.gerir`
+  perfis: ServicosDePerfis
   seguranca: () => Promise<Resultado<Seguranca>>
   alterarPoliticaDeDoisFatores: (politica: PoliticaDoisFatores) => Promise<Resultado<Seguranca>>
 
@@ -491,4 +498,30 @@ export interface ServicosDeAcesso {
 
   // Dashboard (Módulo 7)
   dashboard: ServicosDoDashboard
+}
+
+/** Matriz de permissões de um perfil: `chave → alcance` ou `true` */
+export type MatrizDePermissoes = PerfilDeAcesso['permissoes']
+
+export interface ServicosDePerfis {
+  listar: () => Promise<Resultado<PerfilDeAcesso[]>>
+  membros: (id: string) => Promise<Resultado<MembroDoPerfil[]>>
+  criar: (dados: {
+    nome: string
+    descricao?: string | null
+    exige2fa?: boolean
+    permissoes?: MatrizDePermissoes
+  }) => Promise<Resultado<PerfilDeAcesso>>
+  duplicar: (id: string, nome: string) => Promise<Resultado<PerfilDeAcesso>>
+  editar: (
+    id: string,
+    dados: {
+      nome?: string
+      descricao?: string | null
+      exige2fa?: boolean
+      ativo?: boolean
+      permissoes?: MatrizDePermissoes
+    },
+  ) => Promise<Resultado<PerfilDeAcesso>>
+  excluir: (id: string) => Promise<Resultado>
 }

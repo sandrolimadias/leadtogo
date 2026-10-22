@@ -10,8 +10,8 @@ import { getRouteApi } from '@tanstack/react-router'
 import { Building2, Check, Filter, Plus, Search, Upload, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
-import { chaveDoMe } from '@/auth/guardas'
 import { useDispositivo } from '@/casca/dispositivo'
 import { usePorPagina } from '@/casca/preferencias'
 import { Button, IconButton } from '@/components/ui/button'
@@ -153,11 +153,8 @@ export function ListaDeEmpresas() {
     },
   })
 
-  // Importar planilha é de administrador e gestor
-  const papel = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data?.empresas.find(
-    (e) => e.ativa,
-  )?.papel
-  const quemImporta = papel === 'admin' || papel === 'gestor'
+  // Importar planilha: quem tem `importacao.executar` no perfil de acesso
+  const quemImporta = usePermissoes().pode('importacao.executar')
   const importar = () => void navegar({ to: '/importacao/nova' })
 
   const unicoMembro = opcoes.data?.unicoMembro ?? false

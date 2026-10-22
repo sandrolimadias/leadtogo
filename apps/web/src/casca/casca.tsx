@@ -6,6 +6,7 @@ import { type ReactNode, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { chaveDoMe } from '@/auth/guardas'
+import { permissoesDaAtiva } from '@/auth/permissoes'
 import { AppNav, TenantSwitcher, type GrupoDaNavegacao } from '@/components/ui/navegacao'
 import { Avatar } from '@/components/ui/exibicao'
 import { corDoNome } from '@/components/ui/cores'
@@ -17,7 +18,7 @@ import { RegistrarAtividadeProvider } from '@/telas/atividades/registrar'
 import { FormularioDeOportunidadeProvider } from '@/telas/oportunidades/formulario'
 import { useDispositivo } from './dispositivo'
 import { useTrocarEmpresa } from './empresas'
-import { ROTULO_DO_PAPEL, TELAS, estaAtiva, telaVisivel, tituloDoCaminho } from './navegacao'
+import { TELAS, estaAtiva, telaVisivel, tituloDoCaminho } from './navegacao'
 import {
   BarraInferior,
   BarraSuperior,
@@ -29,7 +30,7 @@ import {
 } from './partes'
 import { usePreferencias } from './preferencias'
 import { SeletorDeEmpresa } from './seletor-de-empresa'
-import { nomeDaEmpresa, papelDe } from './utilidades'
+import { nomeDaEmpresa, papelDe, perfilDaEmpresa } from './utilidades'
 
 /**
  * A casca do app (E9c): menu lateral recolhível no desktop, trilho de ícones no tablet e, no celular,
@@ -112,7 +113,7 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
   const recolhido = dispositivo === 'tablet' || prefs.menuRecolhido
   const pessoa = {
     administradorDeConta: me.administradorDeConta,
-    papelNaEmpresaAtiva: ativa?.papel ?? null,
+    permissoes: permissoesDaAtiva(me),
   }
   const grupo = (g: 'carteira' | undefined) =>
     TELAS.filter((t) => t.grupo === g && telaVisivel(t, pessoa)).map((t) => ({
@@ -130,7 +131,7 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
   const itensDeEmpresas: ItemDeMenu[] = [
     { heading: 'Suas empresas' },
     ...me.empresas.map((e) => ({
-      label: `${nomeDaEmpresa(e)} · ${ROTULO_DO_PAPEL[e.papel]}`,
+      label: `${nomeDaEmpresa(e)} · ${perfilDaEmpresa(e)}`,
       checked: e.ativa,
       onSelect: () => {
         if (!e.ativa) void trocarEmpresa(e.id)

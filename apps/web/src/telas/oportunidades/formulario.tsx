@@ -8,8 +8,8 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
 
+import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
-import { chaveDoMe } from '@/auth/guardas'
 import { Button } from '@/components/ui/button'
 import { Select, TextArea, TextField } from '@/components/ui/campos'
 import { Alert } from '@/components/ui/feedback'
@@ -175,8 +175,7 @@ function FormularioDeOportunidade({
   const [salvando, setSalvando] = useState(false)
   const mudar = (patch: Partial<Formulario>) => setF((a) => ({ ...a, ...patch }))
 
-  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data
-  const papel = me?.empresas.find((e) => e.ativa)?.papel
+  const { pode } = usePermissoes()
   const funis = useQuery({
     queryKey: ['cadastros', 'funis'],
     retry: false,
@@ -526,7 +525,7 @@ function FormularioDeOportunidade({
             value={f.origemId}
             onChange={(e) => mudar({ origemId: e.target.value })}
           />
-          {papel !== undefined && papel !== 'vendedor' ? (
+          {pode('oportunidades.atribuir_responsavel') ? (
             <Select
               label="Responsável"
               placeholder="O vendedor da empresa (padrão)"

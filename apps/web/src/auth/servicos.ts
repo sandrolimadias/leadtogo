@@ -237,6 +237,46 @@ export const servicosReais: ServicosDeAcesso = {
     protegido(async () =>
       daApi(await api.PATCH('/v1/membros/{id}', { params: { path: { id } }, body: dados })),
     ),
+  atribuirPerfil: (membroId, perfilId) =>
+    protegido(async () =>
+      daApi(
+        await api.PUT('/v1/membros/{id}/perfil', {
+          params: { path: { id: membroId } },
+          body: { perfilId },
+        }),
+      ),
+    ),
+  perfis: {
+    listar: () => protegido(async () => daApi(await api.GET('/v1/perfis'))),
+    membros: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/perfis/{id}/membros', { params: { path: { id } } })),
+      ),
+    criar: (dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/perfis', {
+            body: { exige2fa: false, permissoes: {}, ...dados },
+          }),
+        ),
+      ),
+    duplicar: (id, nome) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/perfis/{id}/duplicar', { params: { path: { id } }, body: { nome } }),
+        ),
+      ),
+    editar: (id, dados) =>
+      protegido(async () =>
+        daApi(await api.PATCH('/v1/perfis/{id}', { params: { path: { id } }, body: dados })),
+      ),
+    excluir: (id) =>
+      protegido(async () => {
+        const r = await api.DELETE('/v1/perfis/{id}', { params: { path: { id } } })
+        if (r.response.ok) return ok(undefined)
+        return daApi({ ...r, data: undefined })
+      }),
+  },
   seguranca: () => protegido(async () => daApi(await api.GET('/v1/configuracoes/seguranca'))),
   alterarPoliticaDeDoisFatores: (politica) =>
     protegido(async () =>

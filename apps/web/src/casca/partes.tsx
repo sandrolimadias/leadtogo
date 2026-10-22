@@ -4,6 +4,7 @@ import { Bell, Check, Ellipsis, LogOut, Plus, Search, ShieldCheck } from 'lucide
 import { Popover } from 'radix-ui'
 import type { ReactNode } from 'react'
 
+import { permissoesDaAtiva } from '@/auth/permissoes'
 import { Button, IconButton } from '@/components/ui/button'
 import { TextField } from '@/components/ui/campos'
 import { Logo } from '@/components/acesso/logo'
@@ -17,16 +18,9 @@ import { Sheet } from '@/components/ui/dialog'
 import { cn } from '@/lib/cn'
 
 import { VERSAO_DO_APP } from './empresas'
-import {
-  ROTULO_DO_PAPEL,
-  TELAS,
-  TELAS_DA_BARRA_INFERIOR,
-  estaAtiva,
-  telaVisivel,
-  telasDoMais,
-} from './navegacao'
+import { TELAS, TELAS_DA_BARRA_INFERIOR, estaAtiva, telaVisivel, telasDoMais } from './navegacao'
 import { useRegistrarAtividade } from '@/telas/atividades/registro-contexto'
-import { avisarEmBreve, nomeDaEmpresa } from './utilidades'
+import { avisarEmBreve, nomeDaEmpresa, perfilDaEmpresa } from './utilidades'
 
 type Tema = 'claro' | 'escuro' | 'sistema'
 
@@ -216,10 +210,9 @@ export function FolhaMais({
   aoTrocarEmpresa: (id: string) => void
   aoSair: () => void
 }) {
-  const ativa = me.empresas.find((e) => e.ativa)
   const telas = telasDoMais({
     administradorDeConta: me.administradorDeConta,
-    papelNaEmpresaAtiva: ativa?.papel ?? null,
+    permissoes: permissoesDaAtiva(me),
   })
   const linha =
     'flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-sm border-0 bg-transparent px-2 text-left text-base text-ink no-underline hover:bg-surface-hover aria-[current=page]:bg-surface-selected aria-[current=page]:font-semibold aria-[current=page]:text-brand'
@@ -302,10 +295,9 @@ export function FolhaDePerfil({
   aoTrocarEmpresa: (id: string) => void
   aoSair: () => void
 }) {
-  const ativa = me.empresas.find((e) => e.ativa)
   const pessoa = {
     administradorDeConta: me.administradorDeConta,
-    papelNaEmpresaAtiva: ativa?.papel ?? null,
+    permissoes: permissoesDaAtiva(me),
   }
   const linhaDoMais =
     'flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-sm border-0 bg-transparent px-2 text-left text-base text-ink no-underline hover:bg-surface-hover'
@@ -354,7 +346,7 @@ export function FolhaDePerfil({
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[15px] font-semibold">{nome}</span>
-                    <span className="text-[13px] text-ink-muted">{ROTULO_DO_PAPEL[e.papel]}</span>
+                    <span className="text-[13px] text-ink-muted">{perfilDaEmpresa(e)}</span>
                   </span>
                   {e.ativa ? (
                     <span className="flex items-center gap-1 text-[13px] font-semibold text-brand">

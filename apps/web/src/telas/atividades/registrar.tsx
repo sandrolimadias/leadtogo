@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
 
+import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
-import { chaveDoMe } from '@/auth/guardas'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/checkbox'
 import { Select, TextArea, TextField } from '@/components/ui/campos'
@@ -150,8 +150,7 @@ function FormularioDeAtividade({
   const [salvando, setSalvando] = useState(false)
   const mudar = (patch: Partial<Formulario>) => setF((a) => ({ ...a, ...patch }))
 
-  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data
-  const papel = me?.empresas.find((e) => e.ativa)?.papel
+  const { pode } = usePermissoes()
   const tipos = useQuery({
     queryKey: ['cadastros', 'tipos-atividade'],
     retry: false,
@@ -206,7 +205,7 @@ function FormularioDeAtividade({
   const tipo = tiposAtivos.find((t) => t.id === tipoId)
   const exigeEmpresa = tipo?.exigeEmpresa ?? true
 
-  const podeEscolherResponsavel = papel !== undefined && papel !== 'vendedor'
+  const podeEscolherResponsavel = pode('atividades.atribuir_responsavel')
   const responsaveis = opcoes.data?.vendedores ?? []
 
   const realizada = f.situacao === 'realizada'

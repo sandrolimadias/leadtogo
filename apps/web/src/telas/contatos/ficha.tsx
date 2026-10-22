@@ -15,8 +15,8 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
+import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
-import { chaveDoMe } from '@/auth/guardas'
 import { useDispositivo } from '@/casca/dispositivo'
 import { Button, IconButton } from '@/components/ui/button'
 import { Switch } from '@/components/ui/checkbox'
@@ -201,8 +201,11 @@ export function FichaDoContato() {
   const queryClient = useQueryClient()
   const navegar = useNavigate()
   const celular = useDispositivo() === 'celular'
-  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data
-  const vendedor = me?.empresas.find((e) => e.ativa)?.papel === 'vendedor'
+  // contato sem empresa só fica visível com ver e editar contatos de todos (como o administrador)
+  const { alcanceDe } = usePermissoes()
+  const vendedor = !(
+    alcanceDe('contatos.ver') === 'todas' && alcanceDe('contatos.editar') === 'todas'
+  )
   const [aba, setAba] = useState('resumo')
   const [salvandoConsentimento, setSalvandoConsentimento] = useState(false)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)

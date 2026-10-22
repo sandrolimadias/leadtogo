@@ -1,0 +1,78 @@
+import {
+  Building2,
+  CalendarCheck,
+  Compass,
+  Factory,
+  FileSpreadsheet,
+  MapPin,
+  Funnel,
+  Scale,
+  ShieldCheck,
+  Tags,
+  Users,
+} from 'lucide-react'
+
+/** Seções das Configurações: cada uma aparece para quem tem ao menos uma das permissões dela. */
+export const SECOES = [
+  {
+    para: '/configuracoes/usuarios',
+    titulo: 'Usuários e equipe',
+    icone: Users,
+    permissoes: ['equipe.gerir', 'perfis.gerir'],
+  },
+  { para: '/configuracoes/tags', titulo: 'Tags', icone: Tags, permissoes: ['cadastros.gerir'] },
+  {
+    para: '/configuracoes/tipos-de-atividade',
+    titulo: 'Tipos de atividade',
+    icone: CalendarCheck,
+    permissoes: ['cadastros.gerir'],
+  },
+  {
+    para: '/configuracoes/funis',
+    titulo: 'Funis e fases',
+    icone: Funnel,
+    permissoes: ['cadastros.gerir'],
+  },
+  {
+    para: '/configuracoes/origens-e-motivos',
+    titulo: 'Origens e motivos',
+    icone: Compass,
+    permissoes: ['cadastros.gerir'],
+  },
+  {
+    para: '/configuracoes/verticais-e-solucoes',
+    titulo: 'Verticais e soluções',
+    icone: Factory,
+    permissoes: ['cadastros.gerir'],
+  },
+  {
+    para: '/configuracoes/papeis-na-decisao',
+    titulo: 'Papéis na decisão',
+    icone: Scale,
+    permissoes: ['cadastros.gerir'],
+  },
+  {
+    para: '/configuracoes/carteira',
+    titulo: 'Carteira',
+    icone: Building2,
+    permissoes: ['carteira.configurar'],
+  },
+  {
+    para: '/configuracoes/importacao',
+    titulo: 'Importação',
+    icone: FileSpreadsheet,
+    permissoes: ['cadastros.gerir'],
+  },
+  {
+    para: '/configuracoes/geolocalizacao',
+    titulo: 'Geolocalização',
+    icone: MapPin,
+    permissoes: ['geolocalizacao.regioes', 'geolocalizacao.legenda'],
+  },
+  {
+    para: '/configuracoes/seguranca',
+    titulo: 'Segurança',
+    icone: ShieldCheck,
+    permissoes: ['seguranca.gerir'],
+  },
+] as const

@@ -1,4 +1,4 @@
-import type { Me } from '@leadtogo/api-client'
+import type { Me, PerfilDeAcesso } from '@leadtogo/api-client'
 import { PERMISSOES_PADRAO, nomeDoPerfilDeSistema } from '@leadtogo/shared'
 import { createMemoryHistory, type RouterHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
@@ -30,6 +30,20 @@ export const perfilDoPapel = (papel: EmpresaDoMe['papel']) => ({
   perfil: { id: PERFIL_DE_TESTE[papel], nome: nomeDoPerfilDeSistema[papel] },
   permissoes: { ...PERMISSOES_PADRAO[papel] },
 })
+
+/** Os três perfis de sistema, como a API os devolve (GET /v1/perfis) */
+export const perfisDeSistema = (): PerfilDeAcesso[] =>
+  (['admin', 'gestor', 'vendedor'] as const).map((chave) => ({
+    id: PERFIL_DE_TESTE[chave],
+    nome: nomeDoPerfilDeSistema[chave],
+    descricao: null,
+    sistema: true,
+    chaveSistema: chave,
+    exige2fa: chave === 'admin',
+    ativo: true,
+    membros: 0,
+    permissoes: { ...PERMISSOES_PADRAO[chave] },
+  }))
 
 export const comPerfil = (e: EmpresaDeTeste): EmpresaDoMe => ({ ...perfilDoPapel(e.papel), ...e })
 
@@ -139,6 +153,17 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
     ),
     cancelarConvite: vi.fn(async () => ok(undefined)),
     alterarMembro: vi.fn(async () => falha('membro_nao_encontrado', 'Membro não encontrado.', 404)),
+    atribuirPerfil: vi.fn(async () =>
+      falha('membro_nao_encontrado', 'Membro não encontrado.', 404),
+    ),
+    perfis: {
+      listar: vi.fn(async () => ok(perfisDeSistema())),
+      membros: vi.fn(async () => ok([])),
+      criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      duplicar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      editar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      excluir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+    },
     seguranca: vi.fn(async () => ok({ doisFatoresExigido: 'admin' as const })),
     alterarPoliticaDeDoisFatores: vi.fn(async (p: string) =>
       ok({ doisFatoresExigido: p as 'admin' | 'admin_gestor' | 'todos' }),

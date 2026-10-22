@@ -1,11 +1,11 @@
-import type { ConviteResumo, MembroDaEquipe } from '@leadtogo/api-client'
-import type { PapelMembro } from '@leadtogo/shared'
+import type { ConviteResumo, MembroDaEquipe, PerfilDeAcesso } from '@leadtogo/api-client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleCheck, CirclePause, Mail, MailX, UserPlus, Users } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { chaveDoMe } from '@/auth/guardas'
+import { usePermissoes } from '@/auth/permissoes'
 import { Button } from '@/components/ui/button'
 import { Select, TextField } from '@/components/ui/campos'
 import { Dialog } from '@/components/ui/dialog'
@@ -14,14 +14,16 @@ import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
 import { ROTULO_DO_PAPEL } from '@/casca/navegacao'
 import { EMAIL_VALIDO, focarCampo, useEnvio } from '@/telas/acesso/comum'
+import { chaveDosPerfis } from '@/telas/perfis/chaves'
 
 const chaveDaEquipe = ['equipe'] as const
 const chaveDosConvites = ['convites'] as const
 
-const OPCOES_DE_PAPEL = (Object.keys(ROTULO_DO_PAPEL) as PapelMembro[]).map((p) => ({
-  value: p,
-  label: ROTULO_DO_PAPEL[p],
-}))
+/** Nome do perfil do membro ou do convite (o rótulo do papel legado, se ainda não houver perfil). */
+const nomeDoPerfil = (x: { perfil?: { nome: string } | null; papel: MembroDaEquipe['papel'] }) =>
+  x.perfil?.nome ?? ROTULO_DO_PAPEL[x.papel]
+
+const geraPerfis = (p: PerfilDeAcesso | undefined) => p?.permissoes['perfis.gerir'] !== undefined
 
 /** AAAA-MM-DD (já no fuso de São Paulo, vindo da API) → DD/MM/AAAA, sem passar por Date (sem fuso). */
 const dataDoDia = (dia: string) => dia.split('-').reverse().join('/')
@@ -30,15 +32,34 @@ const dataDoInstante = (iso: string) =>
 
 type Confirmacao =
   | { tipo: 'desativar'; membro: MembroDaEquipe }
-  | { tipo: 'rebaixar'; membro: MembroDaEquipe; papel: PapelMembro }
+  | { tipo: 'rebaixar'; membro: MembroDaEquipe; perfil: PerfilDeAcesso }
   | { tipo: 'cancelar'; convite: ConviteResumo }
 
-/** Configurações → Usuários e equipe: membros, convites pendentes, papéis e desativação (só administrador). */
+/**
+ * Configurações → Usuários e equipe: membros, convites pendentes, perfil de acesso e desativação.
+ * Desativar e convites: `equipe.gerir`; trocar o perfil e convidar (convidar é atribuir um perfil):
+ * também `perfis.gerir`. A API decide; a tela só esconde.
+ */
 export function TelaDeUsuarios() {
   const servicos = useServicos()
   const queryClient = useQueryClient()
   const { enviando, executar } = useEnvio()
+  const { pode } = usePermissoes()
+  const geraOsPerfis = pode('perfis.gerir')
+  const geraAEquipe = pode('equipe.gerir')
   const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me })
+  const perfis = useQuery({
+    queryKey: chaveDosPerfis,
+    retry: false,
+    enabled: geraOsPerfis,
+    queryFn: async () => {
+      const r = await servicos.perfis.listar()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+  const perfisAtivos = (perfis.data ?? []).filter((p) => p.ativo)
+  const opcoesDePerfil = perfisAtivos.map((p) => ({ value: p.id, label: p.nome }))
   const equipe = useQuery({
     queryKey: chaveDaEquipe,
     retry: false,
@@ -66,15 +87,18 @@ export function TelaDeUsuarios() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: chaveDaEquipe }),
       queryClient.invalidateQueries({ queryKey: chaveDosConvites }),
+      queryClient.invalidateQueries({ queryKey: chaveDosPerfis }),
     ])
 
   const alterar = (
     m: MembroDaEquipe,
-    dados: { papel?: PapelMembro; ativo?: boolean },
+    dados: { perfil?: PerfilDeAcesso; ativo?: boolean },
     ok: string,
   ) =>
     executar(async () => {
-      const r = await servicos.alterarMembro(m.id, dados)
+      const r = dados.perfil
+        ? await servicos.atribuirPerfil(m.id, dados.perfil.id)
+        : await servicos.alterarMembro(m.id, { ativo: dados.ativo ?? m.ativo })
       if (!r.ok) {
         setErroDaConfirmacao(r.erro.mensagem)
         toast.error('Não foi possível alterar', { description: r.erro.mensagem })
@@ -89,7 +113,9 @@ export function TelaDeUsuarios() {
 
   const reenviar = (c: ConviteResumo) =>
     executar(async () => {
-      const r = await servicos.convidar({ email: c.email, papel: c.papel })
+      const r = await servicos.convidar(
+        c.perfil ? { email: c.email, perfilId: c.perfil.id } : { email: c.email, papel: c.papel },
+      )
       if (!r.ok) {
         toast.error('Não foi possível reenviar', { description: r.erro.mensagem })
         return
@@ -119,12 +145,14 @@ export function TelaDeUsuarios() {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h2 className="m-0 text-[17px] leading-6 font-semibold">Usuários e equipe</h2>
         <p className="m-0 text-sm text-ink-muted">
-          Quem usa o Leadtogo nesta empresa e com qual papel.
+          Quem usa o Leadtogo nesta empresa e com qual perfil de acesso.
         </p>
       </div>
-      <Button variant="primary" icon={UserPlus} onClick={() => setConvidando(true)}>
-        Convidar pessoa
-      </Button>
+      {geraOsPerfis && geraAEquipe ? (
+        <Button variant="primary" icon={UserPlus} onClick={() => setConvidando(true)}>
+          Convidar pessoa
+        </Button>
+      ) : null}
     </div>
   )
 
@@ -175,11 +203,13 @@ export function TelaDeUsuarios() {
           <EmptyState
             icon={Users}
             title="Você é a única pessoa por aqui"
-            description="Convide a equipe por e-mail: cada pessoa entra com o papel que você escolher."
+            description="Convide a equipe por e-mail: cada pessoa entra com o perfil de acesso que você escolher."
             actions={
-              <Button variant="primary" icon={UserPlus} onClick={() => setConvidando(true)}>
-                Convidar pessoa
-              </Button>
+              geraOsPerfis && geraAEquipe ? (
+                <Button variant="primary" icon={UserPlus} onClick={() => setConvidando(true)}>
+                  Convidar pessoa
+                </Button>
+              ) : undefined
             }
           />
         </div>
@@ -212,25 +242,31 @@ export function TelaDeUsuarios() {
                     </div>
                   </div>
                   <div className="w-[170px] max-md:w-full">
-                    <Select
-                      aria-label={`Papel de ${m.nome}`}
-                      value={m.papel}
-                      options={OPCOES_DE_PAPEL}
-                      disabled={sou || enviando}
-                      onChange={(e) => {
-                        const novo = e.target.value as PapelMembro
-                        if (m.papel === 'admin') {
-                          setErroDaConfirmacao(undefined)
-                          setConfirmacao({ tipo: 'rebaixar', membro: m, papel: novo })
-                        } else {
-                          void alterar(
-                            m,
-                            { papel: novo },
-                            `${m.nome} agora é ${ROTULO_DO_PAPEL[novo].toLowerCase()}`,
-                          )
-                        }
-                      }}
-                    />
+                    {geraOsPerfis && opcoesDePerfil.length > 0 ? (
+                      <Select
+                        aria-label={`Perfil de ${m.nome}`}
+                        value={m.perfil?.id ?? ''}
+                        options={opcoesDePerfil}
+                        disabled={sou || enviando}
+                        onChange={(e) => {
+                          const novo = perfisAtivos.find((p) => p.id === e.target.value)
+                          if (!novo) return
+                          const atual = perfisAtivos.find((p) => p.id === m.perfil?.id)
+                          if (geraPerfis(atual) && !geraPerfis(novo)) {
+                            setErroDaConfirmacao(undefined)
+                            setConfirmacao({ tipo: 'rebaixar', membro: m, perfil: novo })
+                          } else {
+                            void alterar(
+                              m,
+                              { perfil: novo },
+                              `${m.nome} agora tem o perfil ${novo.nome}`,
+                            )
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm">{nomeDoPerfil(m)}</span>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <Badge
@@ -249,7 +285,7 @@ export function TelaDeUsuarios() {
                         : '—'}
                   </span>
                   <div className="w-[96px] text-right max-md:w-auto">
-                    {sou ? null : m.ativo ? (
+                    {sou || !geraAEquipe ? null : m.ativo ? (
                       <Button
                         variant="danger-ghost"
                         size="sm"
@@ -292,7 +328,7 @@ export function TelaDeUsuarios() {
                     </span>
                   </div>
                 </div>
-                <span className="w-[170px] text-sm max-md:w-full">{ROTULO_DO_PAPEL[c.papel]}</span>
+                <span className="w-[170px] text-sm max-md:w-full">{nomeDoPerfil(c)}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {c.situacao === 'expirado' ? (
                     <Badge tone="warning" icon={MailX}>
@@ -306,14 +342,16 @@ export function TelaDeUsuarios() {
                 </div>
                 <span className="w-[130px] max-md:hidden" />
                 <div className="flex w-[96px] flex-col items-end gap-1 max-md:w-auto max-md:flex-row">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={enviando}
-                    onClick={() => void reenviar(c)}
-                  >
-                    Reenviar
-                  </Button>
+                  {geraOsPerfis ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={enviando}
+                      onClick={() => void reenviar(c)}
+                    >
+                      Reenviar
+                    </Button>
+                  ) : null}
                   <Button
                     variant="danger-ghost"
                     size="sm"
@@ -338,6 +376,7 @@ export function TelaDeUsuarios() {
 
       <DialogoDeConvite
         aberto={convidando}
+        perfis={perfisAtivos}
         aoFechar={() => setConvidando(false)}
         aoConvidar={recarregar}
       />
@@ -351,14 +390,14 @@ export function TelaDeUsuarios() {
           confirmacao?.tipo === 'desativar'
             ? `Desativar ${confirmacao.membro.nome}?`
             : confirmacao?.tipo === 'rebaixar'
-              ? `Mudar o papel de ${confirmacao.membro.nome}?`
+              ? `Mudar o perfil de ${confirmacao.membro.nome}?`
               : 'Cancelar este convite?'
         }
         description={
           confirmacao?.tipo === 'desativar'
             ? 'A pessoa perde o acesso a esta empresa na hora. O histórico é mantido e você pode reativá-la depois.'
             : confirmacao?.tipo === 'rebaixar'
-              ? `Hoje é administrador; passará a ${ROTULO_DO_PAPEL[confirmacao.papel].toLowerCase()} e perde o acesso às configurações.`
+              ? `Hoje gere os perfis de acesso; com o perfil ${confirmacao.perfil.nome}, perde essa gestão (e o que mais o perfil novo não tiver).`
               : 'O link enviado por e-mail deixa de valer.'
         }
         footer={
@@ -380,8 +419,8 @@ export function TelaDeUsuarios() {
                 } else if (confirmacao.tipo === 'rebaixar') {
                   void alterar(
                     confirmacao.membro,
-                    { papel: confirmacao.papel },
-                    `${confirmacao.membro.nome} agora é ${ROTULO_DO_PAPEL[confirmacao.papel].toLowerCase()}`,
+                    { perfil: confirmacao.perfil },
+                    `${confirmacao.membro.nome} agora tem o perfil ${confirmacao.perfil.nome}`,
                   )
                 } else {
                   void cancelar(confirmacao.convite)
@@ -391,7 +430,7 @@ export function TelaDeUsuarios() {
               {confirmacao?.tipo === 'desativar'
                 ? 'Desativar'
                 : confirmacao?.tipo === 'rebaixar'
-                  ? 'Mudar papel'
+                  ? 'Mudar perfil'
                   : 'Cancelar convite'}
             </Button>
           </>
@@ -407,27 +446,31 @@ export function TelaDeUsuarios() {
   )
 }
 
-/** Diálogo "Convidar pessoa": e-mail e papel; o convite vale por 7 dias. */
+/** Diálogo "Convidar pessoa": e-mail e perfil de acesso (padrão: Vendedor); o convite vale por 7 dias. */
 function DialogoDeConvite({
   aberto,
+  perfis,
   aoFechar,
   aoConvidar,
 }: {
   aberto: boolean
+  perfis: PerfilDeAcesso[]
   aoFechar: () => void
   aoConvidar: () => Promise<unknown>
 }) {
   const servicos = useServicos()
   const { enviando, executar } = useEnvio()
   const [email, setEmail] = useState('')
-  const [papel, setPapel] = useState<PapelMembro>('vendedor')
+  const padrao = perfis.find((p) => p.chaveSistema === 'vendedor')?.id ?? perfis[0]?.id ?? ''
+  const [escolhido, setPerfil] = useState<string>('')
+  const perfilId = escolhido || padrao
   const [tentou, setTentou] = useState(false)
   const [falha, setFalha] = useState<string | undefined>()
   const emailInvalido = tentou && !EMAIL_VALIDO.test(email.trim())
 
   const fechar = () => {
     setEmail('')
-    setPapel('vendedor')
+    setPerfil('')
     setTentou(false)
     setFalha(undefined)
     aoFechar()
@@ -438,7 +481,7 @@ function DialogoDeConvite({
     if (!EMAIL_VALIDO.test(email.trim())) return focarCampo('convite-email')
     setFalha(undefined)
     void executar(async () => {
-      const r = await servicos.convidar({ email: email.trim(), papel })
+      const r = await servicos.convidar({ email: email.trim(), perfilId })
       if (!r.ok) {
         setFalha(
           r.erro.codigo === 'ja_e_membro' ? 'Este e-mail já faz parte da equipe.' : r.erro.mensagem,
@@ -490,12 +533,12 @@ function DialogoDeConvite({
           error={emailInvalido ? 'Informe um e-mail válido.' : undefined}
         />
         <Select
-          id="convite-papel"
-          label="Papel"
-          value={papel}
-          options={OPCOES_DE_PAPEL}
-          hint="Administrador configura tudo. Gestor vê a equipe. Vendedor vê a própria carteira."
-          onChange={(e) => setPapel(e.target.value as PapelMembro)}
+          id="convite-perfil"
+          label="Perfil de acesso"
+          value={perfilId}
+          options={perfis.map((p) => ({ value: p.id, label: p.nome }))}
+          hint="O que a pessoa pode fazer nesta empresa. Os perfis ficam em Configurações → Perfis de acesso."
+          onChange={(e) => setPerfil(e.target.value)}
         />
         {falha ? (
           <Alert tone="danger" title="Não foi possível convidar">

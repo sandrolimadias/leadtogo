@@ -11,8 +11,7 @@ import { Alert } from '@/components/ui/feedback'
 import { useEnvio } from '@/telas/acesso/comum'
 import { cn } from '@/lib/cn'
 
-import { ROTULO_DO_PAPEL } from './navegacao'
-import { nomeDaEmpresa } from './utilidades'
+import { nomeDaEmpresa, perfilDaEmpresa } from './utilidades'
 import { useTrocarEmpresa } from './empresas'
 
 /**
@@ -75,7 +74,7 @@ export function SeletorDeEmpresa({ me }: { me: Me }) {
                 <span className="flex min-w-0 flex-1 flex-col">
                   <b className="truncate text-[14px]">{nome}</b>
                   <span className="text-[12px] text-ink-muted">
-                    {ROTULO_DO_PAPEL[e.papel]}
+                    {perfilDaEmpresa(e)}
                     {indisponivel ? ' · empresa suspensa ou cancelada' : ''}
                   </span>
                 </span>

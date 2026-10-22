@@ -4,8 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
+import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
-import { chaveDoMe } from '@/auth/guardas'
 import type { TomDoBadge } from '@/components/ui/exibicao'
 
 /** Os passos da importação, na ordem (docs/escopo_mvp.md, Módulo 4). */
@@ -82,27 +82,22 @@ export const TEXTOS_DO_TIPO: Record<
 }
 
 /**
- * Importar planilha é de administrador e gestor. Quem não pode volta para o início (a API também
+ * Importar planilha exige `importacao.executar`. Quem não pode volta para o início (a API também
  * recusa com 403). `pode` fica `false` enquanto a sessão carrega.
  */
 export function useQuemImporta(): { pode: boolean; carregando: boolean } {
-  const servicos = useServicos()
   const navegar = useNavigate()
-  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me })
-  const papel = me.data?.empresas.find((e) => e.ativa)?.papel
-  const pode = papel === 'admin' || papel === 'gestor'
+  const permissoes = usePermissoes()
+  const pode = permissoes.pode('importacao.executar')
   useEffect(() => {
-    if (me.data && !pode) void navegar({ to: '/' })
-  }, [me.data, pode, navegar])
-  return { pode, carregando: me.isPending }
+    if (!permissoes.carregando && !pode) void navegar({ to: '/' })
+  }, [permissoes.carregando, pode, navegar])
+  return { pode, carregando: permissoes.carregando }
 }
 
-/** Administrador e gestor veem o botão "Importar planilha" nas listas (sem redirecionar quem não pode). */
+/** Quem tem `importacao.executar` vê o botão "Importar planilha" nas listas (sem redirecionar quem não pode). */
 export function usePodeImportar(): boolean {
-  const servicos = useServicos()
-  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me })
-  const papel = me.data?.empresas.find((e) => e.ativa)?.papel
-  return papel === 'admin' || papel === 'gestor'
+  return usePermissoes().pode('importacao.executar')
 }
 
 /** "menos de 1 min", "7 min", "1 h 20 min": para a estimativa de uma importação. */

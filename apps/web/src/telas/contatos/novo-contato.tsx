@@ -4,8 +4,8 @@ import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { Check, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
+import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
-import { chaveDoMe } from '@/auth/guardas'
 import { useDispositivo } from '@/casca/dispositivo'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/feedback'
@@ -69,8 +69,8 @@ export function NovoContato() {
     setDuplicados(null)
   }
 
-  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me }).data
-  const papel = me?.empresas.find((e) => e.ativa)?.papel
+  // sem `contatos.criar_sem_empresa`, a empresa é obrigatória (senão a pessoa não veria o contato)
+  const empresaObrigatoria = !usePermissoes().pode('contatos.criar_sem_empresa')
   const papeis = useQuery({
     queryKey: ['cadastros', 'papeis-decisao'],
     retry: false,
@@ -83,7 +83,7 @@ export function NovoContato() {
 
   const salvar = async (ignorarDuplicado: boolean) => {
     const encontrados = validarContato(f)
-    if (papel === 'vendedor' && !f.empresaId) {
+    if (empresaObrigatoria && !f.empresaId) {
       encontrados['empresa'] = 'Escolha a empresa do contato.'
     }
     setErros(encontrados)
@@ -125,7 +125,7 @@ export function NovoContato() {
         </div>
 
         <Secao titulo="Empresa">
-          <EmpresaDoContato f={f} mudar={mudar} obrigatoria={papel === 'vendedor'} />
+          <EmpresaDoContato f={f} mudar={mudar} obrigatoria={empresaObrigatoria} />
           {erros['empresa'] ? (
             <span className="text-xs leading-4 font-medium text-danger">{erros['empresa']}</span>
           ) : null}

@@ -1,15 +1,18 @@
-import type { PapelMembro } from '@leadtogo/shared'
+import { PERMISSOES_PADRAO } from '@leadtogo/shared'
 import { describe, expect, it } from 'vitest'
+
+import type { Permissoes } from '@/auth/permissoes'
 
 import { TELAS, TELAS_DA_BARRA_INFERIOR, telaVisivel, telasDoMais } from './navegacao'
 
 interface Pessoa {
   administradorDeConta: boolean
-  papelNaEmpresaAtiva: PapelMembro | null
+  permissoes: Permissoes
 }
-const admin: Pessoa = { administradorDeConta: false, papelNaEmpresaAtiva: 'admin' }
-const vendedor: Pessoa = { administradorDeConta: false, papelNaEmpresaAtiva: 'vendedor' }
-const donoDaConta: Pessoa = { administradorDeConta: true, papelNaEmpresaAtiva: 'vendedor' }
+const admin: Pessoa = { administradorDeConta: false, permissoes: PERMISSOES_PADRAO.admin }
+const gestor: Pessoa = { administradorDeConta: false, permissoes: PERMISSOES_PADRAO.gestor }
+const vendedor: Pessoa = { administradorDeConta: false, permissoes: PERMISSOES_PADRAO.vendedor }
+const donoDaConta: Pessoa = { administradorDeConta: true, permissoes: PERMISSOES_PADRAO.vendedor }
 
 describe('telasDoMais (folha "Mais" do celular)', () => {
   it('é a lista de TELAS sem a barra inferior, só as visíveis, na ordem do menu lateral', () => {
@@ -29,7 +32,7 @@ describe('telasDoMais (folha "Mais" do celular)', () => {
     }
   })
 
-  it('respeita telaVisivel por papel', () => {
+  it('respeita telaVisivel pelas permissões do perfil', () => {
     const caminhos = (p: Pessoa) => telasDoMais(p).map((t) => t.caminho)
     expect(caminhos(vendedor)).not.toContain('/configuracoes')
     expect(caminhos(vendedor)).not.toContain('/consolidado')
@@ -37,5 +40,15 @@ describe('telasDoMais (folha "Mais" do celular)', () => {
     expect(caminhos(admin)).not.toContain('/consolidado')
     expect(caminhos(donoDaConta)).toContain('/consolidado')
     expect(caminhos(vendedor)).toContain('/mapa')
+    // o Gestor padrão não tem nenhuma permissão de configuração: não vê o menu (como antes)
+    expect(caminhos(gestor)).not.toContain('/configuracoes')
+    // só com uma permissão de configuração (ex.: gerir os cadastros), o menu aparece
+    expect(
+      caminhos({ administradorDeConta: false, permissoes: { 'cadastros.gerir': true } }),
+    ).toContain('/configuracoes')
+    // sem ver contatos, o menu de Contatos some
+    const semContatos = { ...vendedor, permissoes: { ...vendedor.permissoes } }
+    delete semContatos.permissoes['contatos.ver']
+    expect(caminhos(semContatos)).not.toContain('/contatos')
   })
 })

@@ -1,22 +1,17 @@
-import { useQuery } from '@tanstack/react-query'
+import { usePermissoes } from '@/auth/permissoes'
 
-import { useServicos } from '@/auth/contexto'
-import { chaveDoMe } from '@/auth/guardas'
-
-/** O que a pessoa pode fazer na geolocalização (por papel na empresa ativa). */
+/** O que a pessoa pode fazer na geolocalização (pelo perfil de acesso na empresa ativa). */
 export function useQuemGeocodifica(): {
-  /** Roda lotes e vê o resumo: administrador e gestor */
+  /** Roda lotes e vê o resumo: `geolocalizacao.lotes` */
   lotes: boolean
-  /** Cria, altera e exclui regiões: só o administrador */
+  /** Cria, altera e exclui regiões: `geolocalizacao.regioes` */
   regioes: boolean
   carregando: boolean
 } {
-  const servicos = useServicos()
-  const me = useQuery({ queryKey: chaveDoMe, queryFn: servicos.me })
-  const papel = me.data?.empresas.find((e) => e.ativa)?.papel
+  const { pode, carregando } = usePermissoes()
   return {
-    lotes: papel === 'admin' || papel === 'gestor',
-    regioes: papel === 'admin',
-    carregando: me.isPending,
+    lotes: pode('geolocalizacao.lotes'),
+    regioes: pode('geolocalizacao.regioes'),
+    carregando,
   }
 }
