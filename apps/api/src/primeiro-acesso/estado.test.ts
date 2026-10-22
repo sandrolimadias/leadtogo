@@ -33,6 +33,7 @@ describe('GET /v1/primeiro-acesso/estado (público)', () => {
     const r = await (
       await subir({
         NODE_ENV: 'production',
+        MAPA_BASE_URL: 'https://mapa.crm.exemplo.com.br/es.pmtiles',
         APP_URL: 'https://crm.exemplo.com.br',
         API_URL: 'https://api.exemplo.com.br',
 

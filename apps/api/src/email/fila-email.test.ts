@@ -56,15 +56,25 @@ describe('TOKEN_ENCRYPTION_KEY (configuração)', () => {
     SMTP_HOST: 'smtp.exemplo.com',
   }
   it('é obrigatória em produção, opcional no resto, e precisa ter 32 bytes', () => {
-    expect(() => carregarConfiguracao({ ...base, NODE_ENV: 'production' })).toThrow(
-      /TOKEN_ENCRYPTION_KEY/,
-    )
     expect(() =>
-      carregarConfiguracao({ ...base, NODE_ENV: 'production', TOKEN_ENCRYPTION_KEY: 'curta' }),
+      carregarConfiguracao({
+        ...base,
+        NODE_ENV: 'production',
+        MAPA_BASE_URL: 'https://mapa.crm.exemplo.com.br/es.pmtiles',
+      }),
+    ).toThrow(/TOKEN_ENCRYPTION_KEY/)
+    expect(() =>
+      carregarConfiguracao({
+        ...base,
+        NODE_ENV: 'production',
+        MAPA_BASE_URL: 'https://mapa.crm.exemplo.com.br/es.pmtiles',
+        TOKEN_ENCRYPTION_KEY: 'curta',
+      }),
     ).toThrow(/32 bytes/)
     const ok = carregarConfiguracao({
       ...base,
       NODE_ENV: 'production',
+      MAPA_BASE_URL: 'https://mapa.crm.exemplo.com.br/es.pmtiles',
       TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
     })
     expect(ok.TOKEN_ENCRYPTION_KEY).toBeDefined()

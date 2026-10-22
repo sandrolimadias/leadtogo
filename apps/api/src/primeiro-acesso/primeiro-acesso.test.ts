@@ -250,6 +250,7 @@ describe('POST /v1/primeiro-acesso', () => {
     const producao = {
       ...base,
       NODE_ENV: 'production',
+      MAPA_BASE_URL: 'https://mapa.crm.exemplo.com.br/es.pmtiles',
       APP_URL: 'https://crm.aledias.com.br',
       API_URL: 'https://api.crm.aledias.com.br',
     }
