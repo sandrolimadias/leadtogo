@@ -9,8 +9,9 @@
 # ---- 1. build: roda na arquitetura de quem constrói; o resultado (HTML/JS/CSS) é o mesmo para qualquer destino
 FROM --platform=$BUILDPLATFORM node:24-alpine AS build
 WORKDIR /repo
-RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY docker/pnpm-fixo.sh /tmp/pnpm-fixo.sh
+RUN sh /tmp/pnpm-fixo.sh
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/

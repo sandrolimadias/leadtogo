@@ -12,8 +12,9 @@
 # resultante é o mesmo para qualquer arquitetura de destino.
 FROM --platform=$BUILDPLATFORM node:24-alpine AS build
 WORKDIR /repo
-RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY docker/pnpm-fixo.sh /tmp/pnpm-fixo.sh
+RUN sh /tmp/pnpm-fixo.sh
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
@@ -31,8 +32,9 @@ RUN pnpm --filter "@leadtogo/api..." run build
 # TypeScript, sem ferramentas de teste) e podadas (mapas, tipos, documentação e testes dos pacotes).
 FROM node:24-alpine AS deps
 WORKDIR /repo
-RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY docker/pnpm-fixo.sh /tmp/pnpm-fixo.sh
+RUN sh /tmp/pnpm-fixo.sh
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
