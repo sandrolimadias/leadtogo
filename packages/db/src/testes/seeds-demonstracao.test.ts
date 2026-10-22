@@ -16,6 +16,10 @@ const { contaId, tenantId, membroAdminId, emailAdmin } = DEMONSTRACAO
 
 async function limpar() {
   await comTenant(owner, tenantId, async (tx) => {
+    await tx`DELETE FROM visita_resultados WHERE tenant_id = ${tenantId}`
+    await tx`UPDATE visita_modelos SET versao_atual_id = NULL WHERE tenant_id = ${tenantId}`
+    await tx`DELETE FROM visita_modelo_versoes WHERE tenant_id = ${tenantId}`
+    await tx`DELETE FROM visita_modelos WHERE tenant_id = ${tenantId}`
     for (const tabela of [
       'papeis_decisao',
       'motivos',

@@ -11,6 +11,7 @@ import {
   primaryKey,
   smallint,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -33,6 +34,8 @@ export const chavePerfilSistema = pgEnum('chave_perfil_sistema', ['admin', 'gest
 export const situacaoTenant = pgEnum('situacao_tenant', ['teste', 'ativo', 'suspenso', 'cancelado'])
 export const papelMembro = pgEnum('papel_membro', ['admin', 'gestor', 'vendedor'])
 /** Quem precisa de 2FA para usar a empresa (`tenant_configuracoes.dois_fatores_exigido`) */
+/** Check-in da visita (G3): avisar a distância, bloquear além do limite ou só gravar. */
+export const modoCheckin = pgEnum('modo_checkin', ['avisar', 'bloquear', 'so_gravar'])
 export const politicaDoisFatores = pgEnum('politica_dois_fatores', [
   'admin',
   'admin_gestor',
@@ -134,6 +137,13 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   geoPadroesCriadosEm: timestamp({ withTimezone: true }),
   /** Quando os perfis de acesso de sistema foram criados e ligados aos membros; preenchido, nunca mais se recria */
   perfisCriadosEm: timestamp({ withTimezone: true }),
+  checkinModo: modoCheckin().notNull().default('avisar'),
+  /** Distância máxima do check-in até a posição da empresa, em metros (CHECK na migração 0028) */
+  checkinLimiteM: integer().notNull().default(300),
+  /** Hora do lembrete dos relatórios de visita pendentes, no fuso da empresa */
+  lembreteRelatoriosHora: time({ withTimezone: false }).notNull().default('17:30'),
+  /** Quando o modelo padrão e os seis resultados de visita foram criados (G3a); preenchido, nunca mais se recria */
+  visitasPadroesCriadosEm: timestamp({ withTimezone: true }),
   ...carimbos(),
 })
 

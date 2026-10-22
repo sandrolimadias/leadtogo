@@ -11,6 +11,9 @@ import {
   tags,
   tenantConfiguracoes,
   tiposAtividade,
+  visitaModelos,
+  visitaModeloVersoes,
+  visitaResultados,
 } from './schema/index.js'
 import type { Db } from './seeds/upsert.js'
 
@@ -201,6 +204,125 @@ export async function criarPadroesGeoDoTenant(
 }
 
 /**
+ * Campo do relatório de visita como fica no jsonb `visita_modelo_versoes.campos`. A validação por tipo é
+ * do `campoDeVisitaSchema` do @leadtogo/shared (um teste da API confere o modelo de fábrica contra ele);
+ * a ordem dos campos é a posição na lista.
+ */
+export interface CampoDeVisitaGravado {
+  id: string
+  rotulo: string
+  tipo: string
+  obrigatorio: boolean
+  opcoes?: { id: string; rotulo: string }[]
+  tagId?: string
+  campoEmpresa?: string
+}
+
+const opcoes = (...rotulos: string[]) => rotulos.map((rotulo) => ({ id: novoId(), rotulo }))
+
+/** Modelo de fábrica do relatório de visita (plano do G3, seção 9.1). Ids novos a cada empresa. */
+export const camposDoModeloDeFabrica = (): CampoDeVisitaGravado[] => [
+  { id: novoId(), rotulo: 'Contato', tipo: 'contato', obrigatorio: false },
+  {
+    id: novoId(),
+    rotulo: 'Número de funcionários',
+    tipo: 'dados_empresa',
+    obrigatorio: false,
+    campoEmpresa: 'numero_funcionarios',
+  },
+  {
+    id: novoId(),
+    rotulo: 'Interesse',
+    tipo: 'escolha_unica',
+    obrigatorio: false,
+    opcoes: opcoes('Alto', 'Médio', 'Baixo', 'Nenhum'),
+  },
+  { id: novoId(), rotulo: 'Demandas', tipo: 'texto_longo', obrigatorio: false },
+  {
+    id: novoId(),
+    rotulo: 'Ações feitas',
+    tipo: 'multipla_escolha',
+    obrigatorio: false,
+    opcoes: opcoes('WhatsApp', 'E-mail', 'Material'),
+  },
+  { id: novoId(), rotulo: 'Próximo passo', tipo: 'proximo_passo', obrigatorio: false },
+  { id: novoId(), rotulo: 'Resumo', tipo: 'texto_longo', obrigatorio: false },
+]
+
+const RESULTADOS_DE_VISITA: { nome: string; chave?: 'nao_localizada' | 'encerrada' }[] = [
+  { nome: 'Visita realizada' },
+  { nome: 'Retornar depois' },
+  { nome: 'Sem interesse' },
+  { nome: 'Responsável ausente' },
+  { nome: 'Não localizada', chave: 'nao_localizada' },
+  { nome: 'Empresa encerrada', chave: 'encerrada' },
+]
+
+/**
+ * Cria, UMA ÚNICA VEZ por empresa, o modelo padrão do relatório de visita (versão 1) e os seis
+ * resultados apontando para ele (G3a). Marca própria (`visitas_padroes_criados_em`), porque chegou
+ * depois e as empresas que já existiam também precisam. Devolve `true` se criou.
+ */
+export async function criarPadroesVisitaDoTenant(
+  tx: Tx,
+  tenantId: string,
+  membroId: string | null = null,
+): Promise<boolean> {
+  const reservado = await tx
+    .update(tenantConfiguracoes)
+    .set({ visitasPadroesCriadosEm: new Date() })
+    .where(
+      and(
+        eq(tenantConfiguracoes.tenantId, tenantId),
+        isNull(tenantConfiguracoes.visitasPadroesCriadosEm),
+      ),
+    )
+    .returning({ tenantId: tenantConfiguracoes.tenantId })
+  if (reservado.length === 0) return false
+
+  const autoria = { tenantId, criadoPor: membroId, atualizadoPor: membroId }
+  const [homonimo] = await tx
+    .select({ id: visitaModelos.id })
+    .from(visitaModelos)
+    .where(
+      and(
+        eq(visitaModelos.tenantId, tenantId),
+        isNull(visitaModelos.excluidoEm),
+        sql`lower(${visitaModelos.nome}) = 'relatório de visita'`,
+      ),
+    )
+  const modeloId = novoId()
+  const versaoId = novoId()
+  await tx.insert(visitaModelos).values({
+    ...autoria,
+    id: modeloId,
+    nome: homonimo ? 'Relatório de visita (padrão)' : 'Relatório de visita',
+    padrao: true,
+  })
+  await tx.insert(visitaModeloVersoes).values({
+    ...autoria,
+    id: versaoId,
+    modeloId,
+    numero: 1,
+    campos: camposDoModeloDeFabrica(),
+  })
+  await tx
+    .update(visitaModelos)
+    .set({ versaoAtualId: versaoId })
+    .where(eq(visitaModelos.id, modeloId))
+  await tx.insert(visitaResultados).values(
+    RESULTADOS_DE_VISITA.map((r, ordem) => ({
+      ...autoria,
+      nome: r.nome,
+      chaveSistema: r.chave ?? null,
+      modeloId,
+      ordem,
+    })),
+  )
+  return true
+}
+
+/**
  * Cria, UMA ÚNICA VEZ por empresa, os cadastros padrão (tags Status e Visitação, tipos de atividade,
  * funil com fases, origens e motivos). A marca `tenant_configuracoes.padroes_criados_em` é gravada na
  * mesma transação, antes de tudo: com ela preenchida a função não faz nada, para nunca recriar um
@@ -313,5 +435,6 @@ export async function criarPadroesDoTenant(
     )
   await criarPapeisDoTenant(tx, tenantId, membroId)
   await criarPadroesGeoDoTenant(tx, tenantId, membroId)
+  await criarPadroesVisitaDoTenant(tx, tenantId, membroId)
   return true
 }

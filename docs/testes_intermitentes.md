@@ -27,3 +27,4 @@ saída do processo) no lugar de tempos fixos, levando em conta o lock do BullMQ;
 - **`mapa.test.tsx`:** a nova consulta de pontos depois de mudar ou limpar os filtros passava do 1 s
   padrão do `waitFor`. O teste espera primeiro a condição visível (a contagem no botão Filtros) e
   depois a consulta, com prazo explícito de 5 s.
+| 22/10/2026 | Gate local (G3a, migração 0028) | `apps/api/src/worker/encerramento-importacao.test.ts` › worker: SIGTERM com dois consumidores ativos › o job comum termina e é marcado; o bloco da importação fecha na linha e agenda o próximo | `expect(await jobsDoLote()).toBe(1)`: recebeu 2 (dois jobs do lote na fila) | Sozinho passou 3 de 3; gate completo repetido (decisão do Ale). **Investigar depois** a causa das 2 entradas (próximo bloco agendado em dobro ou corrida na contagem) |

@@ -1,7 +1,11 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 
-import { criarPadroesDoTenant, criarPadroesGeoDoTenant } from '../padroes.js'
+import {
+  criarPadroesDoTenant,
+  criarPadroesGeoDoTenant,
+  criarPadroesVisitaDoTenant,
+} from '../padroes.js'
 import { novoId } from '../id.js'
 import { comTenant, conectarDrizzleOwner, conectarOwner } from './conexoes.js'
 import { prepararTenants } from './fabricas.js'
@@ -35,6 +39,12 @@ const criarGeo = (tenantId: string) =>
   db.transaction(async (tx) => {
     await tx.execute(sqlTenant(tenantId))
     return criarPadroesGeoDoTenant(tx, tenantId)
+  })
+
+const criarVisita = (tenantId: string) =>
+  db.transaction(async (tx) => {
+    await tx.execute(sqlTenant(tenantId))
+    return criarPadroesVisitaDoTenant(tx, tenantId)
   })
 
 const sqlTenant = (id: string) => sql`SELECT set_config('app.tenant_id', ${id}, true)`
@@ -264,5 +274,116 @@ describe('criarPadroesGeoDoTenant (G1)', () => {
       (tx) => tx<{ nome: string }[]>`SELECT nome FROM tag_grupos ORDER BY nome COLLATE "C"`,
     )
     expect(nomes.map((n) => n.nome)).toEqual(['Cadastro (sistema)', 'cadastro'])
+  })
+})
+
+describe('criarPadroesVisitaDoTenant (G3a)', () => {
+  it('cria o modelo padrão (versão 1, 7 campos) e os seis resultados apontando para ele', async () => {
+    const t = await novoTenant()
+    await criar(t)
+    const [modelo] = await comTenant(
+      owner,
+      t,
+      (tx) => tx<
+        { id: string; nome: string; padrao: boolean; numero: number; campos: unknown[] }[]
+      >`
+        SELECT m.id, m.nome, m.padrao, v.numero, v.campos
+        FROM visita_modelos m JOIN visita_modelo_versoes v ON v.id = m.versao_atual_id`,
+    )
+    expect(modelo).toMatchObject({ nome: 'Relatório de visita', padrao: true, numero: 1 })
+    const campos = modelo?.campos as { tipo: string; id: string }[]
+    expect(campos.map((c) => c.tipo)).toEqual([
+      'contato',
+      'dados_empresa',
+      'escolha_unica',
+      'texto_longo',
+      'multipla_escolha',
+      'proximo_passo',
+      'texto_longo',
+    ])
+    expect(new Set(campos.map((c) => c.id)).size).toBe(7)
+    const resultados = await comTenant(
+      owner,
+      t,
+      (tx) => tx<{ nome: string; chave: string | null; modelo: string }[]>`
+        SELECT nome, chave_sistema AS chave, modelo_id AS modelo FROM visita_resultados ORDER BY ordem`,
+    )
+    expect(resultados.map((r) => `${r.nome}:${r.chave ?? ''}`)).toEqual([
+      'Visita realizada:',
+      'Retornar depois:',
+      'Sem interesse:',
+      'Responsável ausente:',
+      'Não localizada:nao_localizada',
+      'Empresa encerrada:encerrada',
+    ])
+    expect(resultados.every((r) => r.modelo === modelo?.id)).toBe(true)
+  })
+
+  it('é feito uma única vez', async () => {
+    const t = await novoTenant()
+    await criar(t)
+    expect(await criarVisita(t)).toBe(false)
+    expect(await contar(t, 'visita_modelos')).toBe(1)
+    expect(await contar(t, 'visita_resultados')).toBe(6)
+  })
+
+  it('empresa antiga (sem a marca): cria; modelo homônimo do administrador ganha outro nome', async () => {
+    const t = await novoTenant()
+    await criar(t)
+    await comTenant(owner, t, async (tx) => {
+      await tx`DELETE FROM visita_resultados`
+      await tx`UPDATE visita_modelos SET versao_atual_id = NULL, padrao = false`
+      await tx`DELETE FROM visita_modelo_versoes`
+      await tx`UPDATE tenant_configuracoes SET visitas_padroes_criados_em = NULL`
+    })
+    expect(await criarVisita(t)).toBe(true)
+    const nomes = await comTenant(
+      owner,
+      t,
+      (tx) => tx<{ nome: string }[]>`SELECT nome FROM visita_modelos ORDER BY nome COLLATE "C"`,
+    )
+    expect(nomes.map((n) => n.nome)).toEqual([
+      'Relatório de visita',
+      'Relatório de visita (padrão)',
+    ])
+  })
+
+  it('configurações do check-in nascem com os padrões e o limite é verificado', async () => {
+    const t = await novoTenant()
+    const [c] = await comTenant(
+      owner,
+      t,
+      (tx) => tx<{ modo: string; limite: number; hora: string }[]>`
+        SELECT checkin_modo AS modo, checkin_limite_m AS limite, lembrete_relatorios_hora::text AS hora
+        FROM tenant_configuracoes`,
+    )
+    expect(c).toEqual({ modo: 'avisar', limite: 300, hora: '17:30:00' })
+    await expect(
+      comTenant(owner, t, (tx) => tx`UPDATE tenant_configuracoes SET checkin_limite_m = 5`),
+    ).rejects.toThrow(/checkin_limite_chk/)
+  })
+})
+
+describe('app_tenants_sem_padroes_visita()', () => {
+  it('lista as empresas sem a marca; o leadtogo_app não executa', async () => {
+    const t = await novoTenant()
+    const pendentes = await owner<
+      { tenant_id: string }[]
+    >`SELECT tenant_id FROM app_tenants_sem_padroes_visita()`
+    expect(pendentes.map((p) => p.tenant_id)).toContain(t)
+    await criar(t)
+    const depois = await owner<
+      { tenant_id: string }[]
+    >`SELECT tenant_id FROM app_tenants_sem_padroes_visita()`
+    expect(depois.map((p) => p.tenant_id)).not.toContain(t)
+    const { conectarApp } = await import('./conexoes.js')
+    const app = conectarApp()
+    try {
+      await expect(app`SELECT * FROM app_tenants_sem_padroes_visita()`).rejects.toThrow(
+        /permission denied/,
+      )
+    } finally {
+      await app.end()
+    }
   })
 })

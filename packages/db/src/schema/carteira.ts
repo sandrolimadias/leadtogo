@@ -84,6 +84,8 @@ export const empresas = pgTable(
       .references(() => membros.id),
     verticalId: uuid().references(() => verticais.id),
     website: text(),
+    /** Número exato de funcionários (opcional; G3a, campo "dados da empresa" do relatório de visita) */
+    numeroFuncionarios: integer(),
     cep: char({ length: 8 }),
     tipoLogradouro: text(),
     logradouro: text(),

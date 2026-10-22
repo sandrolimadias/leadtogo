@@ -1,4 +1,6 @@
 import { novoId } from '../id.js'
+import type { TransactionSql } from 'postgres'
+
 import { comTenant, type Sql } from './conexoes.js'
 import { definirFabrica, type FabricaRegistrada } from './isolamento.js'
 
@@ -555,5 +557,39 @@ fabricas['perfil_permissoes'] = definirFabrica<string>({
     await tx`INSERT INTO perfil_permissoes (tenant_id, perfil_id, permissao, alcance)
       VALUES (${tenantId}, ${perfilId}, ${permissao}, 'propria')`
     return permissao
+  },
+})
+
+// Visitas (G3a): modelos, versões e resultados
+const modeloDeVisita = async (tx: Sql | TransactionSql, tenantId: string): Promise<string> => {
+  const id = novoId()
+  await tx`INSERT INTO visita_modelos (id, tenant_id, nome) VALUES (${id}, ${tenantId}, ${`Modelo ${id}`})`
+  return id
+}
+
+fabricas['visita_modelos'] = definirFabrica<string>({
+  colunaAlteravel: 'nome',
+  criar: modeloDeVisita,
+})
+
+fabricas['visita_modelo_versoes'] = definirFabrica<string>({
+  colunaAlteravel: 'numero',
+  preparar: (owner, tenantId) => comTenant(owner, tenantId, (tx) => modeloDeVisita(tx, tenantId)),
+  criar: async (tx, tenantId, modeloId) => {
+    const id = novoId()
+    await tx`INSERT INTO visita_modelo_versoes (id, tenant_id, modelo_id, numero)
+      VALUES (${id}, ${tenantId}, ${modeloId}, ${Math.floor(Math.random() * 1e6)})`
+    return id
+  },
+})
+
+fabricas['visita_resultados'] = definirFabrica<string>({
+  colunaAlteravel: 'nome',
+  preparar: (owner, tenantId) => comTenant(owner, tenantId, (tx) => modeloDeVisita(tx, tenantId)),
+  criar: async (tx, tenantId, modeloId) => {
+    const id = novoId()
+    await tx`INSERT INTO visita_resultados (id, tenant_id, nome, modelo_id)
+      VALUES (${id}, ${tenantId}, ${`Resultado ${id}`}, ${modeloId})`
+    return id
   },
 })

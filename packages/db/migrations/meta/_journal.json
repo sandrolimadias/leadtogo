@@ -197,6 +197,13 @@
       "when": 1792673312357,
       "tag": "0027_perfis_acesso",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792701641008,
+      "tag": "0028_visitas_construtor",
+      "breakpoints": true
     }
   ]
 }
