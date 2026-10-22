@@ -57,8 +57,17 @@ function novoPrefixo() {
   prefixo = `leadtogo:fila:t${Date.now()}-${n}`
   return prefixo
 }
+/**
+ * Lock dos jobs nos testes. Curto (3 s) só onde o teste PRECISA que ele expire (o job do worker que
+ * saiu no prazo volta para a fila); nos demais, com folga: a renovação do lock (a cada metade dele)
+ * atrasa quando a máquina está ocupada, e um lock de 3 s para um job de 3 s fazia o job "perder" o
+ * lock no meio (ficava `active`, ou era dado como travado). Ver docs/testes_intermitentes.md.
+ */
+const LOCK_CURTO = '3000'
+const LOCK_COM_FOLGA = '15000'
+
 async function worker(extra: Record<string, string> = {}) {
-  const f = await subirWorker({ FILA_PREFIXO: prefixo, FILA_LOCK_MS: '3000', ...extra })
+  const f = await subirWorker({ FILA_PREFIXO: prefixo, FILA_LOCK_MS: LOCK_COM_FOLGA, ...extra })
   filhos.push(f)
   return f
 }
@@ -148,7 +157,10 @@ describe('worker: encerramento gracioso (SIGTERM)', () => {
     const longo = await q.add('espera', { ms: 2500, chave: `${prefixo}:feito:longo` })
     await esperarAte(async () => (await longo.getState()) === 'active')
     w.processo.kill('SIGTERM')
-    await new Promise((r) => setTimeout(r, 300))
+    // espera o worker começar a encerrar (ele para de pegar jobs no mesmo passo), não um tempo fixo
+    await esperarAte(() =>
+      Promise.resolve(w.saida().includes('encerrando: terminando os jobs em andamento')),
+    )
     const novo = await q.add('espera', { ms: 0, chave: `${prefixo}:feito:novo` })
     await w.aguardarSaida()
     expect(await valkey.get(`${prefixo}:feito:novo`)).toBeNull()
@@ -157,25 +169,27 @@ describe('worker: encerramento gracioso (SIGTERM)', () => {
 
   it('prazo esgotado: sai no prazo e o job NÃO se perde, outro worker o conclui', async () => {
     novoPrefixo()
-    const w1 = await worker({ WORKER_ENCERRAMENTO_S: '1' })
+    // só o primeiro worker tem o lock curto: é ele que precisa expirar para o job voltar à fila
+    const w1 = await worker({ WORKER_ENCERRAMENTO_S: '1', FILA_LOCK_MS: LOCK_CURTO })
     await w1.aguardarPronto()
     const q = fila()
     const chave = `${prefixo}:feito:forcada`
-    const job = await q.add('espera', { ms: 6000, chave })
+    const job = await q.add('espera', { ms: 4000, chave })
     await esperarAte(async () => (await job.getState()) === 'active')
 
     w1.processo.kill('SIGTERM')
     const saida = await w1.aguardarSaida()
     expect(saida.codigo).toBe(0)
-    expect(saida.emMs).toBeLessThan(4000) // saiu perto do prazo de 1 s, sem esperar os 6 s do job
+    expect(saida.emMs).toBeLessThan(3500) // saiu perto do prazo de 1 s, sem esperar os 4 s do job
     expect(await valkey.get(chave)).toBeNull() // o job não terminou no primeiro worker
 
-    // o lock expira (3 s) e o job parado volta para a fila: o segundo worker o conclui
+    // o lock expira (3 s) e o job parado volta para a fila: o segundo worker (lock com folga, que acha
+    // o travado em até metade do lock) o conclui; a espera é pela condição, com prazo largo
     const w2 = await worker({ WORKER_ENCERRAMENTO_S: '20' })
     await w2.aguardarPronto()
-    await esperarAte(async () => (await valkey.get(chave)) !== null)
+    await esperarAte(async () => (await valkey.get(chave)) !== null, 40_000)
     await esperarConcluido(job, q, w2) // o estado vem logo depois do efeito
-  }, 60_000)
+  }, 80_000)
 })
 
 describe('fila: retenção e descarte de duplicados', () => {

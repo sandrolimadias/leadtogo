@@ -477,6 +477,11 @@ describe('Mapa: chips, pins e legenda', () => {
     await userEvent.selectOptions(within(g).getByLabelText('Cidade'), '3205309')
     await userEvent.selectOptions(within(g).getByLabelText('Região'), 'micro:32009')
     await userEvent.selectOptions(within(g).getByLabelText('Precisão da posição'), 'aproximada')
+    // espera por condição (a contagem no botão e a consulta nova), com prazo explícito: com a máquina
+    // ocupada, a consulta de pontos passava do 1 s padrão do waitFor (docs/testes_intermitentes.md)
+    const ESPERA = { timeout: 5000 }
+    const botaoFiltros = () => screen.getByRole('button', { name: /^Filtros/, hidden: true })
+    await waitFor(() => expect(botaoFiltros()).toHaveTextContent('5'), ESPERA)
     await waitFor(() => {
       expect(x.m.pontos.mock.calls.at(-1)?.[0]).toMatchObject({
         visitada: 'nunca',
@@ -485,12 +490,12 @@ describe('Mapa: chips, pins e legenda', () => {
         regiaoId: 'micro:32009',
         precisao: 'aproximada',
       })
-    })
-    expect(screen.getByRole('button', { name: /^Filtros/, hidden: true })).toHaveTextContent('5')
+    }, ESPERA)
     await userEvent.click(within(g).getByRole('button', { name: 'Limpar' }))
+    await waitFor(() => expect(botaoFiltros()).not.toHaveTextContent('5'), ESPERA)
     await waitFor(() => {
       expect(x.m.pontos.mock.calls.at(-1)?.[0]).not.toHaveProperty('visitada')
-    })
+    }, ESPERA)
   })
 
   it('visitada no período mostra as datas', async () => {

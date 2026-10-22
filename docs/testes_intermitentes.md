@@ -14,3 +14,16 @@ linha: data, onde rodou, teste, erro e o que se fez.
 estabiliza os dois arquivos: em `worker.test.ts`, esperas por condição (estado do job, chave gravada,
 saída do processo) no lugar de tempos fixos, levando em conta o lock do BullMQ; em `mapa.test.tsx`,
 `waitFor`/`findBy` no filtro "visitada". Sem `--no-verify`.
+
+## Correção (commit `test:` depois do commit 6, 22/10/2026)
+
+- **`worker.test.ts`:** o lock dos jobs nos testes era de 3 s, com a verificação de travado a cada
+  1,5 s, para jobs de 3 a 6 s. A renovação do lock (a cada metade dele) atrasa com a máquina ocupada:
+  o job perdia o lock no meio (ficava `active` depois do `moveToFinished` recusado, ou era dado como
+  travado até o limite). Agora o lock é de 15 s, com folga; só o worker que **precisa** perder o lock
+  (o que sai no prazo esgotado) fica com 3 s, e o job desse teste dura 4 s. A espera fixa de 300 ms
+  depois do SIGTERM virou espera pela linha de log "encerrando"; a espera pelo segundo worker tem
+  prazo largo (40 s), por condição.
+- **`mapa.test.tsx`:** a nova consulta de pontos depois de mudar ou limpar os filtros passava do 1 s
+  padrão do `waitFor`. O teste espera primeiro a condição visível (a contagem no botão Filtros) e
+  depois a consulta, com prazo explícito de 5 s.
