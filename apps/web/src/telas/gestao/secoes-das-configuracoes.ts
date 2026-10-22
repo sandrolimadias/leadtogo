@@ -4,6 +4,7 @@ import {
   Compass,
   Factory,
   FileSpreadsheet,
+  KeyRound,
   MapPin,
   Funnel,
   Scale,
@@ -19,6 +20,12 @@ export const SECOES = [
     titulo: 'Usuários e equipe',
     icone: Users,
     permissoes: ['equipe.gerir', 'perfis.gerir'],
+  },
+  {
+    para: '/configuracoes/perfis',
+    titulo: 'Perfis de acesso',
+    icone: KeyRound,
+    permissoes: ['perfis.gerir'],
   },
   { para: '/configuracoes/tags', titulo: 'Tags', icone: Tags, permissoes: ['cadastros.gerir'] },
   {
