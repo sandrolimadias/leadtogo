@@ -7,6 +7,7 @@ import {
 import { Controller, Get, Query } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
+import { TodoMembro } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { DashboardService } from './dashboard.service.js'
@@ -25,6 +26,7 @@ export class DashboardController {
     resposta: dashboardSchema,
     erros: [400, 401, 403, 404],
   })
+  @TodoMembro()
   @Get()
   dashboard(
     @Query(new ZodPipe(consultaDoDashboardSchema)) consulta: ConsultaDoDashboard,

@@ -278,7 +278,8 @@ export class EmpresasDaCarteiraService {
       throw negado('Você só edita empresas da sua carteira.')
     }
     if (dados.vendedorId !== undefined && dados.vendedorId !== atual.vendedorId) {
-      if (!podeTransferir(escopo)) throw negado('Só gestor e administrador passam a carteira.')
+      if (!podeTransferir(escopo))
+        throw negado('Seu perfil de acesso não permite passar a carteira.')
       await this.exigirVendedorAtivo(db, dados.vendedorId)
     }
     if (dados.verticalId) await this.exigirVertical(db, dados.verticalId)
@@ -474,12 +475,14 @@ export class EmpresasDaCarteiraService {
     return resultado
   }
 
-  /** Exclusão lógica (sem lixeira no MVP). Só admin e gestor. */
+  /** Exclusão lógica (sem lixeira no MVP). Pelo alcance de `empresas.excluir`. */
   async excluir(id: string): Promise<void> {
     const db = this.ctx.db()
     const escopo = await escopoDaCarteira(this.ctx)
     const atual = await this.carregar(db, escopo, id)
-    if (!podeExcluir(escopo)) throw negado('Só gestor e administrador excluem empresas.')
+    if (!podeExcluir(escopo, atual.vendedorId)) {
+      throw negado('Seu perfil de acesso não permite excluir esta empresa.')
+    }
     await db
       .update(empresas)
       .set({ excluidoEm: new Date(), atualizadoPor: escopo.membroId })

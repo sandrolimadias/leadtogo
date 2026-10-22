@@ -313,7 +313,8 @@ describe('GET /v1/carteira/contatos', () => {
     // com "ver todas", vê tudo que tem empresa, mas só edita o que é da carteira dela
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     const vendo = await lista(ana.cookie)
     expect(nomes(vendo)).toEqual(['Contato da Ana', 'Contato da Bia', 'Nas duas'])

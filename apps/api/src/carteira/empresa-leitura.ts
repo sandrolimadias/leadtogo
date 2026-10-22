@@ -240,7 +240,7 @@ export async function lerEmpresa(
     atualizadoEm: r.atualizadoEm.toISOString(),
     permissoes: {
       editar: podeEditar(escopo, r.vendedorId),
-      excluir: podeExcluir(escopo),
+      excluir: podeExcluir(escopo, r.vendedorId),
       transferir: podeTransferir(escopo),
     },
   }

@@ -103,6 +103,16 @@ const regras: {
     nova: (p) => alcance(p, 'atividades.ver') === 'todas',
   },
   {
+    regra: 'edita (conclui, cancela, exclui) atividade de outra carteira',
+    antiga: (papel) => papel !== 'vendedor',
+    nova: (p) => alcance(p, 'atividades.editar') === 'todas',
+  },
+  {
+    regra: 'edita (conclui, cancela, exclui) a própria atividade',
+    antiga: () => true,
+    nova: (p) => tem(p, 'atividades.editar'),
+  },
+  {
     regra: 'escolhe outro responsável na atividade',
     antiga: (papel) => papel !== 'vendedor',
     nova: (p) => tem(p, 'atividades.atribuir_responsavel'),

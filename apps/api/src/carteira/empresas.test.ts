@@ -488,12 +488,18 @@ describe('regra de carteira por papel', () => {
     expect(
       (await chamar('patch', bia.cookie, `/${daAna.id}`, { website: 'https://x.com' })).status,
     ).toBe(404)
-    expect((await chamar('delete', bia.cookie, `/${daAna.id}`)).status).toBe(404)
+    // excluir exige `empresas.excluir`, que o Vendedor não tem: 403 já na rota (não revela se existe)
+    expect((await chamar('delete', bia.cookie, `/${daAna.id}`)).status).toBe(403)
     for (const quem of [d, gestor, ana]) {
       expect((await chamar('get', quem.cookie, `/${daAna.id}`)).status).toBe(200)
     }
 
-    await configurar(d.tenantId, 'vendedor_ve_todas_empresas', true)
+    // "vendedores veem todas" agora é o alcance de ver no perfil Vendedor
+    await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${d.tenantId}, true)`
+      await tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao = 'empresas.ver'
+        AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`
+    })
     const vista = await chamar('get', bia.cookie, `/${daAna.id}`)
     expect(vista.status).toBe(200)
     expect(empresaDe(vista).permissoes).toEqual({

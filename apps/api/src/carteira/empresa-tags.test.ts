@@ -227,7 +227,8 @@ describe('PUT /v1/carteira/empresas/:id/tags', () => {
     expect((await definir(undefined as unknown as string, daAna.id, [])).status).toBe(401)
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     const negado = await definir(bia.cookie, daAna.id, [tag('Cliente').id])
     expect(negado.status).toBe(403)
@@ -365,7 +366,8 @@ describe('POST /v1/carteira/empresas/tags-em-massa', () => {
     // vendo tudo, ainda não edita a dos outros
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     const r2 = await aplicar(ana.cookie, [daBia.id], tag('Cliente').id)
     expect(r2.body).toEqual({ aplicadas: 0, semMudanca: 0, ignoradas: 1 })

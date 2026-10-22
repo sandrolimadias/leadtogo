@@ -2,26 +2,34 @@ import { alias, and, eq, isNull, schema, sql, type SQL } from '@leadtogo/db'
 import { type Atividade, estaAtrasada } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
-import type { EscopoDaCarteira } from './regras-de-carteira.js'
+import { condicaoDeResponsaveis, type EscopoDaCarteira } from './regras-de-carteira.js'
 
 const { atividades, contatos, empresas, membros, oportunidades, tiposAtividade } = schema
 const responsavel = alias(membros, 'responsavel')
 
-/** Ela vê a atividade: admin e gestor, todas; o vendedor a da empresa que vê, ou a Tarefa sem empresa que é dele. */
+/**
+ * Ela vê a atividade: a da empresa no alcance de `atividades.ver`; a Tarefa sem empresa, pelo
+ * responsável no alcance de `atividades.editar` (como antes: o vendedor que "vê todas" via só as
+ * Tarefas soltas dele).
+ */
 export const condicaoDeVisibilidadeDaAtividade = (escopo: EscopoDaCarteira): SQL | undefined => {
-  if (escopo.papel !== 'vendedor') return undefined
-  const dasEmpresas = escopo.veTodas ? sql`true` : sql`${empresas.vendedorId} = ${escopo.membroId}`
+  const { ver, editar } = escopo.atividades
+  if (ver === null && editar === null) return undefined
   return sql`(CASE WHEN ${atividades.empresaId} IS NULL
-    THEN ${atividades.responsavelId} = ${escopo.membroId}
-    ELSE ${dasEmpresas} END)`
+    THEN ${condicaoDeResponsaveis(editar, atividades.responsavelId) ?? sql`true`}
+    ELSE ${condicaoDeResponsaveis(ver, empresas.vendedorId) ?? sql`true`} END)`
 }
 
-/** Ela edita (e conclui, cancela, exclui): admin e gestor, todas; o vendedor a da empresa dele, ou a Tarefa sem empresa dele. */
+/**
+ * Ela edita (e conclui, cancela, exclui): a da empresa no alcance de `atividades.editar`, ou a Tarefa
+ * sem empresa cujo responsável está nesse alcance.
+ */
 export const condicaoDeEdicaoDaAtividade = (escopo: EscopoDaCarteira): SQL | undefined => {
-  if (escopo.papel !== 'vendedor') return undefined
+  const { editar } = escopo.atividades
+  if (editar === null) return undefined
   return sql`(CASE WHEN ${atividades.empresaId} IS NULL
-    THEN ${atividades.responsavelId} = ${escopo.membroId}
-    ELSE ${empresas.vendedorId} = ${escopo.membroId} END)`
+    THEN ${condicaoDeResponsaveis(editar, atividades.responsavelId) ?? sql`true`}
+    ELSE ${condicaoDeResponsaveis(editar, empresas.vendedorId) ?? sql`true`} END)`
 }
 
 /** As colunas lidas (com os joins de `selecionarAtividades`). */

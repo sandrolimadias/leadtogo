@@ -1,19 +1,39 @@
-import { eq, schema, sql } from '@leadtogo/db'
+import { eq, schema, type SQL, sql } from '@leadtogo/db'
+import type { Alcance } from '@leadtogo/shared'
 
 import type { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
-import type { PapelMembro } from '../acesso/requisicao.js'
+import { PermissaoService } from '../acesso/permissao.service.js'
 
 /**
- * Regra de carteira (docs/funcionalidades.md, seção 10): cada empresa tem um responsável (o vendedor).
- *  - admin e gestor veem e editam tudo;
- *  - o vendedor vê a própria carteira, ou todas se a empresa ligou "Vendedores podem ver todas as
- *    empresas"; edita sempre só a própria.
- * O RLS isola as empresas (tenants); esta regra isola os vendedores dentro da empresa, na API.
+ * Regra de carteira (docs/funcionalidades.md, "Perfis de acesso"): cada empresa tem um responsável (o
+ * vendedor), e o perfil de acesso diz, por AÇÃO, de quem é a carteira que a pessoa alcança:
+ *  - `propria`: só as empresas em que ela é a responsável;
+ *  - `equipe`: as dela e as dos subordinados (diretos e indiretos, pelo `gestor_id`);
+ *  - `todas`: todas.
+ * O RLS isola as empresas (tenants); esta regra isola as carteiras dentro da empresa, na API.
  */
+
+/** Responsáveis no alcance: `null` = todos (sem restrição); `[]` = ninguém (sem a permissão). */
+export type Responsaveis = readonly string[] | null
+
 export interface EscopoDaCarteira {
   membroId: string
-  papel: PapelMembro
-  /** Vê empresas de outros vendedores */
+  empresas: { ver: Responsaveis; editar: Responsaveis; excluir: Responsaveis }
+  contatos: { ver: Responsaveis; editar: Responsaveis; excluir: Responsaveis }
+  oportunidades: { ver: Responsaveis; editar: Responsaveis; excluir: Responsaveis }
+  /** Atividades: excluir, concluir e cancelar seguem o `editar` (como antes dos perfis) */
+  atividades: { ver: Responsaveis; editar: Responsaveis }
+  /** Passar a carteira para outro responsável (e cadastrar em nome de outro) */
+  transferir: boolean
+  /** Cadastrar contato sem empresa vinculada */
+  contatoSemEmpresa: boolean
+  /** Escolher outro responsável na oportunidade / na atividade */
+  atribuirOportunidade: boolean
+  atribuirAtividade: boolean
+  /**
+   * Vê as empresas de todos (`empresas.ver` = todas). Só para o mapa e a geolocalização, até eles
+   * passarem a usar `empresas.ver` (commit 6f da Fase 1); com `equipe`, fica `false` (mais restrito).
+   */
   veTodas: boolean
   /** Bloqueia o cadastro de CNPJ que não esteja ativo na Receita */
   bloquearNaoAtiva: boolean
@@ -22,37 +42,81 @@ export interface EscopoDaCarteira {
 }
 
 export async function escopoDaCarteira(ctx: ContextoTenantService): Promise<EscopoDaCarteira> {
+  const permissao = new PermissaoService(ctx)
   const [config] = await ctx
     .db()
     .select({
-      vendedorVeTodas: schema.tenantConfiguracoes.vendedorVeTodasEmpresas,
       bloquear: schema.tenantConfiguracoes.bloquearEmpresaNaoAtiva,
       clienteAoConquistar: schema.tenantConfiguracoes.statusClienteAoConquistar,
     })
     .from(schema.tenantConfiguracoes)
     .where(eq(schema.tenantConfiguracoes.tenantId, ctx.tenantId))
-  const { id, papel } = ctx.membro
+  const membroId = ctx.membro.id
+  const alcances = (chave: string): Alcance | undefined => permissao.alcance(chave)
+  const precisaEquipe = Object.values(ctx.membro.permissoes).includes('equipe')
+  const equipe = precisaEquipe ? await permissao.equipe() : []
+  const responsaveis = (chave: string): Responsaveis => {
+    const alcance = alcances(chave)
+    if (alcance === 'todas') return null
+    if (alcance === 'equipe') return equipe
+    if (alcance === 'propria') return [membroId]
+    return []
+  }
   return {
-    membroId: id,
-    papel,
-    veTodas: papel !== 'vendedor' || (config?.vendedorVeTodas ?? false),
+    membroId,
+    empresas: {
+      ver: responsaveis('empresas.ver'),
+      editar: responsaveis('empresas.editar'),
+      excluir: responsaveis('empresas.excluir'),
+    },
+    contatos: {
+      ver: responsaveis('contatos.ver'),
+      editar: responsaveis('contatos.editar'),
+      excluir: responsaveis('contatos.excluir'),
+    },
+    oportunidades: {
+      ver: responsaveis('oportunidades.ver'),
+      editar: responsaveis('oportunidades.editar'),
+      excluir: responsaveis('oportunidades.excluir'),
+    },
+    atividades: {
+      ver: responsaveis('atividades.ver'),
+      editar: responsaveis('atividades.editar'),
+    },
+    transferir: permissao.pode('empresas.transferir'),
+    contatoSemEmpresa: permissao.pode('contatos.criar_sem_empresa'),
+    atribuirOportunidade: permissao.pode('oportunidades.atribuir_responsavel'),
+    atribuirAtividade: permissao.pode('atividades.atribuir_responsavel'),
+    veTodas: alcances('empresas.ver') === 'todas',
     bloquearNaoAtiva: config?.bloquear ?? true,
     clienteAoConquistar: config?.clienteAoConquistar ?? true,
   }
 }
 
+/** O responsável está no alcance? */
+export const alcanca = (r: Responsaveis, responsavelId: string | null): boolean =>
+  r === null || (responsavelId !== null && r.includes(responsavelId))
+
+/** Condição SQL sobre a coluna do responsável: `undefined` = sem restrição; ninguém = `false`. */
+export const condicaoDeResponsaveis = (r: Responsaveis, coluna: unknown): SQL | undefined => {
+  if (r === null) return undefined
+  if (r.length === 0) return sql`false`
+  return sql`${coluna} = ANY (${`{${r.join(',')}}`}::uuid[])`
+}
+
 export const podeVer = (e: EscopoDaCarteira, vendedorId: string): boolean =>
-  e.veTodas || vendedorId === e.membroId
+  alcanca(e.empresas.ver, vendedorId)
 
 export const podeEditar = (e: EscopoDaCarteira, vendedorId: string): boolean =>
-  e.papel !== 'vendedor' || vendedorId === e.membroId
+  alcanca(e.empresas.editar, vendedorId)
 
-/** Excluir empresa: só admin e gestor. */
-export const podeExcluir = (e: EscopoDaCarteira): boolean => e.papel !== 'vendedor'
+/** Excluir a empresa deste responsável. */
+export const podeExcluir = (e: EscopoDaCarteira, vendedorId: string): boolean =>
+  alcanca(e.empresas.excluir, vendedorId)
 
-/** Passar a carteira para outro vendedor (e cadastrar em nome de outro): só admin e gestor. */
-export const podeTransferir = (e: EscopoDaCarteira): boolean => e.papel !== 'vendedor'
+/** Passar a carteira para outro vendedor (e cadastrar em nome de outro). */
+export const podeTransferir = (e: EscopoDaCarteira): boolean => e.transferir
 
 /** Condição SQL das empresas que o usuário vê (`undefined` = todas). Para as listagens. */
 export const condicaoDeVisibilidade = (e: EscopoDaCarteira) =>
-  e.veTodas ? undefined : sql`${schema.empresas.vendedorId} = ${e.membroId}`
+  condicaoDeResponsaveis(e.empresas.ver, schema.empresas.vendedorId)

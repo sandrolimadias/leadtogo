@@ -348,7 +348,8 @@ describe('GET /v1/mapa/pontos', () => {
     expect((await pontos(d.cookie, cli)).total).toBe(2)
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     expect((await pontos(vendedor.cookie, cli)).total).toBe(2)
   })
@@ -752,7 +753,8 @@ describe('GET /v1/mapa/pontos: níveis por zoom (município, bairro, pins)', () 
     expect((await pontos(d.cookie, cli, zoom)).agrupamentos.map((g) => g.total)).toEqual([3])
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     expect((await pontos(vendedor.cookie, cli, zoom)).agrupamentos.map((g) => g.total)).toEqual([3])
   })

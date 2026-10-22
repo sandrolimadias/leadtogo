@@ -283,7 +283,7 @@ describe('POST /v1/carteira/empresas/:id/receita/consultar', () => {
     expect((await consultar(u.cookie, empresa.id)).status).toBe(404)
     await dono.begin(async (tx) => {
       await tx`SELECT set_config('app.tenant_id', ${d.tenantId}, true)`
-      await tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`
+      await tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`
     })
     const r = await consultar(u.cookie, empresa.id)
     expect(r.status).toBe(403)

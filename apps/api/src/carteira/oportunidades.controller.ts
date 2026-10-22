@@ -36,6 +36,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
+import { Permissao } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
@@ -64,6 +65,7 @@ export class OportunidadesController {
     resposta: kanbanSchema,
     erros: [400, 401, 403, 404],
   })
+  @Permissao('oportunidades.ver')
   @Get('kanban')
   kanban(
     @Query(new ZodPipe(consultaDoKanbanSchema)) consulta: ConsultaDoKanban,
@@ -78,6 +80,7 @@ export class OportunidadesController {
     resposta: listaDeOportunidadesSchema,
     erros: [400, 401, 403],
   })
+  @Permissao('oportunidades.ver')
   @Get()
   listar(
     @Query(new ZodPipe(consultaDeOportunidadesSchema)) consulta: ConsultaDeOportunidades,
@@ -93,6 +96,7 @@ export class OportunidadesController {
     status: 201,
     erros: [400, 401, 403, 404, 429],
   })
+  @Permissao('oportunidades.criar')
   @Post()
   @Limite({ nome: 'carteira-oportunidades-criar', max: 120, janelaS: 60 })
   criar(
@@ -107,6 +111,7 @@ export class OportunidadesController {
     resposta: oportunidadeDetalhadaSchema,
     erros: [400, 401, 403, 404],
   })
+  @Permissao('oportunidades.ver')
   @Get(':id')
   detalhar(@Param('id', new ParseUUIDPipe()) id: string): Promise<OportunidadeDetalhada> {
     return this.servico.detalhar(id)
@@ -119,6 +124,7 @@ export class OportunidadesController {
     resposta: oportunidadeSchema,
     erros: [400, 401, 403, 404],
   })
+  @Permissao('oportunidades.editar')
   @Patch(':id')
   alterar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -134,6 +140,7 @@ export class OportunidadesController {
     resposta: resultadoDoMovimentoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('oportunidades.editar')
   @Post(':id/mover')
   @HttpCode(200)
   mover(
@@ -150,6 +157,7 @@ export class OportunidadesController {
     resposta: oportunidadeSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('oportunidades.editar')
   @Post(':id/fechar')
   @HttpCode(200)
   fechar(
@@ -165,6 +173,7 @@ export class OportunidadesController {
     resposta: oportunidadeSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('oportunidades.editar')
   @Post(':id/reabrir')
   @HttpCode(200)
   reabrir(@Param('id', new ParseUUIDPipe()) id: string): Promise<Oportunidade> {
@@ -177,6 +186,7 @@ export class OportunidadesController {
     status: 204,
     erros: [400, 401, 403, 404],
   })
+  @Permissao('oportunidades.excluir')
   @Delete(':id')
   @HttpCode(204)
   excluir(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

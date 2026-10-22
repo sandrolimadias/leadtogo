@@ -49,6 +49,7 @@ import {
 import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 
+import { Permissao } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
@@ -83,6 +84,7 @@ export class EmpresasDaCarteiraController {
     resposta: listaDeEmpresasSchema,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('empresas.ver')
   @Get()
   listar(
     @Query(new ZodPipe(consultaDaListaSchema)) consulta: ConsultaDaLista,
@@ -97,6 +99,7 @@ export class EmpresasDaCarteiraController {
     resposta: contagensDaListaSchema,
     erros: [400, 401, 403, 409],
   })
+  @Permissao('empresas.ver')
   @Get('contagens')
   contagens(
     @Query(new ZodPipe(consultaDeContagensSchema)) consulta: { incluirLeads: 'true' | 'false' },
@@ -110,6 +113,7 @@ export class EmpresasDaCarteiraController {
     resposta: opcoesDaListaSchema,
     erros: [401, 403, 409],
   })
+  @Permissao('empresas.ver', 'empresas.criar')
   @Get('opcoes')
   opcoes(): Promise<OpcoesDaLista> {
     return this.lista.opcoes()
@@ -123,6 +127,7 @@ export class EmpresasDaCarteiraController {
     status: 201,
     erros: [400, 401, 403, 409, 429, 503],
   })
+  @Permissao('empresas.criar')
   @Post()
   @TransacaoSobDemanda()
   @Limite({ nome: 'carteira-empresas-criar', max: 60, janelaS: 60 })
@@ -140,6 +145,7 @@ export class EmpresasDaCarteiraController {
     status: 200,
     erros: [400, 401, 403, 409, 429],
   })
+  @Permissao('empresas.editar')
   @Post('tags-em-massa')
   @HttpCode(200)
   @Limite({ nome: 'carteira-tags-em-massa', max: 30, janelaS: 60 })
@@ -155,6 +161,7 @@ export class EmpresasDaCarteiraController {
     resposta: empresaCarteiraSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('empresas.ver')
   @Get(':id')
   detalhar(@Param('id', new ParseUUIDPipe()) id: string): Promise<EmpresaCarteira> {
     return this.servico.detalhar(id)
@@ -167,6 +174,7 @@ export class EmpresasDaCarteiraController {
     resposta: historicoDaEmpresaSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('empresas.ver')
   @Get(':id/historico')
   historicoDaEmpresa(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -181,6 +189,7 @@ export class EmpresasDaCarteiraController {
     resposta: z.array(contatoDaEmpresaSchema),
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('empresas.ver')
   @Get(':id/contatos')
   contatosDaEmpresa(@Param('id', new ParseUUIDPipe()) id: string): Promise<ContatoDaEmpresa[]> {
     return this.vinculos.daEmpresa(id)
@@ -193,6 +202,7 @@ export class EmpresasDaCarteiraController {
     status: 201,
     erros: [400, 401, 403, 404, 409, 429],
   })
+  @Permissao('contatos.criar')
   @Post(':id/socios/:socioId/converter')
   @Limite({ nome: 'carteira-socios-converter', max: 60, janelaS: 60 })
   converterSocioEmContato(
@@ -209,6 +219,7 @@ export class EmpresasDaCarteiraController {
     resposta: empresaCarteiraSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('empresas.editar')
   @Patch(':id')
   alterar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -224,6 +235,7 @@ export class EmpresasDaCarteiraController {
     resposta: empresaCarteiraSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('empresas.editar')
   @Put(':id/tags')
   definirTags(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -239,6 +251,7 @@ export class EmpresasDaCarteiraController {
     status: 200,
     erros: [400, 401, 403, 404, 409, 429, 503],
   })
+  @Permissao('empresas.editar')
   @Post(':id/receita/consultar')
   @TransacaoSobDemanda()
   @HttpCode(200)
@@ -257,6 +270,7 @@ export class EmpresasDaCarteiraController {
     status: 200,
     erros: [400, 401, 403, 404, 409, 429, 503],
   })
+  @Permissao('empresas.editar')
   @Post(':id/receita/aplicar')
   @TransacaoSobDemanda()
   @HttpCode(200)
@@ -274,6 +288,7 @@ export class EmpresasDaCarteiraController {
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('empresas.excluir')
   @Delete(':id')
   @HttpCode(204)
   excluir(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

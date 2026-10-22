@@ -172,7 +172,8 @@ describe('regra de carteira na lista', () => {
 
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     const todas = await lista(ana.cookie)
     expect(nomes(todas)).toEqual(['Da Ana', 'Da Bia'])

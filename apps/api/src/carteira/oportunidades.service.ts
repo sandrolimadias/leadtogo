@@ -27,6 +27,7 @@ import {
 } from './oportunidades-leitura.js'
 import { empresaViraCliente, recalcularOportunidade } from './oportunidades-efeitos.js'
 import {
+  alcanca,
   type EscopoDaCarteira,
   escopoDaCarteira,
   podeEditar,
@@ -405,12 +406,12 @@ export class OportunidadesService {
     return this.ler(id)
   }
 
-  /** Exclusão lógica, só admin e gestor, sem lixeira. */
+  /** Exclusão lógica, pelo alcance de `oportunidades.excluir`, sem lixeira. */
   async excluir(id: string): Promise<void> {
     const db = this.ctx.db()
     const escopo = await escopoDaCarteira(this.ctx)
     const [atual] = await db
-      .select({ o: oportunidades })
+      .select({ o: oportunidades, vendedorId: empresas.vendedorId })
       .from(oportunidades)
       .innerJoin(empresas, eq(empresas.id, oportunidades.empresaId))
       .where(
@@ -422,8 +423,9 @@ export class OportunidadesService {
         ),
       )
     if (!atual) throw naoEncontrada()
-    if (escopo.papel === 'vendedor')
-      throw negado('Só gestor e administrador excluem oportunidades.')
+    if (!alcanca(escopo.oportunidades.excluir, atual.vendedorId)) {
+      throw negado('Seu perfil de acesso não permite excluir esta oportunidade.')
+    }
     await db
       .update(oportunidades)
       .set({ excluidoEm: new Date(), atualizadoPor: escopo.membroId })
@@ -553,10 +555,10 @@ export class OportunidadesService {
     if (!c.ativo) throw invalido(campo, `${campo}_invalido`, `"${c.nome}" está inativo.`)
   }
 
-  /** O responsável é um membro ativo; o vendedor só atribui a si mesmo. */
+  /** O responsável é um membro ativo; sem `oportunidades.atribuir_responsavel`, só a própria pessoa. */
   private async exigirResponsavel(db: Transacao, escopo: EscopoDaCarteira, membroId: string) {
-    if (escopo.papel === 'vendedor' && membroId !== escopo.membroId) {
-      throw negado('O vendedor só atribui oportunidades a si mesmo.')
+    if (!escopo.atribuirOportunidade && membroId !== escopo.membroId) {
+      throw negado('Seu perfil de acesso só atribui oportunidades a você mesmo.')
     }
     const [m] = await db
       .select({ id: membros.id })

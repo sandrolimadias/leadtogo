@@ -34,6 +34,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
+import { Permissao } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
@@ -63,6 +64,7 @@ export class ContatosController {
     resposta: listaDeContatosSchema,
     erros: [400, 401, 403],
   })
+  @Permissao('contatos.ver')
   @Get()
   listar(
     @Query(new ZodPipe(consultaDeContatosSchema)) consulta: ConsultaDeContatos,
@@ -76,6 +78,7 @@ export class ContatosController {
     resposta: opcoesDaListaDeContatosSchema,
     erros: [401, 403],
   })
+  @Permissao('contatos.ver', 'contatos.criar')
   @Get('opcoes')
   opcoes(): Promise<OpcoesDaListaDeContatos> {
     return this.lista.opcoes()
@@ -89,6 +92,7 @@ export class ContatosController {
     status: 201,
     erros: [400, 401, 403, 404, 409, 429],
   })
+  @Permissao('contatos.criar')
   @Post()
   @Limite({ nome: 'carteira-contatos-criar', max: 60, janelaS: 60 })
   criar(@Body(new ZodPipe(criarContatoSchema)) dados: CriarContato): Promise<Contato> {
@@ -101,6 +105,7 @@ export class ContatosController {
     resposta: contatoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('contatos.ver')
   @Get(':id')
   detalhar(@Param('id', new ParseUUIDPipe()) id: string): Promise<Contato> {
     return this.servico.detalhar(id)
@@ -113,6 +118,7 @@ export class ContatosController {
     resposta: contatoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('contatos.editar')
   @Patch(':id')
   alterar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -129,6 +135,7 @@ export class ContatosController {
     status: 201,
     erros: [400, 401, 403, 404, 409, 429],
   })
+  @Permissao('contatos.editar')
   @Post(':id/vinculos')
   @Limite({ nome: 'carteira-contatos-vincular', max: 60, janelaS: 60 })
   vincular(
@@ -145,6 +152,7 @@ export class ContatosController {
     resposta: contatoSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('contatos.editar')
   @Patch(':id/vinculos/:empresaId')
   alterarVinculo(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -161,6 +169,7 @@ export class ContatosController {
     resposta: historicoDaEmpresaSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('contatos.ver')
   @Get(':id/historico')
   historicoDoContato(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -175,6 +184,7 @@ export class ContatosController {
     status: 204,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('contatos.excluir')
   @Delete(':id')
   @HttpCode(204)
   excluir(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

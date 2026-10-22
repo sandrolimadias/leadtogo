@@ -26,6 +26,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
+import { Permissao } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
@@ -54,6 +55,7 @@ export class AtividadesController {
     resposta: listaDeAtividadesSchema,
     erros: [400, 401, 403],
   })
+  @Permissao('atividades.ver')
   @Get()
   listar(
     @Query(new ZodPipe(consultaDeAtividadesSchema)) consulta: ConsultaDeAtividades,
@@ -69,6 +71,7 @@ export class AtividadesController {
     status: 201,
     erros: [400, 401, 403, 404, 429],
   })
+  @Permissao('atividades.criar')
   @Post()
   @Limite({ nome: 'carteira-atividades-criar', max: 120, janelaS: 60 })
   criar(@Body(new ZodPipe(criarAtividadeSchema)) dados: CriarAtividade): Promise<Atividade> {
@@ -81,6 +84,7 @@ export class AtividadesController {
     resposta: atividadeSchema,
     erros: [400, 401, 403, 404],
   })
+  @Permissao('atividades.ver')
   @Get(':id')
   detalhar(@Param('id', new ParseUUIDPipe()) id: string): Promise<Atividade> {
     return this.servico.detalhar(id)
@@ -93,6 +97,7 @@ export class AtividadesController {
     resposta: atividadeSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('atividades.editar')
   @Patch(':id')
   alterar(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -108,6 +113,7 @@ export class AtividadesController {
     resposta: atividadeSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('atividades.editar')
   @Post(':id/concluir')
   @HttpCode(200)
   concluir(
@@ -123,6 +129,7 @@ export class AtividadesController {
     resposta: atividadeSchema,
     erros: [400, 401, 403, 404, 409],
   })
+  @Permissao('atividades.editar')
   @Post(':id/cancelar')
   @HttpCode(200)
   cancelar(@Param('id', new ParseUUIDPipe()) id: string): Promise<Atividade> {
@@ -135,6 +142,7 @@ export class AtividadesController {
     status: 204,
     erros: [400, 401, 403, 404],
   })
+  @Permissao('atividades.editar')
   @Delete(':id')
   @HttpCode(204)
   excluir(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

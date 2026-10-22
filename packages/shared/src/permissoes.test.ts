@@ -66,7 +66,8 @@ describe('catálogo de permissões', () => {
 describe('versão do catálogo', () => {
   it('a versão 1 tem exatamente estas permissões: acrescentar exige subir a versão e sincronizar', () => {
     expect(VERSAO_DO_CATALOGO).toBe(1)
-    expect(CHAVES_DE_PERMISSAO).toHaveLength(30)
+    // `atividades.excluir` saiu (6d): excluir a atividade é parte de editá-la, como antes dos perfis
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(29)
   })
 })
 

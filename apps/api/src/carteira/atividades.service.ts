@@ -464,10 +464,10 @@ export class AtividadesService {
     for (const id of ids) await recalcularOportunidade(db, tenantId, id)
   }
 
-  /** O responsável é um membro ativo; o vendedor só atribui a si mesmo. */
+  /** O responsável é um membro ativo; sem `atividades.atribuir_responsavel`, só a própria pessoa. */
   private async exigirResponsavel(db: Transacao, escopo: EscopoDaCarteira, membroId: string) {
-    if (escopo.papel === 'vendedor' && membroId !== escopo.membroId) {
-      throw negado('O vendedor só registra atividades para si mesmo.')
+    if (!escopo.atribuirAtividade && membroId !== escopo.membroId) {
+      throw negado('Seu perfil de acesso só registra atividades para você mesmo.')
     }
     const [m] = await db
       .select({ id: membros.id })

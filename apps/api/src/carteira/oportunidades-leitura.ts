@@ -2,7 +2,7 @@ import { alias, and, eq, isNull, schema, sql, type SQL } from '@leadtogo/db'
 import type { Oportunidade } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
-import type { EscopoDaCarteira } from './regras-de-carteira.js'
+import { condicaoDeResponsaveis, type EscopoDaCarteira } from './regras-de-carteira.js'
 
 const {
   atividades,
@@ -23,13 +23,17 @@ const responsavel = alias(membros, 'responsavel')
 const proxima = alias(atividades, 'proxima')
 const tipoDaProxima = alias(tiposAtividade, 'tipo_da_proxima')
 
-/** Ela vê a oportunidade: admin e gestor, todas; o vendedor a das empresas que vê (a própria carteira, ou todas). */
+/** Ela vê a oportunidade: a das empresas no alcance de `oportunidades.ver`. */
 export const condicaoDeVisibilidadeDaOportunidade = (e: EscopoDaCarteira): SQL | undefined =>
-  e.papel !== 'vendedor' || e.veTodas ? undefined : sql`${empresas.vendedorId} = ${e.membroId}`
+  condicaoDeResponsaveis(e.oportunidades.ver, empresas.vendedorId)
 
-/** Ela edita (move, fecha, reabre): admin e gestor, todas; o vendedor a das empresas dele. */
+/** Ela edita (move, fecha, reabre): a das empresas no alcance de `oportunidades.editar`. */
 export const condicaoDeEdicaoDaOportunidade = (e: EscopoDaCarteira): SQL | undefined =>
-  e.papel !== 'vendedor' ? undefined : sql`${empresas.vendedorId} = ${e.membroId}`
+  condicaoDeResponsaveis(e.oportunidades.editar, empresas.vendedorId)
+
+/** Ela exclui: a das empresas no alcance de `oportunidades.excluir`. */
+export const condicaoDeExclusaoDaOportunidade = (e: EscopoDaCarteira): SQL | undefined =>
+  condicaoDeResponsaveis(e.oportunidades.excluir, empresas.vendedorId)
 
 const MS_POR_DIA = 86_400_000
 const iso = (d: Date | string | null): string | null =>
@@ -91,6 +95,7 @@ export function selecionarOportunidades(db: Transacao, escopo: EscopoDaCarteira)
     .select({
       ...colunasDaOportunidade,
       editavel: sql<boolean>`${condicaoDeEdicaoDaOportunidade(escopo) ?? sql`true`}`,
+      excluivel: sql<boolean>`${condicaoDeExclusaoDaOportunidade(escopo) ?? sql`true`}`,
     })
     .from(oportunidades)
     .innerJoin(empresas, eq(empresas.id, oportunidades.empresaId))
@@ -168,7 +173,7 @@ export function paraOportunidade(
     observacoes: l.observacoes,
     criadaEm: new Date(l.criadaEm).toISOString(),
     editavel: l.editavel,
-    excluivel: escopo.papel !== 'vendedor',
+    excluivel: l.excluivel,
     empresaViraClientePadrao: escopo.clienteAoConquistar,
   }
 }

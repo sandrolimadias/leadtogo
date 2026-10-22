@@ -2,12 +2,13 @@ import { and, asc, eq, isNull, schema, sql } from '@leadtogo/db'
 import type { Contato } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
+import { condicaoDeEdicaoDoContato, condicaoDeVisibilidadeDoContato } from './regras-de-contato.js'
 import {
-  condicaoDeEdicaoDoContato,
-  condicaoDeVisibilidadeDoContato,
-  podeExcluirContato,
-} from './regras-de-contato.js'
-import { condicaoDeVisibilidade, type EscopoDaCarteira, podeEditar } from './regras-de-carteira.js'
+  alcanca,
+  condicaoDeVisibilidade,
+  type EscopoDaCarteira,
+  podeEditar,
+} from './regras-de-carteira.js'
 
 const { contatos, contatoEmails, contatoTelefones, empresaContatos, empresas, papeisDecisao } =
   schema
@@ -111,6 +112,12 @@ export async function lerContato(
     })),
     criadoEm: r.criadoEm.toISOString(),
     atualizadoEm: r.atualizadoEm.toISOString(),
-    permissoes: { editar: editavel.length > 0, excluir: podeExcluirContato(escopo) },
+    permissoes: {
+      editar: editavel.length > 0,
+      // com alcance todas, qualquer contato visível; senão, o ligado a uma empresa no alcance de excluir
+      excluir:
+        escopo.contatos.excluir === null ||
+        vinculos.some((v) => v.v.ativo && alcanca(escopo.contatos.excluir, v.vendedorId)),
+    },
   }
 }

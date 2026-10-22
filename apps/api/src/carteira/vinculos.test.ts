@@ -214,7 +214,8 @@ describe('POST /v1/carteira/contatos/:id/vinculos', () => {
     // com "ver todas": vê a empresa da Bia, mas não a edita → 403
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     const negado = await chamar('post', ana.cookie, vinculos(meu.id), { empresaId: daBia.id })
     expect(negado.status).toBe(403)
@@ -374,7 +375,8 @@ describe('PATCH /v1/carteira/contatos/:id/vinculos/:empresaId', () => {
     await chamar('post', d.cookie, vinculos(c.id), { empresaId: daBia.id })
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     const ficha = (await chamar('get', ana.cookie, `${CONTATOS}/${c.id}`)).body as Contato
     expect(doContato(ficha, daAna.id)?.editavel).toBe(true)
@@ -487,7 +489,8 @@ describe('GET /v1/carteira/empresas/:id/contatos', () => {
     await criar(bia.cookie, { nome: 'Da carteira da Bia', vinculo: { empresaId: daBia.id } })
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     expect((await daEmpresa(ana.cookie, daBia.id)).map((c) => c.nome)).toEqual([
       'Da carteira da Bia',

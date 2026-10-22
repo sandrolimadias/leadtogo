@@ -636,7 +636,7 @@ describe('permissões (regra de carteira)', () => {
     const daAna = await empresa(c.ana.cookie, 'Carteira da Ana')
     const o = await nova(c.ana.cookie, { titulo: 'Da Ana', empresaId: daAna.id })
     await noTenant(c.d.tenantId, async (tx) => {
-      await tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true WHERE tenant_id = ${c.d.tenantId}`
+      await tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`
     })
     const vista = await chamar('get', c.bia.cookie, `${OPS}/${o.id}`)
     expect(vista.status).toBe(200)

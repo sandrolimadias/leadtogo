@@ -163,7 +163,8 @@ describe('POST /v1/carteira/contatos', () => {
     ).toBe(400) // não a vê
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     const vendo = await chamar('post', ana.cookie, CONTATOS, {
       nome: 'Fulano',
@@ -329,7 +330,8 @@ describe('regra de carteira dos contatos', () => {
     })
     await noTenant(
       d.tenantId,
-      (tx) => tx`UPDATE tenant_configuracoes SET vendedor_ve_todas_empresas = true`,
+      (tx) =>
+        tx`UPDATE perfil_permissoes SET alcance = 'todas' WHERE permissao IN ('empresas.ver', 'contatos.ver', 'oportunidades.ver', 'atividades.ver') AND perfil_id IN (SELECT id FROM perfis_acesso WHERE chave_sistema = 'vendedor')`,
     )
     const visto = await chamar('get', ana.cookie, `${CONTATOS}/${cBia.id}`)
     expect(visto.status).toBe(200)

@@ -15,7 +15,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { atrasada, hoje, proximos7 } from './atividades-janelas.js'
 import { condicaoDeVisibilidadeDaAtividade, fusoDaEmpresa } from './atividades-leitura.js'
-import { escopoDaCarteira } from './regras-de-carteira.js'
+import { condicaoDeResponsaveis, escopoDaCarteira } from './regras-de-carteira.js'
 
 const { atividades, funis, membros, tenantConfiguracoes } = schema
 
@@ -284,9 +284,7 @@ export class DashboardService {
 
 /** A visibilidade da carteira numa consulta em SQL cru (alias `e` para empresas). */
 function condicaoDeVisibilidadeNaConsulta(escopo: Awaited<ReturnType<typeof escopoDaCarteira>>) {
-  return escopo.papel !== 'vendedor' || escopo.veTodas
-    ? sql`true`
-    : sql`e.vendedor_id = ${escopo.membroId}`
+  return condicaoDeResponsaveis(escopo.empresas.ver, sql`e.vendedor_id`) ?? sql`true`
 }
 
 /** O último dia a considerar na série: o fim do período, mas nunca depois de hoje (no fuso). */

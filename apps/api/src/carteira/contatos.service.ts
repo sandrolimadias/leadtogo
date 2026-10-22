@@ -21,6 +21,7 @@ import {
 } from './regras-de-carteira.js'
 import {
   condicaoDeEdicaoDoContato,
+  condicaoDeExclusaoDoContato,
   condicaoDeVisibilidadeDoContato,
   podeExcluirContato,
 } from './regras-de-contato.js'
@@ -80,7 +81,7 @@ export class ContatosService {
     const db = this.ctx.db()
     const tenantId = this.ctx.tenantId
     const escopo = await escopoDaCarteira(this.ctx)
-    if (escopo.papel === 'vendedor' && !dados.vinculo) {
+    if (!escopo.contatoSemEmpresa && !dados.vinculo) {
       throw invalido(
         'vinculo',
         'empresa_obrigatoria',
@@ -271,7 +272,16 @@ export class ContatosService {
         ),
       )
     if (!atual) throw naoEncontrado()
-    if (!podeExcluirContato(escopo)) throw negado('Só gestor e administrador excluem contatos.')
+    if (!podeExcluirContato(escopo))
+      throw negado('Seu perfil de acesso não permite excluir contatos.')
+    const exclusao = condicaoDeExclusaoDoContato(escopo)
+    if (exclusao) {
+      const [alcancado] = await db
+        .select({ id: contatos.id })
+        .from(contatos)
+        .where(and(eq(contatos.id, id), exclusao))
+      if (!alcancado) throw negado('Este contato está fora da carteira que você pode excluir.')
+    }
     await db
       .update(contatos)
       .set({ excluidoEm: new Date(), atualizadoPor: escopo.membroId })
