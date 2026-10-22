@@ -593,3 +593,31 @@ fabricas['visita_resultados'] = definirFabrica<string>({
     return id
   },
 })
+
+// Relatórios de visita (G3b): pais são a empresa, o responsável e um tipo; cada relatório tem a sua atividade
+fabricas['relatorios_visita'] = definirFabrica<{
+  empresaId: string
+  membroId: string
+  tipoId: string
+}>({
+  colunaAlteravel: 'respostas',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const empresaId = novoId()
+      const membroId = novoId()
+      const tipoId = novoId()
+      await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${membroId}, ${tenantId}, 'Vendedor de teste')`
+      await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id) VALUES (${empresaId}, ${tenantId}, 'Empresa de teste', ${membroId})`
+      await tx`INSERT INTO tipos_atividade (id, tenant_id, nome, icone) VALUES (${tipoId}, ${tenantId}, ${`Visita ${tipoId}`}, 'map-pin')`
+      return { empresaId, membroId, tipoId }
+    }),
+  criar: async (tx, tenantId, { empresaId, membroId, tipoId }) => {
+    const atividadeId = novoId()
+    const id = novoId()
+    await tx`INSERT INTO atividades (id, tenant_id, tipo_atividade_id, titulo, empresa_id, responsavel_id, data_inicio, situacao)
+      VALUES (${atividadeId}, ${tenantId}, ${tipoId}, 'Visita', ${empresaId}, ${membroId}, now(), 'em_execucao')`
+    await tx`INSERT INTO relatorios_visita (id, tenant_id, empresa_id, atividade_id, responsavel_id, sem_checkin)
+      VALUES (${id}, ${tenantId}, ${empresaId}, ${atividadeId}, ${membroId}, true)`
+    return id
+  },
+})

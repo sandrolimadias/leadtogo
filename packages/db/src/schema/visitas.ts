@@ -2,6 +2,8 @@ import { sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
   boolean,
+  check,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -12,8 +14,10 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
+import { atividades } from './atividades.js'
+import { empresas } from './carteira.js'
 import { membros, tenants } from './plataforma.js'
-import { carimbos, chaveUuid } from './tipos.js'
+import { carimbos, chaveUuid, geografiaPonto } from './tipos.js'
 
 // Visitas: construtor do relatório e resultados (G3a; docs/plano_geolocalizacao.md, seção 9, e
 // docs/modelagem_banco.md, seção "Visitas"). RLS, FORCE e GRANTs ficam na migração (aplicar_rls_tenant).
@@ -101,5 +105,66 @@ export const visitaResultados = pgTable(
     uniqueIndex('visita_resultados_chave_sistema_uq')
       .on(t.tenantId, t.chaveSistema)
       .where(sql`${t.chaveSistema} IS NOT NULL AND ${t.excluidoEm} IS NULL`),
+  ],
+)
+
+export const situacaoRelatorioVisita = pgEnum('situacao_relatorio_visita', [
+  'rascunho',
+  'concluido',
+])
+
+/**
+ * Relatório de visita (G3b). O id é gerado no aparelho (uuid v7): reenviar o mesmo relatório não
+ * duplica (o `PUT /visitas/:id` é um upsert). A atividade Visita nasce "em execução" com o check-in e
+ * vira "realizada" ao concluir. A posição do vendedor só existe com check-in (LGPD, `lgpd.md` 3.2).
+ */
+export const relatoriosVisita = pgTable(
+  'relatorios_visita',
+  {
+    id: uuid().primaryKey(),
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    empresaId: uuid()
+      .notNull()
+      .references(() => empresas.id),
+    atividadeId: uuid()
+      .notNull()
+      .references(() => atividades.id),
+    responsavelId: uuid()
+      .notNull()
+      .references(() => membros.id),
+    /** "Registrar depois": sem check-in e sem posição */
+    semCheckin: boolean().notNull().default(false),
+    checkinEm: timestamp({ withTimezone: true }),
+    checkinLocal: geografiaPonto(),
+    /** Precisão informada pelo aparelho, em metros */
+    checkinPrecisaoM: integer(),
+    /** Distância até a posição da empresa no check-in; nula se a empresa não tinha coordenada */
+    distanciaM: integer(),
+    foraDoLimite: boolean().notNull().default(false),
+    /** O check-in foi feito sem sinal (a regra do modo foi aplicada no aparelho) */
+    checkinOffline: boolean().notNull().default(false),
+    situacao: situacaoRelatorioVisita().notNull().default('rascunho'),
+    resultadoId: uuid().references(() => visitaResultados.id),
+    modeloVersaoId: uuid().references(() => visitaModeloVersoes.id),
+    /** `[{ campoId, rotulo (o da época), valor }]` */
+    respostas: jsonb().notNull().default([]),
+    concluidoEm: timestamp({ withTimezone: true }),
+    ...autoria(),
+  },
+  (t) => [
+    uniqueIndex('relatorios_visita_atividade_uq').on(t.atividadeId),
+    index('relatorios_visita_responsavel_idx').on(t.tenantId, t.responsavelId, t.situacao),
+    index('relatorios_visita_empresa_idx').on(t.tenantId, t.empresaId, t.criadoEm.desc()),
+    index('relatorios_visita_versao_idx').on(t.tenantId, t.modeloVersaoId),
+    check(
+      'relatorios_visita_checkin',
+      sql`${t.semCheckin} = (${t.checkinEm} IS NULL) AND (${t.checkinLocal} IS NULL OR ${t.checkinEm} IS NOT NULL)`,
+    ),
+    check(
+      'relatorios_visita_concluido',
+      sql`${t.situacao} <> 'concluido' OR (${t.resultadoId} IS NOT NULL AND ${t.modeloVersaoId} IS NOT NULL AND ${t.concluidoEm} IS NOT NULL)`,
+    ),
   ],
 )

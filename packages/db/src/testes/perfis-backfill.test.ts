@@ -45,6 +45,8 @@ const padroes: PadroesDosPerfis = {
     gestor: politica !== 'admin',
     vendedor: politica === 'todos',
   }),
+  versao: 1,
+  novasPorVersao: {},
 }
 
 async function novaEmpresa(config: { veTodas?: boolean; politica?: string } = {}) {
@@ -181,5 +183,87 @@ describe('backfill dos perfis de acesso (start da API)', () => {
     expect(await perfis(tenantId)).toEqual([])
     await rodar(tenantId)
     expect(await perfis(tenantId)).toHaveLength(3)
+  })
+})
+
+describe('sincronização do catálogo (v2) na partida', () => {
+  // A v2 acrescenta `visitas.ver_localizacao` ao Administrador e ao Gestor
+  const v2: PadroesDosPerfis = {
+    ...padroes,
+    versao: 2,
+    novasPorVersao: { 2: ['visitas.ver_localizacao'] },
+    perfis: padroes.perfis.map((p) =>
+      p.chave === 'vendedor'
+        ? p
+        : {
+            ...p,
+            permissoes: [...p.permissoes, { permissao: 'visitas.ver_localizacao', alcance: null }],
+          },
+    ),
+  }
+  const temLocalizacao = async (tenantId: string) =>
+    (
+      await comTenant(
+        owner,
+        tenantId,
+        (tx) => tx<{ chave: string }[]>`
+          SELECT p.chave_sistema::text AS chave FROM perfil_permissoes pp
+          JOIN perfis_acesso p ON p.id = pp.perfil_id
+          WHERE pp.permissao = 'visitas.ver_localizacao' ORDER BY 1`,
+      )
+    ).map((l) => l.chave)
+
+  it('empresa criada na v1 recebe a chave nova só nos perfis de sistema cujo padrão a tem; o resto não muda', async () => {
+    const { tenantId } = await novaEmpresa()
+    await criarPadroesPendentesPorUrl(urlOwnerDeTeste(), padroes)
+    // o administrador tirou uma permissão do Gestor e criou um perfil próprio: nada disso volta
+    await comTenant(owner, tenantId, async (tx) => {
+      await tx`DELETE FROM perfil_permissoes pp USING perfis_acesso p
+        WHERE p.id = pp.perfil_id AND p.chave_sistema = 'gestor' AND pp.permissao = 'empresas.ver'`
+      await tx`INSERT INTO perfis_acesso (id, tenant_id, nome) VALUES (${novoId()}, ${tenantId}, 'Supervisor')`
+    })
+    expect(await temLocalizacao(tenantId)).toEqual([])
+
+    const r = await criarPadroesPendentesPorUrl(urlOwnerDeTeste(), v2)
+    expect(r.falhas.filter((f) => f.tenantId === tenantId)).toEqual([])
+    expect(await temLocalizacao(tenantId)).toEqual(['admin', 'gestor'])
+    expect(await permissoes(tenantId, 'gestor')).not.toContainEqual(
+      expect.objectContaining({ permissao: 'empresas.ver' }),
+    )
+    const [c] = await comTenant(
+      owner,
+      tenantId,
+      (tx) => tx<{ v: number }[]>`SELECT catalogo_perfis_versao AS v FROM tenant_configuracoes`,
+    )
+    expect(c?.v).toBe(2)
+
+    // de novo: nada muda (a marca já está na v2) e a função não lista mais a empresa
+    await criarPadroesPendentesPorUrl(urlOwnerDeTeste(), v2)
+    expect(await temLocalizacao(tenantId)).toEqual(['admin', 'gestor'])
+    const ids = (
+      await owner<
+        { tenant_id: string }[]
+      >`SELECT tenant_id FROM app_tenants_catalogo_desatualizado(2)`
+    ).map((l) => l.tenant_id)
+    expect(ids).not.toContain(tenantId)
+  })
+
+  it('empresa criada já na v2 nasce com a chave e com a marca', async () => {
+    const { tenantId } = await novaEmpresa()
+    await criarPadroesPendentesPorUrl(urlOwnerDeTeste(), v2)
+    expect(await temLocalizacao(tenantId)).toEqual(['admin', 'gestor'])
+    const ids = (
+      await owner<
+        { tenant_id: string }[]
+      >`SELECT tenant_id FROM app_tenants_catalogo_desatualizado(2)`
+    ).map((l) => l.tenant_id)
+    expect(ids).not.toContain(tenantId)
+  })
+
+  it('a função de listagem é só do owner', async () => {
+    const [p] = await owner<{ publico: boolean; app: boolean }[]>`
+      SELECT has_function_privilege('public', 'app_tenants_catalogo_desatualizado(integer)', 'EXECUTE') AS publico,
+             has_function_privilege('leadtogo_app', 'app_tenants_catalogo_desatualizado(integer)', 'EXECUTE') AS app`
+    expect(p).toEqual({ publico: false, app: false })
   })
 })

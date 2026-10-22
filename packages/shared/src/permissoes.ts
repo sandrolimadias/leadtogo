@@ -45,6 +45,7 @@ export const ROTULO_DO_MODULO: Record<string, string> = {
   atividades: 'Atividades',
   importacao: 'Importação',
   geolocalizacao: 'Geolocalização e mapa',
+  visitas: 'Visitas',
   cadastros: 'Cadastros auxiliares',
   equipe: 'Equipe e convites',
   perfis: 'Perfis de acesso',
@@ -76,6 +77,7 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
   p('geolocalizacao', 'lotes', 'Rodar geocodificação em lote e ver o resumo'),
   p('geolocalizacao', 'regioes', 'Criar, alterar e excluir regiões'),
   p('geolocalizacao', 'legenda', 'Configurar a legenda do mapa'),
+  p('visitas', 'ver_localizacao', 'Ver a localização e a distância dos check-ins'),
   p('cadastros', 'gerir', 'Gerir tags, funis, tipos, origens, motivos e demais cadastros'),
   p('equipe', 'ver_emails', 'Ver o e-mail dos membros da equipe'),
   p('equipe', 'gerir', 'Convidar, desativar e ver o acesso dos membros'),
@@ -85,12 +87,17 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
 ]
 
 /**
- * Versão do catálogo. A versão 1 é a que a criação dos perfis grava (backfill e empresa nova). Quem
- * acrescentar permissão sobe a versão e entrega, na mesma fase, a sincronização dos perfis de sistema
- * das empresas existentes (marca por empresa + função de listagem do owner, numa migração de expansão;
- * ver docs/backlog_pos_mvp.md). Perfis criados pela empresa nunca recebem permissão automaticamente.
+ * Versão do catálogo. A criação dos perfis grava a versão atual (`tenant_configuracoes.catalogo_perfis_versao`);
+ * quem acrescenta permissão sobe a versão e lista as chaves novas em `NOVAS_POR_VERSAO`. Na partida da API,
+ * os perfis de SISTEMA das empresas com versão menor recebem as chaves novas que o seu padrão tem (as
+ * outras permissões não mudam). Perfis criados pela empresa nunca recebem permissão automaticamente.
  */
-export const VERSAO_DO_CATALOGO = 1
+export const VERSAO_DO_CATALOGO = 2
+
+/** As chaves que cada versão acrescentou (a versão 1 é o catálogo inicial). */
+export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
+  2: ['visitas.ver_localizacao'],
+}
 
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
 

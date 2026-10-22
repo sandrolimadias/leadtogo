@@ -9,7 +9,11 @@ import {
   criarPadroesVisitaDoTenant,
   criarPapeisDoTenant,
 } from './padroes.js'
-import { criarPerfisDoTenant, type PadroesDosPerfis } from './perfis.js'
+import {
+  criarPerfisDoTenant,
+  type PadroesDosPerfis,
+  sincronizarCatalogoDoTenant,
+} from './perfis.js'
 import { semearReferencias } from './seeds/referencias.js'
 import type { Db } from './seeds/upsert.js'
 
@@ -129,6 +133,22 @@ export async function criarPadroesPendentesPorUrl(
         }
       }
     }
+    // Catálogo de permissões: os perfis de sistema das empresas criadas numa versão anterior recebem as chaves novas
+    if (perfis) {
+      const desatualizadas = await cliente<
+        { tenant_id: string }[]
+      >`SELECT tenant_id FROM app_tenants_catalogo_desatualizado(${perfis.versao})`
+      for (const { tenant_id: tenantId } of desatualizadas) {
+        try {
+          await db.transaction(async (tx) => {
+            await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)
+            await sincronizarCatalogoDoTenant(tx, tenantId, perfis)
+          })
+        } catch (e) {
+          falhas.push({ tenantId, erro: e instanceof Error ? e.message : String(e) })
+        }
+      }
+    }
     return { criados, falhas }
   } finally {
     await cliente.end()
@@ -149,7 +169,7 @@ export {
   criarPapeisDoTenant,
 }
 export { camposDoModeloDeFabrica, type CampoDeVisitaGravado } from './padroes.js'
-export { criarPerfisDoTenant, membrosSemPerfil } from './perfis.js'
+export { criarPerfisDoTenant, membrosSemPerfil, sincronizarCatalogoDoTenant } from './perfis.js'
 export type {
   AlcanceGravado,
   ChavePerfilSistema,

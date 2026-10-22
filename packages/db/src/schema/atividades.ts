@@ -74,6 +74,11 @@ export const atividades = pgTable(
     urgente: boolean().notNull().default(false),
     observacoes: text(),
     origem: origemAtividade().notNull().default('manual'),
+    /**
+     * Visita que NÃO conta para a empresa ("não localizada", G3b): não atualiza a última visita, o último
+     * contato nem a tag Visitada. Nunca tira a atividade das contagens de esforço (Dashboard, indicadores, listas).
+     */
+    contaVisita: boolean().notNull().default(true),
     /** O lote de importação que criou a atividade (sem FK, como `empresas.importacao_id`: evita ciclo de módulos) */
     importacaoId: uuid(),
     ...carimbos(),

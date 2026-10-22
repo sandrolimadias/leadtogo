@@ -818,3 +818,15 @@ Só expansão. Tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado
 **Colunas novas:** enum `modo_checkin`; em `tenant_configuracoes`, `checkin_modo`, `checkin_limite_m` (CHECK `tenant_configuracoes_checkin_limite_chk`, 10 a 50.000), `lembrete_relatorios_hora` e `visitas_padroes_criados_em` (seção 3.2); em `empresas`, `numero_funcionarios` (seção 6.1).
 
 **Padrões:** `criarPadroesVisitaDoTenant` (`packages/db/src/padroes.ts`) reserva a marca e cria o modelo "Relatório de visita" (versão 1) e os seis resultados; roda junto dos cadastros padrão das empresas novas e, para as existentes, no backfill da partida pela função `app_tenants_sem_padroes_visita()` (mesmo padrão das 0016, 0026 e 0027).
+
+## Visitas: check-in e relatório (G3b; migração 0029, ver `plano_geolocalizacao.md`, seção 9.2)
+
+Só expansão. Tabela nova com `tenant_id`, **RLS habilitado e forçado**, colunas padrão e teste de isolamento:
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `relatorios_visita` | **id gerado no aparelho** (uuid v7, sem default), empresa_id, atividade_id (única), responsavel_id, sem_checkin, checkin_em, checkin_local (`geography(Point,4326)`), checkin_precisao_m, distancia_m, fora_do_limite, checkin_offline, situacao (`situacao_relatorio_visita`: `rascunho` · `concluido`), resultado_id, modelo_versao_id, respostas (jsonb `[{campoId, rotulo, valor}]`, o rótulo da época), concluido_em | `PUT /v1/visitas/:id` é um upsert nesse id: reenviar não duplica. CHECK `relatorios_visita_checkin` (sem check-in ⇔ sem data; posição só com check-in) e `relatorios_visita_concluido` (concluído exige resultado, versão e data). Índices por responsável e situação, por empresa e data, e por versão do modelo (o "modelo em uso" do G3a) |
+
+**Colunas novas:** `atividades.conta_visita` (boolean, padrão `true`; `false` só na "não localizada": a atividade não atualiza a última visita, o último contato nem a tag Visitada, e continua contando como esforço em tudo); `empresas.visita_tentada_em` (a "não localizada" mais recente; o pin mostra "visita tentada" enquanto ela for mais nova que a última visita, e ela some quando o endereço é confirmado); `tenant_configuracoes.catalogo_perfis_versao` (versão do catálogo de permissões dos perfis de sistema; nula = 1).
+
+**Catálogo de permissões v2:** `visitas.ver_localizacao` (Administrador e Gestor por padrão). Na partida da API, `app_tenants_catalogo_desatualizado(versao)` (só o `leadtogo_owner`, mesmo padrão das anteriores) lista as empresas com perfis numa versão anterior, e `sincronizarCatalogoDoTenant` acrescenta aos perfis **de sistema** as chaves novas que o padrão de cada um tem (reserva otimista da marca; nada mais muda; perfis criados pela empresa nunca recebem permissão sozinhos). Empresas novas já nascem com a versão atual.

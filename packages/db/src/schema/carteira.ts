@@ -116,6 +116,8 @@ export const empresas = pgTable(
     situacaoNaoVerificada: boolean().notNull().default(false),
     // Calculados pelas atividades (Módulo 5); a FK de `proxima_atividade_id` está só no SQL da migração 0023 (importar `atividades` aqui faria um ciclo)
     ultimaVisitaEm: timestamp({ withTimezone: true }),
+    /** Última visita "não localizada" (G3b): o pin mostra "visita tentada" enquanto ela for mais nova que a última visita; sai quando o endereço é confirmado */
+    visitaTentadaEm: timestamp({ withTimezone: true }),
     ultimoContatoEm: timestamp({ withTimezone: true }),
     proximaAtividadeId: uuid(),
     proximaAtividadeEm: timestamp({ withTimezone: true }),

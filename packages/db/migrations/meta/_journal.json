@@ -204,6 +204,13 @@
       "when": 1792701641008,
       "tag": "0028_visitas_construtor",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792710621872,
+      "tag": "0029_visitas_campo",
+      "breakpoints": true
     }
   ]
 }

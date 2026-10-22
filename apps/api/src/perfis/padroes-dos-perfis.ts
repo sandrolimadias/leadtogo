@@ -1,11 +1,13 @@
 import type { PadroesDosPerfis } from '@leadtogo/db'
 import {
+  NOVAS_POR_VERSAO,
   PERMISSOES_DE_VER,
   PERMISSOES_PADRAO,
   chaveDeSistemaSchema,
   exige2faDaPoliticaAntiga,
   linhasDasPermissoes,
   nomeDoPerfilDeSistema,
+  VERSAO_DO_CATALOGO,
 } from '@leadtogo/shared'
 
 /**
@@ -20,4 +22,6 @@ export const padroesDosPerfis: PadroesDosPerfis = {
   })),
   permissoesDeVer: PERMISSOES_DE_VER,
   exige2fa: exige2faDaPoliticaAntiga,
+  versao: VERSAO_DO_CATALOGO,
+  novasPorVersao: NOVAS_POR_VERSAO,
 }

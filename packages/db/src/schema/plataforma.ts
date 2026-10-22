@@ -144,6 +144,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   lembreteRelatoriosHora: time({ withTimezone: false }).notNull().default('17:30'),
   /** Quando o modelo padrão e os seis resultados de visita foram criados (G3a); preenchido, nunca mais se recria */
   visitasPadroesCriadosEm: timestamp({ withTimezone: true }),
+  /** Versão do catálogo de permissões dos perfis de sistema (nula = 1); a partida da API sincroniza as chaves novas */
+  catalogoPerfisVersao: integer(),
   ...carimbos(),
 })
 

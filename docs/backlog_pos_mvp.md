@@ -153,7 +153,6 @@
 | Item | Motivo de ter ficado fora | Origem |
 |---|---|---|
 | **Contração dos perfis de acesso** (remover `papel` de `membros` e `convites` e o enum `papel_membro`, `perfil_id NOT NULL`, remover `vendedor_ve_todas_empresas` e `dois_fatores_exigido`, e a função `app_vinculos_com_politica` antiga) | Migração destrutiva: só depois de **duas semanas de uso real** da Fase 1, com aviso ao Ale e commit `BREAKING-DB:` | Perfis de acesso, Fase 1 |
-| **Sincronização do catálogo de permissões na partida** (perfis de sistema recebem as permissões novas padrão; os da empresa nunca) | Na versão 1 do catálogo (`VERSAO_DO_CATALOGO`) a criação dos perfis já grava tudo, então não há o que sincronizar. Listar todas as empresas pede marca + função do owner numa migração: entra na **primeira fase que acrescentar permissão** (um teste trava o catálogo na versão 1): será o **G3b** (`visitas.ver_localizacao`, migração 0029) | Perfis de acesso, Fase 1 |
 | Permissões de chamados e do portal do cliente, visão Equipe, permissões por campo, múltiplos perfis por usuário | Fora da Fase 1; cada fase futura acrescenta as suas ao catálogo | Perfis de acesso, Fase 1 |
 | Apagar remotamente os dados offline de um aparelho perdido | No G3b só se revoga a sessão e o aparelho se limpa no próximo contato com o servidor | G3b (`plano_geolocalizacao.md`, seção 9) |
 | `acessos_log` com retenção de 6 meses (partição mensal descartada pelo job) | Decidido, **ainda não implementado** | Trilha antes do primeiro cliente externo / `lgpd.md` 5.1 |

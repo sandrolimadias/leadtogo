@@ -30,6 +30,10 @@ export interface PadroesDosPerfis {
   permissoesDeVer: readonly string[]
   /** Como a política antiga de 2FA vira o flag `exige_2fa` de cada perfil de sistema */
   exige2fa: (politica: PoliticaAntiga) => Record<ChavePerfilSistema, boolean>
+  /** Versão atual do catálogo, gravada na empresa ao criar os perfis */
+  versao: number
+  /** As chaves que cada versão (2 em diante) acrescentou, para sincronizar os perfis de sistema */
+  novasPorVersao: Record<number, readonly string[]>
 }
 
 /**
@@ -48,7 +52,7 @@ export async function criarPerfisDoTenant(
 ): Promise<Partial<Record<ChavePerfilSistema, string>> | null> {
   const reservado = await tx
     .update(tenantConfiguracoes)
-    .set({ perfisCriadosEm: new Date() })
+    .set({ perfisCriadosEm: new Date(), catalogoPerfisVersao: padroes.versao })
     .where(
       and(eq(tenantConfiguracoes.tenantId, tenantId), isNull(tenantConfiguracoes.perfisCriadosEm)),
     )
@@ -106,6 +110,71 @@ export async function criarPerfisDoTenant(
       )
   }
   return criados
+}
+
+/**
+ * Leva os perfis de SISTEMA de uma empresa até a versão atual do catálogo: cada perfil recebe as chaves
+ * novas (das versões depois da gravada) que o SEU padrão tem, com o alcance padrão. Nada mais muda (o que
+ * o administrador tirou ou mudou fica); perfis criados pela empresa nunca recebem permissão sozinhos.
+ * Idempotente pela marca `catalogo_perfis_versao` (reservada antes de tudo, na mesma transação). Devolve
+ * quantas permissões entraram, ou null se não havia o que sincronizar. Precisa do tenant ativo (RLS).
+ */
+export async function sincronizarCatalogoDoTenant(
+  tx: Tx,
+  tenantId: string,
+  padroes: PadroesDosPerfis,
+): Promise<number | null> {
+  const [atual] = await tx
+    .select({
+      versao: tenantConfiguracoes.catalogoPerfisVersao,
+      criados: tenantConfiguracoes.perfisCriadosEm,
+    })
+    .from(tenantConfiguracoes)
+    .where(eq(tenantConfiguracoes.tenantId, tenantId))
+  const de = atual?.versao ?? 1
+  if (!atual?.criados || de >= padroes.versao) return null
+  // Reserva otimista: só passa quem ainda vê a versão lida (duas execuções juntas não sincronizam duas vezes)
+  const reservado = await tx
+    .update(tenantConfiguracoes)
+    .set({ catalogoPerfisVersao: padroes.versao })
+    .where(
+      and(
+        eq(tenantConfiguracoes.tenantId, tenantId),
+        sql`coalesce(${tenantConfiguracoes.catalogoPerfisVersao}, 1) = ${de}`,
+      ),
+    )
+    .returning({ tenantId: tenantConfiguracoes.tenantId })
+  if (reservado.length === 0) return null
+
+  const novas = new Set(
+    Object.entries(padroes.novasPorVersao)
+      .filter(([v]) => Number(v) > de && Number(v) <= padroes.versao)
+      .flatMap(([, chaves]) => chaves),
+  )
+  if (novas.size === 0) return 0
+  const sistema = await tx
+    .select({ id: perfisAcesso.id, chave: perfisAcesso.chaveSistema })
+    .from(perfisAcesso)
+    .where(
+      and(
+        eq(perfisAcesso.tenantId, tenantId),
+        eq(perfisAcesso.sistema, true),
+        isNull(perfisAcesso.excluidoEm),
+      ),
+    )
+  const linhas = sistema.flatMap((perfil) => {
+    const padrao = padroes.perfis.find((x) => x.chave === perfil.chave)
+    return (padrao?.permissoes ?? [])
+      .filter((x) => novas.has(x.permissao))
+      .map((x) => ({ tenantId, perfilId: perfil.id, permissao: x.permissao, alcance: x.alcance }))
+  })
+  if (linhas.length === 0) return 0
+  const inseridas = await tx
+    .insert(perfilPermissoes)
+    .values(linhas)
+    .onConflictDoNothing()
+    .returning({ permissao: perfilPermissoes.permissao })
+  return inseridas.length
 }
 
 /** Para os testes e diagnósticos: quantos membros da empresa ainda estão sem perfil. */
