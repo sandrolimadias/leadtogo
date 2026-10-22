@@ -204,6 +204,8 @@ O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verifi
 
 `membros.perfil_id` e `convites.perfil_id` entram **nulos** (expandir). O `papel` antigo fica como legado: nenhuma regra nova o lê; perfis da empresa gravam `vendedor` nele só por compatibilidade. `tenant_configuracoes.vendedor_ve_todas_empresas` e `tenant_configuracoes.dois_fatores_exigido` ficam no banco até a contração (a função `app_vinculos_com_politica` ganha uma versão nova que devolve `perfil_id` e `exige_2fa`, em migração de expansão) (fora da Fase 1). O backfill é idempotente, feito na partida da API (depois do migrate): cria os três perfis de sistema por empresa, converte o interruptor e a política de 2FA e liga membros e convites.
 
+> **Implementação (migração 0027, só expansão):** enums `alcance_permissao` e `chave_perfil_sistema`; CHECK `sistema = (chave_sistema IS NOT NULL)`; únicos `(tenant_id, lower(nome))` e `(tenant_id, chave_sistema)` entre os não excluídos; índice `(tenant_id, perfil_id)` em `membros`. Marca `tenant_configuracoes.perfis_criados_em` e a função `app_tenants_sem_perfis()` (só o `leadtogo_owner`, mesmo padrão da 0026) para o backfill na partida. `app_vinculos_com_perfil(usuario_id)` → `(tenant_id, papel, dois_fatores_exigido, perfil_id, perfil_exige_2fa)`: a versão nova da `app_vinculos_com_politica` (que fica até a contração), com política de leitura do owner em `perfis_acesso` presa à variável `app.vinculos_usuario`; ignora perfil excluído ou de outra empresa.
+
 ### 3.5 `convites` 🏢 — Convite de membro
 | Coluna | Tipo | Observação |
 |---|---|---|

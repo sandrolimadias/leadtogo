@@ -530,3 +530,30 @@ fabricas['mapa_legenda'] = definirFabrica<string>({
     return id
   },
 })
+
+fabricas['perfis_acesso'] = definirFabrica<string>({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO perfis_acesso (id, tenant_id, nome) VALUES (${id}, ${tenantId}, ${`Perfil ${id}`})`
+    return id
+  },
+})
+
+fabricas['perfil_permissoes'] = definirFabrica<string>({
+  chave: 'permissao',
+  colunaAlteravel: 'alcance',
+  // O pai: um perfil da empresa
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const id = novoId()
+      await tx`INSERT INTO perfis_acesso (id, tenant_id, nome) VALUES (${id}, ${tenantId}, ${`Perfil ${id}`})`
+      return id
+    }),
+  criar: async (tx, tenantId, perfilId) => {
+    const permissao = `empresas.ver.${novoId()}`
+    await tx`INSERT INTO perfil_permissoes (tenant_id, perfil_id, permissao, alcance)
+      VALUES (${tenantId}, ${perfilId}, ${permissao}, 'propria')`
+    return permissao
+  },
+})

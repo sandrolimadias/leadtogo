@@ -27,6 +27,9 @@ import { carimbos, chaveUuid, citext } from './tipos.js'
 
 export const situacaoConta = pgEnum('situacao_conta', ['teste', 'ativa', 'suspensa', 'cancelada'])
 export const papelConta = pgEnum('papel_conta', ['dono', 'administrador', 'financeiro'])
+/** Alcance de uma permissão da carteira (perfis de acesso): só a própria, a da equipe ou todas. */
+export const alcancePermissao = pgEnum('alcance_permissao', ['propria', 'equipe', 'todas'])
+export const chavePerfilSistema = pgEnum('chave_perfil_sistema', ['admin', 'gestor', 'vendedor'])
 export const situacaoTenant = pgEnum('situacao_tenant', ['teste', 'ativo', 'suspenso', 'cancelado'])
 export const papelMembro = pgEnum('papel_membro', ['admin', 'gestor', 'vendedor'])
 /** Quem precisa de 2FA para usar a empresa (`tenant_configuracoes.dois_fatores_exigido`) */
@@ -129,6 +132,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   papeisDecisaoCriadosEm: timestamp({ withTimezone: true }),
   /** Quando o grupo de tags "Cadastro" e as flags do mapa foram criados (G1); preenchido, nunca mais se recria */
   geoPadroesCriadosEm: timestamp({ withTimezone: true }),
+  /** Quando os perfis de acesso de sistema foram criados e ligados aos membros; preenchido, nunca mais se recria */
+  perfisCriadosEm: timestamp({ withTimezone: true }),
   ...carimbos(),
 })
 
@@ -147,7 +152,10 @@ export const membros = pgTable(
     telefone: varchar({ length: 20 }),
     telefoneE164: varchar('telefone_e164', { length: 20 }),
     email: citext(),
+    /** Legado até a contração: nenhuma regra nova lê o papel (vale o perfil de acesso) */
     papel: papelMembro().notNull().default('vendedor'),
+    /** Perfil de acesso; nulo só até o backfill (contração: NOT NULL) */
+    perfilId: uuid().references((): AnyPgColumn => perfisAcesso.id),
     gestorId: uuid().references((): AnyPgColumn => membros.id),
     cor: char({ length: 7 }),
     fotoArquivoId: uuid().references((): AnyPgColumn => arquivos.id),
@@ -168,6 +176,61 @@ export const membros = pgTable(
       .where(sql`${t.excluidoEm} IS NULL AND ${t.usuarioId} IS NOT NULL`),
     index('membros_tenant_gestor_idx').on(t.tenantId, t.gestorId),
     index('membros_usuario_idx').on(t.usuarioId),
+    index('membros_perfil_idx').on(t.tenantId, t.perfilId),
+  ],
+)
+
+/**
+ * Perfil de acesso (docs/funcionalidades.md, "Perfis de acesso"): permissões por módulo e ação, com
+ * alcance. Admin, Gestor e Vendedor são de sistema (`chave_sistema`), editáveis e nunca excluídos.
+ */
+export const perfisAcesso = pgTable(
+  'perfis_acesso',
+  {
+    id: chaveUuid(),
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    nome: text().notNull(),
+    descricao: text(),
+    sistema: boolean().notNull().default(false),
+    chaveSistema: chavePerfilSistema(),
+    /** Quem tem este perfil precisa de 2FA nesta empresa */
+    exige2fa: boolean('exige_2fa').notNull().default(false),
+    ativo: boolean().notNull().default(true),
+    ...carimbos(),
+    criadoPor: uuid().references((): AnyPgColumn => membros.id),
+    atualizadoPor: uuid().references((): AnyPgColumn => membros.id),
+    excluidoEm: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('perfis_acesso_nome_uq')
+      .on(t.tenantId, sql`lower(${t.nome})`)
+      .where(sql`${t.excluidoEm} IS NULL`),
+    uniqueIndex('perfis_acesso_sistema_uq')
+      .on(t.tenantId, t.chaveSistema)
+      .where(sql`${t.chaveSistema} IS NOT NULL AND ${t.excluidoEm} IS NULL`),
+  ],
+)
+
+/** Permissão concedida a um perfil (chave do catálogo em packages/shared/src/permissoes.ts). */
+export const perfilPermissoes = pgTable(
+  'perfil_permissoes',
+  {
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    perfilId: uuid()
+      .notNull()
+      .references(() => perfisAcesso.id),
+    permissao: text().notNull(),
+    /** Nulo = a permissão não admite alcance */
+    alcance: alcancePermissao(),
+    ...carimbos(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.perfilId, t.permissao] }),
+    index('perfil_permissoes_tenant_idx').on(t.tenantId, t.perfilId),
   ],
 )
 
@@ -183,7 +246,10 @@ export const convites = pgTable(
       .notNull()
       .references(() => tenants.id),
     email: citext().notNull(),
+    /** Legado até a contração (perfis da empresa gravam `vendedor`) */
     papel: papelMembro().notNull(),
+    /** Perfil de acesso que o convidado terá; nulo só até o backfill */
+    perfilId: uuid().references((): AnyPgColumn => perfisAcesso.id),
     tokenHash: text().notNull().unique('convites_token_hash_key'),
     expiraEm: timestamp({ withTimezone: true }).notNull(),
     aceitoEm: timestamp({ withTimezone: true }),
