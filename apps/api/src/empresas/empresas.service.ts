@@ -6,7 +6,12 @@ import {
   schema,
   sql,
 } from '@leadtogo/db'
-import type { CriarEmpresa, EmpresaCriada } from '@leadtogo/shared'
+import {
+  type CriarEmpresa,
+  type EmpresaCriada,
+  PERMISSOES_PADRAO,
+  nomeDoPerfilDeSistema,
+} from '@leadtogo/shared'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import type { DadosDeAcesso } from '../acesso/requisicao.js'
@@ -62,7 +67,7 @@ export class EmpresasService {
         .insert(membros)
         .values({ id: membroId, tenantId, usuarioId, nome, email, papel: 'admin' })
       await criarPadroesDoTenant(tx, tenantId, membroId)
-      await criarPerfisDoTenant(tx, tenantId, padroesDosPerfis, membroId)
+      const perfis = await criarPerfisDoTenant(tx, tenantId, padroesDosPerfis, membroId)
       await this.auditoria.registrarEm(tx, tenantId, membroId, {
         entidade: 'empresa',
         entidadeId: tenantId,
@@ -70,7 +75,7 @@ export class EmpresasService {
         alteracoes: { razaoSocial: dados.razaoSocial, contaId },
         ip,
       })
-      return criada
+      return { ...criada, perfilAdminId: perfis?.admin ?? null }
     })
     this.log.log(`empresa criada (tenant ${tenantId}) na conta ${contaId}`)
 
@@ -80,7 +85,11 @@ export class EmpresasService {
         razaoSocial: dados.razaoSocial,
         nomeFantasia: dados.nomeFantasia ?? null,
         papel: 'admin',
-        situacao: empresa?.situacao ?? 'teste',
+        perfil: empresa.perfilAdminId
+          ? { id: empresa.perfilAdminId, nome: nomeDoPerfilDeSistema.admin }
+          : null,
+        permissoes: empresa.perfilAdminId ? PERMISSOES_PADRAO.admin : {},
+        situacao: empresa.situacao ?? 'teste',
         ativa: false,
       },
       cnpjRepetidoNaConta,

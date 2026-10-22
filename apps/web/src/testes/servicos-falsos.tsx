@@ -1,4 +1,5 @@
 import type { Me } from '@leadtogo/api-client'
+import { PERMISSOES_PADRAO, nomeDoPerfilDeSistema } from '@leadtogo/shared'
 import { createMemoryHistory, type RouterHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
 import { vi } from 'vitest'
@@ -13,7 +14,29 @@ export const falha = (codigo: string, mensagem: string, status = 400): Resultado
   erro: { codigo, mensagem, status } satisfies ErroDeAcesso,
 })
 
-export const meDeAdmin = (extra: Partial<Me> = {}): Me => ({
+type EmpresaDoMe = Me['empresas'][number]
+/** Empresa dos testes: sem perfil e permissões, valem os padrões do perfil de sistema do papel */
+export type EmpresaDeTeste = Omit<EmpresaDoMe, 'perfil' | 'permissoes'> &
+  Partial<Pick<EmpresaDoMe, 'perfil' | 'permissoes'>>
+
+const PERFIL_DE_TESTE = {
+  admin: '0192f0a0-0000-7000-8000-0000000000f1',
+  gestor: '0192f0a0-0000-7000-8000-0000000000f2',
+  vendedor: '0192f0a0-0000-7000-8000-0000000000f3',
+} as const
+
+/** O perfil de sistema do papel e as permissões padrão dele (packages/shared/src/permissoes.ts) */
+export const perfilDoPapel = (papel: EmpresaDoMe['papel']) => ({
+  perfil: { id: PERFIL_DE_TESTE[papel], nome: nomeDoPerfilDeSistema[papel] },
+  permissoes: { ...PERMISSOES_PADRAO[papel] },
+})
+
+export const comPerfil = (e: EmpresaDeTeste): EmpresaDoMe => ({ ...perfilDoPapel(e.papel), ...e })
+
+export const meDeAdmin = ({
+  empresas = [],
+  ...extra
+}: Omit<Partial<Me>, 'empresas'> & { empresas?: EmpresaDeTeste[] } = {}): Me => ({
   usuario: {
     id: '0192f0a0-0000-7000-8000-000000000001',
     nome: 'Alessandro Dias',
@@ -21,7 +44,6 @@ export const meDeAdmin = (extra: Partial<Me> = {}): Me => ({
     emailVerificado: true,
     twoFactorEnabled: true,
   },
-  empresas: [],
   empresaAtivaId: null,
   precisaEscolherEmpresa: false,
   administradorDeConta: true,
@@ -29,6 +51,7 @@ export const meDeAdmin = (extra: Partial<Me> = {}): Me => ({
   doisFatoresObrigatorio: true,
   doisFatoresMotivo: { origem: 'conta', empresaId: null, papel: null },
   ...extra,
+  empresas: empresas.map(comPerfil),
 })
 
 /** Serviços de mentira: por padrão, sem sessão, sem Google e com o primeiro acesso fechado. */
@@ -94,6 +117,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
           razaoSocial: 'Filial Ltda',
           nomeFantasia: null,
           papel: 'admin' as const,
+          ...perfilDoPapel('admin'),
           situacao: 'teste' as const,
           ativa: false,
         },

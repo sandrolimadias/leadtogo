@@ -2,7 +2,14 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { falha, meDeAdmin, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
+import {
+  falha,
+  meDeAdmin,
+  ok,
+  perfilDoPapel,
+  renderizar,
+  servicosFalsos,
+} from '@/testes/servicos-falsos'
 
 const A = '01a111e8-f08a-70b7-b5f3-52998ced0a3a'
 const B = '0192f0a0-0000-7000-8000-0000000000b1'
@@ -11,6 +18,7 @@ const empresaA = {
   razaoSocial: 'Aurora Ltda',
   nomeFantasia: 'Aurora',
   papel: 'admin' as const,
+  ...perfilDoPapel('admin'),
   situacao: 'ativo' as const,
   ativa: true,
 }
@@ -34,6 +42,7 @@ describe('Criar empresa', () => {
           razaoSocial: 'Filial Norte Ltda',
           nomeFantasia: 'Filial Norte',
           papel: 'admin' as const,
+          ...perfilDoPapel('admin'),
           situacao: 'teste' as const,
           ativa: false,
         },

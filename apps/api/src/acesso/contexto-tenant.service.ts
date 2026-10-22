@@ -4,7 +4,7 @@ import type { Conexao } from '@leadtogo/db'
 import { Injectable } from '@nestjs/common'
 
 import { ErroApi } from '../http/erro-api.js'
-import type { PapelMembro } from './requisicao.js'
+import type { MembroDaRequisicao } from './requisicao.js'
 
 /** A transação da requisição, já com o tenant (ou o consolidado) definido. */
 export type Transacao = Parameters<Parameters<Conexao['db']['transaction']>[0]>[0]
@@ -19,7 +19,9 @@ export interface ContextoDaRequisicao {
   tenantId?: string
   /** Empresas do consolidado (só leitura) */
   tenantIds?: string[]
-  membro?: { id: string; papel: PapelMembro }
+  membro?: MembroDaRequisicao
+  /** Valores calculados uma vez por requisição (ex.: os membros da equipe) */
+  memoria?: Map<string, Promise<unknown>>
   /** IP do cliente (`req.ip`, que respeita TRUST_PROXY: o mesmo do rate limit; X-Forwarded-For forjado não vale) */
   ip?: string | undefined
 }
@@ -87,7 +89,19 @@ export class ContextoTenantService {
     return this.atual().tenantIds ?? []
   }
 
-  get membro(): { id: string; papel: PapelMembro } {
+  /** Calcula `fn` uma só vez por requisição (a mesma promessa para quem pedir de novo). */
+  memoizar<T>(chave: string, fn: () => Promise<T>): Promise<T> {
+    const contexto = this.atual()
+    contexto.memoria ??= new Map()
+    let valor = contexto.memoria.get(chave) as Promise<T> | undefined
+    if (!valor) {
+      valor = fn()
+      contexto.memoria.set(chave, valor)
+    }
+    return valor
+  }
+
+  get membro(): MembroDaRequisicao {
     const { membro } = this.atual()
     if (!membro) throw new ErroApi('sem_empresa_ativa', 'Esta rota exige uma empresa ativa.', 409)
     return membro

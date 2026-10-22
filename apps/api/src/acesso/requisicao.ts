@@ -1,8 +1,19 @@
-import type { PoliticaDoisFatores } from '@leadtogo/shared'
+import type { PermissoesDoPerfil, PoliticaDoisFatores } from '@leadtogo/shared'
 import type { Request } from 'express'
 
-/** Papel do membro na empresa ativa (enum `papel_membro`). */
+/** Papel do membro na empresa ativa (enum `papel_membro`). Legado até a contração: vale o perfil de acesso. */
 export type PapelMembro = 'admin' | 'gestor' | 'vendedor'
+
+/** O membro da empresa ativa, com o perfil de acesso carregado na transação da requisição. */
+export interface MembroDaRequisicao {
+  id: string
+  /** Legado: só as rotas ainda não migradas para `@Permissao` o leem (até o commit 6 da Fase 1) */
+  papel: PapelMembro
+  /** Perfil efetivo (o do membro, ou o de sistema do papel enquanto o membro não tem um); null = nenhum */
+  perfil: { id: string; nome: string } | null
+  /** Permissões do perfil: `chave → alcance` ou `true`. Sem perfil, vazio (nenhuma permissão). */
+  permissoes: PermissoesDoPerfil
+}
 
 export interface Sessao {
   sessaoId: string

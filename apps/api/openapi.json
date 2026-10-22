@@ -16040,6 +16040,36 @@
             "type": "string",
             "enum": ["admin", "gestor", "vendedor"]
           },
+          "perfil": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "permissoes": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["propria", "equipe", "todas"]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [true]
+                }
+              ]
+            }
+          },
           "situacao": {
             "type": "string",
             "enum": ["teste", "ativo", "suspenso", "cancelado"]
@@ -16048,7 +16078,16 @@
             "type": "boolean"
           }
         },
-        "required": ["id", "razaoSocial", "nomeFantasia", "papel", "situacao", "ativa"],
+        "required": [
+          "id",
+          "razaoSocial",
+          "nomeFantasia",
+          "papel",
+          "perfil",
+          "permissoes",
+          "situacao",
+          "ativa"
+        ],
         "additionalProperties": false
       },
       "EnderecoDaEmpresaEntrada": {

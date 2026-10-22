@@ -58,6 +58,8 @@ export type Lote = typeof importacoes.$inferSelect
 export interface Importador {
   id: string
   papel: PapelMembro
+  /** Perfil de acesso (null = o de sistema do papel, até a contração) */
+  perfilId: string | null
   usuarioId: string
 }
 
@@ -164,6 +166,7 @@ export abstract class ExecutorBase<Estado> {
         .select({
           id: membros.id,
           papel: membros.papel,
+          perfilId: membros.perfilId,
           usuarioId: membros.usuarioId,
           ativo: membros.ativo,
         })
@@ -183,6 +186,7 @@ export abstract class ExecutorBase<Estado> {
     const quem: Importador = {
       id: importador.id,
       papel: importador.papel,
+      perfilId: importador.perfilId,
       usuarioId: importador.usuarioId ?? '',
     }
 

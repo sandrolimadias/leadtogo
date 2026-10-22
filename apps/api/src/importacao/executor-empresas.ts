@@ -10,8 +10,8 @@ import {
   type ResultadoDaLinha,
 } from '@leadtogo/shared'
 
+import { carregarPermissoes } from '../acesso/permissoes-do-membro.js'
 import { ContextoTenantService, type Transacao } from '../acesso/contexto-tenant.service.js'
-import type { PapelMembro } from '../acesso/requisicao.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { EmpresasDaCarteiraService } from '../carteira/empresas.service.js'
 import { ErroApi } from '../http/erro-api.js'
@@ -249,7 +249,7 @@ export class ExecutorDeEmpresas extends ExecutorBase<EstadoDeEmpresas> {
     consultaAReceita: boolean
     bloquearNaoAtiva: boolean
     campos: Record<string, string>
-    importador: { id: string; papel: PapelMembro; usuarioId: string }
+    importador: Importador
     /** Quanto ainda cabe neste bloco */
     restanteDoBlocoMs: () => number
   }): Promise<{ semReceita: boolean; interrompida?: boolean; adiarMs?: number }> {
@@ -448,7 +448,11 @@ export class ExecutorDeEmpresas extends ExecutorBase<EstadoDeEmpresas> {
             usuarioId: p.importador.usuarioId,
             tx,
             tenantId,
-            membro: { id: p.importador.id, papel: p.importador.papel },
+            membro: await carregarPermissoes(tx, {
+              id: p.importador.id,
+              papel: p.importador.papel,
+              perfil_id: p.importador.perfilId,
+            }),
           },
           () =>
             servico.criar(dados, {

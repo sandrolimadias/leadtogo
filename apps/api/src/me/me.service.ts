@@ -1,6 +1,7 @@
 import type { Conexao } from '@leadtogo/db'
 import { sql } from '@leadtogo/db'
 import type {
+  Alcance,
   EmpresaAtivaResposta,
   EmpresaDoUsuario,
   MeResposta,
@@ -8,6 +9,7 @@ import type {
 } from '@leadtogo/shared'
 import { Inject, Injectable } from '@nestjs/common'
 
+import { permissoesDoCatalogo } from '../acesso/permissoes-do-membro.js'
 import type { DadosDeAcesso, Vinculo } from '../acesso/requisicao.js'
 import {
   doisFatoresObrigatorio,
@@ -24,6 +26,14 @@ type LinhaEmpresa = {
   situacao: SituacaoEmpresa
 }
 
+type LinhaPerfil = {
+  tenant_id: string
+  perfil_id: string
+  nome: string
+  permissao: string | null
+  alcance: Alcance | null
+}
+
 @Injectable()
 export class MeService {
   constructor(@Inject(BANCO) private readonly banco: Conexao) {}
@@ -34,30 +44,54 @@ export class MeService {
    * função de vínculos, não pelo cliente).
    */
   private async empresasDe(
+    usuarioId: string,
     vinculos: Vinculo[],
     ativaId: string | null,
   ): Promise<EmpresaDoUsuario[]> {
     if (vinculos.length === 0) return []
     const ids = vinculos.map((v) => v.tenantId)
-    const linhas = await this.banco.db.transaction(
+    const { linhas, perfis } = await this.banco.db.transaction(
       async (tx) => {
         await tx.execute(sql`SELECT set_config('app.tenant_ids', ${`{${ids.join(',')}}`}, true)`)
-        return tx.execute<LinhaEmpresa>(
-          sql`SELECT id, razao_social, nome_fantasia, situacao FROM tenants`,
-        )
+        return {
+          linhas: await tx.execute<LinhaEmpresa>(
+            sql`SELECT id, razao_social, nome_fantasia, situacao FROM tenants`,
+          ),
+          // Perfil efetivo em cada empresa: a mesma regra do TenantInterceptor (carregarPermissoes):
+          // o do membro, ou o de sistema do papel enquanto ele não tem; excluído ou inativo = nenhum
+          perfis: await tx.execute<LinhaPerfil>(sql`
+            SELECT m.tenant_id, p.id AS perfil_id, p.nome, pp.permissao, pp.alcance::text AS alcance
+            FROM membros m
+            JOIN perfis_acesso p ON p.tenant_id = m.tenant_id AND p.excluido_em IS NULL AND p.ativo
+              AND (p.id = m.perfil_id OR (m.perfil_id IS NULL AND p.chave_sistema::text = m.papel::text))
+            LEFT JOIN perfil_permissoes pp ON pp.perfil_id = p.id
+            WHERE m.usuario_id = ${usuarioId} AND m.excluido_em IS NULL AND m.ativo`),
+        }
       },
       { accessMode: 'read only' },
     )
     const porId = new Map<string, LinhaEmpresa>([...linhas].map((l) => [l.id, l]))
+    const perfilDe = new Map<
+      string,
+      { id: string; nome: string; linhas: { permissao: string; alcance: Alcance | null }[] }
+    >()
+    for (const l of perfis) {
+      const p = perfilDe.get(l.tenant_id) ?? { id: l.perfil_id, nome: l.nome, linhas: [] }
+      if (l.permissao) p.linhas.push({ permissao: l.permissao, alcance: l.alcance })
+      perfilDe.set(l.tenant_id, p)
+    }
     return vinculos
       .map((v): EmpresaDoUsuario | null => {
         const e = porId.get(v.tenantId)
         if (!e) return null
+        const perfil = perfilDe.get(e.id)
         return {
           id: e.id,
           razaoSocial: e.razao_social,
           nomeFantasia: e.nome_fantasia,
           papel: v.papel,
+          perfil: perfil ? { id: perfil.id, nome: perfil.nome } : null,
+          permissoes: permissoesDoCatalogo(perfil?.linhas ?? []),
           situacao: e.situacao,
           ativa: e.id === ativaId,
         }
@@ -72,7 +106,7 @@ export class MeService {
       await this.banco.cliente<{ email_verified: boolean }[]>`
         SELECT email_verified FROM auth."user" WHERE id = ${sessao.usuarioId}`
     )[0]?.email_verified
-    const empresas = await this.empresasDe(vinculos, sessao.empresaAtivaId)
+    const empresas = await this.empresasDe(sessao.usuarioId, vinculos, sessao.empresaAtivaId)
     return {
       usuario: {
         id: sessao.usuarioId,
@@ -114,7 +148,7 @@ export class MeService {
     if (!vinculo) {
       throw new ErroApi('empresa_nao_permitida', 'Você não é membro desta empresa.', 403)
     }
-    const [empresa] = await this.empresasDe([vinculo], null)
+    const [empresa] = await this.empresasDe(sessao.usuarioId, [vinculo], null)
     if (!empresa)
       throw new ErroApi('empresa_nao_permitida', 'Você não é membro desta empresa.', 403)
     if (empresa.situacao !== 'teste' && empresa.situacao !== 'ativo') {

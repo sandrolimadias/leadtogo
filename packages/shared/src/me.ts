@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { alcanceSchema } from './permissoes.js'
+
 /** Papel do membro em uma empresa. */
 export const papelMembroSchema = z.enum(['admin', 'gestor', 'vendedor'])
 export type PapelMembro = z.infer<typeof papelMembroSchema>
@@ -14,7 +16,12 @@ export const empresaDoUsuarioSchema = z
     id: z.uuid(),
     razaoSocial: z.string(),
     nomeFantasia: z.string().nullable(),
+    /** Legado até a contração dos perfis de acesso: use `perfil` e `permissoes` */
     papel: papelMembroSchema,
+    /** Perfil de acesso nesta empresa (null = nenhum: nenhuma permissão) */
+    perfil: z.object({ id: z.uuid(), nome: z.string() }).nullable(),
+    /** Permissões do perfil: `chave → alcance` (propria, equipe, todas) ou `true` */
+    permissoes: z.record(z.string(), z.union([alcanceSchema, z.literal(true)])),
     situacao: situacaoEmpresaSchema,
     /** É a empresa ativa da sessão */
     ativa: z.boolean(),

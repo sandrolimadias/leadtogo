@@ -14,7 +14,7 @@ const empresa = (id: string, nome: string, ativa: boolean) => ({
   situacao: 'ativo' as const,
   ativa,
 })
-const meBase = (extra: Partial<Me>): Me =>
+const meBase = (extra: Parameters<typeof meDeAdmin>[0]): Me =>
   meDeAdmin({ administradorDeConta: false, doisFatoresObrigatorio: false, ...extra })
 
 describe('acesso à empresa encerrado (membro desativado com a sessão aberta)', () => {

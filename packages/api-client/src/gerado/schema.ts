@@ -3427,6 +3427,14 @@ export interface components {
             nomeFantasia: string | null;
             /** @enum {string} */
             papel: "admin" | "gestor" | "vendedor";
+            perfil: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            permissoes: {
+                [key: string]: ("propria" | "equipe" | "todas") | true;
+            };
             /** @enum {string} */
             situacao: "teste" | "ativo" | "suspenso" | "cancelado";
             ativa: boolean;

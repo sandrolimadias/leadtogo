@@ -13,8 +13,13 @@ import { type Observable, from, lastValueFrom } from 'rxjs'
 import { ErroApi } from '../http/erro-api.js'
 import { BANCO } from '../infra/infra.module.js'
 import { MonitorDoPool } from '../infra/monitor-do-pool.js'
-import { CHAVE_SEM_TRANSACAO, CHAVE_TRANSACAO_SOB_DEMANDA } from './acesso.decorators.js'
+import {
+  CHAVE_PERMISSAO,
+  CHAVE_SEM_TRANSACAO,
+  CHAVE_TRANSACAO_SOB_DEMANDA,
+} from './acesso.decorators.js'
 import { ContextoTenantService, type ContextoDaRequisicao } from './contexto-tenant.service.js'
+import { atendeAlguma, carregarPermissoes } from './permissoes-do-membro.js'
 import type { PapelMembro, RequisicaoAutenticada } from './requisicao.js'
 
 /**
@@ -25,6 +30,9 @@ import type { PapelMembro, RequisicaoAutenticada } from './requisicao.js'
  *    nenhuma escrita passaria nem pelo RLS).
  * Tudo que o handler gravar ou ler passa por `ContextoTenantService.db()`, a mesma transação; se
  * o handler falhar, desfaz tudo.
+ * Na empresa, carrega também o perfil de acesso e as permissões do membro e confere a marca
+ * `@Permissao` da rota (403 `sem_permissao`). Rota com `@Permissao` fora de uma empresa ativa (sem
+ * transação, sem empresa, consolidado) é negada: não há perfil para conferir.
  */
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
@@ -41,9 +49,16 @@ export class TenantInterceptor implements NestInterceptor {
         execucao.getHandler(),
         execucao.getClass(),
       ])
-    if (marca(CHAVE_SEM_TRANSACAO)) return proximo.handle()
+    const requeridas = this.reflector.getAllAndOverride<string[] | undefined>(CHAVE_PERMISSAO, [
+      execucao.getHandler(),
+      execucao.getClass(),
+    ])
     const req = execucao.switchToHttp().getRequest<RequisicaoAutenticada>()
     const dados = req.dadosDeAcesso
+    if (requeridas && (marca(CHAVE_SEM_TRANSACAO) || dados?.acesso.tipo !== 'empresa')) {
+      throw new ErroApi('sem_permissao', 'Seu perfil de acesso não permite esta ação.', 403)
+    }
+    if (marca(CHAVE_SEM_TRANSACAO)) return proximo.handle()
     if (!dados || dados.acesso.tipo === 'sem-empresa') return proximo.handle()
     const { acesso, sessao } = dados
 
@@ -61,8 +76,12 @@ export class TenantInterceptor implements NestInterceptor {
               await tx.execute(sql`SELECT set_config('app.tenant_id', ${acesso.tenantId}, true)`)
               ctx.tenantId = acesso.tenantId
               // Já sob RLS: confere de novo o que o guard viu antes da transação (corridas)
-              const membros = await tx.execute<{ id: string; papel: PapelMembro }>(sql`
-              SELECT id, papel FROM membros
+              const membros = await tx.execute<{
+                id: string
+                papel: PapelMembro
+                perfil_id: string | null
+              }>(sql`
+              SELECT id, papel, perfil_id FROM membros
               WHERE usuario_id = ${sessao.usuarioId} AND excluido_em IS NULL AND ativo`)
               const membro = membros[0]
               if (!membro) {
@@ -82,7 +101,14 @@ export class TenantInterceptor implements NestInterceptor {
                   403,
                 )
               }
-              ctx.membro = { id: membro.id, papel: membro.papel }
+              ctx.membro = await carregarPermissoes(tx, membro)
+              if (requeridas && !atendeAlguma(ctx.membro.permissoes, requeridas)) {
+                throw new ErroApi(
+                  'sem_permissao',
+                  'Seu perfil de acesso não permite esta ação.',
+                  403,
+                )
+              }
             } else {
               await tx.execute(
                 sql`SELECT set_config('app.tenant_ids', ${`{${acesso.tenantIds.join(',')}}`}, true)`,

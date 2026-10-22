@@ -37,14 +37,15 @@ export interface PadroesDosPerfis {
  * comportamento dos papéis antigos, e liga membros e convites pelo papel. Converte o interruptor
  * "Vendedores podem ver todas as empresas" (Vendedor com `ver = todas`, `editar = propria`) e a
  * política de 2FA por papel (flag `exige_2fa`). Idempotente pela marca `perfis_criados_em`: com ela
- * preenchida, não faz nada e devolve false. Precisa do tenant ativo na transação (RLS).
+ * preenchida, não faz nada e devolve null; senão, o id de cada perfil criado. Precisa do tenant ativo
+ * na transação (RLS).
  */
 export async function criarPerfisDoTenant(
   tx: Tx,
   tenantId: string,
   padroes: PadroesDosPerfis,
   membroId: string | null = null,
-): Promise<boolean> {
+): Promise<Partial<Record<ChavePerfilSistema, string>> | null> {
   const reservado = await tx
     .update(tenantConfiguracoes)
     .set({ perfisCriadosEm: new Date() })
@@ -56,13 +57,15 @@ export async function criarPerfisDoTenant(
       politica: tenantConfiguracoes.doisFatoresExigido,
     })
   const config = reservado[0]
-  if (!config) return false
+  if (!config) return null
 
   const exige2fa = padroes.exige2fa(config.politica)
   const ver = new Set(padroes.permissoesDeVer)
   const autoria = { tenantId, criadoPor: membroId, atualizadoPor: membroId }
+  const criados: Partial<Record<ChavePerfilSistema, string>> = {}
   for (const perfil of padroes.perfis) {
     const id = novoId()
+    criados[perfil.chave] = id
     await tx.insert(perfisAcesso).values({
       ...autoria,
       id,
@@ -102,7 +105,7 @@ export async function criarPerfisDoTenant(
         ),
       )
   }
-  return true
+  return criados
 }
 
 /** Para os testes e diagnósticos: quantos membros da empresa ainda estão sem perfil. */
