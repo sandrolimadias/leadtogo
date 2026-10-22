@@ -30,6 +30,7 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 | **Contas e empresas clientes** | `contas`, `conta_administradores`, `tenants`, `tenant_configuracoes` | dados cadastrais da empresa cliente (CNPJ, endereço, contatos de cobrança), administradores da conta | PD (PJ) |
 | **Empresas-alvo** (carteira) | `empresas`, `empresa_telefones`, `empresa_cnaes`, `empresa_tags`, `empresa_socios` | CNPJ, razão social, endereço, telefones, nomes de sócios e qualificação (vindos da Receita ou digitados). O CPF mascarado do sócio **não é gravado** | PD (PJ) |
 | **Geolocalização** (G1/G2) | `empresas.localizacao` e `geo_*`, `geo_consultas`, `geo_lotes`, `mapa_legenda` | coordenada do **endereço da empresa-alvo** (PD (PJ), pode ser a residência do empresário individual), texto consultado e quem acionou. Consultas ao CNEFE e ao Nominatim são locais (nenhum endereço sai para terceiros); só o CEP vai à ViaCEP/BrasilAPI. **A posição do vendedor (GPS do aparelho) não é coletada nem gravada no G1 e no G2: só será gravada no check-in da visita (G3), com aviso ao usuário e base legal registrada aqui antes.** | PD (PJ) |
+| **Visitas** (G3) | `visita_modelos`, `visita_modelo_versoes`, `visita_resultados` (G3a, sem dado pessoal); `relatorios_visita` (G3b) | respostas do relatório (texto livre pode conter dados pessoais) e, **só no check-in**, a **posição do vendedor** (`checkin_local`, distância até a empresa, data e hora). Detalhe na seção 3.2 | **PD** (posição do vendedor) |
 | **Contatos** | `contatos`, `empresa_contatos`, `contato_telefones`, `contato_emails` | nome, cargo/papel de decisão, telefones, e-mails, LinkedIn, aniversário (**só dia e mês**), observações, consentimento (`aceita_whatsapp`, `aceita_email`, `consentimento_em`, `consentimento_origem`) | **PD** |
 | **Atividades** | `atividades` e complementares, `comentarios`, `arquivos` | descrição de visitas, ligações e tarefas, comentários e anexos (texto livre pode conter dados pessoais), participantes | **PD** (texto livre) |
 | **Oportunidades** | `oportunidades`, `oportunidade_itens`, `oportunidade_contatos`, `oportunidade_historico` | valores, fases, motivos, contatos envolvidos | PD indireto (via contatos) |
@@ -57,6 +58,23 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 - **Opt-out ("Pediu para não receber contato"):** desliga `aceita_whatsapp` e `aceita_email` juntos, grava `consentimento_em` e `consentimento_origem` (hoje só `manual`) e mostra o selo **"Não quer contato"** em todas as telas. **Não bloqueia** Ligar e WhatsApp por enquanto: o bloqueio efetivo de envio entra com as fases de e-mail e WhatsApp. O registro vai para a auditoria do contato (antes e depois).
 - **Exclusão:** contato excluído (só gestor e administrador) sai das telas e das buscas; os dados seguem a retenção da seção 5. Pedidos de eliminação do titular (art. 18, VI) são atendidos pelo administrador da empresa cliente.
 - **Dado público da Receita:** o sócio convertido em contato leva só o nome e a qualificação; telefone e e-mail não são trazidos.
+
+### 3.2 Check-in da visita e dados no aparelho (G3; plano em `plano_geolocalizacao.md`, seção 9)
+
+**Posição do vendedor**
+- **Quando é coletada:** só no momento do **check-in** da visita, por ação do vendedor, com a permissão de localização do navegador. Não há rastreamento contínuo nem em segundo plano; a posição não é usada no mapa (decisão de 17/10/2026). A visita pode ser registrada **sem check-in** ("registrar depois"), sem posição, marcada como tal.
+- **O que se grava:** a posição do check-in, a data e hora, a distância até a empresa e se ficou fora do limite configurado.
+- **Base legal:** dado do **membro** (empregado ou representante da empresa cliente), tratado pela empresa cliente como controladora: **legítimo interesse** na comprovação e gestão das visitas comerciais (art. 7º, IX), ou **execução do contrato** com o vendedor (art. 7º, V), conforme a relação. **Aplicação a confirmar com advogado.** O aviso ao vendedor aparece na primeira vez que ele faz check-in.
+- **Quem vê:** a posição e a distância só aparecem para quem tem a permissão **Ver a localização dos check-ins** (Administrador e Gestor por padrão). O próprio vendedor vê apenas o aviso de distância na hora do check-in.
+- **Retenção:** a mesma do relatório de visita (registro de negócio, seção 5); o expurgo definitivo segue a regra geral ainda a definir.
+
+**Dados guardados no aparelho (offline do PWA)**
+- **Dados mínimos:** nome, endereço, coordenada, telefone e tags da empresa, contatos ativos, modelos, resultados e a configuração do check-in. **Sem CNPJ, observações nem histórico.**
+- **Quantidade e validade:** as empresas abertas recentemente e as levadas com "Levar para offline" (**até 300 por vez**), válidas por **7 dias**; vencido o prazo, os dados são apagados do aparelho.
+- **Limpeza:** total ao **sair da conta** e ao **entrar outra pessoa** no mesmo aparelho.
+- **Cifra:** os contatos e a posição ficam cifrados com **AES-GCM**, com uma chave **não extraível** do WebCrypto guardada no próprio navegador.
+- **Limite da cifra (dito com franqueza):** ela protege contra a **leitura casual** dos arquivos do navegador (outro programa, cópia do perfil, inspeção do disco). **Não protege** contra quem tem o **navegador desbloqueado e a sessão aberta**: nesse caso o próprio aplicativo decifra e mostra os dados. A proteção real do aparelho depende do bloqueio de tela, e isso deve constar na orientação aos usuários.
+- **Aparelho perdido:** nesta fase não há limpeza remota. O administrador **revoga a sessão**, e o aparelho apaga os dados offline no próximo contato com o servidor. A limpeza remota está no backlog.
 
 ## 4. Suboperadores e localização dos dados
 

@@ -239,8 +239,8 @@ Quem configura: permissão **Gerir cadastros** (`cadastros.gerir`; por padrão s
   - **Empresa encerrada:** pergunta "mudar o Status para Inativo?".
   - **Demais resultados:** visitada e última visita, pela regra do Módulo 5.
 - **Quem vê:** o relatório segue o alcance de **Ver atividades** (o vendedor vê os dele; gestor e admin, todos). A posição e a distância do check-in só aparecem para quem tem **Ver a localização dos check-ins** (Administrador e Gestor por padrão); o vendedor vê apenas o aviso de distância na hora do check-in.
-- **Pendentes:** lista no celular e card no Dashboard; lembrete no horário configurado (notificação do aparelho se permitida, senão aviso ao abrir). Sem Web Push nesta fase.
-- **Offline:** as empresas abertas recentemente e as levadas com **"Levar para offline"** (até 300 por vez, válidas por 7 dias) ficam no aparelho com dados mínimos; check-in e relatório entram numa fila e sobem ao voltar o sinal, sem duplicar. Proteções do aparelho em `lgpd.md`.
+- **Pendentes:** lista no celular e card no Dashboard; lembrete no horário configurado pelo admin na aba Check-in (padrão 17:30), que aparece **com o app aberto** (notificação do aparelho, se permitida) ou **ao abrir o app** depois do horário. Sem Web Push nesta fase (backlog, junto com a central de notificações).
+- **Offline:** as empresas abertas recentemente e as levadas com **"Levar para offline"** (até 300 por vez, válidas por 7 dias) ficam no aparelho com dados mínimos (sem CNPJ, observações nem histórico); check-in e relatório entram numa fila e sobem ao voltar o sinal, sem duplicar. Os dados do aparelho são apagados ao sair da conta e quando outra pessoa entra, e os contatos e a posição ficam cifrados. Proteções e o limite da cifra em `lgpd.md`, seção 3.2.
 
 ## 4. Contatos
 

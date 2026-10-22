@@ -153,9 +153,9 @@ Duas entregas, com o teste do Ale entre elas: **G3a** (construtor e configuraç�
 - Check-in, rascunho e relatório numa fila de operações com id gerado no aparelho (uuid v7).
 - **Sync:** `PUT /visitas/:id` idempotente (upsert no id do cliente; reenviar não duplica), disparado no evento `online` e ao abrir o app, sem depender de Background Sync.
 - Check-in offline no modo "bloquear": o aparelho aplica a regra com a coordenada em cache; o servidor recalcula e marca `fora_do_limite`.
-- **Proteção do aparelho:** (a) dados mínimos; (b) validade de 7 dias; (c) limpeza total ao sair da conta; (d) limpeza no login de outro usuário; (e) contatos e posição cifrados com AES-GCM, chave não extraível do WebCrypto. O limite da cifra fica documentado com franqueza no `lgpd.md` (protege contra leitura casual, não contra navegador desbloqueado). Fora desta fase: apagar remotamente um aparelho perdido (só revogar a sessão e limpar no próximo contato).
-- **Lembrete** dos relatórios pendentes às 17:30 (horário configurável): notificação local se permitida, senão aviso ao abrir. Sem Web Push nesta fase (backlog, junto com a central de notificações).
-- `lgpd.md`: posição gravada só no check-in, base legal, quem vê, retenção.
+- **Proteção do aparelho:** (a) dados mínimos; (b) validade de 7 dias; (c) limpeza total ao sair da conta; (d) limpeza no login de outro usuário; (e) contatos e posição cifrados com AES-GCM, chave não extraível do WebCrypto. O limite da cifra está documentado com franqueza no `lgpd.md`, seção 3.2 (protege contra leitura casual, não contra navegador desbloqueado). Fora desta fase: apagar remotamente um aparelho perdido (só revogar a sessão e limpar no próximo contato).
+- **Lembrete** dos relatórios pendentes às 17:30 (horário configurável pelo admin na aba Check-in): com o app aberto, notificação local se permitida; senão, aviso ao abrir o app depois do horário. Sem Web Push nesta fase (backlog, junto com a central de notificações).
+- `lgpd.md`, seção 3.2: posição gravada só no check-in, base legal, quem vê, retenção e a proteção dos dados no aparelho (já registrado no G3a).
 
 **Testes:** API (idempotência, permissões, efeitos, isolamento); componente do formulário; E2E com `context.setOffline(true)` → check-in → relatório depois → volta o sinal → aparece uma vez só na ficha, com carteira e tags certas; reenvio duplicado.
 
