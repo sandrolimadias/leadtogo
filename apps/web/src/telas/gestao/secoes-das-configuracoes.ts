@@ -1,6 +1,7 @@
 import {
   Building2,
   CalendarCheck,
+  ClipboardCheck,
   Compass,
   Factory,
   FileSpreadsheet,
@@ -32,6 +33,12 @@ export const SECOES = [
     para: '/configuracoes/tipos-de-atividade',
     titulo: 'Tipos de atividade',
     icone: CalendarCheck,
+    permissoes: ['cadastros.gerir'],
+  },
+  {
+    para: '/configuracoes/visitas',
+    titulo: 'Visitas',
+    icone: ClipboardCheck,
     permissoes: ['cadastros.gerir'],
   },
   {

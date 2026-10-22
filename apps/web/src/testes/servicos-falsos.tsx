@@ -366,6 +366,33 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         ),
       },
     },
+    visitas: {
+      resultados: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        reordenar: vi.fn(async () => ok([])),
+      },
+      modelos: {
+        listar: vi.fn(async () => ok([])),
+        versoes: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        reordenar: vi.fn(async () => ok([])),
+      },
+      configuracao: vi.fn(async () =>
+        ok({
+          checkinModo: 'avisar' as const,
+          checkinLimiteM: 300,
+          lembreteRelatoriosHora: '17:30',
+        }),
+      ),
+      alterarConfiguracao: vi.fn(async () =>
+        falha('indisponivel', 'Não configurado no teste.', 500),
+      ),
+    },
     cadastros: {
       verticais: {
         listar: vi.fn(async () => ok([])),

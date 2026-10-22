@@ -480,6 +480,59 @@ export const servicosReais: ServicosDeAcesso = {
     tiposAtividade: cadastroReal('tipos-atividade'),
   },
 
+  visitas: {
+    resultados: cadastroReal('visitas/resultados'),
+    modelos: {
+      listar: () =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/configuracoes/visitas/modelos', {
+              params: { query: { incluirInativos: 'true' } },
+            }),
+          ),
+        ),
+      versoes: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/configuracoes/visitas/modelos/{id}/versoes', {
+              params: { path: { id } },
+            }),
+          ),
+        ),
+      criar: (dados) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/configuracoes/visitas/modelos', { body: dados })),
+        ),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/configuracoes/visitas/modelos/{id}', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(
+            await api.DELETE('/v1/configuracoes/visitas/modelos/{id}', {
+              params: { path: { id } },
+            }),
+          ),
+        ),
+      reordenar: (ids) =>
+        protegido(async () =>
+          daApi(await api.PUT('/v1/configuracoes/visitas/modelos/ordem', { body: { ids } })),
+        ),
+    },
+    configuracao: () =>
+      protegido(async () => daApi(await api.GET('/v1/configuracoes/visitas/checkin'))),
+    alterarConfiguracao: (dados) =>
+      protegido(async () =>
+        daApi(await api.PUT('/v1/configuracoes/visitas/checkin', { body: dados })),
+      ),
+  },
+
   geolocalizacao: {
     resumo: () => protegido(async () => daApi(await api.GET('/v1/geolocalizacao/resumo'))),
     fila: (pagina = 1, porPagina = 25) =>

@@ -9,6 +9,10 @@ import type {
   AndamentoDaImportacao,
   CnaesConferidos,
   ConfiguracaoDaCarteira,
+  ConfiguracaoDeVisitas,
+  ModeloDeVisita,
+  ResultadoDeVisita,
+  VersaoDoModeloDeVisita,
   Contato,
   ConsultaDaReceitaDaEmpresa,
   ConsultaReceita,
@@ -98,6 +102,10 @@ import type {
   AlterarTagEntrada,
   AlterarTagGrupoEntrada,
   AlterarTipoAtividadeEntrada,
+  AlterarModeloDeVisitaEntrada,
+  AlterarResultadoDeVisitaEntrada,
+  CriarModeloDeVisitaEntrada,
+  CriarResultadoDeVisitaEntrada,
   AlterarVerticalEntrada,
   CriarConviteEntrada,
   CriarEmpresaEntrada,
@@ -413,6 +421,26 @@ export interface ServicosDeCadastros {
  * Tudo o que as telas de acesso pedem ao servidor (Better Auth em /v1/auth + a API). As telas só
  * conhecem esta interface: o app usa a implementação real (`servicos.ts`) e os testes uma de mentira.
  */
+/** Visitas (G3a): resultados, modelos do relatório e check-in. Ler é de todos; escrever, `cadastros.gerir`. */
+export interface ServicosDeVisitas {
+  resultados: ServicosDeCadastro<
+    ResultadoDeVisita,
+    CriarResultadoDeVisitaEntrada,
+    AlterarResultadoDeVisitaEntrada
+  >
+  modelos: {
+    /** Todos, inclusive os inativos */
+    listar: () => Promise<Resultado<ModeloDeVisita[]>>
+    versoes: (id: string) => Promise<Resultado<VersaoDoModeloDeVisita[]>>
+    criar: (dados: CriarModeloDeVisitaEntrada) => Promise<Resultado<ModeloDeVisita>>
+    alterar: (id: string, dados: AlterarModeloDeVisitaEntrada) => Promise<Resultado<ModeloDeVisita>>
+    excluir: (id: string) => Promise<Resultado>
+    reordenar: (ids: string[]) => Promise<Resultado<ModeloDeVisita[]>>
+  }
+  configuracao: () => Promise<Resultado<ConfiguracaoDeVisitas>>
+  alterarConfiguracao: (dados: ConfiguracaoDeVisitas) => Promise<Resultado<ConfiguracaoDeVisitas>>
+}
+
 export interface ServicosDeAcesso {
   /** Sessão atual, ou null sem login */
   me: () => Promise<Me | null>
@@ -485,6 +513,9 @@ export interface ServicosDeAcesso {
 
   // Importação de planilha (Módulo 4)
   importacao: ServicosDeImportacao
+
+  // Visitas (G3)
+  visitas: ServicosDeVisitas
 
   // Geolocalização (G1) e mapa (G2)
   geolocalizacao: ServicosDeGeolocalizacao
