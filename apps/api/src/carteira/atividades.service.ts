@@ -154,6 +154,7 @@ export class AtividadesService {
     if (atual.situacao === 'cancelada') {
       throw new ErroApi('atividade_cancelada', 'Uma atividade cancelada não se edita.', 409)
     }
+    await this.recusarSeVisitaEmAndamento(db, id)
     const realizada = atual.situacao === 'realizada'
 
     const tipo = await this.exigirTipo(
@@ -279,6 +280,7 @@ export class AtividadesService {
     if (!estaAberta(atual.situacao)) {
       throw new ErroApi('atividade_nao_aberta', 'Só se conclui uma atividade pendente.', 409)
     }
+    await this.recusarSeVisitaEmAndamento(db, id)
     const agora = new Date()
     const realizadaEm = dados.realizadaEm ? new Date(dados.realizadaEm) : agora
     if (estaNoFuturo(realizadaEm, agora)) throw NO_FUTURO()
@@ -351,6 +353,22 @@ export class AtividadesService {
   // ---- apoio ----
 
   /** A atividade que o usuário vê E edita; 404 se não vê, 403 se só vê. */
+  /**
+   * A visita com relatório em rascunho (G3b) se conclui e se edita pelo relatório: o resultado, as
+   * respostas e os efeitos na empresa saem dele. Cancelar e excluir continuam valendo.
+   */
+  private async recusarSeVisitaEmAndamento(db: Transacao, id: string) {
+    const [r] = await db.execute<{ id: string }>(sql`
+      SELECT id FROM relatorios_visita WHERE atividade_id = ${id} AND situacao = 'rascunho' AND excluido_em IS NULL`)
+    if (r) {
+      throw new ErroApi(
+        'visita_com_relatorio',
+        'Esta visita tem um relatório em andamento: conclua pelo relatório.',
+        409,
+      )
+    }
+  }
+
   private async carregarEditavel(db: Transacao, escopo: EscopoDaCarteira, id: string) {
     const [linha] = await db
       .select({ a: atividades, editavel: condicaoDeEdicaoDaAtividadeSql(escopo) })

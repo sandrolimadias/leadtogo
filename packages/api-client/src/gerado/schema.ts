@@ -2708,6 +2708,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visitas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar relatórios de visita
+         * @description Qualquer membro. `empresaId` filtra pela empresa; `so=pendentes` traz só os rascunhos da própria pessoa (a lista do celular e o card do Dashboard). Vê o relatório quem vê a atividade (alcance de `atividades.ver`). A posição e a distância do check-in só vêm para quem tem `visitas.ver_localizacao`; para os demais, `null`. Até 200, do mais novo ao mais antigo.
+         */
+        get: operations["VisitasDoCampoController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visitas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Obter um relatório de visita
+         * @description Qualquer membro. Vê o relatório quem vê a atividade (alcance de `atividades.ver`). A posição e a distância do check-in só vêm para quem tem `visitas.ver_localizacao`; para os demais, `null`.
+         */
+        get: operations["VisitasDoCampoController_obter"];
+        /**
+         * Salvar o relatório de visita (check-in, rascunho ou concluir)
+         * @description Upsert pelo `id` gerado no aparelho: reenviar não duplica, e reenviar um relatório concluído devolve o gravado. Na criação, `checkin` (posição e hora) cria a atividade Visita em execução; `checkin: null` é "registrar depois". No modo `bloquear`, o check-in online além do limite é recusado (409 `checkin_fora_do_limite`); o feito offline é aceito e marcado `foraDoLimite`. Exige `atividades.criar` e a empresa na carteira que a pessoa edita. `concluir: true` valida os obrigatórios, torna a atividade Realizada e aplica os efeitos (campos de CRM, "não localizada", "encerrada", posição da empresa). Só o autor grava (409 `visita_de_outra_pessoa`).
+         */
+        put: operations["VisitasDoCampoController_salvar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visitas/distancia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Distância até a empresa antes do check-in
+         * @description Qualquer membro que vê a empresa. Diz a distância do aparelho até a posição da empresa e o que o modo configurado faz com ela (`foraDoLimite`, `bloqueado`). Nada é gravado.
+         */
+        get: operations["VisitasDoCampoController_distancia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3043,6 +3107,12 @@ export interface components {
             tipo: "dados_empresa";
             /** @enum {string} */
             campoEmpresa: "nome_fantasia" | "website" | "vertical_id" | "numero_funcionarios";
+        };
+        CheckinDaVisita: {
+            /** Format: date-time */
+            em: string;
+            posicao: components["schemas"]["PosicaoDoAparelho"];
+            offline: boolean;
         };
         ChipDoMapa: {
             /** Format: uuid */
@@ -3680,6 +3750,15 @@ export interface components {
         DefinirTagsDaEmpresaEntrada: {
             tagIds: string[];
         };
+        DistanciaDoCheckin: {
+            empresaTemPosicao: boolean;
+            distanciaM: number | null;
+            limiteM: number;
+            /** @enum {string} */
+            modo: "avisar" | "bloquear" | "so_gravar";
+            foraDoLimite: boolean;
+            bloqueado: boolean;
+        };
         DuplicarPerfil: {
             nome: string;
         };
@@ -4019,6 +4098,36 @@ export interface components {
             emAberto: number;
             situacaoNaoVerificada: boolean;
             editavel: boolean;
+        };
+        ItemDeVisita: {
+            /** Format: uuid */
+            id: string;
+            empresa: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            /** Format: uuid */
+            atividadeId: string;
+            responsavel: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            /** @enum {string} */
+            situacao: "rascunho" | "concluido";
+            semCheckin: boolean;
+            checkinEm: string | null;
+            foraDoLimite: boolean;
+            resultado: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                /** @enum {string|null} */
+                chaveSistema: "nao_localizada" | "encerrada" | null;
+            } | null;
+            concluidoEm: string | null;
+            criadoEm: string;
         };
         KanbanDeOportunidades: {
             funil: {
@@ -4613,6 +4722,11 @@ export interface components {
             } | null;
             faltas: ("logradouro" | "numero" | "bairro" | "cidade")[];
         };
+        PosicaoDoAparelho: {
+            latitude: number;
+            longitude: number;
+            precisaoM?: number;
+        };
         Preferencias: {
             /** @enum {string} */
             tema: "claro" | "escuro" | "sistema";
@@ -4708,6 +4822,62 @@ export interface components {
                 uf: string;
             }[];
         };
+        RelatorioDeVisita: {
+            /** Format: uuid */
+            id: string;
+            empresa: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            /** Format: uuid */
+            atividadeId: string;
+            responsavel: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            /** @enum {string} */
+            situacao: "rascunho" | "concluido";
+            semCheckin: boolean;
+            checkinEm: string | null;
+            checkinOffline: boolean;
+            foraDoLimite: boolean;
+            distanciaM: number | null;
+            posicao: {
+                latitude: number;
+                longitude: number;
+            } | null;
+            localizacaoVisivel: boolean;
+            resultado: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                /** @enum {string|null} */
+                chaveSistema: "nao_localizada" | "encerrada" | null;
+            } | null;
+            modeloVersao: {
+                /** Format: uuid */
+                id: string;
+                numero: number;
+                campos: components["schemas"]["CampoDeVisita"][];
+            } | null;
+            respostas: components["schemas"]["RespostaGravada"][];
+            concluidoEm: string | null;
+            criadoEm: string;
+            atualizadoEm: string;
+        };
+        RespostaDeVisita: {
+            /** Format: uuid */
+            campoId: string;
+            valor: unknown;
+        };
+        RespostaGravada: {
+            /** Format: uuid */
+            campoId: string;
+            rotulo: string;
+            valor: unknown;
+        };
         ResultadoDaTagEmMassa: {
             aplicadas: number;
             semMudanca: number;
@@ -4745,6 +4915,19 @@ export interface components {
         SalvarRegiao: {
             nome: string;
             municipios: number[];
+        };
+        SalvarVisitaEntrada: {
+            /** Format: uuid */
+            empresaId: string;
+            checkin: components["schemas"]["CheckinDaVisita"] | null;
+            /** Format: uuid */
+            resultadoId: string | null;
+            respostas: components["schemas"]["RespostaDeVisita"][];
+            concluir: boolean;
+            /** Format: date-time */
+            realizadaEm?: string;
+            atualizarPosicaoDaEmpresa?: boolean;
+            inativarEmpresa?: boolean;
         };
         Saude: {
             /** @enum {string} */
@@ -15954,6 +16137,272 @@ export interface operations {
             };
             /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    VisitasDoCampoController_listar: {
+        parameters: {
+            query?: {
+                empresaId?: string;
+                so?: "pendentes";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemDeVisita"][];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    VisitasDoCampoController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelatorioDeVisita"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    VisitasDoCampoController_salvar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarVisitaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelatorioDeVisita"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    VisitasDoCampoController_distancia: {
+        parameters: {
+            query: {
+                empresaId: string;
+                latitude: number;
+                longitude: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistanciaDoCheckin"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

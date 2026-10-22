@@ -1,5 +1,10 @@
 import { sql, type SQL } from '@leadtogo/db'
-import { CHAVE_SEM_VISITA, DIAS_SEM_VISITA_DO_ESTADO, type FiltrosDoMapa } from '@leadtogo/shared'
+import {
+  CHAVE_SEM_VISITA,
+  CHAVE_VISITA_TENTADA,
+  DIAS_SEM_VISITA_DO_ESTADO,
+  type FiltrosDoMapa,
+} from '@leadtogo/shared'
 
 import { condicaoDeResponsaveis, type EscopoDaCarteira } from '../carteira/regras-de-carteira.js'
 import { arraySql } from '../importacao/sql-array.js'
@@ -55,9 +60,15 @@ export const DAS_EMPRESAS_DA_AREA = sql`
 
 const BASE = sql`e.excluido_em IS NULL AND e.localizacao IS NOT NULL AND e.pais_codigo IS NULL`
 
-/** O estado que pinta o pin: "sem visita há 60+ dias" prevalece sobre a cor da tag (só Clientes). */
+/**
+ * O estado que pinta o pin: "visita tentada" (a última "não localizada" é mais nova que a última visita, G3b)
+ * e depois "sem visita há 60+ dias" (só Clientes) prevalecem sobre a cor da tag.
+ */
 export const ESTADO_DO_PIN = sql`
-  CASE WHEN t.chave_sistema = 'cliente'
+  CASE WHEN e.visita_tentada_em IS NOT NULL
+        AND (e.ultima_visita_em IS NULL OR e.visita_tentada_em > e.ultima_visita_em)
+       THEN ${CHAVE_VISITA_TENTADA}
+       WHEN t.chave_sistema = 'cliente'
         AND (e.ultima_visita_em IS NULL OR e.ultima_visita_em < now() - make_interval(days => ${DIAS_SEM_VISITA_DO_ESTADO}))
        THEN ${CHAVE_SEM_VISITA} ELSE 'tag:' || t.id::text END`
 

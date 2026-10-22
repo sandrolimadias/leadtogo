@@ -20,7 +20,8 @@ export interface ResumoDasAtividades {
 }
 
 /**
- * Lê as atividades da empresa (não excluídas) e calcula o resumo. É a única fonte desses campos: criar,
+ * Lê as atividades da empresa (não excluídas) e calcula o resumo. A visita "não localizada"
+ * (`conta_visita = false`, G3b) não entra na última visita, no último contato nem na tag Visitada. É a única fonte desses campos: criar,
  * editar, concluir, cancelar e excluir uma atividade só chamam `recalcularCarteira`, e o resultado é
  * sempre o que as atividades que restam dizem (por isso editar ou apagar a última visita volta a data
  * anterior, e a tag só sai quando não resta nenhuma realizada daquele tipo).
@@ -31,9 +32,9 @@ export async function resumoDasAtividades(
 ): Promise<ResumoDasAtividades> {
   const resultado = await db.execute(sql`
     SELECT
-      max(a.realizada_em) FILTER (WHERE a.situacao = 'realizada' AND t.conta_como = 'visita') AS ultima_visita,
-      max(a.realizada_em) FILTER (WHERE a.situacao = 'realizada' AND t.conta_como IN ('visita', 'contato')) AS ultimo_contato,
-      coalesce(bool_or(a.situacao = 'realizada' AND t.conta_como = 'visita'), false) AS tem_visita,
+      max(a.realizada_em) FILTER (WHERE a.situacao = 'realizada' AND a.conta_visita AND t.conta_como = 'visita') AS ultima_visita,
+      max(a.realizada_em) FILTER (WHERE a.situacao = 'realizada' AND a.conta_visita AND t.conta_como IN ('visita', 'contato')) AS ultimo_contato,
+      coalesce(bool_or(a.situacao = 'realizada' AND a.conta_visita AND t.conta_como = 'visita'), false) AS tem_visita,
       coalesce(bool_or(a.situacao = 'realizada' AND t.conta_como = 'contato'), false) AS tem_contato
     FROM atividades a
     JOIN tipos_atividade t ON t.id = a.tipo_atividade_id

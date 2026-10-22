@@ -1,4 +1,4 @@
-import { and, eq, isNull, schema } from '@leadtogo/db'
+import { and, eq, isNull, schema, sql } from '@leadtogo/db'
 import type {
   AlterarResultadoDeVisitaEntrada,
   CriarResultadoDeVisitaEntrada,
@@ -23,7 +23,7 @@ const deSistema = (nome: string, acao: string) =>
 /**
  * Resultados da visita (G3a): escolhem o modelo do relatório. "Não localizada" e "Empresa encerrada"
  * são de sistema (só se renomeiam e trocam de modelo). Os demais seguem a regra dos cadastros: o
- * usado só se inativa (o uso chega com os relatórios, no G3b).
+ * usado em relatório só se inativa.
  */
 @Injectable()
 export class ResultadosDeVisitaService extends CadastroSimplesService<
@@ -54,8 +54,20 @@ export class ResultadosDeVisitaService extends CadastroSimplesService<
         if (l.chaveSistema && v['ativo'] === false)
           throw deSistema(l.nome, 'não pode ser inativado')
       },
-      conferirExclusao: (l) => {
+      conferirExclusao: async (l) => {
         if (l.chaveSistema) throw deSistema(l.nome, 'não pode ser excluído')
+        const [uso] = await contexto
+          .db()
+          .execute<{ usado: boolean }>(
+            sql`SELECT EXISTS (SELECT 1 FROM relatorios_visita WHERE resultado_id = ${l.id}) AS usado`,
+          )
+        if (uso?.usado) {
+          throw new ErroApi(
+            'resultado_em_uso',
+            `O resultado "${l.nome}" já foi usado em relatórios: não dá para excluir, só inativar.`,
+            409,
+          )
+        }
       },
     })
   }

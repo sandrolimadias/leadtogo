@@ -206,7 +206,7 @@ export class ModelosDeVisitaService {
       )
     }
     await this.recusarSeResultadoUsa(id, 'excluir', false)
-    if (await this.emUso(id)) {
+    if (await this.teveRelatorio(id)) {
       throw new ErroApi(
         'modelo_em_uso',
         `O modelo "${atual.nome}" já tem relatórios: não dá para excluir, só inativar.`,
@@ -248,11 +248,24 @@ export class ModelosDeVisitaService {
   }
 
   /**
-   * Modelos que já têm relatório (a versão atual não pode mais mudar no lugar). Os relatórios chegam
-   * no G3b (`relatorios_visita`); até lá nenhum modelo está em uso.
+   * Modelos cuja versão ATUAL já tem relatório (rascunho ou concluído): ela não pode mais mudar no
+   * lugar, e editar publica a N+1. Versões antigas com relatório não contam (já não são editadas).
    */
-  protected async modelosEmUso(_ids: string[]): Promise<Set<string>> {
-    return Promise.resolve(new Set())
+  private async modelosEmUso(ids: string[]): Promise<Set<string>> {
+    if (ids.length === 0) return new Set()
+    const linhas = await this.ctx.db().execute<{ id: string }>(sql`
+      SELECT DISTINCT m.id FROM visita_modelos m
+      JOIN relatorios_visita r ON r.modelo_versao_id = m.versao_atual_id AND r.excluido_em IS NULL
+      WHERE m.id = ANY (${`{${ids.join(',')}}`}::uuid[])`)
+    return new Set(linhas.map((l) => l.id))
+  }
+
+  /** Já teve algum relatório, em qualquer versão: só se inativa. */
+  private async teveRelatorio(id: string): Promise<boolean> {
+    const [l] = await this.ctx.db().execute<{ usado: boolean }>(sql`
+      SELECT EXISTS (SELECT 1 FROM relatorios_visita r JOIN visita_modelo_versoes v ON v.id = r.modelo_versao_id
+        WHERE v.modelo_id = ${id}) AS usado`)
+    return l?.usado === true
   }
 
   private async emUso(id: string): Promise<boolean> {

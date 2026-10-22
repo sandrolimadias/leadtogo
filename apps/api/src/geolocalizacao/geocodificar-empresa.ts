@@ -137,7 +137,13 @@ async function aplicarResultado(
         geo_endereco_consultado = ${p.consultado},
         geo_atualizado_em = now()
       WHERE id = ${empresaId} AND NOT geo_ajuste_manual`)
-    if (tagId) comTag.delete(tagId)
+    if (tagId && comTag.has(tagId)) {
+      // o endereço foi corrigido e achado: a "visita tentada" do mapa sai junto com a tag (G3b)
+      comTag.delete(tagId)
+      await tx.execute(
+        sql`UPDATE empresas SET visita_tentada_em = NULL WHERE id = ${empresaId} AND NOT geo_ajuste_manual`,
+      )
+    }
     desfecho = p.precisao
   } else if (resultado.situacao === 'a_confirmar') {
     // Nenhuma empresa incompleta vira pin: sai do mapa e entra na fila "Confirmar endereço"

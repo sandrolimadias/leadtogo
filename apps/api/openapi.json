@@ -14027,6 +14027,358 @@
         "summary": "Trocar a empresa ativa",
         "tags": ["Usuário"]
       }
+    },
+    "/v1/visitas": {
+      "get": {
+        "description": "Qualquer membro. `empresaId` filtra pela empresa; `so=pendentes` traz só os rascunhos da própria pessoa (a lista do celular e o card do Dashboard). Vê o relatório quem vê a atividade (alcance de `atividades.ver`). A posição e a distância do check-in só vêm para quem tem `visitas.ver_localizacao`; para os demais, `null`. Até 200, do mais novo ao mais antigo.",
+        "operationId": "VisitasDoCampoController_listar",
+        "parameters": [
+          {
+            "name": "empresaId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "so",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["pendentes"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDeVisita"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar relatórios de visita",
+        "tags": ["Visitas: campo"]
+      }
+    },
+    "/v1/visitas/{id}": {
+      "get": {
+        "description": "Qualquer membro. Vê o relatório quem vê a atividade (alcance de `atividades.ver`). A posição e a distância do check-in só vêm para quem tem `visitas.ver_localizacao`; para os demais, `null`.",
+        "operationId": "VisitasDoCampoController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatorioDeVisita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Obter um relatório de visita",
+        "tags": ["Visitas: campo"]
+      },
+      "put": {
+        "description": "Upsert pelo `id` gerado no aparelho: reenviar não duplica, e reenviar um relatório concluído devolve o gravado. Na criação, `checkin` (posição e hora) cria a atividade Visita em execução; `checkin: null` é \"registrar depois\". No modo `bloquear`, o check-in online além do limite é recusado (409 `checkin_fora_do_limite`); o feito offline é aceito e marcado `foraDoLimite`. Exige `atividades.criar` e a empresa na carteira que a pessoa edita. `concluir: true` valida os obrigatórios, torna a atividade Realizada e aplica os efeitos (campos de CRM, \"não localizada\", \"encerrada\", posição da empresa). Só o autor grava (409 `visita_de_outra_pessoa`).",
+        "operationId": "VisitasDoCampoController_salvar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarVisitaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatorioDeVisita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Salvar o relatório de visita (check-in, rascunho ou concluir)",
+        "tags": ["Visitas: campo"]
+      }
+    },
+    "/v1/visitas/distancia": {
+      "get": {
+        "description": "Qualquer membro que vê a empresa. Diz a distância do aparelho até a posição da empresa e o que o modo configurado faz com ela (`foraDoLimite`, `bloqueado`). Nada é gravado.",
+        "operationId": "VisitasDoCampoController_distancia",
+        "parameters": [
+          {
+            "name": "empresaId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "latitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "longitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistanciaDoCheckin"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Distância até a empresa antes do check-in",
+        "tags": ["Visitas: campo"]
+      }
     }
   },
   "info": {
@@ -15274,6 +15626,23 @@
             "additionalProperties": false
           }
         ]
+      },
+      "CheckinDaVisita": {
+        "type": "object",
+        "properties": {
+          "em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "posicao": {
+            "$ref": "#/components/schemas/PosicaoDoAparelho"
+          },
+          "offline": {
+            "type": "boolean"
+          }
+        },
+        "required": ["em", "posicao", "offline"],
+        "additionalProperties": false
       },
       "ChipDoMapa": {
         "type": "object",
@@ -17534,6 +17903,44 @@
         "required": ["tagIds"],
         "additionalProperties": false
       },
+      "DistanciaDoCheckin": {
+        "type": "object",
+        "properties": {
+          "empresaTemPosicao": {
+            "type": "boolean"
+          },
+          "distanciaM": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "limiteM": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "modo": {
+            "type": "string",
+            "enum": ["avisar", "bloquear", "so_gravar"]
+          },
+          "foraDoLimite": {
+            "type": "boolean"
+          },
+          "bloqueado": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "empresaTemPosicao",
+          "distanciaM",
+          "limiteM",
+          "modo",
+          "foraDoLimite",
+          "bloqueado"
+        ],
+        "additionalProperties": false
+      },
       "DuplicarPerfil": {
         "type": "object",
         "properties": {
@@ -18805,6 +19212,102 @@
           "emAberto",
           "situacaoNaoVerificada",
           "editavel"
+        ],
+        "additionalProperties": false
+      },
+      "ItemDeVisita": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresa": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "atividadeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["rascunho", "concluido"]
+          },
+          "semCheckin": {
+            "type": "boolean"
+          },
+          "checkinEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "foraDoLimite": {
+            "type": "boolean"
+          },
+          "resultado": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "chaveSistema": {
+                "nullable": true,
+                "type": "string",
+                "enum": ["nao_localizada", "encerrada"]
+              }
+            },
+            "required": ["id", "nome", "chaveSistema"],
+            "additionalProperties": false
+          },
+          "concluidoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "empresa",
+          "atividadeId",
+          "responsavel",
+          "situacao",
+          "semCheckin",
+          "checkinEm",
+          "foraDoLimite",
+          "resultado",
+          "concluidoEm",
+          "criadoEm"
         ],
         "additionalProperties": false
       },
@@ -21063,6 +21566,28 @@
         ],
         "additionalProperties": false
       },
+      "PosicaoDoAparelho": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "precisaoM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": ["latitude", "longitude"],
+        "additionalProperties": false
+      },
       "Preferencias": {
         "type": "object",
         "properties": {
@@ -21436,6 +21961,194 @@
         "required": ["id", "tipo", "nome", "uf", "municipios"],
         "additionalProperties": false
       },
+      "RelatorioDeVisita": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresa": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "atividadeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["rascunho", "concluido"]
+          },
+          "semCheckin": {
+            "type": "boolean"
+          },
+          "checkinEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "checkinOffline": {
+            "type": "boolean"
+          },
+          "foraDoLimite": {
+            "type": "boolean"
+          },
+          "distanciaM": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "posicao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            },
+            "required": ["latitude", "longitude"],
+            "additionalProperties": false
+          },
+          "localizacaoVisivel": {
+            "type": "boolean"
+          },
+          "resultado": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "chaveSistema": {
+                "nullable": true,
+                "type": "string",
+                "enum": ["nao_localizada", "encerrada"]
+              }
+            },
+            "required": ["id", "nome", "chaveSistema"],
+            "additionalProperties": false
+          },
+          "modeloVersao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "numero": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "campos": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CampoDeVisita"
+                }
+              }
+            },
+            "required": ["id", "numero", "campos"],
+            "additionalProperties": false
+          },
+          "respostas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RespostaGravada"
+            }
+          },
+          "concluidoEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string"
+          },
+          "atualizadoEm": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "empresa",
+          "atividadeId",
+          "responsavel",
+          "situacao",
+          "semCheckin",
+          "checkinEm",
+          "checkinOffline",
+          "foraDoLimite",
+          "distanciaM",
+          "posicao",
+          "localizacaoVisivel",
+          "resultado",
+          "modeloVersao",
+          "respostas",
+          "concluidoEm",
+          "criadoEm",
+          "atualizadoEm"
+        ],
+        "additionalProperties": false
+      },
+      "RespostaDeVisita": {
+        "type": "object",
+        "properties": {
+          "campoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "valor": {}
+        },
+        "required": ["campoId", "valor"],
+        "additionalProperties": false
+      },
+      "RespostaGravada": {
+        "type": "object",
+        "properties": {
+          "campoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "valor": {}
+        },
+        "required": ["campoId", "rotulo", "valor"],
+        "additionalProperties": false
+      },
       "ResultadoDaTagEmMassa": {
         "type": "object",
         "properties": {
@@ -21593,6 +22306,50 @@
           }
         },
         "required": ["nome", "municipios"],
+        "additionalProperties": false
+      },
+      "SalvarVisitaEntrada": {
+        "type": "object",
+        "properties": {
+          "empresaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "checkin": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CheckinDaVisita"
+              }
+            ]
+          },
+          "resultadoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "respostas": {
+            "maxItems": 60,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RespostaDeVisita"
+            }
+          },
+          "concluir": {
+            "type": "boolean"
+          },
+          "realizadaEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizarPosicaoDaEmpresa": {
+            "type": "boolean"
+          },
+          "inativarEmpresa": {
+            "type": "boolean"
+          }
+        },
+        "required": ["empresaId", "checkin", "resultadoId", "respostas", "concluir"],
         "additionalProperties": false
       },
       "Saude": {

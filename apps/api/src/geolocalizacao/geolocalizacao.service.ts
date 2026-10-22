@@ -148,7 +148,8 @@ export class GeolocalizacaoService {
 
   /**
    * "Ajustar posição": o usuário arrasta o pin e confirma. A posição vira exata de origem `manual`,
-   * é preservada (nenhuma geocodificação a sobrescreve) e a tag "Endereço a confirmar" sai.
+   * é preservada (nenhuma geocodificação a sobrescreve), a tag "Endereço a confirmar" sai e a "visita
+   * tentada" do mapa também (o endereço foi confirmado).
    */
   async ajustar(empresaId: string, p: AjustarPosicao): Promise<PosicaoDaEmpresa> {
     if (
@@ -166,7 +167,8 @@ export class GeolocalizacaoService {
     await this.ctx.db().execute(sql`
       UPDATE empresas SET localizacao = ST_SetSRID(ST_MakePoint(${p.longitude}, ${p.latitude}), 4326)::geography,
         geo_precisao = 'exata', geo_aproximacao = NULL, geo_origem = 'manual', geo_ajuste_manual = true,
-        geo_endereco_consultado = ${texto}, geo_atualizado_em = now(), atualizado_por = ${this.ctx.membro.id}
+        geo_endereco_consultado = ${texto}, geo_atualizado_em = now(), visita_tentada_em = NULL,
+        atualizado_por = ${this.ctx.membro.id}
       WHERE id = ${empresaId}`)
     await this.mudarTag(empresaId, false)
     await this.auditoria.registrar({
