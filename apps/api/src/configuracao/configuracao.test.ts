@@ -12,6 +12,7 @@ const valida = {
   S3_BUCKET: 'leadtogo-arquivos',
   S3_ACCESS_KEY: 'chave-de-acesso',
   S3_SECRET_KEY: 'segredo-super-secreto',
+  MAPA_BASE_URL: 'https://mapa.crm.exemplo.com.br/es-20261021.pmtiles',
 }
 
 function falha(env: NodeJS.ProcessEnv): ErroConfiguracao {

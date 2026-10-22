@@ -128,13 +128,11 @@ const esquema = z
     BRASILAPI_CEP_URL: url(['http:', 'https:']).default('https://brasilapi.com.br/api/cep/v1'),
     /** Prazo de cada consulta de CEP, em milissegundos */
     CEP_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
-    /** Chave do arquivo PMTiles do estado no Garage (bucket privado), servido por `GET /v1/mapa/base.pmtiles` */
-    GEO_PMTILES_CHAVE: z.string().min(1).default('mapa/es.pmtiles'),
     /**
      * URL pública do mapa base (PMTiles do estado, bucket público só-leitura do Garage, servido em
      * mapa.crm.aledias.com.br), com o nome versionado: `https://mapa.crm.aledias.com.br/es-20261018.pmtiles`.
      * A API entrega esta URL ao app (`GET /v1/mapa/base`), então trocar de versão é só mudar a variável.
-     * Sem ela, o app lê o mapa pela API (`/v1/mapa/base.pmtiles`, transitório).
+     * Obrigatória em produção; em desenvolvimento, sem ela o mapa abre sem a base (fundo liso).
      */
     MAPA_BASE_URL: opcional(url(['http:', 'https:'])),
     /** Geocodificar sozinho a empresa nova ou com o endereço alterado (ligado em produção; os testes desligam) */
@@ -165,6 +163,14 @@ const esquema = z
     S3_SECRET_KEY: z.string().min(1),
   })
   .superRefine((env, ctx) => {
+    if (env.NODE_ENV === 'production' && !env.MAPA_BASE_URL) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MAPA_BASE_URL'],
+        message:
+          'obrigatória em produção: a URL pública do mapa base versionado (docs/roteiro_mapa_publico.md)',
+      })
+    }
     const verificacao = env.VERIFICACAO_EMAIL ?? env.NODE_ENV === 'production'
     if (verificacao && !env.SMTP_HOST) {
       ctx.addIssue({

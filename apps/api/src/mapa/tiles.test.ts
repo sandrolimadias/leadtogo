@@ -1,40 +1,18 @@
-import { randomBytes } from 'node:crypto'
 import type { Server } from 'node:http'
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import type { INestApplication } from '@nestjs/common'
 import { Redis } from 'ioredis'
 import request from 'supertest'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { carregarConfiguracao } from '../configuracao/configuracao.js'
 import { configuracaoDeTeste, criarAppComRotas } from '../testes/app-teste.js'
 import { limparLimitesAuth } from '../testes/auth-teste.js'
 import { dono, novoDono } from '../testes/mundo.js'
 
-// Arquivo de mentira (bytes aleatórios): o endpoint só repassa bytes, não lê o formato PMTiles.
-const config = configuracaoDeTeste({ GEO_PMTILES_CHAVE: 'teste-mapa/base.pmtiles' })
-const s3 = new S3Client({
-  endpoint: config.S3_ENDPOINT,
-  region: config.S3_REGION,
-  forcePathStyle: config.S3_FORCE_PATH_STYLE,
-  credentials: { accessKeyId: config.S3_ACCESS_KEY, secretAccessKey: config.S3_SECRET_KEY },
-})
+const URL_DO_MAPA = 'https://mapa.crm.exemplo.com.br/es-20261018.pmtiles'
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
-const arquivo = randomBytes(300_000)
-
-beforeAll(async () => {
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: config.S3_BUCKET,
-      Key: 'teste-mapa/base.pmtiles',
-      Body: arquivo,
-    }),
-  )
-})
 afterAll(async () => {
-  await s3.send(
-    new DeleteObjectCommand({ Bucket: config.S3_BUCKET, Key: 'teste-mapa/base.pmtiles' }),
-  )
   await valkey.quit()
   await dono.end()
 })
@@ -42,105 +20,69 @@ afterAll(async () => {
 let app: INestApplication<Server>
 beforeEach(async () => {
   await limparLimitesAuth(valkey)
-  app = await criarAppComRotas([], config)
 })
 afterEach(() => app.close())
 
-const pedir = (cookie: string | undefined, range?: string) => {
-  let r = request(app.getHttpServer())
-    .get('/v1/mapa/base.pmtiles')
-    .buffer(true)
-    .parse((res, cb) => {
-      const partes: Buffer[] = []
-      res.on('data', (c: Buffer) => partes.push(c))
-      res.on('end', () => cb(null, Buffer.concat(partes)))
-    })
-  if (cookie) r = r.set('Cookie', cookie)
-  return range ? r.set('Range', range) : r
+const abrir = async (troca: Record<string, string> = {}) => {
+  app = await criarAppComRotas([], configuracaoDeTeste(troca))
+  return app
 }
 
 describe('GET /v1/mapa/base (de onde ler o mapa)', () => {
-  it('sem MAPA_BASE_URL aponta para a própria API (transitório)', async () => {
+  it('devolve a URL pública versionada (MAPA_BASE_URL); sem sessão é 401', async () => {
+    await abrir({ MAPA_BASE_URL: URL_DO_MAPA })
+    expect((await request(app.getHttpServer()).get('/v1/mapa/base')).status).toBe(401)
     const d = await novoDono(app)
     const r = await request(app.getHttpServer()).get('/v1/mapa/base').set('Cookie', d.cookie)
     expect(r.status).toBe(200)
-    expect(r.body).toEqual({ url: '/v1/mapa/base.pmtiles', origem: 'api' })
+    expect(r.body).toEqual({ url: URL_DO_MAPA })
   })
 
-  it('com MAPA_BASE_URL devolve a URL pública versionada; sem sessão é 401', async () => {
-    const publica = await criarAppComRotas(
-      [],
-      configuracaoDeTeste({ MAPA_BASE_URL: 'https://mapa.crm.exemplo.com.br/es-20261018.pmtiles' }),
-    )
-    try {
-      expect((await request(publica.getHttpServer()).get('/v1/mapa/base')).status).toBe(401)
-      const d = await novoDono(publica)
-      const r = await request(publica.getHttpServer()).get('/v1/mapa/base').set('Cookie', d.cookie)
-      expect(r.body).toEqual({
-        url: 'https://mapa.crm.exemplo.com.br/es-20261018.pmtiles',
-        origem: 'publica',
-      })
-    } finally {
-      await publica.close()
-    }
+  it('sem MAPA_BASE_URL (só em desenvolvimento) a URL vem nula e as opções dizem que o mapa não está instalado', async () => {
+    await abrir()
+    const d = await novoDono(app)
+    const r = await request(app.getHttpServer()).get('/v1/mapa/base').set('Cookie', d.cookie)
+    expect(r.body).toEqual({ url: null })
+    const o = await request(app.getHttpServer()).get('/v1/mapa/opcoes').set('Cookie', d.cookie)
+    expect((o.body as { mapaInstalado: boolean }).mapaInstalado).toBe(false)
+  })
+
+  it('com a URL configurada as opções dizem que o mapa está instalado', async () => {
+    await abrir({ MAPA_BASE_URL: URL_DO_MAPA })
+    const d = await novoDono(app)
+    const o = await request(app.getHttpServer()).get('/v1/mapa/opcoes').set('Cookie', d.cookie)
+    expect((o.body as { mapaInstalado: boolean }).mapaInstalado).toBe(true)
+  })
+
+  it('o endpoint antigo, que servia o PMTiles pela API, não existe mais', async () => {
+    await abrir({ MAPA_BASE_URL: URL_DO_MAPA })
+    const d = await novoDono(app)
+    const r = await request(app.getHttpServer())
+      .get('/v1/mapa/base.pmtiles')
+      .set('Cookie', d.cookie)
+      .set('Range', 'bytes=0-10')
+    expect(r.status).toBe(404)
   })
 })
 
-describe('GET /v1/mapa/base.pmtiles', () => {
-  it('sem sessão é 401', async () => {
-    expect((await pedir(undefined)).status).toBe(401)
+describe('MAPA_BASE_URL na configuração', () => {
+  const base = { ...process.env, LOG_LEVEL: 'silent' }
+
+  it('é obrigatória em produção', () => {
+    expect(() =>
+      carregarConfiguracao({ ...base, NODE_ENV: 'production', MAPA_BASE_URL: '' }),
+    ).toThrow(/MAPA_BASE_URL/)
   })
 
-  it('com Range devolve só o trecho (206) com Content-Range e Accept-Ranges', async () => {
-    const d = await novoDono(app)
-    const r = await pedir(d.cookie, 'bytes=1000-1999')
-    expect(r.status).toBe(206)
-    expect(r.headers['content-range']).toBe('bytes 1000-1999/300000')
-    expect(r.headers['accept-ranges']).toBe('bytes')
-    expect(r.headers['content-length']).toBe('1000')
-    expect((r.body as Buffer).equals(arquivo.subarray(1000, 2000))).toBe(true)
-  })
-
-  it('vários pedidos de faixa seguidos, inclusive o cabeçalho (primeiros 127 bytes) e o fim', async () => {
-    const d = await novoDono(app)
-    for (const [de, ate] of [
-      [0, 126],
-      [150_000, 150_511],
-      [299_000, 299_999],
-    ] as const) {
-      const r = await pedir(d.cookie, `bytes=${de}-${ate}`)
-      expect(r.status).toBe(206)
-      expect((r.body as Buffer).equals(arquivo.subarray(de, ate + 1))).toBe(true)
-    }
-  })
-
-  it('sem Range devolve o arquivo inteiro (200)', async () => {
-    const d = await novoDono(app)
-    const r = await pedir(d.cookie)
-    expect(r.status).toBe(200)
-    expect((r.body as Buffer).length).toBe(300_000)
-  })
-
-  it('faixa fora do arquivo é 416', async () => {
-    const d = await novoDono(app)
-    expect((await pedir(d.cookie, 'bytes=400000-400100')).status).toBe(416)
-  })
-
-  it('arquivo que ainda não foi enviado ao Garage: 404 mapa_indisponivel', async () => {
-    const outro = await criarAppComRotas(
-      [],
-      configuracaoDeTeste({ GEO_PMTILES_CHAVE: 'teste-mapa/nao-existe.pmtiles' }),
-    )
-    try {
-      const d = await novoDono(outro)
-      const r = await request(outro.getHttpServer())
-        .get('/v1/mapa/base.pmtiles')
-        .set('Cookie', d.cookie)
-        .set('Range', 'bytes=0-10')
-      expect(r.status).toBe(404)
-      expect((r.body as { erro: string }).erro).toBe('mapa_indisponivel')
-    } finally {
-      await outro.close()
-    }
+  it('em desenvolvimento é opcional e, em produção, aceita a URL do bucket', () => {
+    expect(carregarConfiguracao({ ...base, NODE_ENV: 'development' }).MAPA_BASE_URL).toBeUndefined()
+    expect(
+      carregarConfiguracao({
+        ...base,
+        NODE_ENV: 'production',
+        MAPA_BASE_URL: URL_DO_MAPA,
+        VERIFICACAO_EMAIL: 'false',
+      }).MAPA_BASE_URL,
+    ).toBe(URL_DO_MAPA)
   })
 })

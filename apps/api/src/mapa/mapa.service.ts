@@ -1,4 +1,3 @@
-import { HeadObjectCommand, type S3Client } from '@aws-sdk/client-s3'
 import { novoId, sql } from '@leadtogo/db'
 import {
   type AlterarEntradaDaLegenda,
@@ -31,7 +30,6 @@ import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { RegioesGeoService } from '../geolocalizacao/regioes.service.js'
 import { ErroApi } from '../http/erro-api.js'
-import { ARMAZENAMENTO } from '../infra/infra.module.js'
 import {
   condicoesDosFiltros,
   DAS_EMPRESAS_DO_MAPA,
@@ -85,7 +83,6 @@ export class MapaService {
     private readonly auditoria: AuditoriaService,
     private readonly regioes: RegioesGeoService,
     @Inject(CONFIGURACAO) private readonly config: Configuracao,
-    @Inject(ARMAZENAMENTO) private readonly s3: S3Client,
   ) {}
 
   // ---- Legenda ----
@@ -189,18 +186,9 @@ export class MapaService {
 
   // ---- Opções (chips, filtros, centro) ----
 
-  private async mapaInstalado(): Promise<boolean> {
-    try {
-      await this.s3.send(
-        new HeadObjectCommand({
-          Bucket: this.config.S3_BUCKET,
-          Key: this.config.GEO_PMTILES_CHAVE,
-        }),
-      )
-      return true
-    } catch {
-      return false
-    }
+  /** O mapa base existe quando a URL pública está configurada (o arquivo vive no bucket do mapa, fora da API). */
+  private mapaInstalado(): boolean {
+    return Boolean(this.config.MAPA_BASE_URL)
   }
 
   async opcoes(): Promise<OpcoesDoMapa> {
@@ -268,7 +256,7 @@ export class MapaService {
         longitude: base?.lon ?? -52,
         zoom: temPontos ? 9 : base?.lat != null ? 7 : 4,
       },
-      mapaInstalado: await this.mapaInstalado(),
+      mapaInstalado: this.mapaInstalado(),
     }
   }
 

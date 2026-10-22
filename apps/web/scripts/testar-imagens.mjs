@@ -7,6 +7,8 @@ import { createHmac } from 'node:crypto'
 
 import { chromium } from 'playwright'
 
+import { servirMapaDeTeste } from './mapa-de-teste.mjs'
+
 const borda = process.env.BORDA_URL ?? 'http://localhost:8080'
 const apiDireta = process.env.API_URL ?? 'http://localhost:3300'
 const versao = process.env.VERSAO ?? ''
@@ -105,6 +107,7 @@ async function testarPosicaoDosPins(contexto, borda) {
     const ctx = await contexto
       .browser()
       .newContext({ storageState: estado, viewport: tela, locale: 'pt-BR' })
+    await servirMapaDeTeste(ctx, new URL(borda).origin)
     const pagina = await ctx.newPage()
     await pagina.goto(`${borda}/mapa`)
     await pagina
@@ -158,37 +161,45 @@ async function testarPosicaoDosPins(contexto, borda) {
           { timeout: 15_000 },
         )
         .catch(() => {})
-      await pagina.waitForTimeout(600)
-      const r = await pagina.evaluate(({ lat, lon }) => {
-        const mapa = document.querySelector(
-          '[role="application"][aria-label="Mapa das empresas"]',
-        ).__mapa
-        const c = mapa.getContainer().getBoundingClientRect()
-        const mundo = 512 * 2 ** mapa.getZoom()
-        const mx = (v) => ((v + 180) / 360) * mundo
-        const my = (v) =>
-          (0.5 - Math.log(Math.tan(Math.PI / 4 + (v * Math.PI) / 360)) / (2 * Math.PI)) * mundo
-        const centro = mapa.getCenter()
-        // onde a conta independente manda o pin, em coordenadas da página
-        const x = c.left + c.width / 2 + mx(lon) - mx(centro.lng)
-        const y = c.top + c.height / 2 + my(lat) - my(centro.lat)
-        const proj = mapa.project([lon, lat])
-        // o corpo da gota fica ~12 px acima da ponta (a ponta é a coordenada)
-        const achados = mapa.queryRenderedFeatures([proj.x, proj.y - 12], { layers: ['pins'] })
-        return {
-          erroProjecao: Math.round(Math.hypot(c.left + proj.x - x, c.top + proj.y - y)),
-          acertos: achados.length,
-          x: Math.round(c.left + proj.x),
-          y: Math.round(c.top + proj.y),
-        }
-      }, e)
-      // o pixel no corpo da gota (na tela) tem de ser diferente do fundo 60 px ao lado
-      const pixel = async (dx, dy) =>
-        (
-          await pagina.screenshot({ clip: { x: r.x + dx, y: r.y + dy, width: 1, height: 1 } })
-        ).toString('base64')
-      const noPin = await pixel(0, -12)
-      const fundo = await pixel(60, -12)
+      // O WebGL por software é lento: o pin chega com a resposta da API, o símbolo entra no quadro seguinte e o
+      // pixel só muda depois. Tenta por até ~10 s e vale a última leitura (um pin que NUNCA aparece falha).
+      let r
+      let noPin
+      let fundo
+      for (let tentativa = 0; tentativa < 20; tentativa++) {
+        await pagina.waitForTimeout(500)
+        r = await pagina.evaluate(({ lat, lon }) => {
+          const mapa = document.querySelector(
+            '[role="application"][aria-label="Mapa das empresas"]',
+          ).__mapa
+          const c = mapa.getContainer().getBoundingClientRect()
+          const mundo = 512 * 2 ** mapa.getZoom()
+          const mx = (v) => ((v + 180) / 360) * mundo
+          const my = (v) =>
+            (0.5 - Math.log(Math.tan(Math.PI / 4 + (v * Math.PI) / 360)) / (2 * Math.PI)) * mundo
+          const centro = mapa.getCenter()
+          // onde a conta independente manda o pin, em coordenadas da página
+          const x = c.left + c.width / 2 + mx(lon) - mx(centro.lng)
+          const y = c.top + c.height / 2 + my(lat) - my(centro.lat)
+          const proj = mapa.project([lon, lat])
+          // o corpo da gota fica ~12 px acima da ponta (a ponta é a coordenada)
+          const achados = mapa.queryRenderedFeatures([proj.x, proj.y - 12], { layers: ['pins'] })
+          return {
+            erroProjecao: Math.round(Math.hypot(c.left + proj.x - x, c.top + proj.y - y)),
+            acertos: achados.length,
+            x: Math.round(c.left + proj.x),
+            y: Math.round(c.top + proj.y),
+          }
+        }, e)
+        // o pixel no corpo da gota (na tela) tem de ser diferente do fundo 60 px ao lado
+        const pixel = async (dx, dy) =>
+          (
+            await pagina.screenshot({ clip: { x: r.x + dx, y: r.y + dy, width: 1, height: 1 } })
+          ).toString('base64')
+        noPin = await pixel(0, -12)
+        fundo = await pixel(60, -12)
+        if (r.acertos >= 1 && noPin !== fundo) break
+      }
       confere(
         r.erroProjecao <= 3 && r.acertos >= 1 && noPin !== fundo,
         `${rotulo}: "${e.nome}" no lugar certo (projeção ${r.erroProjecao} px; pin achado na camada: ${r.acertos}; pixel do pin ${noPin !== fundo ? 'difere' : 'IGUAL'} do fundo)`,
@@ -199,7 +210,8 @@ async function testarPosicaoDosPins(contexto, borda) {
 }
 
 // --- o mapa: worker do MapLibre, CSP e tiles (o que o E2E de desenvolvimento não pega, porque não tem Caddy nem CSP)
-// O PMTiles de teste (docker/fixtures/mapa-teste.pmtiles) é enviado ao Garage por docker/imagens-testar.sh.
+// O PMTiles de teste (docker/fixtures/mapa-teste.pmtiles) é servido pelo Playwright no lugar do bucket público do mapa
+// (scripts/mapa-de-teste.mjs); a API das imagens tem MAPA_BASE_URL apontando para esse domínio.
 async function testarMapa(page, contexto, borda, senha) {
   // As telas internas exigem 2FA ativo: ativa pela API (mesmas chamadas do app) e abre a empresa
   const cabecalhos = { Origin: new URL(borda).origin }
@@ -327,6 +339,7 @@ async function testarMapa(page, contexto, borda, senha) {
     serviceWorkers: 'block',
     locale: 'pt-BR',
   })
+  await servirMapaDeTeste(ctxSemWorker, new URL(borda).origin)
   const semWorker = await ctxSemWorker.newPage()
   await semWorker.route(/maplibre-gl-worker-[\w-]+\.mjs/, (rota) => rota.abort())
   semWorker.on('console', (m) => console.log('   [sem worker]', m.type(), m.text().slice(0, 200)))
@@ -357,6 +370,7 @@ const email = `imagens-${Date.now().toString(36)}@exemplo.com.br`
 const senha = 'senha-forte-imagens-1'
 try {
   const contexto = await navegador.newContext({ locale: 'pt-BR' })
+  await servirMapaDeTeste(contexto, new URL(borda).origin)
   const page = await contexto.newPage()
   const origem = new URL(borda).origin
   const externas = []

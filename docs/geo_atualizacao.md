@@ -81,7 +81,7 @@ Condições: **mesma versão do Nominatim e do Postgres** nos dois lados (imagem
 docker run --rm -v "$PWD":/dados ghcr.io/protomaps/go-pmtiles extract https://build.protomaps.com/AAAAMMDD.pmtiles /dados/es.pmtiles --bbox=-41.9,-21.35,-39.6,-17.85 --maxzoom=14
 ```
 
-Troque `AAAAMMDD` por uma data recente (https://maps.protomaps.com/builds/). Suba o arquivo com **nome versionado** (`es-AAAAMMDD.pmtiles`) para o **bucket público do mapa** (`leadtogo-mapa`), com `Cache-Control` imutável, e aponte a `MAPA_BASE_URL` da API para ele: passo a passo em `roteiro_mapa_publico.md`. (O caminho antigo, bucket privado `leadtogo-arquivos`, chave `mapa/es.pmtiles`, lido pela API em `/v1/mapa/base.pmtiles`, é transitório e sai depois que o mapa abrir pela URL nova.) Outro estado: ajuste a caixa (`--bbox=oeste,sul,leste,norte`).
+Troque `AAAAMMDD` por uma data recente (https://maps.protomaps.com/builds/). Suba o arquivo com **nome versionado** (`es-AAAAMMDD.pmtiles`) para o **bucket público do mapa** (`leadtogo-mapa`), com `Cache-Control` imutável, e aponte a `MAPA_BASE_URL` da API para ele: passo a passo em `roteiro_mapa_publico.md`. (O caminho antigo, bucket privado `leadtogo-arquivos`, chave `mapa/es.pmtiles`, lido pela API em `/v1/mapa/base.pmtiles`, foi **removido em 22/10/2026**; o arquivo `mapa/es.pmtiles` desse bucket pode ser apagado.) Outro estado: ajuste a caixa (`--bbox=oeste,sul,leste,norte`).
 
 ## 4. Depois de qualquer atualização
 

@@ -10937,7 +10937,7 @@
     },
     "/v1/mapa/base": {
       "get": {
-        "description": "Qualquer membro logado. Com `MAPA_BASE_URL` configurada, devolve a URL pública do PMTiles versionado (bucket público do Garage, sem passar pela API); sem ela, o caminho da própria API (`/v1/mapa/base.pmtiles`, transitório).",
+        "description": "Qualquer membro logado. Devolve a URL pública do PMTiles versionado (`MAPA_BASE_URL`, bucket público do Garage). Sem a variável (só em desenvolvimento; em produção ela é obrigatória), `url` vem nulo e o app mostra o mapa sem a base.",
         "operationId": "TilesDoMapaController_origemDaBase",
         "parameters": [],
         "responses": {
@@ -10983,36 +10983,6 @@
           }
         },
         "summary": "De onde ler o mapa base",
-        "tags": ["Mapa"]
-      }
-    },
-    "/v1/mapa/base.pmtiles": {
-      "get": {
-        "description": "Qualquer membro logado. Aceita `Range` (206 com `Content-Range`); sem `Range`, o arquivo inteiro. Arquivo ainda não enviado ao Garage: 404 `mapa_indisponivel`. Segue o formato PMTiles v3 (https://docs.protomaps.com/pmtiles/).",
-        "operationId": "TilesDoMapaController_base",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "O arquivo inteiro (sem `Range`)"
-          },
-          "206": {
-            "description": "O trecho pedido"
-          },
-          "401": {
-            "description": "Sem login",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Erro"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Mapa ainda não enviado (`mapa_indisponivel`)"
-          }
-        },
-        "summary": "Mapa base (PMTiles do estado)",
         "tags": ["Mapa"]
       }
     },
@@ -13468,15 +13438,12 @@
         "type": "object",
         "properties": {
           "url": {
+            "nullable": true,
             "type": "string",
             "minLength": 1
-          },
-          "origem": {
-            "type": "string",
-            "enum": ["publica", "api"]
           }
         },
-        "required": ["url", "origem"],
+        "required": ["url"],
         "additionalProperties": false
       },
       "ChipDoMapa": {

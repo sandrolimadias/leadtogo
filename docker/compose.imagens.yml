@@ -27,9 +27,9 @@ x-api: &api
     TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?}
     SMTP_HOST: mailpit
     SMTP_PORT: '1025'
-    # chave própria do PMTiles de teste no Garage de desenvolvimento (compartilhado com os testes da API, que
-    # esperam `mapa/es.pmtiles` ausente); docker/imagens-testar.sh envia o arquivo e o apaga na limpeza
-    GEO_PMTILES_CHAVE: mapa/teste-${BANCO:?}.pmtiles
+    # o mapa base vem do bucket público (obrigatória em produção); aqui o Playwright atende esse domínio com o
+    # arquivo de teste (apps/web/scripts/mapa-de-teste.mjs)
+    MAPA_BASE_URL: https://mapa.crm.aledias.com.br/teste.pmtiles
     VERIFICACAO_EMAIL: 'false'
     # só para a carga do mapa (pnpm imagens:testar --carga): o /health/alertas mostra o pool do banco
     ALERTAS_TOKEN: token-de-alertas-da-carga-com-32-caracteres

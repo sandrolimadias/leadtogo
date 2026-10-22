@@ -286,9 +286,8 @@ export type CoberturaDoMapa = z.infer<typeof coberturaDoMapaSchema>
 /** GET /v1/mapa/base: de onde o app lê o mapa base (PMTiles). */
 export const baseDoMapaSchema = z
   .object({
-    /** URL absoluta do bucket público (com o nome versionado) ou o caminho da API (transitório) */
-    url: z.string().min(1),
-    origem: z.enum(['publica', 'api']),
+    /** URL pública do arquivo versionado no bucket do mapa; nulo = sem mapa base (só em desenvolvimento) */
+    url: z.string().min(1).nullable(),
   })
   .meta({ id: 'BaseDoMapa' })
 export type BaseDoMapa = z.infer<typeof baseDoMapaSchema>

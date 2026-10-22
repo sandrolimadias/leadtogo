@@ -12,6 +12,8 @@ import { writeFileSync } from 'node:fs'
 
 import { chromium } from 'playwright'
 
+import { servirMapaDeTeste } from './mapa-de-teste.mjs'
+
 const borda = process.env.BORDA_URL ?? 'http://localhost:8080'
 const apiDireta = process.env.API_URL ?? 'http://localhost:3300'
 const banco = process.env.BANCO ?? ''
@@ -70,6 +72,7 @@ const contexto = await navegador.newContext({
   locale: 'pt-BR',
   viewport: { width: 1366, height: 768 },
 })
+await servirMapaDeTeste(contexto, origem)
 {
   const page0 = await contexto.newPage()
   await page0.goto(`${borda}/primeiro-acesso`)
@@ -308,7 +311,7 @@ const navegadorMedidas = await page.evaluate(() => {
   }
 })
 // O tempo de cada pedido visto PELA API (o log "request completed" do pino): sem rede, sem navegador
-const servidor = { pontos: [], tiles: 0 }
+const servidor = { pontos: [] }
 try {
   const log = execFileSync('docker', ['logs', apiContainer], {
     encoding: 'utf8',
@@ -326,7 +329,6 @@ try {
     const url = j.req?.url ?? ''
     if (url.startsWith('/v1/mapa/pontos') && j.res?.statusCode === 200)
       servidor.pontos.push(j.responseTime)
-    if (url.startsWith('/v1/mapa/base.pmtiles')) servidor.tiles += 1
   }
 } catch {
   // sem o log do container não há a medida do servidor
@@ -377,7 +379,6 @@ const resultado = {
     p95: percentil(servidor.pontos, 95),
     p99: percentil(servidor.pontos, 99),
     max: percentil(servidor.pontos, 100),
-    leiturasDoPmtilesPelaApi: servidor.tiles,
   },
   navegador: { ...navegadorMedidas, marcadoresNoDomMax: Math.max(...marcadores, 0) },
   health: saude.status,

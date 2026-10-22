@@ -77,6 +77,8 @@ O **Backup do Uptime Kuma** é um export manual em *Settings → Backup* (o banc
 
 **Lição (PWA em cache):** depois de um deploy, o PWA serve a versão em cache. Para testar o web, atualize o service worker (DevTools → Application → Service Workers → *Update*) e recarregue com `Ctrl+Shift+R`.
 
+**Mapa público, como foi de fato (21 e 22/10/2026):** o Garage é um serviço Compose do Coolify (`Garage-leadtogo-files`) com as regras do Traefik escritas à mão, então o domínio da tela *Domains* não vale: os routers `garage-mapa-http` e `garage-mapa` (Host `mapa.crm.aledias.com.br`, porta 3902, `certresolver=letsencrypt`) entraram no Compose, com `traefik.http.routers.garage-http.service=garage` explícito; o `garage.toml` é gerenciado pelo Coolify (*Storages → Files*) e o bloco `[s3_web]` (`bind_addr = "[::]:3902"`) foi posto ali; os comandos `/garage` rodam pelo terminal do servidor (`docker exec garage-0tdmqt0xu2rbfs4wpygkmxwr /garage ...`); o `rpc_secret` e o `admin_token` foram trocados em 22/10/2026. Conferido em produção: 206, CORS só do app, `Cache-Control` imutável e nenhum pedido a `/v1/mapa/base.pmtiles`. Detalhes em `roteiro_mapa_publico.md`.
+
 **Trava do mapa (19/10/2026) e o que mudou no `/health`:** pedidos de faixa do `base.pmtiles` abortados pelo navegador deixavam o corpo do Garage aberto; os 50 sockets do `S3Client` ficaram presos, e cada pedido novo esperava na fila do Garage **dentro da transação do banco** (o `TenantInterceptor` abre uma por requisição), esgotando o pool de 10 conexões: o `SELECT 1` do `/health` e o `HeadBucket` esgotaram juntos. Correção: o corpo é destruído quando o navegador fecha (`stream.pipeline` + `AbortSignal`), a rota do mapa não abre transação (`@SemTransacao`), o cliente do Garage tem `maxSockets`, `connectionTimeout` (3 s) e `requestTimeout` (15 s) explícitos, e o `/health` usa **conexão do banco e cliente do Garage próprios** (1 conexão e 2 sockets), cada verificação com o prazo de 2 s em paralelo: um serviço lento não derruba o resultado do outro nem espera pela fila do tráfego. Teste: `apps/api/src/mapa/tiles-trava.test.ts`.
 
 O banco não tem porta pública (de propósito): não há monitor TCP direto. Se o Postgres cair, `database` vira `erro` no `/health` e o monitor da API alerta.
@@ -196,7 +198,7 @@ A causa raiz da trava foi o `TenantInterceptor` abrir **uma transação do banco
 
 | Rota / processo | Espera externa | Prendia conexão do banco? | Correção |
 |---|---|---|---|
-| `GET /v1/mapa/base.pmtiles` | Garage (`GetObject` e o corpo em fluxo) | **Sim** (transação aberta na espera; fila de sockets) | `@SemTransacao`; cancelamento e `pipeline`; sai da API na Etapa 2 |
+| `GET /v1/mapa/base.pmtiles` | Garage (`GetObject` e o corpo em fluxo) | **Sim** (transação aberta na espera; fila de sockets) | `@SemTransacao`; cancelamento e `pipeline`; **a rota foi removida em 22/10/2026**: o navegador lê o PMTiles direto do bucket público do mapa (`roteiro_mapa_publico.md`) |
 | `GET /v1/receita/cnpj/:cnpj` | Minha Receita e BrasilAPI (até 2 × 8 s) | **Sim**, até 16 s | `@TransacaoSobDemanda`: consulta sem transação; a leitura da configuração abre uma curta |
 | `POST /v1/carteira/empresas` (CNPJ) | Receita (até 16 s) | **Sim** | `cadastrar()`: Receita antes; `criar()` roda numa transação só (atomicidade mantida) |
 | `POST /v1/carteira/empresas/:id/receita/consultar` | Receita, sem cache (até 16 s) | **Sim** | três fases: lê (curta) → Receita → grava (curta); a situação anterior é lida antes, porque a consulta renova o cache |

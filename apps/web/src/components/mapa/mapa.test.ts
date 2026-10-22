@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { estiloDoMapa, URL_DO_MAPA_BASE } from './estilo'
+import { estiloDoMapa } from './estilo'
+
+const URL_DO_MAPA_BASE = 'https://mapa.crm.exemplo.com.br/es-20261021.pmtiles'
 import { limitarArea } from './area'
 import { geojsonDaCobertura, geojsonDosPins } from './dados'
 import { desenharPin, idDoIcone, lerIdDoIcone } from './icone'
@@ -66,22 +68,25 @@ describe('círculo de incerteza', () => {
 })
 
 describe('estilo do mapa', () => {
-  it('lê o PMTiles pela API e os glifos do nosso servidor (nada externo)', () => {
-    const claro = estiloDoMapa('claro')
+  it('lê o PMTiles do bucket público do mapa e os glifos do nosso servidor (nada de terceiros)', () => {
+    const claro = estiloDoMapa('claro', URL_DO_MAPA_BASE)
     expect(claro.glyphs).toBe('/mapa/fontes/{fontstack}/{range}.pbf')
     expect(JSON.stringify(claro.sources)).toContain(`pmtiles://${URL_DO_MAPA_BASE}`)
-    expect(JSON.stringify(claro)).not.toMatch(/https?:\/\/(?!openstreetmap\.org)/)
+    // o único endereço absoluto além da atribuição do OpenStreetMap é o do mapa base (o domínio liberado na CSP)
+    expect(JSON.stringify(claro)).not.toMatch(
+      /https?:\/\/(?!openstreetmap\.org|mapa\.crm\.exemplo\.com\.br)/,
+    )
   })
 
   it('o tema escuro troca as cores e mantém as camadas', () => {
-    const claro = estiloDoMapa('claro')
-    const escuro = estiloDoMapa('escuro')
+    const claro = estiloDoMapa('claro', URL_DO_MAPA_BASE)
+    const escuro = estiloDoMapa('escuro', URL_DO_MAPA_BASE)
     expect(escuro.layers.length).toBe(claro.layers.length)
     expect(JSON.stringify(escuro.layers)).not.toBe(JSON.stringify(claro.layers))
   })
 
   it('não usa sprite nem ícone de ponto de interesse', () => {
-    const estilo = estiloDoMapa('claro')
+    const estilo = estiloDoMapa('claro', URL_DO_MAPA_BASE)
     expect(estilo.sprite).toBeUndefined()
     expect(JSON.stringify(estilo.layers)).not.toContain('icon-image')
   })

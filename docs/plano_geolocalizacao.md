@@ -60,7 +60,7 @@
 | PMTiles do ES (~227 MB, zoom até 14) | bucket privado do Garage | servido por endpoint da API com `Range`, atrás de sessão |
 | Tabelas novas (com `tenant_id`, RLS forçado e teste de isolamento) | Postgres | `geo_consultas`, `geo_lotes`, `geo_regioes`, `geo_regiao_municipios`, `mapa_legenda` |
 | Microrregiões oficiais | tabela de referência | só leitura |
-| Variáveis novas (`.env.example`, sem valor) | Coolify | `NOMINATIM_URL`, `GEO_CONCORRENCIA`, `GEO_LIMITE_POR_MINUTO`, `GEO_PMTILES_CHAVE`, `GEO_UF` |
+| Variáveis novas (`.env.example`, sem valor) | Coolify | `NOMINATIM_URL`, `GEO_CONCORRENCIA`, `GEO_LIMITE_POR_MINUTO`, `GEO_UF` |
 
 ## 6. Sequência
 

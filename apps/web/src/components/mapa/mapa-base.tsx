@@ -188,7 +188,7 @@ export function MapaBase(props: PropsDoMapa) {
   const [desenhados, setDesenhados] = useState(0)
   const [versaoDoEstilo, setVersaoDoEstilo] = useState(0)
   // De onde vem o PMTiles (URL pública do bucket do mapa ou, transitório, a API): a API informa ao abrir
-  const urlDaBaseRef = useRef('/v1/mapa/base.pmtiles')
+  const urlDaBaseRef = useRef<string | null>(null)
   // As funções mudam a cada render; o mapa lê sempre a última
   const ultimas = useRef(props)
   useEffect(() => {
@@ -225,16 +225,18 @@ export function MapaBase(props: PropsDoMapa) {
       urlDaBaseRef.current = urlDaBase
       const protocolo = new Protocol()
       maplibre.addProtocol('pmtiles', protocolo.tile)
-      protocolo.add(new PMTiles(urlDaBase))
-      const disponivel = await fetch(urlDaBase, { headers: { Range: 'bytes=0-0' } })
-        .then((r) => r.ok || r.status === 206)
-        .catch(() => false)
+      if (urlDaBase) protocolo.add(new PMTiles(urlDaBase))
+      const disponivel = urlDaBase
+        ? await fetch(urlDaBase, { headers: { Range: 'bytes=0-0' } })
+            .then((r) => r.ok || r.status === 206)
+            .catch(() => false)
+        : false
       if (cancelado || !contenedor.current) return
       setEstado(disponivel ? 'pronto' : 'indisponivel')
       mapa = new maplibre.Map({
         container: contenedor.current,
         style: disponivel
-          ? estiloDoMapa(temaAtual(), urlDaBase)
+          ? estiloDoMapa(temaAtual(), urlDaBase as string)
           : {
               version: 8,
               // os rótulos das bolhas precisam dos glifos mesmo sem o mapa base
@@ -351,9 +353,10 @@ export function MapaBase(props: PropsDoMapa) {
   // Troca o estilo quando o tema muda (só com o mapa base disponível)
   useEffect(() => {
     const mapa = mapaRef.current
-    if (!mapa || estado !== 'pronto') return
+    const url = urlDaBaseRef.current
+    if (!mapa || estado !== 'pronto' || !url) return
     void import('./estilo').then(({ estiloDoMapa }) => {
-      mapa.setStyle(estiloDoMapa(tema, urlDaBaseRef.current), { diff: true })
+      mapa.setStyle(estiloDoMapa(tema, url), { diff: true })
       void mapa.once('styledata', () => setVersaoDoEstilo((v) => v + 1))
     })
   }, [tema, estado])

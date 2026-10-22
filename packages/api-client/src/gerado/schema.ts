@@ -2077,29 +2077,9 @@ export interface paths {
         };
         /**
          * De onde ler o mapa base
-         * @description Qualquer membro logado. Com `MAPA_BASE_URL` configurada, devolve a URL pública do PMTiles versionado (bucket público do Garage, sem passar pela API); sem ela, o caminho da própria API (`/v1/mapa/base.pmtiles`, transitório).
+         * @description Qualquer membro logado. Devolve a URL pública do PMTiles versionado (`MAPA_BASE_URL`, bucket público do Garage). Sem a variável (só em desenvolvimento; em produção ela é obrigatória), `url` vem nulo e o app mostra o mapa sem a base.
          */
         get: operations["TilesDoMapaController_origemDaBase"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/mapa/base.pmtiles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Mapa base (PMTiles do estado)
-         * @description Qualquer membro logado. Aceita `Range` (206 com `Content-Range`); sem `Range`, o arquivo inteiro. Arquivo ainda não enviado ao Garage: 404 `mapa_indisponivel`. Segue o formato PMTiles v3 (https://docs.protomaps.com/pmtiles/).
-         */
-        get: operations["TilesDoMapaController_base"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2715,9 +2695,7 @@ export interface components {
             editavel: boolean;
         };
         BaseDoMapa: {
-            url: string;
-            /** @enum {string} */
-            origem: "publica" | "api";
+            url: string | null;
         };
         ChipDoMapa: {
             /** Format: uuid */
@@ -13154,47 +13132,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Erro"];
                 };
-            };
-        };
-    };
-    TilesDoMapaController_base: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description O arquivo inteiro (sem `Range`) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description O trecho pedido */
-            206: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Sem login */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Erro"];
-                };
-            };
-            /** @description Mapa ainda não enviado (`mapa_indisponivel`) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
