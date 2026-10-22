@@ -24,7 +24,6 @@ const me = (papel: 'admin' | 'gestor' | 'vendedor') =>
 
 const config = (extra = {}) => ({
   bloquearEmpresaNaoAtiva: true,
-  vendedorVeTodasEmpresas: false,
   ...extra,
 })
 
@@ -52,7 +51,7 @@ const abrir = async (x: ReturnType<typeof servicos>) => {
 }
 
 describe('Configurações → Carteira', () => {
-  it('administrador: o menu interno traz Carteira, com as duas regras e os padrões', async () => {
+  it('administrador: o menu interno traz Carteira, com a regra e o padrão', async () => {
     await abrir(servicos())
     const menu = screen.getByRole('navigation', { name: 'Configurações' })
     expect(within(menu).getByRole('link', { name: /Carteira/ })).toHaveAttribute(
@@ -62,9 +61,8 @@ describe('Configurações → Carteira', () => {
     expect(
       screen.getByRole('switch', { name: /Bloquear o cadastro de empresa não ativa/ }),
     ).toBeChecked()
-    expect(
-      screen.getByRole('switch', { name: 'Vendedores podem ver todas as empresas' }),
-    ).not.toBeChecked()
+    // "Vendedores podem ver todas as empresas" virou o alcance de ver no perfil de acesso
+    expect(screen.queryByRole('switch', { name: /Vendedores podem ver/ })).not.toBeInTheDocument()
   })
 
   it.each(['gestor', 'vendedor'] as const)('%s volta para o início', async (papel) => {
@@ -85,18 +83,6 @@ describe('Configurações → Carteira', () => {
     expect(await screen.findByText('Regra da carteira salva')).toBeInTheDocument()
     expect(screen.getByText(/poderá ser cadastrada, com o aviso de situação/)).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: /Bloquear o cadastro/ })).not.toBeChecked()
-  })
-
-  it('ligar "Vendedores podem ver todas as empresas" manda só esse campo', async () => {
-    const x = servicos()
-    await abrir(x)
-    await userEvent.click(
-      screen.getByRole('switch', { name: 'Vendedores podem ver todas as empresas' }),
-    )
-    await waitFor(() => expect(x.alterar).toHaveBeenCalledWith({ vendedorVeTodasEmpresas: true }))
-    expect(
-      await screen.findByText('Vendedores passam a ver todas as empresas.'),
-    ).toBeInTheDocument()
   })
 
   it('erro ao salvar: avisa o motivo e a chave volta ao que a API tem', async () => {

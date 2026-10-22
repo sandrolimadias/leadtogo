@@ -299,6 +299,14 @@ describe('PATCH /v1/configuracoes/seguranca (só o administrador da empresa)', (
   it('empresa sem linha de configuração: o PATCH a cria (upsert)', async () => {
     const d = await mundo()
     const semConfig = await novaEmpresa(d.contaId)
+    // sem perfil não há permissão: a empresa ganha o Administrador de sistema (sem a linha de configuração)
+    await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${semConfig}, true)`
+      const [p] = await tx<{ id: string }[]>`
+        INSERT INTO perfis_acesso (id, tenant_id, nome, sistema, chave_sistema)
+        VALUES (gen_random_uuid(), ${semConfig}, 'Administrador', true, 'admin') RETURNING id`
+      await tx`INSERT INTO perfil_permissoes (tenant_id, perfil_id, permissao) VALUES (${semConfig}, ${p?.id ?? ''}, 'seguranca.gerir')`
+    })
     const u = await usuarioNaEmpresa(semConfig, 'admin')
     await ligar2fa(u.id)
     const r = await escrever('patch', '/v1/configuracoes/seguranca', u.cookie, {

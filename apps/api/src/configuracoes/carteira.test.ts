@@ -68,16 +68,13 @@ async function equipe() {
 }
 
 describe('/v1/configuracoes/carteira', () => {
-  it('sem sessão 401; qualquer membro lê, e os padrões são: bloqueio ligado, vendedor vê só a própria', async () => {
+  it('sem sessão 401; qualquer membro lê, e o padrão é o bloqueio ligado', async () => {
     const { d, gestor, vendedor } = await equipe()
     expect((await chamar('get', undefined, ROTA)).status).toBe(401)
     for (const cookie of [d.cookie, gestor.cookie, vendedor.cookie]) {
       const r = await chamar('get', cookie, ROTA)
       expect(r.status).toBe(200)
-      expect(r.body as ConfiguracaoDaCarteira).toEqual({
-        bloquearEmpresaNaoAtiva: true,
-        vendedorVeTodasEmpresas: false,
-      })
+      expect(r.body as ConfiguracaoDaCarteira).toEqual({ bloquearEmpresaNaoAtiva: true })
     }
   })
 
@@ -90,23 +87,23 @@ describe('/v1/configuracoes/carteira', () => {
     }
     const r = await chamar('patch', d.cookie, ROTA, { bloquearEmpresaNaoAtiva: false })
     expect(r.status).toBe(200)
-    expect(r.body).toEqual({ bloquearEmpresaNaoAtiva: false, vendedorVeTodasEmpresas: false })
+    expect(r.body).toEqual({ bloquearEmpresaNaoAtiva: false })
   })
 
   it('muda só o que veio, guarda e registra o antes e o depois na auditoria', async () => {
     const { d } = await equipe()
-    await chamar('patch', d.cookie, ROTA, { vendedorVeTodasEmpresas: true })
+    await chamar('patch', d.cookie, ROTA, { bloquearEmpresaNaoAtiva: false })
     const r = await chamar('get', d.cookie, ROTA)
-    expect(r.body).toEqual({ bloquearEmpresaNaoAtiva: true, vendedorVeTodasEmpresas: true })
+    expect(r.body).toEqual({ bloquearEmpresaNaoAtiva: false })
     const reg = (await auditoriaDe(d.tenantId)).find(
       (a) => a.entidade === 'configuracao_da_carteira',
     )
     expect(reg).toMatchObject({
       acao: 'alterar',
-      alteracoes: { vendedorVeTodasEmpresas: { de: false, para: true } },
+      alteracoes: { bloquearEmpresaNaoAtiva: { de: true, para: false } },
     })
     // repetir o mesmo valor não é mudança
-    await chamar('patch', d.cookie, ROTA, { vendedorVeTodasEmpresas: true })
+    await chamar('patch', d.cookie, ROTA, { bloquearEmpresaNaoAtiva: false })
     expect(
       (await auditoriaDe(d.tenantId)).filter((a) => a.entidade === 'configuracao_da_carteira'),
     ).toHaveLength(1)
@@ -114,7 +111,13 @@ describe('/v1/configuracoes/carteira', () => {
 
   it('corpo vazio, campo desconhecido ou de tipo errado é 400', async () => {
     const { d } = await equipe()
-    for (const corpo of [{}, { x: 1 }, { bloquearEmpresaNaoAtiva: 'sim' }]) {
+    // o antigo interruptor saiu da API: virou o alcance de ver no perfil de acesso
+    for (const corpo of [
+      {},
+      { x: 1 },
+      { bloquearEmpresaNaoAtiva: 'sim' },
+      { vendedorVeTodasEmpresas: true },
+    ]) {
       expect((await chamar('patch', d.cookie, ROTA, corpo)).status, JSON.stringify(corpo)).toBe(400)
     }
   })
@@ -165,19 +168,5 @@ describe('/v1/configuracoes/carteira', () => {
       `/v1/carteira/empresas/${(liberada.body as EmpresaCarteira).id}`,
     )
     expect(ficha.status).toBe(200)
-  })
-
-  it('"vendedor vê todas" muda a lista do vendedor', async () => {
-    const { d, vendedor } = await equipe()
-    await chamar('post', d.cookie, '/v1/carteira/empresas', {
-      tipoDocumento: 'nenhum',
-      razaoSocial: 'Do admin',
-    })
-    const lista = async () =>
-      ((await chamar('get', vendedor.cookie, '/v1/carteira/empresas')).body as { total: number })
-        .total
-    expect(await lista()).toBe(0)
-    await chamar('patch', d.cookie, ROTA, { vendedorVeTodasEmpresas: true })
-    expect(await lista()).toBe(1)
   })
 })

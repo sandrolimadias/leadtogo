@@ -3,7 +3,6 @@ import type { PoliticaDoisFatores, Seguranca, SegurancaPatch } from '@leadtogo/s
 import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
-import { ErroApi } from '../http/erro-api.js'
 
 /** Configurações de segurança da empresa ativa (hoje: a política de 2FA). */
 @Injectable()
@@ -20,15 +19,8 @@ export class SegurancaService {
     return { doisFatoresExigido: linha?.dois_fatores_exigido ?? 'admin' }
   }
 
-  /** Só o administrador da empresa. A mudança vale na próxima requisição de cada pessoa. */
+  /** `seguranca.gerir` (na rota). A mudança vale na próxima requisição de cada pessoa. */
   async alterar(patch: SegurancaPatch): Promise<Seguranca> {
-    if (this.ctx.membro.papel !== 'admin') {
-      throw new ErroApi(
-        'acesso_negado',
-        'Só administradores da empresa podem alterar a segurança.',
-        403,
-      )
-    }
     await this.ctx.db().execute(sql`
       INSERT INTO tenant_configuracoes (tenant_id, dois_fatores_exigido)
       VALUES (${this.ctx.tenantId}, ${patch.doisFatoresExigido}::politica_dois_fatores)

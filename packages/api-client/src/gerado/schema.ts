@@ -681,7 +681,7 @@ export interface paths {
         };
         /**
          * Regras da carteira da empresa ativa
-         * @description Qualquer membro da empresa ativa. `bloquearEmpresaNaoAtiva` (padrão ligado): não cadastra CNPJ que a Receita não dê como ativo (409 `empresa_nao_ativa`), só em cadastro novo. `vendedorVeTodasEmpresas` (padrão desligado): o vendedor vê as empresas de todos os vendedores, mas edita só a própria.
+         * @description Qualquer membro da empresa ativa. `bloquearEmpresaNaoAtiva` (padrão ligado): não cadastra CNPJ que a Receita não dê como ativo (409 `empresa_nao_ativa`), só em cadastro novo. Quem vê a carteira de quem agora é o alcance de `ver` no perfil de acesso.
          */
         get: operations["ConfiguracaoDaCarteiraController_obter"];
         put?: never;
@@ -691,7 +691,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar as regras da carteira
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Só o que vier muda. Vale na próxima requisição de cada pessoa. Registra na auditoria.
+         * @description Exige `carteira.configurar` (403 `acesso_negado` para os demais). Só o que vier muda. Vale na próxima requisição de cada pessoa. Registra na auditoria.
          */
         patch: operations["ConfiguracaoDaCarteiraController_alterar"];
         trace?: never;
@@ -1051,7 +1051,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar a segurança da empresa ativa
-         * @description Só administradores da empresa ativa (403 `acesso_negado` para os demais). Vale na próxima requisição de cada pessoa da empresa.
+         * @description Exige `seguranca.gerir` (403 `acesso_negado` para os demais). Vale na próxima requisição de cada pessoa da empresa.
          */
         patch: operations["SegurancaController_alterar"];
         trace?: never;
@@ -2860,11 +2860,9 @@ export interface components {
         };
         ConfiguracaoDaCarteira: {
             bloquearEmpresaNaoAtiva: boolean;
-            vendedorVeTodasEmpresas: boolean;
         };
         ConfiguracaoDaCarteiraEntrada: {
             bloquearEmpresaNaoAtiva?: boolean;
-            vendedorVeTodasEmpresas?: boolean;
         };
         ConfiguracaoDeSeguranca: {
             /** @enum {string} */

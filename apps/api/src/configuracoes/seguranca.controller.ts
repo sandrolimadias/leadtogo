@@ -7,6 +7,7 @@ import {
 import { Body, Controller, Get, Patch } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
+import { Permissao, TodoMembro } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { SegurancaService } from './seguranca.service.js'
@@ -25,6 +26,7 @@ export class SegurancaController {
     erros: [401, 403, 409],
   })
   @Get()
+  @TodoMembro()
   obter(): Promise<Seguranca> {
     return this.servico.obter()
   }
@@ -32,12 +34,13 @@ export class SegurancaController {
   @Documenta({
     resumo: 'Alterar a segurança da empresa ativa',
     descricao:
-      'Só administradores da empresa ativa (403 `acesso_negado` para os demais). Vale na próxima requisição de cada pessoa da empresa.',
+      'Exige `seguranca.gerir` (403 `acesso_negado` para os demais). Vale na próxima requisição de cada pessoa da empresa.',
     corpo: segurancaPatchSchema,
     resposta: segurancaSchema,
     erros: [400, 401, 403, 409],
   })
   @Patch()
+  @Permissao('seguranca.gerir')
   alterar(@Body(new ZodPipe(segurancaPatchSchema)) patch: SegurancaPatch): Promise<Seguranca> {
     return this.servico.alterar(patch)
   }

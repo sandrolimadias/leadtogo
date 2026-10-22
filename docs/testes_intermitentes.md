@@ -1,0 +1,16 @@
+# Testes intermitentes
+
+Registro de cada falha de teste que não se repetiu ao rodar de novo, sem relação com a mudança em
+andamento. Serve para decidir o que estabilizar (esperar por condição, não por tempo fixo). Cada
+linha: data, onde rodou, teste, erro e o que se fez.
+
+| Data | Onde | Teste | Erro | Resultado |
+|---|---|---|---|---|
+| 22/10/2026 | Gate local (commit 4 da Fase 1, perfis de acesso) | `apps/api/src/worker/worker.test.ts` › encerramento gracioso (SIGTERM) › prazo esgotado: sai no prazo e o job NÃO se perde, outro worker o conclui | `o job 1 ficou "failed" (motivo: job stalled more than allowable limit; tentativas: 1)`; no log do worker: `could not renew lock for job 1`, `Lock mismatch for job 1`, `Missing lock for job 1` | Sozinho passou (9/9); gate completo seguinte, verde |
+| 22/10/2026 | Gate local (commit 6a, cadastros) | `apps/api/src/worker/worker.test.ts` › encerramento gracioso (SIGTERM) › termina o job em andamento, grava o resultado e sai com 0 (nada se perde) | `o job 1 ficou "active" (motivo: nenhum; tentativas: 0)` | Suíte da API repetida: verde (918) |
+| 22/10/2026 | Gate local (commit 6b, equipe e convites) | `apps/web/src/telas/mapa/mapa.test.tsx` › Mapa: chips, pins e legenda › filtros da gaveta: visitada, vendedor, cidade, região e precisão | `expected { oeste: -40.6, sul: -20.6, …(11) } to not have property "visitada"` | Sozinho passou (26/26); suítes do web e da API repetidas: verdes |
+
+**Plano (Ale, 22/10/2026):** depois do commit 6 da Fase 1 e antes do 7, um commit `test:` separado
+estabiliza os dois arquivos: em `worker.test.ts`, esperas por condição (estado do job, chave gravada,
+saída do processo) no lugar de tempos fixos, levando em conta o lock do BullMQ; em `mapa.test.tsx`,
+`waitFor`/`findBy` no filtro "visitada". Sem `--no-verify`.

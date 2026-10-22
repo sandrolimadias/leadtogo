@@ -68,4 +68,29 @@ describe('matriz de permissão por módulo', () => {
       (await chamar('post', '/v1/configuracoes/origens', u.cookie, { nome: 'Feira' })).status,
     ).toBe(201)
   })
+
+  it('carteira.configurar e seguranca.gerir: alterar as configurações; ler é de todo membro', async () => {
+    const { u, usarPerfil } = await pessoa()
+    await usarPerfil({})
+    for (const rota of ['/v1/configuracoes/carteira', '/v1/configuracoes/seguranca']) {
+      expect((await chamar('get', rota, u.cookie)).status).toBe(200)
+    }
+    const carteira = () =>
+      request(app.getHttpServer())
+        .patch('/v1/configuracoes/carteira')
+        .set('Cookie', u.cookie)
+        .set('Origin', ORIGEM_DO_FRONT)
+        .send({ bloquearEmpresaNaoAtiva: false })
+    const seguranca = () =>
+      request(app.getHttpServer())
+        .patch('/v1/configuracoes/seguranca')
+        .set('Cookie', u.cookie)
+        .set('Origin', ORIGEM_DO_FRONT)
+        .send({ doisFatoresExigido: 'admin' })
+    expect((await carteira()).status).toBe(403)
+    expect((await seguranca()).status).toBe(403)
+    await usarPerfil({ 'carteira.configurar': null, 'seguranca.gerir': null })
+    expect((await carteira()).status).toBe(200)
+    expect((await seguranca()).status).toBe(200)
+  })
 })

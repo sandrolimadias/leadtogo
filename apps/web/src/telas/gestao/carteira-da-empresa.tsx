@@ -26,21 +26,11 @@ const REGRAS: {
         ? 'Empresa não ativa na Receita não poderá ser cadastrada.'
         : 'Empresa não ativa na Receita poderá ser cadastrada, com o aviso de situação.',
   },
-  {
-    campo: 'vendedorVeTodasEmpresas',
-    rotulo: 'Vendedores podem ver todas as empresas',
-    descricao:
-      'Ligado: cada vendedor vê a carteira de todos, mas edita só a própria. Desligado: o vendedor vê só as empresas em que é o responsável. Gestores e administradores sempre veem tudo.',
-    avisoAoMudar: (ligado) =>
-      ligado
-        ? 'Vendedores passam a ver todas as empresas.'
-        : 'Vendedores voltam a ver só a própria carteira.',
-  },
 ]
 
 /**
  * Configurações → Carteira: as regras da carteira de empresas. Cada chave vale na hora (como um
- * interruptor); só o administrador altera.
+ * interruptor); só o administrador altera. Quem vê a carteira de quem fica nos perfis de acesso.
  */
 export function TelaDaCarteiraDaEmpresa() {
   const servicos = useServicos()
