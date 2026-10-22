@@ -1,4 +1,4 @@
-import { sql } from '@leadtogo/db'
+import { type SQL, sql } from '@leadtogo/db'
 import { type Alcance, type PermissoesDoPerfil, definicaoDaPermissao } from '@leadtogo/shared'
 
 import type { Transacao } from './contexto-tenant.service.js'
@@ -38,6 +38,16 @@ export async function carregarPermissoes(
     permissoes,
   }
 }
+
+/**
+ * Condição SQL do perfil efetivo do membro `m` ser o perfil `p` (a mesma regra de `carregarPermissoes`):
+ * o perfil do membro ou, enquanto ele não tem, o de sistema do papel; só perfil ativo e não excluído.
+ * `m` e `p` são os apelidos das tabelas `membros` e `perfis_acesso` na consulta.
+ */
+export const perfilEfetivo = (m: SQL, p: SQL): SQL => sql`(${p}.tenant_id = ${m}.tenant_id
+  AND ${p}.excluido_em IS NULL AND ${p}.ativo
+  AND (${p}.id = ${m}.perfil_id
+    OR (${m}.perfil_id IS NULL AND ${p}.chave_sistema::text = ${m}.papel::text)))`
 
 /** Linhas de `perfil_permissoes` → permissões, ignorando o que não está no catálogo (ou veio torto). */
 export function permissoesDoCatalogo(

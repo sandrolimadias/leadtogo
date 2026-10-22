@@ -9,7 +9,7 @@ import type {
 } from '@leadtogo/shared'
 import { Inject, Injectable } from '@nestjs/common'
 
-import { permissoesDoCatalogo } from '../acesso/permissoes-do-membro.js'
+import { perfilEfetivo, permissoesDoCatalogo } from '../acesso/permissoes-do-membro.js'
 import type { DadosDeAcesso, Vinculo } from '../acesso/requisicao.js'
 import {
   doisFatoresObrigatorio,
@@ -62,8 +62,7 @@ export class MeService {
           perfis: await tx.execute<LinhaPerfil>(sql`
             SELECT m.tenant_id, p.id AS perfil_id, p.nome, pp.permissao, pp.alcance::text AS alcance
             FROM membros m
-            JOIN perfis_acesso p ON p.tenant_id = m.tenant_id AND p.excluido_em IS NULL AND p.ativo
-              AND (p.id = m.perfil_id OR (m.perfil_id IS NULL AND p.chave_sistema::text = m.papel::text))
+            JOIN perfis_acesso p ON ${perfilEfetivo(sql`m`, sql`p`)}
             LEFT JOIN perfil_permissoes pp ON pp.perfil_id = p.id
             WHERE m.usuario_id = ${usuarioId} AND m.excluido_em IS NULL AND m.ativo`),
         }

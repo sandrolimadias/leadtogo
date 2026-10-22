@@ -15,6 +15,7 @@ import { MeModule } from './me/me.module.js'
 import { ReceitaModule } from './receita/receita.module.js'
 import { PrimeiroAcessoModule } from './primeiro-acesso/primeiro-acesso.module.js'
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
+import { PerfisModule } from './perfis/perfis.module.js'
 import { ConvitesModule } from './convites/convites.module.js'
 import { EmailModule } from './email/email.module.js'
 import { EmpresasModule } from './empresas/empresas.module.js'
@@ -57,6 +58,7 @@ export class AppModule {
         CadastrosModule,
         CarteiraModule,
         ConvitesModule,
+        PerfisModule,
         ImportacaoModule,
         GeolocalizacaoModule,
         MapaModule,

@@ -12089,6 +12089,581 @@
         "tags": ["Equipe e convites"]
       }
     },
+    "/v1/membros/{id}/perfil": {
+      "put": {
+        "description": "Exige a permissão `perfis.gerir`. Recusa: trocar o próprio perfil (403), o do dono da conta (403), perfil inativo (409) e deixar a empresa sem ninguém ativo que gere os perfis (409). Membro de outra empresa dá 404. Registra na auditoria.",
+        "operationId": "PerfilDoMembroController_atribuir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtribuirPerfil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDoMembro"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Trocar o perfil de acesso de um membro",
+        "tags": ["Perfis de acesso"]
+      }
+    },
+    "/v1/perfis": {
+      "get": {
+        "description": "Exige a permissão `perfis.gerir`. Os não excluídos, com a matriz de permissões e quantos membros têm cada um (os de sistema primeiro).",
+        "operationId": "PerfisController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PerfilDeAcesso"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Perfis de acesso",
+        "tags": ["Perfis de acesso"]
+      },
+      "post": {
+        "description": "Exige a permissão `perfis.gerir`. Nome único na empresa (sem diferença de caixa). Só chaves do catálogo; alcance só onde se admite. Registra na auditoria.",
+        "operationId": "PerfisController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarPerfil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDeAcesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar perfil de acesso",
+        "tags": ["Perfis de acesso"]
+      }
+    },
+    "/v1/perfis/{id}": {
+      "get": {
+        "description": "Exige a permissão `perfis.gerir`.",
+        "operationId": "PerfisController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDeAcesso"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Um perfil de acesso",
+        "tags": ["Perfis de acesso"]
+      },
+      "patch": {
+        "description": "Exige a permissão `perfis.gerir`. Nome, descrição, 2FA, situação e a matriz inteira de permissões. Recusa (409): o Administrador sem `perfis.gerir` ou `equipe.gerir`; inativar perfil de sistema ou em uso; tirar `perfis.gerir` do próprio perfil; deixar a empresa sem ninguém ativo que gere os perfis. Registra na auditoria, com as permissões antes e depois.",
+        "operationId": "PerfisController_editar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditarPerfil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDeAcesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar perfil de acesso",
+        "tags": ["Perfis de acesso"]
+      },
+      "delete": {
+        "description": "Exige a permissão `perfis.gerir`. Exclusão lógica. Recusa (409) perfil de sistema e perfil com membros ou convites pendentes.",
+        "operationId": "PerfisController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir perfil de acesso",
+        "tags": ["Perfis de acesso"]
+      }
+    },
+    "/v1/perfis/{id}/duplicar": {
+      "post": {
+        "description": "Exige a permissão `perfis.gerir`. Copia descrição, 2FA e permissões para um perfil novo da empresa, com o nome informado.",
+        "operationId": "PerfisController_duplicar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicarPerfil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDeAcesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Duplicar perfil de acesso",
+        "tags": ["Perfis de acesso"]
+      }
+    },
+    "/v1/perfis/{id}/membros": {
+      "get": {
+        "description": "Exige a permissão `perfis.gerir`. Membros não excluídos cujo perfil efetivo é este.",
+        "operationId": "PerfisController_membros",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MembroDoPerfil"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Usuários do perfil",
+        "tags": ["Perfis de acesso"]
+      }
+    },
     "/v1/primeiro-acesso": {
       "post": {
         "description": "Cria o usuário, a conta dona, a primeira empresa, as configurações e o membro administrador. Fechado por padrão em produção (`PRIMEIRO_ACESSO`): lá a primeira conta nasce pelo comando `node dist/criar-conta.js`. Limite de 5 por hora por IP.",
@@ -13434,6 +14009,17 @@
         ],
         "additionalProperties": false
       },
+      "AtribuirPerfil": {
+        "type": "object",
+        "properties": {
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["perfilId"],
+        "additionalProperties": false
+      },
       "BaseDoMapa": {
         "type": "object",
         "properties": {
@@ -14729,6 +15315,35 @@
         "required": ["nome"],
         "additionalProperties": false
       },
+      "CriarPerfil": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 300
+          },
+          "exige2fa": {
+            "default": false,
+            "type": "boolean"
+          },
+          "permissoes": {
+            "default": {},
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PermissoesDoPerfil"
+              }
+            ]
+          }
+        },
+        "required": ["nome"],
+        "additionalProperties": false
+      },
       "CriarPerfilDeImportacaoEntrada": {
         "type": "object",
         "properties": {
@@ -15544,6 +16159,47 @@
           }
         },
         "required": ["tagIds"],
+        "additionalProperties": false
+      },
+      "DuplicarPerfil": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          }
+        },
+        "required": ["nome"],
+        "additionalProperties": false
+      },
+      "EditarPerfil": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 300
+          },
+          "exige2fa": {
+            "type": "boolean"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "permissoes": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PermissoesDoPerfil"
+              }
+            ]
+          }
+        },
         "additionalProperties": false
       },
       "EmailDoContatoEntrada": {
@@ -17591,6 +18247,26 @@
         "required": ["id", "nome", "cargo", "papel", "ativo", "temLogin", "cor"],
         "additionalProperties": false
       },
+      "MembroDoPerfil": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "temLogin": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "nome", "ativo", "temLogin"],
+        "additionalProperties": false
+      },
       "MeResposta": {
         "type": "object",
         "properties": {
@@ -18568,6 +19244,56 @@
         "required": ["id", "nome", "ativo", "ordem"],
         "additionalProperties": false
       },
+      "PerfilDeAcesso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sistema": {
+            "type": "boolean"
+          },
+          "chaveSistema": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["admin", "gestor", "vendedor"]
+          },
+          "exige2fa": {
+            "type": "boolean"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "membros": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "permissoes": {
+            "$ref": "#/components/schemas/PermissoesDoPerfil"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "descricao",
+          "sistema",
+          "chaveSistema",
+          "exige2fa",
+          "ativo",
+          "membros",
+          "permissoes"
+        ],
+        "additionalProperties": false
+      },
       "PerfilDeImportacao": {
         "type": "object",
         "properties": {
@@ -18621,6 +19347,46 @@
           "ativo"
         ],
         "additionalProperties": false
+      },
+      "PerfilDoMembro": {
+        "type": "object",
+        "properties": {
+          "membroId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfil": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["membroId", "perfil"],
+        "additionalProperties": false
+      },
+      "PermissoesDoPerfil": {
+        "type": "object",
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": ["propria", "equipe", "todas"]
+            },
+            {
+              "type": "boolean",
+              "enum": [true]
+            }
+          ]
+        }
       },
       "PontosDoMapa": {
         "type": "object",
