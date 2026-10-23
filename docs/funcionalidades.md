@@ -550,7 +550,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 
 ## 10. Usuários, papéis e carteira
 
-### Perfis de acesso (Fase 1, em implementação)
+### Perfis de acesso (Fase 1, ✅ testada e aprovada pelo Ale; registrado em 23/10/2026)
 
 O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configuráveis por empresa: **permissões por módulo e ação, com alcance**. Base da futura central de chamados e do portal do cliente (que não entram agora).
 
@@ -581,7 +581,7 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 - **Regras de alcance da carteira** (iguais às antigas nos perfis de sistema): a empresa conta pelo responsável (`vendedor_id`); a oportunidade, pelo responsável da empresa; o **contato**, pelas empresas a que está vinculado (vínculo ativo), e o contato **sem empresa** só aparece para quem tem ver **e** editar contatos com alcance `todas`; a **atividade**, pelo responsável da empresa, e a Tarefa sem empresa, pelo responsável dela no alcance de `atividades.editar` (o vendedor que "vê todas" continua vendo só as Tarefas soltas dele); excluir, concluir e cancelar a atividade seguem `atividades.editar`. O Dashboard segue `empresas.ver`. **Importação**: lotes, prévia, execução, relatório e modelo exigem `importacao.executar` (o worker relê o perfil de quem iniciou a cada bloco e encerra o lote se a permissão sair); perfis de regras da importação: ler e conferir CNAEs, todo membro; escrever, `cadastros.gerir`. **Geolocalização e mapa**: lotes de geocodificação, `geolocalizacao.lotes`; criar, alterar e excluir regiões, `geolocalizacao.regioes`; legenda do mapa, `geolocalizacao.legenda`; resumo, fila, pontos, próximas, seleção e cobertura seguem o alcance de `empresas.ver`; ajustar a posição, confirmar o endereço e geocodificar uma empresa, `empresas.editar`; regiões, opções e legenda (leitura), todo membro. O filtro de vendedor do mapa aparece só para quem vê a carteira de todos.
 - **Transição:** o `papel` antigo continua gravado como legado, mas nenhuma regra nova lê o papel. A contração (remover `papel`, `perfil_id NOT NULL`, remover o interruptor) fica para depois de duas semanas de uso real (`backlog_pos_mvp.md`).
 
-> Até a Fase 1 ser entregue e aprovada, valem as descrições por papel abaixo e nas demais seções.
+> A Fase 1 foi entregue (22/10/2026) e aprovada pelo Ale (registrado em 23/10/2026): quem decide é o **perfil de acesso**. As descrições por papel abaixo e nas demais seções valem como os **padrões dos perfis de sistema** (Administrador, Gestor e Vendedor).
 
 ### Papéis padrão (anterior à Fase 1)
 | Papel | Acesso |

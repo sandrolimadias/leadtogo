@@ -1,5 +1,7 @@
 # Roteiro de teste: Perfis de acesso (Fase 1)
 
+> **✅ Testado e aprovado pelo Ale** (registrado em 23/10/2026).
+
 > Para o Ale testar em produção, depois do push único da Fase 1. Regras em `funcionalidades.md` ("Perfis de acesso" e "Segurança e acesso"); tabelas em `modelagem_banco.md` (3.4A); catálogo em `packages/shared/src/permissoes.ts`.
 > **Antes de tudo:** rode a verificação no servidor (seção 0). Depois teste **primeiro como Administrador** (seções 1 a 9) e **depois como Vendedor** (seções 10 a 13). Use duas janelas (uma anônima) ou dois navegadores, com dois usuários seus: o Administrador (você) e um vendedor de teste.
 > **O que muda para quem já usa:** nada, se ninguém mexer nos perfis. Os três perfis de sistema reproduzem os papéis antigos (inclusive o "Vendedores podem ver todas as empresas" e a política de 2FA, convertidos na migração).

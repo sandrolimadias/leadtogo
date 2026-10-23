@@ -192,7 +192,7 @@ O Better Auth cuida só da **identidade**: `user`, `session`, `account`, `verifi
 - `user.ultima_empresa_id` → `tenants.id` (`ON DELETE SET NULL`, migração 0012): a última empresa que a pessoa usou; gravada a cada troca de empresa ativa
 - Tabelas em `auth`: `user` (e-mail em `citext`, único), `session`, `account` (senha em hash scrypt), `verification` e `two_factor`, todas com id `uuid` v7. Sem RLS (nada é por tenant); o `leadtogo_app` tem DML, sem DDL.
 
-### 3.4A `perfis_acesso` e `perfil_permissoes` 🏢 — Perfis de acesso (Fase 1, a migrar)
+### 3.4A `perfis_acesso` e `perfil_permissoes` 🏢 — Perfis de acesso (Fase 1, migração 0027; ✅ aprovada em 23/10/2026)
 
 | `perfis_acesso` | Tipo | Observação |
 |---|---|---|

@@ -152,7 +152,7 @@
 ## Segurança e LGPD
 | Item | Motivo de ter ficado fora | Origem |
 |---|---|---|
-| **Contração dos perfis de acesso** (remover `papel` de `membros` e `convites` e o enum `papel_membro`, `perfil_id NOT NULL`, remover `vendedor_ve_todas_empresas` e `dois_fatores_exigido`, e a função `app_vinculos_com_politica` antiga) | Migração destrutiva: só depois de **duas semanas de uso real** da Fase 1, com aviso ao Ale e commit `BREAKING-DB:` | Perfis de acesso, Fase 1 |
+| **Contração dos perfis de acesso** (remover `papel` de `membros` e `convites` e o enum `papel_membro`, `perfil_id NOT NULL`, remover `vendedor_ve_todas_empresas` e `dois_fatores_exigido`, e a função `app_vinculos_com_politica` antiga) | Migração destrutiva: só depois de **duas semanas de uso real** da Fase 1 (entregue em 22/10/2026 e aprovada em 23/10/2026: **a partir de 05/11/2026**), com aviso ao Ale e commit `BREAKING-DB:` | Perfis de acesso, Fase 1 |
 | Permissões de chamados e do portal do cliente, visão Equipe, permissões por campo, múltiplos perfis por usuário | Fora da Fase 1; cada fase futura acrescenta as suas ao catálogo | Perfis de acesso, Fase 1 |
 | Rotas: janela de horário, almoço e várias rotas ou vendedores numa otimização só | Decisão do G0: só a ordem mais curta, um veículo | G4 (`plano_geolocalizacao.md`, seção 10.5) |
 | Rotas recorrentes (a mesma rota toda semana) e duplicar rota | Sem pedido; dá para montar de novo pela lista ou pelo mapa | G4 |
