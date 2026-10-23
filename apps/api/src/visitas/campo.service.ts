@@ -36,6 +36,7 @@ import {
   podeVer,
 } from '../carteira/regras-de-carteira.js'
 import { ErroApi } from '../http/erro-api.js'
+import { concluirParadaDaVisita, ligarVisitaAParada } from '../rotas/rotas.service.js'
 
 const { atividades } = schema
 
@@ -371,6 +372,13 @@ export class VisitasDoCampoService {
         ${p?.precisaoM ?? null}::int, ${distanciaM}::int, ${foraDoLimite},
         ${dados.checkin?.offline ?? false}, ${escopo.membroId}, ${escopo.membroId})`)
     await recalcularCarteira(db, this.ctx.tenantId, empresa.id, escopo.membroId)
+    // G4b: empresa que é parada pendente da rota de hoje do vendedor liga a visita à parada
+    await ligarVisitaAParada(db, {
+      empresaId: empresa.id,
+      responsavelId: escopo.membroId,
+      atividadeId,
+      quando: inicio,
+    })
     await this.auditoria.registrar({
       entidade: 'relatorio_visita',
       entidadeId: id,
@@ -474,6 +482,7 @@ export class VisitasDoCampoService {
         WHERE id = ${atual.empresa_id}`)
     }
     await recalcularCarteira(db, tenantId, atual.empresa_id, escopo.membroId)
+    await concluirParadaDaVisita(db, atual.atividade_id, escopo.membroId)
     await this.auditoria.registrar({
       entidade: 'relatorio_visita',
       entidadeId: atual.id,

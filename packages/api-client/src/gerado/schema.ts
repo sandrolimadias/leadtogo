@@ -1032,6 +1032,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/configuracoes/rotas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Alterar os minutos por visita
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Valor sugerido nas rotas novas (0 a 480; cada rota pode ajustar o seu).
+         */
+        put: operations["ConfiguracoesDeRotasController_alterar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/configuracoes/rotas/pontos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar pontos de partida
+         * @description Qualquer membro (o editor de rota usa). O padrão primeiro; inclui os inativos.
+         */
+        get: operations["ConfiguracoesDeRotasController_listar"];
+        put?: never;
+        /**
+         * Criar ponto de partida
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. A posição é a marcada no mapa. Marcar como padrão tira o anterior. Nome repetido: 409 `nome_repetido`.
+         */
+        post: operations["ConfiguracoesDeRotasController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/configuracoes/rotas/pontos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Excluir ponto de partida
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; usado em alguma rota, só se inativa (409 `ponto_em_uso`).
+         */
+        delete: operations["ConfiguracoesDeRotasController_excluir"];
+        options?: never;
+        head?: never;
+        /**
+         * Alterar ponto de partida
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam; a posição muda com latitude e longitude juntas.
+         */
+        patch: operations["ConfiguracoesDeRotasController_alterarPonto"];
+        trace?: never;
+    };
     "/v1/configuracoes/seguranca": {
         parameters: {
             query?: never;
@@ -2688,6 +2756,214 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/rotas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar rotas
+         * @description Exige `rotas.ver`; o alcance (própria, equipe, todas) vale sobre o RESPONSÁVEL da rota (404 `rota_nao_encontrada` fora dele). Da mais nova para a mais antiga, com as contagens de paradas visitadas, puladas e pendentes.
+         */
+        get: operations["RotasController_listar"];
+        put?: never;
+        /**
+         * Criar rota
+         * @description Exige `rotas.editar`. O código (R-0151) é sequencial por empresa. As distâncias saem pelas ruas (OSRM) ou, sem o serviço, em linha reta (`estimativa`). Paradas: empresas com posição no mapa que quem monta e o responsável da rota veem na carteira (400 `parada_invalida`), no máximo `ROTA_MAX_PARADAS` (30; 400 `paradas_demais`). Montar para outro vendedor exige `rotas.atribuir`. A `posicaoAtual` entra só no cálculo e nunca é gravada.
+         */
+        post: operations["RotasController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Obter rota
+         * @description Exige `rotas.ver`; o alcance (própria, equipe, todas) vale sobre o RESPONSÁVEL da rota (404 `rota_nao_encontrada` fora dele). Com as paradas na ordem e o trajeto pelas ruas (nulo em linha reta).
+         */
+        get: operations["RotasController_obter"];
+        /**
+         * Salvar rota
+         * @description Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. Regrava a rota inteira com as paradas na ordem dada e recalcula as estimativas; paradas visitadas ou puladas não saem (409 `parada_resolvida`). Paradas: empresas com posição no mapa que quem monta e o responsável da rota veem na carteira (400 `parada_invalida`), no máximo `ROTA_MAX_PARADAS` (30; 400 `paradas_demais`). Montar para outro vendedor exige `rotas.atribuir`. A `posicaoAtual` entra só no cálculo e nunca é gravada.
+         */
+        put: operations["RotasController_salvar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/{id}/cancelar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancelar rota
+         * @description Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. A rota fica cancelada (continua na lista, com a situação).
+         */
+        post: operations["RotasController_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/{id}/encerrar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Encerrar rota
+         * @description Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. A rota fica concluída; as paradas ainda pendentes viram puladas ("Rota encerrada").
+         */
+        post: operations["RotasController_encerrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/{id}/paradas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adicionar paradas no fim da rota
+         * @description Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. O que cabe entra no fim; as que já estão na rota, as sem posição ou fora da carteira do responsável e as que passam do limite só contam.
+         */
+        post: operations["RotasController_adicionar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/{id}/paradas/{paradaId}/pular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pular uma parada
+         * @description Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. Só a parada pendente (409 `parada_resolvida`), com o motivo. Sem pendentes, a rota fica concluída.
+         */
+        post: operations["RotasController_pular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/configuracao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Configuração das rotas
+         * @description Qualquer membro. Minutos por visita sugeridos, o limite de paradas e se a otimização (VROOM e OSRM) está configurada; sem ela, a tela mostra "Otimização de rotas ainda não configurada".
+         */
+        get: operations["RotasController_configuracao"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/empresa/{empresaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rotas em aberto de uma empresa
+         * @description As rotas planejadas ou em andamento, de hoje em diante, em que a empresa é parada (o "Na rota · parada N"). Exige `rotas.ver`; o alcance (própria, equipe, todas) vale sobre o RESPONSÁVEL da rota (404 `rota_nao_encontrada` fora dele).
+         */
+        get: operations["RotasController_daEmpresa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/hoje": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rotas de hoje da própria pessoa
+         * @description Qualquer membro. A "rota do dia" do celular: as rotas de hoje dela, sem as canceladas.
+         */
+        get: operations["RotasController_hoje"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rotas/otimizar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Otimizar a ordem das paradas
+         * @description Exige `rotas.editar`. A ordem mais curta pelas ruas (VROOM), sem gravar. Sem VROOM/OSRM configurados, 409 `rotas_nao_configuradas`. Serviço fora do ar: a ordem sai em linha reta, com `aviso: indisponivel`. Paradas: empresas com posição no mapa que quem monta e o responsável da rota veem na carteira (400 `parada_invalida`), no máximo `ROTA_MAX_PARADAS` (30; 400 `paradas_demais`). Montar para outro vendedor exige `rotas.atribuir`. A `posicaoAtual` entra só no cálculo e nunca é gravada.
+         */
+        post: operations["RotasController_otimizar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sessao/empresa-ativa": {
         parameters: {
             query?: never;
@@ -2801,6 +3077,9 @@ export interface components {
             nome?: string;
             senha?: string;
         };
+        AdicionarParadasEntrada: {
+            empresaIds: string[];
+        };
         AjustarPosicao: {
             latitude: number;
             longitude: number;
@@ -2840,6 +3119,9 @@ export interface components {
             importante?: boolean;
             urgente?: boolean;
             observacoes?: string | null;
+        };
+        AlterarConfiguracaoDeRotasEntrada: {
+            minutosPorVisita: number;
         };
         AlterarContatoEntrada: {
             nome?: string;
@@ -2966,6 +3248,14 @@ export interface components {
             aceitarCnaeSecundario?: boolean;
             /** @enum {string} */
             acaoForaDoPerfil?: "pular" | "importar_com_tag";
+            ativo?: boolean;
+        };
+        AlterarPontoDePartidaEntrada: {
+            nome?: string;
+            endereco?: string | null;
+            latitude?: number;
+            longitude?: number;
+            padrao?: boolean;
             ativo?: boolean;
         };
         AlterarResultadoDeVisitaEntrada: {
@@ -3185,6 +3475,11 @@ export interface components {
         ConfiguracaoDaCarteiraEntrada: {
             bloquearEmpresaNaoAtiva?: boolean;
         };
+        ConfiguracaoDeRotas: {
+            minutosPorVisita: number;
+            maxParadas: number;
+            otimizacaoConfigurada: boolean;
+        };
         ConfiguracaoDeSeguranca: {
             perfis: {
                 /** Format: uuid */
@@ -3384,6 +3679,10 @@ export interface components {
             /** @enum {string} */
             situacao: "pendente" | "expirado";
         };
+        Coordenada: {
+            latitude: number;
+            longitude: number;
+        };
         /** @enum {string} */
         CorDeTag: "gray" | "red" | "orange" | "amber" | "green" | "teal" | "blue" | "indigo" | "purple" | "pink";
         CriarAtividadeEntrada: {
@@ -3563,6 +3862,13 @@ export interface components {
              * @enum {string}
              */
             acaoForaDoPerfil: "pular" | "importar_com_tag";
+        };
+        CriarPontoDePartidaEntrada: {
+            nome: string;
+            endereco?: string | null;
+            latitude: number;
+            longitude: number;
+            padrao?: boolean;
         };
         CriarResultadoDeVisitaEntrada: {
             nome: string;
@@ -4144,6 +4450,29 @@ export interface components {
             situacaoNaoVerificada: boolean;
             editavel: boolean;
         };
+        ItemDeRota: {
+            /** Format: uuid */
+            id: string;
+            codigo: number;
+            nome: string;
+            data: string;
+            responsavel: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            /** @enum {string} */
+            situacao: "planejada" | "em_andamento" | "concluida" | "cancelada";
+            paradas: number;
+            visitadas: number;
+            puladas: number;
+            pendentes: number;
+            distanciaM: number | null;
+            duracaoS: number | null;
+            minutosPorVisita: number;
+            /** @enum {string|null} */
+            estimativa: "ruas" | "linha_reta" | null;
+        };
         ItemDeVisita: {
             /** Format: uuid */
             id: string;
@@ -4297,6 +4626,10 @@ export interface components {
                 mensal: number;
                 ponderado: number;
             };
+        };
+        ListaDeRotas: {
+            itens: components["schemas"]["ItemDeRota"][];
+            total: number;
         };
         LoteDeImportacao: {
             /** Format: uuid */
@@ -4661,6 +4994,15 @@ export interface components {
             empresaViraClientePadrao: boolean;
             historico: components["schemas"]["EntradaDoHistoricoDaOportunidade"][];
         };
+        OrdemOtimizada: {
+            empresaIds: string[];
+            /** @enum {string} */
+            estimativa: "ruas" | "linha_reta";
+            distanciaM: number;
+            duracaoS: number;
+            /** @enum {string|null} */
+            aviso: "nao_configurada" | "indisponivel" | "sem_partida" | null;
+        };
         Origem: {
             /** Format: uuid */
             id: string;
@@ -4668,6 +5010,17 @@ export interface components {
             ativo: boolean;
             ordem: number;
             chaveSistema: string | null;
+        };
+        OtimizarRotaEntrada: {
+            /** @enum {string} */
+            partida: "posicao_atual" | "ponto";
+            /** Format: uuid */
+            pontoPartidaId?: string | null;
+            voltarAoInicio: boolean;
+            empresaIds: string[];
+            posicaoAtual?: components["schemas"]["Coordenada"];
+            /** Format: uuid */
+            responsavelId?: string;
         };
         PacoteOffline: {
             empresas: components["schemas"]["EmpresaOffline"][];
@@ -4680,6 +5033,37 @@ export interface components {
             nome: string;
             ativo: boolean;
             ordem: number;
+        };
+        ParadaDaRota: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            empresaId: string;
+            empresaNome: string;
+            bairro: string | null;
+            cidade: string | null;
+            uf: string | null;
+            telefone: string | null;
+            latitude: number | null;
+            longitude: number | null;
+            /** @enum {string|null} */
+            precisao: "exata" | "aproximada" | null;
+            ordem: number;
+            distanciaTrechoM: number | null;
+            duracaoTrechoS: number | null;
+            /** @enum {string} */
+            situacao: "pendente" | "visitada" | "pulada";
+            motivoPulo: string | null;
+            /** Format: uuid */
+            atividadeId: string | null;
+            resolvidaEm: string | null;
+        };
+        ParadasAdicionadas: {
+            rota: components["schemas"]["Rota"];
+            adicionadas: number;
+            jaNaRota: number;
+            ignoradas: number;
+            excedentes: number;
         };
         PerfilDeAcesso: {
             /** Format: uuid */
@@ -4720,6 +5104,17 @@ export interface components {
         };
         PermissoesDoPerfil: {
             [key: string]: ("propria" | "equipe" | "todas") | true;
+        };
+        PontoDePartida: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            endereco: string | null;
+            latitude: number;
+            longitude: number;
+            padrao: boolean;
+            ativo: boolean;
+            ordem: number;
         };
         PontosDoMapa: {
             total: number;
@@ -4863,6 +5258,9 @@ export interface components {
             membroId: string;
             verificacaoEmailPendente: boolean;
         };
+        PularParadaEntrada: {
+            motivo: string;
+        };
         RegiaoGeo: {
             id: string;
             /** @enum {string} */
@@ -4965,9 +5363,70 @@ export interface components {
             aConfirmar: number;
             ajustadasAMao: number;
         };
+        Rota: {
+            /** Format: uuid */
+            id: string;
+            codigo: number;
+            nome: string;
+            data: string;
+            responsavel: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            /** @enum {string} */
+            partida: "posicao_atual" | "ponto";
+            pontoPartida: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                latitude: number;
+                longitude: number;
+            } | null;
+            voltarAoInicio: boolean;
+            minutosPorVisita: number;
+            /** @enum {string} */
+            situacao: "planejada" | "em_andamento" | "concluida" | "cancelada";
+            distanciaM: number | null;
+            duracaoS: number | null;
+            /** @enum {string|null} */
+            estimativa: "ruas" | "linha_reta" | null;
+            otimizadaEm: string | null;
+            trajeto: (number)[][] | null;
+            iniciadaEm: string | null;
+            concluidaEm: string | null;
+            paradas: components["schemas"]["ParadaDaRota"][];
+            podeEditar: boolean;
+        };
+        RotaDaEmpresa: {
+            /** Format: uuid */
+            rotaId: string;
+            codigo: number;
+            nome: string;
+            data: string;
+            ordem: number;
+            /** @enum {string} */
+            situacaoParada: "pendente" | "visitada" | "pulada";
+        };
         SalvarRegiao: {
             nome: string;
             municipios: number[];
+        };
+        SalvarRotaEntrada: {
+            nome: string;
+            /** Format: date */
+            data: string;
+            /** Format: uuid */
+            responsavelId?: string;
+            /** @enum {string} */
+            partida: "posicao_atual" | "ponto";
+            /** Format: uuid */
+            pontoPartidaId?: string | null;
+            voltarAoInicio: boolean;
+            minutosPorVisita?: number;
+            empresaIds: string[];
+            posicaoAtual?: components["schemas"]["Coordenada"];
+            otimizada?: boolean;
         };
         SalvarVisitaEntrada: {
             /** Format: uuid */
@@ -9570,6 +10029,309 @@ export interface operations {
             };
             /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracoesDeRotasController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarConfiguracaoDeRotasEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDeRotas"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracoesDeRotasController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PontoDePartida"][];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracoesDeRotasController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarPontoDePartidaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PontoDePartida"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracoesDeRotasController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracoesDeRotasController_alterarPonto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarPontoDePartidaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PontoDePartida"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16139,6 +16901,756 @@ export interface operations {
             };
             /** @description Serviço indisponível (`servico_indisponivel`) */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_listar: {
+        parameters: {
+            query?: {
+                de?: string;
+                ate?: string;
+                responsavelId?: string;
+                situacao?: "planejada" | "em_andamento" | "concluida" | "cancelada";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeRotas"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarRotaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rota"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rota"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_salvar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarRotaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rota"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_cancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rota"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_encerrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rota"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_adicionar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdicionarParadasEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParadasAdicionadas"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_pular: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                paradaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PularParadaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rota"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_configuracao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDeRotas"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_daEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                empresaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotaDaEmpresa"][];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_hoje: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rota"][];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    RotasController_otimizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtimizarRotaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdemOtimizada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

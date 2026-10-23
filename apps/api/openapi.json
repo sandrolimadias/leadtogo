@@ -5728,6 +5728,361 @@
         "tags": ["Cadastros: papéis na decisão"]
       }
     },
+    "/v1/configuracoes/rotas": {
+      "put": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Valor sugerido nas rotas novas (0 a 480; cada rota pode ajustar o seu).",
+        "operationId": "ConfiguracoesDeRotasController_alterar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarConfiguracaoDeRotasEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDeRotas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar os minutos por visita",
+        "tags": ["Rotas: configurações"]
+      }
+    },
+    "/v1/configuracoes/rotas/pontos": {
+      "get": {
+        "description": "Qualquer membro (o editor de rota usa). O padrão primeiro; inclui os inativos.",
+        "operationId": "ConfiguracoesDeRotasController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PontoDePartida"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar pontos de partida",
+        "tags": ["Rotas: configurações"]
+      },
+      "post": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. A posição é a marcada no mapa. Marcar como padrão tira o anterior. Nome repetido: 409 `nome_repetido`.",
+        "operationId": "ConfiguracoesDeRotasController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarPontoDePartidaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PontoDePartida"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar ponto de partida",
+        "tags": ["Rotas: configurações"]
+      }
+    },
+    "/v1/configuracoes/rotas/pontos/{id}": {
+      "patch": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Só os campos enviados mudam; a posição muda com latitude e longitude juntas.",
+        "operationId": "ConfiguracoesDeRotasController_alterarPonto",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarPontoDePartidaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PontoDePartida"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar ponto de partida",
+        "tags": ["Rotas: configurações"]
+      },
+      "delete": {
+        "description": "Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Exclusão lógica; usado em alguma rota, só se inativa (409 `ponto_em_uso`).",
+        "operationId": "ConfiguracoesDeRotasController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir ponto de partida",
+        "tags": ["Rotas: configurações"]
+      }
+    },
     "/v1/configuracoes/seguranca": {
       "get": {
         "description": "Os perfis de acesso da empresa e se cada um exige a verificação em duas etapas (`exige2fa`). Quem entra na empresa sem 2FA e o perfil dele exige é levado à ativação (`2fa_obrigatorio` nas rotas dela). Quem ainda não tem perfil segue a política antiga por papel (transição).",
@@ -13967,6 +14322,960 @@
         "tags": ["Receita"]
       }
     },
+    "/v1/rotas": {
+      "get": {
+        "description": "Exige `rotas.ver`; o alcance (própria, equipe, todas) vale sobre o RESPONSÁVEL da rota (404 `rota_nao_encontrada` fora dele). Da mais nova para a mais antiga, com as contagens de paradas visitadas, puladas e pendentes.",
+        "operationId": "RotasController_listar",
+        "parameters": [
+          {
+            "name": "de",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "ate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "responsavelId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "situacao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["planejada", "em_andamento", "concluida", "cancelada"]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeRotas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar rotas",
+        "tags": ["Rotas"]
+      },
+      "post": {
+        "description": "Exige `rotas.editar`. O código (R-0151) é sequencial por empresa. As distâncias saem pelas ruas (OSRM) ou, sem o serviço, em linha reta (`estimativa`). Paradas: empresas com posição no mapa que quem monta e o responsável da rota veem na carteira (400 `parada_invalida`), no máximo `ROTA_MAX_PARADAS` (30; 400 `paradas_demais`). Montar para outro vendedor exige `rotas.atribuir`. A `posicaoAtual` entra só no cálculo e nunca é gravada.",
+        "operationId": "RotasController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarRotaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rota"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar rota",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/{id}": {
+      "get": {
+        "description": "Exige `rotas.ver`; o alcance (própria, equipe, todas) vale sobre o RESPONSÁVEL da rota (404 `rota_nao_encontrada` fora dele). Com as paradas na ordem e o trajeto pelas ruas (nulo em linha reta).",
+        "operationId": "RotasController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rota"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Obter rota",
+        "tags": ["Rotas"]
+      },
+      "put": {
+        "description": "Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. Regrava a rota inteira com as paradas na ordem dada e recalcula as estimativas; paradas visitadas ou puladas não saem (409 `parada_resolvida`). Paradas: empresas com posição no mapa que quem monta e o responsável da rota veem na carteira (400 `parada_invalida`), no máximo `ROTA_MAX_PARADAS` (30; 400 `paradas_demais`). Montar para outro vendedor exige `rotas.atribuir`. A `posicaoAtual` entra só no cálculo e nunca é gravada.",
+        "operationId": "RotasController_salvar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarRotaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rota"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Salvar rota",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/{id}/cancelar": {
+      "post": {
+        "description": "Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. A rota fica cancelada (continua na lista, com a situação).",
+        "operationId": "RotasController_cancelar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rota"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cancelar rota",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/{id}/encerrar": {
+      "post": {
+        "description": "Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. A rota fica concluída; as paradas ainda pendentes viram puladas (\"Rota encerrada\").",
+        "operationId": "RotasController_encerrar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rota"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Encerrar rota",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/{id}/paradas": {
+      "post": {
+        "description": "Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. O que cabe entra no fim; as que já estão na rota, as sem posição ou fora da carteira do responsável e as que passam do limite só contam.",
+        "operationId": "RotasController_adicionar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdicionarParadasEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParadasAdicionadas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Adicionar paradas no fim da rota",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/{id}/paradas/{paradaId}/pular": {
+      "post": {
+        "description": "Exige `rotas.editar` no alcance do responsável (403 `acesso_negado`); rota concluída ou cancelada não muda (409 `rota_fechada`). Registra na auditoria. Só a parada pendente (409 `parada_resolvida`), com o motivo. Sem pendentes, a rota fica concluída.",
+        "operationId": "RotasController_pular",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paradaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PularParadaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rota"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Pular uma parada",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/configuracao": {
+      "get": {
+        "description": "Qualquer membro. Minutos por visita sugeridos, o limite de paradas e se a otimização (VROOM e OSRM) está configurada; sem ela, a tela mostra \"Otimização de rotas ainda não configurada\".",
+        "operationId": "RotasController_configuracao",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDeRotas"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Configuração das rotas",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/empresa/{empresaId}": {
+      "get": {
+        "description": "As rotas planejadas ou em andamento, de hoje em diante, em que a empresa é parada (o \"Na rota · parada N\"). Exige `rotas.ver`; o alcance (própria, equipe, todas) vale sobre o RESPONSÁVEL da rota (404 `rota_nao_encontrada` fora dele).",
+        "operationId": "RotasController_daEmpresa",
+        "parameters": [
+          {
+            "name": "empresaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RotaDaEmpresa"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Rotas em aberto de uma empresa",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/hoje": {
+      "get": {
+        "description": "Qualquer membro. A \"rota do dia\" do celular: as rotas de hoje dela, sem as canceladas.",
+        "operationId": "RotasController_hoje",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Rota"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Rotas de hoje da própria pessoa",
+        "tags": ["Rotas"]
+      }
+    },
+    "/v1/rotas/otimizar": {
+      "post": {
+        "description": "Exige `rotas.editar`. A ordem mais curta pelas ruas (VROOM), sem gravar. Sem VROOM/OSRM configurados, 409 `rotas_nao_configuradas`. Serviço fora do ar: a ordem sai em linha reta, com `aviso: indisponivel`. Paradas: empresas com posição no mapa que quem monta e o responsável da rota veem na carteira (400 `parada_invalida`), no máximo `ROTA_MAX_PARADAS` (30; 400 `paradas_demais`). Montar para outro vendedor exige `rotas.atribuir`. A `posicaoAtual` entra só no cálculo e nunca é gravada.",
+        "operationId": "RotasController_otimizar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtimizarRotaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdemOtimizada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Otimizar a ordem das paradas",
+        "tags": ["Rotas"]
+      }
+    },
     "/v1/sessao/empresa-ativa": {
       "post": {
         "description": "Define a empresa ativa DESTA sessão. Só vale para empresa em que o usuário é membro ativo e que está em teste ou ativa; uma empresa alheia e uma inexistente dão o mesmo 403 (`empresa_nao_permitida`). Quem ainda não ativou o 2FA também pode trocar: a regra é aplicada na empresa que ficar ativa (nas rotas dela vem `2fa_obrigatorio` se ela o exige).",
@@ -14508,6 +15817,22 @@
         "required": ["token"],
         "additionalProperties": false
       },
+      "AdicionarParadasEntrada": {
+        "type": "object",
+        "properties": {
+          "empresaIds": {
+            "minItems": 1,
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": ["empresaIds"],
+        "additionalProperties": false
+      },
       "AjustarPosicao": {
         "type": "object",
         "properties": {
@@ -14645,6 +15970,18 @@
             "maxLength": 5000
           }
         },
+        "additionalProperties": false
+      },
+      "AlterarConfiguracaoDeRotasEntrada": {
+        "type": "object",
+        "properties": {
+          "minutosPorVisita": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 480
+          }
+        },
+        "required": ["minutosPorVisita"],
         "additionalProperties": false
       },
       "AlterarContatoEntrada": {
@@ -15098,6 +16435,38 @@
           "acaoForaDoPerfil": {
             "type": "string",
             "enum": ["pular", "importar_com_tag"]
+          },
+          "ativo": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlterarPontoDePartidaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "endereco": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 300
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "padrao": {
+            "type": "boolean"
           },
           "ativo": {
             "type": "boolean"
@@ -15928,6 +17297,26 @@
         },
         "additionalProperties": false
       },
+      "ConfiguracaoDeRotas": {
+        "type": "object",
+        "properties": {
+          "minutosPorVisita": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 480
+          },
+          "maxParadas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "otimizacaoConfigurada": {
+            "type": "boolean"
+          }
+        },
+        "required": ["minutosPorVisita", "maxParadas", "otimizacaoConfigurada"],
+        "additionalProperties": false
+      },
       "ConfiguracaoDeSeguranca": {
         "type": "object",
         "properties": {
@@ -16603,6 +17992,23 @@
         "required": ["id", "email", "papel", "perfil", "expiraEm", "criadoEm", "situacao"],
         "additionalProperties": false
       },
+      "Coordenada": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": ["latitude", "longitude"],
+        "additionalProperties": false
+      },
       "CorDeTag": {
         "type": "string",
         "enum": [
@@ -17184,6 +18590,36 @@
           }
         },
         "required": ["nome"],
+        "additionalProperties": false
+      },
+      "CriarPontoDePartidaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "endereco": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 300
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "padrao": {
+            "type": "boolean"
+          }
+        },
+        "required": ["nome", "latitude", "longitude"],
         "additionalProperties": false
       },
       "CriarResultadoDeVisitaEntrada": {
@@ -19379,6 +20815,103 @@
         ],
         "additionalProperties": false
       },
+      "ItemDeRota": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "nome": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["planejada", "em_andamento", "concluida", "cancelada"]
+          },
+          "paradas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "visitadas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "puladas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pendentes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "distanciaM": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "duracaoS": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "minutosPorVisita": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "estimativa": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["ruas", "linha_reta"]
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "nome",
+          "data",
+          "responsavel",
+          "situacao",
+          "paradas",
+          "visitadas",
+          "puladas",
+          "pendentes",
+          "distanciaM",
+          "duracaoS",
+          "minutosPorVisita",
+          "estimativa"
+        ],
+        "additionalProperties": false
+      },
       "ItemDeVisita": {
         "type": "object",
         "properties": {
@@ -20024,6 +21557,24 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina", "somas"],
+        "additionalProperties": false
+      },
+      "ListaDeRotas": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeRota"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
         "additionalProperties": false
       },
       "LoteDeImportacao": {
@@ -21328,6 +22879,39 @@
         ],
         "additionalProperties": false
       },
+      "OrdemOtimizada": {
+        "type": "object",
+        "properties": {
+          "empresaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "estimativa": {
+            "type": "string",
+            "enum": ["ruas", "linha_reta"]
+          },
+          "distanciaM": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "duracaoS": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "aviso": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["nao_configurada", "indisponivel", "sem_partida"]
+          }
+        },
+        "required": ["empresaIds", "estimativa", "distanciaM", "duracaoS", "aviso"],
+        "additionalProperties": false
+      },
       "Origem": {
         "type": "object",
         "properties": {
@@ -21352,6 +22936,44 @@
           }
         },
         "required": ["id", "nome", "ativo", "ordem", "chaveSistema"],
+        "additionalProperties": false
+      },
+      "OtimizarRotaEntrada": {
+        "type": "object",
+        "properties": {
+          "partida": {
+            "type": "string",
+            "enum": ["posicao_atual", "ponto"]
+          },
+          "pontoPartidaId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "voltarAoInicio": {
+            "type": "boolean"
+          },
+          "empresaIds": {
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "posicaoAtual": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Coordenada"
+              }
+            ]
+          },
+          "responsavelId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["partida", "voltarAoInicio", "empresaIds"],
         "additionalProperties": false
       },
       "PacoteOffline": {
@@ -21395,6 +23017,135 @@
           }
         },
         "required": ["id", "nome", "ativo", "ordem"],
+        "additionalProperties": false
+      },
+      "ParadaDaRota": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresaNome": {
+            "type": "string"
+          },
+          "bairro": {
+            "nullable": true,
+            "type": "string"
+          },
+          "cidade": {
+            "nullable": true,
+            "type": "string"
+          },
+          "uf": {
+            "nullable": true,
+            "type": "string"
+          },
+          "telefone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "latitude": {
+            "nullable": true,
+            "type": "number"
+          },
+          "longitude": {
+            "nullable": true,
+            "type": "number"
+          },
+          "precisao": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["exata", "aproximada"]
+          },
+          "ordem": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "distanciaTrechoM": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "duracaoTrechoS": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["pendente", "visitada", "pulada"]
+          },
+          "motivoPulo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "atividadeId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "resolvidaEm": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "empresaId",
+          "empresaNome",
+          "bairro",
+          "cidade",
+          "uf",
+          "telefone",
+          "latitude",
+          "longitude",
+          "precisao",
+          "ordem",
+          "distanciaTrechoM",
+          "duracaoTrechoS",
+          "situacao",
+          "motivoPulo",
+          "atividadeId",
+          "resolvidaEm"
+        ],
+        "additionalProperties": false
+      },
+      "ParadasAdicionadas": {
+        "type": "object",
+        "properties": {
+          "rota": {
+            "$ref": "#/components/schemas/Rota"
+          },
+          "adicionadas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "jaNaRota": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ignoradas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "excedentes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["rota", "adicionadas", "jaNaRota", "ignoradas", "excedentes"],
         "additionalProperties": false
       },
       "PerfilDeAcesso": {
@@ -21540,6 +23291,41 @@
             }
           ]
         }
+      },
+      "PontoDePartida": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "endereco": {
+            "nullable": true,
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "padrao": {
+            "type": "boolean"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "ordem": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["id", "nome", "endereco", "latitude", "longitude", "padrao", "ativo", "ordem"],
+        "additionalProperties": false
       },
       "PontosDoMapa": {
         "type": "object",
@@ -22120,6 +23906,18 @@
         "required": ["usuarioId", "contaId", "tenantId", "membroId", "verificacaoEmailPendente"],
         "additionalProperties": false
       },
+      "PularParadaEntrada": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": ["motivo"],
+        "additionalProperties": false
+      },
       "RegiaoGeo": {
         "type": "object",
         "properties": {
@@ -22487,6 +24285,187 @@
         ],
         "additionalProperties": false
       },
+      "Rota": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "nome": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "partida": {
+            "type": "string",
+            "enum": ["posicao_atual", "ponto"]
+          },
+          "pontoPartida": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            },
+            "required": ["id", "nome", "latitude", "longitude"],
+            "additionalProperties": false
+          },
+          "voltarAoInicio": {
+            "type": "boolean"
+          },
+          "minutosPorVisita": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["planejada", "em_andamento", "concluida", "cancelada"]
+          },
+          "distanciaM": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "duracaoS": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "estimativa": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["ruas", "linha_reta"]
+          },
+          "otimizadaEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "trajeto": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "iniciadaEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "concluidaEm": {
+            "nullable": true,
+            "type": "string"
+          },
+          "paradas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParadaDaRota"
+            }
+          },
+          "podeEditar": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "nome",
+          "data",
+          "responsavel",
+          "partida",
+          "pontoPartida",
+          "voltarAoInicio",
+          "minutosPorVisita",
+          "situacao",
+          "distanciaM",
+          "duracaoS",
+          "estimativa",
+          "otimizadaEm",
+          "trajeto",
+          "iniciadaEm",
+          "concluidaEm",
+          "paradas",
+          "podeEditar"
+        ],
+        "additionalProperties": false
+      },
+      "RotaDaEmpresa": {
+        "type": "object",
+        "properties": {
+          "rotaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "nome": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "ordem": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "situacaoParada": {
+            "type": "string",
+            "enum": ["pendente", "visitada", "pulada"]
+          }
+        },
+        "required": ["rotaId", "codigo", "nome", "data", "ordem", "situacaoParada"],
+        "additionalProperties": false
+      },
       "SalvarRegiao": {
         "type": "object",
         "properties": {
@@ -22507,6 +24486,61 @@
           }
         },
         "required": ["nome", "municipios"],
+        "additionalProperties": false
+      },
+      "SalvarRotaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "data": {
+            "type": "string",
+            "format": "date"
+          },
+          "responsavelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "partida": {
+            "type": "string",
+            "enum": ["posicao_atual", "ponto"]
+          },
+          "pontoPartidaId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "voltarAoInicio": {
+            "type": "boolean"
+          },
+          "minutosPorVisita": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 480
+          },
+          "empresaIds": {
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "posicaoAtual": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Coordenada"
+              }
+            ]
+          },
+          "otimizada": {
+            "type": "boolean"
+          }
+        },
+        "required": ["nome", "data", "partida", "voltarAoInicio", "empresaIds"],
         "additionalProperties": false
       },
       "SalvarVisitaEntrada": {

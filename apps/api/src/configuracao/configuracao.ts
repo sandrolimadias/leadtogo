@@ -146,6 +146,17 @@ const esquema = z
     /** Por quantos dias a resposta de uma consulta externa (Nominatim, CEP) vale como cache */
     GEO_CACHE_DIAS: z.coerce.number().int().min(0).max(365).default(90),
 
+    // Rotas (G4; docs/plano_geolocalizacao.md, seção 10). Sem VROOM_URL e OSRM_URL a otimização fica desligada
+    // ("Otimização de rotas ainda não configurada") e as estimativas saem em linha reta.
+    /** VROOM da pilha leadtogo-rotas (rede interna do Coolify), ex.: http://leadtogo-vroom-<uuid>:3000 */
+    VROOM_URL: opcional(url(['http:', 'https:'])),
+    /** OSRM da mesma pilha, ex.: http://leadtogo-osrm-<uuid>:5000 (distâncias e trajeto pelas ruas) */
+    OSRM_URL: opcional(url(['http:', 'https:'])),
+    /** Paradas por rota (decisão do Ale: no máximo 30) */
+    ROTA_MAX_PARADAS: z.coerce.number().int().min(2).max(30).default(30),
+    /** Prazo de cada chamada ao VROOM ou ao OSRM, em segundos; esgotado, a ordem sai em linha reta */
+    ROTA_TEMPO_LIMITE_S: z.coerce.number().int().min(1).max(60).default(10),
+
     // Banco (docs/runbook_observabilidade.md, "Trava do mapa"). O pool é por processo (API e worker).
     /** Conexões do pool do banco da API (o worker usa 10) */
     DB_POOL_MAX: z.coerce.number().int().min(2).max(100).default(20),
