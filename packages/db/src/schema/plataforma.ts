@@ -146,6 +146,10 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   visitasPadroesCriadosEm: timestamp({ withTimezone: true }),
   /** Versão do catálogo de permissões dos perfis de sistema (nula = 1); a partida da API sincroniza as chaves novas */
   catalogoPerfisVersao: integer(),
+  /** Minutos por visita sugeridos nas rotas novas (G4; ajustável em cada rota) */
+  rotaMinutosPorVisita: smallint().notNull().default(40),
+  /** Último código de rota usado (R-0151): `UPDATE … RETURNING` na criação da rota */
+  rotaUltimoCodigo: integer().notNull().default(0),
   ...carimbos(),
 })
 

@@ -65,11 +65,23 @@ describe('catálogo de permissões', () => {
 })
 
 describe('versão do catálogo', () => {
-  it('a versão 2 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
-    expect(VERSAO_DO_CATALOGO).toBe(2)
+  it('a versão 3 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
+    expect(VERSAO_DO_CATALOGO).toBe(3)
     // `atividades.excluir` saiu (6d): excluir a atividade é parte de editá-la, como antes dos perfis
-    expect(CHAVES_DE_PERMISSAO).toHaveLength(30)
-    expect(NOVAS_POR_VERSAO).toEqual({ 2: ['visitas.ver_localizacao'] })
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(33)
+    expect(NOVAS_POR_VERSAO).toEqual({
+      2: ['visitas.ver_localizacao'],
+      3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
+    })
+  })
+
+  it('v3: Administrador e Gestor montam rotas de todos e atribuem; o Vendedor só as próprias', () => {
+    expect(PERMISSOES_PADRAO.admin['rotas.ver']).toBe('todas')
+    expect(PERMISSOES_PADRAO.gestor['rotas.editar']).toBe('todas')
+    expect(PERMISSOES_PADRAO.gestor['rotas.atribuir']).toBe(true)
+    expect(PERMISSOES_PADRAO.vendedor['rotas.ver']).toBe('propria')
+    expect(PERMISSOES_PADRAO.vendedor['rotas.editar']).toBe('propria')
+    expect(PERMISSOES_PADRAO.vendedor['rotas.atribuir']).toBeUndefined()
   })
 
   it('toda chave nova existe no catálogo; v2: Administrador e Gestor veem a localização, o Vendedor não', () => {

@@ -39,3 +39,10 @@ export const geografiaPonto = customType<{ data: string; driverData: string }>({
 export const geoPrecisao = pgEnum('geo_precisao', ['exata', 'aproximada'])
 export const geoAproximacao = pgEnum('geo_aproximacao', ['interpolada', 'rua', 'cep_cidade'])
 export const geoOrigem = pgEnum('geo_origem', ['cnefe', 'nominatim', 'cep', 'manual', 'checkin'])
+
+/** Linha geográfica (`geography(LineString,4326)`): o trajeto da rota pelas ruas (G4). Lida e gravada por SQL. */
+export const geografiaLinha = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return 'geography(LineString,4326)'
+  },
+})

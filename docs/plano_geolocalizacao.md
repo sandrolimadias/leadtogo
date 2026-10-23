@@ -202,7 +202,7 @@ O G0 mediu o OSRM e o VROOM em x86 com 12 CPUs; a VPS tem 4 CPUs ARM já perto d
 ### 10.1 G4a — Planejar (migração 0030)
 
 **Tabelas novas** (todas com `tenant_id`, RLS forçado, colunas padrão e teste de isolamento; detalhe em `modelagem_banco.md`):
-- `rota_pontos_partida`: nome, endereço, `localizacao` (geocodificada pela mesma cascata do G1, com ajuste manual), ativo, padrão (um por empresa). Ex.: "Sede Dias Automação · Serra". Cadastrados pelo admin.
+- `rota_pontos_partida`: nome, endereço (texto para exibir), `localizacao` (marcada no mapa pelo admin; geocodificar na requisição contraria a regra do G1, e são poucos pontos), ativo, padrão (um por empresa). Ex.: "Sede Dias Automação · Serra". Cadastrados pelo admin.
 - `rotas`: `codigo` sequencial por empresa (exibido como **R-0151**), nome, data, `responsavel_id` (o vendedor que vai rodar), partida (`posicao_atual` ou `ponto_id`), `voltar_ao_inicio`, `minutos_por_visita`, `situacao` (`planejada` · `em_andamento` · `concluida` · `cancelada`), `distancia_m`, `duracao_s` (deslocamento), `otimizada_em`, `trajeto` (`geography(LineString)`, o desenho pelas ruas para o mapa, recalculado quando as paradas mudam).
 - `rota_paradas`: rota, empresa, ordem, `distancia_trecho_m`, `duracao_trecho_s`, `situacao` (`pendente` · `visitada` · `pulada`), `atividade_id` (a visita do G3, preenchida no G4b). Uma empresa aparece uma vez por rota. Índice por empresa e situação, para o "Na rota · parada N" do mapa.
 - `tenant_configuracoes`: + `rota_minutos_por_visita` (padrão 40).

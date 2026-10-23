@@ -621,3 +621,54 @@ fabricas['relatorios_visita'] = definirFabrica<{
     return id
   },
 })
+
+// Rotas (G4): pontos de partida, rotas e paradas
+const pontoGeo = 'SRID=4326;POINT(-40.3 -20.3)'
+
+fabricas['rota_pontos_partida'] = definirFabrica<undefined>({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO rota_pontos_partida (id, tenant_id, nome, localizacao)
+      VALUES (${id}, ${tenantId}, ${`Ponto ${id}`}, ${pontoGeo}::geography)`
+    return id
+  },
+})
+
+const membroDeRota = async (tx: Sql | TransactionSql, tenantId: string): Promise<string> => {
+  const id = novoId()
+  await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${id}, ${tenantId}, 'Vendedor de rota')`
+  return id
+}
+
+fabricas['rotas'] = definirFabrica<string>({
+  colunaAlteravel: 'nome',
+  preparar: (owner, tenantId) => comTenant(owner, tenantId, (tx) => membroDeRota(tx, tenantId)),
+  criar: async (tx, tenantId, membroId) => {
+    const id = novoId()
+    await tx`INSERT INTO rotas (id, tenant_id, codigo, nome, data, responsavel_id)
+      VALUES (${id}, ${tenantId}, ${Math.floor(Math.random() * 1e9)}, 'Rota de teste', current_date, ${membroId})`
+    return id
+  },
+})
+
+// Cada parada tem a sua empresa (uma empresa aparece uma vez por rota)
+fabricas['rota_paradas'] = definirFabrica<{ rotaId: string; membroId: string }>({
+  colunaAlteravel: 'ordem',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const membroId = await membroDeRota(tx, tenantId)
+      const rotaId = novoId()
+      await tx`INSERT INTO rotas (id, tenant_id, codigo, nome, data, responsavel_id)
+        VALUES (${rotaId}, ${tenantId}, 1, 'Rota de teste', current_date, ${membroId})`
+      return { rotaId, membroId }
+    }),
+  criar: async (tx, tenantId, { rotaId, membroId }) => {
+    const empresaId = novoId()
+    const id = novoId()
+    await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id) VALUES (${empresaId}, ${tenantId}, 'Empresa de teste', ${membroId})`
+    await tx`INSERT INTO rota_paradas (id, tenant_id, rota_id, empresa_id, ordem)
+      VALUES (${id}, ${tenantId}, ${rotaId}, ${empresaId}, ${1 + Math.floor(Math.random() * 30)})`
+    return id
+  },
+})

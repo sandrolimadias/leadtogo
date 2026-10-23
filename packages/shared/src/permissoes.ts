@@ -46,6 +46,7 @@ export const ROTULO_DO_MODULO: Record<string, string> = {
   importacao: 'Importação',
   geolocalizacao: 'Geolocalização e mapa',
   visitas: 'Visitas',
+  rotas: 'Rotas',
   cadastros: 'Cadastros auxiliares',
   equipe: 'Equipe e convites',
   perfis: 'Perfis de acesso',
@@ -78,6 +79,9 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
   p('geolocalizacao', 'regioes', 'Criar, alterar e excluir regiões'),
   p('geolocalizacao', 'legenda', 'Configurar a legenda do mapa'),
   p('visitas', 'ver_localizacao', 'Ver a localização e a distância dos check-ins'),
+  p('rotas', 'ver', 'Ver rotas', true),
+  p('rotas', 'editar', 'Montar, alterar, executar e cancelar rotas', true),
+  p('rotas', 'atribuir', 'Montar ou passar a rota para outro vendedor'),
   p('cadastros', 'gerir', 'Gerir tags, funis, tipos, origens, motivos e demais cadastros'),
   p('equipe', 'ver_emails', 'Ver o e-mail dos membros da equipe'),
   p('equipe', 'gerir', 'Convidar, desativar e ver o acesso dos membros'),
@@ -92,11 +96,12 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
  * os perfis de SISTEMA das empresas com versão menor recebem as chaves novas que o seu padrão tem (as
  * outras permissões não mudam). Perfis criados pela empresa nunca recebem permissão automaticamente.
  */
-export const VERSAO_DO_CATALOGO = 2
+export const VERSAO_DO_CATALOGO = 3
 
 /** As chaves que cada versão acrescentou (a versão 1 é o catálogo inicial). */
 export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
   2: ['visitas.ver_localizacao'],
+  3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
 }
 
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
@@ -190,6 +195,8 @@ export const PERMISSOES_PADRAO: Record<ChaveDeSistema, PermissoesDoPerfil> = {
     'atividades.ver': 'propria',
     'atividades.criar': true,
     'atividades.editar': 'propria',
+    'rotas.ver': 'propria',
+    'rotas.editar': 'propria',
   },
 }
 
