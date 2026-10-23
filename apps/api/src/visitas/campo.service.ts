@@ -6,14 +6,17 @@ import {
   criarContatoSchema,
   decidirCheckin,
   type DistanciaDoCheckin,
+  type EmpresaOffline,
   estaNoFuturo,
   type ItemDeVisita,
   type ModoDeCheckin,
+  type PacoteOffline,
   type PosicaoDoAparelho,
   type ProximoPassoDaResposta,
   type RelatorioDeVisita,
   type RespostaGravada,
   type SalvarVisitaEntrada,
+  textoDoEndereco,
   validarRespostas,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
@@ -208,6 +211,104 @@ export class VisitasDoCampoService {
         criadoEm: d.criadoEm,
       }
     })
+  }
+
+  /**
+   * "Levar para offline": o mínimo de até 300 empresas que a pessoa vê (docs/lgpd.md, 3.2). As que ela
+   * não vê (ou excluídas) só contam em `ignoradas`. Nada é gravado.
+   */
+  async pacoteOffline(empresaIds: string[]): Promise<PacoteOffline> {
+    const escopo = await escopoDaCarteira(this.ctx)
+    const db = this.ctx.db()
+    const ids = `{${[...new Set(empresaIds)].join(',')}}`
+    const linhas = await db.execute<{
+      id: string
+      nome: string
+      vendedor_id: string
+      tipo_logradouro: string | null
+      logradouro: string | null
+      numero: string | null
+      bairro: string | null
+      cep: string | null
+      municipio: string | null
+      latitude: number | null
+      longitude: number | null
+      telefone: string | null
+    }>(sql`
+      SELECT e.id, coalesce(nullif(e.nome_fantasia, ''), e.razao_social) AS nome, e.vendedor_id,
+        e.tipo_logradouro, e.logradouro, e.numero, e.bairro, e.cep, m.nome AS municipio,
+        ST_Y(e.localizacao::geometry) AS latitude, ST_X(e.localizacao::geometry) AS longitude,
+        (SELECT t.numero FROM empresa_telefones t WHERE t.empresa_id = e.id
+          ORDER BY t.principal DESC, t.criado_em LIMIT 1) AS telefone
+      FROM empresas e LEFT JOIN municipios m ON m.codigo_ibge = e.municipio_codigo
+      WHERE e.id = ANY (${ids}::uuid[]) AND e.excluido_em IS NULL`)
+    const visiveis = linhas.filter((e) => podeVer(escopo, e.vendedor_id))
+    const idsVisiveis = `{${visiveis.map((e) => e.id).join(',')}}`
+    const tags = await db.execute<{
+      empresa_id: string
+      id: string
+      nome: string
+      cor: string
+    }>(sql`
+      SELECT et.empresa_id, t.id, t.nome, t.cor::text AS cor FROM empresa_tags et
+      JOIN tags t ON t.id = et.tag_id AND t.excluido_em IS NULL
+      WHERE et.empresa_id = ANY (${idsVisiveis}::uuid[]) ORDER BY t.ordem, t.nome`)
+    const verContatos = escopo.contatos.ver
+    const contatos = await db.execute<{
+      empresa_id: string
+      id: string
+      nome: string
+      cargo: string | null
+      telefone: string | null
+      vendedor_id: string
+    }>(sql`
+      SELECT ec.empresa_id, c.id, c.nome, ec.cargo, e.vendedor_id,
+        (SELECT t.numero FROM contato_telefones t WHERE t.contato_id = c.id
+          ORDER BY t.principal DESC, t.criado_em LIMIT 1) AS telefone
+      FROM empresa_contatos ec JOIN contatos c ON c.id = ec.contato_id AND c.excluido_em IS NULL
+      JOIN empresas e ON e.id = ec.empresa_id
+      WHERE ec.empresa_id = ANY (${idsVisiveis}::uuid[]) AND ec.ativo
+      ORDER BY ec.principal DESC, c.nome`)
+    const empresas: EmpresaOffline[] = visiveis.map((e) => ({
+      id: e.id,
+      nome: e.nome,
+      endereco:
+        textoDoEndereco(
+          {
+            cep: e.cep,
+            tipoLogradouro: e.tipo_logradouro,
+            logradouro: e.logradouro,
+            numero: e.numero,
+            bairro: e.bairro,
+          },
+          e.municipio,
+        ) || null,
+      posicao:
+        e.latitude !== null && e.longitude !== null
+          ? { latitude: e.latitude, longitude: e.longitude }
+          : null,
+      telefone: e.telefone,
+      tags: tags
+        .filter((t) => t.empresa_id === e.id)
+        .map((t) => ({ id: t.id, nome: t.nome, cor: t.cor })),
+      contatos: contatos
+        .filter(
+          (c) =>
+            c.empresa_id === e.id && (verContatos === null || verContatos.includes(c.vendedor_id)),
+        )
+        .map((c) => ({ id: c.id, nome: c.nome, cargo: c.cargo, telefone: c.telefone })),
+      podeVisitar: podeEditar(escopo, e.vendedor_id) && this.permissao.pode('atividades.criar'),
+    }))
+    await this.auditoria.registrar({
+      entidade: 'visitas_offline',
+      acao: 'levar_para_offline',
+      alteracoes: { empresas: empresas.length },
+    })
+    return {
+      empresas,
+      ignoradas: new Set(empresaIds).size - empresas.length,
+      geradoEm: new Date().toISOString(),
+    }
   }
 
   // ---- Criação ----

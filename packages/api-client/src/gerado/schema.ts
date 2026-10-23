@@ -2772,6 +2772,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visitas/offline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Levar empresas para o offline
+         * @description Qualquer membro. Até 300 empresas por vez (400 acima disso). Devolve o mínimo para visitar sem sinal: nome, endereço, posição, telefone, tags e contatos ativos (os que a pessoa vê); sem CNPJ, observações nem histórico. As que ela não vê só contam em `ignoradas`. O aparelho guarda cifrado por 7 dias.
+         */
+        post: operations["VisitasDoCampoController_offline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3919,6 +3939,31 @@ export interface components {
             situacao: "teste" | "ativo" | "suspenso" | "cancelado";
             ativa: boolean;
         };
+        EmpresaOffline: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            endereco: string | null;
+            posicao: {
+                latitude: number;
+                longitude: number;
+            } | null;
+            telefone: string | null;
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cor: string;
+            }[];
+            contatos: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cargo: string | null;
+                telefone: string | null;
+            }[];
+            podeVisitar: boolean;
+        };
         EnderecoDaEmpresaEntrada: {
             cep?: string | null;
             tipoLogradouro?: string | null;
@@ -4157,6 +4202,9 @@ export interface components {
         };
         LegendaDoMapa: {
             entradas: components["schemas"]["EntradaDaLegenda"][];
+        };
+        LevarParaOfflineEntrada: {
+            empresaIds: string[];
         };
         LinhasDaImportacao: {
             itens: {
@@ -4620,6 +4668,11 @@ export interface components {
             ativo: boolean;
             ordem: number;
             chaveSistema: string | null;
+        };
+        PacoteOffline: {
+            empresas: components["schemas"]["EmpresaOffline"][];
+            ignoradas: number;
+            geradoEm: string;
         };
         PapelNaDecisao: {
             /** Format: uuid */
@@ -16394,6 +16447,66 @@ export interface operations {
             };
             /** @description Não encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    VisitasDoCampoController_offline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LevarParaOfflineEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PacoteOffline"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

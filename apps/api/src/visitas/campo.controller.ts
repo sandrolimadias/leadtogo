@@ -3,13 +3,27 @@ import {
   type DistanciaDoCheckin,
   distanciaDoCheckinSchema,
   type ItemDeVisita,
+  type LevarParaOfflineEntrada,
+  levarParaOfflineSchema,
+  type PacoteOffline,
+  pacoteOfflineSchema,
   itemDeVisitaSchema,
   type RelatorioDeVisita,
   relatorioDeVisitaSchema,
   type SalvarVisitaEntrada,
   salvarVisitaSchema,
 } from '@leadtogo/shared'
-import { Body, Controller, Get, Param, ParseUUIDPipe, Put, Query } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 
@@ -49,6 +63,23 @@ export class VisitasDoCampoController {
     @Query(new ZodPipe(distanciaConsultaSchema)) c: z.infer<typeof distanciaConsultaSchema>,
   ): Promise<DistanciaDoCheckin> {
     return this.servico.distancia(c.empresaId, { latitude: c.latitude, longitude: c.longitude })
+  }
+
+  @Documenta({
+    resumo: 'Levar empresas para o offline',
+    descricao:
+      'Qualquer membro. Até 300 empresas por vez (400 acima disso). Devolve o mínimo para visitar sem sinal: nome, endereço, posição, telefone, tags e contatos ativos (os que a pessoa vê); sem CNPJ, observações nem histórico. As que ela não vê só contam em `ignoradas`. O aparelho guarda cifrado por 7 dias.',
+    corpo: levarParaOfflineSchema,
+    resposta: pacoteOfflineSchema,
+    erros: [400, 401, 403, 409],
+  })
+  @TodoMembro()
+  @Post('offline')
+  @HttpCode(200)
+  offline(
+    @Body(new ZodPipe(levarParaOfflineSchema)) dados: LevarParaOfflineEntrada,
+  ): Promise<PacoteOffline> {
+    return this.servico.pacoteOffline(dados.empresaIds)
   }
 
   @Documenta({

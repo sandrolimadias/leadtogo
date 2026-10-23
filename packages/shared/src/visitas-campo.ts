@@ -276,3 +276,56 @@ export function decidirCheckin(
     avisar: fora && modo === 'avisar',
   }
 }
+
+// ---- Offline ----
+
+/** "Levar para offline": até 300 empresas por vez (decisão do Ale), válidas por 7 dias no aparelho. */
+export const MAX_EMPRESAS_OFFLINE = 300
+export const DIAS_DE_VALIDADE_OFFLINE = 7
+
+export const levarParaOfflineSchema = z
+  .object({
+    empresaIds: z
+      .array(z.uuid())
+      .min(1)
+      .max(MAX_EMPRESAS_OFFLINE, `leve até ${MAX_EMPRESAS_OFFLINE} empresas por vez`),
+  })
+  .strict()
+  .meta({ id: 'LevarParaOfflineEntrada' })
+export type LevarParaOfflineEntrada = z.infer<typeof levarParaOfflineSchema>
+
+/**
+ * O mínimo de uma empresa para visitar sem sinal (docs/lgpd.md, 3.2): nome, endereço, posição, telefone,
+ * tags e contatos ativos. Sem CNPJ, observações nem histórico.
+ */
+export const empresaOfflineSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    endereco: z.string().nullable(),
+    posicao: z.object({ latitude: z.number(), longitude: z.number() }).nullable(),
+    telefone: z.string().nullable(),
+    tags: z.array(z.object({ id: z.uuid(), nome: z.string(), cor: z.string() })),
+    contatos: z.array(
+      z.object({
+        id: z.uuid(),
+        nome: z.string(),
+        cargo: z.string().nullable(),
+        telefone: z.string().nullable(),
+      }),
+    ),
+    /** A pessoa pode registrar visita nela (a empresa está na carteira que ela edita) */
+    podeVisitar: z.boolean(),
+  })
+  .meta({ id: 'EmpresaOffline' })
+export type EmpresaOffline = z.infer<typeof empresaOfflineSchema>
+
+export const pacoteOfflineSchema = z
+  .object({
+    empresas: z.array(empresaOfflineSchema),
+    /** As que não vieram: fora da carteira que a pessoa vê, ou excluídas */
+    ignoradas: z.number().int(),
+    geradoEm: z.string(),
+  })
+  .meta({ id: 'PacoteOffline' })
+export type PacoteOffline = z.infer<typeof pacoteOfflineSchema>

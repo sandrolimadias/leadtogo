@@ -389,4 +389,31 @@ describe('/v1/visitas (check-in e relatório)', () => {
     })
     expect(fora.status).toBe(404)
   })
+
+  it('levar para offline: o mínimo das empresas que a pessoa vê, sem CNPJ nem observações; até 300', async () => {
+    const c = await cenario()
+    const minha = await c.empresa()
+    const doDono = await c.empresa(c.idDe(c.d.usuarioId))
+    await noTenant(c.d.tenantId, async (tx) => {
+      await tx`UPDATE empresas SET documento = '11222333000181', tipo_documento = 'cnpj', observacoes = 'segredo',
+        logradouro = 'Rua das Flores', numero = '10' WHERE id = ${minha}`
+    })
+    const r = await chamar('post', c.vendedor.cookie, '/visitas/offline', {
+      empresaIds: [minha, doDono, novoId()],
+    })
+    expect(r.status).toBe(200)
+    const pacote = r.body as { empresas: Record<string, unknown>[]; ignoradas: number }
+    expect(pacote.ignoradas).toBe(2)
+    expect(pacote.empresas).toHaveLength(1)
+    const e = pacote.empresas[0]
+    expect(e).toMatchObject({ id: minha, podeVisitar: true, posicao: EMPRESA })
+    expect(e?.['endereco']).toContain('Rua das Flores')
+    expect(JSON.stringify(e)).not.toContain('11222333000181')
+    expect(JSON.stringify(e)).not.toContain('segredo')
+
+    const muitas = Array.from({ length: 301 }, () => novoId())
+    expect(
+      (await chamar('post', c.vendedor.cookie, '/visitas/offline', { empresaIds: muitas })).status,
+    ).toBe(400)
+  })
 })
