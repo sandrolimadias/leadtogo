@@ -1,7 +1,7 @@
 # Plano — Prospecção (busca por CNAE e município na base da Receita)
 
 > Módulo pós-MVP, **o próximo depois do G4 (rotas)**. É a "fase própria logo após o MVP" de `escopo_mvp.md` (seção 3) e `backlog_pos_mvp.md`. Regras de negócio em `funcionalidades.md`, seção 3A; tabelas previstas em `modelagem_banco.md`, seção 10; tela de referência em `docs/prototipo/prototipo/Prospeccao.dc.html`.
-> **Status: plano para aprovação do Ale.** Nada de código antes das respostas da seção 9 e da medição do passo P0.
+> **Status: plano guardado para a próxima fase (decisão do Ale, 23/10/2026).** Não será implantado agora; antes de começar, o Ale responde a seção 9 e se faz a medição do passo P0. Nada de código até lá.
 
 ## 1. O que já existe (não refazer)
 
@@ -144,4 +144,4 @@ Pushes: (1) commits 1–2; (2) 3–4; (3) 5–6; (4) 7–8. Cada commit com `pnp
 
 | Data | Decisão | Quem |
 |---|---|---|
-| — | Aguardando as respostas da seção 9 | Ale |
+| 23/10/2026 | Plano guardado: a Prospecção fica para a próxima fase; a seção 9 segue sem resposta | Ale |
