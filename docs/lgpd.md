@@ -175,7 +175,7 @@ Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **re
 
 ## 9. Pendências para o MVP
 
-- [ ] **Geolocalização (G3):** antes de gravar a posição do vendedor no check-in, definir base legal, aviso ao usuário, retenção e quem acessa; registrar nas seções 2 e 5. Hoje o Leadtogo **não grava** a posição do vendedor.
+- [x] **Geolocalização (G3):** base legal, quem acessa e retenção da posição do vendedor no check-in definidas na seção 3.2 (G3, 22/10/2026); rotas na seção 3.3 (G4: a posição atual não é gravada). Falta só o **aviso ao usuário** na política de privacidade pública (item abaixo).
 - [ ] **ViaCEP/BrasilAPI** (consulta de CEP, G1): incluir na tabela de suboperadores (seção 4) quando entrar em produção; só o CEP é enviado.
 - [ ] **Rotina de expurgo** dos registros com `excluido_em` (prazo a definir) e das partições antigas da auditoria.
 - [ ] **Exportação de dados por tenant** (atende portabilidade, acesso e saída do cliente).

@@ -348,7 +348,7 @@ Reaproveita o assistente, o worker em blocos curtos com idempotência por linha,
 | **Kanban de Tarefas**, lembretes, recorrência, central de notificações e push | Com um usuário só, "Minhas atividades" do Dashboard cobre o dia a dia; dependem do worker e das notificações | Atividades |
 | **Itens e catálogo de produtos** da oportunidade, campos personalizados e filtros salvos | Decisões do Ale (Módulo 6): o MVP usa valores digitados | Oportunidades; Carteira e Empresas |
 | **Várias pessoas e várias empresas** (visão Equipe, transferência de carteira, Painel consolidado, copiar configurações) | Só há um usuário e uma empresa em uso | Carteira e Empresas; Dashboard |
-| **Mapa e rotas**, **offline** | Fases 2 e 3 de `funcionalidades.md`; o PWA exige conexão no MVP | Carteira e Empresas |
+| **Mapa e rotas**, **offline** | Fases 2 e 3 de `funcionalidades.md`; o PWA exige conexão no MVP. **Entregues depois do MVP:** mapa (G1+G2), check-in e offline das visitas (G3) e rotas (G4), aprovados em 22 e 23/10/2026 (`plano_geolocalizacao.md`) | Carteira e Empresas |
 | **Exportação**, lixeira e restauração, mesclar duplicados | Fora do MVP; o contato e a empresa seguem exclusão lógica | Carteira e Empresas; Contatos |
 | **Faixas de funcionários e de faturamento** | Decidido em 12/10/2026 | Carteira e Empresas |
 | **Relatório completo em Excel** da importação | O CSV do que não entrou cobre a correção. (A importação de contatos e de atividades por planilha foi entregue em 16/10/2026: ver "Importação de contatos e de atividades" acima.) | Importação |

@@ -126,7 +126,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
   - tipo marcado como *Visita* → tag **Visitada** + `última visita em`
   - tipo marcado como *Contato* → tag **Contactada** + `último contato em`
 - **Validade configurável** (opcional): remover a tag depois de X dias sem nova visita ou contato (ex.: 180 dias). Isso mantém a tag como retrato atual da carteira.
-- Filtros prontos: *Nunca visitadas*, *Sem visita há X dias*, *Sem contato há X dias*. São a base da roteirização futura.
+- Filtros prontos: *Nunca visitadas*, *Sem visita há X dias*, *Sem contato há X dias*. São a base da roteirização (G4, seção 3D: montar a rota pelos filtros do mapa).
 
 ### Tela Empresas (lista)
 - Tabela com busca (nome, CNPJ, cidade), filtros (tags, responsável, cidade/UF, última visita/contato, campos personalizados) e ordenação.
