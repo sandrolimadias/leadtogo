@@ -708,7 +708,7 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | `email_rastreios` | Aberturas e cliques |
 | `modelos_mensagem` | Modelos de e-mail/WhatsApp |
 | `conversas_nao_identificadas` | Números/e-mails desconhecidos |
-| `territorios`, `rotas`, `rota_paradas` | Geolocalização e roteirização |
+| `territorios` | Áreas fixas por vendedor (as rotas entraram no G4, migração 0030) |
 | `metas` | Metas por vendedor/período |
 | `tenant_smtp` | SMTP próprio da empresa (futura; detalhe abaixo) |
 
@@ -773,7 +773,7 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 | Prospecção | prospeccoes, prospeccao_resultados | 2 |
 | Sistema | arquivos, comentarios, notificacoes, preferencias_notificacao, filtros_salvos, importacoes, auditoria, eventos_outbox | 8 |
 | **Fase 1** | | **61** |
-| Futuras 🔮 | api_chaves, webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, rotas, rota_paradas, metas, tenant_smtp | 13 |
+| Futuras 🔮 | api_chaves, webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp | 11 |
 
 ---
 
@@ -830,3 +830,18 @@ Só expansão. Tabela nova com `tenant_id`, **RLS habilitado e forçado**, colun
 **Colunas novas:** `atividades.conta_visita` (boolean, padrão `true`; `false` só na "não localizada": a atividade não atualiza a última visita, o último contato nem a tag Visitada, e continua contando como esforço em tudo); `empresas.visita_tentada_em` (a "não localizada" mais recente; o pin mostra "visita tentada" enquanto ela for mais nova que a última visita, e ela some quando o endereço é confirmado); `tenant_configuracoes.catalogo_perfis_versao` (versão do catálogo de permissões dos perfis de sistema; nula = 1).
 
 **Catálogo de permissões v2:** `visitas.ver_localizacao` (Administrador e Gestor por padrão). Na partida da API, `app_tenants_catalogo_desatualizado(versao)` (só o `leadtogo_owner`, mesmo padrão das anteriores) lista as empresas com perfis numa versão anterior, e `sincronizarCatalogoDoTenant` acrescenta aos perfis **de sistema** as chaves novas que o padrão de cada um tem (reserva otimista da marca; nada mais muda; perfis criados pela empresa nunca recebem permissão sozinhos). Empresas novas já nascem com a versão atual.
+
+## Rotas (G4a; migração 0030, ver `plano_geolocalizacao.md`, seção 10)
+
+Só expansão. Tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_tenant`), colunas padrão e teste de isolamento:
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `rota_pontos_partida` | nome, endereço (mesmas colunas de endereço de `empresas`), localizacao (`geography(Point,4326)`), geo_precisao, padrao (boolean), ativo | Nome único por empresa entre os não excluídos; no máximo um `padrao`. Cadastro auxiliar (regra de exclusão da seção 11 de `funcionalidades.md`) |
+| `rotas` | codigo (int, sequencial por empresa, exibido como `R-0151`), nome, data (date), responsavel_id (FK `membros`), partida (`partida_rota`: `posicao_atual` · `ponto`), ponto_partida_id (nulo se `posicao_atual`), voltar_ao_inicio, minutos_por_visita (smallint, 0 a 480), situacao (`situacao_rota`: `planejada` · `em_andamento` · `concluida` · `cancelada`), distancia_m, duracao_s (deslocamento), otimizada_em, otimizacao (`vroom` · `linha_reta`), trajeto (`geography(LineString,4326)`, nulo) | `(tenant_id, codigo)` único. **A posição atual do aparelho nunca é gravada**: com `posicao_atual`, as estimativas consideram a partida do momento do cálculo e o trajeto começa na primeira parada. Índice `(tenant_id, responsavel_id, data)` |
+| `rota_paradas` | rota_id, empresa_id, ordem (smallint), distancia_trecho_m, duracao_trecho_s, situacao (`situacao_parada`: `pendente` · `visitada` · `pulada`), motivo_pulo (texto curto), atividade_id (FK `atividades`, a visita do G3; G4b) | `(rota_id, empresa_id)` e `(rota_id, ordem)` únicos (ordem deferível, para reordenar numa transação); **no máximo 30 por rota** (validado na API, `ROTA_MAX_PARADAS`). Índice `(tenant_id, empresa_id, situacao)` para o "Na rota · parada N" |
+
+**Colunas novas:** `tenant_configuracoes.rota_minutos_por_visita` (smallint, padrão 40) e `tenant_configuracoes.rota_ultimo_codigo` (int, padrão 0; o código da rota sai de um `UPDATE … RETURNING` nessa linha, na mesma transação da criação).
+
+**Catálogo de permissões v3:** `rotas.ver` e `rotas.editar` (com alcance `propria` · `equipe` · `todas`, pelo `responsavel_id`) e `rotas.atribuir`. Padrões: Administrador e Gestor com tudo em `todas`; Vendedor com ver e editar `propria`, sem atribuir. Sincronizado na partida da API pelo mesmo mecanismo do v2 (`sincronizarCatalogoDoTenant`).
+

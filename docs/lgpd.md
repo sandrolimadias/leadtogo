@@ -31,6 +31,7 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 | **Empresas-alvo** (carteira) | `empresas`, `empresa_telefones`, `empresa_cnaes`, `empresa_tags`, `empresa_socios` | CNPJ, razão social, endereço, telefones, nomes de sócios e qualificação (vindos da Receita ou digitados). O CPF mascarado do sócio **não é gravado** | PD (PJ) |
 | **Geolocalização** (G1/G2) | `empresas.localizacao` e `geo_*`, `geo_consultas`, `geo_lotes`, `mapa_legenda` | coordenada do **endereço da empresa-alvo** (PD (PJ), pode ser a residência do empresário individual), texto consultado e quem acionou. Consultas ao CNEFE e ao Nominatim são locais (nenhum endereço sai para terceiros); só o CEP vai à ViaCEP/BrasilAPI. **A posição do vendedor (GPS do aparelho) não é coletada nem gravada no G1 e no G2: só será gravada no check-in da visita (G3), com aviso ao usuário e base legal registrada aqui antes.** | PD (PJ) |
 | **Visitas** (G3) | `visita_modelos`, `visita_modelo_versoes`, `visita_resultados` (G3a, sem dado pessoal); `relatorios_visita` (G3b) | respostas do relatório (texto livre pode conter dados pessoais) e, **só no check-in**, a **posição do vendedor** (`checkin_local`, distância até a empresa, data e hora). Detalhe na seção 3.2 | **PD** (posição do vendedor) |
+| **Rotas** (G4) | `rotas`, `rota_paradas`, `rota_pontos_partida` | o **itinerário planejado do vendedor** (quais empresas ele visita em que dia e em que ordem) e a situação de cada parada; o endereço dos pontos de partida (em geral, da empresa cliente). Detalhe na seção 3.3 | **PD** (itinerário do vendedor) |
 | **Contatos** | `contatos`, `empresa_contatos`, `contato_telefones`, `contato_emails` | nome, cargo/papel de decisão, telefones, e-mails, LinkedIn, aniversário (**só dia e mês**), observações, consentimento (`aceita_whatsapp`, `aceita_email`, `consentimento_em`, `consentimento_origem`) | **PD** |
 | **Atividades** | `atividades` e complementares, `comentarios`, `arquivos` | descrição de visitas, ligações e tarefas, comentários e anexos (texto livre pode conter dados pessoais), participantes | **PD** (texto livre) |
 | **Oportunidades** | `oportunidades`, `oportunidade_itens`, `oportunidade_contatos`, `oportunidade_historico` | valores, fases, motivos, contatos envolvidos | PD indireto (via contatos) |
@@ -76,6 +77,14 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 - **Cifra:** tudo o que fica no aparelho (empresas com os contatos, a posição do check-in na fila, o apoio e a sessão) é cifrado com **AES-GCM**, com uma chave **não extraível** do WebCrypto guardada no próprio navegador.
 - **Limite da cifra (dito com franqueza):** ela protege contra a **leitura casual** dos arquivos do navegador (outro programa, cópia do perfil, inspeção do disco). **Não protege** contra quem tem o **navegador desbloqueado e a sessão aberta**: nesse caso o próprio aplicativo decifra e mostra os dados. A proteção real do aparelho depende do bloqueio de tela, e isso deve constar na orientação aos usuários.
 - **Aparelho perdido:** nesta fase não há limpeza remota. O administrador **revoga a sessão**, e o aparelho apaga os dados offline no próximo contato com o servidor. A limpeza remota está no backlog.
+
+### 3.3 Rotas (G4; plano em `plano_geolocalizacao.md`, seção 10)
+- **O que se grava:** a rota (data, responsável, partida, paradas em ordem, estimativas e o trajeto pelas ruas) e, no G4b, a situação de cada parada e a visita ligada a ela.
+- **Posição atual do vendedor:** quando a partida é "minha posição", ela é enviada **só para o cálculo** da ordem (ao serviço de rotas, que roda na nossa VPS, sem terceiros) e **não é gravada** em lugar nenhum: nem na rota, nem no log, nem na auditoria. Não há rastreamento durante a rota; a posição só se grava no check-in (seção 3.2).
+- **Base legal:** a mesma do check-in (legítimo interesse na gestão das visitas comerciais, ou execução do contrato com o vendedor).
+- **Quem vê:** quem tem **Ver rotas** com o alcance que inclui o responsável (o vendedor vê as próprias; gestor e admin, pelo alcance do perfil).
+- **Retenção:** registro de negócio (seção 5).
+- **Offline:** a rota levada para o aparelho segue as proteções da seção 3.2 (dados mínimos, 7 dias, cifra e limpeza).
 
 ## 4. Suboperadores e localização dos dados
 

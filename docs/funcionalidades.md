@@ -243,6 +243,24 @@ Quem configura: permissão **Gerir cadastros** (`cadastros.gerir`; por padrão s
 - **Pendentes:** lista no celular e card no Dashboard; lembrete no horário configurado pelo admin na aba Check-in (padrão 17:30), que aparece **com o app aberto** (notificação do aparelho, se permitida) ou **ao abrir o app** depois do horário. Sem Web Push nesta fase (backlog, junto com a central de notificações).
 - **Offline:** as empresas abertas recentemente (abrir a ficha guarda a empresa) e as levadas com **"Levar para offline"** da lista de Empresas ou da seleção do mapa (até 300 por vez, válidas por 7 dias) ficam no aparelho com dados mínimos (sem CNPJ, observações nem histórico); check-in e relatório entram numa fila e sobem ao voltar o sinal, sem duplicar. Sem rede, o app usa a última sessão conferida (guardada cifrada no aparelho) para abrir e navegar. Os dados do aparelho são apagados ao sair da conta e quando outra pessoa entra, e tudo o que fica nele é cifrado. Proteções e o limite da cifra em `lgpd.md`, seção 3.2.
 
+## 3D. Rotas (G4; plano em `plano_geolocalizacao.md`, seção 10)
+
+### Planejar (G4a)
+- **Rota:** código sequencial por empresa (**R-0151**), nome, data, **responsável** (o vendedor que vai rodar), ponto de partida, "voltar ao ponto de partida", minutos por visita e as paradas em ordem. Situação: **planejada**, **em andamento** (desde o primeiro check-in pela rota, G4b), **concluída** ou **cancelada**.
+- **Paradas:** no máximo **30 por rota** (decisão do Ale, 23/10/2026). Só entram empresas **com coordenada** e que o **responsável da rota** pode ver na carteira; coordenada **aproximada** entra com aviso na parada. Uma empresa aparece uma vez por rota.
+- **Ponto de partida:** padrão = **posição atual do aparelho**, usada só no cálculo e **nunca gravada** (LGPD); alternativa = um **ponto cadastrado** pelo admin (ex.: a sede). Sem permissão de localização, vale o ponto padrão.
+- **Otimizar ordem:** a ordem mais curta pelas ruas (OSRM + VROOM), sem janela de horário nem almoço; depois, a ordem continua editável arrastando. Sem o serviço de rotas, a ordem sai por uma estimativa em **linha reta**, com o aviso visível.
+- **Estimativas:** distância e tempo = deslocamento + paradas × **minutos por visita** (padrão 40, configurável pelo admin e ajustável em cada rota).
+- **A rota não cria atividades agendadas** (decisão do Ale, 23/10/2026): ela é a agenda do dia; a visita nasce no check-in pela parada (G4b).
+- **Navegação:** **Google Maps** em trechos (até 3 paradas intermediárias no celular e 9 no computador); **Waze** uma parada por vez.
+- **Onde se monta:** tela **Rotas** (menu Carteira) com a lista e "Nova rota"; **editor no Mapa** (painel à direita; no celular, tela cheia com abas Lista | Mapa). Paradas entram por "Adicionar à rota" no painel da empresa (que passa a mostrar **"Na rota · parada N"**), por "Adicionar todas à rota" em Empresas próximas, na seleção por retângulo ou raio e no filtro atual do mapa (até completar 30, com aviso do que ficou de fora), e pela seleção em massa da lista de Empresas.
+- **Permissões:** **Ver rotas** e **Editar rotas** com alcance (própria = as rotas de que a pessoa é responsável, equipe ou todas) e **Atribuir rotas** (montar ou passar a rota para outro vendedor). Padrão: Administrador e Gestor com tudo em todas; Vendedor vê e edita as próprias, sem atribuir. Pontos de partida: Gerir cadastros.
+
+### Executar (G4b)
+- **Rota do dia** no celular, com a próxima parada em destaque (Navegar · Check-in · Pular). O check-in do G3 aberto pela parada liga a visita à parada; concluir o relatório marca a parada **visitada**; "Pular" pede um motivo curto. A rota fica **concluída** quando não há parada pendente ou por "Encerrar rota".
+- **Offline:** "Levar a rota para offline" leva as empresas da rota (com o "levar para offline" do G3b) e a própria rota. Otimizar e salvar exigem sinal.
+- **Planejado × realizado** para gestor e admin: paradas visitadas, puladas e pendentes.
+
 ## 4. Contatos
 
 Um contato pode estar ligado a **várias empresas** (N:N).
@@ -640,6 +658,7 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 | Contas conectadas (visão geral) | Admin (vê quem conectou e pode revogar) |
 | Preferências do tenant | Admin (visão de carteira, validade das tags de visitação, automação de status, dias de "sem contato") |
 | Visitas (resultados, modelos de relatório e check-in) | Gerir cadastros (Admin por padrão; G3, seção 3C) |
+| Pontos de partida das rotas e minutos por visita | Gerir cadastros (Admin por padrão; G4, seção 3D) |
 | Segurança | Admin (**política de 2FA** da empresa: administradores, administradores e gestores, ou todos; ver "Segurança e acesso") |
 | E-mail (SMTP próprio) 🔮 | Admin (servidor de envio da empresa; ver abaixo). **Funcionalidade futura, ainda não implementada** |
 
