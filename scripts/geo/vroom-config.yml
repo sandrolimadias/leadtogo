@@ -1,6 +1,6 @@
 # Configuração do vroom-express para o serviço VROOM do Leadtogo (docs/geo_atualizacao.md, "OSRM e VROOM").
 # Vai em /conf/config.yml do container (ghcr.io/vroom-project/vroom-docker:v1.14.0).
-# O host 'osrm' é o nome do serviço no scripts/geo/rotas-compose.yml (mesma pilha, mesma rede).
+# O host 'leadtogo-osrm' é o nome do serviço no scripts/geo/rotas-compose.yml (mesma pilha, mesma rede).
 cliArgs:
   geometry: false
   planmode: false
@@ -20,5 +20,5 @@ cliArgs:
 routingServers:
   osrm:
     car:
-      host: 'osrm'
+      host: 'leadtogo-osrm'
       port: '5000'

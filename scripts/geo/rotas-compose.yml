@@ -3,11 +3,15 @@
 # (passo a passo: docs/roteiro_rotas_producao.md). A API e o worker falam só com o VROOM e o OSRM pela
 # rede interna (VROOM_URL e OSRM_URL).
 #
+# Nomes dos serviços: leadtogo-osrm e leadtogo-vroom (e não osrm/vroom). Com "Connect to Predefined
+# Network" ligado, o nome do serviço também vale na rede compartilhada `coolify`, onde um nome genérico
+# poderia colidir com o de outra pilha; um nome único elimina essa ambiguidade.
+#
 # Pastas no servidor (preparadas no roteiro):
 #   OSRM_DADOS  arquivos .osrm* gerados por scripts/geo/preparar-osrm.sh (o link "atual" aponta a versão)
 #   VROOM_CONF  config.yml do vroom-express (scripts/geo/vroom-config.yml); o container grava o access.log aqui
 services:
-  osrm:
+  leadtogo-osrm:
     image: ghcr.io/project-osrm/osrm-backend:v26.10.0-debian # a MESMA versão do preparo
     command: osrm-routed --algorithm mld /data/estado.osrm
     volumes:
@@ -15,10 +19,10 @@ services:
     mem_limit: 512m
     restart: unless-stopped
 
-  vroom:
+  leadtogo-vroom:
     image: ghcr.io/vroom-project/vroom-docker:v1.14.0
     depends_on:
-      - osrm
+      - leadtogo-osrm
     volumes:
       - ${VROOM_CONF:-/data/leadtogo/vroom}:/conf
     mem_limit: 256m

@@ -345,7 +345,7 @@ Serviço **só de produção** (no desenvolvimento a API não usa o Nominatim). 
 
 ### 5.5 `leadtogo-rotas` (OSRM + VROOM, G4)
 
-Pilha **Docker Compose** só de produção, **sem domínio** e com *Connect to Predefined Network*: `scripts/geo/rotas-compose.yml` (OSRM com 512 MiB, VROOM com 256 MiB). Dados no servidor em `/data/leadtogo/osrm/atual` e `/data/leadtogo/vroom/config.yml`. Primeira subida e medição: `roteiro_rotas_producao.md`; atualização: `geo_atualizacao.md`, seção 3A. Na API e no worker (quando o G4a entrar): `VROOM_URL=http://<nome do container vroom>:3000` e `OSRM_URL=http://<nome do container osrm>:5000`. Sem as variáveis, a ordem sai pela estimativa em linha reta, com aviso.
+Pilha **Docker Compose** só de produção, **sem domínio** e com *Connect to Predefined Network*: `scripts/geo/rotas-compose.yml` (OSRM com 512 MiB, VROOM com 256 MiB). Dados no servidor em `/data/leadtogo/osrm/atual` e `/data/leadtogo/vroom/config.yml`. Primeira subida e medição: `roteiro_rotas_producao.md`; atualização: `geo_atualizacao.md`, seção 3A. Na API (o worker não usa): `VROOM_URL=http://<nome completo do container leadtogo-vroom>:3000` e `OSRM_URL=http://<nome completo do container leadtogo-osrm>:5000` (nomes com o uuid da pilha; ver `roteiro_rotas_producao.md`, parte B). Sem as variáveis, as rotas se montam e ordenam à mão, com o aviso "Otimização de rotas ainda não configurada" e as estimativas em linha reta.
 
 ## 6. Referências e primeira conta
 
