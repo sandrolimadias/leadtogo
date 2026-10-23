@@ -1,0 +1,34 @@
+# Pilha das rotas (G4): OSRM (ruas do estado, perfil car) + VROOM (ordem das paradas).
+# No Coolify: recurso "Docker Compose Empty" chamado leadtogo-rotas, SEM domínio e sem porta pública
+# (passo a passo: docs/roteiro_rotas_producao.md). A API e o worker falam só com o VROOM e o OSRM pela
+# rede interna (VROOM_URL e OSRM_URL).
+#
+# Pastas no servidor (preparadas no roteiro):
+#   OSRM_DADOS  arquivos .osrm* gerados por scripts/geo/preparar-osrm.sh (o link "atual" aponta a versão)
+#   VROOM_CONF  config.yml do vroom-express (scripts/geo/vroom-config.yml); o container grava o access.log aqui
+services:
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v26.10.0-debian # a MESMA versão do preparo
+    command: osrm-routed --algorithm mld /data/estado.osrm
+    volumes:
+      - ${OSRM_DADOS:-/data/leadtogo/osrm/atual}:/data:ro
+    mem_limit: 512m
+    restart: unless-stopped
+
+  vroom:
+    image: ghcr.io/vroom-project/vroom-docker:v1.14.0
+    depends_on:
+      - osrm
+    volumes:
+      - ${VROOM_CONF:-/data/leadtogo/vroom}:/conf
+    mem_limit: 256m
+    restart: unless-stopped
+    healthcheck:
+      # matriz própria (não depende do OSRM): confere que o vroom-express e o binário respondem
+      test:
+        - CMD-SHELL
+        - "curl -fs -X POST -H 'content-type: application/json' -d @/vroom-express/healthchecks/vroom_custom_matrix.json http://localhost:3000/ > /dev/null"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

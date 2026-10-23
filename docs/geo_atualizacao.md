@@ -10,6 +10,7 @@
 | **CNEFE 2022** (endereços com coordenada) | Postgres, schema `referencia_geo` (**dentro do backup** do Coolify) | IBGE, Censo 2022 | Só no próximo Censo, ou se o schema estiver vazio (seção 1). **A restauração do backup já o traz** |
 | **Nominatim** (ruas e portas do OpenStreetMap, só o ES) | serviço no Coolify (1,5 GiB de RAM no máximo) | Geofabrik + recorte do ES | A cada 6 a 12 meses, ou quando o OSM do ES melhorar muito (seção 2) |
 | **Mapa (PMTiles do ES)** | Garage, **bucket público só do mapa** (`leadtogo-mapa`, domínio `mapa.crm.aledias.com.br`, nome versionado), lido pelo navegador direto | Protomaps | A cada 6 a 12 meses (seção 3) |
+| **OSRM** (ruas para as rotas, só o ES) | pilha `leadtogo-rotas` no Coolify, pasta `/data/leadtogo/osrm` do servidor | Geofabrik + recorte do ES (o mesmo `.pbf` do Nominatim) | Junto com o Nominatim (seção 3A) |
 | Microrregiões e centro dos municípios | Postgres (seed) | IBGE | Só se o IBGE criar município (`node packages/db/seeds/gerar-dados.mjs municipios microrregioes`) |
 
 ## 1. CNEFE (no Postgres)
@@ -82,6 +83,14 @@ docker run --rm -v "$PWD":/dados ghcr.io/protomaps/go-pmtiles extract https://bu
 ```
 
 Troque `AAAAMMDD` por uma data recente (https://maps.protomaps.com/builds/). Suba o arquivo com **nome versionado** (`es-AAAAMMDD.pmtiles`) para o **bucket público do mapa** (`leadtogo-mapa`), com `Cache-Control` imutável, e aponte a `MAPA_BASE_URL` da API para ele: passo a passo em `roteiro_mapa_publico.md`. (O caminho antigo, bucket privado `leadtogo-arquivos`, chave `mapa/es.pmtiles`, lido pela API em `/v1/mapa/base.pmtiles`, foi **removido em 22/10/2026**; o arquivo `mapa/es.pmtiles` desse bucket pode ser apagado.) Outro estado: ajuste a caixa (`--bbox=oeste,sul,leste,norte`).
+
+## 3A. OSRM e VROOM (rotas, G4)
+
+**Preparar no seu ambiente** (WSL com Docker; ~1 min e ~2 GiB de RAM no pico): `scripts/geo/preparar-osrm.sh <estado.osm.pbf> ~/geo` gera `osrm-AAAAMMDD/` (~355 MB) e o pacote `.tgz` (~128 MB). Use o mesmo `.pbf` recortado da seção 2 (passo 1). A imagem é **fixada** (`ghcr.io/project-osrm/osrm-backend:v26.10.0-debian`, com `arm64`) e **tem de ser a mesma** no preparo e na VPS: os arquivos `.osrm*` não servem entre versões. O x86 do WSL e o ARM da VPS leem os mesmos arquivos (as duas arquiteturas são little-endian e de 64 bits); se o OSRM da VPS recusar os arquivos, o plano B é rodar o mesmo script **no servidor, fora do horário de uso** (o `osrm-extract` leva uns 10 a 20 min em ARM e pede ~2 GiB).
+
+**Na VPS:** pilha `leadtogo-rotas` no Coolify (`scripts/geo/rotas-compose.yml`): o OSRM lê `/data/leadtogo/osrm/atual` (link para a versão em uso) e o VROOM lê `/data/leadtogo/vroom/config.yml` (`scripts/geo/vroom-config.yml`). Passo a passo da primeira subida e da medição: `roteiro_rotas_producao.md`.
+
+**Atualizar** (junto com o Nominatim, a cada 6 a 12 meses): prepare um pacote novo, extraia em `/data/leadtogo/osrm/osrm-<nova data>`, troque o link (`ln -sfn ... atual`) e reimplante a pilha no Coolify. A versão antiga fica na pasta até você conferir uma otimização no app; depois apague-a. Rotas já salvas não mudam (guardam ordem, distâncias e trajeto); só as próximas otimizações usam as ruas novas.
 
 ## 4. Depois de qualquer atualização
 

@@ -343,6 +343,10 @@ Serviço **só de produção** (no desenvolvimento a API não usa o Nominatim). 
 5. **Saúde:** `GET /status` (porta 8080) responde `OK`.
 6. **Na API e no worker (`leadtogo-api` e `leadtogo-worker`):** `NOMINATIM_URL=http://<nome interno do recurso>:8080` (o nome vem do Coolify, como em 4.5). Reimplante os dois. Sem a variável, a cascata roda só com o CNEFE e o CEP.
 
+### 5.5 `leadtogo-rotas` (OSRM + VROOM, G4)
+
+Pilha **Docker Compose** só de produção, **sem domínio** e com *Connect to Predefined Network*: `scripts/geo/rotas-compose.yml` (OSRM com 512 MiB, VROOM com 256 MiB). Dados no servidor em `/data/leadtogo/osrm/atual` e `/data/leadtogo/vroom/config.yml`. Primeira subida e medição: `roteiro_rotas_producao.md`; atualização: `geo_atualizacao.md`, seção 3A. Na API e no worker (quando o G4a entrar): `VROOM_URL=http://<nome do container vroom>:3000` e `OSRM_URL=http://<nome do container osrm>:5000`. Sem as variáveis, a ordem sai pela estimativa em linha reta, com aviso.
+
 ## 6. Referências e primeira conta
 
 Antes da conta, confirme que as referências foram semeadas (terminal do `leadtogo-db`; esperado `1332`, `5571` e `27`):

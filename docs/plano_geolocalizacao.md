@@ -195,7 +195,8 @@ O G0 mediu o OSRM e o VROOM em x86 com 12 CPUs; a VPS tem 4 CPUs ARM já perto d
 - **Preparo no WSL** (nunca na VPS): `scripts/geo/preparar-osrm.sh` recorta o ES (o mesmo `.pbf` do Nominatim), roda `osrm-extract` + `osrm-partition` + `osrm-customize` (perfil `car`, MLD) e empacota os arquivos (~350 MB).
 - **Na VPS:** dois serviços novos no Coolify, só na rede interna (sem domínio público): **OSRM** (`osrm-routed --algorithm mld`, limite de 512 MiB; com 30 paradas a matriz tem no máximo 32 pontos, abaixo do limite padrão de 100) e **VROOM** (`vroom-docker:v1.14.0` apontando para o OSRM, limite de 256 MiB).
 - **Medição:** `scripts/geo/medir-vroom.mjs` com 10, 20 e 30 paradas reais do ES. Com o limite de 30 paradas a otimização deve responder na requisição, com tempo-limite; se 30 paradas passarem de **10 s** em ARM, ela vai para o worker (job com progresso na tela).
-- Passo a passo em `docs/geo_atualizacao.md` (nova seção "OSRM e VROOM", atualização junto com o Nominatim, a cada 6 a 12 meses).
+- Passo a passo em `docs/roteiro_rotas_producao.md` (primeira subida e medição) e `docs/geo_atualizacao.md`, seção 3A (atualização junto com o Nominatim, a cada 6 a 12 meses). A pilha fica num recurso só no Coolify, `leadtogo-rotas` (`scripts/geo/rotas-compose.yml`).
+- **Ensaio no WSL (23/10/2026, x86, 12 CPUs):** preparo em 49 s (`extract` 45 s, `partition` 3 s, `customize` 1 s), 355 MB de arquivos (pacote de 128 MB); com 30 paradas, o VROOM respondeu em **0,05 s** (com o trajeto) e a matriz 31×31 do OSRM em 0,04 s; memória: OSRM ~280 MiB, VROOM ~70 MiB. A imagem do OSRM foi fixada em `v26.10.0-debian` (multiarquitetura).
 
 ### 10.1 G4a — Planejar (migração 0030)
 
