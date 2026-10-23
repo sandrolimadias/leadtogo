@@ -546,13 +546,53 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 - A tarefa vinculada aparece também na ficha da empresa ou oportunidade (aba Atividades/Tarefas).
 - Ação "**Converter em atividade**" (ex.: a tarefa "Ligar para o João" vira uma atividade de Telefone).
 
+
+## 9B. Central de chamados (Fase 2, interna)
+
+A equipe abre **chamados** para as áreas da própria empresa (Jurídico, Financeiro...), conversa, anota e resolve, com prazos contados no expediente e métricas. É **interna**: o portal do cliente (origem `portal`, `contato_id`) fica para a fase seguinte; a base já existe no banco.
+
+### Permissões (catálogo v4; só o Administrador recebe, os demais perfis ganham por configuração)
+`chamados.ver` (lista e detalhe), `chamados.criar`, `chamados.atender` (assumir, mudar o estado, responder, nota interna), `chamados.triar`, `chamados.atribuir`, `chamados.gerir_areas` (áreas, triagem, expediente e feriados), `chamados.ver_metricas` e `chamados.exportar` (CSV). O alcance (própria, equipe, todas) vale para ver e para as métricas. Sem `chamados.ver`: sem tela e **403 `acesso_negado`** na API. O enum `papel_conta` não muda.
+
+### Áreas de atendimento
+- Quatro áreas por empresa, criadas sozinhas (e para as empresas que já existiam, no start da API): **Jurídico, Financeiro, Comercial e Administrativo**. Nome único; metas de **primeira resposta** e de **resolução** em minutos úteis, **vazias por padrão** (vazio = sem meta e sem alerta de prazo); "visível no portal" (reservado); "pula a triagem"; ativa.
+- **Quem atende:** membros (um deles pode ser o **gestor da área**) e/ou **perfis inteiros**. Área sem ninguém definido aceita quem tem a permissão de atender.
+- Só se **exclui** a área que nunca teve chamado; a usada só se **inativa** (some das escolhas novas e continua nos chamados que já tem).
+
+### Estados e prioridades
+**Aguardando triagem → Pendente de atendimento → Em atendimento ⇄ Aguardando cliente → Resolvido → Fechado.** Prioridades: baixa, normal, alta, urgente. **Aguardando cliente pausa o prazo.** O chamado **Resolvido** pode ser **reaberto até 7 dias** depois; **Fechado** não muda mais. Cada passo grava um evento na linha do tempo (`chamado_eventos`, só acrescenta), que é a **única base das métricas**.
+
+### Triagem
+- **Configurável, começa desligada.** Desligada, o chamado cai direto na área escolhida. Ligada, ele espera em **Aguardando triagem** e **só quem tria o vê**, até escolher a área (e, se quiser, o responsável).
+- Quem tria: **pessoas** e/ou um **perfil** (com a permissão `chamados.triar`). Ligar exige ao menos um triador.
+- **Exceção por área:** "pula a triagem". **Chamado sem área** (o solicitante não sabe) **sempre** passa pela triagem.
+
+### Atribuição
+O responsável vem do **triador**, do **gestor da área** (quem atribui) ou da própria pessoa (**Assumir**, que coloca em atendimento). Atribuir não muda o estado.
+
+### Conversa, notas e anexos
+- **Conversa** entre solicitante e equipe; a **primeira resposta da equipe** é registrada uma vez.
+- **Nota interna:** só da equipe, em bloco visualmente separado; **nunca** aparece na conversa nem para o solicitante.
+- **Anexos:** até **25 MB** cada e **5 por mensagem**; o navegador envia direto ao Garage por URL pré-assinada e o **ClamAV** varre antes de liberar. Estados: em verificação → **limpo** (único que baixa) ou **infectado** (bloqueado, vai ao histórico). Sem antivírus configurado, os anexos ficam **desligados** (nada é aceito sem varredura).
+
+### Expediente, feriados e prazos
+- **Expediente** por dia da semana, com **várias faixas** por dia (padrão: segunda a sexta, 8h às 18h) e o **fuso** da empresa (`America/Sao_Paulo`). Feriados nacionais fixos e móveis criados por padrão; a empresa acrescenta, exclui e **gera os móveis de um ano** (Carnaval, Sexta-feira Santa, Corpus Christi; idempotente).
+- O prazo de resposta e de resolução conta **só minutos úteis** (faixas do expediente, fora dos feriados), sem o tempo em Aguardando cliente. Sem meta na área, não há prazo nem alerta.
+- Os filtros de data (lista, métricas e CSV) usam o **dia da empresa** (0h a 24h no fuso do expediente).
+
+### Notificações
+Sino do CRM (com atualização em tempo real por SSE) e e-mail, gravados por **evento do outbox** na mesma transação do ato: chamado aberto ou triado (avisa os triadores ou a área), atribuído, assumido, mensagem nova, aguardando cliente, resolvido e reaberto. **Nunca avisa quem fez a ação.** Sem Web Push nesta fase.
+
+### Telas
+Lista com as abas **Triagem, Pendentes, Meus e Todos** (contagem em cada), busca por número ou assunto e filtros; card **Chamados pendentes** no Dashboard; detalhe com conversa, notas, histórico e ações; Configurações → **Chamados** (áreas, triagem, expediente e feriados); **Métricas** (tempo até a 1ª resposta, tempo de resolução, dias em aberto, % no prazo, por área e por responsável) e **Exportar CSV**.
+
 ---
 
 ## 10. Usuários, papéis e carteira
 
 ### Perfis de acesso (Fase 1, em implementação)
 
-O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configuráveis por empresa: **permissões por módulo e ação, com alcance**. Base da futura central de chamados e do portal do cliente (que não entram agora).
+O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configuráveis por empresa: **permissões por módulo e ação, com alcance**. Base da central de chamados (Fase 2, seção 9B) e do futuro portal do cliente (que não entra agora).
 
 - **Nome e confusões a evitar:** "perfil de acesso" não é o *papel na decisão* do contato, nem o *perfil de regras* da importação, nem o `papel_conta` (dono, administrador, financeiro), que **não muda**.
 - **Um perfil por membro por empresa** (`membros.perfil_id`). Sem múltiplos perfis.

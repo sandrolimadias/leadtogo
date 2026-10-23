@@ -149,11 +149,26 @@
 | **PgBouncer e ajuste fino do Postgres** (`shared_buffers`, `work_mem`, `max_connections`) | **Gatilho: dezenas de empresas ativas.** Hoje: API 20 + worker 10 conexões de ~100 (`runbook_observabilidade.md`, seção 9) | Decisão do Ale (21/10/2026) |
 | **Geolocalização multi-UF.** **Gatilho: primeiro cliente fora do ES.** Hoje o CNEFE, o PMTiles e o Nominatim cobrem só o ES (`GEO_UF`). Ao chegar: (1) CNEFE em **banco separado, fora do backup** (hoje o schema `referencia_geo` tem 529 MB dentro do dump); (2) carga **por UF**; (3) `GEO_UF` vira **lista**; (4) PMTiles **do Brasil ou por região**; (5) **Nominatim e OSRM fora da VPS atual**; (6) **rever o limite do backup** (+150 MB do dump já medido na carga do ES) | Decisão do Ale (21/10/2026); depende de haver cliente fora do ES | `plano_geolocalizacao.md`, `geo_atualizacao.md`, `roteiro_carga_geo_producao.md` |
 
+## Central de chamados (Fase 2)
+| Item | Motivo de ter ficado fora | Origem |
+|---|---|---|
+| **Portal do cliente** (abrir e acompanhar chamados pelo contato; origem `portal`) | Próxima fase; a base já está no banco (`contato_id`, `origem`, autor/ator `contato`, destinatário `contato`, "visível no portal") | Fase 2 |
+| **Prospecção** (busca por CNAE e município na base da Receita) | Plano guardado em `plano_prospeccao.md` para a fase seguinte | Decisão do Ale (23/10/2026) |
+| Web Push (notificação no aparelho) para os chamados | Decidido ficar só com sino e e-mail nesta fase | Fase 2 |
+| Cada pessoa escolher quais avisos recebe (e-mail e sino por tipo) | Hoje os avisos vão a quem é a pessoa certa, sem preferência individual | Fase 2 |
+| Geração **automática** dos feriados móveis a cada ano (job anual) | Hoje o admin aperta "Gerar feriados móveis do ano" uma vez por ano (idempotente) | Fase 2 |
+| Limpeza de anexos órfãos (enviados ao Garage e nunca confirmados) | O objeto sem confirmação fica no bucket; baixo volume | Fase 2 |
+| Fechar sozinho o chamado resolvido depois de N dias | Hoje o fechamento é manual; a reabertura vale 7 dias após o "Resolvido" | Fase 2 |
+| Reordenar as áreas pela tela (o campo `ordem` existe) | Sem pedido; hoje seguem a ordem de criação | Fase 2 |
+| Anexos nas notas internas | Anexo só vai na mensagem da conversa | Fase 2 |
+| Escolher a empresa-cliente no "Abrir chamado" (o campo `empresa_cliente_id` existe e a API aceita) | Tela simplificada nesta fase | Fase 2 |
+| Rodar o ClamAV com as assinaturas no mesmo volume do backup e alertar quando o clamd estiver parado | Operação do ClamAV acompanhada à mão por enquanto (`roteiro_teste_chamados.md`, seção 0) | Fase 2 |
+
 ## Segurança e LGPD
 | Item | Motivo de ter ficado fora | Origem |
 |---|---|---|
 | **Contração dos perfis de acesso** (remover `papel` de `membros` e `convites` e o enum `papel_membro`, `perfil_id NOT NULL`, remover `vendedor_ve_todas_empresas` e `dois_fatores_exigido`, e a função `app_vinculos_com_politica` antiga) | Migração destrutiva: só depois de **duas semanas de uso real** da Fase 1, com aviso ao Ale e commit `BREAKING-DB:` | Perfis de acesso, Fase 1 |
-| Permissões de chamados e do portal do cliente, visão Equipe, permissões por campo, múltiplos perfis por usuário | Fora da Fase 1; cada fase futura acrescenta as suas ao catálogo | Perfis de acesso, Fase 1 |
+| Permissões do portal do cliente, permissões por campo, múltiplos perfis por usuário (as permissões dos chamados entraram na Fase 2) | Fora da Fase 1; cada fase futura acrescenta as suas ao catálogo | Perfis de acesso, Fase 1 |
 | Rotas: janela de horário, almoço e várias rotas ou vendedores numa otimização só | Decisão do G0: só a ordem mais curta, um veículo | G4 (`plano_geolocalizacao.md`, seção 10.5) |
 | Rotas recorrentes (a mesma rota toda semana) e duplicar rota | Sem pedido; dá para montar de novo pela lista ou pelo mapa | G4 |
 | Territórios (áreas fixas por vendedor) | Sem pedido; a tabela continua na lista de futuras da modelagem | G4 |
@@ -177,5 +192,7 @@
 | Regra "só se exclui o que nunca foi usado" para tipos de atividade, motivos, origens e soluções (a verificação que ficou pendente nos Módulos 5 e 6) | 16/10/2026 | commit `fix: cadastros usados só se inativam` (Módulo 7) |
 
 | **Importação de contatos por planilha** (e, junto, **de atividades**), com a alternância Empresas / Contatos / Atividades no assistente | 16/10/2026 | `979bb5f` (API de contatos), `5142fe9` (API de atividades), `cc851a8` (telas) e a migração 0025 em `68caf55`/`1a7f861`; roteiro em `roteiro_teste_importacao_contatos_atividades.md` |
+
+| **Central de chamados interna (Fase 2):** áreas, triagem, expediente e feriados, conversa, notas internas, anexos com ClamAV, sino/e-mail/SSE, métricas e CSV | 23/10/2026 | migração 0031 e os commits `feat(db)` a `test(e2e)` da Fase 2; roteiro em `roteiro_teste_chamados.md` |
 
 _(mova para cá o que for entregue, com a data e o commit)_

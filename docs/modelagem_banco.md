@@ -845,3 +845,27 @@ Só expansão. Tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado
 
 **Catálogo de permissões v3:** `rotas.ver` e `rotas.editar` (com alcance `propria` · `equipe` · `todas`, pelo `responsavel_id`) e `rotas.atribuir`. Padrões: Administrador e Gestor com tudo em `todas`; Vendedor com ver e editar `propria`, sem atribuir. Sincronizado na partida da API pelo mesmo mecanismo do v2 (`sincronizarCatalogoDoTenant`).
 
+## Central de chamados (Fase 2; migração 0031, ver `funcionalidades.md`, seção 9B)
+
+Só expansão (a migração não altera nem remove nada que existia). Onze tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_tenant`), colunas padrão e teste de isolamento (`packages/db/src/testes/chamados.test.ts`):
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `areas_atendimento` | nome, descricao, visivel_no_portal, meta_resposta_min, meta_resolucao_min (minutos úteis; nulo = sem meta), pula_triagem, ativa, ordem, chave_sistema | Nome único por empresa (sem diferenciar maiúsculas) entre as não excluídas; `chave_sistema` única (`juridico`, `financeiro`, `comercial`, `administrativo`) |
+| `area_membros` | area_id, membro_id **ou** perfil_id (um dos dois), gestor | Únicos parciais por `(area_id, membro_id)` e `(area_id, perfil_id)`; só membro pode ser `gestor` |
+| `config_triagem` | ativa, perfil_id | Uma linha por empresa; nasce `ativa = false` |
+| `triagem_membros` | membro_id | As pessoas que fazem a triagem (além do perfil) |
+| `chamados` | numero (sequencial por empresa), assunto, descricao, area_id (nulo = a triar), status (`status_chamado`), prioridade (`prioridade_chamado`), responsavel_id, origem (`origem_chamado`: `interna` · `portal`), solicitante_membro_id **ou** contato_id (CHECK), empresa_cliente_id, primeira_resposta_em, resolvido_em, fechado_em, reaberturas, status_alterado_em | `(tenant_id, numero)` único; o número sai de `tenant_configuracoes.chamado_ultimo_numero` (`UPDATE … RETURNING` na mesma transação). Exibido como `CH-0042` |
+| `chamado_mensagens` | chamado_id, autor_tipo (`autor_do_chamado`: `membro` · `contato`), autor_membro_id **ou** autor_contato_id, corpo | A conversa. A nota interna **não** fica aqui |
+| `chamado_notas_internas` | chamado_id, autor_membro_id, corpo | Só da equipe; nunca devolvida ao solicitante |
+| `chamado_eventos` | chamado_id, tipo (`tipo_evento_chamado`), ator_tipo (`ator_do_evento`: `membro` · `contato` · `sistema`), ator, status_de/para, area_de/para, responsavel_de/para, prioridade_de/para, dados (jsonb), em | **Só acrescenta**: `REVOKE UPDATE, DELETE` do `leadtogo_app`. É a **única base das métricas** (tempos, reaberturas, prazos) |
+| `chamado_anexos` | chamado_id, mensagem_id, chave_arquivo (única, no Garage), nome, mime, tamanho (CHECK ≤ 25 MB), estado (`estado_anexo`: `pendente_varredura` · `limpo` · `infectado`), enviado_em, varrido_em, assinatura (nome do vírus), tentativas_varredura, ultimo_erro, enviado_por | Só `limpo` baixa. O arquivo vai direto ao Garage por URL pré-assinada e o worker o varre no ClamAV |
+| `calendario_expediente` | dia_semana (0 = domingo), inicio, fim | Várias faixas por dia; única por `(tenant_id, dia_semana, inicio)`. O fuso é o da empresa (`America/Sao_Paulo`) |
+| `feriados` | data, nome, recorrente | Recorrente vale todo ano (mês e dia). Os nacionais nascem por padrão; os móveis são gerados por ano, sem repetir |
+
+**Colunas novas:** `tenant_configuracoes.chamado_ultimo_numero` (int, padrão 0) e `tenant_configuracoes.chamados_padroes_criados_em` (marca de que as quatro áreas, o expediente, os feriados e a triagem já foram criados). `notificacoes` ganha `destinatario_tipo` (`membro` · `contato`), `contato_id`, `canal` (`sino` · `email`), `chamado_id` e `enviada_em`; `membro_id` passa a aceitar nulo (CHECK: o destinatário é o membro **ou** o contato). A notificação tem id determinístico (a mesma entrega repetida cai na mesma linha).
+
+**Backfill:** a função `app_tenants_sem_padroes_chamados()` (SECURITY DEFINER, mesmo padrão das migrações 0016, 0018 e 0026) devolve as empresas sem a marca; a API as completa no start (`criarPadroesChamadosDoTenant`, idempotente, uma transação por empresa).
+
+**Catálogo de permissões v4:** as oito chaves `chamados.*` (`ver`, `criar`, `atender`, `triar`, `atribuir`, `gerir_areas`, `ver_metricas`, `exportar`). Só o Administrador as recebe; o Gestor **não** herda o prefixo `chamados.`. Sincronizado na partida da API (`sincronizarCatalogoDoTenant`).
+

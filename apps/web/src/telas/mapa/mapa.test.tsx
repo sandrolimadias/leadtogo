@@ -491,10 +491,15 @@ describe('Mapa: chips, pins e legenda', () => {
         precisao: 'aproximada',
       })
     }, ESPERA)
+    // só conta a consulta feita DEPOIS do "Limpar": olhar a última chamada também aceitaria (ou recusaria)
+    // uma consulta antiga que terminou fora de ordem (docs/testes_intermitentes.md, mapa.test.tsx)
+    const antesDeLimpar = x.m.pontos.mock.calls.length
     await userEvent.click(within(g).getByRole('button', { name: 'Limpar' }))
     await waitFor(() => expect(botaoFiltros()).not.toHaveTextContent('5'), ESPERA)
     await waitFor(() => {
-      expect(x.m.pontos.mock.calls.at(-1)?.[0]).not.toHaveProperty('visitada')
+      const depois = x.m.pontos.mock.calls.slice(antesDeLimpar).map((c) => c[0])
+      expect(depois.length).toBeGreaterThan(0)
+      expect(depois.at(-1)).not.toHaveProperty('visitada')
     }, ESPERA)
   })
 

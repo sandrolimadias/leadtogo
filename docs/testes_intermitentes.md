@@ -27,6 +27,13 @@ saída do processo) no lugar de tempos fixos, levando em conta o lock do BullMQ;
 - **`mapa.test.tsx`:** a nova consulta de pontos depois de mudar ou limpar os filtros passava do 1 s
   padrão do `waitFor`. O teste espera primeiro a condição visível (a contagem no botão Filtros) e
   depois a consulta, com prazo explícito de 5 s.
+- **`mapa.test.tsx` (23/10/2026, Fase 2):** o mesmo teste reincidiu olhando só a **última** chamada de
+  `pontos` depois do "Limpar" (uma consulta antiga, terminada fora de ordem, podia ser a última). Agora
+  o teste guarda quantas chamadas havia **antes** do "Limpar" e só valida as feitas depois dele, por
+  condição, com prazo de 5 s.
+- **`convite.test.ts` (23/10/2026, Fase 2):** primeiro e-mail da suíte completa chegou depois dos 15 s com o
+  Mailpit recém-subido. A espera já é por condição; a causa provável é a partida fria do worker de teste.
+  Segue na tabela abaixo como **investigar depois**, sem mudança de código.
 | 22/10/2026 | Gate local (G3a, migração 0028) | `apps/api/src/worker/encerramento-importacao.test.ts` › worker: SIGTERM com dois consumidores ativos › o job comum termina e é marcado; o bloco da importação fecha na linha e agenda o próximo | `expect(await jobsDoLote()).toBe(1)`: recebeu 2 (dois jobs do lote na fila) | Sozinho passou 3 de 3; gate completo repetido (decisão do Ale). **Investigar depois** a causa das 2 entradas (próximo bloco agendado em dobro ou corrida na contagem) |
 | 22/10/2026 | Gate local (G3b, "levar para offline") | `apps/api/src/health/alertas.test.ts` (os 9 testes do arquivo) | `expected 429 to be 200/401/404/503`: o limite de requisições do IP local estourou no meio do arquivo | Sozinho passou 2 de 2; gate completo repetido. **Investigar depois:** o teste não isola o IP (os testes novos usam `X-Forwarded-For` próprio) |
 | 23/10/2026 | Gate local (Fase 2, commit 1: migração 0031) | `apps/api/src/worker/outbox/convite.test.ts` › convite.enviar › envia o e-mail, grava o hash do token do link e o token não fica no outbox nem no Valkey | `Nenhum e-mail para conv-…@exemplo.com em 15000 ms` (primeiro teste do arquivo, na suíte completa da API, com Mailpit e S3 de teste recém-subidos) | Sozinho passou 5 de 5, três vezes seguidas; suíte da API repetida: verde (959). A espera já é por condição (`aguardarMensagem`); falta descobrir o que atrasou o primeiro e-mail da suíte (candidata: partida fria do worker do teste) |
