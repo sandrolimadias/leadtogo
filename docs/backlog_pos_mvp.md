@@ -154,6 +154,11 @@
 |---|---|---|
 | **Contração dos perfis de acesso** (remover `papel` de `membros` e `convites` e o enum `papel_membro`, `perfil_id NOT NULL`, remover `vendedor_ve_todas_empresas` e `dois_fatores_exigido`, e a função `app_vinculos_com_politica` antiga) | Migração destrutiva: só depois de **duas semanas de uso real** da Fase 1, com aviso ao Ale e commit `BREAKING-DB:` | Perfis de acesso, Fase 1 |
 | Permissões de chamados e do portal do cliente, visão Equipe, permissões por campo, múltiplos perfis por usuário | Fora da Fase 1; cada fase futura acrescenta as suas ao catálogo | Perfis de acesso, Fase 1 |
+| Rotas: janela de horário, almoço e várias rotas ou vendedores numa otimização só | Decisão do G0: só a ordem mais curta, um veículo | G4 (`plano_geolocalizacao.md`, seção 10.5) |
+| Rotas recorrentes (a mesma rota toda semana) e duplicar rota | Sem pedido; dá para montar de novo pela lista ou pelo mapa | G4 |
+| Territórios (áreas fixas por vendedor) | Sem pedido; a tabela continua na lista de futuras da modelagem | G4 |
+| Rota: desligar a parada da visita cancelada ou excluída | Hoje a parada fica com a visita ligada e pendente; o vendedor pula ou faz novo check-in no dia seguinte (outra rota) | G4b |
+| Rota: pular e encerrar sem sinal | Pular e encerrar exigem sinal; o check-in e o relatório já entram na fila offline | G4b |
 | Apagar remotamente os dados offline de um aparelho perdido | No G3b só se revoga a sessão e o aparelho se limpa no próximo contato com o servidor | G3b (`plano_geolocalizacao.md`, seção 9) |
 | `acessos_log` com retenção de 6 meses (partição mensal descartada pelo job) | Decidido, **ainda não implementado** | Trilha antes do primeiro cliente externo / `lgpd.md` 5.1 |
 | Limpeza de sessões expiradas | Trilha técnica | Trilha antes do primeiro cliente externo |

@@ -1,6 +1,6 @@
 # Plano — Geolocalização e rotas (G1 e G2)
 
-> Módulo pós-MVP. Base: `docs/geo_g0_relatorio.md` (medições do G0, aprovado pelo Ale em 16/10/2026) e o plano mestre "Leadtogo — Plano de implementação: Geolocalização e rotas". Plano do G1+G2 **aprovado pelo Ale em 16/10/2026**. Plano do **G3 (check-in e relatório de visita) aprovado em 22/10/2026**, na seção 9; **G3 testado e aprovado pelo Ale em 22/10/2026**. Plano do **G4 (rotas)** na seção 10, **aprovado pelo Ale em 23/10/2026** (com no máximo 30 paradas por rota).
+> Módulo pós-MVP. Base: `docs/geo_g0_relatorio.md` (medições do G0, aprovado pelo Ale em 16/10/2026) e o plano mestre "Leadtogo — Plano de implementação: Geolocalização e rotas". Plano do G1+G2 **aprovado pelo Ale em 16/10/2026**. Plano do **G3 (check-in e relatório de visita) aprovado em 22/10/2026**, na seção 9; **G3 testado e aprovado pelo Ale em 22/10/2026**. Plano do **G4 (rotas)** na seção 10, **aprovado pelo Ale em 23/10/2026** (com no máximo 30 paradas por rota). G4a e G4b **implementados em 23/10/2026, 🧪 em teste** (`roteiro_teste_geo_g4.md`).
 > Tela de referência do mapa: `docs/referencias/geo/mapa_referencia.png` (não faz parte do protótipo congelado; o editor de rota à direita é do G4 e é ignorado no G2).
 
 ## 1. Decisões do G0 (valem para o G1)
@@ -250,7 +250,7 @@ O G0 mediu o OSRM e o VROOM em x86 com 12 CPUs; a VPS tem 4 CPUs ARM já perto d
 ### 10.4 Sequência
 
 **G4a:** (a) docs (este plano, funcionalidades, modelagem, LGPD, design system); (b) preparo do OSRM no WSL, serviços na VPS e medição em ARM (**com o Ale**); (c) migração 0030, catálogo v3 e isolamento: **PARA antes do push para o Backup Now**; (d) API das rotas e pontos de partida; (e) otimização (VROOM, OSRM, heurística em linha reta) e links de navegação; (f) telas: lista, editor no mapa, adicionar paradas, celular, configurações; (g) E2E, roteiro `docs/roteiro_teste_geo_g4a.md` e relatório.
-**G4b:** (a) docs; (b) migração 0031 (se precisar); (c) API da execução; (d) rota do dia e check-in pela parada; (e) offline da rota; (f) planejado × realizado; (g) E2E, roteiro e relatório.
+**G4b:** (a) docs; (b) migração 0031 (não foi preciso: as colunas entraram na 0030); (c) API da execução; (d) rota do dia e check-in pela parada; (e) offline da rota; (f) planejado × realizado; (g) E2E, roteiro e relatório.
 
 ### 10.5 Fora do G4
 
@@ -282,3 +282,14 @@ O G0 mediu o OSRM e o VROOM em x86 com 12 CPUs; a VPS tem 4 CPUs ARM já perto d
 | 23/10/2026 | `rotas.atribuir` (montar rota para outro vendedor) só para Administrador e Gestor por padrão | Ale (recomendação do Claude) |
 | 23/10/2026 | Minutos por visita: 40 por padrão, configurável pelo admin e ajustável em cada rota | Ale (recomendação do Claude) |
 | 23/10/2026 | OSRM e VROOM na VPS, com a medição em ARM antes do código | Ale (recomendação do Claude) |
+| 23/10/2026 | **Sem `VROOM_URL`/`OSRM_URL` as rotas ficam com a otimização desligada** ("Otimização de rotas ainda não configurada"): montar, ordenar à mão e executar continuam valendo, com as distâncias em linha reta. A estimativa em linha reta da decisão anterior fica para o serviço configurado e fora do ar | Ale (autorização de 23/10/2026) |
+| 23/10/2026 | Serviços da pilha renomeados para `leadtogo-osrm` e `leadtogo-vroom`; "Connect to Predefined Network" ligado; a API usa o nome completo do container (`roteiro_rotas_producao.md`, B.1) | Claude |
+| 23/10/2026 | As colunas da execução (situação da parada, motivo, visita ligada) entram já na 0030: o G4b não teve migração | Claude |
+| 23/10/2026 | O ponto de partida tem a posição **marcada no mapa** (não geocodificada: a regra do G1 proíbe geocodificar na requisição) e o endereço é só texto para exibir | Claude |
+| 23/10/2026 | **Todo** check-in numa parada pendente da rota de hoje do mesmo vendedor se liga à parada (da rota, da ficha, do mapa ou sem sinal), sem mudar o pedido do check-in: a fila offline do G3b segue igual | Claude |
+| 23/10/2026 | Concluir o relatório com qualquer resultado (inclusive "não localizada") marca a parada **visitada** (houve a ida); "Pular" é a parada não feita | Claude (Ale revisa no teste) |
+| 23/10/2026 | Estimativa em linha reta: desvio de 1,3 sobre a reta e 40 km/h | Claude |
+| 23/10/2026 | Pontos de partida e minutos por visita numa seção própria, **Configurações → Rotas** (em vez de Geolocalização e Visitas) | Claude |
+| 23/10/2026 | "Adicionar à rota" da lista de Empresas cria a rota (vazia) no servidor e acrescenta as selecionadas; o filtro do mapa entra pelo botão de rota das ferramentas (área visível + filtros) | Claude |
+| 23/10/2026 | Sem a posição atual (negada ou indisponível), a rota começa na primeira parada (aviso "Sem a posição atual") | Claude |
+
