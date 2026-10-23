@@ -1,6 +1,6 @@
 # Plano — Geolocalização e rotas (G1 e G2)
 
-> Módulo pós-MVP. Base: `docs/geo_g0_relatorio.md` (medições do G0, aprovado pelo Ale em 16/10/2026) e o plano mestre "Leadtogo — Plano de implementação: Geolocalização e rotas". Plano do G1+G2 **aprovado pelo Ale em 16/10/2026**. Plano do **G3 (check-in e relatório de visita) aprovado em 22/10/2026**, na seção 9. G4 (rotas) fica para depois.
+> Módulo pós-MVP. Base: `docs/geo_g0_relatorio.md` (medições do G0, aprovado pelo Ale em 16/10/2026) e o plano mestre "Leadtogo — Plano de implementação: Geolocalização e rotas". Plano do G1+G2 **aprovado pelo Ale em 16/10/2026**. Plano do **G3 (check-in e relatório de visita) aprovado em 22/10/2026**, na seção 9; **G3 testado e aprovado pelo Ale em 22/10/2026**. Plano do **G4 (rotas)** na seção 10, **aguardando aprovação**.
 > Tela de referência do mapa: `docs/referencias/geo/mapa_referencia.png` (não faz parte do protótipo congelado; o editor de rota à direita é do G4 e é ignorado no G2).
 
 ## 1. Decisões do G0 (valem para o G1)
@@ -181,3 +181,90 @@ Duas entregas, com o teste do Ale entre elas: **G3a** (construtor e configuraç�
 | 22/10/2026 | Sem sinal, a ficha não abre: o check-in offline começa em "Relatórios de visita → Empresas no aparelho"; abrir a ficha com sinal guarda a empresa (as "abertas recentemente") | Claude |
 | 22/10/2026 | Sem rede, as guardas usam a última sessão conferida (cifrada no aparelho, 7 dias, apagada ao sair), para o app abrir e navegar sem sinal; com sinal a sessão é sempre conferida no servidor | Claude |
 | 22/10/2026 | Modelo "em uso" = a versão ATUAL tem relatório (rascunho ou concluído); excluir o modelo ou o resultado com qualquer relatório só se inativa | Claude |
+| 22/10/2026 | Teste do G3 (G3a e G3b) em produção concluído: **aprovado** | Ale |
+
+## 10. G4 — Rotas (proposta do Claude, 22/10/2026; **aguardando aprovação do Ale**)
+
+Montar o roteiro do dia a partir do mapa e dos filtros, otimizar a ordem (OSRM + VROOM), navegar pelo Google Maps ou Waze e executar a rota no celular com o check-in do G3. Base: as "portas para o G4" do G0 (seção 1), as medições do `geo_g0_relatorio.md` (seção 6) e o editor de rota à direita de `docs/referencias/geo/mapa_referencia.png`.
+
+São duas entregas, com o teste do Ale entre elas, como no G3: **G4a** (planejar: rotas, editor e otimização; migração 0030) e **G4b** (executar: a rota do dia no celular, o check-in pela parada e o planejado × realizado; migração 0031, se precisar). Cada migração para antes do push para o Backup Now.
+
+### 10.0 Antes do código: medir na VPS (ARM)
+
+O G0 mediu o OSRM e o VROOM em x86 com 12 CPUs; a VPS tem 4 CPUs ARM já perto de 50%. Primeiro passo do G4, com o Ale no terminal da VPS:
+- **Preparo no WSL** (nunca na VPS): `scripts/geo/preparar-osrm.sh` recorta o ES (o mesmo `.pbf` do Nominatim), roda `osrm-extract` + `osrm-partition` + `osrm-customize` (perfil `car`, MLD) e empacota os arquivos (~350 MB).
+- **Na VPS:** dois serviços novos no Coolify, só na rede interna (sem domínio público): **OSRM** (`osrm-routed --algorithm mld --max-table-size 200`, limite de 512 MiB) e **VROOM** (`vroom-docker:v1.14.0` apontando para o OSRM, limite de 256 MiB).
+- **Medição:** `scripts/geo/medir-vroom.mjs` com 25, 50, 100 e 150 paradas reais do ES. Se 150 paradas passarem de **10 s**, a otimização vai para o worker (job com progresso na tela) em vez de responder na hora; se ficar abaixo, responde na requisição com tempo-limite.
+- Passo a passo em `docs/geo_atualizacao.md` (nova seção "OSRM e VROOM", atualização junto com o Nominatim, a cada 6 a 12 meses).
+
+### 10.1 G4a — Planejar (migração 0030)
+
+**Tabelas novas** (todas com `tenant_id`, RLS forçado, colunas padrão e teste de isolamento; detalhe em `modelagem_banco.md`):
+- `rota_pontos_partida`: nome, endereço, `localizacao` (geocodificada pela mesma cascata do G1, com ajuste manual), ativo, padrão (um por empresa). Ex.: "Sede Dias Automação · Serra". Cadastrados pelo admin.
+- `rotas`: `codigo` sequencial por empresa (exibido como **R-0151**), nome, data, `responsavel_id` (o vendedor que vai rodar), partida (`posicao_atual` ou `ponto_id`), `voltar_ao_inicio`, `minutos_por_visita`, `situacao` (`planejada` · `em_andamento` · `concluida` · `cancelada`), `distancia_m`, `duracao_s` (deslocamento), `otimizada_em`, `trajeto` (`geography(LineString)`, o desenho pelas ruas para o mapa, recalculado quando as paradas mudam).
+- `rota_paradas`: rota, empresa, ordem, `distancia_trecho_m`, `duracao_trecho_s`, `situacao` (`pendente` · `visitada` · `pulada`), `atividade_id` (a visita do G3, preenchida no G4b). Uma empresa aparece uma vez por rota. Índice por empresa e situação, para o "Na rota · parada N" do mapa.
+- `tenant_configuracoes`: + `rota_minutos_por_visita` (padrão 40).
+- **Catálogo de permissões v3** (mesmo mecanismo do v2): `rotas.ver` e `rotas.editar` com alcance (`propria` · `equipe` · `todas`; "própria" = rotas de que a pessoa é responsável) e `rotas.atribuir` (criar ou passar a rota para outro vendedor). Padrões: Administrador e Gestor com tudo em `todas`; Vendedor com ver e editar `propria`, sem atribuir. Pontos de partida: `cadastros.gerir`.
+
+**Regras:**
+- **Paradas:** só empresas **com coordenada** e que o **responsável da rota** pode ver na carteira (um gestor não coloca na rota do vendedor uma empresa que o vendedor não consegue abrir). Coordenada **aproximada** entra com aviso na parada (o G0: "só a coordenada exata ou confirmada entra na rota sem aviso"). Máximo de **150 paradas** por rota (`ROTA_MAX_PARADAS`).
+- **Partida:** padrão = **posição atual do aparelho** (decisão do G0); alternativa = um ponto cadastrado. A posição atual é usada **só no cálculo** e **não é gravada** (LGPD: a posição do vendedor só se grava no check-in, `lgpd.md` 3.2); a rota guarda apenas a ordem e as estimativas. Sem permissão de localização, cai no ponto padrão.
+- **Otimizar ordem:** VROOM com um veículo, partida, volta opcional e as paradas; **só a ordem mais curta**, sem janela de horário nem almoço (G0). Depois da otimização, a ordem continua editável à mão (arrastar). As estimativas mostram distância e tempo: deslocamento + paradas × minutos por visita ("14 h · com 40 min por visita").
+- **Sem OSRM/VROOM** (desenvolvimento, testes, ou o serviço fora do ar em produção): ordem pela heurística do vizinho mais próximo + 2-opt em **linha reta**, com o aviso "estimativa em linha reta". Ninguém fica sem rota por causa do serviço.
+- **Rotas de outro dia:** a rota é um plano; **não cria atividades agendadas** no G4a (ver a pergunta 1). A situação passa de `planejada` a `em_andamento` no primeiro check-in pela rota (G4b).
+- **Auditoria:** criar, editar paradas, otimizar, atribuir, cancelar.
+
+**Navegação:**
+- **Google Maps:** link de direções em **trechos** (até 3 paradas intermediárias no celular e 9 no computador, limite da URL de 2.048 caracteres; G0, seção 7). Uma rota de 15 paradas no celular vira 4 trechos: "Trecho 1 (paradas 1–4)", "Trecho 2…".
+- **Waze:** uma parada por vez ("Navegar até a próxima").
+
+**Telas (G4a):**
+- **Rotas** (menu Carteira → Rotas, sai o selo "Fase 3"): lista com código, nome, data, responsável, paradas, distância e situação; filtros por data, responsável e situação; "Nova rota".
+- **Editor de rota** no Mapa, painel à direita (como na referência): nome, data, responsável (só com `rotas.atribuir`), ponto de partida, "Voltar ao ponto de partida", ordem de visita (arrastar pela alça, remover, aviso de precisão), **Otimizar ordem**, totais, **Google Maps** e **Salvar alterações**. Paradas numeradas no mapa e o trajeto desenhado pelas ruas.
+- **Adicionar paradas:** "Adicionar à rota" no painel da empresa (vira **"Na rota · parada N"**), "Adicionar todas à rota" em Empresas próximas, na seleção por retângulo ou raio e no filtro atual do mapa (até 150, com contador; é o "montar o roteiro pelos filtros", ex.: sem visita há 90 dias + cidade), e na seleção em massa da lista de Empresas.
+- **Celular:** o editor vira tela cheia com abas **Lista | Mapa**; reordenar pela alça (toque e teclado), como no Kanban.
+- **Configurações → Geolocalização → Pontos de partida** (admin) e **minutos por visita** em Configurações → Visitas → Check-in.
+
+**Testes (G4a):** API (permissões e alcance, parada só de empresa visível ao responsável, limite de 150, sem coordenada recusada, otimização com provedor falso e a heurística em linha reta, recálculo das estimativas, isolamento, auditoria); schemas compartilhados; montagem dos links do Google Maps em trechos e do Waze; componente do editor (arrastar, remover, otimizar); E2E: filtrar no mapa → adicionar todas → otimizar → salvar → abrir pela lista de Rotas.
+
+### 10.2 G4b — Executar (depois do teste do G4a)
+
+- **Rota do dia** no celular: o Dashboard e o menu mostram a rota de hoje; a tela mostra a próxima parada em destaque (Navegar · Check-in · Pular) e a lista com a situação de cada parada.
+- **Check-in pela parada:** o check-in do G3, aberto pela parada, liga a visita à parada (`rota_paradas.atividade_id`); concluir o relatório marca a parada **visitada**; "Pular" pede um motivo curto. A rota fica `concluida` quando não há parada pendente, ou por "Encerrar rota" (as pendentes viram puladas).
+- **Offline:** "Levar a rota para offline" reaproveita o "levar para offline" do G3b com as empresas da rota (150 cabem no limite de 300) e guarda a própria rota no aparelho (ordem, endereços e links). Otimizar e salvar mudanças exigem sinal.
+- **Planejado × realizado** para gestor e admin: na lista de Rotas, paradas visitadas, puladas e pendentes, e a distância estimada.
+- **Testes:** API (ligação da visita à parada, idempotência com a fila offline do G3b, encerramento); E2E sem sinal: abrir a rota do dia → check-in na parada 1 → relatório → volta o sinal → parada visitada uma vez só.
+
+### 10.3 Dados e infraestrutura
+
+| Item | Onde | Observação |
+|---|---|---|
+| OSRM do ES (perfil `car`, MLD, ~350 MB) | serviço novo no Coolify, rede interna | preparo no WSL; 512 MiB no máximo; `--max-table-size 200` |
+| VROOM 1.14 | serviço novo no Coolify, rede interna | 256 MiB no máximo; tempo-limite por pedido |
+| Tabelas novas (com RLS forçado e isolamento) | Postgres | `rota_pontos_partida`, `rotas`, `rota_paradas` (substituem `territorios`, `rotas` e `rota_paradas` da lista de futuras da modelagem; `territorios` continua futura) |
+| Variáveis novas (`.env.example`, sem valor) | Coolify | `OSRM_URL`, `VROOM_URL`, `ROTA_MAX_PARADAS`, `ROTA_TEMPO_LIMITE_S` |
+| LGPD | `lgpd.md` | a rota é o itinerário planejado do vendedor (dado pessoal dele): mesmo alcance de quem vê a rota; a posição atual usada na partida não é gravada |
+
+### 10.4 Sequência
+
+**G4a:** (a) docs (este plano, funcionalidades, modelagem, LGPD, design system); (b) preparo do OSRM no WSL, serviços na VPS e medição em ARM (**com o Ale**); (c) migração 0030, catálogo v3 e isolamento: **PARA antes do push para o Backup Now**; (d) API das rotas e pontos de partida; (e) otimização (VROOM, OSRM, heurística em linha reta) e links de navegação; (f) telas: lista, editor no mapa, adicionar paradas, celular, configurações; (g) E2E, roteiro `docs/roteiro_teste_geo_g4a.md` e relatório.
+**G4b:** (a) docs; (b) migração 0031 (se precisar); (c) API da execução; (d) rota do dia e check-in pela parada; (e) offline da rota; (f) planejado × realizado; (g) E2E, roteiro e relatório.
+
+### 10.5 Fora do G4
+
+| Item | Motivo |
+|---|---|
+| Janela de horário, almoço, várias rotas ou vendedores numa otimização só (dividir a carteira entre veículos) | Decisão do G0: só a ordem mais curta, um veículo |
+| Territórios (áreas fixas por vendedor) | Sem pedido; a tabela continua na lista de futuras |
+| Rastrear a posição do vendedor durante a rota | LGPD: a posição só se grava no check-in |
+| Navegação dentro do app (curva a curva) | O Google Maps e o Waze fazem isso; o app só monta os links |
+| Rotas recorrentes (toda segunda, a mesma rota) | Dá para duplicar a rota; a recorrência fica para o backlog se fizer falta |
+
+### 10.6 Perguntas para o Ale (com a recomendação do Claude)
+
+1. **A rota cria atividades "Visita" agendadas para as paradas?** Recomendação: **não**. A rota já é a agenda do dia; criar 15 visitas agendadas encheria a lista de atividades e mexeria na "próxima atividade" da carteira, e cada mudança na rota exigiria mexer nelas. A visita nasce no check-in pela parada (G4b), como no G3.
+2. **Partida pela posição atual sem gravá-la** (só no cálculo). Recomendação: **sim** (LGPD).
+3. **Heurística em linha reta** quando o OSRM ou o VROOM não respondem. Recomendação: **sim**, com o aviso visível.
+4. **Quem monta a rota para outro vendedor:** `rotas.atribuir`, por padrão Administrador e Gestor. Recomendação: **sim**.
+5. **Minutos por visita:** padrão 40 por empresa (admin) e ajustável em cada rota. Recomendação: **sim**.
+6. **Serviços na VPS:** OSRM + VROOM somam uns 350 MB de RAM e 1,2 GB de disco (imagens e dados), a medir no passo 10.0. Recomendação: **subir os dois**, com a medição antes do código.
