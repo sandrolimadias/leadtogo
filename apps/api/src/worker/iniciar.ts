@@ -130,10 +130,12 @@ export async function iniciarWorker(deps: {
     banco,
     filas,
     log,
-    manipuladores: manipuladoresPadrao(config, enviador, {
-      banco,
-      servico: receita,
-    }),
+    manipuladores: manipuladoresPadrao(
+      config,
+      enviador,
+      { banco, servico: receita },
+      (canal, mensagem) => valkey.publish(canal, mensagem),
+    ),
   })
   filas.consumir(
     FILAS.outbox,

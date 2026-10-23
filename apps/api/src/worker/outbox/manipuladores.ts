@@ -16,6 +16,11 @@ import { EVENTO_GEOCODIFICAR_EMPRESA } from '../../geolocalizacao/evento.js'
 import { EVENTO_EXECUTAR_LOTE_GEO } from '../../geolocalizacao/evento-lote.js'
 import { enfileirarBlocoDoLote, enfileirarEmpresa } from '../../geolocalizacao/fila.js'
 import { EVENTO_VARRER_ANEXO } from '../../chamados/evento-anexo.js'
+import {
+  EVENTO_NOTIFICAR_CHAMADO,
+  manipuladorDeNotificacaoDeChamado,
+  type Publicador,
+} from '../../chamados/notificar-chamado.js'
 import { enfileirarVarredura } from '../../chamados/fila-antivirus.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
@@ -32,6 +37,8 @@ export function manipuladoresPadrao(
   enviador: EnviadorSmtp,
   /** Banco e consulta da Receita: habilitam a reconsulta da situação das empresas salvas sem verificar */
   receita?: { banco: Conexao; servico: ReceitaService },
+  /** Tempo real do sino (Valkey pub/sub); sem ele as notificações só aparecem quando o app relê a lista */
+  publicar: Publicador = () => Promise.resolve(),
 ): Record<string, ManipuladorDeEvento> {
   const manipuladores: Record<string, ManipuladorDeEvento> = {}
 
@@ -150,6 +157,9 @@ export function manipuladoresPadrao(
       eventoId: evento.id,
     })
   }
+
+  /** Chamado mexeu: sino, e-mail de quem é a pessoa certa e aviso em tempo real (depois do commit). */
+  manipuladores[EVENTO_NOTIFICAR_CHAMADO] = manipuladorDeNotificacaoDeChamado(config, publicar)
 
   if (receita) {
     manipuladores[EVENTO_VERIFICAR_SITUACAO] = manipuladorDaSituacao(receita.banco, receita.servico)

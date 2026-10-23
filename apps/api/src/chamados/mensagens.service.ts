@@ -110,6 +110,7 @@ export class MensagensService {
         status_alterado_em = CASE WHEN ${status} <> ${l.status} THEN now() ELSE status_alterado_em END,
         atualizado_em = now(), atualizado_por = ${eu}
       WHERE id = ${id}`)
+    await this.chamados.notificar(id, 'mensagem', { mensagemId })
     return this.chamados.obter(id, true)
   }
 

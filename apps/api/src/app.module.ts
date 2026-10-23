@@ -26,6 +26,7 @@ import { ImportacaoModule } from './importacao/importacao.module.js'
 import { MapaModule } from './mapa/mapa.module.js'
 import { RotasModule } from './rotas/rotas.module.js'
 import { ChamadosModule } from './chamados/chamados.module.js'
+import { NotificacoesModule } from './notificacoes/notificacoes.module.js'
 import { InfraModule } from './infra/infra.module.js'
 import { LogModule } from './log/log.module.js'
 import { LimiteDeRequisicoesGuard } from './rate-limit/limite.guard.js'
@@ -68,6 +69,7 @@ export class AppModule {
         MapaModule,
         RotasModule,
         ChamadosModule,
+        NotificacoesModule,
         EmpresasModule,
         PrimeiroAcessoModule,
         ReceitaModule,

@@ -29,6 +29,11 @@ import { ContextoTenantService, type Transacao } from '../acesso/contexto-tenant
 import { ErroApi } from '../http/erro-api.js'
 import { AcessoDeChamados, type ChamadoParaAcesso } from './acesso-chamados.js'
 import { ExpedienteService } from './expediente.service.js'
+import {
+  agendarNotificacao,
+  type PayloadDaNotificacao,
+  type TipoDeNotificacaoDeChamado,
+} from './notificar-chamado.js'
 import { TriagemService } from './triagem.service.js'
 
 type LinhaDoChamado = {
@@ -125,6 +130,20 @@ export class ChamadosService {
         ${e.responsavelDeId ?? null}::uuid, ${e.responsavelParaId ?? null}::uuid,
         ${e.prioridadeDe ?? null}::prioridade_chamado, ${e.prioridadePara ?? null}::prioridade_chamado,
         ${JSON.stringify(e.dados ?? {})}::jsonb)`)
+  }
+
+  /** Avisa as pessoas certas (sino e e-mail) depois do commit; quem fez o ato nunca é avisado dele. */
+  async notificar(
+    chamadoId: string,
+    tipo: TipoDeNotificacaoDeChamado,
+    extra: Pick<PayloadDaNotificacao, 'mensagemId'> = {},
+  ): Promise<void> {
+    await agendarNotificacao(this.ctx.db(), this.ctx.tenantId, {
+      chamadoId,
+      tipo,
+      atorId: this.ctx.membro.id,
+      ...extra,
+    })
   }
 
   // ---- Leitura ----
@@ -492,6 +511,7 @@ export class ChamadosService {
       areaParaId: areaId,
       prioridadePara: dados.prioridade,
     })
+    await this.notificar(id, 'aberto')
     return this.obter(id, true)
   }
 
@@ -538,6 +558,7 @@ export class ChamadosService {
       prioridadeDe: l.prioridade,
       prioridadePara: prioridade,
     })
+    await this.notificar(id, 'triado')
     return this.obter(id, true)
   }
 
@@ -568,6 +589,7 @@ export class ChamadosService {
       responsavelDeId: l.responsavel_id,
       responsavelParaId: dados.responsavelId,
     })
+    if (dados.responsavelId) await this.notificar(id, 'atribuido')
     return this.obter(id, true)
   }
 
@@ -591,6 +613,7 @@ export class ChamadosService {
       responsavelDeId: null,
       responsavelParaId: this.ctx.membro.id,
     })
+    await this.notificar(id, 'assumido')
     return this.obter(id, true)
   }
 
@@ -618,6 +641,7 @@ export class ChamadosService {
       statusDe: l.status,
       statusPara: para,
     })
+    if (para === 'aguardando_cliente' || para === 'resolvido') await this.notificar(id, para)
     return this.obter(id, true)
   }
 
@@ -683,6 +707,7 @@ export class ChamadosService {
       statusDe: 'resolvido',
       statusPara: 'em_atendimento',
     })
+    await this.notificar(id, 'reaberto')
     return this.obter(id, true)
   }
 }

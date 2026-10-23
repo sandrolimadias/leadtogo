@@ -87,3 +87,23 @@ export function emailConvite(dados: {
     'Se você não esperava este convite, ignore este e-mail: nada será criado sem o seu aceite.',
   )
 }
+
+/** Aviso de um chamado: o título, o assunto, a prévia da mensagem (se houver) e o link para abrir. */
+export function emailChamado(p: {
+  nome: string
+  titulo: string
+  assunto: string
+  previa: string | null
+  autor: string | null
+  link: string
+}): ModeloDeEmail {
+  const paragrafos = [p.assunto]
+  if (p.previa) paragrafos.push(`${p.autor ?? 'Alguém'} escreveu: ${p.previa}`)
+  return montar(
+    p.titulo,
+    `Olá, ${p.nome}.`,
+    paragrafos,
+    { texto: 'Abrir o chamado', link: p.link },
+    'Você recebe este aviso porque participa deste chamado no Leadtogo.',
+  )
+}
