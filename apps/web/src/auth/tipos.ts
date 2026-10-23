@@ -10,6 +10,10 @@ import type {
   CnaesConferidos,
   ConfiguracaoDaCarteira,
   ConfiguracaoDeVisitas,
+  DistanciaDoCheckin,
+  ItemDeVisita,
+  PacoteOffline,
+  RelatorioDeVisita,
   ModeloDeVisita,
   ResultadoDeVisita,
   VersaoDoModeloDeVisita,
@@ -106,6 +110,8 @@ import type {
   AlterarResultadoDeVisitaEntrada,
   CriarModeloDeVisitaEntrada,
   CriarResultadoDeVisitaEntrada,
+  PosicaoDoAparelho,
+  SalvarVisitaEntrada,
   AlterarVerticalEntrada,
   CriarConviteEntrada,
   CriarEmpresaEntrada,
@@ -439,6 +445,17 @@ export interface ServicosDeVisitas {
   }
   configuracao: () => Promise<Resultado<ConfiguracaoDeVisitas>>
   alterarConfiguracao: (dados: ConfiguracaoDeVisitas) => Promise<Resultado<ConfiguracaoDeVisitas>>
+  /** O campo (G3b): check-in, relatório (PUT idempotente pelo id do aparelho), pendentes e offline */
+  campo: {
+    distancia: (
+      empresaId: string,
+      posicao: PosicaoDoAparelho,
+    ) => Promise<Resultado<DistanciaDoCheckin>>
+    salvar: (id: string, dados: SalvarVisitaEntrada) => Promise<Resultado<RelatorioDeVisita>>
+    obter: (id: string) => Promise<Resultado<RelatorioDeVisita>>
+    listar: (filtro: { empresaId?: string; so?: 'pendentes' }) => Promise<Resultado<ItemDeVisita[]>>
+    offline: (empresaIds: string[]) => Promise<Resultado<PacoteOffline>>
+  }
 }
 
 export interface ServicosDeAcesso {

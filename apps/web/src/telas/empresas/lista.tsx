@@ -421,6 +421,7 @@ export function ListaDeEmpresas() {
 
       {!celular && selecionadas.size > 0 ? (
         <BarraDeAcoesEmMassa
+          empresaIds={[...selecionadas]}
           quantidade={selecionadas.size}
           grupos={tags.data ?? []}
           ocupado={aplicando}

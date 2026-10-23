@@ -70,9 +70,10 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 
 **Dados guardados no aparelho (offline do PWA)**
 - **Dados mínimos:** nome, endereço, coordenada, telefone e tags da empresa, contatos ativos, modelos, resultados e a configuração do check-in. **Sem CNPJ, observações nem histórico.**
+- **Sessão para abrir sem sinal:** a última sessão conferida no servidor (nome e e-mail da pessoa, empresas e permissões), também cifrada e com a mesma validade. Ela só é usada quando **não há rede**; com sinal, a sessão é sempre conferida no servidor, e sair da conta a apaga.
 - **Quantidade e validade:** as empresas abertas recentemente e as levadas com "Levar para offline" (**até 300 por vez**), válidas por **7 dias**; vencido o prazo, os dados são apagados do aparelho.
 - **Limpeza:** total ao **sair da conta** e ao **entrar outra pessoa** no mesmo aparelho.
-- **Cifra:** os contatos e a posição ficam cifrados com **AES-GCM**, com uma chave **não extraível** do WebCrypto guardada no próprio navegador.
+- **Cifra:** tudo o que fica no aparelho (empresas com os contatos, a posição do check-in na fila, o apoio e a sessão) é cifrado com **AES-GCM**, com uma chave **não extraível** do WebCrypto guardada no próprio navegador.
 - **Limite da cifra (dito com franqueza):** ela protege contra a **leitura casual** dos arquivos do navegador (outro programa, cópia do perfil, inspeção do disco). **Não protege** contra quem tem o **navegador desbloqueado e a sessão aberta**: nesse caso o próprio aplicativo decifra e mostra os dados. A proteção real do aparelho depende do bloqueio de tela, e isso deve constar na orientação aos usuários.
 - **Aparelho perdido:** nesta fase não há limpeza remota. O administrador **revoga a sessão**, e o aparelho apaga os dados offline no próximo contato com o servidor. A limpeza remota está no backlog.
 

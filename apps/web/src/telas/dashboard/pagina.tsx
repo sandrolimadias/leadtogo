@@ -24,6 +24,7 @@ import {
   GraficoDoFunil,
 } from './graficos'
 import { linkDeConquistadas, linkDePerdas, linkDoStatus, linkSemContato } from './links'
+import { CardDePendentes } from '@/telas/visitas/campo/pendentes'
 
 const rota = getRouteApi('/_autenticado/')
 
@@ -179,6 +180,8 @@ export function PaginaDoDashboard() {
           }
         />
       </div>
+
+      <CardDePendentes />
 
       {consulta.isError ? (
         <Alert

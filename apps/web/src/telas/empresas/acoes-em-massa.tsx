@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Menu, type ItemDeMenu } from '@/components/ui/menu'
+import { BotaoLevarParaOffline } from '@/telas/visitas/campo/offline'
 
 /** As tags que se aplicam à mão: dos grupos ativos que não são do sistema (a Visitação, não). */
 function itensDoMenu(
@@ -21,15 +22,18 @@ function itensDoMenu(
 
 /**
  * Barra que aparece quando há empresas marcadas na lista: quantas, "Aplicar tag" (Status substitui o
- * atual; as de seleção múltipla se somam) e "Limpar seleção".
+ * atual; as de seleção múltipla se somam), "Levar para offline" e "Limpar seleção".
  */
 export function BarraDeAcoesEmMassa({
+  empresaIds,
   quantidade,
   grupos,
   ocupado,
   aoAplicar,
   aoLimpar,
 }: {
+  /** As marcadas: "Levar para offline" (G3b) */
+  empresaIds: string[]
   quantidade: number
   grupos: TagGrupo[]
   ocupado: boolean
@@ -53,6 +57,7 @@ export function BarraDeAcoesEmMassa({
           </Button>
         }
       />
+      <BotaoLevarParaOffline empresaIds={empresaIds} />
       <span className="flex-1" />
       <Button variant="ghost" size="sm" onClick={aoLimpar} disabled={ocupado}>
         Limpar seleção

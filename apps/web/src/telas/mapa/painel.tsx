@@ -27,6 +27,7 @@ import { ContatosDaEmpresaAba } from '@/telas/empresas/ficha-contatos'
 import { dataCurta, diasDesde, tempoRelativo } from '@/telas/empresas/formatos'
 import { SeloDePosicao } from '@/telas/geolocalizacao/selo'
 import { OportunidadesDaEmpresa } from '@/telas/oportunidades/na-ficha'
+import { BotaoDeVisita } from '@/telas/visitas/campo/checkin'
 
 const ABAS = [
   { value: 'atividades', label: 'Atividades' },
@@ -40,7 +41,7 @@ const classeDoBotao =
 /**
  * O painel da empresa no mapa: nome, tags, selo de precisão, carteira, última visita, próxima atividade,
  * as ações (Ligar, WhatsApp, Empresas próximas, Abrir ficha) e as abas Atividades, Oportunidades e Contatos.
- * "Na rota" e "Check-in" só existem quando o G3 e o G4 chegarem.
+ * O "Check-in" (G3b) abre a visita; "Na rota" chega com o G4.
  */
 export function PainelDaEmpresa({
   empresaId,
@@ -166,6 +167,9 @@ function Conteudo({
           </li>
         </ul>
         <div className="flex flex-wrap gap-2">
+          {e.permissoes.editar ? (
+            <BotaoDeVisita empresa={{ id: e.id, nome: e.nome }} compacto />
+          ) : null}
           {ligar ? (
             <a href={ligar} className={classeDoBotao}>
               <Phone size={14} aria-hidden="true" /> Ligar

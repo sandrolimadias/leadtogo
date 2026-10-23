@@ -42,6 +42,8 @@ import { useContatosDaEmpresa } from './contatos-da-empresa'
 import { ContatosDaEmpresaAba } from './ficha-contatos'
 import { HistoricoDaEmpresaAba } from './ficha-historico'
 import { CartaoDaPosicao } from '@/telas/geolocalizacao/ficha-posicao'
+import { BotaoDeVisita } from '@/telas/visitas/campo/checkin'
+import { VisitasDaEmpresa } from '@/telas/visitas/campo/na-ficha'
 import { Cartao, CnaesDaEmpresa, DadosCadastrais, SociosDaEmpresa } from './ficha-resumo'
 
 const rota = getRouteApi('/_autenticado/empresas/$empresaId')
@@ -402,6 +404,9 @@ export function FichaDaEmpresa() {
           </div>
           <div className="flex items-center gap-2">
             {e.permissoes.editar && !celular ? (
+              <BotaoDeVisita empresa={{ id: e.id, nome: e.nome }} compacto />
+            ) : null}
+            {e.permissoes.editar && !celular ? (
               <Button
                 icon={Handshake}
                 onClick={() => abrirOportunidade({ empresa: { id: e.id, nome: e.nome } })}
@@ -516,6 +521,11 @@ export function FichaDaEmpresa() {
             ) : null}
           </div>
         ) : null}
+        {celular && e.permissoes.editar ? (
+          <div className="flex flex-col [&>button]:w-full" data-density="touch">
+            <BotaoDeVisita empresa={{ id: e.id, nome: e.nome }} />
+          </div>
+        ) : null}
       </header>
 
       <Tabs
@@ -567,6 +577,7 @@ export function FichaDaEmpresa() {
               </Cartao>
             </div>
             <div className="flex min-w-0 flex-col gap-4">
+              <VisitasDaEmpresa empresaId={e.id} />
               <CartaoDaPosicao empresa={e} />
               {e.socios.length > 0 ? (
                 <Cartao titulo="Sócios" semMargem>

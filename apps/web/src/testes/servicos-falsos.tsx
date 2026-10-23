@@ -382,6 +382,15 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         excluir: vi.fn(async () => ok(undefined)),
         reordenar: vi.fn(async () => ok([])),
       },
+      campo: {
+        distancia: vi.fn(async () => falha('sem_rede', 'Sem conexão.', 0)),
+        salvar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        obter: vi.fn(async () => falha('visita_nao_encontrada', 'Não encontrado.', 404)),
+        listar: vi.fn(async () => ok([])),
+        offline: vi.fn(async () =>
+          ok({ empresas: [], ignoradas: 0, geradoEm: '2026-10-22T12:00:00Z' }),
+        ),
+      },
       configuracao: vi.fn(async () =>
         ok({
           checkinModo: 'avisar' as const,

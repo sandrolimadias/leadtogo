@@ -6,6 +6,7 @@ import {
   MapPin,
   Settings,
   CalendarCheck,
+  ClipboardList,
   Handshake,
   Target,
   Users,
@@ -59,6 +60,12 @@ export const TELAS: TelaDoApp[] = [
     permissoes: ['atividades.ver'],
   },
   { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone, permissoes: ['empresas.ver'] },
+  {
+    caminho: '/visitas',
+    titulo: 'Relatórios de visita',
+    icone: ClipboardList,
+    permissoes: ['atividades.criar'],
+  },
   { caminho: '/prospeccao', titulo: 'Prospecção', icone: Target, grupo: 'carteira' },
   {
     caminho: '/geolocalizacao',

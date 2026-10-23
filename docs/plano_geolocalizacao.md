@@ -175,3 +175,9 @@ Duas entregas, com o teste do Ale entre elas: **G3a** (construtor e configuraç�
 | 22/10/2026 | Migrações 0028 (G3a) e 0029 (G3b): a 0027 ficou com os perfis de acesso | Claude |
 | 22/10/2026 | Backfill dos padrões de visita na partida da API (marca + função do owner), não INSERT … SELECT na migração, por causa do RLS forçado | Claude |
 | 22/10/2026 | Nomes dos quatro resultados livres (Visita realizada, Retornar depois, Sem interesse, Responsável ausente), opções do "interesse" e a lista fixa de "dados da empresa" (nome fantasia, site, vertical, número de funcionários; `empresas.numero_funcionarios` entra na 0028) | Claude (Ale revisa no teste) |
+| 22/10/2026 | "Não localizada" também não atualiza o **último contato** (ninguém foi contatado); continua contando como atividade realizada em tudo que mede esforço | Claude (Ale revisa no teste) |
+| 22/10/2026 | "Visita tentada" no mapa: vale enquanto a última "não localizada" for mais nova que a última visita real; sai ao confirmar o endereço | Claude |
+| 22/10/2026 | Enquanto o relatório está em rascunho, a atividade da visita não se edita nem se conclui por fora dele | Claude |
+| 22/10/2026 | Sem sinal, a ficha não abre: o check-in offline começa em "Relatórios de visita → Empresas no aparelho"; abrir a ficha com sinal guarda a empresa (as "abertas recentemente") | Claude |
+| 22/10/2026 | Sem rede, as guardas usam a última sessão conferida (cifrada no aparelho, 7 dias, apagada ao sair), para o app abrir e navegar sem sinal; com sinal a sessão é sempre conferida no servidor | Claude |
+| 22/10/2026 | Modelo "em uso" = a versão ATUAL tem relatório (rascunho ou concluído); excluir o modelo ou o resultado com qualquer relatório só se inativa | Claude |

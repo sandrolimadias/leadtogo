@@ -11,6 +11,7 @@ import { Alert } from '@/components/ui/feedback'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 import { distanciaCurta } from '@/telas/geolocalizacao/rotulos'
+import { BotaoLevarParaOffline } from '@/telas/visitas/campo/offline'
 
 const RAIOS_EM_KM = [2, 5, 10, 25] as const
 
@@ -84,7 +85,7 @@ export function BarraDeRaio({
 
 /**
  * O resultado de uma seleção (raio, retângulo ou próximas): a lista, o total e as ações. No G2 a seleção
- * serve para listar, abrir e aplicar uma tag (as rotas entram no G4).
+ * serve para listar, abrir, aplicar uma tag e levar para o offline (as rotas entram no G4).
  */
 export function ResultadoDaSelecao({
   titulo,
@@ -192,6 +193,7 @@ export function ResultadoDaSelecao({
       </ul>
       {dados.itens.length > 0 ? (
         <div className="flex flex-col gap-2 border-t border-border p-3">
+          <BotaoLevarParaOffline empresaIds={dados.itens.map((i) => i.id)} />
           <Select
             label="Aplicar uma tag a todas da lista"
             value={tagId}

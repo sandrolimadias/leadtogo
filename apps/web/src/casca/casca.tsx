@@ -15,6 +15,7 @@ import { cn } from '@/lib/cn'
 
 import { Logo } from '@/components/acesso/logo'
 import { RegistrarAtividadeProvider } from '@/telas/atividades/registrar'
+import { CampoDasVisitas } from '@/telas/visitas/campo/pendentes'
 import { FormularioDeOportunidadeProvider } from '@/telas/oportunidades/formulario'
 import { useDispositivo } from './dispositivo'
 import { useTrocarEmpresa } from './empresas'
@@ -58,6 +59,10 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: chaveDoMe })
     await navegar({ to: '/login', search: { redirect: undefined } })
   }
+  // Visitas no campo (G3b): banco do aparelho da pessoa, fila que sobe com o sinal e o lembrete
+  const campo = me.empresaAtivaId ? (
+    <CampoDasVisitas me={me} usuarioId={me.usuario.id} empresaId={me.empresaAtivaId} />
+  ) : null
   const empresaDoMenu = ativa
     ? { name: nomeDaEmpresa(ativa), role: papelDe(me), color: corDoNome(nomeDaEmpresa(ativa)) }
     : null
@@ -66,6 +71,7 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
     return (
       <RegistrarAtividadeProvider>
         <FormularioDeOportunidadeProvider>
+          {campo}
           <div
             data-density="touch"
             className="relative flex h-dvh flex-col overflow-hidden bg-bg text-ink"
@@ -213,6 +219,7 @@ export function Casca({ me, children }: { me: Me; children: ReactNode }) {
   return (
     <RegistrarAtividadeProvider>
       <FormularioDeOportunidadeProvider>
+        {campo}
         <div
           data-density={dispositivo === 'tablet' ? 'touch' : undefined}
           className="relative flex h-dvh overflow-hidden bg-bg text-ink"

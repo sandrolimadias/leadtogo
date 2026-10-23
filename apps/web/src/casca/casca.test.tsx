@@ -458,7 +458,8 @@ describe('casca: teclado', () => {
     renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
     await screen.findByRole('navigation', { name: 'Principal' })
     const ordem: string[] = []
-    for (let i = 0; i < 16; i++) {
+    // 18 paradas: o menu ganhou 'Relatórios de visita' (G3b)
+    for (let i = 0; i < 18; i++) {
       await userEvent.tab()
       const el = document.activeElement as HTMLElement
       ordem.push(el.getAttribute('aria-label') ?? el.textContent?.trim().replace(/\s+/g, ' ') ?? '')

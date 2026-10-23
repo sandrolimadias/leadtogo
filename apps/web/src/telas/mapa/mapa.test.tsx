@@ -678,7 +678,8 @@ describe('Mapa: painel da empresa', () => {
     expect(within(painel).getByRole('link', { name: /Abrir ficha/ })).toBeInTheDocument()
     expect(within(painel).getByRole('button', { name: /Empresas próximas/ })).toBeInTheDocument()
     expect(within(painel).queryByText(/Na rota/)).not.toBeInTheDocument()
-    expect(within(painel).queryByText(/Check-in/)).not.toBeInTheDocument()
+    // G3b: o check-in da visita sai do painel
+    expect(within(painel).getByRole('button', { name: 'Check-in' })).toBeInTheDocument()
     for (const aba of ['Atividades', 'Oportunidades', 'Contatos']) {
       expect(within(painel).getByRole('tab', { name: aba })).toBeInTheDocument()
     }

@@ -32,6 +32,7 @@ import { Route as AutenticadoImportacaoRouteImport } from './routes/_autenticado
 import { Route as AutenticadoMapaRouteImport } from './routes/_autenticado.mapa'
 import { Route as AutenticadoOportunidadesRouteImport } from './routes/_autenticado.oportunidades'
 import { Route as AutenticadoProspeccaoRouteImport } from './routes/_autenticado.prospeccao'
+import { Route as AutenticadoVisitasRouteImport } from './routes/_autenticado.visitas'
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
 import { Route as AutenticadoAtividadesIndexRouteImport } from './routes/_autenticado.atividades.index'
 import { Route as AutenticadoConfiguracoesIndexRouteImport } from './routes/_autenticado.configuracoes.index'
@@ -60,6 +61,8 @@ import { Route as AutenticadoImportacaoNovaRouteImport } from './routes/_autenti
 import { Route as AutenticadoOportunidadesIndexRouteImport } from './routes/_autenticado.oportunidades.index'
 import { Route as AutenticadoOportunidadesOportunidadeIdRouteImport } from './routes/_autenticado.oportunidades.$oportunidadeId'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
+import { Route as AutenticadoVisitasIndexRouteImport } from './routes/_autenticado.visitas.index'
+import { Route as AutenticadoVisitasRelatorioIdRouteImport } from './routes/_autenticado.visitas.$relatorioId'
 import { Route as AutenticadoContatosContatoIdEditarRouteImport } from './routes/_autenticado.contatos.$contatoId_.editar'
 import { Route as AutenticadoEmpresasEmpresaIdEditarRouteImport } from './routes/_autenticado.empresas.$empresaId_.editar'
 
@@ -177,6 +180,11 @@ const AutenticadoOportunidadesRoute =
 const AutenticadoProspeccaoRoute = AutenticadoProspeccaoRouteImport.update({
   id: '/prospeccao',
   path: '/prospeccao',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoVisitasRoute = AutenticadoVisitasRouteImport.update({
+  id: '/visitas',
+  path: '/visitas',
   getParentRoute: () => AutenticadoRoute,
 } as any)
 const DevCatalogoRoute = DevCatalogoRouteImport.update({
@@ -344,6 +352,17 @@ const AutenticadoPerfilSegurancaRoute =
     path: '/perfil/seguranca',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoVisitasIndexRoute = AutenticadoVisitasIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutenticadoVisitasRoute,
+} as any)
+const AutenticadoVisitasRelatorioIdRoute =
+  AutenticadoVisitasRelatorioIdRouteImport.update({
+    id: '/$relatorioId',
+    path: '/$relatorioId',
+    getParentRoute: () => AutenticadoVisitasRoute,
+  } as any)
 const AutenticadoContatosContatoIdEditarRoute =
   AutenticadoContatosContatoIdEditarRouteImport.update({
     id: '/$contatoId_/editar',
@@ -379,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/mapa': typeof AutenticadoMapaRoute
   '/oportunidades': typeof AutenticadoOportunidadesRouteWithChildren
   '/prospeccao': typeof AutenticadoProspeccaoRoute
+  '/visitas': typeof AutenticadoVisitasRouteWithChildren
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
@@ -401,12 +421,14 @@ export interface FileRoutesByFullPath {
   '/importacao/nova': typeof AutenticadoImportacaoNovaRoute
   '/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/visitas/$relatorioId': typeof AutenticadoVisitasRelatorioIdRoute
   '/atividades/': typeof AutenticadoAtividadesIndexRoute
   '/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
   '/contatos/': typeof AutenticadoContatosIndexRoute
   '/empresas/': typeof AutenticadoEmpresasIndexRoute
   '/importacao/': typeof AutenticadoImportacaoIndexRoute
   '/oportunidades/': typeof AutenticadoOportunidadesIndexRoute
+  '/visitas/': typeof AutenticadoVisitasIndexRoute
   '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -448,12 +470,14 @@ export interface FileRoutesByTo {
   '/importacao/nova': typeof AutenticadoImportacaoNovaRoute
   '/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/visitas/$relatorioId': typeof AutenticadoVisitasRelatorioIdRoute
   '/atividades': typeof AutenticadoAtividadesIndexRoute
   '/configuracoes': typeof AutenticadoConfiguracoesIndexRoute
   '/contatos': typeof AutenticadoContatosIndexRoute
   '/empresas': typeof AutenticadoEmpresasIndexRoute
   '/importacao': typeof AutenticadoImportacaoIndexRoute
   '/oportunidades': typeof AutenticadoOportunidadesIndexRoute
+  '/visitas': typeof AutenticadoVisitasIndexRoute
   '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -481,6 +505,7 @@ export interface FileRoutesById {
   '/_autenticado/mapa': typeof AutenticadoMapaRoute
   '/_autenticado/oportunidades': typeof AutenticadoOportunidadesRouteWithChildren
   '/_autenticado/prospeccao': typeof AutenticadoProspeccaoRoute
+  '/_autenticado/visitas': typeof AutenticadoVisitasRouteWithChildren
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
   '/_autenticado/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
@@ -504,12 +529,14 @@ export interface FileRoutesById {
   '/_autenticado/importacao/nova': typeof AutenticadoImportacaoNovaRoute
   '/_autenticado/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/_autenticado/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/_autenticado/visitas/$relatorioId': typeof AutenticadoVisitasRelatorioIdRoute
   '/_autenticado/atividades/': typeof AutenticadoAtividadesIndexRoute
   '/_autenticado/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
   '/_autenticado/contatos/': typeof AutenticadoContatosIndexRoute
   '/_autenticado/empresas/': typeof AutenticadoEmpresasIndexRoute
   '/_autenticado/importacao/': typeof AutenticadoImportacaoIndexRoute
   '/_autenticado/oportunidades/': typeof AutenticadoOportunidadesIndexRoute
+  '/_autenticado/visitas/': typeof AutenticadoVisitasIndexRoute
   '/_autenticado/contatos/$contatoId_/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/_autenticado/empresas/$empresaId_/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
 }
@@ -537,6 +564,7 @@ export interface FileRouteTypes {
     | '/mapa'
     | '/oportunidades'
     | '/prospeccao'
+    | '/visitas'
     | '/dev/catalogo'
     | '/configuracoes/carteira'
     | '/configuracoes/funis'
@@ -559,12 +587,14 @@ export interface FileRouteTypes {
     | '/importacao/nova'
     | '/oportunidades/$oportunidadeId'
     | '/perfil/seguranca'
+    | '/visitas/$relatorioId'
     | '/atividades/'
     | '/configuracoes/'
     | '/contatos/'
     | '/empresas/'
     | '/importacao/'
     | '/oportunidades/'
+    | '/visitas/'
     | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
   fileRoutesByTo: FileRoutesByTo
@@ -606,12 +636,14 @@ export interface FileRouteTypes {
     | '/importacao/nova'
     | '/oportunidades/$oportunidadeId'
     | '/perfil/seguranca'
+    | '/visitas/$relatorioId'
     | '/atividades'
     | '/configuracoes'
     | '/contatos'
     | '/empresas'
     | '/importacao'
     | '/oportunidades'
+    | '/visitas'
     | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
   id:
@@ -638,6 +670,7 @@ export interface FileRouteTypes {
     | '/_autenticado/mapa'
     | '/_autenticado/oportunidades'
     | '/_autenticado/prospeccao'
+    | '/_autenticado/visitas'
     | '/dev/catalogo'
     | '/_autenticado/'
     | '/_autenticado/configuracoes/carteira'
@@ -661,12 +694,14 @@ export interface FileRouteTypes {
     | '/_autenticado/importacao/nova'
     | '/_autenticado/oportunidades/$oportunidadeId'
     | '/_autenticado/perfil/seguranca'
+    | '/_autenticado/visitas/$relatorioId'
     | '/_autenticado/atividades/'
     | '/_autenticado/configuracoes/'
     | '/_autenticado/contatos/'
     | '/_autenticado/empresas/'
     | '/_autenticado/importacao/'
     | '/_autenticado/oportunidades/'
+    | '/_autenticado/visitas/'
     | '/_autenticado/contatos/$contatoId_/editar'
     | '/_autenticado/empresas/$empresaId_/editar'
   fileRoutesById: FileRoutesById
@@ -838,6 +873,13 @@ declare module '@tanstack/react-router' {
       path: '/prospeccao'
       fullPath: '/prospeccao'
       preLoaderRoute: typeof AutenticadoProspeccaoRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/visitas': {
+      id: '/_autenticado/visitas'
+      path: '/visitas'
+      fullPath: '/visitas'
+      preLoaderRoute: typeof AutenticadoVisitasRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/dev/catalogo': {
@@ -1036,6 +1078,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoPerfilSegurancaRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/visitas/': {
+      id: '/_autenticado/visitas/'
+      path: '/'
+      fullPath: '/visitas/'
+      preLoaderRoute: typeof AutenticadoVisitasIndexRouteImport
+      parentRoute: typeof AutenticadoVisitasRoute
+    }
+    '/_autenticado/visitas/$relatorioId': {
+      id: '/_autenticado/visitas/$relatorioId'
+      path: '/$relatorioId'
+      fullPath: '/visitas/$relatorioId'
+      preLoaderRoute: typeof AutenticadoVisitasRelatorioIdRouteImport
+      parentRoute: typeof AutenticadoVisitasRoute
+    }
     '/_autenticado/contatos/$contatoId_/editar': {
       id: '/_autenticado/contatos/$contatoId_/editar'
       path: '/$contatoId/editar'
@@ -1212,6 +1268,19 @@ const AutenticadoOportunidadesRouteWithChildren =
     AutenticadoOportunidadesRouteChildren,
   )
 
+interface AutenticadoVisitasRouteChildren {
+  AutenticadoVisitasRelatorioIdRoute: typeof AutenticadoVisitasRelatorioIdRoute
+  AutenticadoVisitasIndexRoute: typeof AutenticadoVisitasIndexRoute
+}
+
+const AutenticadoVisitasRouteChildren: AutenticadoVisitasRouteChildren = {
+  AutenticadoVisitasRelatorioIdRoute: AutenticadoVisitasRelatorioIdRoute,
+  AutenticadoVisitasIndexRoute: AutenticadoVisitasIndexRoute,
+}
+
+const AutenticadoVisitasRouteWithChildren =
+  AutenticadoVisitasRoute._addFileChildren(AutenticadoVisitasRouteChildren)
+
 interface AutenticadoRouteChildren {
   AutenticadoAtividadesRoute: typeof AutenticadoAtividadesRouteWithChildren
   AutenticadoConfiguracoesRoute: typeof AutenticadoConfiguracoesRouteWithChildren
@@ -1224,6 +1293,7 @@ interface AutenticadoRouteChildren {
   AutenticadoMapaRoute: typeof AutenticadoMapaRoute
   AutenticadoOportunidadesRoute: typeof AutenticadoOportunidadesRouteWithChildren
   AutenticadoProspeccaoRoute: typeof AutenticadoProspeccaoRoute
+  AutenticadoVisitasRoute: typeof AutenticadoVisitasRouteWithChildren
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
   AutenticadoPerfilSegurancaRoute: typeof AutenticadoPerfilSegurancaRoute
 }
@@ -1240,6 +1310,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoMapaRoute: AutenticadoMapaRoute,
   AutenticadoOportunidadesRoute: AutenticadoOportunidadesRouteWithChildren,
   AutenticadoProspeccaoRoute: AutenticadoProspeccaoRoute,
+  AutenticadoVisitasRoute: AutenticadoVisitasRouteWithChildren,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
   AutenticadoPerfilSegurancaRoute: AutenticadoPerfilSegurancaRoute,
 }

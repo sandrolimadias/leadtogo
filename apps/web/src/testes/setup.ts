@@ -1,9 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 
 import { cleanup, configure } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import { afterEach, beforeEach } from 'vitest'
+
+import { armazemEmMemoria, usarArmazem } from '@/lib/offline/banco'
 
 import { aguardarRoteadores } from './roteadores'
+
+// jsdom não tem IndexedDB: o banco das visitas offline usa memória, um novo a cada teste
+beforeEach(() => usarArmazem(armazemEmMemoria()))
 
 // Antes de desmontar, cada teste espera a navegação pendente do roteador terminar
 afterEach(async () => {

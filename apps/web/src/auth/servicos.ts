@@ -2,6 +2,8 @@ import type { ErroDaApi } from '@leadtogo/api-client'
 
 import { api } from '@/api/cliente'
 
+import { limparTudo } from '@/lib/offline/banco'
+
 import { authClient } from './cliente'
 import { erroDeRede, traduzirErro } from './erros'
 import type {
@@ -153,6 +155,8 @@ export const servicosReais: ServicosDeAcesso = {
     }),
   async sair() {
     await authClient.signOut().catch(() => undefined)
+    // Proteção do aparelho (lgpd.md 3.2): ao sair, os dados das visitas offline são apagados
+    await limparTudo().catch(() => undefined)
   },
 
   pedirNovaSenha: (email) =>
@@ -523,6 +527,30 @@ export const servicosReais: ServicosDeAcesso = {
       reordenar: (ids) =>
         protegido(async () =>
           daApi(await api.PUT('/v1/configuracoes/visitas/modelos/ordem', { body: { ids } })),
+        ),
+    },
+    campo: {
+      distancia: (empresaId, p) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/visitas/distancia', {
+              params: { query: { empresaId, latitude: p.latitude, longitude: p.longitude } },
+            }),
+          ),
+        ),
+      salvar: (id, dados) =>
+        protegido(async () =>
+          daApi(await api.PUT('/v1/visitas/{id}', { params: { path: { id } }, body: dados })),
+        ),
+      obter: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/visitas/{id}', { params: { path: { id } } })),
+        ),
+      listar: (filtro) =>
+        protegido(async () => daApi(await api.GET('/v1/visitas', { params: { query: filtro } }))),
+      offline: (empresaIds) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/visitas/offline', { body: { empresaIds } })),
         ),
     },
     configuracao: () =>
