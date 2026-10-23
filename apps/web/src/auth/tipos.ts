@@ -69,8 +69,20 @@ import type {
   TagGrupo,
   TipoAtividade,
   Vertical,
+  ConfiguracaoDeRotas,
+  ListaDeRotas,
+  OrdemOtimizada,
+  ParadasAdicionadas,
+  PontoDePartida,
+  Rota,
+  RotaDaEmpresa,
 } from '@leadtogo/api-client'
 import type {
+  AlterarPontoDePartidaEntrada,
+  ConsultaDeRotas,
+  CriarPontoDePartidaEntrada,
+  OtimizarRotaEntrada,
+  SalvarRotaEntrada,
   AjustarPosicao,
   AlterarEntradaDaLegenda,
   ConsultaDePontos,
@@ -458,6 +470,34 @@ export interface ServicosDeVisitas {
   }
 }
 
+/** Rotas (G4): montar, otimizar, executar e as configurações (pontos de partida, minutos por visita). */
+export interface ServicosDeRotas {
+  configuracao: () => Promise<Resultado<ConfiguracaoDeRotas>>
+  alterarConfiguracao: (minutosPorVisita: number) => Promise<Resultado<ConfiguracaoDeRotas>>
+  pontos: {
+    /** Inclui os inativos; o padrão primeiro */
+    listar: () => Promise<Resultado<PontoDePartida[]>>
+    criar: (dados: CriarPontoDePartidaEntrada) => Promise<Resultado<PontoDePartida>>
+    alterar: (id: string, dados: AlterarPontoDePartidaEntrada) => Promise<Resultado<PontoDePartida>>
+    /** 409 `ponto_em_uso`: usado em rota só se inativa */
+    excluir: (id: string) => Promise<Resultado>
+  }
+  listar: (consulta: Partial<ConsultaDeRotas>) => Promise<Resultado<ListaDeRotas>>
+  obter: (id: string) => Promise<Resultado<Rota>>
+  /** A rota do dia da própria pessoa */
+  hoje: () => Promise<Resultado<Rota[]>>
+  /** As rotas em aberto em que a empresa é parada ("Na rota · parada N") */
+  daEmpresa: (empresaId: string) => Promise<Resultado<RotaDaEmpresa[]>>
+  criar: (dados: SalvarRotaEntrada) => Promise<Resultado<Rota>>
+  salvar: (id: string, dados: SalvarRotaEntrada) => Promise<Resultado<Rota>>
+  /** 409 `rotas_nao_configuradas` sem VROOM/OSRM */
+  otimizar: (dados: OtimizarRotaEntrada) => Promise<Resultado<OrdemOtimizada>>
+  adicionar: (id: string, empresaIds: string[]) => Promise<Resultado<ParadasAdicionadas>>
+  pular: (id: string, paradaId: string, motivo: string) => Promise<Resultado<Rota>>
+  encerrar: (id: string) => Promise<Resultado<Rota>>
+  cancelar: (id: string) => Promise<Resultado<Rota>>
+}
+
 export interface ServicosDeAcesso {
   /** Sessão atual, ou null sem login */
   me: () => Promise<Me | null>
@@ -537,6 +577,7 @@ export interface ServicosDeAcesso {
   // Geolocalização (G1) e mapa (G2)
   geolocalizacao: ServicosDeGeolocalizacao
   mapa: ServicosDoMapa
+  rotas: ServicosDeRotas
 
   // Atividades (Módulo 5)
   atividades: ServicosDeAtividades

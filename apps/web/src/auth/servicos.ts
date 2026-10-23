@@ -561,6 +561,78 @@ export const servicosReais: ServicosDeAcesso = {
       ),
   },
 
+  rotas: {
+    configuracao: () => protegido(async () => daApi(await api.GET('/v1/rotas/configuracao'))),
+    alterarConfiguracao: (minutosPorVisita) =>
+      protegido(async () =>
+        daApi(await api.PUT('/v1/configuracoes/rotas', { body: { minutosPorVisita } })),
+      ),
+    pontos: {
+      listar: () => protegido(async () => daApi(await api.GET('/v1/configuracoes/rotas/pontos'))),
+      criar: (dados) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/configuracoes/rotas/pontos', { body: dados })),
+        ),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/configuracoes/rotas/pontos/{id}', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(
+            await api.DELETE('/v1/configuracoes/rotas/pontos/{id}', { params: { path: { id } } }),
+          ),
+        ),
+    },
+    listar: (consulta) =>
+      protegido(async () => daApi(await api.GET('/v1/rotas', { params: { query: consulta } }))),
+    obter: (id) =>
+      protegido(async () => daApi(await api.GET('/v1/rotas/{id}', { params: { path: { id } } }))),
+    hoje: () => protegido(async () => daApi(await api.GET('/v1/rotas/hoje'))),
+    daEmpresa: (empresaId) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/rotas/empresa/{empresaId}', { params: { path: { empresaId } } })),
+      ),
+    criar: (dados) => protegido(async () => daApi(await api.POST('/v1/rotas', { body: dados }))),
+    salvar: (id, dados) =>
+      protegido(async () =>
+        daApi(await api.PUT('/v1/rotas/{id}', { params: { path: { id } }, body: dados })),
+      ),
+    otimizar: (dados) =>
+      protegido(async () => daApi(await api.POST('/v1/rotas/otimizar', { body: dados }))),
+    adicionar: (id, empresaIds) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/rotas/{id}/paradas', {
+            params: { path: { id } },
+            body: { empresaIds },
+          }),
+        ),
+      ),
+    pular: (id, paradaId, motivo) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/rotas/{id}/paradas/{paradaId}/pular', {
+            params: { path: { id, paradaId } },
+            body: { motivo },
+          }),
+        ),
+      ),
+    encerrar: (id) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/rotas/{id}/encerrar', { params: { path: { id } } })),
+      ),
+    cancelar: (id) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/rotas/{id}/cancelar', { params: { path: { id } } })),
+      ),
+  },
+
   geolocalizacao: {
     resumo: () => protegido(async () => daApi(await api.GET('/v1/geolocalizacao/resumo'))),
     fila: (pagina = 1, porPagina = 25) =>

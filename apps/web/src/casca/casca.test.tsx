@@ -90,8 +90,8 @@ describe('casca no desktop', () => {
       expect(within(nav).getByRole('link', { name: new RegExp(nome) })).toBeInTheDocument()
     }
     expect(within(nav).getByText('Carteira')).toBeInTheDocument()
-    // item de fase futura (Rotas, Fase 3) fica oculto
-    expect(within(nav).queryByRole('link', { name: /Rotas/ })).toBeNull()
+    // Rotas (G4) entrou no grupo Carteira, sem o selo de fase futura
+    expect(within(nav).getByRole('link', { name: /Rotas/ })).toHaveAttribute('href', '/rotas')
     expect(screen.queryByText('Fase 3')).toBeNull()
     expect(within(nav).getByRole('button', { name: /Aurora Móveis/ })).toHaveTextContent(
       'Administrador',

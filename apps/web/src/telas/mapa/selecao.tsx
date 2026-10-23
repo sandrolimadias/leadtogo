@@ -1,6 +1,6 @@
 import type { SelecaoDoMapaResposta } from '@leadtogo/api-client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, TagIcon, X } from 'lucide-react'
+import { Check, Route as RotaIcone, TagIcon, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -85,19 +85,22 @@ export function BarraDeRaio({
 
 /**
  * O resultado de uma seleção (raio, retângulo ou próximas): a lista, o total e as ações. No G2 a seleção
- * serve para listar, abrir, aplicar uma tag e levar para o offline (as rotas entram no G4).
+ * serve para listar, abrir, aplicar uma tag, levar para o offline e adicionar à rota (G4).
  */
 export function ResultadoDaSelecao({
   titulo,
   dados,
   aoAbrir,
   aoFechar,
+  aoAdicionarARota,
   className,
 }: {
   titulo: string
   dados: SelecaoDoMapaResposta
   aoAbrir: (id: string) => void
   aoFechar: () => void
+  /** "Adicionar todas à rota" (G4): sem ele, o botão não aparece */
+  aoAdicionarARota?: (itens: SelecaoDoMapaResposta['itens']) => void
   className?: string
 }) {
   const servicos = useServicos()
@@ -193,6 +196,11 @@ export function ResultadoDaSelecao({
       </ul>
       {dados.itens.length > 0 ? (
         <div className="flex flex-col gap-2 border-t border-border p-3">
+          {aoAdicionarARota ? (
+            <Button icon={RotaIcone} onClick={() => aoAdicionarARota(dados.itens)}>
+              Adicionar todas à rota
+            </Button>
+          ) : null}
           <BotaoLevarParaOffline empresaIds={dados.itens.map((i) => i.id)} />
           <Select
             label="Aplicar uma tag a todas da lista"

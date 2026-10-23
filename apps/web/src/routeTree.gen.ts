@@ -32,6 +32,7 @@ import { Route as AutenticadoImportacaoRouteImport } from './routes/_autenticado
 import { Route as AutenticadoMapaRouteImport } from './routes/_autenticado.mapa'
 import { Route as AutenticadoOportunidadesRouteImport } from './routes/_autenticado.oportunidades'
 import { Route as AutenticadoProspeccaoRouteImport } from './routes/_autenticado.prospeccao'
+import { Route as AutenticadoRotasRouteImport } from './routes/_autenticado.rotas'
 import { Route as AutenticadoVisitasRouteImport } from './routes/_autenticado.visitas'
 import { Route as DevCatalogoRouteImport } from './routes/dev.catalogo'
 import { Route as AutenticadoAtividadesIndexRouteImport } from './routes/_autenticado.atividades.index'
@@ -43,6 +44,7 @@ import { Route as AutenticadoConfiguracoesImportacaoRouteImport } from './routes
 import { Route as AutenticadoConfiguracoesOrigensEMotivosRouteImport } from './routes/_autenticado.configuracoes.origens-e-motivos'
 import { Route as AutenticadoConfiguracoesPapeisNaDecisaoRouteImport } from './routes/_autenticado.configuracoes.papeis-na-decisao'
 import { Route as AutenticadoConfiguracoesPerfisRouteImport } from './routes/_autenticado.configuracoes.perfis'
+import { Route as AutenticadoConfiguracoesRotasRouteImport } from './routes/_autenticado.configuracoes.rotas'
 import { Route as AutenticadoConfiguracoesSegurancaRouteImport } from './routes/_autenticado.configuracoes.seguranca'
 import { Route as AutenticadoConfiguracoesTagsRouteImport } from './routes/_autenticado.configuracoes.tags'
 import { Route as AutenticadoConfiguracoesTiposDeAtividadeRouteImport } from './routes/_autenticado.configuracoes.tipos-de-atividade'
@@ -61,6 +63,8 @@ import { Route as AutenticadoImportacaoNovaRouteImport } from './routes/_autenti
 import { Route as AutenticadoOportunidadesIndexRouteImport } from './routes/_autenticado.oportunidades.index'
 import { Route as AutenticadoOportunidadesOportunidadeIdRouteImport } from './routes/_autenticado.oportunidades.$oportunidadeId'
 import { Route as AutenticadoPerfilSegurancaRouteImport } from './routes/_autenticado.perfil.seguranca'
+import { Route as AutenticadoRotasIndexRouteImport } from './routes/_autenticado.rotas.index'
+import { Route as AutenticadoRotasRotaIdRouteImport } from './routes/_autenticado.rotas.$rotaId'
 import { Route as AutenticadoVisitasIndexRouteImport } from './routes/_autenticado.visitas.index'
 import { Route as AutenticadoVisitasRelatorioIdRouteImport } from './routes/_autenticado.visitas.$relatorioId'
 import { Route as AutenticadoContatosContatoIdEditarRouteImport } from './routes/_autenticado.contatos.$contatoId_.editar'
@@ -182,6 +186,11 @@ const AutenticadoProspeccaoRoute = AutenticadoProspeccaoRouteImport.update({
   path: '/prospeccao',
   getParentRoute: () => AutenticadoRoute,
 } as any)
+const AutenticadoRotasRoute = AutenticadoRotasRouteImport.update({
+  id: '/rotas',
+  path: '/rotas',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
 const AutenticadoVisitasRoute = AutenticadoVisitasRouteImport.update({
   id: '/visitas',
   path: '/visitas',
@@ -244,6 +253,12 @@ const AutenticadoConfiguracoesPerfisRoute =
   AutenticadoConfiguracoesPerfisRouteImport.update({
     id: '/perfis',
     path: '/perfis',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
+const AutenticadoConfiguracoesRotasRoute =
+  AutenticadoConfiguracoesRotasRouteImport.update({
+    id: '/rotas',
+    path: '/rotas',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
 const AutenticadoConfiguracoesSegurancaRoute =
@@ -352,6 +367,16 @@ const AutenticadoPerfilSegurancaRoute =
     path: '/perfil/seguranca',
     getParentRoute: () => AutenticadoRoute,
   } as any)
+const AutenticadoRotasIndexRoute = AutenticadoRotasIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutenticadoRotasRoute,
+} as any)
+const AutenticadoRotasRotaIdRoute = AutenticadoRotasRotaIdRouteImport.update({
+  id: '/$rotaId',
+  path: '/$rotaId',
+  getParentRoute: () => AutenticadoRotasRoute,
+} as any)
 const AutenticadoVisitasIndexRoute = AutenticadoVisitasIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -398,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/mapa': typeof AutenticadoMapaRoute
   '/oportunidades': typeof AutenticadoOportunidadesRouteWithChildren
   '/prospeccao': typeof AutenticadoProspeccaoRoute
+  '/rotas': typeof AutenticadoRotasRouteWithChildren
   '/visitas': typeof AutenticadoVisitasRouteWithChildren
   '/dev/catalogo': typeof DevCatalogoRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
@@ -407,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/configuracoes/perfis': typeof AutenticadoConfiguracoesPerfisRoute
+  '/configuracoes/rotas': typeof AutenticadoConfiguracoesRotasRoute
   '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
   '/configuracoes/tags': typeof AutenticadoConfiguracoesTagsRoute
   '/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
@@ -421,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/importacao/nova': typeof AutenticadoImportacaoNovaRoute
   '/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/rotas/$rotaId': typeof AutenticadoRotasRotaIdRoute
   '/visitas/$relatorioId': typeof AutenticadoVisitasRelatorioIdRoute
   '/atividades/': typeof AutenticadoAtividadesIndexRoute
   '/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
@@ -428,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/empresas/': typeof AutenticadoEmpresasIndexRoute
   '/importacao/': typeof AutenticadoImportacaoIndexRoute
   '/oportunidades/': typeof AutenticadoOportunidadesIndexRoute
+  '/rotas/': typeof AutenticadoRotasIndexRoute
   '/visitas/': typeof AutenticadoVisitasIndexRoute
   '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
@@ -456,6 +485,7 @@ export interface FileRoutesByTo {
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/configuracoes/perfis': typeof AutenticadoConfiguracoesPerfisRoute
+  '/configuracoes/rotas': typeof AutenticadoConfiguracoesRotasRoute
   '/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
   '/configuracoes/tags': typeof AutenticadoConfiguracoesTagsRoute
   '/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
@@ -470,6 +500,7 @@ export interface FileRoutesByTo {
   '/importacao/nova': typeof AutenticadoImportacaoNovaRoute
   '/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/rotas/$rotaId': typeof AutenticadoRotasRotaIdRoute
   '/visitas/$relatorioId': typeof AutenticadoVisitasRelatorioIdRoute
   '/atividades': typeof AutenticadoAtividadesIndexRoute
   '/configuracoes': typeof AutenticadoConfiguracoesIndexRoute
@@ -477,6 +508,7 @@ export interface FileRoutesByTo {
   '/empresas': typeof AutenticadoEmpresasIndexRoute
   '/importacao': typeof AutenticadoImportacaoIndexRoute
   '/oportunidades': typeof AutenticadoOportunidadesIndexRoute
+  '/rotas': typeof AutenticadoRotasIndexRoute
   '/visitas': typeof AutenticadoVisitasIndexRoute
   '/contatos/$contatoId/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/empresas/$empresaId/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
@@ -505,6 +537,7 @@ export interface FileRoutesById {
   '/_autenticado/mapa': typeof AutenticadoMapaRoute
   '/_autenticado/oportunidades': typeof AutenticadoOportunidadesRouteWithChildren
   '/_autenticado/prospeccao': typeof AutenticadoProspeccaoRoute
+  '/_autenticado/rotas': typeof AutenticadoRotasRouteWithChildren
   '/_autenticado/visitas': typeof AutenticadoVisitasRouteWithChildren
   '/dev/catalogo': typeof DevCatalogoRoute
   '/_autenticado/': typeof AutenticadoIndexRoute
@@ -515,6 +548,7 @@ export interface FileRoutesById {
   '/_autenticado/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/_autenticado/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/_autenticado/configuracoes/perfis': typeof AutenticadoConfiguracoesPerfisRoute
+  '/_autenticado/configuracoes/rotas': typeof AutenticadoConfiguracoesRotasRoute
   '/_autenticado/configuracoes/seguranca': typeof AutenticadoConfiguracoesSegurancaRoute
   '/_autenticado/configuracoes/tags': typeof AutenticadoConfiguracoesTagsRoute
   '/_autenticado/configuracoes/tipos-de-atividade': typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
@@ -529,6 +563,7 @@ export interface FileRoutesById {
   '/_autenticado/importacao/nova': typeof AutenticadoImportacaoNovaRoute
   '/_autenticado/oportunidades/$oportunidadeId': typeof AutenticadoOportunidadesOportunidadeIdRoute
   '/_autenticado/perfil/seguranca': typeof AutenticadoPerfilSegurancaRoute
+  '/_autenticado/rotas/$rotaId': typeof AutenticadoRotasRotaIdRoute
   '/_autenticado/visitas/$relatorioId': typeof AutenticadoVisitasRelatorioIdRoute
   '/_autenticado/atividades/': typeof AutenticadoAtividadesIndexRoute
   '/_autenticado/configuracoes/': typeof AutenticadoConfiguracoesIndexRoute
@@ -536,6 +571,7 @@ export interface FileRoutesById {
   '/_autenticado/empresas/': typeof AutenticadoEmpresasIndexRoute
   '/_autenticado/importacao/': typeof AutenticadoImportacaoIndexRoute
   '/_autenticado/oportunidades/': typeof AutenticadoOportunidadesIndexRoute
+  '/_autenticado/rotas/': typeof AutenticadoRotasIndexRoute
   '/_autenticado/visitas/': typeof AutenticadoVisitasIndexRoute
   '/_autenticado/contatos/$contatoId_/editar': typeof AutenticadoContatosContatoIdEditarRoute
   '/_autenticado/empresas/$empresaId_/editar': typeof AutenticadoEmpresasEmpresaIdEditarRoute
@@ -564,6 +600,7 @@ export interface FileRouteTypes {
     | '/mapa'
     | '/oportunidades'
     | '/prospeccao'
+    | '/rotas'
     | '/visitas'
     | '/dev/catalogo'
     | '/configuracoes/carteira'
@@ -573,6 +610,7 @@ export interface FileRouteTypes {
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/papeis-na-decisao'
     | '/configuracoes/perfis'
+    | '/configuracoes/rotas'
     | '/configuracoes/seguranca'
     | '/configuracoes/tags'
     | '/configuracoes/tipos-de-atividade'
@@ -587,6 +625,7 @@ export interface FileRouteTypes {
     | '/importacao/nova'
     | '/oportunidades/$oportunidadeId'
     | '/perfil/seguranca'
+    | '/rotas/$rotaId'
     | '/visitas/$relatorioId'
     | '/atividades/'
     | '/configuracoes/'
@@ -594,6 +633,7 @@ export interface FileRouteTypes {
     | '/empresas/'
     | '/importacao/'
     | '/oportunidades/'
+    | '/rotas/'
     | '/visitas/'
     | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
@@ -622,6 +662,7 @@ export interface FileRouteTypes {
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/papeis-na-decisao'
     | '/configuracoes/perfis'
+    | '/configuracoes/rotas'
     | '/configuracoes/seguranca'
     | '/configuracoes/tags'
     | '/configuracoes/tipos-de-atividade'
@@ -636,6 +677,7 @@ export interface FileRouteTypes {
     | '/importacao/nova'
     | '/oportunidades/$oportunidadeId'
     | '/perfil/seguranca'
+    | '/rotas/$rotaId'
     | '/visitas/$relatorioId'
     | '/atividades'
     | '/configuracoes'
@@ -643,6 +685,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/importacao'
     | '/oportunidades'
+    | '/rotas'
     | '/visitas'
     | '/contatos/$contatoId/editar'
     | '/empresas/$empresaId/editar'
@@ -670,6 +713,7 @@ export interface FileRouteTypes {
     | '/_autenticado/mapa'
     | '/_autenticado/oportunidades'
     | '/_autenticado/prospeccao'
+    | '/_autenticado/rotas'
     | '/_autenticado/visitas'
     | '/dev/catalogo'
     | '/_autenticado/'
@@ -680,6 +724,7 @@ export interface FileRouteTypes {
     | '/_autenticado/configuracoes/origens-e-motivos'
     | '/_autenticado/configuracoes/papeis-na-decisao'
     | '/_autenticado/configuracoes/perfis'
+    | '/_autenticado/configuracoes/rotas'
     | '/_autenticado/configuracoes/seguranca'
     | '/_autenticado/configuracoes/tags'
     | '/_autenticado/configuracoes/tipos-de-atividade'
@@ -694,6 +739,7 @@ export interface FileRouteTypes {
     | '/_autenticado/importacao/nova'
     | '/_autenticado/oportunidades/$oportunidadeId'
     | '/_autenticado/perfil/seguranca'
+    | '/_autenticado/rotas/$rotaId'
     | '/_autenticado/visitas/$relatorioId'
     | '/_autenticado/atividades/'
     | '/_autenticado/configuracoes/'
@@ -701,6 +747,7 @@ export interface FileRouteTypes {
     | '/_autenticado/empresas/'
     | '/_autenticado/importacao/'
     | '/_autenticado/oportunidades/'
+    | '/_autenticado/rotas/'
     | '/_autenticado/visitas/'
     | '/_autenticado/contatos/$contatoId_/editar'
     | '/_autenticado/empresas/$empresaId_/editar'
@@ -875,6 +922,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoProspeccaoRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/rotas': {
+      id: '/_autenticado/rotas'
+      path: '/rotas'
+      fullPath: '/rotas'
+      preLoaderRoute: typeof AutenticadoRotasRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
     '/_autenticado/visitas': {
       id: '/_autenticado/visitas'
       path: '/visitas'
@@ -950,6 +1004,13 @@ declare module '@tanstack/react-router' {
       path: '/perfis'
       fullPath: '/configuracoes/perfis'
       preLoaderRoute: typeof AutenticadoConfiguracoesPerfisRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
+    '/_autenticado/configuracoes/rotas': {
+      id: '/_autenticado/configuracoes/rotas'
+      path: '/rotas'
+      fullPath: '/configuracoes/rotas'
+      preLoaderRoute: typeof AutenticadoConfiguracoesRotasRouteImport
       parentRoute: typeof AutenticadoConfiguracoesRoute
     }
     '/_autenticado/configuracoes/seguranca': {
@@ -1078,6 +1139,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoPerfilSegurancaRouteImport
       parentRoute: typeof AutenticadoRoute
     }
+    '/_autenticado/rotas/': {
+      id: '/_autenticado/rotas/'
+      path: '/'
+      fullPath: '/rotas/'
+      preLoaderRoute: typeof AutenticadoRotasIndexRouteImport
+      parentRoute: typeof AutenticadoRotasRoute
+    }
+    '/_autenticado/rotas/$rotaId': {
+      id: '/_autenticado/rotas/$rotaId'
+      path: '/$rotaId'
+      fullPath: '/rotas/$rotaId'
+      preLoaderRoute: typeof AutenticadoRotasRotaIdRouteImport
+      parentRoute: typeof AutenticadoRotasRoute
+    }
     '/_autenticado/visitas/': {
       id: '/_autenticado/visitas/'
       path: '/'
@@ -1157,6 +1232,7 @@ interface AutenticadoConfiguracoesRouteChildren {
   AutenticadoConfiguracoesOrigensEMotivosRoute: typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   AutenticadoConfiguracoesPapeisNaDecisaoRoute: typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   AutenticadoConfiguracoesPerfisRoute: typeof AutenticadoConfiguracoesPerfisRoute
+  AutenticadoConfiguracoesRotasRoute: typeof AutenticadoConfiguracoesRotasRoute
   AutenticadoConfiguracoesSegurancaRoute: typeof AutenticadoConfiguracoesSegurancaRoute
   AutenticadoConfiguracoesTagsRoute: typeof AutenticadoConfiguracoesTagsRoute
   AutenticadoConfiguracoesTiposDeAtividadeRoute: typeof AutenticadoConfiguracoesTiposDeAtividadeRoute
@@ -1180,6 +1256,7 @@ const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildr
     AutenticadoConfiguracoesPapeisNaDecisaoRoute:
       AutenticadoConfiguracoesPapeisNaDecisaoRoute,
     AutenticadoConfiguracoesPerfisRoute: AutenticadoConfiguracoesPerfisRoute,
+    AutenticadoConfiguracoesRotasRoute: AutenticadoConfiguracoesRotasRoute,
     AutenticadoConfiguracoesSegurancaRoute:
       AutenticadoConfiguracoesSegurancaRoute,
     AutenticadoConfiguracoesTagsRoute: AutenticadoConfiguracoesTagsRoute,
@@ -1268,6 +1345,19 @@ const AutenticadoOportunidadesRouteWithChildren =
     AutenticadoOportunidadesRouteChildren,
   )
 
+interface AutenticadoRotasRouteChildren {
+  AutenticadoRotasRotaIdRoute: typeof AutenticadoRotasRotaIdRoute
+  AutenticadoRotasIndexRoute: typeof AutenticadoRotasIndexRoute
+}
+
+const AutenticadoRotasRouteChildren: AutenticadoRotasRouteChildren = {
+  AutenticadoRotasRotaIdRoute: AutenticadoRotasRotaIdRoute,
+  AutenticadoRotasIndexRoute: AutenticadoRotasIndexRoute,
+}
+
+const AutenticadoRotasRouteWithChildren =
+  AutenticadoRotasRoute._addFileChildren(AutenticadoRotasRouteChildren)
+
 interface AutenticadoVisitasRouteChildren {
   AutenticadoVisitasRelatorioIdRoute: typeof AutenticadoVisitasRelatorioIdRoute
   AutenticadoVisitasIndexRoute: typeof AutenticadoVisitasIndexRoute
@@ -1293,6 +1383,7 @@ interface AutenticadoRouteChildren {
   AutenticadoMapaRoute: typeof AutenticadoMapaRoute
   AutenticadoOportunidadesRoute: typeof AutenticadoOportunidadesRouteWithChildren
   AutenticadoProspeccaoRoute: typeof AutenticadoProspeccaoRoute
+  AutenticadoRotasRoute: typeof AutenticadoRotasRouteWithChildren
   AutenticadoVisitasRoute: typeof AutenticadoVisitasRouteWithChildren
   AutenticadoIndexRoute: typeof AutenticadoIndexRoute
   AutenticadoPerfilSegurancaRoute: typeof AutenticadoPerfilSegurancaRoute
@@ -1310,6 +1401,7 @@ const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoMapaRoute: AutenticadoMapaRoute,
   AutenticadoOportunidadesRoute: AutenticadoOportunidadesRouteWithChildren,
   AutenticadoProspeccaoRoute: AutenticadoProspeccaoRoute,
+  AutenticadoRotasRoute: AutenticadoRotasRouteWithChildren,
   AutenticadoVisitasRoute: AutenticadoVisitasRouteWithChildren,
   AutenticadoIndexRoute: AutenticadoIndexRoute,
   AutenticadoPerfilSegurancaRoute: AutenticadoPerfilSegurancaRoute,

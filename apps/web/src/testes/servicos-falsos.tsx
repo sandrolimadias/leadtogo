@@ -339,6 +339,31 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       selecao: vi.fn(async () => ok({ total: 0, limite: 500, itens: [] })),
       cobertura: vi.fn(async () => ok({ municipios: [] })),
     },
+    rotas: {
+      configuracao: vi.fn(async () =>
+        ok({ minutosPorVisita: 40, maxParadas: 30, otimizacaoConfigurada: true }),
+      ),
+      alterarConfiguracao: vi.fn(async (minutosPorVisita: number) =>
+        ok({ minutosPorVisita, maxParadas: 30, otimizacaoConfigurada: true }),
+      ),
+      pontos: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+      },
+      listar: vi.fn(async () => ok({ itens: [], total: 0 })),
+      obter: vi.fn(async () => falha('rota_nao_encontrada', 'Rota não encontrada.', 404)),
+      hoje: vi.fn(async () => ok([])),
+      daEmpresa: vi.fn(async () => ok([])),
+      criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      salvar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      otimizar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      adicionar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      pular: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      encerrar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      cancelar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+    },
     importacao: {
       perfis: {
         listar: vi.fn(async () => ok([])),

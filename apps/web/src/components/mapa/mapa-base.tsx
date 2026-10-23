@@ -37,6 +37,15 @@ export type AreaDesenhada =
   | { tipo: 'circulo'; latitude: number; longitude: number; raioM: number }
   | { tipo: 'retangulo'; oeste: number; sul: number; leste: number; norte: number }
 
+/** A rota desenhada por cima (G4): o trajeto e as paradas numeradas, na cor de destaque. */
+export interface RotaDesenhada {
+  /** `[longitude, latitude]`: o trajeto pelas ruas ou, em linha reta, a sequência de pontos */
+  linha: [number, number][]
+  /** Linha reta (estimativa sem o serviço de rotas): tracejado mais espaçado */
+  emLinhaReta: boolean
+  paradas: { id: string; latitude: number; longitude: number; numero: number; resolvida: boolean }[]
+}
+
 export interface AreaVisivel {
   oeste: number
   sul: number
@@ -94,6 +103,8 @@ export interface PropsDoMapa {
   }
   /** Áreas da seleção (retângulo e raio) desenhadas por cima */
   areas?: AreaDesenhada[]
+  /** Rota em edição ou em execução: o trajeto e as paradas numeradas (clicar numa parada = clicar no pin) */
+  rota?: RotaDesenhada | null
   /** O cursor vira uma cruz (modo de desenhar a área) */
   desenhando?: boolean
   /** Quem usa o mapa mostra o aviso de "mapa base não instalado" por conta própria */
@@ -103,7 +114,7 @@ export interface PropsDoMapa {
   rotulo: string
 }
 
-const CAMADAS_CLICAVEIS = ['pins', 'bolhas-circulos']
+const CAMADAS_CLICAVEIS = ['rota-paradas', 'pins', 'bolhas-circulos']
 const FONTE_DOS_ROTULOS = ['Noto Sans Medium']
 const VAZIO = { type: 'FeatureCollection' as const, features: [] }
 
@@ -299,7 +310,7 @@ export function MapaBase(props: PropsDoMapa) {
             : []
         const topo = achados[0]
         const id = topo?.layer.id
-        if (id === 'pins') {
+        if (id === 'pins' || id === 'rota-paradas') {
           ultimas.current.aoClicarNoPin?.(String(topo?.properties['id']))
         } else if (id === 'bolhas-circulos') {
           ultimas.current.aoClicarNaBolha?.(String(topo?.properties['id']))
@@ -514,6 +525,78 @@ export function MapaBase(props: PropsDoMapa) {
       paint: { 'line-color': corDoToken('--accent'), 'line-width': 2, 'line-dasharray': [3, 2] },
     })
   }, [areas, versaoDoEstilo])
+
+  // Rota: o trajeto por baixo dos pins e as paradas numeradas por cima
+  const rota = props.rota
+  useEffect(() => {
+    const mapa = mapaRef.current
+    if (!mapa || !mapa.isStyleLoaded()) return
+    for (const id of ['rota-numeros', 'rota-paradas', 'rota-linha'])
+      if (mapa.getLayer(id)) mapa.removeLayer(id)
+    for (const id of ['rota-linha', 'rota-paradas']) if (mapa.getSource(id)) mapa.removeSource(id)
+    if (!rota) return
+    garantirCamadas(mapa)
+    const destaque = corDoToken('--accent')
+    if (rota.linha.length >= 2) {
+      mapa.addSource('rota-linha', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: rota.linha },
+        },
+      })
+      mapa.addLayer(
+        {
+          id: 'rota-linha',
+          type: 'line',
+          source: 'rota-linha',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': destaque,
+            'line-width': 3,
+            'line-dasharray': rota.emLinhaReta ? [1, 3] : [2, 1.5],
+          },
+        },
+        'pins',
+      )
+    }
+    mapa.addSource('rota-paradas', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: rota.paradas.map((p) => ({
+          type: 'Feature' as const,
+          properties: { id: p.id, numero: String(p.numero), resolvida: p.resolvida },
+          geometry: { type: 'Point' as const, coordinates: [p.longitude, p.latitude] },
+        })),
+      },
+    })
+    mapa.addLayer({
+      id: 'rota-paradas',
+      type: 'circle',
+      source: 'rota-paradas',
+      paint: {
+        'circle-color': ['case', ['get', 'resolvida'], corDoToken('--ink-subtle'), destaque],
+        'circle-radius': 11,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 2,
+      },
+    })
+    mapa.addLayer({
+      id: 'rota-numeros',
+      type: 'symbol',
+      source: 'rota-paradas',
+      layout: {
+        'text-field': ['get', 'numero'],
+        'text-font': FONTE_DOS_ROTULOS,
+        'text-size': 12,
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: { 'text-color': '#ffffff' },
+    })
+  }, [rota, versaoDoEstilo, tema])
 
   // Cursor de desenho
   useEffect(() => {

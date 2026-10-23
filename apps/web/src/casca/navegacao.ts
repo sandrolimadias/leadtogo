@@ -4,6 +4,7 @@ import {
   LayoutGrid,
   Map as MapaIcone,
   MapPin,
+  Route as RotaIcone,
   Settings,
   CalendarCheck,
   ClipboardList,
@@ -74,7 +75,13 @@ export const TELAS: TelaDoApp[] = [
     grupo: 'carteira',
     permissoes: ['empresas.ver'],
   },
-  // Rotas é da Fase 3: item de fase futura fica fora do menu até existir
+  {
+    caminho: '/rotas',
+    titulo: 'Rotas',
+    icone: RotaIcone,
+    grupo: 'carteira',
+    permissoes: ['rotas.ver'],
+  },
   {
     caminho: '/consolidado',
     titulo: 'Painel consolidado',

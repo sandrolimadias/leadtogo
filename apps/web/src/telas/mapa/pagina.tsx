@@ -1,16 +1,28 @@
-import type { EmpresaCarteira, PontosDoMapa } from '@leadtogo/api-client'
+import type { EmpresaCarteira, PontosDoMapa, SelecaoDoMapaResposta } from '@leadtogo/api-client'
 import { zoomDoNivelSeguinte } from '@leadtogo/shared'
 import { type AreaVisivel, MapaBase, type PinDoMapa } from '@/components/mapa/mapa-base'
 import { useQuery } from '@tanstack/react-query'
-import { Layers, PenLine, RectangleHorizontal, X } from 'lucide-react'
+import { getRouteApi, useNavigate } from '@tanstack/react-router'
+import {
+  Layers,
+  List,
+  Map as MapaIcone,
+  PenLine,
+  RectangleHorizontal,
+  Route as RotaIcone,
+  X,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePermissoes } from '@/auth/permissoes'
 import { useDispositivo } from '@/casca/dispositivo'
 import { Button, IconButton } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Alert, Skeleton } from '@/components/ui/feedback'
 import { cn } from '@/lib/cn'
+import { EditorDeRota } from '@/telas/rotas/editor'
+import { type NovaParada, useRotaNoMapa } from '@/telas/rotas/no-mapa'
 
 import { BotaoDeFiltros, BuscaDoMapa, CamposDeFiltro, ChipsDoMapa } from './filtros'
 import {
@@ -23,6 +35,8 @@ import {
 import { LegendaDoMapa } from './legenda'
 import { PainelDaEmpresa } from './painel'
 import { BarraDeRaio, ResultadoDaSelecao } from './selecao'
+
+const rotaDoMapa = getRouteApi('/_autenticado/mapa')
 
 type Ferramenta = null | 'retangulo' | 'raio'
 type Area = Pick<AreaVisivel, 'oeste' | 'sul' | 'leste' | 'norte' | 'zoom'>
@@ -48,6 +62,17 @@ const arredondar = (n: number) => Math.round(n * 10_000) / 10_000
 export function TelaDoMapa() {
   const servicos = useServicos()
   const celular = useDispositivo() === 'celular'
+  const { pode } = usePermissoes()
+  const busca = rotaDoMapa.useSearch()
+  const navegar = useNavigate()
+  const rotaNoMapa = useRotaNoMapa({
+    rotaParam: busca.rota,
+    aoTrocarParam: (rota) =>
+      void navegar({ to: '/mapa', search: rota ? { rota } : {}, replace: true }),
+  })
+  // celular: o editor ocupa a tela; a aba "Mapa" mostra o mapa com a rota desenhada
+  const [abaDaRota, setAbaDaRota] = useState<'lista' | 'mapa'>('lista')
+  const [adicionandoVisiveis, setAdicionandoVisiveis] = useState(false)
   const opcoes = useQuery({
     queryKey: ['mapa', 'opcoes'],
     retry: false,
@@ -332,6 +357,37 @@ export function TelaDoMapa() {
     }
   }
 
+  /** Sem rota aberta, abre uma nova; com rota aberta, acrescenta as empresas da área visível com os filtros. */
+  async function rotaComAsVisiveis() {
+    if (!rotaNoMapa.rascunho) {
+      void navegar({ to: '/mapa', search: { rota: 'nova' }, replace: true })
+      return
+    }
+    if (!area || !filtrosApi) return
+    setAdicionandoVisiveis(true)
+    const r = await servicos.mapa.selecao({
+      tipo: 'retangulo',
+      oeste: area.oeste,
+      sul: area.sul,
+      leste: area.leste,
+      norte: area.norte,
+      incluirVisitadas: true,
+      filtros: filtrosApi,
+    } as never)
+    setAdicionandoVisiveis(false)
+    if (!r.ok) return
+    rotaNoMapa.adicionar(
+      r.dados.itens.map((i) => ({
+        empresaId: i.id,
+        nome: i.nome,
+        detalhe: i.cidade,
+        latitude: i.latitude,
+        longitude: i.longitude,
+        precisao: null,
+      })),
+    )
+  }
+
   if (opcoes.isPending) {
     return (
       <main data-mapa="" className="relative h-full w-full p-6">
@@ -347,6 +403,7 @@ export function TelaDoMapa() {
     )
   }
   const o = opcoes.data
+  const podeAtribuir = Boolean(pode('rotas.atribuir'))
   const resultado = ferramenta === 'raio' ? proximas.data : retanguloResultado.data
   const tituloDoResultado =
     ferramenta === 'raio' && centroDoRaio
@@ -366,6 +423,7 @@ export function TelaDoMapa() {
         pins={pins}
         bolhas={bolhas}
         areas={areas}
+        rota={rotaNoMapa.desenho}
         desenhando={ferramenta !== null}
         semAvisoDeMapa
         {...(pontos.data?.comCnefe ? { fonteDosDados: 'Fonte: IBGE – CNEFE 2022' } : {})}
@@ -454,6 +512,25 @@ export function TelaDoMapa() {
           empresaId={selecionada}
           aoFechar={() => setSelecionada(null)}
           aoVerProximas={verProximas}
+          rota={{
+            ordem: rotaNoMapa.ordemNoRascunho(selecionada),
+            podeAdicionar: rotaNoMapa.podeMontar,
+            aoAdicionar: (e) =>
+              e.posicao.latitude !== null && e.posicao.longitude !== null
+                ? rotaNoMapa.adicionar([
+                    {
+                      empresaId: e.id,
+                      nome: e.nome,
+                      detalhe: e.endereco.municipio
+                        ? [e.endereco.bairro, e.endereco.municipio.nome].filter(Boolean).join(' · ')
+                        : null,
+                      latitude: e.posicao.latitude,
+                      longitude: e.posicao.longitude,
+                      precisao: e.posicao.precisao,
+                    },
+                  ])
+                : undefined,
+          }}
           className={cn(
             'z-20',
             celular
@@ -483,13 +560,93 @@ export function TelaDoMapa() {
           dados={resultado}
           aoAbrir={abrirEmpresa}
           aoFechar={() => escolher(ferramenta)}
+          {...(rotaNoMapa.podeMontar
+            ? {
+                aoAdicionarARota: (itens: SelecaoDoMapaResposta['itens']) =>
+                  rotaNoMapa.adicionar(
+                    itens.map<NovaParada>((i) => ({
+                      empresaId: i.id,
+                      nome: i.nome,
+                      detalhe: i.cidade,
+                      latitude: i.latitude,
+                      longitude: i.longitude,
+                      precisao: null,
+                    })),
+                  ),
+              }
+            : {})}
           className={cn(
             'z-20',
             celular
               ? 'absolute inset-x-0 bottom-0 max-h-[55%] rounded-b-none'
-              : 'absolute top-[140px] right-3 bottom-[200px] w-[340px]',
+              : cn(
+                  'absolute top-[140px] bottom-[200px] w-[340px]',
+                  rotaNoMapa.aberto ? 'right-[388px]' : 'right-3',
+                ),
           )}
         />
+      ) : null}
+
+      {/* Editor de rota (G4): à direita no computador; tela cheia no celular, com as abas Lista | Mapa */}
+      {rotaNoMapa.aberto && rotaNoMapa.rascunho && rotaNoMapa.config ? (
+        celular && abaDaRota === 'mapa' ? (
+          <Button
+            icon={List}
+            variant="primary"
+            className="absolute inset-x-2 bottom-2 z-30 shadow-lg"
+            onClick={() => setAbaDaRota('lista')}
+          >
+            Ver a lista da rota ({rotaNoMapa.rascunho.paradas.length})
+          </Button>
+        ) : (
+          <div
+            className={cn(
+              'z-30 flex flex-col',
+              celular ? 'absolute inset-0 bg-bg' : 'absolute top-[88px] right-3 bottom-3 w-[360px]',
+            )}
+          >
+            {celular ? (
+              <div className="flex gap-2 p-2">
+                <Button icon={List} variant="primary" className="flex-1" aria-pressed="true">
+                  Lista
+                </Button>
+                <Button icon={MapaIcone} className="flex-1" onClick={() => setAbaDaRota('mapa')}>
+                  Mapa
+                </Button>
+              </div>
+            ) : null}
+            <EditorDeRota
+              className="min-h-0 flex-1"
+              rascunho={rotaNoMapa.rascunho}
+              aoMudar={rotaNoMapa.setRascunho}
+              salva={rotaNoMapa.salva}
+              vendedores={o.vendedores}
+              podeAtribuir={podeAtribuir}
+              pontos={rotaNoMapa.pontos}
+              maxParadas={rotaNoMapa.config.maxParadas}
+              otimizacaoConfigurada={rotaNoMapa.config.otimizacaoConfigurada}
+              inicio={rotaNoMapa.inicio}
+              aviso={rotaNoMapa.aviso}
+              otimizando={rotaNoMapa.otimizando}
+              salvando={rotaNoMapa.salvando}
+              aoOtimizar={rotaNoMapa.otimizar}
+              aoSalvar={rotaNoMapa.salvar}
+              aoFechar={rotaNoMapa.fechar}
+              aoAbrirParada={(id) => {
+                if (celular) setAbaDaRota('mapa')
+                abrirEmpresa(id)
+              }}
+            />
+          </div>
+        )
+      ) : rotaNoMapa.aberto && rotaNoMapa.erroAoAbrir ? (
+        <Alert
+          tone="danger"
+          className="absolute top-[88px] right-3 z-30 w-[360px] max-md:inset-x-2 max-md:w-auto"
+          actions={<IconButton icon={X} label="Fechar" onClick={rotaNoMapa.fechar} />}
+        >
+          Não consegui abrir a rota. {rotaNoMapa.erroAoAbrir}
+        </Alert>
       ) : null}
 
       {/* Ferramentas */}
@@ -498,7 +655,9 @@ export function TelaDoMapa() {
         aria-label="Ferramentas do mapa"
         className={cn(
           'absolute z-10 flex flex-col gap-2',
-          celular ? 'right-2 bottom-[140px]' : 'top-[88px] right-3',
+          celular
+            ? 'right-2 bottom-[140px]'
+            : cn('top-[88px]', rotaNoMapa.aberto ? 'right-[388px]' : 'right-3'),
         )}
       >
         <IconButton
@@ -534,6 +693,19 @@ export function TelaDoMapa() {
           onClick={() => setMostraCobertura((v) => !v)}
           className={cn('bg-surface shadow-md', mostraCobertura && 'ring-2 ring-brand')}
         />
+        {rotaNoMapa.podeMontar ? (
+          <IconButton
+            icon={RotaIcone}
+            label={
+              rotaNoMapa.rascunho
+                ? 'Adicionar à rota as empresas visíveis (com os filtros)'
+                : 'Montar uma rota nova'
+            }
+            disabled={adicionandoVisiveis}
+            onClick={() => void rotaComAsVisiveis()}
+            className={cn('bg-surface shadow-md', rotaNoMapa.aberto && 'ring-2 ring-brand')}
+          />
+        ) : null}
       </div>
       {ferramenta === 'retangulo' && !retangulo ? (
         <p

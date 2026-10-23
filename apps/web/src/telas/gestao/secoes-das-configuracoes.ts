@@ -8,6 +8,7 @@ import {
   KeyRound,
   MapPin,
   Funnel,
+  Route as RotaIcone,
   Scale,
   ShieldCheck,
   Tags,
@@ -39,6 +40,12 @@ export const SECOES = [
     para: '/configuracoes/visitas',
     titulo: 'Visitas',
     icone: ClipboardCheck,
+    permissoes: ['cadastros.gerir'],
+  },
+  {
+    para: '/configuracoes/rotas',
+    titulo: 'Rotas',
+    icone: RotaIcone,
     permissoes: ['cadastros.gerir'],
   },
   {

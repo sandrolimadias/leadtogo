@@ -1,5 +1,5 @@
 import type { EmpresaCarteira } from '@leadtogo/api-client'
-import { linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
+import { codigoDaRota, linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
@@ -10,12 +10,14 @@ import {
   MessageCircle,
   Phone,
   Radar,
+  Route as RotaIcone,
   User,
   X,
 } from 'lucide-react'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePermissoes } from '@/auth/permissoes'
 import { IconButton } from '@/components/ui/button'
 import type { CorDeTag } from '@/components/ui/cores'
 import { Avatar, Tag } from '@/components/ui/exibicao'
@@ -41,18 +43,27 @@ const classeDoBotao =
 /**
  * O painel da empresa no mapa: nome, tags, selo de precisão, carteira, última visita, próxima atividade,
  * as ações (Ligar, WhatsApp, Empresas próximas, Abrir ficha) e as abas Atividades, Oportunidades e Contatos.
- * O "Check-in" (G3b) abre a visita; "Na rota" chega com o G4.
+ * O "Check-in" (G3b) abre a visita; "Adicionar à rota" / "Na rota · parada N" é do G4.
  */
+export interface RotaNoPainel {
+  /** Posição da empresa na rota aberta no editor (1, 2...), ou null */
+  ordem: number | null
+  podeAdicionar: boolean
+  aoAdicionar: (e: EmpresaCarteira) => void
+}
+
 export function PainelDaEmpresa({
   empresaId,
   aoFechar,
   aoVerProximas,
+  rota,
   className,
 }: {
   empresaId: string
   aoFechar: () => void
   /** "Empresas próximas": abre a barra de raio em volta desta empresa */
   aoVerProximas: (e: EmpresaCarteira) => void
+  rota?: RotaNoPainel
   className?: string
 }) {
   const servicos = useServicos()
@@ -94,6 +105,7 @@ export function PainelDaEmpresa({
           aoMudarAba={setAba}
           aoFechar={aoFechar}
           aoVerProximas={aoVerProximas}
+          {...(rota ? { rota } : {})}
         />
       )}
     </aside>
@@ -106,13 +118,28 @@ function Conteudo({
   aoMudarAba,
   aoFechar,
   aoVerProximas,
+  rota,
 }: {
   e: EmpresaCarteira
   aba: string
   aoMudarAba: (a: string) => void
   aoFechar: () => void
   aoVerProximas: (e: EmpresaCarteira) => void
+  rota?: RotaNoPainel
 }) {
+  const servicos = useServicos()
+  const { pode } = usePermissoes()
+  // as rotas salvas em aberto em que a empresa é parada (fora a aberta no editor)
+  const rotasSalvas = useQuery({
+    queryKey: ['rotas', 'empresa', e.id],
+    enabled: pode('rotas.ver'),
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.rotas.daEmpresa(e.id)
+      return r.ok ? r.dados : []
+    },
+  })
+  const salva = rotasSalvas.data?.[0]
   const telefone = e.telefones.find((t) => t.principal) ?? e.telefones[0]
   const ligar = telefone ? linkDeLigacao(telefone.e164) : null
   const whatsapp = telefone ? linkDoWhatsapp(telefone.e164) : null
@@ -167,6 +194,25 @@ function Conteudo({
           </li>
         </ul>
         <div className="flex flex-wrap gap-2">
+          {rota?.ordem ? (
+            <span className={cn(classeDoBotao, 'cursor-default border-brand text-brand')}>
+              <Check size={14} aria-hidden="true" /> Na rota · parada {rota.ordem}
+            </span>
+          ) : rota?.podeAdicionar && e.posicao.latitude !== null ? (
+            <button type="button" className={classeDoBotao} onClick={() => rota.aoAdicionar(e)}>
+              <RotaIcone size={14} aria-hidden="true" /> Adicionar à rota
+            </button>
+          ) : null}
+          {!rota?.ordem && salva ? (
+            <Link
+              to="/mapa"
+              search={{ rota: salva.rotaId }}
+              className={cn(classeDoBotao, 'text-brand')}
+            >
+              <Check size={14} aria-hidden="true" /> Na rota {codigoDaRota(salva.codigo)} · parada{' '}
+              {salva.ordem}
+            </Link>
+          ) : null}
           {e.permissoes.editar ? (
             <BotaoDeVisita empresa={{ id: e.id, nome: e.nome }} compacto />
           ) : null}
