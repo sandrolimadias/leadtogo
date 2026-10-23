@@ -6,6 +6,7 @@ import {
   Factory,
   FileSpreadsheet,
   KeyRound,
+  LifeBuoy,
   MapPin,
   Funnel,
   Route as RotaIcone,
@@ -89,6 +90,12 @@ export const SECOES = [
     titulo: 'Geolocalização',
     icone: MapPin,
     permissoes: ['geolocalizacao.regioes', 'geolocalizacao.legenda'],
+  },
+  {
+    para: '/configuracoes/chamados',
+    titulo: 'Chamados',
+    icone: LifeBuoy,
+    permissoes: ['chamados.gerir_areas'],
   },
   {
     para: '/configuracoes/seguranca',

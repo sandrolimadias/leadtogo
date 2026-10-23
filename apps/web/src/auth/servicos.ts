@@ -733,7 +733,54 @@ export const servicosReais: ServicosDeAcesso = {
             }),
           ),
         ),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/chamados/areas', { body: dados }))),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/chamados/areas/{id}', { params: { path: { id } }, body: dados }),
+          ),
+        ),
+      membros: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/chamados/areas/{id}/membros', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/chamados/areas/{id}', { params: { path: { id } } })),
+        ),
     },
+    opcoesDeConfiguracao: () =>
+      protegido(async () => daApi(await api.GET('/v1/chamados/opcoes-de-configuracao'))),
+    triagem: {
+      ver: () => protegido(async () => daApi(await api.GET('/v1/chamados/triagem'))),
+      alterar: (dados) =>
+        protegido(async () => daApi(await api.PUT('/v1/chamados/triagem', { body: dados }))),
+    },
+    expediente: {
+      ver: () => protegido(async () => daApi(await api.GET('/v1/chamados/expediente'))),
+      definir: (dados) =>
+        protegido(async () => daApi(await api.PUT('/v1/chamados/expediente', { body: dados }))),
+      criarFeriado: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/chamados/feriados', { body: dados }))),
+      gerarFeriados: (ano) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/chamados/feriados/gerar', { body: { ano } })),
+        ),
+      excluirFeriado: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/chamados/feriados/{id}', { params: { path: { id } } })),
+        ),
+    },
+    metricas: (consulta) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/chamados/metricas', { params: { query: consulta } })),
+      ),
   },
 
   notificacoes: {

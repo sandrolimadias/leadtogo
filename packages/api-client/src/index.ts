@@ -132,6 +132,7 @@ export type MembroDaArea = Esquemas['MembroDaArea']
 export type ConfiguracaoDeTriagem = Esquemas['ConfiguracaoDeTriagem']
 export type Expediente = Esquemas['Expediente']
 export type Feriado = Esquemas['Feriado']
+export type OpcoesDeConfiguracaoDeChamados = Esquemas['OpcoesDeConfiguracaoDeChamados']
 export type MetricasDeChamados = Esquemas['MetricasDeChamados']
 export type IndicadoresDeChamados = Esquemas['IndicadoresDeChamados']
 // Notificações (sino)

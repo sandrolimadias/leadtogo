@@ -21,6 +21,8 @@ import {
   feriadoSchema,
   type GerarFeriadosEntrada,
   gerarFeriadosSchema,
+  type OpcoesDeConfiguracao,
+  opcoesDeConfiguracaoSchema,
 } from '@leadtogo/shared'
 import {
   Body,
@@ -74,6 +76,19 @@ export class ConfiguracaoDeChamadosController {
     private readonly triagem: TriagemService,
     private readonly expediente: ExpedienteService,
   ) {}
+
+  @Documenta({
+    resumo: 'Opções da configuração dos chamados',
+    descricao:
+      'Exige `chamados.gerir_areas`. Os membros ativos e os perfis de acesso da empresa, para escolher quem atende a área e quem faz a triagem.',
+    resposta: opcoesDeConfiguracaoSchema,
+    erros: [401, 403, 409],
+  })
+  @Permissao('chamados.gerir_areas')
+  @Get('opcoes-de-configuracao')
+  opcoes(): Promise<OpcoesDeConfiguracao> {
+    return this.areas.opcoes()
+  }
 
   // ---- Áreas ----
 

@@ -194,6 +194,24 @@ describe('áreas', () => {
     }
   })
 
+  it('as opções de configuração (pessoas e perfis) são só de quem gere as áreas e só desta empresa', async () => {
+    const e = await empresaDeChamados(app)
+    const outra = await empresaDeChamados(app)
+    const atendente = await e.pessoa('Atendente', PERMISSOES.atendente)
+    const r = await chamar('get', e.d.cookie, '/chamados/opcoes-de-configuracao')
+    expect(r.status).toBe(200)
+    const o = r.body as { membros: { id: string; nome: string }[]; perfis: { id: string }[] }
+    expect(o.membros.map((m) => m.id)).toContain(atendente.membroId)
+    expect(o.perfis.map((p) => p.id)).toContain(atendente.perfilId)
+    const deFora = (await chamar('get', outra.d.cookie, '/chamados/opcoes-de-configuracao'))
+      .body as typeof o
+    expect(deFora.membros.map((m) => m.id)).not.toContain(atendente.membroId)
+    expect(deFora.perfis.map((p) => p.id)).not.toContain(atendente.perfilId)
+    const negado = await chamar('get', atendente.cookie, '/chamados/opcoes-de-configuracao')
+    expect(negado.status).toBe(403)
+    expect(erroDe(negado)).toBe('acesso_negado')
+  })
+
   it('outra empresa nunca vê nem altera as áreas desta', async () => {
     const a = await empresaDeChamados(app)
     const b = await empresaDeChamados(app)

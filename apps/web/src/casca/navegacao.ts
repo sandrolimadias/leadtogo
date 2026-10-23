@@ -42,6 +42,7 @@ export const PERMISSOES_DAS_CONFIGURACOES = [
   'geolocalizacao.regioes',
   'geolocalizacao.legenda',
   'seguranca.gerir',
+  'chamados.gerir_areas',
 ] as const
 
 export const TELAS: TelaDoApp[] = [

@@ -47,6 +47,7 @@ function servicos(permissoes = { 'chamados.ver': 'todas', 'chamados.criar': true
         }),
       ),
       areas: {
+        ...base.chamados.areas,
         listar: vi.fn(async () =>
           ok([
             {

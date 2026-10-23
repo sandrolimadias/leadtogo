@@ -6025,6 +6025,57 @@
         "tags": ["Chamados: métricas"]
       }
     },
+    "/v1/chamados/opcoes-de-configuracao": {
+      "get": {
+        "description": "Exige `chamados.gerir_areas`. Os membros ativos e os perfis de acesso da empresa, para escolher quem atende a área e quem faz a triagem.",
+        "operationId": "ConfiguracaoDeChamadosController_opcoes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcoesDeConfiguracaoDeChamados"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Opções da configuração dos chamados",
+        "tags": ["Chamados: configuração"]
+      }
+    },
     "/v1/chamados/triagem": {
       "get": {
         "description": "Qualquer perfil com permissão dos chamados. Desligada por padrão; ligada, indica as pessoas e/ou o perfil que triam.",
@@ -26339,6 +26390,47 @@
           }
         },
         "required": ["loginGoogle"],
+        "additionalProperties": false
+      },
+      "OpcoesDeConfiguracaoDeChamados": {
+        "type": "object",
+        "properties": {
+          "membros": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome"],
+              "additionalProperties": false
+            }
+          },
+          "perfis": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["membros", "perfis"],
         "additionalProperties": false
       },
       "OpcoesDoMapa": {

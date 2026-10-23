@@ -5,6 +5,7 @@ import type {
   CriarAreaEntrada,
   DefinirMembrosDaAreaEntrada,
   MembroDaArea,
+  OpcoesDeConfiguracao,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
@@ -61,6 +62,20 @@ export class AreasService {
 
   private get gere(): boolean {
     return this.permissao.pode('chamados.gerir_areas')
+  }
+
+  /** Quem pode ser escolhido como atendente ou triador: membros ativos e perfis de acesso. */
+  async opcoes(): Promise<OpcoesDeConfiguracao> {
+    this.exigirGerir()
+    const db = this.ctx.db()
+    const membros = await db.execute<{ id: string; nome: string }>(sql`
+      SELECT id, nome FROM membros WHERE ativo AND excluido_em IS NULL ORDER BY lower(nome)`)
+    const perfis = await db.execute<{ id: string; nome: string }>(sql`
+      SELECT id, nome FROM perfis_acesso WHERE excluido_em IS NULL ORDER BY lower(nome)`)
+    return {
+      membros: membros.map((m) => ({ id: m.id, nome: m.nome })),
+      perfis: perfis.map((p) => ({ id: p.id, nome: p.nome })),
+    }
   }
 
   private async linhas(filtro: ReturnType<typeof sql>): Promise<AreaDeAtendimento[]> {

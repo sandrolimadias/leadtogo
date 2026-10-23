@@ -10,7 +10,7 @@ import {
 } from '@leadtogo/shared'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { LifeBuoy, Plus, Search } from 'lucide-react'
+import { ChartColumn, LifeBuoy, Plus, Search } from 'lucide-react'
 import { useDeferredValue, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -137,6 +137,14 @@ export function TelaDeChamados() {
         <h1 className="m-0 flex-1 text-[26px] leading-8 font-semibold max-md:text-[22px]">
           Chamados
         </h1>
+        {pode('chamados.ver_metricas') ? (
+          <Link
+            to="/chamados/metricas"
+            className="inline-flex h-(--ctl) items-center gap-2 rounded-sm border border-border-strong px-3 text-sm font-semibold text-ink no-underline hover:bg-surface-hover"
+          >
+            <ChartColumn size={16} aria-hidden="true" /> Métricas
+          </Link>
+        ) : null}
         {pode('chamados.criar') ? (
           <Button variant="primary" icon={Plus} onClick={() => setAbrindo(true)}>
             Abrir chamado

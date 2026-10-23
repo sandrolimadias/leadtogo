@@ -71,6 +71,11 @@ import type {
   Vertical,
   AreaDeAtendimento,
   AtendenteDoChamado,
+  ConfiguracaoDeTriagem,
+  Expediente,
+  Feriado,
+  MetricasDeChamados,
+  OpcoesDeConfiguracaoDeChamados,
   Chamado,
   ConfiguracaoDeRotas,
   DownloadDeAnexo,
@@ -90,8 +95,15 @@ import type {
   AbrirChamadoEntrada,
   AlterarChamadoEntrada,
   AlterarPontoDePartidaEntrada,
+  AlterarAreaEntrada,
+  AlterarTriagemEntrada,
   AtribuirChamadoEntrada,
   ConsultaDeChamados,
+  ConsultaDeMetricas,
+  CriarAreaEntrada,
+  CriarFeriadoEntrada,
+  DefinirExpedienteEntrada,
+  DefinirMembrosDaAreaEntrada,
   ConsultaDeNotificacoes,
   ConsultaDeRotas,
   CriarNotaInternaEntrada,
@@ -547,7 +559,31 @@ export interface ServicosDeChamados {
   areas: {
     /** Quem gere as áreas vê as inativas e os membros */
     listar: (incluirInativas?: boolean) => Promise<Resultado<AreaDeAtendimento[]>>
+    /** Só `chamados.gerir_areas` */
+    criar: (dados: CriarAreaEntrada) => Promise<Resultado<AreaDeAtendimento>>
+    alterar: (id: string, dados: AlterarAreaEntrada) => Promise<Resultado<AreaDeAtendimento>>
+    membros: (
+      id: string,
+      dados: DefinirMembrosDaAreaEntrada,
+    ) => Promise<Resultado<AreaDeAtendimento>>
+    /** 409 `area_em_uso` se já teve chamado */
+    excluir: (id: string) => Promise<Resultado>
   }
+  /** Pessoas e perfis para escolher quem atende e quem tria */
+  opcoesDeConfiguracao: () => Promise<Resultado<OpcoesDeConfiguracaoDeChamados>>
+  triagem: {
+    ver: () => Promise<Resultado<ConfiguracaoDeTriagem>>
+    alterar: (dados: AlterarTriagemEntrada) => Promise<Resultado<ConfiguracaoDeTriagem>>
+  }
+  expediente: {
+    ver: () => Promise<Resultado<Expediente>>
+    definir: (dados: DefinirExpedienteEntrada) => Promise<Resultado<Expediente>>
+    criarFeriado: (dados: CriarFeriadoEntrada) => Promise<Resultado<Feriado>>
+    gerarFeriados: (ano: number) => Promise<Resultado<{ criados: number }>>
+    excluirFeriado: (id: string) => Promise<Resultado>
+  }
+  /** Só `chamados.ver_metricas` */
+  metricas: (consulta: ConsultaDeMetricas) => Promise<Resultado<MetricasDeChamados>>
 }
 
 /** O sino do CRM: as notificações do próprio membro. */

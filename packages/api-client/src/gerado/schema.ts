@@ -1132,6 +1132,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/chamados/opcoes-de-configuracao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Opções da configuração dos chamados
+         * @description Exige `chamados.gerir_areas`. Os membros ativos e os perfis de acesso da empresa, para escolher quem atende a área e quem faz a triagem.
+         */
+        get: operations["ConfiguracaoDeChamadosController_opcoes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/chamados/triagem": {
         parameters: {
             query?: never;
@@ -5765,6 +5785,18 @@ export interface components {
         };
         OpcoesDeAcesso: {
             loginGoogle: boolean;
+        };
+        OpcoesDeConfiguracaoDeChamados: {
+            membros: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            }[];
+            perfis: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            }[];
         };
         OpcoesDoMapa: {
             uf: string;
@@ -11063,6 +11095,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_opcoes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcoesDeConfiguracaoDeChamados"];
                 };
             };
             /** @description Sem login (`nao_autenticado`) ou sessão expirada */

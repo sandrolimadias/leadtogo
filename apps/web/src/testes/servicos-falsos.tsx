@@ -385,7 +385,26 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         confirmar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
         baixar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       },
-      areas: { listar: vi.fn(async () => ok([])) },
+      areas: {
+        listar: vi.fn(async () => ok([])),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        membros: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+      },
+      opcoesDeConfiguracao: vi.fn(async () => ok({ membros: [], perfis: [] })),
+      triagem: {
+        ver: vi.fn(async () => ok({ ativa: false, perfilId: null, perfilNome: null, membros: [] })),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      },
+      expediente: {
+        ver: vi.fn(async () => ok({ faixas: [], feriados: [], fusoHorario: 'America/Sao_Paulo' })),
+        definir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        criarFeriado: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        gerarFeriados: vi.fn(async () => ok({ criados: 0 })),
+        excluirFeriado: vi.fn(async () => ok(undefined)),
+      },
+      metricas: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
     notificacoes: {
       listar: vi.fn(async () => ok({ itens: [], total: 0, naoLidas: 0 })),

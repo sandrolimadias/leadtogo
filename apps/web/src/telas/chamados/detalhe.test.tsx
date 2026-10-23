@@ -30,6 +30,7 @@ function servicos(chamado: Chamado, atualizado?: Chamado) {
       triar: vi.fn(async () => ok(atualizado ?? chamado)),
       atendentes: vi.fn(async () => ok([{ id: id(900), nome: 'Ana Atendente' }])),
       areas: {
+        ...base.chamados.areas,
         listar: vi.fn(async () =>
           ok([
             {

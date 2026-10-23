@@ -198,3 +198,12 @@ export const gerarFeriadosSchema = z
   .strict()
   .meta({ id: 'GerarFeriadosEntrada' })
 export type GerarFeriadosEntrada = z.infer<typeof gerarFeriadosSchema>
+
+/** Pessoas e perfis que a tela de configuração oferece para a área e para a triagem. */
+export const opcoesDeConfiguracaoSchema = z
+  .object({
+    membros: z.array(z.object({ id: z.uuid(), nome: z.string() })),
+    perfis: z.array(z.object({ id: z.uuid(), nome: z.string() })),
+  })
+  .meta({ id: 'OpcoesDeConfiguracaoDeChamados' })
+export type OpcoesDeConfiguracao = z.infer<typeof opcoesDeConfiguracaoSchema>
