@@ -325,6 +325,35 @@ describe('triar, atribuir e assumir', () => {
   })
 })
 
+describe('atendentes da área', () => {
+  it('lista quem atende a área (ou todos, se ela não tem ninguém); só quem tria ou atribui consulta', async () => {
+    const c = await cenario()
+    const lista = async (cookie: string, area: string) =>
+      chamar('get', cookie, `/chamados/atendentes?areaId=${area}`)
+    const juridico = await lista(c.admin, c.juridico)
+    expect(juridico.status).toBe(200)
+    expect((juridico.body as { nome: string }[]).map((a) => a.nome)).toEqual([
+      'Atendente',
+      'Gestor da área',
+    ])
+    const financeiro = await lista(c.admin, c.financeiro)
+    expect((financeiro.body as { nome: string }[]).map((a) => a.nome)).toEqual([
+      'Atendente do Financeiro',
+    ])
+    // área sem ninguém cadastrado: todos os que atendem (inclusive o administrador)
+    const comercial = await lista(c.admin, await c.e.areaPadrao('comercial'))
+    const nomes = (comercial.body as { nome: string }[]).map((a) => a.nome)
+    expect(nomes).toHaveLength(4)
+    expect(nomes).toEqual(
+      expect.arrayContaining(['Atendente', 'Atendente do Financeiro', 'Gestor da área']),
+    )
+    expect((await lista(c.gestor.cookie, c.juridico)).status).toBe(200)
+    expect((await lista(c.atendente.cookie, c.juridico)).status).toBe(403)
+    expect((await lista(c.solicitante.cookie, c.juridico)).status).toBe(403)
+    expect((await chamar('get', c.admin, '/chamados/atendentes')).status).toBe(400)
+  })
+})
+
 describe('estados', () => {
   it('percorre todos os estados, grava um evento em cada passo e recusa o que não é permitido', async () => {
     const c = await cenario()

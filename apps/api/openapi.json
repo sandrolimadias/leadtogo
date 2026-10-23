@@ -5384,6 +5384,80 @@
         "tags": ["Chamados: configuração"]
       }
     },
+    "/v1/chamados/atendentes": {
+      "get": {
+        "description": "Exige `chamados.triar` ou `chamados.atribuir` (e, no caso de triar, ser quem tria). Membros ativos com `chamados.atender` que são da área; se a área não tem ninguém cadastrado, todos os que atendem. Serve para escolher o responsável ao triar ou atribuir.",
+        "operationId": "ChamadosController_atendentes",
+        "parameters": [
+          {
+            "name": "areaId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AtendenteDoChamado"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Quem pode receber os chamados de uma área",
+        "tags": ["Chamados"]
+      }
+    },
     "/v1/chamados/expediente": {
       "get": {
         "description": "Qualquer perfil com permissão dos chamados. Faixas de horário por dia da semana (0 = domingo), feriados e o fuso da empresa. Padrão: segunda a sexta, 8h às 18h, com os feriados nacionais.",
@@ -19620,6 +19694,20 @@
           "membros",
           "chamadosAbertos"
         ],
+        "additionalProperties": false
+      },
+      "AtendenteDoChamado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nome"],
         "additionalProperties": false
       },
       "Atividade": {

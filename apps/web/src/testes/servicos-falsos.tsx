@@ -364,6 +364,34 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       encerrar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       cancelar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
+    chamados: {
+      listar: vi.fn(async () =>
+        ok({ itens: [], total: 0, abas: { triagem: 0, pendentes: 0, meus: 0, todos: 0 } }),
+      ),
+      obter: vi.fn(async () => falha('chamado_nao_encontrado', 'Chamado não encontrado.', 404)),
+      abrir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      triar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      atribuir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      assumir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      alterarStatus: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      reabrir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      mensagem: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      nota: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      atendentes: vi.fn(async () => ok([])),
+      anexos: {
+        pedir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        enviar: vi.fn(async () => ok(undefined)),
+        confirmar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        baixar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      },
+      areas: { listar: vi.fn(async () => ok([])) },
+    },
+    notificacoes: {
+      listar: vi.fn(async () => ok({ itens: [], total: 0, naoLidas: 0 })),
+      marcarLida: vi.fn(async () => ok({ marcadas: 0, naoLidas: 0 })),
+      marcarTodas: vi.fn(async () => ok({ marcadas: 0, naoLidas: 0 })),
+    },
     importacao: {
       perfis: {
         listar: vi.fn(async () => ok([])),

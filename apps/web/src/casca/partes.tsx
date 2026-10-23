@@ -1,7 +1,6 @@
 import type { Me } from '@leadtogo/api-client'
 import { Link } from '@tanstack/react-router'
-import { Bell, Check, Ellipsis, LogOut, Plus, Search, ShieldCheck } from 'lucide-react'
-import { Popover } from 'radix-ui'
+import { Check, Ellipsis, LogOut, Plus, Search, ShieldCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { permissoesDaAtiva } from '@/auth/permissoes'
@@ -18,6 +17,7 @@ import { Sheet } from '@/components/ui/dialog'
 import { cn } from '@/lib/cn'
 
 import { VERSAO_DO_APP } from './empresas'
+import { Notificacoes } from './sino'
 import { TELAS, TELAS_DA_BARRA_INFERIOR, estaAtiva, telaVisivel, telasDoMais } from './navegacao'
 import { useRegistrarAtividade } from '@/telas/atividades/registro-contexto'
 import { avisarEmBreve, nomeDaEmpresa, perfilDaEmpresa } from './utilidades'
@@ -61,34 +61,6 @@ export function PularParaOConteudo() {
     >
       Pular para o conteúdo
     </a>
-  )
-}
-
-/** Sino de notificações (painel de 360 px). Ainda sem notificações: o painel diz isso. */
-export function Notificacoes({ tamanho = 'md' }: { tamanho?: 'md' | 'lg' }) {
-  return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <IconButton icon={Bell} label="Notificações" size={tamanho} />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          align="end"
-          sideOffset={6}
-          className="z-[1000] w-[360px] max-w-[calc(100vw-24px)] rounded-md border border-border bg-surface p-1 text-ink shadow-md"
-        >
-          <div className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[.06em] text-ink-subtle uppercase">
-            Notificações
-          </div>
-          <EmptyState
-            icon={Bell}
-            title="Nenhuma notificação"
-            description="Avisos de todas as suas empresas aparecem aqui, com o nome da empresa."
-            className="py-6"
-          />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
   )
 }
 

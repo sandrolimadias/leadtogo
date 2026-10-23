@@ -633,6 +633,121 @@ export const servicosReais: ServicosDeAcesso = {
       ),
   },
 
+  chamados: {
+    listar: (consulta) =>
+      protegido(async () => daApi(await api.GET('/v1/chamados', { params: { query: consulta } }))),
+    obter: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/chamados/{id}', { params: { path: { id } } })),
+      ),
+    abrir: (dados) => protegido(async () => daApi(await api.POST('/v1/chamados', { body: dados }))),
+    triar: (id, dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/chamados/{id}/triar', { params: { path: { id } }, body: dados })),
+      ),
+    atribuir: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/chamados/{id}/atribuir', { params: { path: { id } }, body: dados }),
+        ),
+      ),
+    assumir: (id) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/chamados/{id}/assumir', { params: { path: { id } } })),
+      ),
+    alterarStatus: (id, status) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/chamados/{id}/status', {
+            params: { path: { id } },
+            body: { status },
+          }),
+        ),
+      ),
+    alterar: (id, dados) =>
+      protegido(async () =>
+        daApi(await api.PATCH('/v1/chamados/{id}', { params: { path: { id } }, body: dados })),
+      ),
+    reabrir: (id) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/chamados/{id}/reabrir', { params: { path: { id } } })),
+      ),
+    mensagem: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/chamados/{id}/mensagens', { params: { path: { id } }, body: dados }),
+        ),
+      ),
+    nota: (id, dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/chamados/{id}/notas', { params: { path: { id } }, body: dados })),
+      ),
+    atendentes: (areaId) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/chamados/atendentes', { params: { query: { areaId } } })),
+      ),
+    anexos: {
+      pedir: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/chamados/{id}/anexos', { params: { path: { id } }, body: dados }),
+          ),
+        ),
+      // O arquivo vai direto ao armazenamento (URL pré-assinada): fora do cliente da API, sem cookie
+      enviar: (url, arquivo) =>
+        protegido(async () => {
+          const r = await globalThis.fetch(url, { method: 'PUT', body: arquivo })
+          return r.ok
+            ? ok(undefined)
+            : {
+                ok: false,
+                erro: traduzirErro(r.status, {
+                  erro: 'envio_falhou',
+                  mensagem: 'Não consegui enviar o arquivo.',
+                }),
+              }
+        }),
+      confirmar: (id, anexoId) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/chamados/{id}/anexos/{anexoId}/confirmar', {
+              params: { path: { id, anexoId } },
+            }),
+          ),
+        ),
+      baixar: (id, anexoId) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/chamados/{id}/anexos/{anexoId}/download', {
+              params: { path: { id, anexoId } },
+            }),
+          ),
+        ),
+    },
+    areas: {
+      listar: (incluirInativas = false) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/chamados/areas', {
+              params: { query: { incluirInativas: incluirInativas ? 'true' : 'false' } },
+            }),
+          ),
+        ),
+    },
+  },
+
+  notificacoes: {
+    listar: (consulta = {}) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/notificacoes', { params: { query: consulta } })),
+      ),
+    marcarLida: (id) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/notificacoes/{id}/lida', { params: { path: { id } } })),
+      ),
+    marcarTodas: () => protegido(async () => daApi(await api.POST('/v1/notificacoes/lidas'))),
+  },
+
   geolocalizacao: {
     resumo: () => protegido(async () => daApi(await api.GET('/v1/geolocalizacao/resumo'))),
     fila: (pagina = 1, porPagina = 25) =>

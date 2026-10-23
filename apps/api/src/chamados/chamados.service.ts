@@ -2,6 +2,7 @@ import { novoId, type SQL, sql } from '@leadtogo/db'
 import {
   type AbrirChamadoEntrada,
   type AcoesDoChamado,
+  type AtendenteDoChamado,
   type AlterarChamadoEntrada,
   type AtribuirChamadoEntrada,
   type Chamado,
@@ -513,6 +514,25 @@ export class ChamadosService {
     })
     await this.notificar(id, 'aberto')
     return this.obter(id, true)
+  }
+
+  /**
+   * Quem pode receber os chamados da área: membros ativos com `chamados.atender` que são da área (ou todos
+   * eles, se a área ainda não tem ninguém cadastrado). Para quem tria ou atribui escolher o responsável.
+   */
+  async atendentes(areaId: string): Promise<AtendenteDoChamado[]> {
+    if (!(this.acesso.permissao.pode('chamados.atribuir') || (await this.acesso.euTrio()))) {
+      throw semPermissao('Só quem tria ou atribui chamados escolhe o responsável.')
+    }
+    const linhas = await this.ctx.db().execute<{ id: string; nome: string }>(sql`
+      SELECT m.id, m.nome FROM membros m
+      WHERE m.ativo AND m.excluido_em IS NULL
+        AND EXISTS (SELECT 1 FROM perfil_permissoes pp WHERE pp.perfil_id = m.perfil_id AND pp.permissao = 'chamados.atender')
+        AND (NOT EXISTS (SELECT 1 FROM area_membros am WHERE am.area_id = ${areaId})
+          OR EXISTS (SELECT 1 FROM area_membros am
+            WHERE am.area_id = ${areaId} AND (am.membro_id = m.id OR am.perfil_id = m.perfil_id)))
+      ORDER BY lower(m.nome)`)
+    return linhas.map((l) => ({ id: l.id, nome: l.nome }))
   }
 
   // ---- Mudanças ----

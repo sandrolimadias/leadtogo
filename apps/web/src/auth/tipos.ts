@@ -69,8 +69,17 @@ import type {
   TagGrupo,
   TipoAtividade,
   Vertical,
+  AreaDeAtendimento,
+  AtendenteDoChamado,
+  Chamado,
   ConfiguracaoDeRotas,
+  DownloadDeAnexo,
+  EnvioDeAnexo,
+  AnexoDoChamado,
+  ListaDeChamados,
+  ListaDeNotificacoes,
   ListaDeRotas,
+  MarcadasComoLidas,
   OrdemOtimizada,
   ParadasAdicionadas,
   PontoDePartida,
@@ -78,8 +87,18 @@ import type {
   RotaDaEmpresa,
 } from '@leadtogo/api-client'
 import type {
+  AbrirChamadoEntrada,
+  AlterarChamadoEntrada,
   AlterarPontoDePartidaEntrada,
+  AtribuirChamadoEntrada,
+  ConsultaDeChamados,
+  ConsultaDeNotificacoes,
   ConsultaDeRotas,
+  CriarNotaInternaEntrada,
+  EnviarMensagemEntrada,
+  PedirEnvioDeAnexoEntrada,
+  StatusDoChamado,
+  TriarChamadoEntrada,
   CriarPontoDePartidaEntrada,
   OtimizarRotaEntrada,
   SalvarRotaEntrada,
@@ -498,6 +517,46 @@ export interface ServicosDeRotas {
   cancelar: (id: string) => Promise<Resultado<Rota>>
 }
 
+/** Central de chamados (Fase 2): a equipe abre, tria, atende e conversa. */
+export interface ServicosDeChamados {
+  listar: (consulta: Partial<ConsultaDeChamados>) => Promise<Resultado<ListaDeChamados>>
+  obter: (id: string) => Promise<Resultado<Chamado>>
+  abrir: (dados: AbrirChamadoEntrada) => Promise<Resultado<Chamado>>
+  /** Só em "Aguardando triagem", por quem tria */
+  triar: (id: string, dados: TriarChamadoEntrada) => Promise<Resultado<Chamado>>
+  atribuir: (id: string, dados: AtribuirChamadoEntrada) => Promise<Resultado<Chamado>>
+  assumir: (id: string) => Promise<Resultado<Chamado>>
+  alterarStatus: (id: string, status: StatusDoChamado) => Promise<Resultado<Chamado>>
+  /** Prioridade e/ou área */
+  alterar: (id: string, dados: AlterarChamadoEntrada) => Promise<Resultado<Chamado>>
+  reabrir: (id: string) => Promise<Resultado<Chamado>>
+  mensagem: (id: string, dados: EnviarMensagemEntrada) => Promise<Resultado<Chamado>>
+  /** Nota interna: só da equipe */
+  nota: (id: string, dados: CriarNotaInternaEntrada) => Promise<Resultado<Chamado>>
+  /** Quem pode receber os chamados da área (para escolher o responsável) */
+  atendentes: (areaId: string) => Promise<Resultado<AtendenteDoChamado[]>>
+  anexos: {
+    /** URL pré-assinada para o PUT direto ao armazenamento (503 `anexos_indisponiveis` sem antivírus) */
+    pedir: (id: string, dados: PedirEnvioDeAnexoEntrada) => Promise<Resultado<EnvioDeAnexo>>
+    /** O PUT em si (o navegador envia o arquivo ao Garage) */
+    enviar: (url: string, arquivo: Blob) => Promise<Resultado>
+    confirmar: (id: string, anexoId: string) => Promise<Resultado<AnexoDoChamado>>
+    /** 409 `anexo_em_verificacao` / `anexo_bloqueado` */
+    baixar: (id: string, anexoId: string) => Promise<Resultado<DownloadDeAnexo>>
+  }
+  areas: {
+    /** Quem gere as áreas vê as inativas e os membros */
+    listar: (incluirInativas?: boolean) => Promise<Resultado<AreaDeAtendimento[]>>
+  }
+}
+
+/** O sino do CRM: as notificações do próprio membro. */
+export interface ServicosDeNotificacoes {
+  listar: (consulta?: Partial<ConsultaDeNotificacoes>) => Promise<Resultado<ListaDeNotificacoes>>
+  marcarLida: (id: string) => Promise<Resultado<MarcadasComoLidas>>
+  marcarTodas: () => Promise<Resultado<MarcadasComoLidas>>
+}
+
 export interface ServicosDeAcesso {
   /** Sessão atual, ou null sem login */
   me: () => Promise<Me | null>
@@ -578,6 +637,10 @@ export interface ServicosDeAcesso {
   geolocalizacao: ServicosDeGeolocalizacao
   mapa: ServicosDoMapa
   rotas: ServicosDeRotas
+
+  // Central de chamados (Fase 2) e o sino
+  chamados: ServicosDeChamados
+  notificacoes: ServicosDeNotificacoes
 
   // Atividades (Módulo 5)
   atividades: ServicosDeAtividades

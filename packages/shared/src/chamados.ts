@@ -379,3 +379,12 @@ export const downloadDeAnexoSchema = z
   .object({ url: z.url(), expiraEm: z.iso.datetime() })
   .meta({ id: 'DownloadDeAnexo' })
 export type DownloadDeAnexo = z.infer<typeof downloadDeAnexoSchema>
+
+/** Quem pode receber os chamados de uma área (para escolher o responsável ao triar ou atribuir). */
+export const consultaDeAtendentesSchema = z.object({ areaId: z.uuid() }).strict()
+export type ConsultaDeAtendentes = z.infer<typeof consultaDeAtendentesSchema>
+
+export const atendenteSchema = z
+  .object({ id: z.uuid(), nome: z.string() })
+  .meta({ id: 'AtendenteDoChamado' })
+export type AtendenteDoChamado = z.infer<typeof atendenteSchema>

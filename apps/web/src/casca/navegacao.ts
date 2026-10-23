@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   ClipboardList,
   Handshake,
+  LifeBuoy,
   Target,
   Users,
   type LucideIcon,
@@ -60,6 +61,7 @@ export const TELAS: TelaDoApp[] = [
     icone: CalendarCheck,
     permissoes: ['atividades.ver'],
   },
+  { caminho: '/chamados', titulo: 'Chamados', icone: LifeBuoy, permissoes: ['chamados.ver'] },
   { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone, permissoes: ['empresas.ver'] },
   {
     caminho: '/visitas',

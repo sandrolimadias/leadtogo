@@ -1,6 +1,10 @@
 import {
   type AbrirChamadoEntrada,
   abrirChamadoSchema,
+  type AtendenteDoChamado,
+  atendenteSchema,
+  type ConsultaDeAtendentes,
+  consultaDeAtendentesSchema,
   type AlterarChamadoEntrada,
   alterarChamadoSchema,
   type AlterarStatusDoChamadoEntrada,
@@ -28,6 +32,7 @@ import {
   Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
+import { z } from 'zod'
 
 import { Permissao } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
@@ -57,6 +62,22 @@ export class ChamadosController {
     @Query(new ZodPipe(consultaDeChamadosSchema)) consulta: ConsultaDeChamados,
   ): Promise<ListaDeChamados> {
     return this.servico.listar(consulta)
+  }
+
+  @Documenta({
+    resumo: 'Quem pode receber os chamados de uma área',
+    descricao:
+      'Exige `chamados.triar` ou `chamados.atribuir` (e, no caso de triar, ser quem tria). Membros ativos com `chamados.atender` que são da área; se a área não tem ninguém cadastrado, todos os que atendem. Serve para escolher o responsável ao triar ou atribuir.',
+    consulta: consultaDeAtendentesSchema,
+    resposta: z.array(atendenteSchema),
+    erros: [400, 401, 403, 409],
+  })
+  @Permissao('chamados.triar', 'chamados.atribuir')
+  @Get('atendentes')
+  atendentes(
+    @Query(new ZodPipe(consultaDeAtendentesSchema)) consulta: ConsultaDeAtendentes,
+  ): Promise<AtendenteDoChamado[]> {
+    return this.servico.atendentes(consulta.areaId)
   }
 
   @Documenta({

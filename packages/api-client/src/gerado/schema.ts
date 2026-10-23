@@ -988,6 +988,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/chamados/atendentes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quem pode receber os chamados de uma área
+         * @description Exige `chamados.triar` ou `chamados.atribuir` (e, no caso de triar, ser quem tria). Membros ativos com `chamados.atender` que são da área; se a área não tem ninguém cadastrado, todos os que atendem. Serve para escolher o responsável ao triar ou atribuir.
+         */
+        get: operations["ChamadosController_atendentes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/chamados/expediente": {
         parameters: {
             query?: never;
@@ -3939,6 +3959,11 @@ export interface components {
             chaveSistema: string | null;
             membros: components["schemas"]["MembroDaArea"][];
             chamadosAbertos: number;
+        };
+        AtendenteDoChamado: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
         };
         Atividade: {
             /** Format: uuid */
@@ -10617,6 +10642,64 @@ export interface operations {
             };
             /** @description Não encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChamadosController_atendentes: {
+        parameters: {
+            query: {
+                areaId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtendenteDoChamado"][];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

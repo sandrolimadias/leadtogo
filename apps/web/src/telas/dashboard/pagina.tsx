@@ -26,6 +26,7 @@ import {
 import { linkDeConquistadas, linkDePerdas, linkDoStatus, linkSemContato } from './links'
 import { CardDaRotaDeHoje } from '@/telas/rotas/rota-de-hoje'
 import { CardDePendentes } from '@/telas/visitas/campo/pendentes'
+import { CardDeChamadosPendentes } from '@/telas/chamados/cartao'
 
 const rota = getRouteApi('/_autenticado/')
 
@@ -184,6 +185,7 @@ export function PaginaDoDashboard() {
 
       <CardDaRotaDeHoje />
       <CardDePendentes />
+      <CardDeChamadosPendentes />
 
       {consulta.isError ? (
         <Alert
