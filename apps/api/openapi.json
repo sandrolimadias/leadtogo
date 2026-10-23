@@ -3744,6 +3744,805 @@
         "tags": ["Carteira: oportunidades"]
       }
     },
+    "/v1/chamados/areas": {
+      "get": {
+        "description": "Qualquer perfil com permissão dos chamados. Quem tem `chamados.gerir_areas` vê também os membros de cada área e, com `incluirInativas=true`, as inativas; os demais veem só as ativas, sem a lista de membros.",
+        "operationId": "ConfiguracaoDeChamadosController_listarAreas",
+        "parameters": [
+          {
+            "name": "incluirInativas",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaDeAtendimento"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar as áreas de atendimento",
+        "tags": ["Chamados: configuração"]
+      },
+      "post": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Nome único (409 `nome_duplicado`). Metas vazias = sem meta e sem alerta de prazo.",
+        "operationId": "ConfiguracaoDeChamadosController_criarArea",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarAreaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaDeAtendimento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar uma área de atendimento",
+        "tags": ["Chamados: configuração"]
+      }
+    },
+    "/v1/chamados/areas/{id}": {
+      "patch": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Nome, descrição, metas, \"visível no portal\", \"pula a triagem\" e ativa.",
+        "operationId": "ConfiguracaoDeChamadosController_alterarArea",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarAreaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaDeAtendimento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar uma área de atendimento",
+        "tags": ["Chamados: configuração"]
+      },
+      "delete": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Só a área que nunca teve chamado; a usada só se inativa (409 `area_em_uso`).",
+        "operationId": "ConfiguracaoDeChamadosController_excluirArea",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir uma área de atendimento",
+        "tags": ["Chamados: configuração"]
+      }
+    },
+    "/v1/chamados/areas/{id}/membros": {
+      "put": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Troca a lista inteira: membros (com o gestor da área marcado) e perfis de acesso. Membro ou perfil inexistente ou inativo: 400 `membro_invalido` / `perfil_invalido`.",
+        "operationId": "ConfiguracaoDeChamadosController_definirMembros",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirMembrosDaAreaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaDeAtendimento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Definir quem atende a área",
+        "tags": ["Chamados: configuração"]
+      }
+    },
+    "/v1/chamados/expediente": {
+      "get": {
+        "description": "Qualquer perfil com permissão dos chamados. Faixas de horário por dia da semana (0 = domingo), feriados e o fuso da empresa. Padrão: segunda a sexta, 8h às 18h, com os feriados nacionais.",
+        "operationId": "ConfiguracaoDeChamadosController_verExpediente",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expediente"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ver o expediente e os feriados",
+        "tags": ["Chamados: configuração"]
+      },
+      "put": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Troca as faixas inteiras; faixas do mesmo dia não se sobrepõem (400). Sem faixa nenhuma, as metas deixam de contar prazo.",
+        "operationId": "ConfiguracaoDeChamadosController_definirExpediente",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirExpedienteEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expediente"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Definir o expediente",
+        "tags": ["Chamados: configuração"]
+      }
+    },
+    "/v1/chamados/feriados": {
+      "post": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Uma data só tem um feriado (409 `feriado_repetido`). `recorrente` vale todo ano no mesmo dia e mês.",
+        "operationId": "ConfiguracaoDeChamadosController_criarFeriado",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarFeriadoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Feriado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar um feriado",
+        "tags": ["Chamados: configuração"]
+      }
+    },
+    "/v1/chamados/feriados/{id}": {
+      "delete": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria.",
+        "operationId": "ConfiguracaoDeChamadosController_excluirFeriado",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir um feriado",
+        "tags": ["Chamados: configuração"]
+      }
+    },
+    "/v1/chamados/feriados/gerar": {
+      "post": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Carnaval, Sexta-feira Santa e Corpus Christi do ano pedido, sem repetir o que já está no cadastro.",
+        "operationId": "ConfiguracaoDeChamadosController_gerarFeriados",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GerarFeriadosEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "criados": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["criados"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Gerar os feriados nacionais móveis do ano",
+        "tags": ["Chamados: configuração"]
+      }
+    },
+    "/v1/chamados/triagem": {
+      "get": {
+        "description": "Qualquer perfil com permissão dos chamados. Desligada por padrão; ligada, indica as pessoas e/ou o perfil que triam.",
+        "operationId": "ConfiguracaoDeChamadosController_verTriagem",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDeTriagem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ver a configuração da triagem",
+        "tags": ["Chamados: configuração"]
+      },
+      "put": {
+        "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Ligar exige ao menos uma pessoa ou um perfil de triagem (409 `triagem_sem_triador`). A exceção por área é o campo `pulaTriagem` da área.",
+        "operationId": "ConfiguracaoDeChamadosController_alterarTriagem",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarTriagemEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDeTriagem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar a triagem",
+        "tags": ["Chamados: configuração"]
+      }
+    },
     "/v1/configuracoes/carteira": {
       "get": {
         "description": "Qualquer membro da empresa ativa. `bloquearEmpresaNaoAtiva` (padrão ligado): não cadastra CNPJ que a Receita não dê como ativo (409 `empresa_nao_ativa`), só em cadastro novo. Quem vê a carteira de quem agora é o alcance de `ver` no perfil de acesso.",
@@ -15910,6 +16709,43 @@
         ],
         "additionalProperties": false
       },
+      "AlterarAreaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
+          },
+          "visivelNoPortal": {
+            "type": "boolean"
+          },
+          "metaRespostaMin": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 129600
+          },
+          "metaResolucaoMin": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 129600
+          },
+          "pulaTriagem": {
+            "type": "boolean"
+          },
+          "ativa": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarAtividadeEntrada": {
         "type": "object",
         "properties": {
@@ -16602,6 +17438,29 @@
         },
         "additionalProperties": false
       },
+      "AlterarTriagemEntrada": {
+        "type": "object",
+        "properties": {
+          "ativa": {
+            "type": "boolean"
+          },
+          "perfilId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "membroIds": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": ["ativa", "perfilId", "membroIds"],
+        "additionalProperties": false
+      },
       "AlterarVerticalEntrada": {
         "type": "object",
         "properties": {
@@ -16758,6 +17617,78 @@
           }
         },
         "required": ["empresaIds", "tagId"],
+        "additionalProperties": false
+      },
+      "AreaDeAtendimento": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string"
+          },
+          "visivelNoPortal": {
+            "type": "boolean"
+          },
+          "metaRespostaMin": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "metaResolucaoMin": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pulaTriagem": {
+            "type": "boolean"
+          },
+          "ativa": {
+            "type": "boolean"
+          },
+          "ordem": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "chaveSistema": {
+            "nullable": true,
+            "type": "string"
+          },
+          "membros": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembroDaArea"
+            }
+          },
+          "chamadosAbertos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "descricao",
+          "visivelNoPortal",
+          "metaRespostaMin",
+          "metaResolucaoMin",
+          "pulaTriagem",
+          "ativa",
+          "ordem",
+          "chaveSistema",
+          "membros",
+          "chamadosAbertos"
+        ],
         "additionalProperties": false
       },
       "Atividade": {
@@ -17371,6 +18302,42 @@
           }
         },
         "required": ["perfis"],
+        "additionalProperties": false
+      },
+      "ConfiguracaoDeTriagem": {
+        "type": "object",
+        "properties": {
+          "ativa": {
+            "type": "boolean"
+          },
+          "perfilId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilNome": {
+            "nullable": true,
+            "type": "string"
+          },
+          "membros": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "membroId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["membroId", "nome"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["ativa", "perfilId", "perfilNome", "membros"],
         "additionalProperties": false
       },
       "ConfiguracaoDeVisitas": {
@@ -18024,6 +18991,45 @@
           "pink"
         ]
       },
+      "CriarAreaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
+          },
+          "visivelNoPortal": {
+            "default": false,
+            "type": "boolean"
+          },
+          "metaRespostaMin": {
+            "default": null,
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 129600
+          },
+          "metaResolucaoMin": {
+            "default": null,
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 129600
+          },
+          "pulaTriagem": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["nome"],
+        "additionalProperties": false
+      },
       "CriarAtividadeEntrada": {
         "type": "object",
         "properties": {
@@ -18295,6 +19301,26 @@
           }
         },
         "required": ["razaoSocial"],
+        "additionalProperties": false
+      },
+      "CriarFeriadoEntrada": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string",
+            "format": "date"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "recorrente": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["data", "nome"],
         "additionalProperties": false
       },
       "CriarFunilEntrada": {
@@ -19395,6 +20421,54 @@
         ],
         "additionalProperties": false
       },
+      "DefinirExpedienteEntrada": {
+        "type": "object",
+        "properties": {
+          "faixas": {
+            "maxItems": 70,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FaixaDeExpediente"
+            }
+          }
+        },
+        "required": ["faixas"],
+        "additionalProperties": false
+      },
+      "DefinirMembrosDaAreaEntrada": {
+        "type": "object",
+        "properties": {
+          "membros": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "membroId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "gestor": {
+                  "default": false,
+                  "type": "boolean"
+                }
+              },
+              "required": ["membroId"],
+              "additionalProperties": false
+            }
+          },
+          "perfilIds": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": ["membros", "perfilIds"],
+        "additionalProperties": false
+      },
       "DefinirTagsDaEmpresaEntrada": {
         "type": "object",
         "properties": {
@@ -20382,6 +21456,48 @@
         "required": ["statusCode", "erro", "mensagem"],
         "additionalProperties": false
       },
+      "Expediente": {
+        "type": "object",
+        "properties": {
+          "faixas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FaixaDeExpediente"
+            }
+          },
+          "feriados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Feriado"
+            }
+          },
+          "fusoHorario": {
+            "type": "string"
+          }
+        },
+        "required": ["faixas", "feriados", "fusoHorario"],
+        "additionalProperties": false
+      },
+      "FaixaDeExpediente": {
+        "type": "object",
+        "properties": {
+          "diaSemana": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6
+          },
+          "inicio": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "fim": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          }
+        },
+        "required": ["diaSemana", "inicio", "fim"],
+        "additionalProperties": false
+      },
       "FecharOportunidadeEntrada": {
         "type": "object",
         "properties": {
@@ -20409,6 +21525,27 @@
           }
         },
         "required": ["status"],
+        "additionalProperties": false
+      },
+      "Feriado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "data": {
+            "type": "string",
+            "format": "date"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "recorrente": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "data", "nome", "recorrente"],
         "additionalProperties": false
       },
       "FilaConfirmarEndereco": {
@@ -20558,6 +21695,18 @@
           "ativo",
           "ordem"
         ],
+        "additionalProperties": false
+      },
+      "GerarFeriadosEntrada": {
+        "type": "object",
+        "properties": {
+          "ano": {
+            "type": "integer",
+            "minimum": 2024,
+            "maximum": 2100
+          }
+        },
+        "required": ["ano"],
         "additionalProperties": false
       },
       "HistoricoDaEmpresa": {
@@ -21811,6 +22960,38 @@
           "criadoEm",
           "criadoPor"
         ],
+        "additionalProperties": false
+      },
+      "MembroDaArea": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "membroId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "membroNome": {
+            "nullable": true,
+            "type": "string"
+          },
+          "perfilId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilNome": {
+            "nullable": true,
+            "type": "string"
+          },
+          "gestor": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "membroId", "membroNome", "perfilId", "perfilNome", "gestor"],
         "additionalProperties": false
       },
       "MembroDaEquipe": {

@@ -672,6 +672,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/chamados/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar as áreas de atendimento
+         * @description Qualquer perfil com permissão dos chamados. Quem tem `chamados.gerir_areas` vê também os membros de cada área e, com `incluirInativas=true`, as inativas; os demais veem só as ativas, sem a lista de membros.
+         */
+        get: operations["ConfiguracaoDeChamadosController_listarAreas"];
+        put?: never;
+        /**
+         * Criar uma área de atendimento
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Nome único (409 `nome_duplicado`). Metas vazias = sem meta e sem alerta de prazo.
+         */
+        post: operations["ConfiguracaoDeChamadosController_criarArea"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/areas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Excluir uma área de atendimento
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Só a área que nunca teve chamado; a usada só se inativa (409 `area_em_uso`).
+         */
+        delete: operations["ConfiguracaoDeChamadosController_excluirArea"];
+        options?: never;
+        head?: never;
+        /**
+         * Alterar uma área de atendimento
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Nome, descrição, metas, "visível no portal", "pula a triagem" e ativa.
+         */
+        patch: operations["ConfiguracaoDeChamadosController_alterarArea"];
+        trace?: never;
+    };
+    "/v1/chamados/areas/{id}/membros": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Definir quem atende a área
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Troca a lista inteira: membros (com o gestor da área marcado) e perfis de acesso. Membro ou perfil inexistente ou inativo: 400 `membro_invalido` / `perfil_invalido`.
+         */
+        put: operations["ConfiguracaoDeChamadosController_definirMembros"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/expediente": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver o expediente e os feriados
+         * @description Qualquer perfil com permissão dos chamados. Faixas de horário por dia da semana (0 = domingo), feriados e o fuso da empresa. Padrão: segunda a sexta, 8h às 18h, com os feriados nacionais.
+         */
+        get: operations["ConfiguracaoDeChamadosController_verExpediente"];
+        /**
+         * Definir o expediente
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Troca as faixas inteiras; faixas do mesmo dia não se sobrepõem (400). Sem faixa nenhuma, as metas deixam de contar prazo.
+         */
+        put: operations["ConfiguracaoDeChamadosController_definirExpediente"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/feriados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cadastrar um feriado
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Uma data só tem um feriado (409 `feriado_repetido`). `recorrente` vale todo ano no mesmo dia e mês.
+         */
+        post: operations["ConfiguracaoDeChamadosController_criarFeriado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/feriados/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Excluir um feriado
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria.
+         */
+        delete: operations["ConfiguracaoDeChamadosController_excluirFeriado"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/feriados/gerar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gerar os feriados nacionais móveis do ano
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Carnaval, Sexta-feira Santa e Corpus Christi do ano pedido, sem repetir o que já está no cadastro.
+         */
+        post: operations["ConfiguracaoDeChamadosController_gerarFeriados"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/triagem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver a configuração da triagem
+         * @description Qualquer perfil com permissão dos chamados. Desligada por padrão; ligada, indica as pessoas e/ou o perfil que triam.
+         */
+        get: operations["ConfiguracaoDeChamadosController_verTriagem"];
+        /**
+         * Alterar a triagem
+         * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Ligar exige ao menos uma pessoa ou um perfil de triagem (409 `triagem_sem_triador`). A exceção por área é o campo `pulaTriagem` da área.
+         */
+        put: operations["ConfiguracaoDeChamadosController_alterarTriagem"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/configuracoes/carteira": {
         parameters: {
             query?: never;
@@ -3098,6 +3274,15 @@ export interface components {
                 limite_pct: number;
             };
         };
+        AlterarAreaEntrada: {
+            nome?: string;
+            descricao?: string | null;
+            visivelNoPortal?: boolean;
+            metaRespostaMin?: number | null;
+            metaResolucaoMin?: number | null;
+            pulaTriagem?: boolean;
+            ativa?: boolean;
+        };
         AlterarAtividadeEntrada: {
             /** Format: uuid */
             tipoAtividadeId?: string;
@@ -3294,6 +3479,12 @@ export interface components {
             sincronizaAgenda?: boolean;
             ativo?: boolean;
         };
+        AlterarTriagemEntrada: {
+            ativa: boolean;
+            /** Format: uuid */
+            perfilId: string | null;
+            membroIds: string[];
+        };
         AlterarVerticalEntrada: {
             nome?: string;
             cor?: components["schemas"]["CorDeTag"];
@@ -3327,6 +3518,21 @@ export interface components {
             empresaIds: string[];
             /** Format: uuid */
             tagId: string;
+        };
+        AreaDeAtendimento: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            descricao: string | null;
+            visivelNoPortal: boolean;
+            metaRespostaMin: number | null;
+            metaResolucaoMin: number | null;
+            pulaTriagem: boolean;
+            ativa: boolean;
+            ordem: number;
+            chaveSistema: string | null;
+            membros: components["schemas"]["MembroDaArea"][];
+            chamadosAbertos: number;
         };
         Atividade: {
             /** Format: uuid */
@@ -3497,6 +3703,17 @@ export interface components {
             perfis: {
                 [key: string]: boolean;
             };
+        };
+        ConfiguracaoDeTriagem: {
+            ativa: boolean;
+            /** Format: uuid */
+            perfilId: string | null;
+            perfilNome: string | null;
+            membros: {
+                /** Format: uuid */
+                membroId: string;
+                nome: string;
+            }[];
         };
         ConfiguracaoDeVisitas: {
             /** @enum {string} */
@@ -3685,6 +3902,18 @@ export interface components {
         };
         /** @enum {string} */
         CorDeTag: "gray" | "red" | "orange" | "amber" | "green" | "teal" | "blue" | "indigo" | "purple" | "pink";
+        CriarAreaEntrada: {
+            nome: string;
+            descricao?: string | null;
+            /** @default false */
+            visivelNoPortal: boolean;
+            /** @default null */
+            metaRespostaMin: number | null;
+            /** @default null */
+            metaResolucaoMin: number | null;
+            /** @default false */
+            pulaTriagem: boolean;
+        };
         CriarAtividadeEntrada: {
             /** Format: uuid */
             tipoAtividadeId: string;
@@ -3766,6 +3995,13 @@ export interface components {
             cnpj?: string;
             /** Format: uuid */
             contaId?: string;
+        };
+        CriarFeriadoEntrada: {
+            /** Format: date */
+            data: string;
+            nome: string;
+            /** @default false */
+            recorrente: boolean;
         };
         CriarFunilEntrada: {
             nome: string;
@@ -4073,6 +4309,18 @@ export interface components {
                 proximos7: number;
             };
         };
+        DefinirExpedienteEntrada: {
+            faixas: components["schemas"]["FaixaDeExpediente"][];
+        };
+        DefinirMembrosDaAreaEntrada: {
+            membros: {
+                /** Format: uuid */
+                membroId: string;
+                /** @default false */
+                gestor: boolean;
+            }[];
+            perfilIds: string[];
+        };
         DefinirTagsDaEmpresaEntrada: {
             tagIds: string[];
         };
@@ -4336,6 +4584,16 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        Expediente: {
+            faixas: components["schemas"]["FaixaDeExpediente"][];
+            feriados: components["schemas"]["Feriado"][];
+            fusoHorario: string;
+        };
+        FaixaDeExpediente: {
+            diaSemana: number;
+            inicio: string;
+            fim: string;
+        };
         FecharOportunidadeEntrada: {
             /** @enum {string} */
             status: "conquistado" | "perdido" | "cancelado" | "suspenso";
@@ -4345,6 +4603,14 @@ export interface components {
             /** Format: date */
             retomarEm?: string | null;
             empresaViraCliente?: boolean;
+        };
+        Feriado: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            data: string;
+            nome: string;
+            recorrente: boolean;
         };
         FilaConfirmarEndereco: {
             itens: {
@@ -4381,6 +4647,9 @@ export interface components {
             diasAlertaParada: number | null;
             ativo: boolean;
             ordem: number;
+        };
+        GerarFeriadosEntrada: {
+            ano: number;
         };
         HistoricoDaEmpresa: {
             itens: components["schemas"]["EntradaDoHistoricoDaEmpresa"][];
@@ -4693,6 +4962,17 @@ export interface components {
             concluidoEm: string | null;
             criadoEm: string;
             criadoPor: string | null;
+        };
+        MembroDaArea: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            membroId: string | null;
+            membroNome: string | null;
+            /** Format: uuid */
+            perfilId: string | null;
+            perfilNome: string | null;
+            gestor: boolean;
         };
         MembroDaEquipe: {
             /** Format: uuid */
@@ -8395,6 +8675,678 @@ export interface operations {
             };
             /** @description Não encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_listarAreas: {
+        parameters: {
+            query?: {
+                incluirInativas?: "true" | "false";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaDeAtendimento"][];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_criarArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarAreaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaDeAtendimento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_excluirArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_alterarArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarAreaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaDeAtendimento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_definirMembros: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefinirMembrosDaAreaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaDeAtendimento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_verExpediente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Expediente"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_definirExpediente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefinirExpedienteEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Expediente"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_criarFeriado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarFeriadoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feriado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_excluirFeriado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_gerarFeriados: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GerarFeriadosEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        criados: number;
+                    };
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_verTriagem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDeTriagem"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConfiguracaoDeChamadosController_alterarTriagem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarTriagemEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDeTriagem"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
