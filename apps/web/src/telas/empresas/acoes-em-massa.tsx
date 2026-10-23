@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Menu, type ItemDeMenu } from '@/components/ui/menu'
+import { BotaoAdicionarARota } from '@/telas/rotas/adicionar-da-lista'
 import { BotaoLevarParaOffline } from '@/telas/visitas/campo/offline'
 
 /** As tags que se aplicam à mão: dos grupos ativos que não são do sistema (a Visitação, não). */
@@ -22,7 +23,7 @@ function itensDoMenu(
 
 /**
  * Barra que aparece quando há empresas marcadas na lista: quantas, "Aplicar tag" (Status substitui o
- * atual; as de seleção múltipla se somam), "Levar para offline" e "Limpar seleção".
+ * atual; as de seleção múltipla se somam), "Levar para offline", "Adicionar à rota" (G4) e "Limpar seleção".
  */
 export function BarraDeAcoesEmMassa({
   empresaIds,
@@ -58,6 +59,7 @@ export function BarraDeAcoesEmMassa({
         }
       />
       <BotaoLevarParaOffline empresaIds={empresaIds} />
+      <BotaoAdicionarARota empresaIds={empresaIds} />
       <span className="flex-1" />
       <Button variant="ghost" size="sm" onClick={aoLimpar} disabled={ocupado}>
         Limpar seleção
