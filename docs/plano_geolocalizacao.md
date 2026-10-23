@@ -1,6 +1,6 @@
 # Plano — Geolocalização e rotas (G1 e G2)
 
-> Módulo pós-MVP. Base: `docs/geo_g0_relatorio.md` (medições do G0, aprovado pelo Ale em 16/10/2026) e o plano mestre "Leadtogo — Plano de implementação: Geolocalização e rotas". Plano do G1+G2 **aprovado pelo Ale em 16/10/2026**. Plano do **G3 (check-in e relatório de visita) aprovado em 22/10/2026**, na seção 9; **G3 testado e aprovado pelo Ale em 22/10/2026**. Plano do **G4 (rotas)** na seção 10, **aprovado pelo Ale em 23/10/2026** (com no máximo 30 paradas por rota). G4a e G4b **implementados em 23/10/2026, 🧪 em teste** (`roteiro_teste_geo_g4.md`).
+> Módulo pós-MVP. Base: `docs/geo_g0_relatorio.md` (medições do G0, aprovado pelo Ale em 16/10/2026) e o plano mestre "Leadtogo — Plano de implementação: Geolocalização e rotas". Plano do G1+G2 **aprovado pelo Ale em 16/10/2026**. Plano do **G3 (check-in e relatório de visita) aprovado em 22/10/2026**, na seção 9; **G3 testado e aprovado pelo Ale em 22/10/2026**. Plano do **G4 (rotas)** na seção 10, **aprovado pelo Ale em 23/10/2026** (com no máximo 30 paradas por rota). G4a e G4b implementados em 23/10/2026; **G4 testado e aprovado pelo Ale em 23/10/2026** (`roteiro_teste_geo_g4.md`).
 > Tela de referência do mapa: `docs/referencias/geo/mapa_referencia.png` (não faz parte do protótipo congelado; o editor de rota à direita é do G4 e é ignorado no G2).
 
 ## 1. Decisões do G0 (valem para o G1)
@@ -292,4 +292,4 @@ O G0 mediu o OSRM e o VROOM em x86 com 12 CPUs; a VPS tem 4 CPUs ARM já perto d
 | 23/10/2026 | Pontos de partida e minutos por visita numa seção própria, **Configurações → Rotas** (em vez de Geolocalização e Visitas) | Claude |
 | 23/10/2026 | "Adicionar à rota" da lista de Empresas cria a rota (vazia) no servidor e acrescenta as selecionadas; o filtro do mapa entra pelo botão de rota das ferramentas (área visível + filtros) | Claude |
 | 23/10/2026 | Sem a posição atual (negada ou indisponível), a rota começa na primeira parada (aviso "Sem a posição atual") | Claude |
-
+| 23/10/2026 | Teste do G4 em produção concluído: **aprovado** (com a correção da tela da rota ↔ editor no mapa sem recarregar) | Ale |

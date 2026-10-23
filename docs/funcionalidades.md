@@ -844,7 +844,7 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 | Fase | Funcionalidade |
 |---|---|
 | 2 — Geolocalização | **G1 (geocodificação) e G2 (mapa) ✅ testados e aprovados pelo Ale em 22/10/2026, ver `plano_geolocalizacao.md` e a seção 3B.** Check-in de visita com GPS e relatório (G3) **✅ testado e aprovado pelo Ale em 22/10/2026** (seção 3C) |
-| 3 — Roteirização (G4) | **Implementado, 🧪 em teste do Ale** (plano aprovado em 23/10/2026, `plano_geolocalizacao.md`, seção 10; seção 3D; roteiro `roteiro_teste_geo_g4.md`; no máximo 30 paradas por rota). Montar roteiro do dia com base em filtros (ex.: sem visita há 90 dias + cidade), otimização da ordem (VROOM) e navegação |
+| 3 — Roteirização (G4) | **✅ testado e aprovado pelo Ale em 23/10/2026** (plano aprovado em 23/10/2026, `plano_geolocalizacao.md`, seção 10; seção 3D; roteiro `roteiro_teste_geo_g4.md`; no máximo 30 paradas por rota). Montar roteiro do dia com base em filtros (ex.: sem visita há 90 dias + cidade), otimização da ordem (VROOM) e navegação |
 | 4 — WhatsApp | Integração Evolution API: registro automático/manual de conversas, caixa de não identificados e, depois, envio pelo CRM (ver seção 13.1) |
 | 5 — n8n | Webhooks de saída, chaves de API e automações (ver seção 13.2) |
 | 6 — E-mail | Conexão Google/Microsoft + BCC, registro automático, envio pelo CRM com modelos, rastreamento de abertura/cliques (ver seção 13.3) |
