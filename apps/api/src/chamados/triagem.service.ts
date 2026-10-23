@@ -48,19 +48,19 @@ export class TriagemService {
   }
 
   /**
-   * A pessoa da requisição tria? Triagem ligada, designada (pessoa ou perfil) e com `chamados.triar`.
-   * Desligada, ninguém tria (os chamados caem direto na área).
+   * A pessoa da requisição tria? Precisa de `chamados.triar` e, com a triagem ligada, de estar designada
+   * (pessoa ou perfil de triagem). Desligada, quem tem `chamados.triar` ainda esvazia a fila que sobrou
+   * (e a dos chamados abertos sem área).
    */
   async euTrio(): Promise<boolean> {
     if (!new PermissaoService(this.ctx).pode('chamados.triar')) return false
     return this.ctx.memoizar('chamados:triador', async () => {
       const [r] = await this.ctx.db().execute<{ triador: boolean }>(sql`
-        SELECT (t.ativa AND (
-          t.perfil_id = ${this.ctx.membro.perfil?.id ?? null}::uuid
-          OR EXISTS (SELECT 1 FROM triagem_membros tm WHERE tm.membro_id = ${this.ctx.membro.id})
-        )) AS triador
+        SELECT (NOT t.ativa
+          OR coalesce(t.perfil_id = ${this.ctx.membro.perfil?.id ?? null}::uuid, false)
+          OR EXISTS (SELECT 1 FROM triagem_membros tm WHERE tm.membro_id = ${this.ctx.membro.id})) AS triador
         FROM config_triagem t WHERE t.tenant_id = ${this.ctx.tenantId}`)
-      return r?.triador ?? false
+      return r?.triador ?? true
     })
   }
 

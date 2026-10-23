@@ -3744,6 +3744,825 @@
         "tags": ["Carteira: oportunidades"]
       }
     },
+    "/v1/chamados": {
+      "get": {
+        "description": "Exige `chamados.ver`. Abas: `triagem` (só para quem tria), `pendentes`, `meus` (abertos em que a pessoa é responsável ou solicitante) e `todos`. Vê o que o alcance de `chamados.ver` permite, o que abriu e tudo das áreas em que atua. As contagens das abas vêm junto. Cada item traz os prazos de resposta e de resolução em horas úteis (ausentes sem meta na área).",
+        "operationId": "ChamadosController_listar",
+        "parameters": [
+          {
+            "name": "aba",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "todos",
+              "type": "string",
+              "enum": ["triagem", "pendentes", "meus", "todos"]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/StatusDoChamado"
+                }
+              ]
+            }
+          },
+          {
+            "name": "areaId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "prioridade",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/PrioridadeDoChamado"
+                }
+              ]
+            }
+          },
+          {
+            "name": "responsavelId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "empresaClienteId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "de",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "ate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeChamados"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar chamados",
+        "tags": ["Chamados"]
+      },
+      "post": {
+        "description": "Exige `chamados.criar`. Sem `areaId` (\"não sei a área\") o chamado vai sempre para a triagem. Com a área: ligada a triagem, vai para a triagem, salvo se a área a pular; desligada, cai direto na área como Pendente. A empresa, se informada, precisa estar na carteira da pessoa (400 `empresa_invalida`). Número sequencial por empresa (CH-0001).",
+        "operationId": "ChamadosController_abrir",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbrirChamadoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abrir um chamado",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}": {
+      "get": {
+        "description": "Exige `chamados.ver`. Conversa, anexos, linha do tempo e as ações possíveis para quem pede. As notas internas (e os eventos delas) só vêm para quem atende (`chamados.atender`). Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`.",
+        "operationId": "ChamadosController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Detalhar um chamado",
+        "tags": ["Chamados"]
+      },
+      "patch": {
+        "description": "Prioridade: quem atende o chamado ou quem tria. Área: quem tria, o gestor da área ou quem atribui; o responsável que não atende a área nova perde o chamado. Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ChamadosController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarChamadoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Mudar a prioridade ou a área",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/assumir": {
+      "post": {
+        "description": "Exige `chamados.atender`. Só o chamado sem responsável (409 `ja_atribuido`), de uma área em que a pessoa atua. Pendente passa a Em atendimento. Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ChamadosController_assumir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Assumir o chamado",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/atribuir": {
+      "post": {
+        "description": "Exige `chamados.atribuir` e ser quem tria, o gestor da área ou quem atende tudo. `responsavelId: null` tira o responsável. O responsável precisa atender a área (400 `responsavel_invalido`). Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ChamadosController_atribuir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtribuirChamadoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Atribuir o chamado a alguém",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/reabrir": {
+      "post": {
+        "description": "Exige `chamados.ver`. O solicitante ou quem atende, até 7 dias depois de Resolvido (409 `prazo_de_reabertura_vencido`; 409 `nao_resolvido` se não está resolvido). Volta a Em atendimento, com o mesmo responsável. Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ChamadosController_reabrir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reabrir um chamado resolvido",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/status": {
+      "post": {
+        "description": "Exige `chamados.atender` no alcance. Mudanças permitidas: Pendente, Em atendimento e Aguardando cliente (que pausa o prazo) entre si e para Resolvido; Resolvido só vai a Fechado (409 `transicao_invalida` nas demais). Para reabrir, use `/reabrir`. Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ChamadosController_alterarStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarStatusDoChamadoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Mudar o estado do chamado",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/triar": {
+      "post": {
+        "description": "Exige `chamados.triar` e ser quem tria (pessoa designada ou do perfil de triagem). Só em \"Aguardando triagem\" (409 `fora_da_triagem`): define a área, a prioridade e, se quiser, o responsável (que precisa atender a área, 400 `responsavel_invalido`) e o chamado vira Pendente. Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ChamadosController_triar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriarChamadoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Triar um chamado",
+        "tags": ["Chamados"]
+      }
+    },
     "/v1/chamados/areas": {
       "get": {
         "description": "Qualquer perfil com permissão dos chamados. Quem tem `chamados.gerir_areas` vê também os membros de cada área e, com `incluirInativas=true`, as inativas; os demais veem só as ativas, sem a lista de membros.",
@@ -16594,6 +17413,41 @@
       }
     },
     "schemas": {
+      "AbrirChamadoEntrada": {
+        "type": "object",
+        "properties": {
+          "assunto": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 10000
+          },
+          "areaId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "prioridade": {
+            "default": "normal",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrioridadeDoChamado"
+              }
+            ]
+          },
+          "empresaClienteId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["assunto"],
+        "additionalProperties": false
+      },
       "AceitarConviteEntrada": {
         "type": "object",
         "properties": {
@@ -16614,6 +17468,49 @@
           }
         },
         "required": ["token"],
+        "additionalProperties": false
+      },
+      "AcoesDoChamado": {
+        "type": "object",
+        "properties": {
+          "responder": {
+            "type": "boolean"
+          },
+          "notaInterna": {
+            "type": "boolean"
+          },
+          "triar": {
+            "type": "boolean"
+          },
+          "atribuir": {
+            "type": "boolean"
+          },
+          "assumir": {
+            "type": "boolean"
+          },
+          "alterarStatus": {
+            "type": "boolean"
+          },
+          "reabrir": {
+            "type": "boolean"
+          },
+          "statusPossiveis": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusDoChamado"
+            }
+          }
+        },
+        "required": [
+          "responder",
+          "notaInterna",
+          "triar",
+          "atribuir",
+          "assumir",
+          "alterarStatus",
+          "reabrir",
+          "statusPossiveis"
+        ],
         "additionalProperties": false
       },
       "AdicionarParadasEntrada": {
@@ -16804,6 +17701,23 @@
             "nullable": true,
             "type": "string",
             "maxLength": 5000
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlterarChamadoEntrada": {
+        "type": "object",
+        "properties": {
+          "prioridade": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrioridadeDoChamado"
+              }
+            ]
+          },
+          "areaId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false
@@ -17354,6 +18268,16 @@
         },
         "additionalProperties": false
       },
+      "AlterarStatusDoChamadoEntrada": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/StatusDoChamado"
+          }
+        },
+        "required": ["status"],
+        "additionalProperties": false
+      },
       "AlterarTagEntrada": {
         "type": "object",
         "properties": {
@@ -17555,6 +18479,35 @@
           "iniciadoEm",
           "concluidoEm"
         ],
+        "additionalProperties": false
+      },
+      "AnexoDoChamado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "mime": {
+            "type": "string"
+          },
+          "tamanho": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoDeAnexo"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "nome", "mime", "tamanho", "estado", "criadoEm"],
         "additionalProperties": false
       },
       "AniversarioDoContato": {
@@ -17854,6 +18807,18 @@
         ],
         "additionalProperties": false
       },
+      "AtribuirChamadoEntrada": {
+        "type": "object",
+        "properties": {
+          "responsavelId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["responsavelId"],
+        "additionalProperties": false
+      },
       "AtribuirPerfil": {
         "type": "object",
         "properties": {
@@ -17997,6 +18962,196 @@
             "additionalProperties": false
           }
         ]
+      },
+      "Chamado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusDoChamado"
+          },
+          "prioridade": {
+            "$ref": "#/components/schemas/PrioridadeDoChamado"
+          },
+          "area": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "responsavel": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "solicitante": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": ["membro", "contato"]
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["tipo", "nome"],
+            "additionalProperties": false
+          },
+          "empresaCliente": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "origem": {
+            "type": "string",
+            "enum": ["interna", "portal"]
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "statusAlteradoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "primeiraRespostaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolvidoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "prazoResposta": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrazoDoChamado"
+              }
+            ]
+          },
+          "prazoResolucao": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrazoDoChamado"
+              }
+            ]
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fechadoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "reaberturas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "mensagens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MensagemDoChamado"
+            }
+          },
+          "notasInternas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotaInterna"
+            }
+          },
+          "eventos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoDoChamado"
+            }
+          },
+          "acoes": {
+            "$ref": "#/components/schemas/AcoesDoChamado"
+          }
+        },
+        "required": [
+          "id",
+          "numero",
+          "codigo",
+          "assunto",
+          "status",
+          "prioridade",
+          "area",
+          "responsavel",
+          "solicitante",
+          "empresaCliente",
+          "origem",
+          "criadoEm",
+          "atualizadoEm",
+          "statusAlteradoEm",
+          "primeiraRespostaEm",
+          "resolvidoEm",
+          "prazoResposta",
+          "prazoResolucao",
+          "descricao",
+          "fechadoEm",
+          "reaberturas",
+          "mensagens",
+          "notasInternas",
+          "eventos",
+          "acoes"
+        ],
+        "additionalProperties": false
       },
       "CheckinDaVisita": {
         "type": "object",
@@ -21456,6 +22611,120 @@
         "required": ["statusCode", "erro", "mensagem"],
         "additionalProperties": false
       },
+      "EstadoDeAnexo": {
+        "type": "string",
+        "enum": ["pendente_varredura", "limpo", "infectado"]
+      },
+      "EventoDoChamado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "aberto",
+              "triado",
+              "atribuido",
+              "assumido",
+              "status_alterado",
+              "prioridade_alterada",
+              "area_alterada",
+              "primeira_resposta",
+              "mensagem",
+              "nota_interna",
+              "anexo",
+              "resolvido",
+              "reaberto",
+              "fechado"
+            ]
+          },
+          "ator": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": ["membro", "contato", "sistema"]
+              },
+              "nome": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["tipo", "nome"],
+            "additionalProperties": false
+          },
+          "statusDe": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatusDoChamado"
+              }
+            ]
+          },
+          "statusPara": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatusDoChamado"
+              }
+            ]
+          },
+          "areaDe": {
+            "nullable": true,
+            "type": "string"
+          },
+          "areaPara": {
+            "nullable": true,
+            "type": "string"
+          },
+          "responsavelDe": {
+            "nullable": true,
+            "type": "string"
+          },
+          "responsavelPara": {
+            "nullable": true,
+            "type": "string"
+          },
+          "prioridadeDe": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrioridadeDoChamado"
+              }
+            ]
+          },
+          "prioridadePara": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrioridadeDoChamado"
+              }
+            ]
+          },
+          "em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "ator",
+          "statusDe",
+          "statusPara",
+          "areaDe",
+          "areaPara",
+          "responsavelDe",
+          "responsavelPara",
+          "prioridadeDe",
+          "prioridadePara",
+          "em"
+        ],
+        "additionalProperties": false
+      },
       "Expediente": {
         "type": "object",
         "properties": {
@@ -21961,6 +23230,154 @@
           "emAberto",
           "situacaoNaoVerificada",
           "editavel"
+        ],
+        "additionalProperties": false
+      },
+      "ItemDeChamado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusDoChamado"
+          },
+          "prioridade": {
+            "$ref": "#/components/schemas/PrioridadeDoChamado"
+          },
+          "area": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "responsavel": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "solicitante": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": ["membro", "contato"]
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["tipo", "nome"],
+            "additionalProperties": false
+          },
+          "empresaCliente": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "origem": {
+            "type": "string",
+            "enum": ["interna", "portal"]
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "statusAlteradoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "primeiraRespostaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolvidoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "prazoResposta": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrazoDoChamado"
+              }
+            ]
+          },
+          "prazoResolucao": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrazoDoChamado"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "numero",
+          "codigo",
+          "assunto",
+          "status",
+          "prioridade",
+          "area",
+          "responsavel",
+          "solicitante",
+          "empresaCliente",
+          "origem",
+          "criadoEm",
+          "atualizadoEm",
+          "statusAlteradoEm",
+          "primeiraRespostaEm",
+          "resolvidoEm",
+          "prazoResposta",
+          "prazoResolucao"
         ],
         "additionalProperties": false
       },
@@ -22478,6 +23895,51 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina", "contagens"],
+        "additionalProperties": false
+      },
+      "ListaDeChamados": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeChamado"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "abas": {
+            "type": "object",
+            "properties": {
+              "triagem": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "pendentes": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "meus": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "todos": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["triagem", "pendentes", "meus", "todos"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["itens", "total", "abas"],
         "additionalProperties": false
       },
       "ListaDeContatos": {
@@ -23070,6 +24532,48 @@
         "required": ["id", "nome", "ativo", "temLogin"],
         "additionalProperties": false
       },
+      "MensagemDoChamado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "autor": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": ["membro", "contato"]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["tipo", "id", "nome"],
+            "additionalProperties": false
+          },
+          "corpo": {
+            "type": "string"
+          },
+          "anexos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnexoDoChamado"
+            }
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "autor", "corpo", "anexos", "criadoEm"],
+        "additionalProperties": false
+      },
       "MeResposta": {
         "type": "object",
         "properties": {
@@ -23237,6 +24741,38 @@
           }
         },
         "required": ["faseId"],
+        "additionalProperties": false
+      },
+      "NotaInterna": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "autor": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "corpo": {
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "autor", "corpo", "criadoEm"],
         "additionalProperties": false
       },
       "NovaOrdemEntrada": {
@@ -24756,6 +26292,37 @@
         "required": ["latitude", "longitude"],
         "additionalProperties": false
       },
+      "PrazoDoChamado": {
+        "type": "object",
+        "properties": {
+          "metaMin": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "consumidoMin": {
+            "type": "number"
+          },
+          "venceEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "atrasado": {
+            "type": "boolean"
+          },
+          "cumpridoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "pausado": {
+            "type": "boolean"
+          }
+        },
+        "required": ["metaMin", "consumidoMin", "venceEm", "atrasado", "cumpridoEm", "pausado"],
+        "additionalProperties": false
+      },
       "Preferencias": {
         "type": "object",
         "properties": {
@@ -25086,6 +26653,10 @@
         },
         "required": ["usuarioId", "contaId", "tenantId", "membroId", "verificacaoEmailPendente"],
         "additionalProperties": false
+      },
+      "PrioridadeDoChamado": {
+        "type": "string",
+        "enum": ["baixa", "normal", "alta", "urgente"]
       },
       "PularParadaEntrada": {
         "type": "object",
@@ -26104,6 +27675,17 @@
         "required": ["id", "nome", "cor", "descricao", "ativo", "ordem"],
         "additionalProperties": false
       },
+      "StatusDoChamado": {
+        "type": "string",
+        "enum": [
+          "aguardando_triagem",
+          "pendente",
+          "em_atendimento",
+          "aguardando_cliente",
+          "resolvido",
+          "fechado"
+        ]
+      },
       "Tag": {
         "type": "object",
         "properties": {
@@ -26279,6 +27861,29 @@
           "ordem",
           "chaveSistema"
         ],
+        "additionalProperties": false
+      },
+      "TriarChamadoEntrada": {
+        "type": "object",
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prioridade": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrioridadeDoChamado"
+              }
+            ]
+          },
+          "responsavelId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["areaId"],
         "additionalProperties": false
       },
       "ValoresDoTipoDaImportacao": {
