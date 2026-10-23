@@ -148,7 +148,8 @@ export function TelaDaRota() {
   const [ocupado, setOcupado] = useState(false)
 
   const rota = useQuery({
-    queryKey: ['rotas', 'rota', rotaId],
+    // chave própria: o editor do mapa guarda a rota em ['rotas', 'rota', id] num formato diferente (sem `doAparelho`)
+    queryKey: ['rotas', 'execucao', rotaId],
     networkMode: 'always',
     retry: false,
     queryFn: async () => {
@@ -167,7 +168,8 @@ export function TelaDaRota() {
   })
 
   const atualizar = (r: Rota) => {
-    queryClient.setQueryData(['rotas', 'rota', rotaId], { rota: r, doAparelho: false })
+    queryClient.setQueryData(['rotas', 'execucao', rotaId], { rota: r, doAparelho: false })
+    queryClient.setQueryData(['rotas', 'rota', rotaId], r)
     void queryClient.invalidateQueries({ queryKey: ['rotas', 'lista'] })
     void queryClient.invalidateQueries({ queryKey: ['rotas', 'hoje'] })
   }

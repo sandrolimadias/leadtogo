@@ -255,3 +255,24 @@ describe('Rotas: editor no mapa', () => {
     expect(within(editor).getByRole('button', { name: /Otimizar ordem/ })).toBeDisabled()
   })
 })
+
+describe('Rotas: da tela da rota para o mapa e de volta (sem recarregar)', () => {
+  it('as duas telas leem a mesma rota sem quebrar (o cache de uma não serve à outra)', async () => {
+    const s = servicos(true)
+    const usuario = userEvent.setup()
+    const { historico } = renderizar(s, `/rotas/${id(500)}`)
+    expect(
+      await screen.findByRole('heading', { name: 'Grande Vitória · segunda' }),
+    ).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('link', { name: /Editar no mapa/ }))
+    const editor = await screen.findByRole('region', { name: 'Editor de rota' })
+    expect(within(editor).getByText('Editando R-0151')).toBeInTheDocument()
+
+    historico.push(`/rotas/${id(500)}`)
+    expect(
+      await screen.findByRole('heading', { name: 'Grande Vitória · segunda' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Paradas' })).toHaveTextContent('Alfa Ltda')
+  })
+})
