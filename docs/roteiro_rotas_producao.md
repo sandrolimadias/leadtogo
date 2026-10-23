@@ -4,7 +4,7 @@
 > **Terminal do Coolify:** cole **uma linha por vez**. O `read -rp` engole a linha seguinte quando se cola um bloco; por isso as variáveis vão direto (`D=AAAAMMDD`).
 > **Medição do passo 10.0 (23/10/2026, na VPS ARM):** 30 paradas, pior caso **0,11 s**; memória: OSRM **286 MiB de 512**, VROOM **50 MiB de 256**. A otimização responde na própria requisição (não precisa do worker).
 
-**Onde você está:** a pilha já subiu e foi medida (parte A, feita em 23/10/2026). Falta a **parte B** (ligar as rotas no app), depois do deploy do G4. A parte A fica como registro e para reinstalar.
+**Situação:** a pilha subiu e foi medida (parte A) e a otimização foi **ligada em produção pelo Ale (parte B), funcionando** (23/10/2026). As duas partes ficam como registro e para reinstalar.
 
 ---
 

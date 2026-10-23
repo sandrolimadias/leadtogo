@@ -293,3 +293,4 @@ O G0 mediu o OSRM e o VROOM em x86 com 12 CPUs; a VPS tem 4 CPUs ARM já perto d
 | 23/10/2026 | "Adicionar à rota" da lista de Empresas cria a rota (vazia) no servidor e acrescenta as selecionadas; o filtro do mapa entra pelo botão de rota das ferramentas (área visível + filtros) | Claude |
 | 23/10/2026 | Sem a posição atual (negada ou indisponível), a rota começa na primeira parada (aviso "Sem a posição atual") | Claude |
 | 23/10/2026 | Teste do G4 em produção concluído: **aprovado** (com a correção da tela da rota ↔ editor no mapa sem recarregar) | Ale |
+| 23/10/2026 | Otimização das rotas **ligada em produção** (pilha `leadtogo-rotas` com os nomes novos, rede predefinida, `VROOM_URL`/`OSRM_URL` na API): funcionando | Ale |

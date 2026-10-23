@@ -209,7 +209,7 @@ crm/
 
 ## 10. Geolocalização e roteirização (G1 a G4, entregues)
 
-> **Como ficou (23/10/2026):** a tabela abaixo é a previsão original. O que foi implementado está em `plano_geolocalizacao.md` e `geo_g0_relatorio.md`: **CNEFE do IBGE no Postgres + Nominatim local só do ES** (o Google foi descartado no G0 pelos termos de uso), **PMTiles do ES** num bucket público do Garage, **MapLibre**, e **OSRM + VROOM** na pilha `leadtogo-rotas` do Coolify (`scripts/geo/rotas-compose.yml`; preparo no WSL, `geo_atualizacao.md`, seção 3A; ligação na API por `VROOM_URL`/`OSRM_URL`, `roteiro_rotas_producao.md`). **Rastreamento em campo não existe** (LGPD: a posição do vendedor só se grava no check-in).
+> **Como ficou (23/10/2026):** a tabela abaixo é a previsão original. O que foi implementado está em `plano_geolocalizacao.md` e `geo_g0_relatorio.md`: **CNEFE do IBGE no Postgres + Nominatim local só do ES** (o Google foi descartado no G0 pelos termos de uso), **PMTiles do ES** num bucket público do Garage, **MapLibre**, e **OSRM + VROOM** na pilha `leadtogo-rotas` do Coolify (`scripts/geo/rotas-compose.yml`; preparo no WSL, `geo_atualizacao.md`, seção 3A; ligação na API por `VROOM_URL`/`OSRM_URL`, `roteiro_rotas_producao.md`; **ligada em produção em 23/10/2026**). **Rastreamento em campo não existe** (LGPD: a posição do vendedor só se grava no check-in).
 
 
 | Função | Ferramenta |
