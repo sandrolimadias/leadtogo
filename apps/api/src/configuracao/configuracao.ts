@@ -172,6 +172,19 @@ const esquema = z
     S3_FORCE_PATH_STYLE: booleano.default(true),
     S3_ACCESS_KEY: z.string().min(1),
     S3_SECRET_KEY: z.string().min(1),
+    /**
+     * Endereço do Garage que o NAVEGADOR alcança (ex.: https://files.crm.aledias.com.br), usado só para assinar
+     * as URLs de envio e de download dos anexos dos chamados. Sem ele vale o `S3_ENDPOINT` (desenvolvimento).
+     * O bucket precisa de CORS para a origem do app (docs/configuracao_tecnologia.md, seção 11.7).
+     */
+    S3_PUBLIC_ENDPOINT: opcional(url(['http:', 'https:'])),
+
+    // Antivírus dos anexos (Fase 2): ClamAV (clamd) em rede interna. Sem CLAMAV_HOST os anexos ficam
+    // desligados ("Envio de anexos ainda não configurado"): nada é aceito sem passar pela varredura.
+    CLAMAV_HOST: opcional(z.string().min(1)),
+    CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
+    /** Prazo de uma varredura (envio do arquivo ao clamd e resposta), em milissegundos */
+    CLAMAV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(120_000),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && !env.MAPA_BASE_URL) {

@@ -16,6 +16,8 @@ import { RelayDoOutbox } from './outbox/relay.js'
 import { ExecutorDaImportacao } from '../importacao/executor.js'
 import { enfileirarBloco, type JobDeImportacao } from '../importacao/fila.js'
 import { EnviadorSmtp } from '../email/enviador.js'
+import { criarClienteS3 } from '../infra/s3.js'
+import { processadorDeAntivirus } from '../chamados/processador-antivirus.js'
 import { processadorDaGeocodificacao } from '../geolocalizacao/processador.js'
 import { ReceitaService, provedoresPadrao } from '../receita/receita.service.js'
 import { chavesDe } from '../seguranca/cifra.js'
@@ -71,6 +73,14 @@ export async function iniciarWorker(deps: {
   }
 
   filas.consumir(FILAS.notificacoes, processadorDeNotificacao(banco))
+
+  // Antivírus dos anexos dos chamados (Fase 2): poucos por vez, o clamd é pesado
+  const armazenamento = criarClienteS3(config)
+  filas.consumir(
+    FILAS.antivirus,
+    processadorDeAntivirus({ config, banco, s3: armazenamento, log }),
+    { concorrencia: 2 },
+  )
 
   // Manutenção agendada (partições da auditoria e limpezas), via funções SECURITY DEFINER do banco
   filas.consumir(FILAS.manutencao, processadorDeManutencao(banco, log, filas), { concorrencia: 1 })
@@ -159,7 +169,9 @@ export async function iniciarWorker(deps: {
     estado,
     encerrar: async () => {
       servidorDeSaude.close()
-      return filas.encerrar(config.WORKER_ENCERRAMENTO_S * 1000)
+      const terminou = await filas.encerrar(config.WORKER_ENCERRAMENTO_S * 1000)
+      armazenamento.destroy()
+      return terminou
     },
   }
 }

@@ -720,6 +720,66 @@ export interface paths {
         patch: operations["ChamadosController_alterar"];
         trace?: never;
     };
+    "/v1/chamados/{id}/anexos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pedir o envio de um anexo
+         * @description Exige `chamados.ver` e poder responder no chamado. Devolve uma URL pré-assinada (PUT, 15 minutos) para enviar o arquivo direto ao armazenamento, de até 25 MB. Depois do PUT, chame `/confirmar`. Sem antivírus configurado: 503 `anexos_indisponiveis`. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.
+         */
+        post: operations["ConversaDoChamadoController_pedirEnvio"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/{id}/anexos/{anexoId}/confirmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar o envio do anexo
+         * @description Exige `chamados.ver`. Confere o arquivo no armazenamento (409 `anexo_nao_enviado` se ainda não chegou; 400 `anexo_invalido` se o tamanho não bate, e o arquivo é descartado) e manda o antivírus varrer. O anexo nasce "pendente_varredura" e só pode ser baixado depois de "limpo". Idempotente. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.
+         */
+        post: operations["ConversaDoChamadoController_confirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/{id}/anexos/{anexoId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Baixar um anexo
+         * @description Exige `chamados.ver`. URL pré-assinada de 5 minutos, sempre como download. Só anexo de uma mensagem e "limpo": "pendente_varredura" dá 409 `anexo_em_verificacao`; "infectado" dá 409 `anexo_bloqueado`. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.
+         */
+        get: operations["ConversaDoChamadoController_baixar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/chamados/{id}/assumir": {
         parameters: {
             query?: never;
@@ -754,6 +814,46 @@ export interface paths {
          * @description Exige `chamados.atribuir` e ser quem tria, o gestor da área ou quem atende tudo. `responsavelId: null` tira o responsável. O responsável precisa atender a área (400 `responsavel_invalido`). Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.
          */
         post: operations["ChamadosController_atribuir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/{id}/mensagens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Responder na conversa do chamado
+         * @description Exige `chamados.ver`. Quem atende o chamado ou o solicitante; até 5 anexos já enviados e confirmados por quem escreve (400 `anexo_invalido`). Chamado resolvido: 409 `chamado_resolvido` (reabra antes); fechado: 409 `chamado_fechado`. A primeira resposta da equipe marca a métrica de primeira resposta; responder em Pendente passa a Em atendimento; o solicitante que responde em Aguardando cliente devolve o chamado ao atendimento. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.
+         */
+        post: operations["ConversaDoChamadoController_enviar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/{id}/notas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fazer uma nota interna
+         * @description Exige `chamados.atender`. A nota é só da equipe: nunca entra na conversa nem aparece para o solicitante. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.
+         */
+        post: operations["ConversaDoChamadoController_anotar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4274,6 +4374,9 @@ export interface components {
             nome: string;
             aplicaA: ("perdido" | "cancelado" | "suspenso")[];
         };
+        CriarNotaInternaEntrada: {
+            corpo: string;
+        };
         CriarOportunidadeEntrada: {
             titulo: string;
             /** Format: uuid */
@@ -4574,6 +4677,12 @@ export interface components {
             foraDoLimite: boolean;
             bloqueado: boolean;
         };
+        DownloadDeAnexo: {
+            /** Format: uri */
+            url: string;
+            /** Format: date-time */
+            expiraEm: string;
+        };
         DuplicarPerfil: {
             nome: string;
         };
@@ -4811,6 +4920,22 @@ export interface components {
             acao: "criada" | "fase" | "status" | "reaberta";
             titulo: string;
             detalhe: string | null;
+        };
+        EnviarMensagemEntrada: {
+            corpo: string;
+            /** @default [] */
+            anexoIds: string[];
+        };
+        EnvioDeAnexo: {
+            /** Format: uuid */
+            anexoId: string;
+            /** Format: uri */
+            url: string;
+            cabecalhos: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            expiraEm: string;
         };
         Erro: {
             statusCode: number;
@@ -5688,6 +5813,11 @@ export interface components {
             jaNaRota: number;
             ignoradas: number;
             excedentes: number;
+        };
+        PedirEnvioDeAnexoEntrada: {
+            nome: string;
+            mime: string;
+            tamanho: number;
         };
         PerfilDeAcesso: {
             /** Format: uuid */
@@ -9315,6 +9445,222 @@ export interface operations {
             };
         };
     };
+    ConversaDoChamadoController_pedirEnvio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedirEnvioDeAnexoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvioDeAnexo"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConversaDoChamadoController_confirmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                anexoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnexoDoChamado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConversaDoChamadoController_baixar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                anexoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadDeAnexo"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     ChamadosController_assumir: {
         parameters: {
             query?: never;
@@ -9435,6 +9781,139 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConversaDoChamadoController_enviar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarMensagemEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Chamado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConversaDoChamadoController_anotar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarNotaInternaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Chamado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

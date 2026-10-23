@@ -129,7 +129,7 @@ export class ChamadosService {
 
   // ---- Leitura ----
 
-  private paraAcesso(l: LinhaDoChamado): ChamadoParaAcesso {
+  paraAcesso(l: LinhaDoChamado): ChamadoParaAcesso {
     return {
       id: l.id,
       status: l.status,

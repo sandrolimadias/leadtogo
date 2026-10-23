@@ -60,6 +60,30 @@ services:
       timeout: 5s
       retries: 20
 
+  # Antivírus dos anexos dos chamados (ClamAV/clamd, porta 3310). Na primeira subida o freshclam baixa as
+  # assinaturas (alguns minutos, ~300 MB): o healthcheck só fica verde depois disso. Os dados ficam em
+  # docker/.data/clamav. Precisa de ~1,5 GB de RAM (o clamd carrega as assinaturas inteiras).
+  # Fica num perfil à parte (`antivirus`): o `pnpm dev:up` o sobe sem esperar a primeira carga das assinaturas.
+  clamav:
+    image: clamav/clamav:1.4
+    profiles: [antivirus]
+    restart: unless-stopped
+    environment:
+      CLAMAV_NO_FRESHCLAMD: 'false'
+      # Os anexos aceitam até 25 MB: o clamd precisa aceitar fluxos desse tamanho
+      CLAMD_CONF_StreamMaxLength: 30M
+      CLAMD_CONF_MaxFileSize: 30M
+    ports:
+      - '127.0.0.1:3310:3310'
+    volumes:
+      - ./.data/clamav:/var/lib/clamav
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/clamdcheck.sh']
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 300s
+
   # Servidor SMTP de desenvolvimento: captura os e-mails (recuperação de senha, verificação,
   # convites) sem enviar nada. Interface e API em http://localhost:8025. Não guarda em disco.
   mailpit:

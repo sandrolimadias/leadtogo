@@ -147,11 +147,11 @@ export class AcessoDeChamados {
     return this.podeAtender(c)
   }
 
-  /** Responder na conversa: quem atende ou o solicitante do chamado (que responde às perguntas da equipe). */
+  /** Responder na conversa: quem atende ou o solicitante do chamado (que complementa e responde à equipe). */
   async podeResponder(c: ChamadoParaAcesso): Promise<boolean> {
     if (c.status === 'fechado' || c.status === 'resolvido') return false
     if (await this.podeAtender(c)) return true
-    return c.solicitanteMembroId === this.euId && c.status !== 'aguardando_triagem'
+    return c.solicitanteMembroId === this.euId
   }
 
   /** Notas internas: só quem atende (qualquer chamado que veja, até depois de fechado). */

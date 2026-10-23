@@ -15,6 +15,8 @@ import { enfileirarBloco } from '../../importacao/fila.js'
 import { EVENTO_GEOCODIFICAR_EMPRESA } from '../../geolocalizacao/evento.js'
 import { EVENTO_EXECUTAR_LOTE_GEO } from '../../geolocalizacao/evento-lote.js'
 import { enfileirarBlocoDoLote, enfileirarEmpresa } from '../../geolocalizacao/fila.js'
+import { EVENTO_VARRER_ANEXO } from '../../chamados/evento-anexo.js'
+import { enfileirarVarredura } from '../../chamados/fila-antivirus.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
 
@@ -136,6 +138,16 @@ export function manipuladoresPadrao(
       loteId,
       raiz: evento.id,
       bloco: 0,
+    })
+  }
+
+  /** Anexo de chamado enviado ao Garage: vira um job de varredura (id do job = id do evento: reentrega não duplica). */
+  manipuladores[EVENTO_VARRER_ANEXO] = async (evento, { filas }) => {
+    const { anexoId } = evento.payload as { anexoId: string }
+    await enfileirarVarredura(filas.fila(FILAS.antivirus), {
+      tenantId: evento.tenantId,
+      anexoId,
+      eventoId: evento.id,
     })
   }
 

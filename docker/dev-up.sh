@@ -15,5 +15,8 @@ fi
 COMPOSE=(docker compose --env-file .env -f docker/compose.dev.yml)
 
 "${COMPOSE[@]}" up -d --wait
+# Antivírus dos anexos dos chamados: sobe sem esperar (a primeira carga das assinaturas leva alguns minutos;
+# `docker compose -f docker/compose.dev.yml ps clamav` mostra quando fica "healthy")
+"${COMPOSE[@]}" --profile antivirus up -d clamav
 "${COMPOSE[@]}" exec -T -e PGUSER=postgres -e SQL_DIR=/sql postgres bash /scripts/garantir-bancos.sh
 bash docker/garage/init.sh

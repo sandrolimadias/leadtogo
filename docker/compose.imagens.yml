@@ -26,6 +26,8 @@ x-api: &api
     BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?}
     TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?}
     SMTP_HOST: mailpit
+    # antivírus dos anexos dos chamados (ClamAV do compose de desenvolvimento)
+    CLAMAV_HOST: clamav
     SMTP_PORT: '1025'
     # o mapa base vem do bucket público (obrigatória em produção); aqui o Playwright atende esse domínio com o
     # arquivo de teste (apps/web/scripts/mapa-de-teste.mjs)

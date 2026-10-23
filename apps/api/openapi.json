@@ -4153,6 +4153,282 @@
         "tags": ["Chamados"]
       }
     },
+    "/v1/chamados/{id}/anexos": {
+      "post": {
+        "description": "Exige `chamados.ver` e poder responder no chamado. Devolve uma URL pré-assinada (PUT, 15 minutos) para enviar o arquivo direto ao armazenamento, de até 25 MB. Depois do PUT, chame `/confirmar`. Sem antivírus configurado: 503 `anexos_indisponiveis`. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ConversaDoChamadoController_pedirEnvio",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedirEnvioDeAnexoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvioDeAnexo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Pedir o envio de um anexo",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/anexos/{anexoId}/confirmar": {
+      "post": {
+        "description": "Exige `chamados.ver`. Confere o arquivo no armazenamento (409 `anexo_nao_enviado` se ainda não chegou; 400 `anexo_invalido` se o tamanho não bate, e o arquivo é descartado) e manda o antivírus varrer. O anexo nasce \"pendente_varredura\" e só pode ser baixado depois de \"limpo\". Idempotente. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ConversaDoChamadoController_confirmar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "anexoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnexoDoChamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Confirmar o envio do anexo",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/anexos/{anexoId}/download": {
+      "get": {
+        "description": "Exige `chamados.ver`. URL pré-assinada de 5 minutos, sempre como download. Só anexo de uma mensagem e \"limpo\": \"pendente_varredura\" dá 409 `anexo_em_verificacao`; \"infectado\" dá 409 `anexo_bloqueado`. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ConversaDoChamadoController_baixar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "anexoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadDeAnexo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Baixar um anexo",
+        "tags": ["Chamados"]
+      }
+    },
     "/v1/chamados/{id}/assumir": {
       "post": {
         "description": "Exige `chamados.atender`. Só o chamado sem responsável (409 `ja_atribuido`), de uma área em que a pessoa atua. Pendente passa a Em atendimento. Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
@@ -4310,6 +4586,176 @@
           }
         },
         "summary": "Atribuir o chamado a alguém",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/mensagens": {
+      "post": {
+        "description": "Exige `chamados.ver`. Quem atende o chamado ou o solicitante; até 5 anexos já enviados e confirmados por quem escreve (400 `anexo_invalido`). Chamado resolvido: 409 `chamado_resolvido` (reabra antes); fechado: 409 `chamado_fechado`. A primeira resposta da equipe marca a métrica de primeira resposta; responder em Pendente passa a Em atendimento; o solicitante que responde em Aguardando cliente devolve o chamado ao atendimento. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ConversaDoChamadoController_enviar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarMensagemEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Responder na conversa do chamado",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/notas": {
+      "post": {
+        "description": "Exige `chamados.atender`. A nota é só da equipe: nunca entra na conversa nem aparece para o solicitante. Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ConversaDoChamadoController_anotar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarNotaInternaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Fazer uma nota interna",
         "tags": ["Chamados"]
       }
     },
@@ -20596,6 +21042,18 @@
         "required": ["nome", "aplicaA"],
         "additionalProperties": false
       },
+      "CriarNotaInternaEntrada": {
+        "type": "object",
+        "properties": {
+          "corpo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": ["corpo"],
+        "additionalProperties": false
+      },
       "CriarOportunidadeEntrada": {
         "type": "object",
         "properties": {
@@ -21677,6 +22135,21 @@
         ],
         "additionalProperties": false
       },
+      "DownloadDeAnexo": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["url", "expiraEm"],
+        "additionalProperties": false
+      },
       "DuplicarPerfil": {
         "type": "object",
         "properties": {
@@ -22568,6 +23041,52 @@
           }
         },
         "required": ["id", "em", "por", "acao", "titulo", "detalhe"],
+        "additionalProperties": false
+      },
+      "EnviarMensagemEntrada": {
+        "type": "object",
+        "properties": {
+          "corpo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "anexoIds": {
+            "default": [],
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": ["corpo"],
+        "additionalProperties": false
+      },
+      "EnvioDeAnexo": {
+        "type": "object",
+        "properties": {
+          "anexoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "cabecalhos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["anexoId", "url", "cabecalhos", "expiraEm"],
         "additionalProperties": false
       },
       "Erro": {
@@ -25863,6 +26382,28 @@
           }
         },
         "required": ["rota", "adicionadas", "jaNaRota", "ignoradas", "excedentes"],
+        "additionalProperties": false
+      },
+      "PedirEnvioDeAnexoEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "mime": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "tamanho": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 26214400
+          }
+        },
+        "required": ["nome", "mime", "tamanho"],
         "additionalProperties": false
       },
       "PerfilDeAcesso": {
