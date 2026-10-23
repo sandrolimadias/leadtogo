@@ -158,7 +158,7 @@ export class ChamadosService {
     return { ...this.paraAcesso(l), numero: l.numero }
   }
 
-  private async mudancasDe(ids: string[]): Promise<Map<string, MudancaDeEstado[]>> {
+  async mudancasDe(ids: string[]): Promise<Map<string, MudancaDeEstado[]>> {
     const mapa = new Map<string, MudancaDeEstado[]>()
     if (ids.length === 0) return mapa
     const linhas = await this.ctx.db().execute<{
@@ -243,8 +243,10 @@ export class ChamadosService {
     }))
   }
 
-  async listar(c: ConsultaDeChamados): Promise<ListaDeChamados> {
-    const db = this.ctx.db()
+  /** A condição da consulta (visibilidade, aba e filtros) e as condições de cada aba, para as contagens. */
+  private async filtros(
+    c: ConsultaDeChamados,
+  ): Promise<{ onde: SQL; visiveis: SQL; aba: (nome: ConsultaDeChamados['aba']) => SQL }> {
     const visiveis = await this.acesso.visiveis()
     const eu = this.ctx.membro.id
     const aba = (nome: ConsultaDeChamados['aba']): SQL => {
@@ -273,6 +275,20 @@ export class ChamadosService {
       )
     }
     const onde = sql.join(filtros, sql` AND `)
+    return { onde, visiveis, aba }
+  }
+
+  /** Os chamados da consulta, sem paginação (até `limite`), para a exportação. */
+  async paraExportar(c: ConsultaDeChamados, limite: number): Promise<ItemDeChamado[]> {
+    const { onde } = await this.filtros(c)
+    const linhas = await this.ctx.db().execute<LinhaDoChamado>(sql`
+      SELECT ${COLUNAS} ${JUNCOES} WHERE ${onde} ORDER BY c.numero DESC LIMIT ${limite}`)
+    return this.paraItens(linhas)
+  }
+
+  async listar(c: ConsultaDeChamados): Promise<ListaDeChamados> {
+    const db = this.ctx.db()
+    const { onde, visiveis, aba } = await this.filtros(c)
     const ordem =
       c.aba === 'triagem' || c.aba === 'pendentes'
         ? sql`${PESO_DA_PRIORIDADE} DESC, c.criado_em ASC`

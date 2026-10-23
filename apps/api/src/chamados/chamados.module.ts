@@ -9,6 +9,8 @@ import { ConfiguracaoDeChamadosController } from './configuracao.controller.js'
 import { ConversaDoChamadoController } from './conversa.controller.js'
 import { ExpedienteService } from './expediente.service.js'
 import { MensagensService } from './mensagens.service.js'
+import { MetricasDeChamadosController } from './metricas.controller.js'
+import { MetricasService } from './metricas.service.js'
 import { TriagemService } from './triagem.service.js'
 
 /**
@@ -16,7 +18,12 @@ import { TriagemService } from './triagem.service.js'
  * (`/chamados/areas` não pode cair em `/chamados/:id`).
  */
 @Module({
-  controllers: [ConfiguracaoDeChamadosController, ChamadosController, ConversaDoChamadoController],
+  controllers: [
+    ConfiguracaoDeChamadosController,
+    MetricasDeChamadosController,
+    ChamadosController,
+    ConversaDoChamadoController,
+  ],
   providers: [
     AreasService,
     TriagemService,
@@ -25,6 +32,7 @@ import { TriagemService } from './triagem.service.js'
     ChamadosService,
     MensagensService,
     AnexosService,
+    MetricasService,
   ],
   exports: [
     AreasService,

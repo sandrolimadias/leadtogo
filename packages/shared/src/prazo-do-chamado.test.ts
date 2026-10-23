@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { EXPEDIENTE_PADRAO, type CalendarioUtil } from './chamados-prazo.js'
-import { calcularPrazo, intervalosAtivos } from './prazo-do-chamado.js'
+import { calcularPrazo, intervalosAtivos, minutosConsumidos } from './prazo-do-chamado.js'
 
 const cal: CalendarioUtil = { ...EXPEDIENTE_PADRAO, feriados: [], fusoHorario: 'America/Sao_Paulo' }
 // 11:00Z = 08:00 em São Paulo (UTC-3). Quinta 22/10/2026.
@@ -135,5 +135,19 @@ describe('calcularPrazo', () => {
       calendario: { ...cal, faixas: [] },
     })
     expect(r).toMatchObject({ venceEm: null, atrasado: false, consumidoMin: 0 })
+  })
+})
+
+describe('minutosConsumidos', () => {
+  it('conta só o relógio que correu até o instante pedido, sem a pausa', () => {
+    const mudancas = [
+      { em: z('22', '11:00'), statusPara: 'pendente' as const },
+      { em: z('22', '12:00'), statusPara: 'aguardando_cliente' as const },
+      { em: z('22', '15:00'), statusPara: 'em_atendimento' as const },
+    ]
+    // 08h-09h (60) + 12h-13h30 locais (90)
+    expect(minutosConsumidos({ mudancas, ate: z('22', '16:30'), calendario: cal })).toBe(150)
+    // pedindo antes da pausa
+    expect(minutosConsumidos({ mudancas, ate: z('22', '11:30'), calendario: cal })).toBe(30)
   })
 })

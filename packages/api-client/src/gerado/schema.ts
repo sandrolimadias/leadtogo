@@ -1012,6 +1012,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/chamados/exportar.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Exportar os chamados (CSV)
+         * @description Exige `chamados.exportar`. Um CSV (`;`, UTF-8 com BOM) com os chamados que a pessoa vê, com os mesmos filtros da lista (sem paginação; até 10.000 linhas), incluindo as metas e a situação dos prazos. Células que começariam com `=`, `+`, `-` ou `@` vão como texto.
+         */
+        get: operations["MetricasDeChamadosController_exportar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/chamados/feriados": {
         parameters: {
             query?: never;
@@ -1066,6 +1086,26 @@ export interface paths {
          * @description Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Carnaval, Sexta-feira Santa e Corpus Christi do ano pedido, sem repetir o que já está no cadastro.
          */
         post: operations["ConfiguracaoDeChamadosController_gerarFeriados"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/metricas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Métricas dos chamados
+         * @description Exige `chamados.ver_metricas`; o alcance (própria, equipe, todas) vale sobre o RESPONSÁVEL do chamado. Período pela data de abertura (padrão: os últimos 30 dias). Totais, abertos, tempo médio até a primeira resposta e até a resolução (minutos úteis do expediente, sem a pausa de Aguardando cliente), dias em aberto e % dentro do prazo (só áreas com meta), no geral, por área e por responsável. Até 5.000 chamados por consulta (`truncado`).
+         */
+        get: operations["MetricasDeChamadosController_metricas"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5049,6 +5089,16 @@ export interface components {
         ImportarForaDoPerfilEntrada: {
             linhaIds?: string[];
         };
+        IndicadoresDeChamados: {
+            total: number;
+            abertos: number;
+            resolvidos: number;
+            tempoPrimeiraRespostaMin: number | null;
+            tempoResolucaoMin: number | null;
+            diasEmAberto: number | null;
+            respostaNoPrazoPct: number | null;
+            resolucaoNoPrazoPct: number | null;
+        };
         ItemDaListaDeContatos: {
             /** Format: uuid */
             id: string;
@@ -5481,6 +5531,50 @@ export interface components {
                 /** @enum {string|null} */
                 papel: "admin" | "gestor" | "vendedor" | null;
             } | null;
+        };
+        MetricasDeChamados: {
+            /** Format: date */
+            de: string;
+            /** Format: date */
+            ate: string;
+            /** @enum {string} */
+            alcance: "propria" | "equipe" | "todas";
+            geral: components["schemas"]["IndicadoresDeChamados"];
+            porArea: {
+                total: number;
+                abertos: number;
+                resolvidos: number;
+                tempoPrimeiraRespostaMin: number | null;
+                tempoResolucaoMin: number | null;
+                diasEmAberto: number | null;
+                respostaNoPrazoPct: number | null;
+                resolucaoNoPrazoPct: number | null;
+                area: {
+                    /** Format: uuid */
+                    id: string;
+                    nome: string;
+                };
+            }[];
+            porResponsavel: {
+                total: number;
+                abertos: number;
+                resolvidos: number;
+                tempoPrimeiraRespostaMin: number | null;
+                tempoResolucaoMin: number | null;
+                diasEmAberto: number | null;
+                respostaNoPrazoPct: number | null;
+                resolucaoNoPrazoPct: number | null;
+                responsavel: {
+                    /** Format: uuid */
+                    id: string;
+                    nome: string;
+                } | null;
+            }[];
+            porStatus: {
+                status: components["schemas"]["StatusDoChamado"];
+                total: number;
+            }[];
+            truncado: boolean;
         };
         ModeloDeVisita: {
             /** Format: uuid */
@@ -10528,6 +10622,72 @@ export interface operations {
             };
         };
     };
+    MetricasDeChamadosController_exportar: {
+        parameters: {
+            query?: {
+                aba?: "triagem" | "pendentes" | "meus" | "todos";
+                status?: components["schemas"]["StatusDoChamado"];
+                areaId?: string;
+                prioridade?: components["schemas"]["PrioridadeDoChamado"];
+                responsavelId?: string;
+                empresaClienteId?: string;
+                busca?: string;
+                de?: string;
+                ate?: string;
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     ConfiguracaoDeChamadosController_criarFeriado: {
         parameters: {
             query?: never;
@@ -10679,6 +10839,67 @@ export interface operations {
             };
             /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    MetricasDeChamadosController_metricas: {
+        parameters: {
+            query?: {
+                de?: string;
+                ate?: string;
+                areaId?: string;
+                responsavelId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetricasDeChamados"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -105,3 +105,21 @@ export function calcularPrazo(p: {
       : consumidoMin > p.metaMin
   return { ...base, venceEm: pausado ? null : venceEm, atrasado }
 }
+
+/**
+ * Minutos úteis em que o relógio correu até `ate` (a resposta, a resolução ou agora), pela linha do tempo.
+ * É o "tempo até a primeira resposta" e o "tempo de resolução" das métricas, com ou sem meta.
+ */
+export function minutosConsumidos(p: {
+  mudancas: readonly MudancaDeEstado[]
+  ate: Date
+  calendario: CalendarioUtil
+}): number {
+  const intervalos = intervalosAtivos(p.mudancas)
+    .map((i) => ({
+      de: i.de,
+      ate: new Date(Math.min((i.ate ?? p.ate).getTime(), p.ate.getTime())),
+    }))
+    .filter((i) => i.ate.getTime() > i.de.getTime())
+  return intervalos.reduce((soma, i) => soma + minutosUteisEntre(i.de, i.ate, p.calendario), 0)
+}

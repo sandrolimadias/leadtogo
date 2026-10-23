@@ -5494,6 +5494,171 @@
         "tags": ["Chamados: configuração"]
       }
     },
+    "/v1/chamados/exportar.csv": {
+      "get": {
+        "description": "Exige `chamados.exportar`. Um CSV (`;`, UTF-8 com BOM) com os chamados que a pessoa vê, com os mesmos filtros da lista (sem paginação; até 10.000 linhas), incluindo as metas e a situação dos prazos. Células que começariam com `=`, `+`, `-` ou `@` vão como texto.",
+        "operationId": "MetricasDeChamadosController_exportar",
+        "parameters": [
+          {
+            "name": "aba",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "todos",
+              "type": "string",
+              "enum": ["triagem", "pendentes", "meus", "todos"]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/StatusDoChamado"
+                }
+              ]
+            }
+          },
+          {
+            "name": "areaId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "prioridade",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/PrioridadeDoChamado"
+                }
+              ]
+            }
+          },
+          {
+            "name": "responsavelId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "empresaClienteId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "de",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "ate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Exportar os chamados (CSV)",
+        "tags": ["Chamados: métricas"]
+      }
+    },
     "/v1/chamados/feriados": {
       "post": {
         "description": "Exige `chamados.gerir_areas` (403 `acesso_negado` para os demais). Registra na auditoria. Uma data só tem um feriado (409 `feriado_repetido`). `recorrente` vale todo ano no mesmo dia e mês.",
@@ -5686,6 +5851,104 @@
         },
         "summary": "Gerar os feriados nacionais móveis do ano",
         "tags": ["Chamados: configuração"]
+      }
+    },
+    "/v1/chamados/metricas": {
+      "get": {
+        "description": "Exige `chamados.ver_metricas`; o alcance (própria, equipe, todas) vale sobre o RESPONSÁVEL do chamado. Período pela data de abertura (padrão: os últimos 30 dias). Totais, abertos, tempo médio até a primeira resposta e até a resolução (minutos úteis do expediente, sem a pausa de Aguardando cliente), dias em aberto e % dentro do prazo (só áreas com meta), no geral, por área e por responsável. Até 5.000 chamados por consulta (`truncado`).",
+        "operationId": "MetricasDeChamadosController_metricas",
+        "parameters": [
+          {
+            "name": "de",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "ate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "areaId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "responsavelId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricasDeChamados"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Métricas dos chamados",
+        "tags": ["Chamados: métricas"]
       }
     },
     "/v1/chamados/triagem": {
@@ -23540,6 +23803,57 @@
         },
         "additionalProperties": false
       },
+      "IndicadoresDeChamados": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "abertos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "resolvidos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "tempoPrimeiraRespostaMin": {
+            "nullable": true,
+            "type": "number"
+          },
+          "tempoResolucaoMin": {
+            "nullable": true,
+            "type": "number"
+          },
+          "diasEmAberto": {
+            "nullable": true,
+            "type": "number"
+          },
+          "respostaNoPrazoPct": {
+            "nullable": true,
+            "type": "number"
+          },
+          "resolucaoNoPrazoPct": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "abertos",
+          "resolvidos",
+          "tempoPrimeiraRespostaMin",
+          "tempoResolucaoMin",
+          "diasEmAberto",
+          "respostaNoPrazoPct",
+          "resolucaoNoPrazoPct"
+        ],
+        "additionalProperties": false
+      },
       "ItemDaListaDeContatos": {
         "type": "object",
         "properties": {
@@ -25174,6 +25488,197 @@
           "doisFatoresPendente",
           "doisFatoresObrigatorio",
           "doisFatoresMotivo"
+        ],
+        "additionalProperties": false
+      },
+      "MetricasDeChamados": {
+        "type": "object",
+        "properties": {
+          "de": {
+            "type": "string",
+            "format": "date"
+          },
+          "ate": {
+            "type": "string",
+            "format": "date"
+          },
+          "alcance": {
+            "type": "string",
+            "enum": ["propria", "equipe", "todas"]
+          },
+          "geral": {
+            "$ref": "#/components/schemas/IndicadoresDeChamados"
+          },
+          "porArea": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "total": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "abertos": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "resolvidos": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "tempoPrimeiraRespostaMin": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "tempoResolucaoMin": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "diasEmAberto": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "respostaNoPrazoPct": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "resolucaoNoPrazoPct": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "area": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "nome"],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "total",
+                "abertos",
+                "resolvidos",
+                "tempoPrimeiraRespostaMin",
+                "tempoResolucaoMin",
+                "diasEmAberto",
+                "respostaNoPrazoPct",
+                "resolucaoNoPrazoPct",
+                "area"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "porResponsavel": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "total": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "abertos": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "resolvidos": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "tempoPrimeiraRespostaMin": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "tempoResolucaoMin": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "diasEmAberto": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "respostaNoPrazoPct": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "resolucaoNoPrazoPct": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "responsavel": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "nome"],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "total",
+                "abertos",
+                "resolvidos",
+                "tempoPrimeiraRespostaMin",
+                "tempoResolucaoMin",
+                "diasEmAberto",
+                "respostaNoPrazoPct",
+                "resolucaoNoPrazoPct",
+                "responsavel"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "porStatus": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/StatusDoChamado"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["status", "total"],
+              "additionalProperties": false
+            }
+          },
+          "truncado": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "de",
+          "ate",
+          "alcance",
+          "geral",
+          "porArea",
+          "porResponsavel",
+          "porStatus",
+          "truncado"
         ],
         "additionalProperties": false
       },
