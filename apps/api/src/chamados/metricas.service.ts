@@ -55,10 +55,12 @@ export class MetricasService {
     const de = c.de ?? diasAtras(30)
     const ate = c.ate ?? hoje()
     if (de > ate) throw new ErroApi('periodo_invalido', 'A data inicial é depois da final.', 400)
+    // o dia é o da empresa (fuso do expediente), não o da sessão do banco
+    const { fusoHorario: fuso } = await this.expediente.calendario()
     const filtros: SQL[] = [
       sql`c.excluido_em IS NULL`,
-      sql`c.criado_em >= (${de}::date AT TIME ZONE ${(await this.expediente.calendario()).fusoHorario})`,
-      sql`c.criado_em < ((${ate}::date + 1) AT TIME ZONE ${(await this.expediente.calendario()).fusoHorario})`,
+      sql`c.criado_em >= (${de}::date::timestamp AT TIME ZONE ${fuso})`,
+      sql`c.criado_em < ((${ate}::date + 1)::timestamp AT TIME ZONE ${fuso})`,
     ]
     const escopo = await this.permissao.condicao('chamados.ver_metricas', sql`c.responsavel_id`)
     if (escopo) filtros.push(escopo)

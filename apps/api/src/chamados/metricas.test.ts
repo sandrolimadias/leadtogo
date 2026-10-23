@@ -182,6 +182,30 @@ describe('métricas', () => {
     expect(erroDe(invertido)).toBe('periodo_invalido')
   })
 
+  it('o dia é o da empresa (São Paulo): o chamado das 19h30 e o das 23h30 entram no dia, o da 0h30 do dia seguinte não', async () => {
+    const c = await cenario()
+    const noite = await c.abrir(c.juridico, 'Noite')
+    // 19h30 em SP = 22h30Z: depois das 21h do fuso UTC, onde o dia do banco já mudaria
+    await c.moldar(noite, { abertoEm: z('22', '22:30') })
+    const tarde = await c.abrir(c.juridico, 'Quase meia-noite')
+    await c.moldar(tarde, { abertoEm: z('23', '02:30') }) // 22/10 23h30 em SP
+    const amanha = await c.abrir(c.juridico, 'Depois da meia-noite')
+    await c.moldar(amanha, { abertoEm: z('23', '03:30') }) // 23/10 00h30 em SP
+    const total = async (qs: string) =>
+      ((await chamar('get', c.e.d.cookie, `/chamados/metricas?${qs}`)).body as MetricasDeChamados)
+        .geral.total
+    expect(await total('de=2026-10-22&ate=2026-10-22')).toBe(2)
+    expect(await total('de=2026-10-23&ate=2026-10-23')).toBe(1)
+    const lista = async (qs: string) =>
+      (
+        (await chamar('get', c.e.d.cookie, `/chamados?aba=todos&${qs}`)).body as {
+          itens: unknown[]
+        }
+      ).itens.length
+    expect(await lista('de=2026-10-22&ate=2026-10-22')).toBe(2)
+    expect(await lista('de=2026-10-23&ate=2026-10-23')).toBe(1)
+  })
+
   it('o alcance de ver_metricas vale sobre o responsável: própria só os dela, equipe os da equipe, sem permissão 403', async () => {
     const c = await cenario()
     for (const [assunto, resp] of [

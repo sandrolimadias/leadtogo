@@ -284,8 +284,12 @@ export class ChamadosService {
     if (c.prioridade) filtros.push(sql`c.prioridade = ${c.prioridade}::prioridade_chamado`)
     if (c.responsavelId) filtros.push(sql`c.responsavel_id = ${c.responsavelId}`)
     if (c.empresaClienteId) filtros.push(sql`c.empresa_cliente_id = ${c.empresaClienteId}`)
-    if (c.de) filtros.push(sql`c.criado_em >= ${c.de}::date`)
-    if (c.ate) filtros.push(sql`c.criado_em < (${c.ate}::date + 1)`)
+    // o dia é o da empresa (fuso do expediente), não o da sessão do banco
+    const fuso = c.de || c.ate ? (await this.expediente.calendario()).fusoHorario : ''
+    if (c.de) filtros.push(sql`c.criado_em >= (${c.de}::date::timestamp AT TIME ZONE ${fuso})`)
+    if (c.ate) {
+      filtros.push(sql`c.criado_em < ((${c.ate}::date + 1)::timestamp AT TIME ZONE ${fuso})`)
+    }
     if (c.busca) {
       const numero = /^(?:ch-?)?0*(\d{1,9})$/i.exec(c.busca)?.[1]
       filtros.push(
