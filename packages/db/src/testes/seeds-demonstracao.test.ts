@@ -21,6 +21,10 @@ async function limpar() {
     await tx`DELETE FROM visita_modelo_versoes WHERE tenant_id = ${tenantId}`
     await tx`DELETE FROM visita_modelos WHERE tenant_id = ${tenantId}`
     for (const tabela of [
+      'config_triagem',
+      'feriados',
+      'calendario_expediente',
+      'areas_atendimento',
       'papeis_decisao',
       'motivos',
       'origens',

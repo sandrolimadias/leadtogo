@@ -672,3 +672,156 @@ fabricas['rota_paradas'] = definirFabrica<{ rotaId: string; membroId: string }>(
     return id
   },
 })
+
+// Central de chamados (Fase 2)
+const membroDeChamado = async (tx: Sql | TransactionSql, tenantId: string): Promise<string> => {
+  const id = novoId()
+  await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${id}, ${tenantId}, 'Atendente de teste')`
+  return id
+}
+
+/** Área, membro e um chamado interno aberto (o pai das tabelas do chamado). */
+const prepararChamado = (owner: Sql, tenantId: string) =>
+  comTenant(owner, tenantId, async (tx) => {
+    const membroId = await membroDeChamado(tx, tenantId)
+    const areaId = novoId()
+    const chamadoId = novoId()
+    await tx`INSERT INTO areas_atendimento (id, tenant_id, nome) VALUES (${areaId}, ${tenantId}, ${`Área ${areaId}`})`
+    await tx`INSERT INTO chamados (id, tenant_id, numero, assunto, area_id, solicitante_membro_id)
+      VALUES (${chamadoId}, ${tenantId}, 1, 'Chamado de teste', ${areaId}, ${membroId})`
+    return { membroId, areaId, chamadoId }
+  })
+
+fabricas['areas_atendimento'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO areas_atendimento (id, tenant_id, nome) VALUES (${id}, ${tenantId}, ${`Área ${id}`})`
+    return id
+  },
+})
+
+fabricas['area_membros'] = definirFabrica<{ areaId: string; membroId: string }>({
+  colunaAlteravel: 'gestor',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const membroId = await membroDeChamado(tx, tenantId)
+      const areaId = novoId()
+      await tx`INSERT INTO areas_atendimento (id, tenant_id, nome) VALUES (${areaId}, ${tenantId}, ${`Área ${areaId}`})`
+      return { areaId, membroId }
+    }),
+  criar: async (tx, tenantId, { areaId, membroId }) => {
+    const id = novoId()
+    await tx`INSERT INTO area_membros (id, tenant_id, area_id, membro_id) VALUES (${id}, ${tenantId}, ${areaId}, ${membroId})`
+    return id
+  },
+})
+
+fabricas['config_triagem'] = definirFabrica({
+  chave: 'tenant_id',
+  colunaAlteravel: 'ativa',
+  criar: async (tx, tenantId) => {
+    await tx`INSERT INTO config_triagem (tenant_id) VALUES (${tenantId})`
+    return tenantId
+  },
+})
+
+fabricas['triagem_membros'] = definirFabrica<string>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: (owner, tenantId) => comTenant(owner, tenantId, (tx) => membroDeChamado(tx, tenantId)),
+  criar: async (tx, tenantId, membroId) => {
+    const id = novoId()
+    await tx`INSERT INTO triagem_membros (id, tenant_id, membro_id) VALUES (${id}, ${tenantId}, ${membroId})`
+    return id
+  },
+})
+
+fabricas['chamados'] = definirFabrica<{ membroId: string; areaId: string }>({
+  colunaAlteravel: 'assunto',
+  preparar: async (owner, tenantId) => {
+    const { membroId, areaId } = await prepararChamado(owner, tenantId)
+    return { membroId, areaId }
+  },
+  criar: async (tx, tenantId, { membroId, areaId }) => {
+    const id = novoId()
+    await tx`INSERT INTO chamados (id, tenant_id, numero, assunto, area_id, solicitante_membro_id)
+      VALUES (${id}, ${tenantId}, ${2 + Math.floor(Math.random() * 1e9)}, 'Outro chamado', ${areaId}, ${membroId})`
+    return id
+  },
+})
+
+fabricas['chamado_mensagens'] = definirFabrica<{ membroId: string; chamadoId: string }>({
+  colunaAlteravel: 'corpo',
+  preparar: async (owner, tenantId) => {
+    const { membroId, chamadoId } = await prepararChamado(owner, tenantId)
+    return { membroId, chamadoId }
+  },
+  criar: async (tx, tenantId, { membroId, chamadoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO chamado_mensagens (id, tenant_id, chamado_id, autor_tipo, autor_membro_id, corpo)
+      VALUES (${id}, ${tenantId}, ${chamadoId}, 'membro', ${membroId}, 'Olá')`
+    return id
+  },
+})
+
+fabricas['chamado_notas_internas'] = definirFabrica<{ membroId: string; chamadoId: string }>({
+  colunaAlteravel: 'corpo',
+  preparar: async (owner, tenantId) => {
+    const { membroId, chamadoId } = await prepararChamado(owner, tenantId)
+    return { membroId, chamadoId }
+  },
+  criar: async (tx, tenantId, { membroId, chamadoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO chamado_notas_internas (id, tenant_id, chamado_id, autor_membro_id, corpo)
+      VALUES (${id}, ${tenantId}, ${chamadoId}, ${membroId}, 'Só a equipe vê')`
+    return id
+  },
+})
+
+fabricas['chamado_eventos'] = definirFabrica<{ membroId: string; chamadoId: string }>({
+  colunaAlteravel: 'dados',
+  appSemAlterar: true,
+  preparar: async (owner, tenantId) => {
+    const { membroId, chamadoId } = await prepararChamado(owner, tenantId)
+    return { membroId, chamadoId }
+  },
+  criar: async (tx, tenantId, { membroId, chamadoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO chamado_eventos (id, tenant_id, chamado_id, tipo, ator_tipo, ator_membro_id)
+      VALUES (${id}, ${tenantId}, ${chamadoId}, 'aberto', 'membro', ${membroId})`
+    return id
+  },
+})
+
+fabricas['chamado_anexos'] = definirFabrica<{ chamadoId: string }>({
+  colunaAlteravel: 'nome',
+  preparar: async (owner, tenantId) => {
+    const { chamadoId } = await prepararChamado(owner, tenantId)
+    return { chamadoId }
+  },
+  criar: async (tx, tenantId, { chamadoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO chamado_anexos (id, tenant_id, chamado_id, chave_arquivo, nome, mime, tamanho)
+      VALUES (${id}, ${tenantId}, ${chamadoId}, ${`${tenantId}/chamados/${id}`}, 'contrato.pdf', 'application/pdf', 2048)`
+    return id
+  },
+})
+
+fabricas['calendario_expediente'] = definirFabrica({
+  colunaAlteravel: 'fim',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO calendario_expediente (id, tenant_id, dia_semana, inicio, fim)
+      VALUES (${id}, ${tenantId}, 1, '08:00', '18:00')`
+    return id
+  },
+})
+
+fabricas['feriados'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO feriados (id, tenant_id, data, nome) VALUES (${id}, ${tenantId}, '2026-12-25', 'Natal')`
+    return id
+  },
+})

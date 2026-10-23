@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  type AnyPgColumn,
   bigint,
   check,
   integer,
@@ -15,6 +16,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
+import { chamados } from './chamados.js'
+import { contatos } from './contatos.js'
 import { membros, tenants } from './plataforma.js'
 import { carimbos, chaveUuid } from './tipos.js'
 
@@ -44,7 +47,17 @@ export const arquivos = pgTable(
   ],
 )
 
-/** Central de notificações de cada membro. */
+export const destinatarioDaNotificacao = pgEnum('destinatario_da_notificacao', [
+  'membro',
+  'contato',
+])
+/** Canal de entrega: o sino do CRM (e do portal, depois) ou o e-mail */
+export const canalDaNotificacao = pgEnum('canal_da_notificacao', ['sino', 'email'])
+
+/**
+ * Central de notificações. O destinatário é um membro da equipe (sino do CRM) ou um contato do cliente
+ * (sino do portal e e-mail, na fase seguinte); uma linha por destinatário e canal.
+ */
 export const notificacoes = pgTable(
   'notificacoes',
   {
@@ -52,20 +65,35 @@ export const notificacoes = pgTable(
     tenantId: uuid()
       .notNull()
       .references(() => tenants.id),
-    membroId: uuid()
-      .notNull()
-      .references(() => membros.id),
+    destinatarioTipo: destinatarioDaNotificacao().notNull().default('membro'),
+    membroId: uuid().references(() => membros.id),
+    contatoId: uuid().references(() => contatos.id),
+    canal: canalDaNotificacao().notNull().default('sino'),
+    chamadoId: uuid().references((): AnyPgColumn => chamados.id),
     tipo: text().notNull(),
     titulo: text().notNull(),
     mensagem: text(),
     link: text(),
     lidaEm: timestamp({ withTimezone: true }),
+    /** Canal e-mail: quando o envio foi feito */
+    enviadaEm: timestamp({ withTimezone: true }),
     criadoEm: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    check(
+      'notificacoes_destinatario_chk',
+      sql`(${t.destinatarioTipo} = 'membro' AND ${t.membroId} IS NOT NULL AND ${t.contatoId} IS NULL)
+        OR (${t.destinatarioTipo} = 'contato' AND ${t.contatoId} IS NOT NULL AND ${t.membroId} IS NULL)`,
+    ),
     index('notificacoes_nao_lidas_idx')
       .on(t.tenantId, t.membroId, t.criadoEm)
       .where(sql`${t.lidaEm} IS NULL`),
+    index('notificacoes_contato_idx')
+      .on(t.tenantId, t.contatoId, t.criadoEm)
+      .where(sql`${t.contatoId} IS NOT NULL`),
+    index('notificacoes_chamado_idx')
+      .on(t.chamadoId)
+      .where(sql`${t.chamadoId} IS NOT NULL`),
   ],
 )
 

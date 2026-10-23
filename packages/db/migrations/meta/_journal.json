@@ -218,6 +218,13 @@
       "when": 1792731345669,
       "tag": "0030_rotas",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792773835724,
+      "tag": "0031_chamados",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import postgres from 'postgres'
 
 import * as schema from './schema/index.js'
 import {
+  criarPadroesChamadosDoTenant,
   criarPadroesDoTenant,
   criarPadroesGeoDoTenant,
   criarPadroesVisitaDoTenant,
@@ -117,6 +118,20 @@ export async function criarPadroesPendentesPorUrl(
         falhas.push({ tenantId, erro: e instanceof Error ? e.message : String(e) })
       }
     }
+    // Empresas que já existiam antes da central de chamados (Fase 2): áreas, expediente, feriados e triagem
+    const semChamados = await cliente<
+      { tenant_id: string }[]
+    >`SELECT tenant_id FROM app_tenants_sem_padroes_chamados()`
+    for (const { tenant_id: tenantId } of semChamados) {
+      try {
+        await db.transaction(async (tx) => {
+          await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)
+          await criarPadroesChamadosDoTenant(tx, tenantId)
+        })
+      } catch (e) {
+        falhas.push({ tenantId, erro: e instanceof Error ? e.message : String(e) })
+      }
+    }
     // Perfis de acesso (Fase 1): os três de sistema, com membros e convites ligados pelo papel
     if (perfis) {
       const semPerfis = await cliente<
@@ -163,12 +178,18 @@ export { aplicarMigracoes, pastaMigracoes } from './migrar.js'
 export { and, asc, desc, eq, gt, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 export { alias } from 'drizzle-orm/pg-core'
 export {
+  criarPadroesChamadosDoTenant,
   criarPadroesDoTenant,
   criarPadroesGeoDoTenant,
   criarPadroesVisitaDoTenant,
   criarPapeisDoTenant,
 }
-export { camposDoModeloDeFabrica, type CampoDeVisitaGravado } from './padroes.js'
+export {
+  camposDoModeloDeFabrica,
+  type CampoDeVisitaGravado,
+  feriadosNacionaisMoveis,
+  gerarFeriadosMoveis,
+} from './padroes.js'
 export { criarPerfisDoTenant, membrosSemPerfil, sincronizarCatalogoDoTenant } from './perfis.js'
 export type {
   AlcanceGravado,

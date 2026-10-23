@@ -150,6 +150,10 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   rotaMinutosPorVisita: smallint().notNull().default(40),
   /** Último código de rota usado (R-0151): `UPDATE … RETURNING` na criação da rota */
   rotaUltimoCodigo: integer().notNull().default(0),
+  /** Último número de chamado usado (CH-0001): `UPDATE … RETURNING` na abertura do chamado */
+  chamadoUltimoNumero: integer().notNull().default(0),
+  /** Quando as áreas, o expediente, os feriados e a triagem padrão foram criados (Fase 2); preenchido, nunca mais se recria */
+  chamadosPadroesCriadosEm: timestamp({ withTimezone: true }),
   ...carimbos(),
 })
 

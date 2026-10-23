@@ -2,6 +2,10 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { novoId } from './id.js'
 import {
+  areasAtendimento,
+  calendarioExpediente,
+  configTriagem,
+  feriados,
   funilFases,
   funis,
   motivos,
@@ -322,6 +326,157 @@ export async function criarPadroesVisitaDoTenant(
   return true
 }
 
+/** Áreas de atendimento criadas por padrão em cada empresa (Fase 2). */
+const AREAS_DE_CHAMADO: { nome: string; chave: string }[] = [
+  { nome: 'Jurídico', chave: 'juridico' },
+  { nome: 'Financeiro', chave: 'financeiro' },
+  { nome: 'Comercial', chave: 'comercial' },
+  { nome: 'Administrativo', chave: 'administrativo' },
+]
+
+/** Feriados nacionais de data fixa (valem todo ano). */
+const FERIADOS_FIXOS: { mes: number; dia: number; nome: string }[] = [
+  { mes: 1, dia: 1, nome: 'Confraternização Universal' },
+  { mes: 4, dia: 21, nome: 'Tiradentes' },
+  { mes: 5, dia: 1, nome: 'Dia do Trabalho' },
+  { mes: 9, dia: 7, nome: 'Independência do Brasil' },
+  { mes: 10, dia: 12, nome: 'Nossa Senhora Aparecida' },
+  { mes: 11, dia: 2, nome: 'Finados' },
+  { mes: 11, dia: 15, nome: 'Proclamação da República' },
+  { mes: 11, dia: 20, nome: 'Dia da Consciência Negra' },
+  { mes: 12, dia: 25, nome: 'Natal' },
+]
+
+const doisDigitos = (n: number) => String(n).padStart(2, '0')
+const dataIso = (ano: number, mes: number, dia: number) =>
+  `${ano}-${doisDigitos(mes)}-${doisDigitos(dia)}`
+
+/** Domingo de Páscoa (algoritmo de Meeus/Jones/Butcher), como `{ mes, dia }`. */
+function pascoa(ano: number): { mes: number; dia: number } {
+  const a = ano % 19
+  const b = Math.floor(ano / 100)
+  const c = ano % 100
+  const d = Math.floor(b / 4)
+  const e = b % 4
+  const f = Math.floor((b + 8) / 25)
+  const g = Math.floor((b - f + 1) / 3)
+  const h = (19 * a + b - d - g + 15) % 30
+  const i = Math.floor(c / 4)
+  const k = c % 4
+  const l = (32 + 2 * e + 2 * i - h - k) % 7
+  const m = Math.floor((a + 11 * h + 22 * l) / 451)
+  const mes = Math.floor((h + l - 7 * m + 114) / 31)
+  const dia = ((h + l - 7 * m + 114) % 31) + 1
+  return { mes, dia }
+}
+
+/**
+ * Feriados nacionais móveis do ano (Carnaval, Sexta-feira Santa e Corpus Christi), em `AAAA-MM-DD`.
+ * Não recorrem: cada ano é gravado à parte (`gerarFeriadosMoveis`).
+ */
+export function feriadosNacionaisMoveis(ano: number): { data: string; nome: string }[] {
+  const { mes, dia } = pascoa(ano)
+  const base = Date.UTC(ano, mes - 1, dia)
+  const em = (dias: number, nome: string) => {
+    const d = new Date(base + dias * 86_400_000)
+    return { data: dataIso(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()), nome }
+  }
+  return [
+    em(-48, 'Segunda-feira de Carnaval'),
+    em(-47, 'Terça-feira de Carnaval'),
+    em(-2, 'Sexta-feira Santa'),
+    em(60, 'Corpus Christi'),
+  ]
+}
+
+/**
+ * Grava os feriados nacionais móveis do ano que ainda não existem na empresa. Idempotente (não repete
+ * a data, nem recria o que o administrador excluiu: a exclusão é lógica e a data continua ocupada só
+ * enquanto não excluída; aqui só se acrescenta o que falta).
+ */
+export async function gerarFeriadosMoveis(
+  tx: Tx,
+  tenantId: string,
+  ano: number,
+  membroId: string | null = null,
+): Promise<number> {
+  const linhas = feriadosNacionaisMoveis(ano).map((f) => ({
+    tenantId,
+    data: f.data,
+    nome: f.nome,
+    recorrente: false,
+    criadoPor: membroId,
+    atualizadoPor: membroId,
+  }))
+  const criadas = await tx
+    .insert(feriados)
+    .values(linhas)
+    .onConflictDoNothing()
+    .returning({ id: feriados.id })
+  return criadas.length
+}
+
+/**
+ * Cria, UMA ÚNICA VEZ por empresa, as áreas de atendimento padrão (Jurídico, Financeiro, Comercial,
+ * Administrativo; sem metas), o expediente (segunda a sexta, 8h às 18h), os feriados nacionais (os de
+ * data fixa, recorrentes, e os móveis do ano e do seguinte) e a triagem desligada (Fase 2: chamados).
+ * Marca própria (`chamados_padroes_criados_em`), porque chegou depois e as empresas que já existiam
+ * também precisam. Devolve `true` se criou.
+ */
+export async function criarPadroesChamadosDoTenant(
+  tx: Tx,
+  tenantId: string,
+  membroId: string | null = null,
+  hoje: Date = new Date(),
+): Promise<boolean> {
+  const reservado = await tx
+    .update(tenantConfiguracoes)
+    .set({ chamadosPadroesCriadosEm: new Date() })
+    .where(
+      and(
+        eq(tenantConfiguracoes.tenantId, tenantId),
+        isNull(tenantConfiguracoes.chamadosPadroesCriadosEm),
+      ),
+    )
+    .returning({ tenantId: tenantConfiguracoes.tenantId })
+  if (reservado.length === 0) return false
+
+  const autoria = { tenantId, criadoPor: membroId, atualizadoPor: membroId }
+  await tx.insert(areasAtendimento).values(
+    AREAS_DE_CHAMADO.map((a, ordem) => ({
+      ...autoria,
+      nome: a.nome,
+      chaveSistema: a.chave,
+      ordem,
+    })),
+  )
+  await tx.insert(calendarioExpediente).values(
+    [1, 2, 3, 4, 5].map((diaSemana) => ({
+      tenantId,
+      diaSemana,
+      inicio: '08:00',
+      fim: '18:00',
+      atualizadoPor: membroId,
+    })),
+  )
+  const ano = hoje.getUTCFullYear()
+  await tx.insert(feriados).values(
+    FERIADOS_FIXOS.map((f) => ({
+      ...autoria,
+      data: dataIso(ano, f.mes, f.dia),
+      nome: f.nome,
+      recorrente: true,
+    })),
+  )
+  await gerarFeriadosMoveis(tx, tenantId, ano, membroId)
+  await gerarFeriadosMoveis(tx, tenantId, ano + 1, membroId)
+  await tx
+    .insert(configTriagem)
+    .values({ tenantId, ativa: false, atualizadoPor: membroId })
+    .onConflictDoNothing()
+  return true
+}
+
 /**
  * Cria, UMA ÚNICA VEZ por empresa, os cadastros padrão (tags Status e Visitação, tipos de atividade,
  * funil com fases, origens e motivos). A marca `tenant_configuracoes.padroes_criados_em` é gravada na
@@ -436,5 +591,6 @@ export async function criarPadroesDoTenant(
   await criarPapeisDoTenant(tx, tenantId, membroId)
   await criarPadroesGeoDoTenant(tx, tenantId, membroId)
   await criarPadroesVisitaDoTenant(tx, tenantId, membroId)
+  await criarPadroesChamadosDoTenant(tx, tenantId, membroId)
   return true
 }
