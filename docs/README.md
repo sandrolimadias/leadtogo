@@ -11,6 +11,7 @@
 | [esteira_deploy.md](esteira_deploy.md) | Git, CI/CD, Coolify, migrações e rollback |
 | [runbook_e13.md](runbook_e13.md) | Roteiro do primeiro deploy no Coolify (DNS, segredos, GHCR, banco, recursos, deploy automático, checklist e rollback) |
 | [escopo_mvp.md](escopo_mvp.md) | Recorte do MVP: módulos em ordem, trilha técnica e o que fica de fora |
+| [plano_prospeccao.md](plano_prospeccao.md) | Plano da Prospecção (busca por CNAE e município na base da Receita), para aprovação |
 | [plano_implantacao.md](plano_implantacao.md) | Plano da Fase 0: estrutura, infraestrutura e primeiro deploy |
 | [prototipo/](prototipo/README.md) | Protótipo das telas (Claude Design) e especificação de interface |
 | [cnaes_interesse.md](cnaes_interesse.md) | Lista de CNAEs do Ale (126 códigos, todos válidos): primeiro perfil de regras da importação |
