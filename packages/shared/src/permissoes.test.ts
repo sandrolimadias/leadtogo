@@ -26,7 +26,8 @@ describe('catálogo de permissões', () => {
 
   it('não registra módulos que ainda não existem', () => {
     const modulos = new Set(CATALOGO_DE_PERMISSOES.map((d) => d.modulo))
-    expect(modulos.has('chamados')).toBe(false)
+    // A central de chamados entrou na v4 (Fase 2); o portal do cliente é a fase seguinte
+    expect(modulos.has('chamados')).toBe(true)
     expect(modulos.has('portal')).toBe(false)
   })
 
@@ -65,14 +66,36 @@ describe('catálogo de permissões', () => {
 })
 
 describe('versão do catálogo', () => {
-  it('a versão 3 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
-    expect(VERSAO_DO_CATALOGO).toBe(3)
+  it('a versão 4 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
+    expect(VERSAO_DO_CATALOGO).toBe(4)
     // `atividades.excluir` saiu (6d): excluir a atividade é parte de editá-la, como antes dos perfis
-    expect(CHAVES_DE_PERMISSAO).toHaveLength(33)
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(41)
     expect(NOVAS_POR_VERSAO).toEqual({
       2: ['visitas.ver_localizacao'],
       3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
+      4: [
+        'chamados.ver',
+        'chamados.criar',
+        'chamados.atender',
+        'chamados.triar',
+        'chamados.atribuir',
+        'chamados.gerir_areas',
+        'chamados.ver_metricas',
+        'chamados.exportar',
+      ],
     })
+  })
+
+  it('v4: só o Administrador recebe as permissões dos chamados; Gestor e Vendedor não ganham nada novo', () => {
+    const chamados = NOVAS_POR_VERSAO[4] ?? []
+    for (const c of chamados) expect(PERMISSOES_PADRAO.admin[c]).toBeDefined()
+    expect(PERMISSOES_PADRAO.admin['chamados.ver']).toBe('todas')
+    expect(PERMISSOES_PADRAO.admin['chamados.atender']).toBe('todas')
+    expect(PERMISSOES_PADRAO.admin['chamados.criar']).toBe(true)
+    expect(PERMISSOES_PADRAO.admin['chamados.ver_metricas']).toBe('todas')
+    for (const perfil of [PERMISSOES_PADRAO.gestor, PERMISSOES_PADRAO.vendedor]) {
+      expect(Object.keys(perfil).filter((c) => c.startsWith('chamados.'))).toEqual([])
+    }
   })
 
   it('v3: Administrador e Gestor montam rotas de todos e atribuem; o Vendedor só as próprias', () => {

@@ -47,6 +47,7 @@ export const ROTULO_DO_MODULO: Record<string, string> = {
   geolocalizacao: 'Geolocalização e mapa',
   visitas: 'Visitas',
   rotas: 'Rotas',
+  chamados: 'Central de chamados',
   cadastros: 'Cadastros auxiliares',
   equipe: 'Equipe e convites',
   perfis: 'Perfis de acesso',
@@ -82,6 +83,14 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
   p('rotas', 'ver', 'Ver rotas', true),
   p('rotas', 'editar', 'Montar, alterar, executar e cancelar rotas', true),
   p('rotas', 'atribuir', 'Montar ou passar a rota para outro vendedor'),
+  p('chamados', 'ver', 'Ver chamados', true),
+  p('chamados', 'criar', 'Abrir chamados'),
+  p('chamados', 'atender', 'Responder, anotar, assumir e mudar o estado dos chamados', true),
+  p('chamados', 'triar', 'Triar chamados (definir a área na fila de triagem)'),
+  p('chamados', 'atribuir', 'Atribuir chamados a outra pessoa'),
+  p('chamados', 'gerir_areas', 'Gerir áreas, triagem, expediente e feriados'),
+  p('chamados', 'ver_metricas', 'Ver as métricas dos chamados', true),
+  p('chamados', 'exportar', 'Exportar os chamados em CSV'),
   p('cadastros', 'gerir', 'Gerir tags, funis, tipos, origens, motivos e demais cadastros'),
   p('equipe', 'ver_emails', 'Ver o e-mail dos membros da equipe'),
   p('equipe', 'gerir', 'Convidar, desativar e ver o acesso dos membros'),
@@ -96,12 +105,22 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
  * os perfis de SISTEMA das empresas com versão menor recebem as chaves novas que o seu padrão tem (as
  * outras permissões não mudam). Perfis criados pela empresa nunca recebem permissão automaticamente.
  */
-export const VERSAO_DO_CATALOGO = 3
+export const VERSAO_DO_CATALOGO = 4
 
 /** As chaves que cada versão acrescentou (a versão 1 é o catálogo inicial). */
 export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
   2: ['visitas.ver_localizacao'],
   3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
+  4: [
+    'chamados.ver',
+    'chamados.criar',
+    'chamados.atender',
+    'chamados.triar',
+    'chamados.atribuir',
+    'chamados.gerir_areas',
+    'chamados.ver_metricas',
+    'chamados.exportar',
+  ],
 }
 
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
@@ -178,7 +197,7 @@ export const PERMISSOES_PADRAO: Record<ChaveDeSistema, PermissoesDoPerfil> = {
           'perfis.gerir',
           'seguranca.gerir',
           'carteira.configurar',
-        ].includes(c),
+        ].includes(c) && !c.startsWith('chamados.'),
     ),
     'todas',
   ),
