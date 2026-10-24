@@ -11,8 +11,8 @@
    - `CLAMAV_HOST` = nome do serviço do ClamAV na rede do Coolify; `CLAMAV_PORT` = `3310`; `CLAMAV_TIMEOUT_MS` = `120000`.
    Sem `CLAMAV_HOST`, **os anexos ficam desligados** ("Envio de anexos ainda não configurado") e o resto dos chamados funciona.
 3. **ClamAV:** suba o serviço `clamav/clamav:1.4` (porta 3310, só rede interna) com `CLAMD_CONF_StreamMaxLength=30M` e `CLAMD_CONF_MaxFileSize=30M`. Precisa de **~1,5 GB de RAM** e, na primeira subida, baixa as assinaturas (alguns minutos): espere o healthcheck ficar verde antes de testar anexos.
-4. **CORS do bucket de arquivos** (o navegador envia direto ao Garage): liberar `PUT` e `GET` para `https://crm.aledias.com.br` no bucket `leadtogo-arquivos` (mesmo procedimento do bucket do mapa, `roteiro_mapa_publico.md`). Sem isso o envio de anexo falha no navegador com erro de CORS.
-5. Conferir a CSP do web (`docker/web.Caddyfile`): `connect-src` precisa incluir `https://files.crm.aledias.com.br`.
+4. **Garage dos anexos** (endereço público, CORS do bucket e CSP do web): siga `roteiro_garage_anexos.md`, passo a passo. Sem o CORS o envio de anexo falha no navegador com erro de CORS.
+5. **CSP do web:** `docker/web.Caddyfile` já inclui `https://files.crm.aledias.com.br` no `connect-src` (vai na imagem do web, no deploy). Sem isso o navegador bloqueia o envio antes de sair.
 
 ## 1. Verificação no servidor (terminal da VPS)
 Conecte ao banco como no `runbook_e13.md`, seção 4.6:
