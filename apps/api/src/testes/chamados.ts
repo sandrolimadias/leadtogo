@@ -4,8 +4,8 @@ import { novoId } from '@leadtogo/db'
 import type { INestApplication } from '@nestjs/common'
 import request from 'supertest'
 
-import { ORIGEM_DO_FRONT } from '../testes/auth-teste.js'
-import { ativar, dono, novoDono, usuarioSimples, vincular } from '../testes/mundo.js'
+import { ORIGEM_DO_FRONT } from './auth-teste.js'
+import { ativar, dono, novoDono, usuarioSimples, vincular } from './mundo.js'
 
 // Apoio dos testes da central de chamados: pessoas com perfis de acesso sob medida, chamadas HTTP e SQL
 // direto do owner (com o tenant ativo, por causa do RLS).

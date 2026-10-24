@@ -7,10 +7,10 @@ import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { criarClienteS3 } from '../infra/s3.js'
 import { configuracaoDeTeste } from '../testes/app-teste.js'
 import { dono, empresaDeOutraConta } from '../testes/mundo.js'
-import { type ClamdFalso, eicar, subirClamdFalso } from './clamd-falso.js'
+import { type ClamdFalso, eicar, subirClamdFalso } from '../testes/clamd-falso.js'
 import type { JobDeVarredura } from './fila-antivirus.js'
 import { processadorDeAntivirus } from './processador-antivirus.js'
-import { noTenant } from './teste-chamados.js'
+import { noTenant } from '../testes/chamados.js'
 
 const banco = criarConexao(process.env['DATABASE_URL'] ?? '', { max: 4 })
 const s3 = criarClienteS3(configuracaoDeTeste())

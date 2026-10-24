@@ -15,7 +15,7 @@ import type { RespostaDeErro } from '../http/filtro-excecoes.js'
 import { criarAppComRotas, configuracaoDeTeste } from '../testes/app-teste.js'
 import { limparLimitesAuth } from '../testes/auth-teste.js'
 import { auditoriaDe, dono } from '../testes/mundo.js'
-import { chamarEm, empresaDeChamados, noTenant, PERMISSOES } from './teste-chamados.js'
+import { chamarEm, empresaDeChamados, noTenant, PERMISSOES } from '../testes/chamados.js'
 
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
 let app: INestApplication<Server>

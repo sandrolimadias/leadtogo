@@ -14,7 +14,13 @@ import { esperarAte } from '../testes/espera.js'
 import { aguardarMensagem, limparCaixa, mensagensPara } from '../testes/mailpit.js'
 import { dono } from '../testes/mundo.js'
 import { subirWorkerDeTeste } from '../testes/worker-teste.js'
-import { chamarEm, empresaDeChamados, noTenant, PERMISSOES, type Pessoa } from './teste-chamados.js'
+import {
+  chamarEm,
+  empresaDeChamados,
+  noTenant,
+  PERMISSOES,
+  type Pessoa,
+} from '../testes/chamados.js'
 import {
   EVENTO_NOTIFICAR_CHAMADO,
   idDeterministico,

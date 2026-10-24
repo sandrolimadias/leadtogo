@@ -3,7 +3,7 @@ import { Readable } from 'node:stream'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { varrerComClamd, VarreduraIndisponivel } from './antivirus.js'
-import { type ClamdFalso, eicar, subirClamdFalso } from './clamd-falso.js'
+import { type ClamdFalso, eicar, subirClamdFalso } from '../testes/clamd-falso.js'
 
 let clamd: ClamdFalso | undefined
 afterEach(async () => {

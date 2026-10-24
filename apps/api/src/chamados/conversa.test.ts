@@ -12,8 +12,8 @@ import { limparLimitesAuth } from '../testes/auth-teste.js'
 import { esperarAte } from '../testes/espera.js'
 import { dono } from '../testes/mundo.js'
 import { subirWorkerDeTeste } from '../testes/worker-teste.js'
-import { type ClamdFalso, eicar, subirClamdFalso } from './clamd-falso.js'
-import { chamarEm, empresaDeChamados, noTenant, PERMISSOES } from './teste-chamados.js'
+import { type ClamdFalso, eicar, subirClamdFalso } from '../testes/clamd-falso.js'
+import { chamarEm, empresaDeChamados, noTenant, PERMISSOES } from '../testes/chamados.js'
 
 const valkey = new Redis(process.env['REDIS_URL'] ?? '')
 let app: INestApplication<Server>
