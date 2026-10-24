@@ -27,10 +27,12 @@ saída do processo) no lugar de tempos fixos, levando em conta o lock do BullMQ;
 - **`mapa.test.tsx`:** a nova consulta de pontos depois de mudar ou limpar os filtros passava do 1 s
   padrão do `waitFor`. O teste espera primeiro a condição visível (a contagem no botão Filtros) e
   depois a consulta, com prazo explícito de 5 s.
-- **`mapa.test.tsx` (23/10/2026, Fase 2):** o mesmo teste reincidiu olhando só a **última** chamada de
-  `pontos` depois do "Limpar" (uma consulta antiga, terminada fora de ordem, podia ser a última). Agora
-  o teste guarda quantas chamadas havia **antes** do "Limpar" e só valida as feitas depois dele, por
-  condição, com prazo de 5 s.
+- **`mapa.test.tsx` (24/10/2026, Fase 2; causa de verdade):** depois do "Limpar" da gaveta de filtros, a
+  consulta volta à chave sem filtros, que o TanStack Query já tem em cache. Conforme a idade dela, o app
+  refaz o pedido ou não: quando não refaz, a última chamada do mock continua a dos filtros (o teste via
+  `visitada` onde não devia) e nenhuma chamada nova existe (a tentativa de 23/10, que exigia uma, falhou
+  no hook de pré-push). Em vez de olhar as chamadas, o teste confere o **estado da gaveta** (todos os
+  campos de volta ao padrão), que não depende de tempo. Três execuções seguidas verdes.
 - **`convite.test.ts` (23/10/2026, Fase 2):** primeiro e-mail da suíte completa chegou depois dos 15 s com o
   Mailpit recém-subido. A espera já é por condição; a causa provável é a partida fria do worker de teste.
   Segue na tabela abaixo como **investigar depois**, sem mudança de código.

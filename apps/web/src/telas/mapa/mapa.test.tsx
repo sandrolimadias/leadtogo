@@ -491,16 +491,14 @@ describe('Mapa: chips, pins e legenda', () => {
         precisao: 'aproximada',
       })
     }, ESPERA)
-    // só conta a consulta feita DEPOIS do "Limpar": olhar a última chamada também aceitaria (ou recusaria)
-    // uma consulta antiga que terminou fora de ordem (docs/testes_intermitentes.md, mapa.test.tsx)
-    const antesDeLimpar = x.m.pontos.mock.calls.length
     await userEvent.click(within(g).getByRole('button', { name: 'Limpar' }))
     await waitFor(() => expect(botaoFiltros()).not.toHaveTextContent('5'), ESPERA)
-    await waitFor(() => {
-      const depois = x.m.pontos.mock.calls.slice(antesDeLimpar).map((c) => c[0])
-      expect(depois.length).toBeGreaterThan(0)
-      expect(depois.at(-1)).not.toHaveProperty('visitada')
-    }, ESPERA)
+    // Depois do "Limpar" a consulta volta à chave sem filtros, que o TanStack Query já tem em cache: conforme a
+    // idade dela, o app refaz o pedido ou não (e olhar as chamadas do mock fazia o teste oscilar). O que vale
+    // é o estado da gaveta, que não depende de tempo: todos os campos de volta ao padrão.
+    for (const campo of ['Visitada', 'Vendedor', 'Cidade', 'Região', 'Precisão da posição']) {
+      expect(within(g).getByLabelText(campo)).toHaveValue('')
+    }
   })
 
   it('visitada no período mostra as datas', async () => {
