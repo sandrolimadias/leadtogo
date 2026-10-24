@@ -47,7 +47,7 @@ O protótipo cobre **7 fluxos** (Dashboard, Empresas, Ficha da empresa, Nova emp
 ## 5. Observações para a implementação
 
 - O botão "Importar planilha" aparece na lista de empresas, mas o fluxo de importação (mapeamento de colunas, prévia, erros) não foi desenhado. Foi incluído no pedido da segunda rodada.
-- "Rotas (Fase 3)" aparece no menu como item futuro, com badge. No MVP, esconder ou manter desativado.
+- "Rotas (Fase 3)" aparece no menu como item futuro, com badge. No MVP, esconder ou manter desativado. **(23/10/2026: Rotas entrou no menu Carteira com o G4, sem o selo.)**
 - `support.js` e a barra Tema/Dispositivo do protótipo **não** fazem parte do produto.
 
 ## 6. Divergências da tela Usuários e equipe (E16a, 12/10/2026)

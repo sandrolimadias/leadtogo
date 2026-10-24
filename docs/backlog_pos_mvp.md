@@ -25,7 +25,7 @@
 | Copiar configurações entre empresas do grupo | Só há uma empresa em uso | Seção 3 |
 | Busca global (empresas, contatos, oportunidades) | Transversal ainda não entregue: a caixa da barra do topo avisa "em breve" | Transversal (`escopo_mvp.md`) |
 | Auditoria nas fichas além do que existe (Histórico de contato e empresa) | Transversal; hoje o Histórico mostra o essencial de empresa e contato | Transversal |
-| Mapa e rotas (roteirização, "Rota" além do link para o mapa) | Fases 2 e 3 de `funcionalidades.md` | Seção 3 |
+| ~~Mapa e rotas (roteirização, "Rota" além do link para o mapa)~~ **Entregue:** G1+G2 (mapa) aprovados em 22/10/2026, G3 (check-in) em 22/10/2026 e G4 (rotas) em 23/10/2026 (`plano_geolocalizacao.md`) | Fases 2 e 3 de `funcionalidades.md` | Seção 3 |
 | Prospecção (busca por CNAE e município na base completa) | **Fase própria logo após o MVP**; exige a base completa de CNPJs e instância própria da Minha Receita | Seção 3 |
 | BrasilAPI como alternativa independente à Minha Receita | Ela repassa a própria Minha Receita; só vale a instância própria (`configuracao_tecnologia.md`) | Módulo 2 |
 | Offline (leitura e fila de registros sem internet) | Complexidade alta; o PWA exige conexão no MVP | Seção 3 |
@@ -167,7 +167,7 @@
 ## Segurança e LGPD
 | Item | Motivo de ter ficado fora | Origem |
 |---|---|---|
-| **Contração dos perfis de acesso** (remover `papel` de `membros` e `convites` e o enum `papel_membro`, `perfil_id NOT NULL`, remover `vendedor_ve_todas_empresas` e `dois_fatores_exigido`, e a função `app_vinculos_com_politica` antiga) | Migração destrutiva: só depois de **duas semanas de uso real** da Fase 1, com aviso ao Ale e commit `BREAKING-DB:` | Perfis de acesso, Fase 1 |
+| **Contração dos perfis de acesso** (remover `papel` de `membros` e `convites` e o enum `papel_membro`, `perfil_id NOT NULL`, remover `vendedor_ve_todas_empresas` e `dois_fatores_exigido`, e a função `app_vinculos_com_politica` antiga) | Migração destrutiva: só depois de **duas semanas de uso real** da Fase 1 (entregue em 22/10/2026 e aprovada em 23/10/2026: **a partir de 05/11/2026**), com aviso ao Ale e commit `BREAKING-DB:` | Perfis de acesso, Fase 1 |
 | Permissões do portal do cliente, permissões por campo, múltiplos perfis por usuário (as permissões dos chamados entraram na Fase 2) | Fora da Fase 1; cada fase futura acrescenta as suas ao catálogo | Perfis de acesso, Fase 1 |
 | Rotas: janela de horário, almoço e várias rotas ou vendedores numa otimização só | Decisão do G0: só a ordem mais curta, um veículo | G4 (`plano_geolocalizacao.md`, seção 10.5) |
 | Rotas recorrentes (a mesma rota toda semana) e duplicar rota | Sem pedido; dá para montar de novo pela lista ou pelo mapa | G4 |

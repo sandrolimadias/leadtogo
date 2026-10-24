@@ -45,7 +45,7 @@
 - **Quem aparece:** flags na tag de Status, "aparece no mapa" (ligada, exceto Inativo) e "visível ao abrir" (ligada, exceto Prospect). Os chips são gerados das tags e acompanham renomeações.
 - **Carga** por área visível + filtros (consulta por caixa no PostGIS), com agrupamento nos zooms afastados. Carteira sempre; leads por lote de importação, até 500 por vez, com contador.
 - **Filtros:** busca (empresa, bairro, cidade), status, visitada (alguma vez, em 90 dias, por período), vendedor, sem visita há N dias, cidade, região e precisão.
-- **Painel da empresa:** tags, selo de precisão, carteira, próxima atividade, oportunidades, abas Atividades/Oportunidades/Contatos, ações Ligar, WhatsApp e Abrir ficha. "Na rota" e "Check-in" só quando G3/G4 existirem.
+- **Painel da empresa:** tags, selo de precisão, carteira, próxima atividade, oportunidades, abas Atividades/Oportunidades/Contatos, ações Ligar, WhatsApp e Abrir ficha. "Na rota" e "Check-in" só quando G3/G4 existirem (entregues: Check-in no G3, "Adicionar à rota" / "Na rota · parada N" no G4).
 - **Empresas próximas** (2, 5, 10 e 25 km), seleção por retângulo e por raio; por padrão exclui as já visitadas, com opção de incluir. No G2 a seleção serve para listar, abrir ou aplicar tag.
 - **Cobertura por município:** visitadas e quantas faltam (ponto no centro do município, com os números).
 - **Celular:** mapa em tela cheia, painel como folha que sobe de baixo, filtros numa gaveta.
@@ -76,7 +76,7 @@
 
 Pushes: (1) commits 1–2; (2) commits 3–5; (3) commits 6–7; (4) commits 8–9.
 
-## 7. Fora deste plano (G3+)
+## 7. Fora deste plano (G3+; entregues depois: G3 na seção 9 e G4 na seção 10)
 
 Check-in com GPS (G3, plano na seção 9), "Na rota" no painel, rotas e otimização (OSRM/VROOM), janela de horário e almoço (G4).
 
@@ -293,3 +293,4 @@ O G0 mediu o OSRM e o VROOM em x86 com 12 CPUs; a VPS tem 4 CPUs ARM já perto d
 | 23/10/2026 | "Adicionar à rota" da lista de Empresas cria a rota (vazia) no servidor e acrescenta as selecionadas; o filtro do mapa entra pelo botão de rota das ferramentas (área visível + filtros) | Claude |
 | 23/10/2026 | Sem a posição atual (negada ou indisponível), a rota começa na primeira parada (aviso "Sem a posição atual") | Claude |
 | 23/10/2026 | Teste do G4 em produção concluído: **aprovado** (com a correção da tela da rota ↔ editor no mapa sem recarregar) | Ale |
+| 23/10/2026 | Otimização das rotas **ligada em produção** (pilha `leadtogo-rotas` com os nomes novos, rede predefinida, `VROOM_URL`/`OSRM_URL` na API): funcionando | Ale |

@@ -17,7 +17,7 @@
 - Funcionar no **computador (PWA)**, **tablet** e **celular**.
 - **Multitenant** (várias empresas no mesmo sistema, dados isolados).
 - Prioridades: **performance, segurança e usabilidade**.
-- Futuro: **geolocalização e roteirização** de visitas.
+- **Geolocalização e roteirização** de visitas: entregues pós-MVP (G1 a G4, aprovados em 22 e 23/10/2026; seção 10).
 - Infraestrutura própria: **VPS Oracle Cloud com Coolify** — ARM64 (Ampere), 4 vCPU, 24 GB de RAM, ~190 GB de disco.
 
 ### Por que não Supabase self-hosted
@@ -47,7 +47,7 @@ O Supabase self-hosted é composto por cerca de 10 a 12 serviços (Kong, GoTrue,
 | Arquivos | **Garage** na VPS (compatível com S3; substitui o MinIO, descontinuado) |
 | Mapas (futuro) | MapLibre GL + OpenStreetMap |
 | Geocodificação (futuro) | **Híbrido:** Google Maps API + cache + Nominatim |
-| Rotas (futuro) | OSRM + VROOM (otimização de roteiro) |
+| Rotas (G4) | OSRM + VROOM (otimização de roteiro), pilha `leadtogo-rotas` |
 | Repositório / CI | **GitHub + GitHub Actions** |
 | Deploy | **Coolify** (deploy automático por branch) |
 | Ambientes | **Dev local + Produção** |
@@ -211,7 +211,10 @@ crm/
 
 ---
 
-## 10. Geolocalização e roteirização (fase futura)
+## 10. Geolocalização e roteirização (G1 a G4, entregues)
+
+> **Como ficou (23/10/2026):** a tabela abaixo é a previsão original. O que foi implementado está em `plano_geolocalizacao.md` e `geo_g0_relatorio.md`: **CNEFE do IBGE no Postgres + Nominatim local só do ES** (o Google foi descartado no G0 pelos termos de uso), **PMTiles do ES** num bucket público do Garage, **MapLibre**, e **OSRM + VROOM** na pilha `leadtogo-rotas` do Coolify (`scripts/geo/rotas-compose.yml`; preparo no WSL, `geo_atualizacao.md`, seção 3A; ligação na API por `VROOM_URL`/`OSRM_URL`, `roteiro_rotas_producao.md`; **ligada em produção em 23/10/2026**). **Rastreamento em campo não existe** (LGPD: a posição do vendedor só se grava no check-in).
+
 
 | Função | Ferramenta |
 |---|---|
@@ -254,7 +257,7 @@ Total estimado do Leadtogo: **~3–5 GB**. Medição de 06/10/2026: a VPS usa ~5
 - **Conferir o consumo real** dos serviços existentes antes de subir o CRM (`docker stats` na VPS ou métricas do Coolify).
 - O **GlitchTip self-hosted** foi o escolhido (dados dos erros ficam na VPS); acompanhe a RAM dele nas métricas do Coolify.
 - Definir **limites de memória** por container no Coolify, para que um serviço não derrube os outros.
-- O **OSRM** (fase de roteirização) provavelmente exigirá **upgrade da VPS ou um servidor separado**.
+- O **OSRM** só do ES coube na VPS sem upgrade (medido em 23/10/2026: OSRM 286 MiB, VROOM 50 MiB; 30 paradas em 0,11 s). Um estado a mais exige reavaliar (`backlog_pos_mvp.md`, geolocalização multi-UF).
 
 - **Domínios:** `crm.aledias.com.br` (front e `/v1`), `api.crm.aledias.com.br` (integrações servidor a servidor e health check da esteira), `files.crm.aledias.com.br` (Garage, se necessário), `t.crm.aledias.com.br` (rastreamento de e-mail).
 - Containers de banco, Valkey e Garage **sem porta pública**.
