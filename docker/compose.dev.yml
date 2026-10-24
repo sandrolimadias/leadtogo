@@ -5,7 +5,7 @@ name: leadtogo-dev
 
 services:
   postgres:
-    image: imresamu/postgis:17-3.5
+    image: imresamu/postgis:17-3.6
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -43,7 +43,7 @@ services:
       retries: 20
 
   garage:
-    image: dxflrs/garage:v2.1.0
+    image: dxflrs/garage:v2.4.1
     restart: unless-stopped
     environment:
       # Só para desenvolvimento; em produção o segredo fica no Coolify
