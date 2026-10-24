@@ -25,17 +25,19 @@ confere(
   raiz.ok && (await raiz.text()).includes('<div id="root">'),
   'a borda entrega o index.html do web em /',
 )
-// Os únicos domínios externos permitidos no connect-src: o GlitchTip (envio de erros do navegador) e o bucket
-// público do mapa base (PMTiles, só leitura, sem dado de cliente)
+// Os únicos domínios externos permitidos no connect-src: o GlitchTip (envio de erros do navegador), o bucket
+// público do mapa base (PMTiles, só leitura, sem dado de cliente) e o Garage dos arquivos (o PUT direto dos
+// anexos dos chamados, por URL pré-assinada)
 const hostsExternos = [...cabecalho('content-security-policy').matchAll(/https?:\/\/[^\s;]+/g)].map(
   (m) => m[0],
 )
 confere(
   cabecalho('content-security-policy').includes("connect-src 'self'") &&
-    hostsExternos.length === 2 &&
+    hostsExternos.length === 3 &&
     hostsExternos.includes('https://erros.crm.aledias.com.br') &&
-    hostsExternos.includes('https://mapa.crm.aledias.com.br'),
-  "CSP com connect-src 'self' e só o GlitchTip e o bucket público do mapa como domínios externos",
+    hostsExternos.includes('https://mapa.crm.aledias.com.br') &&
+    hostsExternos.includes('https://files.crm.aledias.com.br'),
+  "CSP com connect-src 'self' e só o GlitchTip, o bucket do mapa e o Garage dos arquivos como domínios externos",
 )
 confere(cabecalho('strict-transport-security').includes('max-age=31536000'), 'HSTS')
 confere(cabecalho('x-content-type-options') === 'nosniff', 'X-Content-Type-Options: nosniff')
