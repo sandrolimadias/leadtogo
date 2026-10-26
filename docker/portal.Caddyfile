@@ -43,6 +43,18 @@
 		file_server
 	}
 
+	# o service worker e o manifesto: sem cache (o navegador precisa ver a versão nova logo após um deploy)
+	handle /sw.js {
+		header Cache-Control "no-cache"
+		header Content-Type "text/javascript; charset=utf-8"
+		file_server
+	}
+	handle /manifest.webmanifest {
+		header Cache-Control "no-cache"
+		header Content-Type "application/manifest+json"
+		file_server
+	}
+
 	# todo o resto: index.html e as rotas do app (que caem nele). Sem cache: o navegador sempre confere.
 	handle {
 		header Cache-Control "no-cache"

@@ -46,6 +46,12 @@ export default defineConfig(
     extends: [tseslint.configs.disableTypeChecked],
   },
 
+  // Service worker do portal: roda no escopo de worker (`self`), sem DOM nem Node
+  {
+    files: ['apps/portal/public/sw.js'],
+    languageOptions: { sourceType: 'script', globals: { ...globals.serviceworker } },
+  },
+
   // API NestJS: classes vazias com decorator (módulos) são o padrão do framework
   {
     files: ['apps/api/**/*.ts'],

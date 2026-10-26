@@ -175,6 +175,24 @@ export const servicosReais: ServicosDoPortal = {
         daApi(await api.DELETE('/v1/portal/eventos/{id}/confirmacao', chave(id))),
       ),
   },
+  preferencias: {
+    obter: () => protegido(async () => daApi(await api.GET('/v1/portal/preferencias'))),
+    salvar: (dados) =>
+      protegido(async () => daApi(await api.PUT('/v1/portal/preferencias', { body: dados }))),
+  },
+  push: {
+    configuracao: () => protegido(async () => daApi(await api.GET('/v1/portal/push/configuracao'))),
+    inscrever: (inscricao) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/push/inscricoes', { body: inscricao })),
+      ),
+    remover: (endpoint) =>
+      protegido(async () =>
+        daApi(await api.DELETE('/v1/portal/push/inscricoes', { body: { endpoint } })),
+      ),
+  },
+  busca: (q) =>
+    protegido(async () => daApi(await api.GET('/v1/portal/busca', { params: { query: { q } } }))),
   documentos: {
     listar: (consulta) =>
       protegido(async () =>

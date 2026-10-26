@@ -5,6 +5,9 @@ import type {
   EventoDoPortal,
   ListaDeEventosDoPortal,
   ProximosEventosDoPortal,
+  PreferenciasDoPortal,
+  ConfiguracaoDePush,
+  ResultadoDaBuscaDoPortal,
   ListaDeDocumentosDoPortal,
   FeedDoPortal,
   ListaDeComentariosDoPortal,
@@ -110,6 +113,22 @@ export interface ServicosDoPortal {
     denunciar: (comentarioId: string, motivo: MotivoDeDenuncia) => Promise<Resultado>
     marcarLidas: (ids: string[]) => Promise<Resultado<{ marcadas: number }>>
   }
+  /** Preferências da própria pessoa (Fase 3E): horário de silêncio e e-mail por tipo */
+  preferencias: {
+    obter: () => Promise<Resultado<PreferenciasDoPortal>>
+    salvar: (dados: PreferenciasDoPortal) => Promise<Resultado<PreferenciasDoPortal>>
+  }
+  /** Push (Web Push/VAPID): só depois do consentimento da pessoa, por aparelho */
+  push: {
+    configuracao: () => Promise<Resultado<ConfiguracaoDePush>>
+    inscrever: (inscricao: {
+      endpoint: string
+      keys: { p256dh: string; auth: string }
+    }) => Promise<Resultado<ConfiguracaoDePush>>
+    remover: (endpoint: string) => Promise<Resultado<ConfiguracaoDePush>>
+  }
+  /** Busca global: chamados, documentos, eventos e publicações que a pessoa pode ver */
+  busca: (q: string) => Promise<Resultado<ResultadoDaBuscaDoPortal>>
   pedidos: {
     listar: () => Promise<Resultado<ListaDePedidosDoCliente>>
     pedir: (dados: { nome: string; email: string; cargo?: string | null }) => Promise<Resultado>

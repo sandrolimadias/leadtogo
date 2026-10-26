@@ -2,6 +2,7 @@ import type {
   ChamadoDoPortal,
   EventoDoPortal,
   InicioDoPortal,
+  PreferenciasDoPortal,
   PublicacaoDoPortal,
   ItemDeChamadoDoPortal,
   SessaoDoPortal,
@@ -32,6 +33,14 @@ export const sessao = (extra: Partial<SessaoDoPortal> = {}): SessaoDoPortal => (
   segundoFatorPendente: false,
   ...extra,
 })
+
+export const preferenciasPadrao: PreferenciasDoPortal = {
+  silencioInicio: null,
+  silencioFim: null,
+  emailChamados: true,
+  emailEventos: true,
+  emailAvisos: true,
+}
 
 export const item = (extra: Partial<ItemDeChamadoDoPortal> = {}): ItemDeChamadoDoPortal => ({
   id: id(10),
@@ -188,6 +197,22 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
         falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
       ),
     },
+    preferencias: {
+      obter: vi.fn(async () => ok(preferenciasPadrao)),
+      salvar: vi.fn(async (dados: PreferenciasDoPortal) => ok(dados)),
+    },
+    push: {
+      configuracao: vi.fn(async () =>
+        ok({ disponivel: true, chavePublica: 'chave-publica', inscricoes: 0 }),
+      ),
+      inscrever: vi.fn(async () =>
+        ok({ disponivel: true, chavePublica: 'chave-publica', inscricoes: 1 }),
+      ),
+      remover: vi.fn(async () =>
+        ok({ disponivel: true, chavePublica: 'chave-publica', inscricoes: 0 }),
+      ),
+    },
+    busca: vi.fn(async () => ok({ itens: [] })),
     documentos: {
       listar: vi.fn(async () => ok({ itens: [], total: 0 })),
       baixar: vi.fn(async () => ok({ url: 'https://armazenamento/documento' })),

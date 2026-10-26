@@ -9,7 +9,9 @@ import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { tempoRelativo } from '@/casca/rotulos'
 import { useServicos } from '@/servicos/contexto'
 
-/** O sino do cliente: avisos dos chamados (resposta da equipe, aguardando você, resolvido). */
+const TELAS = ['/', '/chamados', '/documentos', '/agenda', '/notificacoes', '/perfil'] as const
+
+/** O sino do cliente: chamados, agenda e avisos da equipe. */
 export function TelaNotificacoes() {
   const servicos = useServicos()
   const queryClient = useQueryClient()
@@ -27,9 +29,17 @@ export function TelaNotificacoes() {
   const abrir = async (id: string, destino: string | null | undefined) => {
     await servicos.notificacoes.marcarLida(id)
     reler()
-    // o destino é um caminho do portal (/chamados/<id>); qualquer outra coisa não é seguida
-    const seguro = destino?.match(/^\/chamados\/([0-9a-f-]{36})$/)
-    if (seguro?.[1]) await navegar({ to: '/chamados/$chamadoId', params: { chamadoId: seguro[1] } })
+    if (!destino) return
+    // o destino é uma tela conhecida do portal, um chamado ou (nos avisos) um endereço http(s) em outra aba;
+    // qualquer outra coisa não é seguida
+    const chamado = destino.match(/^\/chamados\/([0-9a-f-]{36})$/)
+    if (chamado?.[1]) {
+      await navegar({ to: '/chamados/$chamadoId', params: { chamadoId: chamado[1] } })
+    } else if ((TELAS as readonly string[]).includes(destino)) {
+      await navegar({ to: destino as (typeof TELAS)[number] })
+    } else if (/^https?:\/\/\S+$/i.test(destino)) {
+      window.open(destino, '_blank', 'noopener,noreferrer')
+    }
   }
   const marcarTodas = async () => {
     await servicos.notificacoes.marcarTodas()
@@ -56,7 +66,7 @@ export function TelaNotificacoes() {
           <EmptyState
             icon={Bell}
             title="Nenhuma notificação"
-            description="Quando a equipe responder um chamado, o aviso aparece aqui."
+            description="Quando a equipe responder um chamado ou enviar um aviso, ele aparece aqui."
           />
         ) : (
           <ul className="m-0 flex list-none flex-col divide-y divide-border p-0">
