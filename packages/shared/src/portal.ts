@@ -173,6 +173,8 @@ export const configuracaoDoPortalSchema = z
     exigeDoisFatoresDoResponsavel: z.boolean(),
     /** Chave geral: desligada, ninguém comenta nas publicações */
     comentariosAtivos: z.boolean(),
+    /** Quantos avisos normais cada cliente pode receber por semana (os urgentes não contam) */
+    avisosLimiteSemanal: z.number().int().min(1).max(20),
   })
   .meta({ id: 'ConfiguracaoDoPortal' })
 export type ConfiguracaoDoPortal = z.infer<typeof configuracaoDoPortalSchema>
@@ -183,6 +185,7 @@ export const atualizarConfiguracaoDoPortalSchema = z
     nome: z.string().trim().min(2, 'informe o nome').max(80).nullable().optional(),
     exigeDoisFatoresDoResponsavel: z.boolean().optional(),
     comentariosAtivos: z.boolean().optional(),
+    avisosLimiteSemanal: z.number().int().min(1).max(20).optional(),
   })
   .strict()
   .meta({ id: 'AtualizarConfiguracaoDoPortalEntrada' })
@@ -499,6 +502,7 @@ export const TIPOS_DE_NOTIFICACAO_DO_PORTAL = [
   'chamado_aguardando_voce',
   'chamado_resolvido',
   'acesso',
+  'aviso',
 ] as const
 export const tipoDeNotificacaoDoPortalSchema = z.enum(TIPOS_DE_NOTIFICACAO_DO_PORTAL)
 export type TipoDeNotificacaoDoPortal = z.infer<typeof tipoDeNotificacaoDoPortalSchema>
