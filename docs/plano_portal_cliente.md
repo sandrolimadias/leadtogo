@@ -62,7 +62,7 @@ Regras do projeto: português, uuid v7, `tenant_id`, RLS forçado, colunas padr�
 - **0034 (3B):** `publicacoes`, `publicacao_empresas`, `publicacao_reacoes`, `publicacao_comentarios`, `publicacao_denuncias`, `publicacao_leituras`.
 - **0035 (3C):** `documentos`, `documento_empresas`, `documento_acessos`.
 - **0036 (3D):** `eventos`, `evento_empresas`, `evento_confirmacoes`.
-- **0037 (3E):** `avisos`, `aviso_entregas`, `portal_preferencias` (e-mail por tipo, horário de silêncio), `portal_push_inscricoes`, índices de busca (`tsvector`).
+- **0037 (3E):** `avisos`, `aviso_empresas`, `aviso_entregas`, `portal_preferencias` (e-mail por tipo, horário de silêncio), `portal_push_inscricoes` e a coluna `portal_avisos_limite_semanal`. Sem índice de busca (ver ajuste da 3E).
 
 ## 6. Chamados
 
@@ -103,9 +103,11 @@ Definido pelas telas `05` e `06`. O aviso é diferente de publicação: é uma *
 - **Enviados e agendados:** lista com mensagem, urgência, data, audiência, **Entregues (x de y)** e **Lidos (%)**; os agendados mostram o número de destinatários e **Cancelar envio**.
 - **Preferências do cliente (3E):** horário de silêncio, e-mail por tipo; avisos de segurança nunca desligam.
 
+> **Ajustes na execução da 3E:** (1) o limite semanal é **por empresa-cliente** (os avisos de alcance "todos" contam para todas; os de segmento, só para as escolhidas), configurável de 1 a 20 em Configurações → Portal; (2) o aviso nasce **agendado** e vira enviado/cancelado: "agora" é um agendamento para este instante e a entrega é feita pelo worker (evento do outbox), então envio imediato e agendado seguem o mesmo caminho; (3) o **push** sai por um job próprio que reivindica a entrega antes de enviar (no máximo uma vez) e revoga aparelhos que o serviço recusa; (4) o horário de silêncio só adia o **push** dos avisos normais (sino e e-mail não esperam); (5) a **busca** usa `f_unaccent` + `LIKE` (sem acento, sem diferenciar maiúsculas) e **não** `tsvector`: com o volume do portal (por empresa-cliente) é suficiente e dispensa índice novo; revisar se algum cliente passar de dezenas de milhares de linhas; (6) o service worker **não faz cache** (dados de clientes não ficam no aparelho); (7) sem as chaves VAPID o push fica desligado sem quebrar nada.
+
 ## 9. Notificações, busca e PWA
 
-Tudo reaproveita `notificacoes` (destinatário `contato`) e o SSE da Fase 2. Busca global (chamados, documentos, eventos e publicações) por `tsvector` em português, **dentro da sessão do cliente**, então as mesmas políticas valem. PWA instalável e Web Push (VAPID) com consentimento explícito.
+Tudo reaproveita `notificacoes` (destinatário `contato`) e o SSE da Fase 2. Busca global (chamados, documentos, eventos e publicações) por `f_unaccent` + `LIKE`, **dentro da sessão do cliente**, então as mesmas políticas valem. PWA instalável e Web Push (VAPID) com consentimento explícito.
 
 ## 10. Permissões (catálogo v5, só o Administrador recebe)
 
