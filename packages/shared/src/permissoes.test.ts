@@ -26,13 +26,14 @@ describe('catálogo de permissões', () => {
 
   it('não registra módulos que ainda não existem', () => {
     const modulos = new Set(CATALOGO_DE_PERMISSOES.map((d) => d.modulo))
-    // Chamados entrou na v4, o portal na v5, as publicações na v6 e os documentos na v7; a agenda chega na fase 3D
+    // Chamados entrou na v4, o portal na v5, as publicações na v6 e os documentos na v7 e a agenda na v8
     expect(modulos.has('chamados')).toBe(true)
     expect(modulos.has('portal')).toBe(true)
     expect([...CHAVES_DE_PERMISSAO].filter((c) => c.startsWith('portal.'))).toEqual([
       ...(NOVAS_POR_VERSAO[5] ?? []),
       ...(NOVAS_POR_VERSAO[6] ?? []),
       ...(NOVAS_POR_VERSAO[7] ?? []),
+      ...(NOVAS_POR_VERSAO[8] ?? []),
     ])
   })
 
@@ -71,10 +72,10 @@ describe('catálogo de permissões', () => {
 })
 
 describe('versão do catálogo', () => {
-  it('a versão 7 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
-    expect(VERSAO_DO_CATALOGO).toBe(7)
+  it('a versão 8 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
+    expect(VERSAO_DO_CATALOGO).toBe(8)
     // `atividades.excluir` saiu (6d): excluir a atividade é parte de editá-la, como antes dos perfis
-    expect(CHAVES_DE_PERMISSAO).toHaveLength(47)
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(48)
     expect(NOVAS_POR_VERSAO).toEqual({
       2: ['visitas.ver_localizacao'],
       3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
@@ -91,6 +92,7 @@ describe('versão do catálogo', () => {
       5: ['portal.ver', 'portal.acessos', 'portal.configurar'],
       6: ['portal.publicar', 'portal.moderar'],
       7: ['portal.documentos'],
+      8: ['portal.agenda'],
     })
   })
 
@@ -106,11 +108,12 @@ describe('versão do catálogo', () => {
     }
   })
 
-  it('v5 a v7: só o Administrador recebe as permissões do portal; Gestor e Vendedor não ganham nada', () => {
+  it('v5 a v8: só o Administrador recebe as permissões do portal; Gestor e Vendedor não ganham nada', () => {
     for (const c of [
       ...(NOVAS_POR_VERSAO[5] ?? []),
       ...(NOVAS_POR_VERSAO[6] ?? []),
       ...(NOVAS_POR_VERSAO[7] ?? []),
+      ...(NOVAS_POR_VERSAO[8] ?? []),
     ])
       expect(PERMISSOES_PADRAO.admin[c]).toBe(true)
     for (const perfil of [PERMISSOES_PADRAO.gestor, PERMISSOES_PADRAO.vendedor]) {
