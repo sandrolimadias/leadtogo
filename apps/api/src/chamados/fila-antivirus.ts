@@ -2,8 +2,11 @@ import type { Queue } from 'bullmq'
 
 export interface JobDeVarredura {
   tenantId: string
+  /** Id do anexo do chamado ou do documento do portal (conforme `tipo`) */
   anexoId: string
   eventoId: string
+  /** O que se varre; ausente = anexo de chamado (jobs antigos continuam valendo) */
+  tipo?: 'anexo' | 'documento'
 }
 
 /** Tentativas e espera entre elas: o clamd pode estar atualizando as assinaturas ou ainda subindo. */

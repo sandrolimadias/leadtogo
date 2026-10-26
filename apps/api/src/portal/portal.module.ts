@@ -30,6 +30,10 @@ import { PortalPublicacoesController } from './portal-publicacoes.controller.js'
 import { PortalPublicacoesService } from './portal-publicacoes.service.js'
 import { PublicacoesController } from './publicacoes.controller.js'
 import { PublicacoesService } from './publicacoes.service.js'
+import { DocumentosController } from './documentos.controller.js'
+import { DocumentosService } from './documentos.service.js'
+import { PortalDocumentosController } from './portal-documentos.controller.js'
+import { PortalDocumentosService } from './portal-documentos.service.js'
 import { PortalGuard } from './portal.guard.js'
 import { PortalInterceptor } from './portal.interceptor.js'
 
@@ -47,6 +51,8 @@ import { PortalInterceptor } from './portal.interceptor.js'
     TarefasDoChamadoController,
     PublicacoesController,
     PortalPublicacoesController,
+    DocumentosController,
+    PortalDocumentosController,
   ],
   providers: [
     LimitePorChave,
@@ -54,6 +60,8 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalSessaoService,
     PublicacoesService,
     PortalPublicacoesService,
+    DocumentosService,
+    PortalDocumentosService,
     PortalEntradaService,
     PortalSegundoFatorService,
     PortalAcessosService,

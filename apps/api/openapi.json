@@ -17698,6 +17698,627 @@
         "tags": ["Portal do cliente: gestão"]
       }
     },
+    "/v1/portal-documentos": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.documentos`. Todos os documentos (também os em verificação, bloqueados e ocultos do portal), com o total de downloads.",
+        "operationId": "DocumentosController_listar",
+        "parameters": [
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeDocumentos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Documentos do portal",
+        "tags": ["Portal do cliente: documentos"]
+      },
+      "post": {
+        "description": "Exige `portal.documentos`. Passo 1: cria o documento (arquivo ainda não enviado) e devolve a URL pré-assinada para o navegador enviar o arquivo (até 25 MB) direto ao armazenamento. Passo 2: `POST /portal-documentos/{id}/confirmar`. Sem o antivírus configurado: 503 `anexos_indisponiveis`.",
+        "operationId": "DocumentosController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarDocumentoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvioDeDocumento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar um documento e reservar o envio do arquivo",
+        "tags": ["Portal do cliente: documentos"]
+      }
+    },
+    "/v1/portal-documentos/{id}": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.documentos`.",
+        "operationId": "DocumentosController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Documento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ver um documento",
+        "tags": ["Portal do cliente: documentos"]
+      },
+      "patch": {
+        "description": "Exige `portal.documentos`. Título, descrição, alcance (com a lista de empresas) e se aparece no portal. O arquivo não troca: publique outro documento.",
+        "operationId": "DocumentosController_editar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditarDocumentoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Documento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar um documento",
+        "tags": ["Portal do cliente: documentos"]
+      },
+      "delete": {
+        "description": "Exige `portal.documentos`. Exclusão lógica: some do portal e da lista.",
+        "operationId": "DocumentosController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir um documento",
+        "tags": ["Portal do cliente: documentos"]
+      }
+    },
+    "/v1/portal-documentos/{id}/baixas": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.documentos`. Os downloads mais recentes (até 200), com a pessoa, a empresa-cliente e a data.",
+        "operationId": "DocumentosController_baixas",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeBaixasDeDocumento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Quem baixou",
+        "tags": ["Portal do cliente: documentos"]
+      }
+    },
+    "/v1/portal-documentos/{id}/confirmar": {
+      "post": {
+        "description": "Exige `portal.documentos`. Passo 2: confere o objeto no armazenamento (existe e tem o tamanho dito) e manda o antivírus varrer. Idempotente. Arquivo fora do combinado: 400 `anexo_invalido` e o documento é descartado; ainda não chegou: 409 `anexo_nao_enviado`.",
+        "operationId": "DocumentosController_confirmar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Documento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Confirmar o envio do arquivo",
+        "tags": ["Portal do cliente: documentos"]
+      }
+    },
+    "/v1/portal-documentos/{id}/download": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.documentos`. URL pré-assinada de 5 minutos, sempre como download. Só o \"limpo\": 409 `anexo_em_verificacao` ou `anexo_bloqueado`.",
+        "operationId": "DocumentosController_baixar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadDeAnexo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Baixar o arquivo (equipe)",
+        "tags": ["Portal do cliente: documentos"]
+      }
+    },
     "/v1/portal-hub/indicadores": {
       "get": {
         "description": "Exige `portal.ver`. Dos chamados abertos pelos clientes: Em aberto e Prazo estourando (do momento), 1ª resposta no prazo e Nota média (na janela de `dias`, padrão 30), além de acessos ativos e pedidos pendentes. Vale o conjunto de TODOS os chamados do portal.",
@@ -19999,6 +20620,199 @@
         },
         "summary": "Reabrir um chamado resolvido",
         "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/documentos": {
+      "get": {
+        "description": "Só os documentos já verificados pelo antivírus, visíveis no portal e do alcance da empresa do cliente, os mais novos primeiro. Busca pelo título ou pela descrição.",
+        "operationId": "PortalDocumentosController_listar",
+        "parameters": [
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeDocumentosDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Documentos da empresa",
+        "tags": ["Portal do cliente: documentos"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/documentos/{id}/download": {
+      "post": {
+        "description": "Registra o download (quem, de que empresa e quando) e devolve a URL pré-assinada de 60 segundos, sempre como arquivo. Documento que o cliente não enxerga: 404 `documento_nao_encontrado`.",
+        "operationId": "PortalDocumentosController_baixar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadDeAnexo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Baixar um documento",
+        "tags": ["Portal do cliente: documentos"],
         "security": [
           {
             "sessaoPortal": []
@@ -24897,6 +25711,30 @@
         "required": ["id", "nome"],
         "additionalProperties": false
       },
+      "ArquivoDoDocumento": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "mime": {
+            "type": "string"
+          },
+          "tamanho": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoDeAnexo"
+          },
+          "enviado": {
+            "type": "boolean"
+          }
+        },
+        "required": ["nome", "mime", "tamanho", "estado", "enviado"],
+        "additionalProperties": false
+      },
       "AtendenteDoChamado": {
         "type": "object",
         "properties": {
@@ -25153,6 +25991,23 @@
           }
         },
         "required": ["nota"],
+        "additionalProperties": false
+      },
+      "BaixaDeDocumento": {
+        "type": "object",
+        "properties": {
+          "pessoa": {
+            "type": "string"
+          },
+          "empresa": {
+            "type": "string"
+          },
+          "baixadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["pessoa", "empresa", "baixadoEm"],
         "additionalProperties": false
       },
       "BaseDoMapa": {
@@ -26951,6 +27806,38 @@
         "required": ["email"],
         "additionalProperties": false
       },
+      "CriarDocumentoEntrada": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 160
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
+          },
+          "alcance": {
+            "$ref": "#/components/schemas/AlcanceDaPublicacao"
+          },
+          "empresaIds": {
+            "default": [],
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "arquivo": {
+            "$ref": "#/components/schemas/PedirEnvioDeAnexoEntrada"
+          }
+        },
+        "required": ["titulo", "alcance", "arquivo"],
+        "additionalProperties": false
+      },
       "CriarEmpresaDaCarteiraEntrada": {
         "type": "object",
         "properties": {
@@ -28357,6 +29244,104 @@
         ],
         "additionalProperties": false
       },
+      "Documento": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string"
+          },
+          "alcance": {
+            "$ref": "#/components/schemas/AlcanceDaPublicacao"
+          },
+          "visivelNoPortal": {
+            "type": "boolean"
+          },
+          "arquivo": {
+            "$ref": "#/components/schemas/ArquivoDoDocumento"
+          },
+          "totalDownloads": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "empresas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "descricao",
+          "alcance",
+          "visivelNoPortal",
+          "arquivo",
+          "totalDownloads",
+          "criadoEm",
+          "atualizadoEm",
+          "empresas"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentoDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "tamanho": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "publicadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "titulo", "descricao", "nome", "tamanho", "publicadoEm"],
+        "additionalProperties": false
+      },
       "DownloadDeAnexo": {
         "type": "object",
         "properties": {
@@ -28382,6 +29367,40 @@
           }
         },
         "required": ["nome"],
+        "additionalProperties": false
+      },
+      "EditarDocumentoEntrada": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 160
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
+          },
+          "alcance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AlcanceDaPublicacao"
+              }
+            ]
+          },
+          "empresaIds": {
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "visivelNoPortal": {
+            "type": "boolean"
+          }
+        },
         "additionalProperties": false
       },
       "EditarPerfil": {
@@ -29309,6 +30328,37 @@
           }
         },
         "required": ["anexoId", "url", "cabecalhos", "expiraEm"],
+        "additionalProperties": false
+      },
+      "EnvioDeDocumento": {
+        "type": "object",
+        "properties": {
+          "documento": {
+            "$ref": "#/components/schemas/Documento"
+          },
+          "envio": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "cabecalhos": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "expiraEm": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": ["url", "cabecalhos", "expiraEm"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["documento", "envio"],
         "additionalProperties": false
       },
       "Erro": {
@@ -30344,6 +31394,56 @@
         ],
         "additionalProperties": false
       },
+      "ItemDeDocumento": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string"
+          },
+          "alcance": {
+            "$ref": "#/components/schemas/AlcanceDaPublicacao"
+          },
+          "visivelNoPortal": {
+            "type": "boolean"
+          },
+          "arquivo": {
+            "$ref": "#/components/schemas/ArquivoDoDocumento"
+          },
+          "totalDownloads": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "descricao",
+          "alcance",
+          "visivelNoPortal",
+          "arquivo",
+          "totalDownloads",
+          "criadoEm",
+          "atualizadoEm"
+        ],
+        "additionalProperties": false
+      },
       "ItemDePublicacao": {
         "type": "object",
         "properties": {
@@ -30957,6 +32057,24 @@
         "required": ["itens", "total", "pagina", "porPagina", "contagens"],
         "additionalProperties": false
       },
+      "ListaDeBaixasDeDocumento": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaixaDeDocumento"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
+        "additionalProperties": false
+      },
       "ListaDeChamados": {
         "type": "object",
         "properties": {
@@ -31092,6 +32210,42 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina"],
+        "additionalProperties": false
+      },
+      "ListaDeDocumentos": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeDocumento"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
+        "additionalProperties": false
+      },
+      "ListaDeDocumentosDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDoPortal"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
         "additionalProperties": false
       },
       "ListaDeEmpresas": {
