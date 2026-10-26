@@ -25,6 +25,8 @@ export function processadorDeAntivirus(deps: {
   const { config, banco, s3, log } = deps
   return async (job: Job<JobDeVarredura>): Promise<Desfecho> => {
     const { tenantId, anexoId } = job.data
+    // Só estas duas tabelas (nunca vem de fora): as colunas do arquivo têm os mesmos nomes nas duas
+    const tabela = sql.raw(job.data.tipo === 'documento' ? 'documentos' : 'chamado_anexos')
     const comTenant = <T>(
       fn: (tx: Parameters<Parameters<Conexao['db']['transaction']>[0]>[0]) => Promise<T>,
     ) =>
@@ -35,7 +37,7 @@ export function processadorDeAntivirus(deps: {
 
     const [anexo] = await comTenant((tx) =>
       tx.execute<{ chave_arquivo: string; estado: string; enviado_em: string | null }>(sql`
-        SELECT chave_arquivo, estado, enviado_em FROM chamado_anexos WHERE id = ${anexoId} AND excluido_em IS NULL`),
+        SELECT chave_arquivo, estado, enviado_em FROM ${tabela} WHERE id = ${anexoId} AND excluido_em IS NULL`),
     )
     if (!anexo || anexo.enviado_em === null) return 'sem_anexo'
     if (anexo.estado !== 'pendente_varredura') return 'ja_varrido'
@@ -54,7 +56,7 @@ export function processadorDeAntivirus(deps: {
       if (r.limpo) {
         await comTenant((tx) =>
           tx.execute(sql`
-            UPDATE chamado_anexos SET estado = 'limpo', varrido_em = now(), ultimo_erro = NULL,
+            UPDATE ${tabela} SET estado = 'limpo', varrido_em = now(), ultimo_erro = NULL,
               tentativas_varredura = tentativas_varredura + 1, atualizado_em = now()
             WHERE id = ${anexoId} AND estado = 'pendente_varredura'`),
         )
@@ -63,7 +65,7 @@ export function processadorDeAntivirus(deps: {
       log.warn({ anexoId, tenantId, assinatura: r.assinatura }, 'anexo infectado bloqueado')
       await comTenant((tx) =>
         tx.execute(sql`
-          UPDATE chamado_anexos SET estado = 'infectado', assinatura = ${r.assinatura}, varrido_em = now(),
+          UPDATE ${tabela} SET estado = 'infectado', assinatura = ${r.assinatura}, varrido_em = now(),
             ultimo_erro = NULL, tentativas_varredura = tentativas_varredura + 1, atualizado_em = now()
           WHERE id = ${anexoId} AND estado = 'pendente_varredura'`),
       )
@@ -72,7 +74,7 @@ export function processadorDeAntivirus(deps: {
       const mensagem = e instanceof Error ? e.message : String(e)
       await comTenant((tx) =>
         tx.execute(sql`
-          UPDATE chamado_anexos SET ultimo_erro = ${mensagem.slice(0, 300)},
+          UPDATE ${tabela} SET ultimo_erro = ${mensagem.slice(0, 300)},
             tentativas_varredura = tentativas_varredura + 1, atualizado_em = now()
           WHERE id = ${anexoId}`),
       ).catch(() => undefined)

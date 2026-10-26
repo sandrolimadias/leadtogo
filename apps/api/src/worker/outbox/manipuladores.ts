@@ -15,7 +15,7 @@ import { enfileirarBloco } from '../../importacao/fila.js'
 import { EVENTO_GEOCODIFICAR_EMPRESA } from '../../geolocalizacao/evento.js'
 import { EVENTO_EXECUTAR_LOTE_GEO } from '../../geolocalizacao/evento-lote.js'
 import { enfileirarBlocoDoLote, enfileirarEmpresa } from '../../geolocalizacao/fila.js'
-import { EVENTO_VARRER_ANEXO } from '../../chamados/evento-anexo.js'
+import { EVENTO_VARRER_ANEXO, EVENTO_VARRER_DOCUMENTO } from '../../chamados/evento-anexo.js'
 import {
   EVENTO_NOTIFICAR_CHAMADO,
   manipuladorDeNotificacaoDeChamado,
@@ -155,6 +155,17 @@ export function manipuladoresPadrao(
       tenantId: evento.tenantId,
       anexoId,
       eventoId: evento.id,
+    })
+  }
+
+  /** Documento do portal enviado ao Garage: o mesmo antivírus, em outra tabela. */
+  manipuladores[EVENTO_VARRER_DOCUMENTO] = async (evento, { filas }) => {
+    const { documentoId } = evento.payload as { documentoId: string }
+    await enfileirarVarredura(filas.fila(FILAS.antivirus), {
+      tenantId: evento.tenantId,
+      anexoId: documentoId,
+      eventoId: evento.id,
+      tipo: 'documento',
     })
   }
 

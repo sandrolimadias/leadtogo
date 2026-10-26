@@ -3416,6 +3416,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal-documentos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Documentos do portal
+         * @description Exige `portal.ver` ou `portal.documentos`. Todos os documentos (também os em verificação, bloqueados e ocultos do portal), com o total de downloads.
+         */
+        get: operations["DocumentosController_listar"];
+        put?: never;
+        /**
+         * Cadastrar um documento e reservar o envio do arquivo
+         * @description Exige `portal.documentos`. Passo 1: cria o documento (arquivo ainda não enviado) e devolve a URL pré-assinada para o navegador enviar o arquivo (até 25 MB) direto ao armazenamento. Passo 2: `POST /portal-documentos/{id}/confirmar`. Sem o antivírus configurado: 503 `anexos_indisponiveis`.
+         */
+        post: operations["DocumentosController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-documentos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver um documento
+         * @description Exige `portal.ver` ou `portal.documentos`.
+         */
+        get: operations["DocumentosController_obter"];
+        put?: never;
+        post?: never;
+        /**
+         * Excluir um documento
+         * @description Exige `portal.documentos`. Exclusão lógica: some do portal e da lista.
+         */
+        delete: operations["DocumentosController_excluir"];
+        options?: never;
+        head?: never;
+        /**
+         * Editar um documento
+         * @description Exige `portal.documentos`. Título, descrição, alcance (com a lista de empresas) e se aparece no portal. O arquivo não troca: publique outro documento.
+         */
+        patch: operations["DocumentosController_editar"];
+        trace?: never;
+    };
+    "/v1/portal-documentos/{id}/baixas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quem baixou
+         * @description Exige `portal.ver` ou `portal.documentos`. Os downloads mais recentes (até 200), com a pessoa, a empresa-cliente e a data.
+         */
+        get: operations["DocumentosController_baixas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-documentos/{id}/confirmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar o envio do arquivo
+         * @description Exige `portal.documentos`. Passo 2: confere o objeto no armazenamento (existe e tem o tamanho dito) e manda o antivírus varrer. Idempotente. Arquivo fora do combinado: 400 `anexo_invalido` e o documento é descartado; ainda não chegou: 409 `anexo_nao_enviado`.
+         */
+        post: operations["DocumentosController_confirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-documentos/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Baixar o arquivo (equipe)
+         * @description Exige `portal.ver` ou `portal.documentos`. URL pré-assinada de 5 minutos, sempre como download. Só o "limpo": 409 `anexo_em_verificacao` ou `anexo_bloqueado`.
+         */
+        get: operations["DocumentosController_baixar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal-hub/indicadores": {
         parameters: {
             query?: never;
@@ -3866,6 +3978,46 @@ export interface paths {
          * @description Até 7 dias depois de Resolvido (409 `prazo_de_reabertura_vencido`); depois, abra um novo chamado.
          */
         post: operations["PortalChamadosController_reabrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/documentos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Documentos da empresa
+         * @description Só os documentos já verificados pelo antivírus, visíveis no portal e do alcance da empresa do cliente, os mais novos primeiro. Busca pelo título ou pela descrição.
+         */
+        get: operations["PortalDocumentosController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/documentos/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Baixar um documento
+         * @description Registra o download (quem, de que empresa e quando) e devolve a URL pré-assinada de 60 segundos, sempre como arquivo. Documento que o cliente não enxerga: 404 `documento_nao_encontrado`.
+         */
+        post: operations["PortalDocumentosController_baixar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5053,6 +5205,13 @@ export interface components {
             id: string;
             nome: string;
         };
+        ArquivoDoDocumento: {
+            nome: string;
+            mime: string;
+            tamanho: number;
+            estado: components["schemas"]["EstadoDeAnexo"];
+            enviado: boolean;
+        };
         AtendenteDoChamado: {
             /** Format: uuid */
             id: string;
@@ -5130,6 +5289,12 @@ export interface components {
         AvaliarChamadoEntrada: {
             nota: number;
             comentario?: string | null;
+        };
+        BaixaDeDocumento: {
+            pessoa: string;
+            empresa: string;
+            /** Format: date-time */
+            baixadoEm: string;
         };
         BaseDoMapa: {
             url: string | null;
@@ -5633,6 +5798,14 @@ export interface components {
             /** @enum {string} */
             papel?: "admin" | "gestor" | "vendedor";
         };
+        CriarDocumentoEntrada: {
+            titulo: string;
+            descricao?: string | null;
+            alcance: components["schemas"]["AlcanceDaPublicacao"];
+            /** @default [] */
+            empresaIds: string[];
+            arquivo: components["schemas"]["PedirEnvioDeAnexoEntrada"];
+        };
         CriarEmpresaDaCarteiraEntrada: {
             /** @enum {string} */
             tipoDocumento: "cnpj" | "cpf" | "nenhum";
@@ -6023,6 +6196,35 @@ export interface components {
             foraDoLimite: boolean;
             bloqueado: boolean;
         };
+        Documento: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            descricao: string | null;
+            alcance: components["schemas"]["AlcanceDaPublicacao"];
+            visivelNoPortal: boolean;
+            arquivo: components["schemas"]["ArquivoDoDocumento"];
+            totalDownloads: number;
+            /** Format: date-time */
+            criadoEm: string;
+            /** Format: date-time */
+            atualizadoEm: string;
+            empresas: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            }[];
+        };
+        DocumentoDoPortal: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            descricao: string | null;
+            nome: string;
+            tamanho: number;
+            /** Format: date-time */
+            publicadoEm: string;
+        };
         DownloadDeAnexo: {
             /** Format: uri */
             url: string;
@@ -6031,6 +6233,13 @@ export interface components {
         };
         DuplicarPerfil: {
             nome: string;
+        };
+        EditarDocumentoEntrada: {
+            titulo?: string;
+            descricao?: string | null;
+            alcance?: components["schemas"]["AlcanceDaPublicacao"];
+            empresaIds?: string[];
+            visivelNoPortal?: boolean;
         };
         EditarPerfil: {
             nome?: string;
@@ -6282,6 +6491,18 @@ export interface components {
             };
             /** Format: date-time */
             expiraEm: string;
+        };
+        EnvioDeDocumento: {
+            documento: components["schemas"]["Documento"];
+            envio: {
+                /** Format: uri */
+                url: string;
+                cabecalhos: {
+                    [key: string]: string;
+                };
+                /** Format: date-time */
+                expiraEm: string;
+            };
         };
         Erro: {
             statusCode: number;
@@ -6549,6 +6770,20 @@ export interface components {
             /** Format: date-time */
             atualizadoEm: string;
         };
+        ItemDeDocumento: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            descricao: string | null;
+            alcance: components["schemas"]["AlcanceDaPublicacao"];
+            visivelNoPortal: boolean;
+            arquivo: components["schemas"]["ArquivoDoDocumento"];
+            totalDownloads: number;
+            /** Format: date-time */
+            criadoEm: string;
+            /** Format: date-time */
+            atualizadoEm: string;
+        };
         ItemDePublicacao: {
             /** Format: uuid */
             id: string;
@@ -6701,6 +6936,10 @@ export interface components {
                 proximos7: number;
             };
         };
+        ListaDeBaixasDeDocumento: {
+            itens: components["schemas"]["BaixaDeDocumento"][];
+            total: number;
+        };
         ListaDeChamados: {
             itens: components["schemas"]["ItemDeChamado"][];
             total: number;
@@ -6731,6 +6970,14 @@ export interface components {
             total: number;
             pagina: number;
             porPagina: number;
+        };
+        ListaDeDocumentos: {
+            itens: components["schemas"]["ItemDeDocumento"][];
+            total: number;
+        };
+        ListaDeDocumentosDoPortal: {
+            itens: components["schemas"]["DocumentoDoPortal"][];
+            total: number;
         };
         ListaDeEmpresas: {
             itens: components["schemas"]["ItemDaListaDeEmpresas"][];
@@ -22053,6 +22300,512 @@ export interface operations {
             };
         };
     };
+    DocumentosController_listar: {
+        parameters: {
+            query?: {
+                busca?: string;
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeDocumentos"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DocumentosController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarDocumentoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvioDeDocumento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DocumentosController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Documento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DocumentosController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DocumentosController_editar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditarDocumentoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Documento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DocumentosController_baixas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeBaixasDeDocumento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DocumentosController_confirmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Documento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DocumentosController_baixar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadDeAnexo"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalHubController_indicadores: {
         parameters: {
             query?: {
@@ -23846,6 +24599,142 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalDocumentosController_listar: {
+        parameters: {
+            query?: {
+                busca?: string;
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeDocumentosDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalDocumentosController_baixar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadDeAnexo"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
