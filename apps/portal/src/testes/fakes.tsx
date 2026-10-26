@@ -1,6 +1,7 @@
 import type {
   ChamadoDoPortal,
   InicioDoPortal,
+  PublicacaoDoPortal,
   ItemDeChamadoDoPortal,
   SessaoDoPortal,
 } from '@leadtogo/api-client'
@@ -59,6 +60,19 @@ export const chamado = (extra: Partial<ChamadoDoPortal> = {}): ChamadoDoPortal =
   marcos: [{ tipo: 'aberto', em: '2026-10-20T09:14:00.000Z' }],
   avaliacao: null,
   acoes: { responder: true, reabrir: false, avaliar: false },
+  ...extra,
+})
+
+export const publicacao = (extra: Partial<PublicacaoDoPortal> = {}): PublicacaoDoPortal => ({
+  id: id(50),
+  titulo: 'Expediente reduzido na sexta',
+  corpo: 'Lembrete: o expediente desta sexta encerra às **14h** por manutenção elétrica.',
+  publicadaEm: '2026-10-21T12:00:00.000Z',
+  fixada: false,
+  reacoes: { curtir: 0, apoiar: 0, parabens: 0 },
+  minhasReacoes: [],
+  comentarios: 0,
+  comentariosAbertos: true,
   ...extra,
 })
 
@@ -142,6 +156,27 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       listar: vi.fn(async () => ok({ itens: [], naoLidas: 0 })),
       marcarLida: vi.fn(async () => ok({ naoLidas: 0 })),
       marcarTodas: vi.fn(async () => ok({ naoLidas: 0 })),
+    },
+    publicacoes: {
+      feed: vi.fn(async () => ok({ itens: [], total: 0 })),
+      comentarios: vi.fn(async () => ok({ itens: [], comentariosAbertos: true })),
+      comentar: vi.fn(async (_id: string, corpo: string) =>
+        ok({
+          id: id(90),
+          autorNome: 'Daniel P.',
+          corpo,
+          criadoEm: '2026-10-21T12:00:00.000Z',
+          meu: true,
+          oculto: false,
+          ocultoMotivo: null,
+          denunciado: false,
+        }),
+      ),
+      reagir: vi.fn(async () =>
+        ok({ reacoes: { curtir: 1, apoiar: 0, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
+      ),
+      denunciar: vi.fn(async () => ok(undefined)),
+      marcarLidas: vi.fn(async () => ok({ marcadas: 0 })),
     },
     pedidos: {
       listar: vi.fn(async () => ok({ itens: [] })),

@@ -8,6 +8,7 @@ import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 
 import { useSessaoAtual } from '@/app/sessao'
 import { saudacao, primeiroNome } from '@/casca/rotulos'
+import { FeedDePublicacoes } from '@/components/feed-de-publicacoes'
 import { ListaDeChamados } from '@/components/lista-de-chamados'
 import { useServicos } from '@/servicos/contexto'
 
@@ -83,6 +84,13 @@ export function TelaInicio({ sessao: inicial }: { sessao: SessaoDoPortal }) {
         <Numero rotulo="Em aberto" valor={inicio?.chamadosAbertos ?? 0} />
         <Numero rotulo="Aguardando você" valor={inicio?.aguardandoVoce ?? 0} destaque />
         <Numero rotulo="Para avaliar" valor={inicio?.resolvidosParaAvaliar ?? 0} />
+      </section>
+
+      <section aria-labelledby="publicacoes" className="flex flex-col gap-3">
+        <h2 id="publicacoes" className="m-0 text-[15px] leading-5 font-semibold">
+          Publicações da equipe
+        </h2>
+        <FeedDePublicacoes nomeDoPortal={sessao.nomeDoPortal} />
       </section>
 
       <section aria-labelledby="recentes" className="rounded-md border border-border bg-surface">

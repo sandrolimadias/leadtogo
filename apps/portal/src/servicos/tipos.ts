@@ -1,6 +1,10 @@
 import type {
   AreaDoPortal,
   ChamadoDoPortal,
+  ComentarioDoPortal,
+  FeedDoPortal,
+  ListaDeComentariosDoPortal,
+  ReacoesDaPublicacao,
   InicioDoPortal,
   IniciarSegundoFatorResposta,
   ListaDeChamadosDoPortal,
@@ -11,6 +15,8 @@ import type {
   SessaoAtivaDoPortal,
   SessaoDoPortal,
 } from '@leadtogo/api-client'
+
+import type { MotivoDeDenuncia, TipoDeReacao } from '@leadtogo/shared'
 
 import type { Resultado } from './resultado'
 
@@ -70,6 +76,15 @@ export interface ServicosDoPortal {
     listar: (apenasNaoLidas?: boolean) => Promise<Resultado<ListaDeNotificacoesDoPortal>>
     marcarLida: (id: string) => Promise<Resultado<{ naoLidas: number }>>
     marcarTodas: () => Promise<Resultado<{ naoLidas: number }>>
+  }
+  /** Publicações da equipe (Fase 3B): feed, reações, comentários, denúncia e leitura */
+  publicacoes: {
+    feed: (pagina?: number) => Promise<Resultado<FeedDoPortal>>
+    comentarios: (id: string) => Promise<Resultado<ListaDeComentariosDoPortal>>
+    comentar: (id: string, corpo: string) => Promise<Resultado<ComentarioDoPortal>>
+    reagir: (id: string, tipo: TipoDeReacao) => Promise<Resultado<ReacoesDaPublicacao>>
+    denunciar: (comentarioId: string, motivo: MotivoDeDenuncia) => Promise<Resultado>
+    marcarLidas: (ids: string[]) => Promise<Resultado<{ marcadas: number }>>
   }
   pedidos: {
     listar: () => Promise<Resultado<ListaDePedidosDoCliente>>
