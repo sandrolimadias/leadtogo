@@ -16819,6 +16819,784 @@
         "tags": ["Perfis de acesso"]
       }
     },
+    "/v1/portal-acessos": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.acessos`. Lista os acessos (sem os revogados, salvo filtro por situação), por empresa-cliente, contato ou busca.",
+        "operationId": "PortalAcessosController_listar",
+        "parameters": [
+          {
+            "name": "empresaClienteId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "contatoId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "situacao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/SituacaoDoAcesso"
+                }
+              ]
+            }
+          },
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeAcessosDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Acessos ao portal",
+        "tags": ["Portal do cliente: gestão"]
+      },
+      "post": {
+        "description": "Exige `portal.acessos`. O contato precisa estar ativo na empresa-cliente. Sem `email`, usa o principal do contato. Cria o acesso como \"Convite enviado\" e envia o link de convite (7 dias, uso único). Portal desligado dá 409; contato fora da empresa, 422; já tem acesso ou e-mail em uso, 409.",
+        "operationId": "PortalAcessosController_darAcesso",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DarAcessoAoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcessoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dar acesso ao portal a um contato",
+        "tags": ["Portal do cliente: gestão"]
+      }
+    },
+    "/v1/portal-acessos/{id}": {
+      "patch": {
+        "description": "Exige `portal.acessos`. Suspender derruba as sessões abertas na hora. Só se suspende o acesso ativo e só se reativa o suspenso (409 nos outros casos).",
+        "operationId": "PortalAcessosController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarAcessoDoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcessoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar o papel ou suspender/reativar um acesso",
+        "tags": ["Portal do cliente: gestão"]
+      },
+      "delete": {
+        "description": "Exige `portal.acessos`. Revoga em definitivo (um novo convite cria outro acesso), derruba as sessões e invalida os links pendentes.",
+        "operationId": "PortalAcessosController_revogar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Revogar um acesso",
+        "tags": ["Portal do cliente: gestão"]
+      }
+    },
+    "/v1/portal-acessos/{id}/reenviar": {
+      "post": {
+        "description": "Exige `portal.acessos`. Só para quem ainda não aceitou. O convite anterior deixa de valer.",
+        "operationId": "PortalAcessosController_reenviar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcessoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reenviar o convite",
+        "tags": ["Portal do cliente: gestão"]
+      }
+    },
+    "/v1/portal-configuracao": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.configurar`.",
+        "operationId": "PortalConfiguracaoController_obter",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDoPortal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Configuração do portal",
+        "tags": ["Portal do cliente: gestão"]
+      },
+      "put": {
+        "description": "Exige `portal.configurar`. Liga ou desliga o portal da empresa (desligado, ninguém entra e as sessões deixam de valer), muda o nome mostrado no topo e a exigência de 2FA do Responsável.",
+        "operationId": "PortalConfiguracaoController_atualizar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarConfiguracaoDoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar a configuração do portal",
+        "tags": ["Portal do cliente: gestão"]
+      }
+    },
+    "/v1/portal-pedidos": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.acessos`. Pedidos que o Responsável de uma empresa-cliente fez para colegas (por padrão, os pendentes).",
+        "operationId": "PortalPedidosController_listar",
+        "parameters": [
+          {
+            "name": "situacao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "pendente",
+              "type": "string",
+              "enum": ["pendente", "aprovado", "recusado"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDePedidosDeAcesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Pedidos de acesso dos clientes",
+        "tags": ["Portal do cliente: gestão"]
+      }
+    },
+    "/v1/portal-pedidos/{id}/tratar": {
+      "post": {
+        "description": "Exige `portal.acessos`. Aprovar cria o contato, o vínculo com a empresa-cliente e o acesso (Colega) com o convite, numa transação só. Recusar guarda o motivo, que o Responsável vê. Pedido já tratado dá 409.",
+        "operationId": "PortalPedidosController_tratar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TratarPedidoDeAcessoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Aprovar ou recusar um pedido de acesso",
+        "tags": ["Portal do cliente: gestão"]
+      }
+    },
     "/v1/portal/2fa/conferir": {
       "post": {
         "description": "Código do aplicativo ou código de recuperação (que se gasta). Libera as rotas do portal nesta sessão. Limite de tentativas por acesso.",
@@ -17532,6 +18310,149 @@
         "summary": "Confirmar o link e entrar",
         "tags": ["Portal do cliente: acesso"],
         "security": []
+      }
+    },
+    "/v1/portal/pedidos-de-acesso": {
+      "get": {
+        "description": "Só o Responsável. Lista os pedidos da própria empresa-cliente e como a equipe os tratou.",
+        "operationId": "PortalPedidosClienteController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDePedidosDoCliente"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Meus pedidos de acesso para colegas",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      },
+      "post": {
+        "description": "Só o Responsável. A equipe aprova (cria o acesso) ou recusa. A empresa-cliente vem da sessão, nunca do corpo. E-mail que já tem acesso ou pedido pendente dá 409.",
+        "operationId": "PortalPedidosClienteController_pedir",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedirAcessoParaColegaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Pedir acesso para um colega",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
       }
     },
     "/v1/portal/perfil": {
@@ -19647,6 +20568,82 @@
         "required": ["token"],
         "additionalProperties": false
       },
+      "AcessoDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contato": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "empresaCliente": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "email": {
+            "type": "string"
+          },
+          "papel": {
+            "$ref": "#/components/schemas/PapelDoPortal"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDoAcesso"
+          },
+          "convidadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "aceitoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "ultimoAcessoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "conviteVencido": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "contato",
+          "empresaCliente",
+          "email",
+          "papel",
+          "situacao",
+          "convidadoEm",
+          "aceitoEm",
+          "ultimoAcessoEm",
+          "conviteVencido"
+        ],
+        "additionalProperties": false
+      },
       "AcoesDoChamado": {
         "type": "object",
         "properties": {
@@ -19781,6 +20778,23 @@
           "limite_jobs_falhos",
           "pool_banco"
         ],
+        "additionalProperties": false
+      },
+      "AlterarAcessoDoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "papel": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PapelDoPortal"
+              }
+            ]
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["ativo", "suspenso"]
+          }
+        },
         "additionalProperties": false
       },
       "AlterarAreaEntrada": {
@@ -21021,6 +22035,24 @@
         "required": ["perfilId"],
         "additionalProperties": false
       },
+      "AtualizarConfiguracaoDoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "ativo": {
+            "type": "boolean"
+          },
+          "nome": {
+            "nullable": true,
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "exigeDoisFatoresDoResponsavel": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "BaseDoMapa": {
         "type": "object",
         "properties": {
@@ -21716,6 +22748,27 @@
           }
         },
         "required": ["checkinModo", "checkinLimiteM", "lembreteRelatoriosHora"],
+        "additionalProperties": false
+      },
+      "ConfiguracaoDoPortal": {
+        "type": "object",
+        "properties": {
+          "ativo": {
+            "type": "boolean"
+          },
+          "nome": {
+            "nullable": true,
+            "type": "string"
+          },
+          "logoUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "exigeDoisFatoresDoResponsavel": {
+            "type": "boolean"
+          }
+        },
+        "required": ["ativo", "nome", "logoUrl", "exigeDoisFatoresDoResponsavel"],
         "additionalProperties": false
       },
       "ConfirmarEndereco": {
@@ -23415,6 +24468,33 @@
           "cnaes",
           "socios"
         ],
+        "additionalProperties": false
+      },
+      "DarAcessoAoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "contatoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresaClienteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "papel": {
+            "default": "colega",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PapelDoPortal"
+              }
+            ]
+          }
+        },
+        "required": ["contatoId", "empresaClienteId"],
         "additionalProperties": false
       },
       "Dashboard": {
@@ -26202,6 +27282,24 @@
         "required": ["itens", "total", "pagina", "porPagina", "colunas"],
         "additionalProperties": false
       },
+      "ListaDeAcessosDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcessoDoPortal"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
+        "additionalProperties": false
+      },
       "ListaDeAtividades": {
         "type": "object",
         "properties": {
@@ -26556,6 +27654,37 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina", "somas"],
+        "additionalProperties": false
+      },
+      "ListaDePedidosDeAcesso": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PedidoDeAcesso"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
+        "additionalProperties": false
+      },
+      "ListaDePedidosDoCliente": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PedidoDeAcessoDoCliente"
+            }
+          }
+        },
+        "required": ["itens"],
         "additionalProperties": false
       },
       "ListaDeRotas": {
@@ -28556,6 +29685,126 @@
         "required": ["rota", "adicionadas", "jaNaRota", "ignoradas", "excedentes"],
         "additionalProperties": false
       },
+      "PedidoDeAcesso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresaCliente": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "pedidoPor": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "nome": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["pendente", "aprovado", "recusado"]
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "empresaCliente",
+          "pedidoPor",
+          "nome",
+          "email",
+          "cargo",
+          "situacao",
+          "criadoEm"
+        ],
+        "additionalProperties": false
+      },
+      "PedidoDeAcessoDoCliente": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["pendente", "aprovado", "recusado"]
+          },
+          "motivo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "nome", "email", "cargo", "situacao", "motivo", "criadoEm"],
+        "additionalProperties": false
+      },
+      "PedirAcessoParaColegaEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 80
+          }
+        },
+        "required": ["nome", "email"],
+        "additionalProperties": false
+      },
       "PedirEntradaEntrada": {
         "type": "object",
         "properties": {
@@ -30526,6 +31775,10 @@
         ],
         "additionalProperties": false
       },
+      "SituacaoDoAcesso": {
+        "type": "string",
+        "enum": ["convidado", "ativo", "suspenso", "revogado"]
+      },
       "Solucao": {
         "type": "object",
         "properties": {
@@ -30741,6 +31994,21 @@
           "ordem",
           "chaveSistema"
         ],
+        "additionalProperties": false
+      },
+      "TratarPedidoDeAcessoEntrada": {
+        "type": "object",
+        "properties": {
+          "decisao": {
+            "type": "string",
+            "enum": ["aprovar", "recusar"]
+          },
+          "motivo": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": ["decisao"],
         "additionalProperties": false
       },
       "TriarChamadoEntrada": {

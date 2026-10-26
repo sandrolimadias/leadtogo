@@ -3280,6 +3280,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal-acessos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Acessos ao portal
+         * @description Exige `portal.ver` ou `portal.acessos`. Lista os acessos (sem os revogados, salvo filtro por situação), por empresa-cliente, contato ou busca.
+         */
+        get: operations["PortalAcessosController_listar"];
+        put?: never;
+        /**
+         * Dar acesso ao portal a um contato
+         * @description Exige `portal.acessos`. O contato precisa estar ativo na empresa-cliente. Sem `email`, usa o principal do contato. Cria o acesso como "Convite enviado" e envia o link de convite (7 dias, uso único). Portal desligado dá 409; contato fora da empresa, 422; já tem acesso ou e-mail em uso, 409.
+         */
+        post: operations["PortalAcessosController_darAcesso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-acessos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revogar um acesso
+         * @description Exige `portal.acessos`. Revoga em definitivo (um novo convite cria outro acesso), derruba as sessões e invalida os links pendentes.
+         */
+        delete: operations["PortalAcessosController_revogar"];
+        options?: never;
+        head?: never;
+        /**
+         * Alterar o papel ou suspender/reativar um acesso
+         * @description Exige `portal.acessos`. Suspender derruba as sessões abertas na hora. Só se suspende o acesso ativo e só se reativa o suspenso (409 nos outros casos).
+         */
+        patch: operations["PortalAcessosController_alterar"];
+        trace?: never;
+    };
+    "/v1/portal-acessos/{id}/reenviar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reenviar o convite
+         * @description Exige `portal.acessos`. Só para quem ainda não aceitou. O convite anterior deixa de valer.
+         */
+        post: operations["PortalAcessosController_reenviar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-configuracao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Configuração do portal
+         * @description Exige `portal.ver` ou `portal.configurar`.
+         */
+        get: operations["PortalConfiguracaoController_obter"];
+        /**
+         * Alterar a configuração do portal
+         * @description Exige `portal.configurar`. Liga ou desliga o portal da empresa (desligado, ninguém entra e as sessões deixam de valer), muda o nome mostrado no topo e a exigência de 2FA do Responsável.
+         */
+        put: operations["PortalConfiguracaoController_atualizar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-pedidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pedidos de acesso dos clientes
+         * @description Exige `portal.ver` ou `portal.acessos`. Pedidos que o Responsável de uma empresa-cliente fez para colegas (por padrão, os pendentes).
+         */
+        get: operations["PortalPedidosController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-pedidos/{id}/tratar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprovar ou recusar um pedido de acesso
+         * @description Exige `portal.acessos`. Aprovar cria o contato, o vínculo com a empresa-cliente e o acesso (Colega) com o convite, numa transação só. Recusar guarda o motivo, que o Responsável vê. Pedido já tratado dá 409.
+         */
+        post: operations["PortalPedidosController_tratar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/2fa/conferir": {
         parameters: {
             query?: never;
@@ -3434,6 +3566,30 @@ export interface paths {
          * @description Público. Consome o link (uso único) e abre a sessão do portal no cookie `HttpOnly` (30 dias deslizantes, no máximo 90). O convite ativa o acesso; a troca de e-mail grava o endereço novo. No primeiro acesso exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`).
          */
         post: operations["PortalAuthController_consumirLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/pedidos-de-acesso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Meus pedidos de acesso para colegas
+         * @description Só o Responsável. Lista os pedidos da própria empresa-cliente e como a equipe os tratou.
+         */
+        get: operations["PortalPedidosClienteController_listar"];
+        put?: never;
+        /**
+         * Pedir acesso para um colega
+         * @description Só o Responsável. A equipe aprova (cria o acesso) ou recusa. A empresa-cliente vem da sessão, nunca do corpo. E-mail que já tem acesso ou pedido pendente dá 409.
+         */
+        post: operations["PortalPedidosClienteController_pedir"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3951,6 +4107,30 @@ export interface components {
             nome?: string;
             senha?: string;
         };
+        AcessoDoPortal: {
+            /** Format: uuid */
+            id: string;
+            contato: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            empresaCliente: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            email: string;
+            papel: components["schemas"]["PapelDoPortal"];
+            situacao: components["schemas"]["SituacaoDoAcesso"];
+            /** Format: date-time */
+            convidadoEm: string;
+            /** Format: date-time */
+            aceitoEm: string | null;
+            /** Format: date-time */
+            ultimoAcessoEm: string | null;
+            conviteVencido: boolean;
+        };
         AcoesDoChamado: {
             responder: boolean;
             notaInterna: boolean;
@@ -3981,6 +4161,11 @@ export interface components {
                 pico_pct: number;
                 limite_pct: number;
             };
+        };
+        AlterarAcessoDoPortalEntrada: {
+            papel?: components["schemas"]["PapelDoPortal"];
+            /** @enum {string} */
+            situacao?: "ativo" | "suspenso";
         };
         AlterarAreaEntrada: {
             nome?: string;
@@ -4322,6 +4507,11 @@ export interface components {
             /** Format: uuid */
             perfilId: string;
         };
+        AtualizarConfiguracaoDoPortalEntrada: {
+            ativo?: boolean;
+            nome?: string | null;
+            exigeDoisFatoresDoResponsavel?: boolean;
+        };
         BaseDoMapa: {
             url: string | null;
         };
@@ -4509,6 +4699,12 @@ export interface components {
             checkinModo: "avisar" | "bloquear" | "so_gravar";
             checkinLimiteM: number;
             lembreteRelatoriosHora: string;
+        };
+        ConfiguracaoDoPortal: {
+            ativo: boolean;
+            nome: string | null;
+            logoUrl: string | null;
+            exigeDoisFatoresDoResponsavel: boolean;
         };
         ConfirmarEndereco: {
             /** @enum {string} */
@@ -5001,6 +5197,15 @@ export interface components {
                 qualificacaoCodigo: number | null;
                 qualificacaoTexto: string | null;
             }[];
+        };
+        DarAcessoAoPortalEntrada: {
+            /** Format: uuid */
+            contatoId: string;
+            /** Format: uuid */
+            empresaClienteId: string;
+            email?: string;
+            /** @default colega */
+            papel: components["schemas"]["PapelDoPortal"];
         };
         Dashboard: {
             membro: {
@@ -5733,6 +5938,10 @@ export interface components {
             porPagina: number;
             colunas: string[];
         };
+        ListaDeAcessosDoPortal: {
+            itens: components["schemas"]["AcessoDoPortal"][];
+            total: number;
+        };
         ListaDeAtividades: {
             itens: components["schemas"]["Atividade"][];
             total: number;
@@ -5811,6 +6020,13 @@ export interface components {
                 mensal: number;
                 ponderado: number;
             };
+        };
+        ListaDePedidosDeAcesso: {
+            itens: components["schemas"]["PedidoDeAcesso"][];
+            total: number;
+        };
+        ListaDePedidosDoCliente: {
+            itens: components["schemas"]["PedidoDeAcessoDoCliente"][];
         };
         ListaDeRotas: {
             itens: components["schemas"]["ItemDeRota"][];
@@ -6366,6 +6582,44 @@ export interface components {
             ignoradas: number;
             excedentes: number;
         };
+        PedidoDeAcesso: {
+            /** Format: uuid */
+            id: string;
+            empresaCliente: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            pedidoPor: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            };
+            nome: string;
+            email: string;
+            cargo: string | null;
+            /** @enum {string} */
+            situacao: "pendente" | "aprovado" | "recusado";
+            /** Format: date-time */
+            criadoEm: string;
+        };
+        PedidoDeAcessoDoCliente: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            email: string;
+            cargo: string | null;
+            /** @enum {string} */
+            situacao: "pendente" | "aprovado" | "recusado";
+            motivo: string | null;
+            /** Format: date-time */
+            criadoEm: string;
+        };
+        PedirAcessoParaColegaEntrada: {
+            nome: string;
+            email: string;
+            cargo?: string | null;
+        };
         PedirEntradaEntrada: {
             email: string;
         };
@@ -6899,6 +7153,8 @@ export interface components {
             segundoFatorExigido: boolean;
             segundoFatorPendente: boolean;
         };
+        /** @enum {string} */
+        SituacaoDoAcesso: "convidado" | "ativo" | "suspenso" | "revogado";
         Solucao: {
             /** Format: uuid */
             id: string;
@@ -6956,6 +7212,11 @@ export interface components {
             ativo: boolean;
             ordem: number;
             chaveSistema: string | null;
+        };
+        TratarPedidoDeAcessoEntrada: {
+            /** @enum {string} */
+            decisao: "aprovar" | "recusar";
+            motivo?: string;
         };
         TriarChamadoEntrada: {
             /** Format: uuid */
@@ -20173,6 +20434,629 @@ export interface operations {
             };
         };
     };
+    PortalAcessosController_listar: {
+        parameters: {
+            query?: {
+                empresaClienteId?: string;
+                contatoId?: string;
+                situacao?: components["schemas"]["SituacaoDoAcesso"];
+                busca?: string;
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeAcessosDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAcessosController_darAcesso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DarAcessoAoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcessoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAcessosController_revogar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAcessosController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarAcessoDoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcessoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAcessosController_reenviar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcessoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalConfiguracaoController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDoPortal"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalConfiguracaoController_atualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtualizarConfiguracaoDoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPedidosController_listar: {
+        parameters: {
+            query?: {
+                situacao?: "pendente" | "aprovado" | "recusado";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDePedidosDeAcesso"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPedidosController_tratar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TratarPedidoDeAcessoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalAuthController_conferirSegundoFator: {
         parameters: {
             query?: never;
@@ -20751,6 +21635,129 @@ export interface operations {
             };
             /** @description Erro */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPedidosClienteController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDePedidosDoCliente"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPedidosClienteController_pedir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedirAcessoParaColegaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
