@@ -256,7 +256,7 @@ export class DocumentosService {
     await db.execute(sql`
       UPDATE documentos SET
         titulo = ${d.titulo ?? antes.titulo},
-        descricao = ${d.descricao === undefined ? antes.descricao : d.descricao},
+        descricao = ${d.descricao === undefined ? antes.descricao : d.descricao || null},
         alcance = ${d.alcance ?? antes.alcance}::alcance_documento,
         visivel_no_portal = ${d.visivelNoPortal ?? antes.visivel_no_portal},
         atualizado_em = now(), atualizado_por = ${this.ctx.membro.id}

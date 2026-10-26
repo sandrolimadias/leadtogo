@@ -131,7 +131,16 @@ export type EnvioDeDocumento = z.infer<typeof envioDeDocumentoSchema>
 export const editarDocumentoSchema = z
   .object({
     titulo: tituloSchema.optional(),
-    descricao: descricaoSchema,
+    /** Ausente = não muda; vazio ou nulo = apaga */
+    descricao: z
+      .string()
+      .trim()
+      .max(
+        TAMANHO_MAXIMO_DA_DESCRICAO_DO_DOCUMENTO,
+        `no máximo ${TAMANHO_MAXIMO_DA_DESCRICAO_DO_DOCUMENTO} caracteres`,
+      )
+      .nullable()
+      .optional(),
     alcance: alcanceDaPublicacaoSchema.optional(),
     empresaIds: z.array(z.uuid()).max(MAXIMO_DE_EMPRESAS_NO_ALCANCE).optional(),
     visivelNoPortal: z.boolean().optional(),

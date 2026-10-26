@@ -58,6 +58,10 @@ describe('editarDocumentoSchema', () => {
   it('aceita mudanças parciais; lista de empresas exige o alcance junto', () => {
     expect(editarDocumentoSchema.safeParse({ visivelNoPortal: false }).success).toBe(true)
     expect(editarDocumentoSchema.safeParse({ titulo: 'Novo título' }).success).toBe(true)
+    // ausente continua ausente (não vira nulo): a API só muda o que veio
+    expect(editarDocumentoSchema.parse({ visivelNoPortal: false })).toEqual({
+      visivelNoPortal: false,
+    })
     expect(editarDocumentoSchema.safeParse({ empresaIds: [empresa] }).success).toBe(false)
     expect(
       editarDocumentoSchema.safeParse({ alcance: 'empresas', empresaIds: [empresa] }).success,
