@@ -1,0 +1,510 @@
+import { z } from 'zod'
+
+import {
+  MAXIMO_DE_ANEXOS_POR_MENSAGEM,
+  estadoDeAnexoSchema,
+  podeReabrir,
+  type StatusDoChamado,
+} from './chamados.js'
+import { TAMANHO_MAXIMO_DE_PAGINA } from './paginacao.js'
+
+// Portal do cliente — Fase 3A (docs/plano_portal_cliente.md). O cliente tem formatos próprios (lista de
+// permissão): nada daqui reaproveita o DTO do CRM, e o que é interno (notas, triagem, prioridade, prazos,
+// e-mail do atendente) não tem campo para vazar.
+
+// ---- Constantes de acesso ----
+
+export const PAPEIS_DO_PORTAL = ['responsavel', 'colega'] as const
+export const papelDoPortalSchema = z.enum(PAPEIS_DO_PORTAL).meta({ id: 'PapelDoPortal' })
+export type PapelDoPortal = z.infer<typeof papelDoPortalSchema>
+export const ROTULO_DO_PAPEL_DO_PORTAL: Record<PapelDoPortal, string> = {
+  responsavel: 'Responsável',
+  colega: 'Colega',
+}
+
+export const SITUACOES_DO_ACESSO = ['convidado', 'ativo', 'suspenso', 'revogado'] as const
+export const situacaoDoAcessoSchema = z.enum(SITUACOES_DO_ACESSO).meta({ id: 'SituacaoDoAcesso' })
+export type SituacaoDoAcesso = z.infer<typeof situacaoDoAcessoSchema>
+export const ROTULO_DA_SITUACAO_DO_ACESSO: Record<SituacaoDoAcesso, string> = {
+  convidado: 'Convite enviado',
+  ativo: 'Ativo',
+  suspenso: 'Suspenso',
+  revogado: 'Revogado',
+}
+
+/** Validades (constantes únicas, usadas pela API, pelos e-mails e pelas telas). */
+export const VALIDADE_DO_CONVITE_DIAS = 7
+export const VALIDADE_DO_LINK_DE_ENTRADA_MIN = 15
+export const VALIDADE_DA_SESSAO_DIAS = 30
+export const VALIDADE_MAXIMA_DA_SESSAO_DIAS = 90
+export const VALIDADE_DO_DOWNLOAD_SEGUNDOS = 60
+
+const emailSchema = z.string().trim().toLowerCase().max(254).pipe(z.email('e-mail inválido'))
+
+/** O token do link: 256 bits em base64url (43 caracteres). */
+export const tokenDoLinkSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'link inválido')
+
+// ---- Equipe: dar e gerir acessos (CRM) ----
+
+export const darAcessoAoPortalSchema = z
+  .object({
+    contatoId: z.uuid(),
+    empresaClienteId: z.uuid(),
+    /** Em branco: usa o e-mail principal do contato */
+    email: emailSchema.optional(),
+    papel: papelDoPortalSchema.default('colega'),
+  })
+  .strict()
+  .meta({ id: 'DarAcessoAoPortalEntrada' })
+export type DarAcessoAoPortalEntrada = z.infer<typeof darAcessoAoPortalSchema>
+
+export const alterarAcessoDoPortalSchema = z
+  .object({
+    papel: papelDoPortalSchema.optional(),
+    situacao: z.enum(['ativo', 'suspenso']).optional(),
+  })
+  .strict()
+  .refine((d) => d.papel !== undefined || d.situacao !== undefined, 'informe o que mudar')
+  .meta({ id: 'AlterarAcessoDoPortalEntrada' })
+export type AlterarAcessoDoPortalEntrada = z.infer<typeof alterarAcessoDoPortalSchema>
+
+export const consultaDeAcessosDoPortalSchema = z
+  .object({
+    empresaClienteId: z.uuid().optional(),
+    contatoId: z.uuid().optional(),
+    situacao: situacaoDoAcessoSchema.optional(),
+    busca: z.string().trim().max(100).optional(),
+    pagina: z.coerce.number().int().min(1).default(1),
+    porPagina: z.coerce.number().int().min(1).max(TAMANHO_MAXIMO_DE_PAGINA).default(25),
+  })
+  .strict()
+export type ConsultaDeAcessosDoPortal = z.infer<typeof consultaDeAcessosDoPortalSchema>
+
+export const acessoDoPortalSchema = z
+  .object({
+    id: z.uuid(),
+    contato: z.object({ id: z.uuid(), nome: z.string() }),
+    empresaCliente: z.object({ id: z.uuid(), nome: z.string() }),
+    email: z.string(),
+    papel: papelDoPortalSchema,
+    situacao: situacaoDoAcessoSchema,
+    convidadoEm: z.iso.datetime(),
+    aceitoEm: z.iso.datetime().nullable(),
+    ultimoAcessoEm: z.iso.datetime().nullable(),
+    /** O convite pendente já venceu (a ação é reenviar) */
+    conviteVencido: z.boolean(),
+  })
+  .meta({ id: 'AcessoDoPortal' })
+export type AcessoDoPortal = z.infer<typeof acessoDoPortalSchema>
+
+export const listaDeAcessosDoPortalSchema = z
+  .object({ itens: z.array(acessoDoPortalSchema), total: z.number().int() })
+  .meta({ id: 'ListaDeAcessosDoPortal' })
+export type ListaDeAcessosDoPortal = z.infer<typeof listaDeAcessosDoPortalSchema>
+
+export const PEDIDO_DE_ACESSO_SITUACOES = ['pendente', 'aprovado', 'recusado'] as const
+export const situacaoDoPedidoDeAcessoSchema = z.enum(PEDIDO_DE_ACESSO_SITUACOES)
+export type SituacaoDoPedidoDeAcesso = z.infer<typeof situacaoDoPedidoDeAcessoSchema>
+
+export const pedidoDeAcessoSchema = z
+  .object({
+    id: z.uuid(),
+    empresaCliente: z.object({ id: z.uuid(), nome: z.string() }),
+    pedidoPor: z.object({ id: z.uuid(), nome: z.string() }),
+    nome: z.string(),
+    email: z.string(),
+    cargo: z.string().nullable(),
+    situacao: situacaoDoPedidoDeAcessoSchema,
+    criadoEm: z.iso.datetime(),
+  })
+  .meta({ id: 'PedidoDeAcesso' })
+export type PedidoDeAcesso = z.infer<typeof pedidoDeAcessoSchema>
+
+export const tratarPedidoDeAcessoSchema = z
+  .object({
+    decisao: z.enum(['aprovar', 'recusar']),
+    motivo: z.string().trim().max(500).optional(),
+  })
+  .strict()
+  .meta({ id: 'TratarPedidoDeAcessoEntrada' })
+export type TratarPedidoDeAcessoEntrada = z.infer<typeof tratarPedidoDeAcessoSchema>
+
+// ---- Configuração do portal (CRM) ----
+
+export const configuracaoDoPortalSchema = z
+  .object({
+    ativo: z.boolean(),
+    nome: z.string().nullable(),
+    logoUrl: z.string().nullable(),
+    exigeDoisFatoresDoResponsavel: z.boolean(),
+  })
+  .meta({ id: 'ConfiguracaoDoPortal' })
+export type ConfiguracaoDoPortal = z.infer<typeof configuracaoDoPortalSchema>
+
+export const atualizarConfiguracaoDoPortalSchema = z
+  .object({
+    ativo: z.boolean().optional(),
+    nome: z.string().trim().min(2, 'informe o nome').max(80).nullable().optional(),
+    exigeDoisFatoresDoResponsavel: z.boolean().optional(),
+  })
+  .strict()
+  .meta({ id: 'AtualizarConfiguracaoDoPortalEntrada' })
+export type AtualizarConfiguracaoDoPortalEntrada = z.infer<
+  typeof atualizarConfiguracaoDoPortalSchema
+>
+
+// ---- Cliente: entrada, convite e sessão ----
+
+/** A resposta é sempre a mesma, exista o e-mail ou não (não revela quem tem acesso). */
+export const pedirEntradaSchema = z
+  .object({ email: emailSchema })
+  .strict()
+  .meta({ id: 'PedirEntradaEntrada' })
+export type PedirEntradaEntrada = z.infer<typeof pedirEntradaSchema>
+
+export const respostaDePedirEntradaSchema = z
+  .object({ mensagem: z.string() })
+  .meta({ id: 'RespostaDePedirEntrada' })
+export const MENSAGEM_DE_ENTRADA_ENVIADA =
+  'Se este e-mail tem acesso ao portal, enviamos um link de entrada. Ele vale 15 minutos.'
+
+/** O que a página de confirmação mostra antes do clique (a leitura não consome o link). */
+export const consultaDoLinkSchema = z
+  .object({ token: tokenDoLinkSchema })
+  .strict()
+  .meta({ id: 'ConsultaDoLinkEntrada' })
+export const previaDoLinkSchema = z
+  .object({
+    finalidade: z.enum(['convite', 'entrada', 'troca_email']),
+    nomeDoPortal: z.string(),
+    empresaCliente: z.string(),
+    /** Convite: exige o aceite do aviso de privacidade no primeiro acesso */
+    exigeAceiteDePrivacidade: z.boolean(),
+  })
+  .meta({ id: 'PreviaDoLink' })
+export type PreviaDoLink = z.infer<typeof previaDoLinkSchema>
+
+export const consumirLinkSchema = z
+  .object({
+    token: tokenDoLinkSchema,
+    /** Obrigatório (true) quando a prévia pede o aceite */
+    aceitaPrivacidade: z.boolean().optional(),
+  })
+  .strict()
+  .meta({ id: 'ConsumirLinkEntrada' })
+export type ConsumirLinkEntrada = z.infer<typeof consumirLinkSchema>
+
+export const sessaoDoPortalSchema = z
+  .object({
+    acessoId: z.uuid(),
+    contato: z.object({ id: z.uuid(), nome: z.string(), email: z.string() }),
+    empresaCliente: z.object({ id: z.uuid(), nome: z.string() }),
+    papel: papelDoPortalSchema,
+    nomeDoPortal: z.string(),
+    logoUrl: z.string().nullable(),
+    /** A empresa exige 2FA do responsável e ainda não foi concluído nesta sessão */
+    segundoFatorPendente: z.boolean(),
+  })
+  .meta({ id: 'SessaoDoPortal' })
+export type SessaoDoPortal = z.infer<typeof sessaoDoPortalSchema>
+
+export const sessaoAtivaSchema = z
+  .object({
+    id: z.uuid(),
+    agente: z.string().nullable(),
+    ip: z.string().nullable(),
+    criadaEm: z.iso.datetime(),
+    ultimoUsoEm: z.iso.datetime(),
+    atual: z.boolean(),
+  })
+  .meta({ id: 'SessaoAtivaDoPortal' })
+export type SessaoAtiva = z.infer<typeof sessaoAtivaSchema>
+
+export const listaDeSessoesSchema = z
+  .object({ itens: z.array(sessaoAtivaSchema) })
+  .meta({ id: 'ListaDeSessoesDoPortal' })
+
+export const trocarEmailSchema = z
+  .object({ email: emailSchema })
+  .strict()
+  .meta({ id: 'TrocarEmailEntrada' })
+
+export const perfilDoPortalSchema = z
+  .object({
+    nome: z.string().trim().min(2, 'informe o nome').max(120),
+    cargo: z.string().trim().max(80).nullable().optional(),
+    telefone: z.string().trim().max(30).nullable().optional(),
+  })
+  .strict()
+  .meta({ id: 'PerfilDoPortalEntrada' })
+export type PerfilDoPortalEntrada = z.infer<typeof perfilDoPortalSchema>
+
+export const pedirAcessoParaColegaSchema = z
+  .object({
+    nome: z.string().trim().min(2, 'informe o nome').max(120),
+    email: emailSchema,
+    cargo: z.string().trim().max(80).nullable().optional(),
+  })
+  .strict()
+  .meta({ id: 'PedirAcessoParaColegaEntrada' })
+export type PedirAcessoParaColegaEntrada = z.infer<typeof pedirAcessoParaColegaSchema>
+
+// ---- Cliente: chamados ----
+
+/** O que o cliente vê no lugar do estado interno (docs/plano_portal_cliente.md, seção 6). */
+export const ESTADOS_DO_CHAMADO_NO_PORTAL = [
+  'aberto',
+  'em_atendimento',
+  'aguardando_voce',
+  'resolvido',
+  'fechado',
+] as const
+export const estadoDoChamadoNoPortalSchema = z
+  .enum(ESTADOS_DO_CHAMADO_NO_PORTAL)
+  .meta({ id: 'EstadoDoChamadoNoPortal' })
+export type EstadoDoChamadoNoPortal = z.infer<typeof estadoDoChamadoNoPortalSchema>
+
+export const ROTULO_DO_ESTADO_NO_PORTAL: Record<EstadoDoChamadoNoPortal, string> = {
+  aberto: 'Aberto',
+  em_atendimento: 'Em atendimento',
+  aguardando_voce: 'Aguardando sua resposta',
+  resolvido: 'Resolvido',
+  fechado: 'Fechado',
+}
+
+const ESTADO_NO_PORTAL: Record<StatusDoChamado, EstadoDoChamadoNoPortal> = {
+  aguardando_triagem: 'aberto',
+  pendente: 'aberto',
+  em_atendimento: 'em_atendimento',
+  aguardando_cliente: 'aguardando_voce',
+  resolvido: 'resolvido',
+  fechado: 'fechado',
+}
+export const estadoNoPortal = (status: StatusDoChamado): EstadoDoChamadoNoPortal =>
+  ESTADO_NO_PORTAL[status]
+
+const assuntoSchema = z.string().trim().min(3, 'descreva o assunto em poucas palavras').max(200)
+const textoSchema = z
+  .string()
+  .trim()
+  .min(1, 'escreva a mensagem')
+  .max(10_000, 'use até 10.000 caracteres')
+
+/** Empresa-cliente e solicitante vêm da sessão, nunca do corpo (`.strict()` recusa o excedente). */
+export const abrirChamadoNoPortalSchema = z
+  .object({
+    assunto: assuntoSchema,
+    descricao: z.string().trim().max(10_000).nullable().optional(),
+    /** Só áreas visíveis no portal; nulo = "não sei" (vai para a triagem) */
+    areaId: z.uuid().nullable().optional(),
+    anexoIds: z.array(z.uuid()).max(MAXIMO_DE_ANEXOS_POR_MENSAGEM).default([]),
+  })
+  .strict()
+  .meta({ id: 'AbrirChamadoNoPortalEntrada' })
+export type AbrirChamadoNoPortalEntrada = z.infer<typeof abrirChamadoNoPortalSchema>
+
+export const responderChamadoNoPortalSchema = z
+  .object({
+    corpo: textoSchema,
+    anexoIds: z.array(z.uuid()).max(MAXIMO_DE_ANEXOS_POR_MENSAGEM).default([]),
+  })
+  .strict()
+  .meta({ id: 'ResponderChamadoNoPortalEntrada' })
+export type ResponderChamadoNoPortalEntrada = z.infer<typeof responderChamadoNoPortalSchema>
+
+export const avaliarChamadoSchema = z
+  .object({
+    nota: z.number().int().min(1, 'dê uma nota de 1 a 5').max(5, 'dê uma nota de 1 a 5'),
+    comentario: z.string().trim().max(2_000).nullable().optional(),
+  })
+  .strict()
+  .meta({ id: 'AvaliarChamadoEntrada' })
+export type AvaliarChamadoEntrada = z.infer<typeof avaliarChamadoSchema>
+
+export const ABAS_DE_CHAMADOS_NO_PORTAL = ['abertos', 'todos'] as const
+export const consultaDeChamadosDoPortalSchema = z
+  .object({
+    aba: z.enum(ABAS_DE_CHAMADOS_NO_PORTAL).default('abertos'),
+    busca: z.string().trim().max(100).optional(),
+    pagina: z.coerce.number().int().min(1).default(1),
+    porPagina: z.coerce.number().int().min(1).max(TAMANHO_MAXIMO_DE_PAGINA).default(20),
+  })
+  .strict()
+export type ConsultaDeChamadosDoPortal = z.infer<typeof consultaDeChamadosDoPortalSchema>
+
+export const itemDeChamadoDoPortalSchema = z
+  .object({
+    id: z.uuid(),
+    codigo: z.string(),
+    assunto: z.string(),
+    estado: estadoDoChamadoNoPortalSchema,
+    area: z.string().nullable(),
+    abertoPor: z.string(),
+    criadoEm: z.iso.datetime(),
+    atualizadoEm: z.iso.datetime(),
+  })
+  .meta({ id: 'ItemDeChamadoDoPortal' })
+export type ItemDeChamadoDoPortal = z.infer<typeof itemDeChamadoDoPortalSchema>
+
+export const listaDeChamadosDoPortalSchema = z
+  .object({
+    itens: z.array(itemDeChamadoDoPortalSchema),
+    total: z.number().int(),
+    abas: z.object({ abertos: z.number().int(), todos: z.number().int() }),
+  })
+  .meta({ id: 'ListaDeChamadosDoPortal' })
+export type ListaDeChamadosDoPortal = z.infer<typeof listaDeChamadosDoPortalSchema>
+
+export const mensagemDoPortalSchema = z
+  .object({
+    id: z.uuid(),
+    /** "Você", um colega ou o nome da equipe: o e-mail do atendente nunca sai */
+    autor: z.object({ nome: z.string(), daEquipe: z.boolean(), voce: z.boolean() }),
+    corpo: z.string(),
+    anexos: z.array(
+      z.object({
+        id: z.uuid(),
+        nome: z.string(),
+        mime: z.string(),
+        tamanho: z.number().int(),
+        estado: estadoDeAnexoSchema,
+      }),
+    ),
+    criadoEm: z.iso.datetime(),
+  })
+  .meta({ id: 'MensagemDoPortal' })
+export type MensagemDoPortal = z.infer<typeof mensagemDoPortalSchema>
+
+export const marcoDoChamadoSchema = z
+  .object({
+    tipo: z.enum([
+      'aberto',
+      'em_atendimento',
+      'aguardando_voce',
+      'resolvido',
+      'reaberto',
+      'fechado',
+    ]),
+    em: z.iso.datetime(),
+  })
+  .meta({ id: 'MarcoDoChamadoNoPortal' })
+
+export const avaliacaoDoChamadoSchema = z
+  .object({
+    nota: z.number().int(),
+    comentario: z.string().nullable(),
+    criadaEm: z.iso.datetime(),
+  })
+  .meta({ id: 'AvaliacaoDoChamado' })
+
+export const chamadoDoPortalSchema = itemDeChamadoDoPortalSchema
+  .extend({
+    descricao: z.string().nullable(),
+    resolvidoEm: z.iso.datetime().nullable(),
+    mensagens: z.array(mensagemDoPortalSchema),
+    marcos: z.array(marcoDoChamadoSchema),
+    avaliacao: avaliacaoDoChamadoSchema.nullable(),
+    acoes: z.object({
+      responder: z.boolean(),
+      reabrir: z.boolean(),
+      avaliar: z.boolean(),
+    }),
+  })
+  .meta({ id: 'ChamadoDoPortal' })
+export type ChamadoDoPortal = z.infer<typeof chamadoDoPortalSchema>
+
+/** O que o cliente pode fazer agora (a API decide de novo; a tela só esconde botões). */
+export function acoesDoCliente(
+  status: StatusDoChamado,
+  resolvidoEm: string | Date | null,
+  jaAvaliou: boolean,
+  agora: Date = new Date(),
+): { responder: boolean; reabrir: boolean; avaliar: boolean } {
+  return {
+    responder: status !== 'fechado' && status !== 'resolvido',
+    reabrir: podeReabrir(status, resolvidoEm, agora),
+    avaliar: (status === 'resolvido' || status === 'fechado') && !jaAvaliou,
+  }
+}
+
+export const areaDoPortalSchema = z
+  .object({ id: z.uuid(), nome: z.string() })
+  .meta({ id: 'AreaDoPortal' })
+export const listaDeAreasDoPortalSchema = z
+  .object({ itens: z.array(areaDoPortalSchema) })
+  .meta({ id: 'ListaDeAreasDoPortal' })
+
+// ---- Cliente: notificações e início ----
+
+export const TIPOS_DE_NOTIFICACAO_DO_PORTAL = [
+  'chamado_resposta',
+  'chamado_status',
+  'chamado_aguardando_voce',
+  'chamado_resolvido',
+  'acesso',
+] as const
+export const tipoDeNotificacaoDoPortalSchema = z.enum(TIPOS_DE_NOTIFICACAO_DO_PORTAL)
+export type TipoDeNotificacaoDoPortal = z.infer<typeof tipoDeNotificacaoDoPortalSchema>
+
+export const notificacaoDoPortalSchema = z
+  .object({
+    id: z.uuid(),
+    tipo: z.string(),
+    titulo: z.string(),
+    corpo: z.string().nullable(),
+    /** Rota do portal a abrir (ex.: `/chamados/<id>`) */
+    destino: z.string().nullable(),
+    lida: z.boolean(),
+    criadaEm: z.iso.datetime(),
+  })
+  .meta({ id: 'NotificacaoDoPortal' })
+export type NotificacaoDoPortal = z.infer<typeof notificacaoDoPortalSchema>
+
+export const listaDeNotificacoesDoPortalSchema = z
+  .object({ itens: z.array(notificacaoDoPortalSchema), naoLidas: z.number().int() })
+  .meta({ id: 'ListaDeNotificacoesDoPortal' })
+
+export const inicioDoPortalSchema = z
+  .object({
+    chamadosAbertos: z.number().int(),
+    aguardandoVoce: z.number().int(),
+    resolvidosParaAvaliar: z.number().int(),
+    recentes: z.array(itemDeChamadoDoPortalSchema),
+  })
+  .meta({ id: 'InicioDoPortal' })
+export type InicioDoPortal = z.infer<typeof inicioDoPortalSchema>
+
+// ---- CRM: hub do portal (aba Chamados) ----
+
+export const indicadoresDoHubSchema = z
+  .object({
+    emAberto: z.number().int(),
+    prazoEstourando: z.number().int(),
+    /** Percentual (0 a 100) das primeiras respostas dentro da meta; nulo sem dados */
+    primeiraRespostaNoPrazo: z.number().nullable(),
+    notaMedia: z.number().nullable(),
+    avaliacoes: z.number().int(),
+    acessosAtivos: z.number().int(),
+    pedidosPendentes: z.number().int(),
+  })
+  .meta({ id: 'IndicadoresDoHub' })
+export type IndicadoresDoHub = z.infer<typeof indicadoresDoHubSchema>
+
+export const aguardarClienteSchema = z
+  .object({
+    corpo: textoSchema,
+    anexoIds: z.array(z.uuid()).max(MAXIMO_DE_ANEXOS_POR_MENSAGEM).default([]),
+  })
+  .strict()
+  .meta({ id: 'AguardarClienteEntrada' })
+export type AguardarClienteEntrada = z.infer<typeof aguardarClienteSchema>
+
+export const criarTarefaDoChamadoSchema = z
+  .object({
+    titulo: z.string().trim().min(3, 'informe o título').max(200),
+    responsavelId: z.uuid().optional(),
+    prazo: z.iso.datetime().optional(),
+  })
+  .strict()
+  .meta({ id: 'CriarTarefaDoChamadoEntrada' })
+export type CriarTarefaDoChamadoEntrada = z.infer<typeof criarTarefaDoChamadoSchema>

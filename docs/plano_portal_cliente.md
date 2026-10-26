@@ -100,6 +100,8 @@ Tudo reaproveita `notificacoes` (destinatário `contato`) e o SSE da Fase 2. Bus
 
 ## 10. Permissões (catálogo v5, só o Administrador recebe)
 
+> **Ajuste na execução:** as chaves entram por fase, cada uma sobe a versão do catálogo: v5 (3A) `portal.ver`, `portal.acessos`, `portal.configurar`; v6 (3B) `portal.publicar`, `portal.moderar`; v7 (3C) `portal.documentos`; v8 (3D) `portal.agenda`; v9 (3E) `portal.avisos`. Assim nenhuma permissão existe sem a tela que a usa.
+
 `portal.ver`, `portal.acessos`, `portal.publicar`, `portal.moderar`, `portal.documentos`, `portal.agenda`, `portal.configurar`, e `portal.avisos` (acrescentada por causa da aba Avisos). O Gestor não herda o prefixo `portal.`. O enum `papel_conta` não muda.
 
 ## 11. Pré-requisitos, riscos e LGPD

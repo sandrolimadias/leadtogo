@@ -26,9 +26,12 @@ describe('catálogo de permissões', () => {
 
   it('não registra módulos que ainda não existem', () => {
     const modulos = new Set(CATALOGO_DE_PERMISSOES.map((d) => d.modulo))
-    // A central de chamados entrou na v4 (Fase 2); o portal do cliente é a fase seguinte
+    // Chamados entrou na v4 e o portal na v5; publicações, documentos e agenda chegam nas fases 3B a 3D
     expect(modulos.has('chamados')).toBe(true)
-    expect(modulos.has('portal')).toBe(false)
+    expect(modulos.has('portal')).toBe(true)
+    expect([...CHAVES_DE_PERMISSAO].filter((c) => c.startsWith('portal.'))).toEqual(
+      NOVAS_POR_VERSAO[5],
+    )
   })
 
   it('os perfis de sistema padrão são válidos', () => {
@@ -66,10 +69,10 @@ describe('catálogo de permissões', () => {
 })
 
 describe('versão do catálogo', () => {
-  it('a versão 4 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
-    expect(VERSAO_DO_CATALOGO).toBe(4)
+  it('a versão 5 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
+    expect(VERSAO_DO_CATALOGO).toBe(5)
     // `atividades.excluir` saiu (6d): excluir a atividade é parte de editá-la, como antes dos perfis
-    expect(CHAVES_DE_PERMISSAO).toHaveLength(41)
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(44)
     expect(NOVAS_POR_VERSAO).toEqual({
       2: ['visitas.ver_localizacao'],
       3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
@@ -83,6 +86,7 @@ describe('versão do catálogo', () => {
         'chamados.ver_metricas',
         'chamados.exportar',
       ],
+      5: ['portal.ver', 'portal.acessos', 'portal.configurar'],
     })
   })
 
@@ -95,6 +99,13 @@ describe('versão do catálogo', () => {
     expect(PERMISSOES_PADRAO.admin['chamados.ver_metricas']).toBe('todas')
     for (const perfil of [PERMISSOES_PADRAO.gestor, PERMISSOES_PADRAO.vendedor]) {
       expect(Object.keys(perfil).filter((c) => c.startsWith('chamados.'))).toEqual([])
+    }
+  })
+
+  it('v5: só o Administrador recebe as permissões do portal; Gestor e Vendedor não ganham nada', () => {
+    for (const c of NOVAS_POR_VERSAO[5] ?? []) expect(PERMISSOES_PADRAO.admin[c]).toBe(true)
+    for (const perfil of [PERMISSOES_PADRAO.gestor, PERMISSOES_PADRAO.vendedor]) {
+      expect(Object.keys(perfil).filter((c) => c.startsWith('portal.'))).toEqual([])
     }
   })
 
