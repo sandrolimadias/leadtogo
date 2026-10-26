@@ -5,12 +5,12 @@ import { CalendarDays, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { TextField } from '@/components/ui/campos'
-import { Switch } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/exibicao'
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { TextField } from '@leadtogo/ui/campos'
+import { Switch } from '@leadtogo/ui/checkbox'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 
 // Segunda a domingo, na ordem em que se lê (o índice 0 do expediente é o domingo)
 const ORDEM_DOS_DIAS = [1, 2, 3, 4, 5, 6, 0] as const

@@ -22,9 +22,9 @@ import { ChevronsLeft, ChevronsRight, Plus } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { useFasesRecolhidas } from '@/casca/preferencias'
-import { IconButton } from '@/components/ui/button'
-import { classeDaCor } from '@/components/ui/cores'
-import { cn } from '@/lib/cn'
+import { IconButton } from '@leadtogo/ui/button'
+import { classeDaCor } from '@leadtogo/ui/cores'
+import { cn } from '@leadtogo/ui/cn'
 import { useReduzirMovimento } from '@/lib/grafico'
 
 import { useAcoesDaOportunidade } from './acoes'

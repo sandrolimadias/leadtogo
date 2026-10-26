@@ -8,9 +8,9 @@ import { useServicos } from '@/auth/contexto'
 import type { ErroDeAcesso } from '@/auth/tipos'
 import { CampoDeSenha } from '@/components/acesso/campo-de-senha'
 import { Cabecalho, DivisorOu } from '@/components/acesso/layout'
-import { Button } from '@/components/ui/button'
-import { TextField } from '@/components/ui/campos'
-import { Alert } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { TextField } from '@leadtogo/ui/campos'
+import { Alert } from '@leadtogo/ui/feedback'
 
 import { classeDoLink, EMAIL_VALIDO, focarCampo, useEnvio } from './comum'
 

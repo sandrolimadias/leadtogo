@@ -1,7 +1,7 @@
 import type { ContatoExistente } from '@leadtogo/shared'
 
-import { Button } from '@/components/ui/button'
-import { Alert } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { Alert } from '@leadtogo/ui/feedback'
 
 /**
  * Aviso de contato duplicado (mesmo e-mail ou telefone). Só avisa: a pessoa abre o existente ou salva

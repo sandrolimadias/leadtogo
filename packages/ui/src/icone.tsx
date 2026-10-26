@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 
-import { cn } from '@/lib/cn'
+import { cn } from './cn'
 
 /**
  * Ícone de traço (Lucide) no padrão do design system: `currentColor`, traço 1,75. Sem `label` fica

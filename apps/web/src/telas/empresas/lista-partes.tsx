@@ -11,10 +11,10 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Checkbox } from '@/components/ui/checkbox'
-import { Tag } from '@/components/ui/exibicao'
-import type { CorDeTag } from '@/components/ui/cores'
-import { cn } from '@/lib/cn'
+import { Checkbox } from '@leadtogo/ui/checkbox'
+import { Tag } from '@leadtogo/ui/exibicao'
+import type { CorDeTag } from '@leadtogo/ui/cores'
+import { cn } from '@leadtogo/ui/cn'
 import { reais } from '@/telas/oportunidades/formatos'
 
 import { dataCurta, diasDesde, documentoFormatado, linkDeRota, tempoRelativo } from './formatos'

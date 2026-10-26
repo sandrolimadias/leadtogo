@@ -5,11 +5,11 @@ import { ArrowRight, Ban, ChevronLeft, CircleCheck, TriangleAlert, Upload } from
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/campos'
-import { Badge } from '@/components/ui/exibicao'
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { cn } from '@/lib/cn'
+import { Button } from '@leadtogo/ui/button'
+import { Select } from '@leadtogo/ui/campos'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { cn } from '@leadtogo/ui/cn'
 import { useEnvio } from '@/telas/acesso/comum'
 
 import { formatarDuracao, PASSO, usePrevia } from './comum'

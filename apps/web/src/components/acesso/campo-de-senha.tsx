@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { TextField, type TextFieldProps } from '@/components/ui/campos'
+import { Button } from '@leadtogo/ui/button'
+import { TextField, type TextFieldProps } from '@leadtogo/ui/campos'
 
 /** Campo de senha com "Mostrar/Ocultar". Mantém o tipo `password` por padrão (gerenciador de senhas). */
 export function CampoDeSenha(props: Omit<TextFieldProps, 'type' | 'suffix'>) {

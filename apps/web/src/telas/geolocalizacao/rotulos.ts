@@ -1,6 +1,6 @@
 import type { PosicaoDaEmpresa, ResultadoGeoEmpresa } from '@leadtogo/shared'
 
-import type { TomDoBadge } from '@/components/ui/exibicao'
+import type { TomDoBadge } from '@leadtogo/ui/exibicao'
 
 export const ROTULO_DO_ESTADO: Record<PosicaoDaEmpresa['estado'], string> = {
   exata: 'Posição exata',

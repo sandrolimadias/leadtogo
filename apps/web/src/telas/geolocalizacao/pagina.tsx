@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { type ReactNode, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { ConteudoDaAba, Tabs } from '@/components/ui/tabs'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { ConteudoDaAba, Tabs } from '@leadtogo/ui/tabs'
 
 import { FilaDeConfirmacao } from './confirmar'
 import { chaveDoResumo, useRegioes } from './consultas'

@@ -3,8 +3,8 @@ import { Search, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { TextField } from '@/components/ui/campos'
+import { Button } from '@leadtogo/ui/button'
+import { TextField } from '@leadtogo/ui/campos'
 import { documentoFormatado } from '@/telas/empresas/formatos'
 
 /** Quantas empresas a busca traz por vez; quem procura refina digitando mais. */

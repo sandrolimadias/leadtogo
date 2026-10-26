@@ -3,11 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/exibicao'
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { Switch } from '@leadtogo/ui/checkbox'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 import { useEnvio } from '@/telas/acesso/comum'
 
 const chaveDaSegurancaDaEmpresa = ['seguranca-da-empresa'] as const

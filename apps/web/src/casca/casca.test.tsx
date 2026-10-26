@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { TooltipProvider } from '@leadtogo/ui/tooltip'
 import { meDeAdmin, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 
 import { VersaoDoApp } from './partes'

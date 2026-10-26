@@ -5,14 +5,14 @@ import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { MapaBase } from '@/components/mapa/mapa-base'
-import { Button } from '@/components/ui/button'
-import { TextField } from '@/components/ui/campos'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog } from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/exibicao'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
-import { PaginaDeTabela } from '@/components/ui/pagina'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { TextField } from '@leadtogo/ui/campos'
+import { Checkbox } from '@leadtogo/ui/checkbox'
+import { Dialog } from '@leadtogo/ui/dialog'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
+import { PaginaDeTabela } from '@leadtogo/ui/pagina'
+import { toast } from '@leadtogo/ui/toast'
 
 // Centro inicial do mapa do ponto novo: Vitória (ES). O admin arrasta o pin ou toca no lugar certo.
 const CENTRO_PADRAO = { latitude: -20.3155, longitude: -40.3128 }

@@ -2,8 +2,8 @@ import type { ItemDaListaDeContatos } from '@leadtogo/api-client'
 import { linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
 import { ChevronRight, Mail, MessageCircle, Phone, Star } from 'lucide-react'
 
-import { Avatar, Badge } from '@/components/ui/exibicao'
-import { cn } from '@/lib/cn'
+import { Avatar, Badge } from '@leadtogo/ui/exibicao'
+import { cn } from '@leadtogo/ui/cn'
 
 import { AcaoDoCartao } from '../empresas/lista-partes'
 import { telefoneParaTela } from './formatos'

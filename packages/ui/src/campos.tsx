@@ -7,7 +7,7 @@ import {
   useId,
 } from 'react'
 
-import { cn } from '@/lib/cn'
+import { cn } from './cn'
 
 const controle =
   'w-full rounded-sm border border-border-strong bg-surface text-ink text-[length:var(--ctl-font)] placeholder:text-ink-subtle hover:border-ink-muted focus-visible:border-brand focus-visible:outline-offset-0 aria-invalid:border-danger disabled:cursor-not-allowed disabled:opacity-45'

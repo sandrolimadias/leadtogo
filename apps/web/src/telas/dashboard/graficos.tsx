@@ -2,7 +2,7 @@ import type { Dashboard } from '@leadtogo/api-client'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Area, AreaChart, Bar, BarChart, LabelList, Tooltip, XAxis, YAxis } from 'recharts'
 
-import { ConteudoDoTooltip, ContainerDoGrafico, GraficoVazio } from '@/components/ui/grafico'
+import { ConteudoDoTooltip, ContainerDoGrafico, GraficoVazio } from '@leadtogo/ui/grafico'
 import { corDaTag, useReduzirMovimento } from '@/lib/grafico'
 import { reais, reaisCurto } from '@/telas/oportunidades/formatos'
 

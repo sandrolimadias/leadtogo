@@ -1,8 +1,8 @@
 import type { TagGrupo } from '@leadtogo/api-client'
 import { ChevronDown } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Menu, type ItemDeMenu } from '@/components/ui/menu'
+import { Button } from '@leadtogo/ui/button'
+import { Menu, type ItemDeMenu } from '@leadtogo/ui/menu'
 import { BotaoAdicionarARota } from '@/telas/rotas/adicionar-da-lista'
 import { BotaoLevarParaOffline } from '@/telas/visitas/campo/offline'
 

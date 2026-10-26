@@ -1,7 +1,7 @@
 import type { GeoJSONSource, Map as MapaDoMapLibre, Marker } from 'maplibre-gl'
 import { useEffect, useRef, useState } from 'react'
 
-import { cn } from '@/lib/cn'
+import { cn } from '@leadtogo/ui/cn'
 
 import { areaVisivel } from './area'
 import { geojsonDasBolhas, geojsonDosPins } from './dados'

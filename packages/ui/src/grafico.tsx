@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { ResponsiveContainer } from 'recharts'
 
-import { cn } from '@/lib/cn'
+import { cn } from './cn'
 
 /**
  * Peças comuns dos gráficos do app (docs/design_system.md, seção "Gráficos"), no padrão do shadcn/ui Charts

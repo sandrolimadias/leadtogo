@@ -8,8 +8,8 @@ import type {
 } from '@leadtogo/shared'
 import { Lightbulb, Factory } from 'lucide-react'
 
-import { TextArea } from '@/components/ui/campos'
-import { Tag } from '@/components/ui/exibicao'
+import { TextArea } from '@leadtogo/ui/campos'
+import { Tag } from '@leadtogo/ui/exibicao'
 
 import { SeletorDeCor } from './base'
 import { type ConfigDaLista, ListaDeCadastro } from './lista'

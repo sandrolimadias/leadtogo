@@ -5,8 +5,8 @@ import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { usePorPagina } from '@/casca/preferencias'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
-import { Paginacao } from '@/components/ui/paginacao'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
+import { Paginacao } from '@leadtogo/ui/paginacao'
 
 import { textoDasFaltas } from './rotulos'
 

@@ -4,9 +4,9 @@ import { type FormEvent, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { Cabecalho, Selo } from '@/components/acesso/layout'
-import { Button } from '@/components/ui/button'
-import { TextField } from '@/components/ui/campos'
-import { Alert } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { TextField } from '@leadtogo/ui/campos'
+import { Alert } from '@leadtogo/ui/feedback'
 
 import { classeDoLinkSuave, EMAIL_VALIDO, focarCampo, useEnvio } from './comum'
 

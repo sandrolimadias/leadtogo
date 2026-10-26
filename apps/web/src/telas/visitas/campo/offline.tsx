@@ -3,8 +3,8 @@ import { CloudDownload } from 'lucide-react'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { toast } from '@leadtogo/ui/toast'
 import { guardarEmpresas } from '@/lib/offline/visitas'
 
 /**

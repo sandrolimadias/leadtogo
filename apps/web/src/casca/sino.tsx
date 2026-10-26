@@ -6,9 +6,9 @@ import { Popover } from 'radix-ui'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button, IconButton } from '@/components/ui/button'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
-import { cn } from '@/lib/cn'
+import { Button, IconButton } from '@leadtogo/ui/button'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
+import { cn } from '@leadtogo/ui/cn'
 
 import { useFluxoDoSino } from './fluxo-do-sino'
 

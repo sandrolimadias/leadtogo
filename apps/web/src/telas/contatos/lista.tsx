@@ -9,12 +9,12 @@ import { useServicos } from '@/auth/contexto'
 import { usePodeImportar } from '@/telas/importacao/comum'
 import { useDispositivo } from '@/casca/dispositivo'
 import { usePorPagina } from '@/casca/preferencias'
-import { Button, IconButton } from '@/components/ui/button'
-import { Select, TextField } from '@/components/ui/campos'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
-import { Paginacao } from '@/components/ui/paginacao'
-import { AreaDaTabela, CorpoDaTabela, PaginaDeTabela } from '@/components/ui/pagina'
-import { cn } from '@/lib/cn'
+import { Button, IconButton } from '@leadtogo/ui/button'
+import { Select, TextField } from '@leadtogo/ui/campos'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
+import { Paginacao } from '@leadtogo/ui/paginacao'
+import { AreaDaTabela, CorpoDaTabela, PaginaDeTabela } from '@leadtogo/ui/pagina'
+import { cn } from '@leadtogo/ui/cn'
 
 import {
   type BuscaDeContatos,

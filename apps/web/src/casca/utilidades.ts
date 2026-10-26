@@ -1,6 +1,6 @@
 import type { EmpresaDoUsuario, Me } from '@leadtogo/api-client'
 
-import { toast } from '@/components/ui/toast'
+import { toast } from '@leadtogo/ui/toast'
 
 import { ROTULO_DO_PAPEL } from './navegacao'
 

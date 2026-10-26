@@ -1,8 +1,8 @@
 import { TAMANHOS_DE_PAGINA, type TamanhoDePagina } from '@leadtogo/shared'
 
-import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/campos'
-import { cn } from '@/lib/cn'
+import { Button } from './button'
+import { Select } from './campos'
+import { cn } from './cn'
 
 /**
  * Paginação de toda tabela de dados (docs/design_system.md, "Tabelas e paginação"): "1–25 de 120",

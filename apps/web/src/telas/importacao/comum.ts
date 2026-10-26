@@ -6,7 +6,7 @@ import { useEffect } from 'react'
 
 import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
-import type { TomDoBadge } from '@/components/ui/exibicao'
+import type { TomDoBadge } from '@leadtogo/ui/exibicao'
 
 /** Os passos da importação, na ordem (docs/escopo_mvp.md, Módulo 4). */
 export const NOMES_DOS_PASSOS = [

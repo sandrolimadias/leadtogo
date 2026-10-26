@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
-import { cn } from '@/lib/cn'
+import { cn } from './cn'
 
 import { IconButton } from './button'
 import { classeDaCor, iniciais, type CorDeTag } from './cores'

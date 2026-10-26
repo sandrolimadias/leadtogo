@@ -6,11 +6,11 @@ import { ArrowLeft, CloudOff } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/campos'
+import { Button } from '@leadtogo/ui/button'
+import { Select } from '@leadtogo/ui/campos'
 
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 import {
   empresaOffline,
   enfileirar,

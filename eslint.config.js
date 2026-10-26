@@ -16,6 +16,8 @@ export default defineConfig(
     'docs/',
     'packages/api-client/src/gerado/',
     'apps/web/src/routeTree.gen.ts',
+    'apps/portal/src/routeTree.gen.ts',
+    'apps/portal/src/styles/',
     'apps/web/src/styles/',
     'packages/db/migrations/',
   ]),
@@ -54,7 +56,7 @@ export default defineConfig(
 
   // Web (React)
   {
-    files: ['apps/web/**/*.{ts,tsx}'],
+    files: ['apps/web/**/*.{ts,tsx}', 'apps/portal/**/*.{ts,tsx}', 'packages/ui/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat['recommended-latest'], reactRefresh.configs.vite],
     languageOptions: { globals: { ...globals.browser } },
     rules: {
@@ -68,7 +70,14 @@ export default defineConfig(
 
   // Testes e serviços de mentira: funções async sem await e hooks ao lado de componentes são normais
   {
-    files: ['apps/web/**/*.test.{ts,tsx}', 'apps/web/src/testes/**'],
+    files: [
+      'apps/web/**/*.test.{ts,tsx}',
+      'apps/web/src/testes/**',
+      'apps/portal/**/*.test.{ts,tsx}',
+      'apps/portal/src/testes/**',
+      'packages/ui/**/*.test.{ts,tsx}',
+      'packages/ui/src/testes/**',
+    ],
     rules: {
       '@typescript-eslint/require-await': 'off',
       'react-refresh/only-export-components': 'off',

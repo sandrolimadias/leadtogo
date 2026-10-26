@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { TooltipProvider } from '@leadtogo/ui/tooltip'
 
 import { Catalogo } from './catalogo'
 

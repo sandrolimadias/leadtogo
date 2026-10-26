@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ConteudoDoTooltip } from '@/components/ui/grafico'
+import { ConteudoDoTooltip } from '@leadtogo/ui/grafico'
 import { atividade } from '@/telas/atividades/fixtures'
 import { meComPapel } from '@/telas/contatos/fixtures'
 import { FASES, FUNIL } from '@/telas/oportunidades/fixtures'

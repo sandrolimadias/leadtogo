@@ -4,12 +4,12 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button, IconButton } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog } from '@/components/ui/dialog'
-import { TextField } from '@/components/ui/campos'
-import { Alert } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Button, IconButton } from '@leadtogo/ui/button'
+import { Checkbox } from '@leadtogo/ui/checkbox'
+import { Dialog } from '@leadtogo/ui/dialog'
+import { TextField } from '@leadtogo/ui/campos'
+import { Alert } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
 
 /** Cadastro de região: nome e municípios (lista filtrável, com a opção de marcar uma microrregião inteira). */

@@ -2,11 +2,11 @@ import type { UseQueryResult } from '@tanstack/react-query'
 import { ArrowDown, ArrowUp, Check } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode } from 'react'
 
-import { Button, IconButton } from '@/components/ui/button'
-import { CORES_DE_TAG, classeDaCor, type CorDeTag, ROTULO_DA_COR } from '@/components/ui/cores'
-import { Dialog, Sheet } from '@/components/ui/dialog'
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { cn } from '@/lib/cn'
+import { Button, IconButton } from '@leadtogo/ui/button'
+import { CORES_DE_TAG, classeDaCor, type CorDeTag, ROTULO_DA_COR } from '@leadtogo/ui/cores'
+import { Dialog, Sheet } from '@leadtogo/ui/dialog'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { cn } from '@leadtogo/ui/cn'
 import { useDispositivo } from '@/casca/dispositivo'
 
 // Peças comuns das telas de Configurações → Cadastros (tags, tipos de atividade, funis...).

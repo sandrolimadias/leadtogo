@@ -1,7 +1,7 @@
 import { CircleCheck } from 'lucide-react'
 
 import { useDispositivo } from '@/casca/dispositivo'
-import { cn } from '@/lib/cn'
+import { cn } from '@leadtogo/ui/cn'
 
 import type { TipoDeImportacao } from '@leadtogo/shared'
 

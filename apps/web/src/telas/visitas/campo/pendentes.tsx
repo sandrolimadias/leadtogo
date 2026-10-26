@@ -5,10 +5,10 @@ import { Bell, ClipboardList, CloudOff, RefreshCw, TriangleAlert } from 'lucide-
 import { useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/exibicao'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 import { empresasOffline, guardarMe, sincronizar } from '@/lib/offline/visitas'
 
 import { useApoioDasVisitas } from './apoio'

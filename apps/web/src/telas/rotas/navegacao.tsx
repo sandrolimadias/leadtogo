@@ -2,8 +2,8 @@ import { type Coordenada, trechosDoGoogleMaps } from '@leadtogo/shared'
 import { ExternalLink } from 'lucide-react'
 
 import { useDispositivo } from '@/casca/dispositivo'
-import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
+import { Button } from '@leadtogo/ui/button'
+import { Dialog } from '@leadtogo/ui/dialog'
 
 /**
  * Os links do Google Maps em trechos (até 3 paradas intermediárias no celular e 9 no computador; G0, seção 7).

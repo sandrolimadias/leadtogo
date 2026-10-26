@@ -3,8 +3,8 @@ import { Link } from '@tanstack/react-router'
 import { Star, Zap } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Badge } from '@/components/ui/exibicao'
-import { cn } from '@/lib/cn'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { cn } from '@leadtogo/ui/cn'
 import { BolhaDoTipo } from '@/telas/cadastros/tipos-de-atividade'
 
 import { quandoDaAtividade, situacaoEmPalavras } from './formatos'

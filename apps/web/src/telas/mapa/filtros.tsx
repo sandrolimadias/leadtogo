@@ -2,9 +2,9 @@ import type { OpcoesDoMapa } from '@leadtogo/shared'
 import { tokenDaCorDoMapa } from '@leadtogo/shared'
 import { Search, SlidersHorizontal, TriangleAlert } from 'lucide-react'
 
-import { Select, TextField } from '@/components/ui/campos'
-import { Checkbox } from '@/components/ui/checkbox'
-import { cn } from '@/lib/cn'
+import { Select, TextField } from '@leadtogo/ui/campos'
+import { Checkbox } from '@leadtogo/ui/checkbox'
+import { cn } from '@leadtogo/ui/cn'
 
 import { type FiltrosDaTela } from './estado'
 

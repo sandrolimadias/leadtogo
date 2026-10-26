@@ -2,7 +2,7 @@ import type { RelatorioDeVisita } from '@leadtogo/api-client'
 import type { CampoDeVisita, ContatoDaResposta, ProximoPassoDaResposta } from '@leadtogo/shared'
 import { CloudOff, MapPin, MapPinOff, TriangleAlert } from 'lucide-react'
 
-import { Badge } from '@/components/ui/exibicao'
+import { Badge } from '@leadtogo/ui/exibicao'
 
 const dataEHora = (iso: string) =>
   new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })

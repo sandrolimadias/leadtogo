@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react'
 import type { ReactNode } from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@leadtogo/ui/button'
 
 /** Tela de último recurso: um erro de renderização que nenhuma tela tratou. */
 function ErroGeral() {

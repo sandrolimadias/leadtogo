@@ -1,7 +1,7 @@
 import { CircleAlert } from 'lucide-react'
 import { type ClipboardEvent, type KeyboardEvent, useLayoutEffect, useRef } from 'react'
 
-import { cn } from '@/lib/cn'
+import { cn } from '@leadtogo/ui/cn'
 
 const DIGITOS = 6
 

@@ -6,9 +6,9 @@ import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { usePermissoes } from '@/auth/permissoes'
-import { Button } from '@/components/ui/button'
-import { type ItemDeMenu, Menu } from '@/components/ui/menu'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { type ItemDeMenu, Menu } from '@leadtogo/ui/menu'
+import { toast } from '@leadtogo/ui/toast'
 
 import { hojeLocal } from './rascunho'
 

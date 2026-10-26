@@ -1,7 +1,7 @@
 import { X, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { cn } from '@/lib/cn'
+import { cn } from './cn'
 
 import { classeDaCor, corDoNome, iniciais, type CorDeTag } from './cores'
 

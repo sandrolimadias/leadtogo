@@ -3,11 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/campos'
-import { Checkbox, Switch } from '@/components/ui/checkbox'
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { Select } from '@leadtogo/ui/campos'
+import { Checkbox, Switch } from '@leadtogo/ui/checkbox'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 
 import { useOpcoesDeConfiguracao } from './opcoes'
 
