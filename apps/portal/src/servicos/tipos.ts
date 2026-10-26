@@ -2,6 +2,7 @@ import type {
   AreaDoPortal,
   ChamadoDoPortal,
   ComentarioDoPortal,
+  ListaDeDocumentosDoPortal,
   FeedDoPortal,
   ListaDeComentariosDoPortal,
   ReacoesDaPublicacao,
@@ -19,6 +20,11 @@ import type {
 import type { MotivoDeDenuncia, TipoDeReacao } from '@leadtogo/shared'
 
 import type { Resultado } from './resultado'
+
+export interface ConsultaDeDocumentos {
+  busca?: string
+  pagina?: number
+}
 
 export interface ConsultaDeChamados {
   aba?: 'abertos' | 'todos'
@@ -76,6 +82,11 @@ export interface ServicosDoPortal {
     listar: (apenasNaoLidas?: boolean) => Promise<Resultado<ListaDeNotificacoesDoPortal>>
     marcarLida: (id: string) => Promise<Resultado<{ naoLidas: number }>>
     marcarTodas: () => Promise<Resultado<{ naoLidas: number }>>
+  }
+  /** Documentos que a equipe compartilha (Fase 3C): lista e download (registrado, URL de 60 segundos) */
+  documentos: {
+    listar: (consulta: ConsultaDeDocumentos) => Promise<Resultado<ListaDeDocumentosDoPortal>>
+    baixar: (id: string) => Promise<Resultado<{ url: string }>>
   }
   /** Publicações da equipe (Fase 3B): feed, reações, comentários, denúncia e leitura */
   publicacoes: {

@@ -156,6 +156,25 @@ export const servicosReais: ServicosDoPortal = {
     marcarTodas: () =>
       protegido(async () => daApi(await api.POST('/v1/portal/notificacoes/lidas'))),
   },
+  documentos: {
+    listar: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/portal/documentos', {
+            params: {
+              query: {
+                ...(consulta.busca ? { busca: consulta.busca } : {}),
+                ...(consulta.pagina ? { pagina: consulta.pagina } : {}),
+              },
+            },
+          }),
+        ),
+      ),
+    baixar: (id) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/documentos/{id}/download', chave(id))),
+      ),
+  },
   publicacoes: {
     feed: (pagina) =>
       protegido(async () =>
