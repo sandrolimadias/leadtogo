@@ -48,6 +48,7 @@ export const ROTULO_DO_MODULO: Record<string, string> = {
   visitas: 'Visitas',
   rotas: 'Rotas',
   chamados: 'Central de chamados',
+  portal: 'Portal do cliente',
   cadastros: 'Cadastros auxiliares',
   equipe: 'Equipe e convites',
   perfis: 'Perfis de acesso',
@@ -91,6 +92,9 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
   p('chamados', 'gerir_areas', 'Gerir áreas, triagem, expediente e feriados'),
   p('chamados', 'ver_metricas', 'Ver as métricas dos chamados', true),
   p('chamados', 'exportar', 'Exportar os chamados em CSV'),
+  p('portal', 'ver', 'Ver o hub do portal do cliente (indicadores e chamados vindos do portal)'),
+  p('portal', 'acessos', 'Dar, suspender e revogar o acesso dos contatos ao portal'),
+  p('portal', 'configurar', 'Configurar o portal (ligar, nome, logo e segurança)'),
   p('cadastros', 'gerir', 'Gerir tags, funis, tipos, origens, motivos e demais cadastros'),
   p('equipe', 'ver_emails', 'Ver o e-mail dos membros da equipe'),
   p('equipe', 'gerir', 'Convidar, desativar e ver o acesso dos membros'),
@@ -105,7 +109,7 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
  * os perfis de SISTEMA das empresas com versão menor recebem as chaves novas que o seu padrão tem (as
  * outras permissões não mudam). Perfis criados pela empresa nunca recebem permissão automaticamente.
  */
-export const VERSAO_DO_CATALOGO = 4
+export const VERSAO_DO_CATALOGO = 5
 
 /** As chaves que cada versão acrescentou (a versão 1 é o catálogo inicial). */
 export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
@@ -121,6 +125,7 @@ export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
     'chamados.ver_metricas',
     'chamados.exportar',
   ],
+  5: ['portal.ver', 'portal.acessos', 'portal.configurar'],
 }
 
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
@@ -197,7 +202,9 @@ export const PERMISSOES_PADRAO: Record<ChaveDeSistema, PermissoesDoPerfil> = {
           'perfis.gerir',
           'seguranca.gerir',
           'carteira.configurar',
-        ].includes(c) && !c.startsWith('chamados.'),
+        ].includes(c) &&
+        !c.startsWith('chamados.') &&
+        !c.startsWith('portal.'),
     ),
     'todas',
   ),
