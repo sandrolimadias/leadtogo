@@ -12,6 +12,7 @@
 | [runbook_e13.md](runbook_e13.md) | Roteiro do primeiro deploy no Coolify (DNS, segredos, GHCR, banco, recursos, deploy automático, checklist e rollback) |
 | [escopo_mvp.md](escopo_mvp.md) | Recorte do MVP: módulos em ordem, trilha técnica e o que fica de fora |
 | [roteiro_teste_chamados.md](roteiro_teste_chamados.md) | Roteiro de teste da central de chamados (Fase 2), com a verificação no servidor, o ClamAV e o CORS |
+| [roteiro_teste_portal_3c.md](roteiro_teste_portal_3c.md) | Roteiro de teste do Portal do Cliente, Fase 3C (documentos: envio com antivírus, alcance, download com registro e quem baixou) |
 | [roteiro_teste_portal_3b.md](roteiro_teste_portal_3b.md) | Roteiro de teste do Portal do Cliente, Fase 3B (publicações: escrever, agendar, fixar, reagir, comentar, denunciar e moderar) |
 | [roteiro_teste_portal_3a.md](roteiro_teste_portal_3a.md) | Roteiro de teste do Portal do Cliente, Fase 3A (acesso do cliente e chamados), com DNS, Coolify, `PORTAL_URL` e verificação no servidor |
 | [roteiro_garage_anexos.md](roteiro_garage_anexos.md) | Garage dos anexos dos chamados: endereço público, CORS do bucket, CSP e como conferir |

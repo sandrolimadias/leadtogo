@@ -642,6 +642,21 @@ A equipe publica **comunicados** no feed do portal; o cliente lê, reage, coment
 - **Auditoria:** atos da equipe e do cliente (comentar, denunciar) são auditados; reagir e ler não.
 - **Sem notificação:** publicar não gera sino nem e-mail para o cliente nesta fase; o aviso com push chega na Fase 3E (Avisos).
 
+## 9E. Portal do Cliente, Fase 3C (documentos)
+
+A equipe publica **arquivos** para os clientes; o cliente lista e baixa; **cada download fica registrado**. Hub: Portal do Cliente → aba **Documentos**; cliente: **Documentos** no menu. Roteiro em `roteiro_teste_portal_3c.md`.
+
+### Permissões (catálogo v7; só o Administrador recebe)
+`portal.documentos` (publicar, editar, tirar do portal e excluir). Quem só tem `portal.ver` lista, baixa e vê quem baixou.
+
+### O documento
+- **Cadastro:** título (até 160), descrição opcional (até 500), arquivo de **até 25 MB** e alcance (todos os clientes, ou empresas escolhidas, até 500). O arquivo não troca: outra versão é outro documento.
+- **Envio e antivírus (o mesmo caminho dos anexos dos chamados):** o navegador envia o arquivo direto ao Garage por URL pré-assinada, a API confere o tamanho e o **ClamAV** varre antes de liberar. Estados: **Em verificação** → **Disponível** (limpo) ou **Bloqueado pelo antivírus** (infectado, nunca baixa, nem para a equipe). **Sem o antivírus configurado, o envio fica desligado** (503 `anexos_indisponiveis`).
+- **Visibilidade:** o cliente só vê documento **Disponível, visível no portal e do alcance da empresa dele**. "Tirar do portal" esconde sem excluir; excluir é lógico (some do portal e da lista).
+- **Download:** equipe, URL de 5 minutos; cliente, URL de **60 segundos**, sempre como arquivo (nunca abre no navegador). O cliente baixa por `POST` (a ação registra o download).
+- **Registro:** cada download do cliente grava quem (o acesso), de que empresa-cliente e quando, e a equipe vê o total e a lista (os 200 mais recentes). É dado pessoal (ver `lgpd.md`). O ato do cliente também entra na auditoria (ator contato).
+- **Busca do cliente:** por título e descrição, sem diferença de acento ou caixa.
+
 ---
 
 ## 10. Usuários, papéis e carteira
