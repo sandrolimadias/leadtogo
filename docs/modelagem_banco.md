@@ -925,3 +925,15 @@ Seis tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado** (`aplic
 - `publicacao_leituras`: lê só as próprias; registra só em publicação visível.
 
 **Publicação agendada:** `app_publicar_agendadas()` (SECURITY DEFINER, mesmo padrão das limpezas da 0009: política só para `leadtogo_owner`, travada na variável `app.publicando_agendadas`) publica as vencidas em todas as empresas; o worker a chama a cada minuto.
+
+## Portal do Cliente, Fase 3C: documentos (migração 0035, só expansão)
+
+Três tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de isolamento (`packages/db/src/testes/documentos.test.ts` e o teste genérico).
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `documentos` | titulo (160), descricao, alcance (`todos` · `empresas`), visivel_no_portal, chave_arquivo, nome, mime, tamanho, estado (`pendente_varredura` · `limpo` · `infectado`), enviado_em, varrido_em, assinatura, tentativas_varredura, ultimo_erro, total_downloads | O arquivo segue o caminho dos anexos dos chamados (Garage + ClamAV). As colunas do arquivo têm os **mesmos nomes** de `chamado_anexos` para o processador do antivírus ser um só. CHECK: tamanho entre 1 byte e 25 MB; `infectado` exige a assinatura. Chave do arquivo única |
+| `documento_empresas` | documento_id, empresa_id | Alcance "empresas" (único por par) |
+| `documento_acessos` | documento_id, acesso_id, empresa_id, baixado_em | Um registro por download. **Gatilho** `app_documento_download_total` soma em `documentos.total_downloads` (SECURITY DEFINER) |
+
+**O que a sessão do portal enxerga e grava:** `documentos` só as linhas com `visivel_no_portal`, arquivo `limpo` e enviado, não excluídas e do alcance da empresa dela (não grava; a restrição vale `TO leadtogo_app`, porque o gatilho roda como dono); `documento_empresas` as da própria empresa (não grava); `documento_acessos` registra só em nome do próprio acesso e empresa e só de documento que enxerga, e lê só os próprios (não altera nem apaga).
