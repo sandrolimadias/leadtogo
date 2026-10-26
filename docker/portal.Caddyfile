@@ -1,0 +1,52 @@
+# Caddy do portal do cliente: arquivos estáticos. O TLS é do Traefik (Coolify), então aqui é HTTP na porta 8080.
+# A MESMA imagem serve a qualquer ambiente: o portal fala com a API por caminhos relativos (/v1/portal/...), que o
+# Traefik (produção) leva até a API. Por isso a CSP é 'self'; o único domínio externo é o do Garage (arquivos),
+# para o envio e o download direto dos anexos por URL pré-assinada.
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		# o token do link vai no fragmento (#), que o navegador nunca envia; mesmo assim, nada de Referer para fora
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+		X-Robots-Tag "noindex, nofollow"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		# 'unsafe-inline' só em estilos (Radix e Sonner injetam <style>); nenhum script inline.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://files.crm.aledias.com.br; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+	}
+
+	handle /health {
+		respond "ok" 200
+	}
+
+	# arquivos com hash no nome: nunca mudam, cache de 1 ano
+	handle /assets/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	handle /icons/* {
+		header Cache-Control "public, max-age=86400"
+		file_server
+	}
+	handle /favicon.svg {
+		header Cache-Control "public, max-age=86400"
+		file_server
+	}
+
+	# todo o resto: index.html e as rotas do app (que caem nele). Sem cache: o navegador sempre confere.
+	handle {
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}
