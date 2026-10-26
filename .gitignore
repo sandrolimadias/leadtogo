@@ -47,3 +47,7 @@ apps/web/dist-lh/
 
 # Configuração pessoal do Claude Code
 .claude/settings.local.json
+apps/portal/src/styles/tokens.css
+apps/portal/src/styles/tailwind-theme.css
+apps/portal/src/styles/fonts/
+apps/portal/src/styles/assets/
