@@ -878,6 +878,59 @@ export const servicosReais: ServicosDeAcesso = {
           ),
         ),
     },
+    documentos: {
+      listar: (consulta = {}) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-documentos', { params: { query: consulta } })),
+        ),
+      obter: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-documentos/{id}', { params: { path: { id } } })),
+        ),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/portal-documentos', { body: dados }))),
+      // O arquivo vai direto ao armazenamento (URL pré-assinada): fora do cliente da API, sem cookie
+      enviar: (url, arquivo) =>
+        protegido(async () => {
+          const r = await globalThis.fetch(url, { method: 'PUT', body: arquivo })
+          return r.ok
+            ? ok(undefined)
+            : {
+                ok: false,
+                erro: traduzirErro(r.status, {
+                  erro: 'envio_falhou',
+                  mensagem: 'Não consegui enviar o arquivo.',
+                }),
+              }
+        }),
+      confirmar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-documentos/{id}/confirmar', { params: { path: { id } } }),
+          ),
+        ),
+      editar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/portal-documentos/{id}', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/portal-documentos/{id}', { params: { path: { id } } })),
+        ),
+      baixar: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-documentos/{id}/download', { params: { path: { id } } })),
+        ),
+      baixas: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-documentos/{id}/baixas', { params: { path: { id } } })),
+        ),
+    },
     acessos: {
       listar: (consulta = {}) =>
         protegido(async () =>

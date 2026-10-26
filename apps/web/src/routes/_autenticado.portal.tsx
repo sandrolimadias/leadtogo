@@ -7,7 +7,12 @@ import { permissoesDaAtiva, podeCom } from '@/auth/permissoes'
 export const Route = createFileRoute('/_autenticado/portal')({
   beforeLoad: ({ context }) => {
     if (
-      !podeCom(permissoesDaAtiva(context.me), ['portal.ver', 'portal.publicar', 'portal.moderar'])
+      !podeCom(permissoesDaAtiva(context.me), [
+        'portal.ver',
+        'portal.publicar',
+        'portal.moderar',
+        'portal.documentos',
+      ])
     )
       throw redirect({ to: '/' })
   },
