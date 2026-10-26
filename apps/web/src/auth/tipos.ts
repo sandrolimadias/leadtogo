@@ -612,6 +612,7 @@ export interface ServicosDoPortalNoCrm {
       ativo?: boolean
       nome?: string | null
       exigeDoisFatoresDoResponsavel?: boolean
+      comentariosAtivos?: boolean
     }) => Promise<Resultado<ConfiguracaoDoPortal>>
   }
   acessos: {

@@ -107,6 +107,23 @@ export function TelaDeConfiguracoesDoPortal() {
           podem ligar por vontade própria.
         </p>
       </section>
+      <section className="flex flex-col gap-2 rounded-md border border-border bg-surface p-4">
+        <Switch
+          checked={c.comentariosAtivos}
+          disabled={salvando}
+          onChange={(e) =>
+            void salvar(
+              { comentariosAtivos: e.target.checked },
+              e.target.checked ? 'Comentários liberados' : 'Comentários desligados',
+            )
+          }
+          label="Permitir comentários nas publicações"
+        />
+        <p className="m-0 text-[13px] text-ink-muted">
+          Chave geral: desligada, ninguém comenta, em nenhuma publicação. Os comentários já feitos
+          continuam visíveis.
+        </p>
+      </section>
     </div>
   )
 }

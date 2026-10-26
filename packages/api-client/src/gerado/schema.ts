@@ -4864,6 +4864,7 @@ export interface components {
             ativo?: boolean;
             nome?: string | null;
             exigeDoisFatoresDoResponsavel?: boolean;
+            comentariosAtivos?: boolean;
         };
         AvaliacaoDoChamado: {
             nota: number;
@@ -5092,6 +5093,7 @@ export interface components {
             nome: string | null;
             logoUrl: string | null;
             exigeDoisFatoresDoResponsavel: boolean;
+            comentariosAtivos: boolean;
         };
         ConfirmarEndereco: {
             /** @enum {string} */

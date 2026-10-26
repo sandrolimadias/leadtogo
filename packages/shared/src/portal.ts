@@ -171,6 +171,8 @@ export const configuracaoDoPortalSchema = z
     nome: z.string().nullable(),
     logoUrl: z.string().nullable(),
     exigeDoisFatoresDoResponsavel: z.boolean(),
+    /** Chave geral: desligada, ninguém comenta nas publicações */
+    comentariosAtivos: z.boolean(),
   })
   .meta({ id: 'ConfiguracaoDoPortal' })
 export type ConfiguracaoDoPortal = z.infer<typeof configuracaoDoPortalSchema>
@@ -180,6 +182,7 @@ export const atualizarConfiguracaoDoPortalSchema = z
     ativo: z.boolean().optional(),
     nome: z.string().trim().min(2, 'informe o nome').max(80).nullable().optional(),
     exigeDoisFatoresDoResponsavel: z.boolean().optional(),
+    comentariosAtivos: z.boolean().optional(),
   })
   .strict()
   .meta({ id: 'AtualizarConfiguracaoDoPortalEntrada' })

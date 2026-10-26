@@ -23757,6 +23757,9 @@
           },
           "exigeDoisFatoresDoResponsavel": {
             "type": "boolean"
+          },
+          "comentariosAtivos": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -24606,9 +24609,18 @@
           },
           "exigeDoisFatoresDoResponsavel": {
             "type": "boolean"
+          },
+          "comentariosAtivos": {
+            "type": "boolean"
           }
         },
-        "required": ["ativo", "nome", "logoUrl", "exigeDoisFatoresDoResponsavel"],
+        "required": [
+          "ativo",
+          "nome",
+          "logoUrl",
+          "exigeDoisFatoresDoResponsavel",
+          "comentariosAtivos"
+        ],
         "additionalProperties": false
       },
       "ConfirmarEndereco": {
