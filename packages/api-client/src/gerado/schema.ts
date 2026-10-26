@@ -3476,6 +3476,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal-publicacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Publicações do portal
+         * @description Exige `portal.ver`, `portal.publicar` ou `portal.moderar`. Por aba (todas, publicadas, agendadas, rascunhos), com alcance, reações, comentários e denúncias de cada uma e o total de denúncias abertas.
+         */
+        get: operations["PublicacoesController_listar"];
+        put?: never;
+        /**
+         * Criar uma publicação
+         * @description Exige `portal.publicar`. `situacao`: rascunho, publicada (publica agora) ou agendada (exige `agendadaPara` no futuro; 422 `agenda_no_passado`). Alcance "empresas" exige a lista de empresas (422 `empresa_invalida` se alguma não existe). O texto é Markdown restrito, sem HTML.
+         */
+        post: operations["PublicacoesController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver uma publicação
+         * @description Exige `portal.ver`, `portal.publicar` ou `portal.moderar`.
+         */
+        get: operations["PublicacoesController_obter"];
+        put?: never;
+        post?: never;
+        /**
+         * Excluir uma publicação
+         * @description Exige `portal.publicar`. Exclusão lógica: some do portal e da lista, os dados ficam guardados.
+         */
+        delete: operations["PublicacoesController_excluir"];
+        options?: never;
+        head?: never;
+        /**
+         * Editar uma publicação
+         * @description Exige `portal.publicar`. Rascunho e agendada mudam livremente (inclusive para publicada). Publicada só tem o conteúdo e o alcance editados: voltar a rascunho ou agenda dá 409 `publicacao_ja_publicada`.
+         */
+        patch: operations["PublicacoesController_editar"];
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/comentarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comentários para moderar
+         * @description Exige `portal.moderar`. Todos os comentários da publicação, inclusive os ocultos (com o motivo e quem ocultou), com a empresa do autor e as denúncias abertas.
+         */
+        get: operations["PublicacoesController_comentarios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/comentarios-bloqueados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Bloquear ou liberar os comentários da publicação
+         * @description Exige `portal.moderar`. Bloqueada, ninguém comenta; os comentários que já existem continuam visíveis.
+         */
+        put: operations["PublicacoesController_bloquear"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/comentarios/{comentarioId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Moderar um comentário
+         * @description Exige `portal.moderar`. `manter` dispensa as denúncias; `ocultar` (com motivo) esconde dos outros clientes sem apagar (o autor continua vendo, com o motivo) e encerra as denúncias; `reexibir` desfaz.
+         */
+        patch: operations["PublicacoesController_moderar"];
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/fixada": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Fixar ou desafixar
+         * @description Exige `portal.publicar`. Só uma publicação fica fixada por vez (fixar outra desafixa a anterior); só a já publicada pode ser fixada (409 `so_publicada_fixa`).
+         */
+        put: operations["PublicacoesController_fixar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/2fa/conferir": {
         parameters: {
             query?: never;
@@ -3952,6 +4084,127 @@ export interface paths {
          */
         put: operations["PortalAuthController_perfil"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publicacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Feed de publicações
+         * @description Só as publicadas e do alcance da empresa do cliente, a fixada primeiro. As reações vêm como total (nunca quem reagiu).
+         */
+        get: operations["PortalPublicacoesController_feed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publicacoes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ver uma publicação */
+        get: operations["PortalPublicacoesController_obter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publicacoes/{id}/comentarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comentários da publicação
+         * @description Os visíveis (de todas as empresas, com o nome reduzido do autor) e os próprios, mesmo ocultos, com o motivo.
+         */
+        get: operations["PortalPublicacoesController_comentarios"];
+        put?: never;
+        /**
+         * Comentar
+         * @description Texto puro de 1 a 1000 caracteres. 409 `comentarios_fechados` se a publicação está bloqueada ou a chave geral está desligada.
+         */
+        post: operations["PortalPublicacoesController_comentar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publicacoes/{id}/reacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reagir (ou desfazer a reação)
+         * @description Clicar liga a reação (curtir, apoiar ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.
+         */
+        post: operations["PortalPublicacoesController_reagir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publicacoes/comentarios/{comentarioId}/denuncia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Denunciar um comentário
+         * @description Só comentário que o cliente enxerga e que não é dele (422 `denuncia_propria`). Denunciar duas vezes é inofensivo. A equipe trata no hub.
+         */
+        post: operations["PortalPublicacoesController_denunciar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publicacoes/leituras": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marcar publicações como lidas
+         * @description Registra a leitura (uma por pessoa e publicação) das que o cliente enxerga; as outras são ignoradas. Base do alcance que a equipe vê.
+         */
+        post: operations["PortalPublicacoesController_leituras"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4496,6 +4749,8 @@ export interface components {
             latitude: number;
             longitude: number;
         };
+        /** @enum {string} */
+        AlcanceDaPublicacao: "todos" | "empresas";
         Alertas: {
             /** @enum {string} */
             status: "ok" | "alerta" | "erro";
@@ -4879,6 +5134,9 @@ export interface components {
         BaseDoMapa: {
             url: string | null;
         };
+        BloquearComentariosEntrada: {
+            bloqueados: boolean;
+        };
         CampoDeVisita: {
             /** Format: uuid */
             id: string;
@@ -5033,6 +5291,35 @@ export interface components {
         };
         CodigoDeSegundoFatorEntrada: {
             codigo: string;
+        };
+        ComentarioDoPortal: {
+            /** Format: uuid */
+            id: string;
+            autorNome: string;
+            corpo: string;
+            /** Format: date-time */
+            criadoEm: string;
+            meu: boolean;
+            oculto: boolean;
+            ocultoMotivo: string | null;
+            denunciado: boolean;
+        };
+        ComentarioParaModeracao: {
+            /** Format: uuid */
+            id: string;
+            autorNome: string;
+            empresaNome: string;
+            corpo: string;
+            /** Format: date-time */
+            criadoEm: string;
+            oculto: boolean;
+            ocultoMotivo: string | null;
+            ocultoPorNome: string | null;
+            denunciasAbertas: number;
+            motivoDaDenuncia: components["schemas"]["MotivoDeDenuncia"] | null;
+        };
+        ComentarNoPortalEntrada: {
+            corpo: string;
         };
         ConcluirAtividadeEntrada: {
             resultado: string;
@@ -5724,6 +6011,9 @@ export interface components {
         DefinirTagsDaEmpresaEntrada: {
             tagIds: string[];
         };
+        DenunciarNoPortalEntrada: {
+            motivo: components["schemas"]["MotivoDeDenuncia"];
+        };
         DistanciaDoCheckin: {
             empresaTemPosicao: boolean;
             distanciaM: number | null;
@@ -6051,6 +6341,10 @@ export interface components {
             retomarEm?: string | null;
             empresaViraCliente?: boolean;
         };
+        FeedDoPortal: {
+            itens: components["schemas"]["PublicacaoDoPortal"][];
+            total: number;
+        };
         Feriado: {
             /** Format: uuid */
             id: string;
@@ -6073,6 +6367,9 @@ export interface components {
             total: number;
             pagina: number;
             porPagina: number;
+        };
+        FixarPublicacaoEntrada: {
+            fixada: boolean;
         };
         Funil: {
             /** Format: uuid */
@@ -6252,6 +6549,22 @@ export interface components {
             /** Format: date-time */
             atualizadoEm: string;
         };
+        ItemDePublicacao: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            situacao: components["schemas"]["SituacaoDaPublicacao"];
+            alcance: components["schemas"]["AlcanceDaPublicacao"];
+            fixada: boolean;
+            /** Format: date-time */
+            agendadaPara: string | null;
+            /** Format: date-time */
+            publicadaEm: string | null;
+            /** Format: date-time */
+            atualizadoEm: string;
+            comentariosBloqueados: boolean;
+            metricas: components["schemas"]["MetricasDaPublicacao"];
+        };
         ItemDeRota: {
             /** Format: uuid */
             id: string;
@@ -6334,6 +6647,9 @@ export interface components {
         LegendaDoMapa: {
             entradas: components["schemas"]["EntradaDaLegenda"][];
         };
+        LeiturasMarcadas: {
+            marcadas: number;
+        };
         LevarParaOfflineEntrada: {
             empresaIds: string[];
         };
@@ -6403,6 +6719,13 @@ export interface components {
                 todos: number;
             };
         };
+        ListaDeComentariosDoPortal: {
+            itens: components["schemas"]["ComentarioDoPortal"][];
+            comentariosAbertos: boolean;
+        };
+        ListaDeComentariosParaModeracao: {
+            itens: components["schemas"]["ComentarioParaModeracao"][];
+        };
         ListaDeContatos: {
             itens: components["schemas"]["ItemDaListaDeContatos"][];
             total: number;
@@ -6469,6 +6792,17 @@ export interface components {
         };
         ListaDePedidosDoCliente: {
             itens: components["schemas"]["PedidoDeAcessoDoCliente"][];
+        };
+        ListaDePublicacoes: {
+            itens: components["schemas"]["ItemDePublicacao"][];
+            total: number;
+            abas: {
+                todas: number;
+                publicadas: number;
+                agendadas: number;
+                rascunhos: number;
+            };
+            denunciasAbertas: number;
         };
         ListaDeRotas: {
             itens: components["schemas"]["ItemDeRota"][];
@@ -6546,6 +6880,9 @@ export interface components {
         MarcadasComoLidas: {
             marcadas: number;
             naoLidas: number;
+        };
+        MarcarLeiturasEntrada: {
+            ids: string[];
         };
         MarcoDoChamadoNoPortal: {
             /** @enum {string} */
@@ -6650,6 +6987,19 @@ export interface components {
                 papel: "admin" | "gestor" | "vendedor" | null;
             } | null;
         };
+        MetricasDaPublicacao: {
+            leitores: number;
+            alvo: number;
+            empresasAlcancadas: number;
+            reacoes: {
+                curtir: number;
+                apoiar: number;
+                parabens: number;
+            };
+            comentarios: number;
+            comentariosOcultos: number;
+            denunciasAbertas: number;
+        };
         MetricasDeChamados: {
             /** Format: date */
             de: string;
@@ -6705,6 +7055,11 @@ export interface components {
             resultados: number;
             emUso: boolean;
         };
+        ModerarComentarioEntrada: {
+            /** @enum {string} */
+            acao: "manter" | "ocultar" | "reexibir";
+            motivo?: string;
+        };
         Motivo: {
             /** Format: uuid */
             id: string;
@@ -6713,6 +7068,8 @@ export interface components {
             ativo: boolean;
             ordem: number;
         };
+        /** @enum {string} */
+        MotivoDeDenuncia: "spam" | "ofensivo" | "outro";
         MoverOportunidadeEntrada: {
             /** Format: uuid */
             faseId: string;
@@ -7328,8 +7685,61 @@ export interface components {
         };
         /** @enum {string} */
         PrioridadeDoChamado: "baixa" | "normal" | "alta" | "urgente";
+        Publicacao: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            situacao: components["schemas"]["SituacaoDaPublicacao"];
+            alcance: components["schemas"]["AlcanceDaPublicacao"];
+            fixada: boolean;
+            /** Format: date-time */
+            agendadaPara: string | null;
+            /** Format: date-time */
+            publicadaEm: string | null;
+            /** Format: date-time */
+            atualizadoEm: string;
+            comentariosBloqueados: boolean;
+            metricas: components["schemas"]["MetricasDaPublicacao"];
+            corpo: string;
+            autorNome: string | null;
+            /** Format: date-time */
+            criadoEm: string;
+            empresas: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            }[];
+        };
+        PublicacaoDoPortal: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            corpo: string;
+            /** Format: date-time */
+            publicadaEm: string;
+            fixada: boolean;
+            reacoes: {
+                curtir: number;
+                apoiar: number;
+                parabens: number;
+            };
+            minhasReacoes: components["schemas"]["TipoDeReacao"][];
+            comentarios: number;
+            comentariosAbertos: boolean;
+        };
         PularParadaEntrada: {
             motivo: string;
+        };
+        ReacoesDaPublicacao: {
+            reacoes: {
+                curtir: number;
+                apoiar: number;
+                parabens: number;
+            };
+            minhasReacoes: components["schemas"]["TipoDeReacao"][];
+        };
+        ReagirNoPortalEntrada: {
+            tipo: components["schemas"]["TipoDeReacao"];
         };
         RegiaoGeo: {
             id: string;
@@ -7485,6 +7895,19 @@ export interface components {
             ordem: number;
             /** @enum {string} */
             situacaoParada: "pendente" | "visitada" | "pulada";
+        };
+        SalvarPublicacaoEntrada: {
+            titulo: string;
+            corpo: string;
+            alcance: components["schemas"]["AlcanceDaPublicacao"];
+            /** @default [] */
+            empresaIds: string[];
+            situacao: components["schemas"]["SituacaoDaPublicacao"];
+            /**
+             * Format: date-time
+             * @default null
+             */
+            agendadaPara: string | null;
         };
         SalvarRegiao: {
             nome: string;
@@ -7644,6 +8067,8 @@ export interface components {
             segundoFatorPendente: boolean;
         };
         /** @enum {string} */
+        SituacaoDaPublicacao: "rascunho" | "agendada" | "publicada";
+        /** @enum {string} */
         SituacaoDoAcesso: "convidado" | "ativo" | "suspenso" | "revogado";
         Solucao: {
             /** Format: uuid */
@@ -7716,6 +8141,8 @@ export interface components {
             ordem: number;
             chaveSistema: string | null;
         };
+        /** @enum {string} */
+        TipoDeReacao: "curtir" | "apoiar" | "parabens";
         TratarPedidoDeAcessoEntrada: {
             /** @enum {string} */
             decisao: "aprovar" | "recusar";
@@ -21829,6 +22256,565 @@ export interface operations {
             };
         };
     };
+    PublicacoesController_listar: {
+        parameters: {
+            query?: {
+                aba?: "todas" | "publicadas" | "agendadas" | "rascunhos";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDePublicacoes"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarPublicacaoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Publicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Publicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_editar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarPublicacaoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Publicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_comentarios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeComentariosParaModeracao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_bloquear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BloquearComentariosEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Publicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_moderar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                comentarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerarComentarioEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeComentariosParaModeracao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_fixar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FixarPublicacaoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Publicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalAuthController_conferirSegundoFator: {
         parameters: {
             query?: never;
@@ -23579,6 +24565,497 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessaoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPublicacoesController_feed: {
+        parameters: {
+            query?: {
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPublicacoesController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicacaoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPublicacoesController_comentarios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeComentariosDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPublicacoesController_comentar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComentarNoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComentarioDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPublicacoesController_reagir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReagirNoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReacoesDaPublicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPublicacoesController_denunciar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comentarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DenunciarNoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPublicacoesController_leituras: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarcarLeiturasEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeiturasMarcadas"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */

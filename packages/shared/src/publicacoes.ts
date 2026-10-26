@@ -105,7 +105,6 @@ export const consultaDePublicacoesSchema = z
     porPagina: z.coerce.number().int().min(1).max(TAMANHO_MAXIMO_DE_PAGINA).default(25),
   })
   .strict()
-  .meta({ id: 'ConsultaDePublicacoes' })
 export type ConsultaDePublicacoes = z.infer<typeof consultaDePublicacoesSchema>
 
 export const listaDePublicacoesSchema = z
@@ -253,7 +252,6 @@ export const consultaDoFeedSchema = z
     porPagina: z.coerce.number().int().min(1).max(50).default(10),
   })
   .strict()
-  .meta({ id: 'ConsultaDoFeed' })
 export type ConsultaDoFeed = z.infer<typeof consultaDoFeedSchema>
 
 export const feedDoPortalSchema = z

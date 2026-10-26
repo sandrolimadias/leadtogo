@@ -46,6 +46,7 @@ describe('agendadores (upsertJobScheduler)', () => {
       'limpeza-convites',
       'limpeza-outbox',
       'varredura-importacoes',
+      'publicar-agendadas',
     ])
     expect(new Set(AGENDADORES.map((a) => a.id)).size).toBe(AGENDADORES.length)
     expect(AGENDADORES[0]?.quando).toEqual({ pattern: '0 3 1 * *' })
@@ -122,6 +123,28 @@ describe('processador de manutenção (banco real)', () => {
       ]
     })
     expect(resta).toEqual([0, 0])
+  })
+
+  it('publicar-agendadas: publica só as agendadas que venceram, em qualquer empresa', async () => {
+    const { tenantId } = await empresaDeOutraConta()
+    const vencida = novoId()
+    const futura = novoId()
+    await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+      await tx`INSERT INTO publicacoes (id, tenant_id, titulo, corpo, situacao, agendada_para)
+        VALUES (${vencida}, ${tenantId}, 'Vencida', 'x', 'agendada', now() - interval '2 minutes')`
+      await tx`INSERT INTO publicacoes (id, tenant_id, titulo, corpo, situacao, agendada_para)
+        VALUES (${futura}, ${tenantId}, 'Futura', 'x', 'agendada', now() + interval '1 day')`
+    })
+    expect((await rodar('publicar-agendadas')).resultado).toBeGreaterThanOrEqual(1)
+    const situacoes = await dono.begin(async (tx) => {
+      await tx`SELECT set_config('app.tenant_id', ${tenantId}, true)`
+      return tx`SELECT id, situacao::text AS situacao, publicada_em FROM publicacoes WHERE id IN (${vencida}, ${futura})`
+    })
+    const por = new Map(situacoes.map((l) => [String(l['id']), l]))
+    expect(por.get(vencida)?.['situacao']).toBe('publicada')
+    expect(por.get(vencida)?.['publicada_em']).not.toBeNull()
+    expect(por.get(futura)?.['situacao']).toBe('agendada')
   })
 
   it('tarefa desconhecida é erro (o job falha e aparece), não sucesso silencioso', async () => {
