@@ -2,6 +2,9 @@ import type {
   AreaDoPortal,
   ChamadoDoPortal,
   ComentarioDoPortal,
+  EventoDoPortal,
+  ListaDeEventosDoPortal,
+  ProximosEventosDoPortal,
   ListaDeDocumentosDoPortal,
   FeedDoPortal,
   ListaDeComentariosDoPortal,
@@ -82,6 +85,16 @@ export interface ServicosDoPortal {
     listar: (apenasNaoLidas?: boolean) => Promise<Resultado<ListaDeNotificacoesDoPortal>>
     marcarLida: (id: string) => Promise<Resultado<{ naoLidas: number }>>
     marcarTodas: () => Promise<Resultado<{ naoLidas: number }>>
+  }
+  /** Agenda de eventos da equipe (Fase 3D): lista, confirmar presença (ou lista de espera) e cancelar */
+  eventos: {
+    listar: (
+      aba: 'proximos' | 'passados',
+      pagina?: number,
+    ) => Promise<Resultado<ListaDeEventosDoPortal>>
+    proximos: () => Promise<Resultado<ProximosEventosDoPortal>>
+    confirmar: (id: string) => Promise<Resultado<EventoDoPortal>>
+    cancelar: (id: string) => Promise<Resultado<EventoDoPortal>>
   }
   /** Documentos que a equipe compartilha (Fase 3C): lista e download (registrado, URL de 60 segundos) */
   documentos: {
