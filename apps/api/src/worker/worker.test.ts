@@ -228,17 +228,19 @@ describe('manutenção agendada com dois workers de verdade', () => {
       const agendadores = await q.getJobSchedulers()
       expect(agendadores.map((a) => a.key).sort()).toEqual([
         'auditoria-particoes',
+        'lembrar-eventos',
         'limpeza-convites',
         'limpeza-outbox',
         'publicar-agendadas',
         'varredura-importacoes',
       ])
-      // Os agendadores por cron esperam a hora; os de intervalo (varredura de importações e publicação das
-      // agendadas) rodam já na partida
-      await esperarAte(async () => (await q.getJobCounts('completed'))['completed'] === 3)
+      // Os agendadores por cron esperam a hora; os de intervalo (varredura de importações, publicação das
+      // agendadas e lembrete de eventos) rodam já na partida
+      await esperarAte(async () => (await q.getJobCounts('completed'))['completed'] === 4)
       const concluidos = await q.getJobs(['completed'])
       // só UMA execução de cada, mesmo com dois workers
       expect(concluidos.map((j) => j.name).sort()).toEqual([
+        'lembrar-eventos',
         'particoes',
         'publicar-agendadas',
         'varrer-importacoes',

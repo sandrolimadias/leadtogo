@@ -22,6 +22,10 @@ import {
   type Publicador,
 } from '../../chamados/notificar-chamado.js'
 import { enfileirarVarredura } from '../../chamados/fila-antivirus.js'
+import {
+  EVENTO_NOTIFICAR_EVENTO,
+  manipuladorDeNotificacaoDeEvento,
+} from '../../portal/notificar-evento.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
 
@@ -171,6 +175,9 @@ export function manipuladoresPadrao(
 
   /** Chamado mexeu: sino, e-mail de quem é a pessoa certa e aviso em tempo real (depois do commit). */
   manipuladores[EVENTO_NOTIFICAR_CHAMADO] = manipuladorDeNotificacaoDeChamado(config, publicar)
+
+  /** Agenda do portal: vaga da lista de espera, evento cancelado e lembrete de 24 horas. */
+  manipuladores[EVENTO_NOTIFICAR_EVENTO] = manipuladorDeNotificacaoDeEvento(config, publicar)
 
   if (receita) {
     manipuladores[EVENTO_VERIFICAR_SITUACAO] = manipuladorDaSituacao(receita.banco, receita.servico)
