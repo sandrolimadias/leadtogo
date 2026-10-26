@@ -152,6 +152,7 @@
 ## Central de chamados (Fase 2)
 | Item | Motivo de ter ficado fora | Origem |
 |---|---|---|
+| **PENDENTE DE IMPLANTAÇÃO: ligar os anexos dos chamados em produção** (variáveis `S3_PUBLIC_ENDPOINT` e `CLAMAV_*` na API e no worker; serviço do ClamAV no Coolify, que ainda não foi subido de verdade; CORS do bucket de arquivos no Garage) | A Fase 2 foi ao ar em 24/10/2026 (`557832a`) **sem** os anexos: sem `CLAMAV_HOST` o envio fica desligado ("Envio de anexos ainda não configurado") e o resto dos chamados funciona. Decisão do Ale (26/10/2026): configurar depois. A CSP do web já inclui o host dos arquivos. Passo a passo em `roteiro_garage_anexos.md` e `roteiro_teste_chamados.md` (seções 0 e 4) | Fase 2, implantação |
 | **Portal do cliente** (abrir e acompanhar chamados pelo contato; origem `portal`) | Próxima fase; a base já está no banco (`contato_id`, `origem`, autor/ator `contato`, destinatário `contato`, "visível no portal") | Fase 2 |
 | **Prospecção** (busca por CNAE e município na base da Receita) | Plano guardado em `plano_prospeccao.md` para a fase seguinte | Decisão do Ale (23/10/2026) |
 | Web Push (notificação no aparelho) para os chamados | Decidido ficar só com sino e e-mail nesta fase | Fase 2 |

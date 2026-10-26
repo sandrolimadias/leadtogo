@@ -5,6 +5,9 @@
 > **O que muda para quem já usa:** nada. Só o **Administrador** recebe as permissões dos chamados; Gestor e Vendedor só ganham se você marcar nas Configurações → Perfis de acesso. A migração 0031 só **acrescenta** (nenhuma coluna ou tabela existente some).
 
 ## 0. Antes do deploy (Coolify)
+
+> **Estado em 26/10/2026:** o código da Fase 2 está em produção desde 24/10/2026 (`557832a`), mas **os anexos continuam desligados** (itens 2 a 5 abaixo pendentes; decisão do Ale de configurar depois, registrada em `backlog_pos_mvp.md`). Dá para testar tudo do roteiro **menos a seção 4 (Anexos e antivírus)**. Ao ligar os anexos, siga `roteiro_garage_anexos.md` e refaça a seção 4.
+
 1. **Backup Now** do banco (já feito para a 0031; repita se passou muito tempo).
 2. Variáveis novas na API **e no worker** (a lista está no `.env.example`):
    - `S3_PUBLIC_ENDPOINT` = `https://files.crm.aledias.com.br` (endereço que o **navegador** alcança, para as URLs pré-assinadas de envio e download).
