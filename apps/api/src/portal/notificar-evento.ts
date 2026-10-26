@@ -44,6 +44,7 @@ type Destinatario = {
   cancelado_motivo: string | null
   portal_nome: string | null
   empresa_nome: string
+  quer_email: boolean
 }
 
 const FORMATO_DATA = new Intl.DateTimeFormat('pt-BR', {
@@ -105,12 +106,14 @@ export function manipuladorDeNotificacaoDeEvento(
     const destinatarios = await tx.execute<Destinatario>(sql`
       SELECT pa.contato_id, ct.nome, pa.email::text AS email, ec.id AS confirmacao_id, ev.id AS evento_id,
              ev.titulo, ev.inicio_em, ev.local, ev.cancelado_motivo, tc.portal_nome,
-             coalesce(e.nome_fantasia, e.razao_social) AS empresa_nome
+             coalesce(e.nome_fantasia, e.razao_social) AS empresa_nome,
+             coalesce(pp.email_eventos, true) AS quer_email
       FROM evento_confirmacoes ec
       JOIN eventos ev ON ev.id = ec.evento_id AND ev.excluido_em IS NULL
       JOIN portal_acessos pa ON pa.id = ec.acesso_id AND pa.situacao = 'ativo' AND pa.excluido_em IS NULL
       JOIN contatos ct ON ct.id = pa.contato_id
       JOIN empresas e ON e.id = pa.empresa_id
+      LEFT JOIN portal_preferencias pp ON pp.acesso_id = pa.id
       JOIN tenant_configuracoes tc ON tc.tenant_id = ev.tenant_id AND tc.portal_ativo
       WHERE ${filtro}`)
     if (destinatarios.length === 0) return
@@ -128,7 +131,8 @@ export function manipuladorDeNotificacaoDeEvento(
         ON CONFLICT (id) DO NOTHING RETURNING id`)
       if (!feita) continue
       novos.push({ contatoId: d.contato_id, id, tipo: `evento.${p.tipo}`, titulo })
-      if (config.PORTAL_URL && config.TOKEN_ENCRYPTION_KEY && config.SMTP_HOST) {
+      // O cliente pode desligar o e-mail dos eventos em Preferências; o sino continua
+      if (d.quer_email && config.PORTAL_URL && config.TOKEN_ENCRYPTION_KEY && config.SMTP_HOST) {
         const idEmail = idDeterministico(evento.id, d.contato_id, 'email-evento')
         await tx.execute(sql`
           INSERT INTO notificacoes (id, tenant_id, destinatario_tipo, contato_id, canal, tipo, titulo, mensagem, link, enviada_em)

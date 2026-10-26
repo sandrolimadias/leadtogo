@@ -11,6 +11,7 @@ import {
   processadorDeManutencao,
   registrarAgendadores,
 } from './manutencao.js'
+import { criarEnviadorDePush, type EnviadorDePush } from '../portal/push.js'
 import { manipuladoresPadrao } from './outbox/manipuladores.js'
 import { RelayDoOutbox } from './outbox/relay.js'
 import { ExecutorDaImportacao } from '../importacao/executor.js'
@@ -47,8 +48,12 @@ export async function iniciarWorker(deps: {
   banco: Conexao
   valkey: Redis
   log: Logger
+  /** Quem envia o push; sem ele vale o Web Push real (ou nenhum, sem as chaves VAPID). Os testes injetam um falso. */
+  enviadorDePush?: EnviadorDePush | null
 }): Promise<WorkerEmExecucao> {
   const { config, banco, valkey, log } = deps
+  const enviadorDePush =
+    deps.enviadorDePush === undefined ? criarEnviadorDePush(config) : deps.enviadorDePush
   const filas = new WorkerFilas(config, log)
   // Marca compartilhada: o relay roda em UM worker por ciclo, então a idade do último ciclo vale para todos
   const chaveDoCiclo = `${config.FILA_PREFIXO}:relay:ultimo-ciclo`
@@ -83,7 +88,9 @@ export async function iniciarWorker(deps: {
   )
 
   // Manutenção agendada (partições da auditoria e limpezas), via funções SECURITY DEFINER do banco
-  filas.consumir(FILAS.manutencao, processadorDeManutencao(banco, log, filas), { concorrencia: 1 })
+  filas.consumir(FILAS.manutencao, processadorDeManutencao(banco, log, filas, enviadorDePush), {
+    concorrencia: 1,
+  })
   await registrarAgendadores(filas)
   await garantirParticoesNaPartida(filas)
 

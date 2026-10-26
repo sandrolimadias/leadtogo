@@ -2,6 +2,7 @@ import { criarConexao } from '@leadtogo/db'
 import { Redis } from 'ioredis'
 import { pino } from 'pino'
 
+import type { EnviadorDePush } from '../portal/push.js'
 import { iniciarWorker, type WorkerEmExecucao } from '../worker/iniciar.js'
 import { configuracaoDeTeste } from './app-teste.js'
 
@@ -10,7 +11,10 @@ import { configuracaoDeTeste } from './app-teste.js'
  * para os testes de API em que algo só acontece depois de o worker agir (e-mails). Chame o `parar()`
  * no afterAll. Os arquivos de teste rodam em sequência, então só há um worker por vez.
  */
-export async function subirWorkerDeTeste(troca: Record<string, string> = {}) {
+export async function subirWorkerDeTeste(
+  troca: Record<string, string> = {},
+  enviadorDePush?: EnviadorDePush | null,
+) {
   const config = configuracaoDeTeste({ WORKER_SAUDE_PORTA: '0', ...troca })
   const banco = criarConexao(config.DATABASE_URL, { max: 4 })
   const valkey = new Redis(config.REDIS_URL)
@@ -19,6 +23,7 @@ export async function subirWorkerDeTeste(troca: Record<string, string> = {}) {
     banco,
     valkey,
     log: pino({ level: 'silent' }),
+    ...(enviadorDePush === undefined ? {} : { enviadorDePush }),
   })
   return {
     worker,

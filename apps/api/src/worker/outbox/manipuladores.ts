@@ -22,6 +22,7 @@ import {
   type Publicador,
 } from '../../chamados/notificar-chamado.js'
 import { enfileirarVarredura } from '../../chamados/fila-antivirus.js'
+import { EVENTO_ENVIAR_AVISO, manipuladorDeEnvioDeAviso } from '../../portal/notificar-aviso.js'
 import {
   EVENTO_NOTIFICAR_EVENTO,
   manipuladorDeNotificacaoDeEvento,
@@ -178,6 +179,9 @@ export function manipuladoresPadrao(
 
   /** Agenda do portal: vaga da lista de espera, evento cancelado e lembrete de 24 horas. */
   manipuladores[EVENTO_NOTIFICAR_EVENTO] = manipuladorDeNotificacaoDeEvento(config, publicar)
+
+  /** Avisos do portal: sino, e-mail e a marca do push de cada pessoa (o push sai do job `enviar-pushes`). */
+  manipuladores[EVENTO_ENVIAR_AVISO] = manipuladorDeEnvioDeAviso(config, publicar)
 
   if (receita) {
     manipuladores[EVENTO_VERIFICAR_SITUACAO] = manipuladorDaSituacao(receita.banco, receita.servico)

@@ -292,12 +292,15 @@ async function notificarCliente(
     portal_ativo: boolean | null
     portal_nome: string | null
     empresa_nome: string
+    quer_email: boolean
   }>(sql`
     SELECT ct.nome, pa.email::text AS email, tc.portal_ativo, tc.portal_nome,
-           coalesce(e.nome_fantasia, e.razao_social) AS empresa_nome
+           coalesce(e.nome_fantasia, e.razao_social) AS empresa_nome,
+           coalesce(pp.email_chamados, true) AS quer_email
     FROM portal_acessos pa
     JOIN contatos ct ON ct.id = pa.contato_id
     JOIN empresas e ON e.id = pa.empresa_id
+    LEFT JOIN portal_preferencias pp ON pp.acesso_id = pa.id
     LEFT JOIN tenant_configuracoes tc ON tc.tenant_id = pa.tenant_id
     WHERE pa.contato_id = ${c.contato_id} AND pa.situacao = 'ativo' AND pa.excluido_em IS NULL
     ORDER BY pa.criado_em LIMIT 1`)
@@ -311,7 +314,8 @@ async function notificarCliente(
     VALUES (${id}, ${evento.tenantId}, 'contato', ${c.contato_id}, 'sino', ${c.id}, ${`chamado.${p.tipo}`}, ${titulo}, ${mensagem}, ${link})
     ON CONFLICT (id) DO NOTHING RETURNING id`)
   if (!feita) return null
-  if (config.PORTAL_URL && config.TOKEN_ENCRYPTION_KEY && config.SMTP_HOST) {
+  // O cliente pode desligar o e-mail dos chamados em Preferências; o sino continua
+  if (a.quer_email && config.PORTAL_URL && config.TOKEN_ENCRYPTION_KEY && config.SMTP_HOST) {
     const idEmail = idDeterministico(evento.id, c.contato_id, 'email-cliente')
     await tx.execute(sql`
       INSERT INTO notificacoes (id, tenant_id, destinatario_tipo, contato_id, canal, chamado_id, tipo, titulo, mensagem, link, enviada_em)

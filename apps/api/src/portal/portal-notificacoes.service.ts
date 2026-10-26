@@ -55,6 +55,7 @@ export class PortalNotificacoesService {
     const db = this.ctx.db()
     const marcadas = await db.execute(sql`
       UPDATE notificacoes SET lida_em = now() WHERE id = ${id} AND ${this.minhas} AND lida_em IS NULL RETURNING id`)
+    if (marcadas.length > 0) await this.marcarAvisosComoLidos(sql`notificacao_id = ${id}`)
     if (marcadas.length === 0) {
       const [existe] = await db.execute(
         sql`SELECT 1 FROM notificacoes WHERE id = ${id} AND ${this.minhas}`,
@@ -65,7 +66,17 @@ export class PortalNotificacoesService {
     return { naoLidas: await this.naoLidas() }
   }
 
+  /** Ler a notificação de um aviso marca o aviso como lido (as estatísticas da equipe). O banco limita ao próprio acesso. */
+  private async marcarAvisosComoLidos(onde: ReturnType<typeof sql>): Promise<void> {
+    await this.ctx.db().execute(sql`
+      UPDATE aviso_entregas SET lido_em = now(), atualizado_em = now()
+      WHERE lido_em IS NULL AND acesso_id = ${this.ctx.portal.acessoId} AND ${onde}`)
+  }
+
   async marcarTodasComoLidas(): Promise<{ naoLidas: number }> {
+    await this.marcarAvisosComoLidos(
+      sql`notificacao_id IN (SELECT id FROM notificacoes WHERE ${this.minhas} AND lida_em IS NULL)`,
+    )
     await this.ctx.db().execute(sql`
       UPDATE notificacoes SET lida_em = now() WHERE ${this.minhas} AND lida_em IS NULL`)
     return { naoLidas: 0 }
