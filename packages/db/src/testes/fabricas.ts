@@ -1106,3 +1106,52 @@ fabricas['documento_acessos'] = definirFabrica<PaisDoDocumento>({
     return id
   },
 })
+
+// Portal do Cliente (Fase 3D): agenda
+interface PaisDoEvento {
+  acessoId: string
+  empresaId: string
+  eventoId: string
+}
+const inserirEvento = async (tx: TransactionSql, tenantId: string) => {
+  const eventoId = novoId()
+  await tx`INSERT INTO eventos (id, tenant_id, titulo, inicio_em, fim_em, situacao, publicado_em)
+    VALUES (${eventoId}, ${tenantId}, 'Encontro anual', now() + interval '10 days',
+      now() + interval '10 days 3 hours', 'publicado', now())`
+  return eventoId
+}
+const prepararEvento = async (owner: Sql, tenantId: string): Promise<PaisDoEvento> => {
+  const pais = await prepararPortal(owner, tenantId)
+  return comTenant(owner, tenantId, async (tx) => ({
+    acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+    empresaId: pais.empresaId,
+    eventoId: await inserirEvento(tx, tenantId),
+  }))
+}
+
+fabricas['eventos'] = definirFabrica({
+  colunaAlteravel: 'titulo',
+  criar: (tx, tenantId) => inserirEvento(tx, tenantId),
+})
+
+fabricas['evento_empresas'] = definirFabrica<PaisDoEvento>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararEvento,
+  criar: async (tx, tenantId, { empresaId, eventoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO evento_empresas (id, tenant_id, evento_id, empresa_id)
+      VALUES (${id}, ${tenantId}, ${eventoId}, ${empresaId})`
+    return id
+  },
+})
+
+fabricas['evento_confirmacoes'] = definirFabrica<PaisDoEvento>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararEvento,
+  criar: async (tx, tenantId, { acessoId, empresaId, eventoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO evento_confirmacoes (id, tenant_id, evento_id, acesso_id, empresa_id)
+      VALUES (${id}, ${tenantId}, ${eventoId}, ${acessoId}, ${empresaId})`
+    return id
+  },
+})

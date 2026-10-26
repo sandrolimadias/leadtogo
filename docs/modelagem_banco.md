@@ -937,3 +937,22 @@ Três tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 | `documento_acessos` | documento_id, acesso_id, empresa_id, baixado_em | Um registro por download. **Gatilho** `app_documento_download_total` soma em `documentos.total_downloads` (SECURITY DEFINER) |
 
 **O que a sessão do portal enxerga e grava:** `documentos` só as linhas com `visivel_no_portal`, arquivo `limpo` e enviado, não excluídas e do alcance da empresa dela (não grava; a restrição vale `TO leadtogo_app`, porque o gatilho roda como dono); `documento_empresas` as da própria empresa (não grava); `documento_acessos` registra só em nome do próprio acesso e empresa e só de documento que enxerga, e lê só os próprios (não altera nem apaga).
+
+## Portal do Cliente, Fase 3D: agenda (migração 0036, só expansão)
+
+Três tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de isolamento (`packages/db/src/testes/agenda.test.ts`, com os testes de **concorrência**, e o teste genérico).
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `eventos` | titulo (160), descricao (Markdown restrito), local (200), link_online (http/https), inicio_em, fim_em, vagas_totais, vagas_por_empresa (nulas = sem limite), prazo_confirmacao, alcance (`todos` · `empresas`), situacao (`rascunho` · `publicado` · `cancelado`), publicado_em, cancelado_em/motivo, lembrete_enviado_em, total_confirmados, total_lista_espera | CHECKs: fim depois do início; vagas ≥ 1; prazo até o início; link http(s); `cancelado` exige `cancelado_em`; fora de rascunho exige `publicado_em`. Os totais são mantidos pelas funções abaixo |
+| `evento_empresas` | evento_id, empresa_id | Alcance "empresas" (único por par) |
+| `evento_confirmacoes` | evento_id, acesso_id, empresa_id, situacao (`confirmado` · `lista_espera` · `cancelado`), entrou_na_fila_em, confirmado_em, promovido_em, cancelado_em | **Uma presença ativa por pessoa e evento** (índice único parcial); a fila anda por `entrou_na_fila_em` |
+
+**Quem muda as confirmações são funções `SECURITY DEFINER`** (mesmo padrão das 0016, 0026 e 0031), que **travam a linha do evento (`FOR UPDATE`)**: duas pessoas confirmando ao mesmo tempo nunca passam do limite de vagas, nem o total nem o da empresa.
+- `app_evento_confirmar(evento, id)`: do cliente da sessão. Vaga livre = `confirmado`; lotado (total ou da empresa dele) = `lista_espera`. Idempotente. Recusa (mensagem do erro): `evento_nao_encontrado` (rascunho, fora do alcance ou inexistente), `evento_cancelado`, `evento_encerrado` (já começou), `prazo_encerrado`, `sem_sessao_do_portal`.
+- `app_evento_cancelar_presenca(evento)`: o cliente cancela a **própria** presença (até o início) e a fila é promovida. Devolve os ids promovidos.
+- `app_evento_remover_participante(confirmacao)` e `app_evento_reprocessar_vagas(evento)`: da **equipe** (recusam a sessão do portal); a segunda promove quem passou a caber depois de a equipe aumentar as vagas.
+- `app_evento_promover` e `app_evento_cancelar_confirmacao`: internas (sem EXECUTE para o papel da API). A promoção anda na ordem da fila e **pula quem a empresa já está no limite**.
+- `app_eventos_a_lembrar()`: para o worker achar, em todas as empresas, os eventos publicados que começam em até 24 horas e ainda sem lembrete (política só para o dono, travada numa variável, como as limpezas da 0009).
+
+**O que a sessão do portal enxerga:** `eventos` publicados ou cancelados (nunca rascunho), não excluídos e do alcance da empresa dela; `evento_empresas` e `evento_confirmacoes` só da **própria empresa** (para contar as vagas dela). **Não grava em nenhuma das três.** As políticas restritivas dessas tabelas valem só para o papel da API (`TO leadtogo_app`), para as funções, que rodam como dono, enxergarem todas as confirmações do evento.
