@@ -191,8 +191,31 @@ const esquema = z
     CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
     /** Prazo de uma varredura (envio do arquivo ao clamd e resposta), em milissegundos */
     CLAMAV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(120_000),
+
+    // Push do portal (Fase 3E, Web Push/VAPID). Sem o par de chaves o push fica desligado (o portal esconde o
+    // botão) e os avisos seguem pelo sino e pelo e-mail. Gere com `npx web-push generate-vapid-keys`.
+    VAPID_PUBLIC_KEY: opcional(z.string().min(20)),
+    VAPID_PRIVATE_KEY: opcional(z.string().min(20)),
+    /** Contato do remetente para o serviço de push: `mailto:` ou https */
+    VAPID_SUBJECT: opcional(
+      z.string().regex(/^(mailto:\S+@\S+|https:\/\/\S+)$/, 'use mailto:... ou https://...'),
+    ),
   })
   .superRefine((env, ctx) => {
+    if (Boolean(env.VAPID_PUBLIC_KEY) !== Boolean(env.VAPID_PRIVATE_KEY)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['VAPID_PRIVATE_KEY'],
+        message: 'VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY vão juntas',
+      })
+    }
+    if (env.VAPID_PUBLIC_KEY && !env.VAPID_SUBJECT) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['VAPID_SUBJECT'],
+        message: 'obrigatória com as chaves VAPID (ex.: mailto:contato@aledias.com.br)',
+      })
+    }
     if (env.NODE_ENV === 'production' && !env.MAPA_BASE_URL) {
       ctx.addIssue({
         code: 'custom',

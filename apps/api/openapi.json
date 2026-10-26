@@ -17578,6 +17578,239 @@
         "tags": ["Portal do cliente: gestão"]
       }
     },
+    "/v1/portal-avisos": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.avisos`. Do mais novo ao mais antigo, com os destinatários, quantos receberam (sino), o percentual de lidos e os pushes e e-mails. `semana` traz o uso do limite de avisos normais da semana.",
+        "operationId": "AvisosController_listar",
+        "parameters": [
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeAvisos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Avisos enviados e agendados",
+        "tags": ["Portal do cliente: avisos"]
+      },
+      "post": {
+        "description": "Exige `portal.avisos`. Mensagem de até 140 caracteres; sem `enviarEm` sai agora. O aviso **normal** respeita o horário de silêncio de cada pessoa (no push) e conta no limite semanal por empresa (409 `limite_semanal`); o **urgente** chega na hora e não conta. 409 `portal_desligado`; 422 `horario_no_passado` ou `empresa_invalida`.",
+        "operationId": "AvisosController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarAvisoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Aviso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Enviar ou agendar um aviso",
+        "tags": ["Portal do cliente: avisos"]
+      }
+    },
+    "/v1/portal-avisos/{id}/cancelar": {
+      "post": {
+        "description": "Exige `portal.avisos`. Só o que ainda não saiu (409 `aviso_ja_enviado`); o que já foi enviado não volta.",
+        "operationId": "AvisosController_cancelar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Aviso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cancelar um aviso agendado",
+        "tags": ["Portal do cliente: avisos"]
+      }
+    },
     "/v1/portal-configuracao": {
       "get": {
         "description": "Exige `portal.ver` ou `portal.configurar`.",
@@ -20423,6 +20656,93 @@
         ]
       }
     },
+    "/v1/portal/busca": {
+      "get": {
+        "description": "Chamados, documentos, eventos e publicações que a pessoa pode ver, pelo título e pelo texto (sem acento e sem diferenciar maiúsculas). Até 5 por tipo; mínimo de 2 letras.",
+        "operationId": "PortalPreferenciasController_buscar",
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDaBuscaDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Busca global",
+        "tags": ["Portal do cliente: preferências e busca"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/chamados": {
       "get": {
         "description": "Os chamados da empresa-cliente abertos pelo portal (os de colegas também aparecem). O estado é o que o cliente vê: Aberto, Em atendimento, Aguardando sua resposta, Resolvido ou Fechado.",
@@ -22972,6 +23292,145 @@
         ]
       }
     },
+    "/v1/portal/preferencias": {
+      "get": {
+        "description": "Horário de silêncio (do push dos avisos normais) e e-mail por tipo. Quem nunca salvou recebe o padrão. Avisos de segurança (entrada, 2FA) não dependem disto.",
+        "operationId": "PortalPreferenciasController_obter",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenciasDoPortal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Minhas preferências",
+        "tags": ["Portal do cliente: preferências e busca"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "PortalPreferenciasController_salvar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarPreferenciasDoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenciasDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Salvar minhas preferências",
+        "tags": ["Portal do cliente: preferências e busca"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/publicacoes": {
       "get": {
         "description": "Só as publicadas e do alcance da empresa do cliente, a fixada primeiro. As reações vêm como total (nunca quem reagiu).",
@@ -23605,6 +24064,231 @@
         },
         "summary": "Marcar publicações como lidas",
         "tags": ["Portal do cliente: publicações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/push/configuracao": {
+      "get": {
+        "description": "Se o push está disponível neste servidor, a chave pública (VAPID) e quantos aparelhos desta conta estão inscritos.",
+        "operationId": "PortalPreferenciasController_configuracaoDePush",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDePush"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Configuração do push",
+        "tags": ["Portal do cliente: preferências e busca"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/push/inscricoes": {
+      "post": {
+        "description": "Guarda a inscrição (endereço e chaves) que o navegador gerou depois do consentimento da pessoa. Idempotente. 503 `push_indisponivel`; 409 `aparelho_em_uso` se o aparelho já recebe avisos de outra conta.",
+        "operationId": "PortalPreferenciasController_inscrever",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InscreverPushEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDePush"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ativar o push neste aparelho",
+        "tags": ["Portal do cliente: preferências e busca"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PortalPreferenciasController_remover",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoverInscricaoDePushEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracaoDePush"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Desativar o push neste aparelho",
+        "tags": ["Portal do cliente: preferências e busca"],
         "security": [
           {
             "sessaoPortal": []
@@ -27197,6 +27881,11 @@
           },
           "comentariosAtivos": {
             "type": "boolean"
+          },
+          "avisosLimiteSemanal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
           }
         },
         "additionalProperties": false
@@ -27236,6 +27925,110 @@
           }
         },
         "required": ["nota"],
+        "additionalProperties": false
+      },
+      "Aviso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mensagem": {
+            "type": "string"
+          },
+          "link": {
+            "nullable": true,
+            "type": "string"
+          },
+          "urgencia": {
+            "$ref": "#/components/schemas/UrgenciaDoAviso"
+          },
+          "alcance": {
+            "$ref": "#/components/schemas/AlcanceDaPublicacao"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDoAviso"
+          },
+          "enviarEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "enviadoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "canceladoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "destinatarios": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "entregues": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lidos": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pushEnviados": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "emailsEnfileirados": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "empresas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "mensagem",
+          "link",
+          "urgencia",
+          "alcance",
+          "situacao",
+          "enviarEm",
+          "enviadoEm",
+          "canceladoEm",
+          "destinatarios",
+          "entregues",
+          "lidos",
+          "pushEnviados",
+          "emailsEnfileirados",
+          "criadoEm",
+          "empresas"
+        ],
         "additionalProperties": false
       },
       "BaixaDeDocumento": {
@@ -28051,6 +28844,25 @@
         },
         "additionalProperties": false
       },
+      "ConfiguracaoDePush": {
+        "type": "object",
+        "properties": {
+          "disponivel": {
+            "type": "boolean"
+          },
+          "chavePublica": {
+            "nullable": true,
+            "type": "string"
+          },
+          "inscricoes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["disponivel", "chavePublica", "inscricoes"],
+        "additionalProperties": false
+      },
       "ConfiguracaoDeRotas": {
         "type": "object",
         "properties": {
@@ -28202,6 +29014,11 @@
           },
           "comentariosAtivos": {
             "type": "boolean"
+          },
+          "avisosLimiteSemanal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
           }
         },
         "required": [
@@ -28209,7 +29026,8 @@
           "nome",
           "logoUrl",
           "exigeDoisFatoresDoResponsavel",
-          "comentariosAtivos"
+          "comentariosAtivos",
+          "avisosLimiteSemanal"
         ],
         "additionalProperties": false
       },
@@ -28977,6 +29795,48 @@
           }
         },
         "required": ["tipoAtividadeId", "titulo", "dataInicio"],
+        "additionalProperties": false
+      },
+      "CriarAvisoEntrada": {
+        "type": "object",
+        "properties": {
+          "mensagem": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 140
+          },
+          "link": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
+          },
+          "urgencia": {
+            "default": "normal",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UrgenciaDoAviso"
+              }
+            ]
+          },
+          "alcance": {
+            "$ref": "#/components/schemas/AlcanceDaPublicacao"
+          },
+          "empresaIds": {
+            "default": [],
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "enviarEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["mensagem", "alcance"],
         "additionalProperties": false
       },
       "CriarContatoEntrada": {
@@ -32475,6 +33335,34 @@
         "required": ["chamadosAbertos", "aguardandoVoce", "resolvidosParaAvaliar", "recentes"],
         "additionalProperties": false
       },
+      "InscreverPushEntrada": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 1000,
+            "format": "uri"
+          },
+          "keys": {
+            "type": "object",
+            "properties": {
+              "p256dh": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "auth": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            },
+            "required": ["p256dh", "auth"]
+          }
+        },
+        "required": ["endpoint", "keys"],
+        "additionalProperties": false
+      },
       "ItemDaListaDeContatos": {
         "type": "object",
         "properties": {
@@ -33614,6 +34502,42 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina", "contagens"],
+        "additionalProperties": false
+      },
+      "ListaDeAvisos": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Aviso"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "semana": {
+            "type": "object",
+            "properties": {
+              "usados": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limite": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["usados", "limite"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["itens", "total", "semana"],
         "additionalProperties": false
       },
       "ListaDeBaixasDeDocumento": {
@@ -37188,6 +38112,38 @@
         ],
         "additionalProperties": false
       },
+      "PreferenciasDoPortal": {
+        "type": "object",
+        "properties": {
+          "silencioInicio": {
+            "nullable": true,
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "silencioFim": {
+            "nullable": true,
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "emailChamados": {
+            "type": "boolean"
+          },
+          "emailEventos": {
+            "type": "boolean"
+          },
+          "emailAvisos": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "silencioInicio",
+          "silencioFim",
+          "emailChamados",
+          "emailEventos",
+          "emailAvisos"
+        ],
+        "additionalProperties": false
+      },
       "PreferenciasPatch": {
         "type": "object",
         "properties": {
@@ -37910,6 +38866,18 @@
         ],
         "additionalProperties": false
       },
+      "RemoverInscricaoDePushEntrada": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 1000,
+            "format": "uri"
+          }
+        },
+        "required": ["endpoint"],
+        "additionalProperties": false
+      },
       "ResponderChamadoNoPortalEntrada": {
         "type": "object",
         "properties": {
@@ -37966,6 +38934,48 @@
           "valor": {}
         },
         "required": ["campoId", "rotulo", "valor"],
+        "additionalProperties": false
+      },
+      "ResultadoDaBusca": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": ["chamado", "documento", "evento", "publicacao"]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "trecho": {
+            "nullable": true,
+            "type": "string"
+          },
+          "destino": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["tipo", "id", "titulo", "trecho", "destino", "data"],
+        "additionalProperties": false
+      },
+      "ResultadoDaBuscaDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultadoDaBusca"
+            }
+          }
+        },
+        "required": ["itens"],
         "additionalProperties": false
       },
       "ResultadoDaTagEmMassa": {
@@ -38348,6 +39358,38 @@
           }
         },
         "required": ["titulo", "inicioEm", "fimEm", "alcance"],
+        "additionalProperties": false
+      },
+      "SalvarPreferenciasDoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "silencioInicio": {
+            "nullable": true,
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "silencioFim": {
+            "nullable": true,
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "emailChamados": {
+            "type": "boolean"
+          },
+          "emailEventos": {
+            "type": "boolean"
+          },
+          "emailAvisos": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "silencioInicio",
+          "silencioFim",
+          "emailChamados",
+          "emailEventos",
+          "emailAvisos"
+        ],
         "additionalProperties": false
       },
       "SalvarPublicacaoEntrada": {
@@ -38942,6 +39984,10 @@
         "type": "string",
         "enum": ["convidado", "ativo", "suspenso", "revogado"]
       },
+      "SituacaoDoAviso": {
+        "type": "string",
+        "enum": ["agendado", "enviado", "cancelado"]
+      },
       "SituacaoDoEvento": {
         "type": "string",
         "enum": ["rascunho", "publicado", "cancelado"]
@@ -39251,6 +40297,10 @@
         },
         "required": ["email"],
         "additionalProperties": false
+      },
+      "UrgenciaDoAviso": {
+        "type": "string",
+        "enum": ["normal", "urgente"]
       },
       "ValoresDoTipoDaImportacao": {
         "type": "object",

@@ -48,6 +48,8 @@ describe('agendadores (upsertJobScheduler)', () => {
       'varredura-importacoes',
       'publicar-agendadas',
       'lembrar-eventos',
+      'enviar-avisos',
+      'enviar-pushes',
     ])
     expect(new Set(AGENDADORES.map((a) => a.id)).size).toBe(AGENDADORES.length)
     expect(AGENDADORES[0]?.quando).toEqual({ pattern: '0 3 1 * *' })

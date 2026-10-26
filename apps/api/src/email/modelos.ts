@@ -202,3 +202,23 @@ export function emailPortalEvento(p: {
     p.portal,
   )
 }
+
+/** Aviso curto do portal (Fase 3E): a mensagem inteira e um botão para o link, quando houver. */
+export function emailPortalAviso(p: {
+  nome: string
+  portal: string
+  urgente: boolean
+  mensagem: string
+  /** Endereço completo a abrir (o portal ou o link do aviso) */
+  link: string
+  rotuloDoLink: string
+}): ModeloDeEmail {
+  return montar(
+    p.urgente ? 'Aviso urgente' : 'Novo aviso',
+    `Olá, ${p.nome}.`,
+    [p.mensagem],
+    { texto: p.rotuloDoLink, link: p.link },
+    `Você recebe este aviso porque tem acesso ao ${p.portal}. Você pode escolher quais e-mails receber em Preferências, no portal.`,
+    p.portal,
+  )
+}

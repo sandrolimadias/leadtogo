@@ -75,9 +75,12 @@ export const listaDeAvisosSchema = z
   .object({
     itens: z.array(avisoSchema),
     total: z.number().int().nonnegative(),
-    /** Avisos normais desta semana (segunda a domingo, horário de Brasília) e o limite por cliente */
+    /**
+     * Avisos normais da semana corrente (segunda a domingo, horário de Brasília) que a empresa mais atingida já
+     * tem (enviados ou agendados, sem os cancelados) e o limite por empresa. Os urgentes não contam.
+     */
     semana: z.object({
-      normaisEnviadosOuAgendados: z.number().int().nonnegative(),
+      usados: z.number().int().nonnegative(),
       limite: z.number().int().positive(),
     }),
   })
@@ -145,7 +148,7 @@ export const PREFERENCIAS_PADRAO_DO_PORTAL: PreferenciasDoPortal = {
   silencioFim: null,
   emailChamados: true,
   emailEventos: true,
-  emailAvisos: false,
+  emailAvisos: true,
 }
 
 export const salvarPreferenciasDoPortalSchema = preferenciasDoPortalSchema

@@ -1,12 +1,13 @@
 import { novoId, sql } from '@leadtogo/db'
-import type {
-  AcessoDoPortal,
-  AlterarAcessoDoPortalEntrada,
-  AtualizarConfiguracaoDoPortalEntrada,
-  ConfiguracaoDoPortal,
-  ConsultaDeAcessosDoPortal,
-  DarAcessoAoPortalEntrada,
-  ListaDeAcessosDoPortal,
+import {
+  type AcessoDoPortal,
+  type AlterarAcessoDoPortalEntrada,
+  type AtualizarConfiguracaoDoPortalEntrada,
+  type ConfiguracaoDoPortal,
+  type ConsultaDeAcessosDoPortal,
+  type DarAcessoAoPortalEntrada,
+  LIMITE_SEMANAL_PADRAO_DE_AVISOS,
+  type ListaDeAcessosDoPortal,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
@@ -306,9 +307,10 @@ export class PortalAcessosService {
       nome: string | null
       exige: boolean
       comentarios: boolean
+      limite: number
     }>(sql`
       SELECT portal_ativo AS ativo, portal_nome AS nome, portal_exige_dois_fatores_responsavel AS exige,
-             portal_comentarios_ativos AS comentarios
+             portal_comentarios_ativos AS comentarios, portal_avisos_limite_semanal AS limite
       FROM tenant_configuracoes`)
     return {
       ativo: c?.ativo ?? false,
@@ -316,6 +318,7 @@ export class PortalAcessosService {
       logoUrl: null,
       exigeDoisFatoresDoResponsavel: c?.exige ?? false,
       comentariosAtivos: c?.comentarios ?? true,
+      avisosLimiteSemanal: c?.limite ?? LIMITE_SEMANAL_PADRAO_DE_AVISOS,
     }
   }
 
@@ -329,6 +332,7 @@ export class PortalAcessosService {
           portal_nome = ${d.nome === undefined ? antes.nome : d.nome},
           portal_exige_dois_fatores_responsavel = ${d.exigeDoisFatoresDoResponsavel ?? antes.exigeDoisFatoresDoResponsavel},
           portal_comentarios_ativos = ${d.comentariosAtivos ?? antes.comentariosAtivos},
+          portal_avisos_limite_semanal = ${d.avisosLimiteSemanal ?? antes.avisosLimiteSemanal},
           atualizado_em = now()`)
     const depois = await this.configuracao()
     await this.auditoria.registrar({

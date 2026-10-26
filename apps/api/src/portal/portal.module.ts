@@ -38,6 +38,11 @@ import { EventosController } from './eventos.controller.js'
 import { EventosService } from './eventos.service.js'
 import { PortalEventosController } from './portal-eventos.controller.js'
 import { PortalEventosService } from './portal-eventos.service.js'
+import { AvisosController } from './avisos.controller.js'
+import { AvisosService } from './avisos.service.js'
+import { PortalBuscaService } from './portal-busca.service.js'
+import { PortalPreferenciasController } from './portal-preferencias.controller.js'
+import { PortalPreferenciasService } from './portal-preferencias.service.js'
 import { PortalGuard } from './portal.guard.js'
 import { PortalInterceptor } from './portal.interceptor.js'
 
@@ -59,6 +64,8 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalDocumentosController,
     EventosController,
     PortalEventosController,
+    AvisosController,
+    PortalPreferenciasController,
   ],
   providers: [
     LimitePorChave,
@@ -70,6 +77,9 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalDocumentosService,
     EventosService,
     PortalEventosService,
+    AvisosService,
+    PortalPreferenciasService,
+    PortalBuscaService,
     PortalEntradaService,
     PortalSegundoFatorService,
     PortalAcessosService,

@@ -3,7 +3,9 @@ import type { Job } from 'bullmq'
 import type { Logger } from 'pino'
 
 import { varrerImportacoesParadas } from '../importacao/varredura.js'
+import { agendarEnvioDoAviso, EVENTO_ENVIAR_AVISO } from '../portal/notificar-aviso.js'
 import { agendarNotificacaoDeEvento } from '../portal/notificar-evento.js'
+import { type EnviadorDePush, enviarPushesPendentes } from '../portal/push.js'
 import { FILAS } from './filas.js'
 import type { WorkerFilas } from './worker-filas.service.js'
 
@@ -17,6 +19,8 @@ export interface Agendador {
     | 'varrer-importacoes'
     | 'publicar-agendadas'
     | 'lembrar-eventos'
+    | 'enviar-avisos'
+    | 'enviar-pushes'
     | (string & {})
   /** Cron (UTC) ou intervalo em ms (só os testes usam intervalo) */
   quando: { pattern: string } | { every: number }
@@ -38,6 +42,10 @@ export const AGENDADORES: readonly Agendador[] = [
   { id: 'publicar-agendadas', tarefa: 'publicar-agendadas', quando: { every: 60_000 } },
   // A cada 5 minutos: avisa quem está confirmado nos eventos que começam em até 24 horas (uma vez por evento)
   { id: 'lembrar-eventos', tarefa: 'lembrar-eventos', quando: { every: 300_000 } },
+  // A cada minuto: entrega os avisos do portal agendados que já venceram (em todas as empresas)
+  { id: 'enviar-avisos', tarefa: 'enviar-avisos', quando: { every: 60_000 } },
+  // A cada minuto: envia os pushes que já podem sair (os que esperaram o fim do horário de silêncio)
+  { id: 'enviar-pushes', tarefa: 'enviar-pushes', quando: { every: 60_000 } },
 ]
 
 const TAMANHO_DO_LOTE = 500
@@ -106,7 +114,35 @@ async function lembrarEventos(banco: Conexao): Promise<number> {
   return lembrados
 }
 
-export function processadorDeManutencao(banco: Conexao, log: Logger, filas?: WorkerFilas) {
+/**
+ * Avisos agendados que chegaram na hora: para cada um, dentro da empresa dele, grava o evento do outbox que faz a
+ * entrega (se ainda não houver um na fila). A entrega em si é idempotente pela situação do aviso.
+ */
+async function enviarAvisosVencidos(banco: Conexao): Promise<number> {
+  const achados = await banco.cliente<{ id: string; tenant_id: string }[]>`
+    SELECT id, tenant_id FROM app_avisos_a_enviar()`
+  let enfileirados = 0
+  for (const { id, tenant_id: tenantId } of achados) {
+    const feito = await banco.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)
+      const [existe] = await tx.execute(sql`
+        SELECT 1 FROM eventos_outbox WHERE tipo = ${EVENTO_ENVIAR_AVISO} AND entidade_id = ${id}`)
+      if (existe) return false
+      await agendarEnvioDoAviso(tx, tenantId, id)
+      return true
+    })
+    if (feito) enfileirados += 1
+  }
+  return enfileirados
+}
+
+export function processadorDeManutencao(
+  banco: Conexao,
+  log: Logger,
+  filas?: WorkerFilas,
+  /** Quem envia o push (nulo = push desligado: o job não faz nada) */
+  enviadorDePush: EnviadorDePush | null = null,
+) {
   return async (job: Job): Promise<{ tarefa: string; resultado: number }> => {
     let resultado: number
     switch (job.name) {
@@ -130,6 +166,12 @@ export function processadorDeManutencao(banco: Conexao, log: Logger, filas?: Wor
       }
       case 'lembrar-eventos':
         resultado = await lembrarEventos(banco)
+        break
+      case 'enviar-avisos':
+        resultado = await enviarAvisosVencidos(banco)
+        break
+      case 'enviar-pushes':
+        resultado = await enviarPushesPendentes(banco, enviadorDePush, log)
         break
       case 'varrer-importacoes':
         if (!filas) throw new Error('varredura de importações sem acesso às filas')

@@ -3392,6 +3392,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal-avisos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Avisos enviados e agendados
+         * @description Exige `portal.ver` ou `portal.avisos`. Do mais novo ao mais antigo, com os destinatários, quantos receberam (sino), o percentual de lidos e os pushes e e-mails. `semana` traz o uso do limite de avisos normais da semana.
+         */
+        get: operations["AvisosController_listar"];
+        put?: never;
+        /**
+         * Enviar ou agendar um aviso
+         * @description Exige `portal.avisos`. Mensagem de até 140 caracteres; sem `enviarEm` sai agora. O aviso **normal** respeita o horário de silêncio de cada pessoa (no push) e conta no limite semanal por empresa (409 `limite_semanal`); o **urgente** chega na hora e não conta. 409 `portal_desligado`; 422 `horario_no_passado` ou `empresa_invalida`.
+         */
+        post: operations["AvisosController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-avisos/{id}/cancelar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancelar um aviso agendado
+         * @description Exige `portal.avisos`. Só o que ainda não saiu (409 `aviso_ja_enviado`); o que já foi enviado não volta.
+         */
+        post: operations["AvisosController_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal-configuracao": {
         parameters: {
             query?: never;
@@ -3952,6 +3996,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal/busca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Busca global
+         * @description Chamados, documentos, eventos e publicações que a pessoa pode ver, pelo título e pelo texto (sem acento e sem diferenciar maiúsculas). Até 5 por tipo; mínimo de 2 letras.
+         */
+        get: operations["PortalPreferenciasController_buscar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/chamados": {
         parameters: {
             query?: never;
@@ -4475,6 +4539,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal/preferencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Minhas preferências
+         * @description Horário de silêncio (do push dos avisos normais) e e-mail por tipo. Quem nunca salvou recebe o padrão. Avisos de segurança (entrada, 2FA) não dependem disto.
+         */
+        get: operations["PortalPreferenciasController_obter"];
+        /** Salvar minhas preferências */
+        put: operations["PortalPreferenciasController_salvar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/publicacoes": {
         parameters: {
             query?: never;
@@ -4591,6 +4676,47 @@ export interface paths {
          */
         post: operations["PortalPublicacoesController_leituras"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/push/configuracao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Configuração do push
+         * @description Se o push está disponível neste servidor, a chave pública (VAPID) e quantos aparelhos desta conta estão inscritos.
+         */
+        get: operations["PortalPreferenciasController_configuracaoDePush"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/push/inscricoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ativar o push neste aparelho
+         * @description Guarda a inscrição (endereço e chaves) que o navegador gerou depois do consentimento da pessoa. Idempotente. 503 `push_indisponivel`; 409 `aparelho_em_uso` se o aparelho já recebe avisos de outra conta.
+         */
+        post: operations["PortalPreferenciasController_inscrever"];
+        /** Desativar o push neste aparelho */
+        delete: operations["PortalPreferenciasController_remover"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5512,6 +5638,7 @@ export interface components {
             nome?: string | null;
             exigeDoisFatoresDoResponsavel?: boolean;
             comentariosAtivos?: boolean;
+            avisosLimiteSemanal?: number;
         };
         AvaliacaoDoChamado: {
             nota: number;
@@ -5522,6 +5649,33 @@ export interface components {
         AvaliarChamadoEntrada: {
             nota: number;
             comentario?: string | null;
+        };
+        Aviso: {
+            /** Format: uuid */
+            id: string;
+            mensagem: string;
+            link: string | null;
+            urgencia: components["schemas"]["UrgenciaDoAviso"];
+            alcance: components["schemas"]["AlcanceDaPublicacao"];
+            situacao: components["schemas"]["SituacaoDoAviso"];
+            /** Format: date-time */
+            enviarEm: string;
+            /** Format: date-time */
+            enviadoEm: string | null;
+            /** Format: date-time */
+            canceladoEm: string | null;
+            destinatarios: number;
+            entregues: number;
+            lidos: number;
+            pushEnviados: number;
+            emailsEnfileirados: number;
+            /** Format: date-time */
+            criadoEm: string;
+            empresas: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            }[];
         };
         BaixaDeDocumento: {
             pessoa: string;
@@ -5736,6 +5890,11 @@ export interface components {
         ConfiguracaoDaCarteiraEntrada: {
             bloquearEmpresaNaoAtiva?: boolean;
         };
+        ConfiguracaoDePush: {
+            disponivel: boolean;
+            chavePublica: string | null;
+            inscricoes: number;
+        };
         ConfiguracaoDeRotas: {
             minutosPorVisita: number;
             maxParadas: number;
@@ -5782,6 +5941,7 @@ export interface components {
             logoUrl: string | null;
             exigeDoisFatoresDoResponsavel: boolean;
             comentariosAtivos: boolean;
+            avisosLimiteSemanal: number;
         };
         ConfirmarEndereco: {
             /** @enum {string} */
@@ -6012,6 +6172,17 @@ export interface components {
             /** @default false */
             urgente: boolean;
             observacoes?: string | null;
+        };
+        CriarAvisoEntrada: {
+            mensagem: string;
+            link?: string | null;
+            /** @default normal */
+            urgencia: components["schemas"]["UrgenciaDoAviso"];
+            alcance: components["schemas"]["AlcanceDaPublicacao"];
+            /** @default [] */
+            empresaIds: string[];
+            /** Format: date-time */
+            enviarEm?: string | null;
         };
         CriarContatoEntrada: {
             nome: string;
@@ -6948,6 +7119,14 @@ export interface components {
             resolvidosParaAvaliar: number;
             recentes: components["schemas"]["ItemDeChamadoDoPortal"][];
         };
+        InscreverPushEntrada: {
+            /** Format: uri */
+            endpoint: string;
+            keys: {
+                p256dh: string;
+                auth: string;
+            };
+        };
         ItemDaListaDeContatos: {
             /** Format: uuid */
             id: string;
@@ -7245,6 +7424,14 @@ export interface components {
                 realizadas: number;
                 hoje: number;
                 proximos7: number;
+            };
+        };
+        ListaDeAvisos: {
+            itens: components["schemas"]["Aviso"][];
+            total: number;
+            semana: {
+                usados: number;
+                limite: number;
             };
         };
         ListaDeBaixasDeDocumento: {
@@ -8203,6 +8390,13 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        PreferenciasDoPortal: {
+            silencioInicio: string | null;
+            silencioFim: string | null;
+            emailChamados: boolean;
+            emailEventos: boolean;
+            emailAvisos: boolean;
+        };
         PreferenciasPatch: {
             /** @enum {string|null} */
             tema?: "claro" | "escuro" | "sistema" | null;
@@ -8395,6 +8589,10 @@ export interface components {
             criadoEm: string;
             atualizadoEm: string;
         };
+        RemoverInscricaoDePushEntrada: {
+            /** Format: uri */
+            endpoint: string;
+        };
         ResponderChamadoNoPortalEntrada: {
             corpo: string;
             /** @default [] */
@@ -8413,6 +8611,20 @@ export interface components {
             campoId: string;
             rotulo: string;
             valor: unknown;
+        };
+        ResultadoDaBusca: {
+            /** @enum {string} */
+            tipo: "chamado" | "documento" | "evento" | "publicacao";
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            trecho: string | null;
+            destino: string;
+            /** Format: date-time */
+            data: string;
+        };
+        ResultadoDaBuscaDoPortal: {
+            itens: components["schemas"]["ResultadoDaBusca"][];
         };
         ResultadoDaTagEmMassa: {
             aplicadas: number;
@@ -8509,6 +8721,13 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+        };
+        SalvarPreferenciasDoPortalEntrada: {
+            silencioInicio: string | null;
+            silencioFim: string | null;
+            emailChamados: boolean;
+            emailEventos: boolean;
+            emailAvisos: boolean;
         };
         SalvarPublicacaoEntrada: {
             titulo: string;
@@ -8687,6 +8906,8 @@ export interface components {
         /** @enum {string} */
         SituacaoDoAcesso: "convidado" | "ativo" | "suspenso" | "revogado";
         /** @enum {string} */
+        SituacaoDoAviso: "agendado" | "enviado" | "cancelado";
+        /** @enum {string} */
         SituacaoDoEvento: "rascunho" | "publicado" | "cancelado";
         Solucao: {
             /** Format: uuid */
@@ -8776,6 +8997,8 @@ export interface components {
         TrocarEmailEntrada: {
             email: string;
         };
+        /** @enum {string} */
+        UrgenciaDoAviso: "normal" | "urgente";
         ValoresDoTipoDaImportacao: {
             itens: {
                 valor: string;
@@ -22564,6 +22787,192 @@ export interface operations {
             };
         };
     };
+    AvisosController_listar: {
+        parameters: {
+            query?: {
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeAvisos"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AvisosController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarAvisoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Aviso"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    AvisosController_cancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Aviso"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalConfiguracaoController_obter: {
         parameters: {
             query?: never;
@@ -24877,6 +25286,73 @@ export interface operations {
             };
         };
     };
+    PortalPreferenciasController_buscar: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoDaBuscaDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalChamadosController_listar: {
         parameters: {
             query?: {
@@ -26852,6 +27328,122 @@ export interface operations {
             };
         };
     };
+    PortalPreferenciasController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferenciasDoPortal"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPreferenciasController_salvar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarPreferenciasDoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferenciasDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalPublicacoesController_feed: {
         parameters: {
             query?: {
@@ -27303,6 +27895,191 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LeiturasMarcadas"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPreferenciasController_configuracaoDePush: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDePush"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPreferenciasController_inscrever: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InscreverPushEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDePush"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPreferenciasController_remover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoverInscricaoDePushEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracaoDePush"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
