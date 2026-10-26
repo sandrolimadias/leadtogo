@@ -16819,6 +16819,1075 @@
         "tags": ["Perfis de acesso"]
       }
     },
+    "/v1/portal/2fa/conferir": {
+      "post": {
+        "description": "Código do aplicativo ou código de recuperação (que se gasta). Libera as rotas do portal nesta sessão. Limite de tentativas por acesso.",
+        "operationId": "PortalAuthController_conferirSegundoFator",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodigoDeSegundoFatorEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Conferir o 2FA desta sessão",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/2fa/confirmar": {
+      "post": {
+        "description": "Confere o primeiro código do aplicativo, liga o 2FA e devolve os códigos de recuperação (uso único; só aparecem agora).",
+        "operationId": "PortalAuthController_confirmarSegundoFator",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodigoDeSegundoFatorEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegundoFatorConfirmado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Confirmar o 2FA",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/2fa/desativar": {
+      "post": {
+        "description": "Pede um código válido. O Responsável de uma empresa que exige o 2FA não pode desligar (409 `segundo_fator_obrigatorio`).",
+        "operationId": "PortalAuthController_desativarSegundoFator",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodigoDeSegundoFatorEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Desligar o 2FA",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/2fa/iniciar": {
+      "post": {
+        "description": "Gera o segredo do aplicativo autenticador (e a URI do QR code). O 2FA só passa a valer depois de `/portal/2fa/confirmar`.",
+        "operationId": "PortalAuthController_iniciarSegundoFator",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IniciarSegundoFatorResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Começar a ligar o 2FA",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/email/troca": {
+      "post": {
+        "description": "Envia um link ao e-mail NOVO (válido por 1 hora, uso único). O e-mail só muda quando o link é confirmado. E-mail já usado por outro acesso da empresa dá 409.",
+        "operationId": "PortalAuthController_trocarEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrocarEmailEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Pedir a troca do e-mail de entrada",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/entrada": {
+      "post": {
+        "description": "Público. Envia ao e-mail um link de entrada de uso único, válido por 15 minutos. A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail.",
+        "operationId": "PortalAuthController_pedirEntrada",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedirEntradaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaDePedirEntrada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Pedir o link de entrada",
+        "tags": ["Portal do cliente: acesso"],
+        "security": []
+      }
+    },
+    "/v1/portal/link/consulta": {
+      "post": {
+        "description": "Público. Mostra o que a página de confirmação exibe (portal, empresa, finalidade e se pede o aceite de privacidade). NÃO consome o link: só o POST de `/portal/link/consumir` o faz, para os verificadores de e-mail não queimarem o link.",
+        "operationId": "PortalAuthController_consultarLink",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultaDoLinkEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviaDoLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Conferir um link",
+        "tags": ["Portal do cliente: acesso"],
+        "security": []
+      }
+    },
+    "/v1/portal/link/consumir": {
+      "post": {
+        "description": "Público. Consome o link (uso único) e abre a sessão do portal no cookie `HttpOnly` (30 dias deslizantes, no máximo 90). O convite ativa o acesso; a troca de e-mail grava o endereço novo. No primeiro acesso exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`).",
+        "operationId": "PortalAuthController_consumirLink",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsumirLinkEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Confirmar o link e entrar",
+        "tags": ["Portal do cliente: acesso"],
+        "security": []
+      }
+    },
+    "/v1/portal/perfil": {
+      "put": {
+        "description": "O cliente só altera o próprio nome; cargo e vínculo com a empresa são da equipe.",
+        "operationId": "PortalAuthController_perfil",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerfilDoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Corrigir o próprio nome",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/sair": {
+      "post": {
+        "description": "Revoga a sessão atual e apaga o cookie.",
+        "operationId": "PortalAuthController_sair",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sair do portal",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/sessao": {
+      "get": {
+        "description": "Quem está logado no portal, a empresa-cliente e o estado do 2FA. Funciona mesmo com o 2FA pendente (para a tela saber o que pedir).",
+        "operationId": "PortalAuthController_sessao",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoDoPortal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sessão atual do portal",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/sessoes": {
+      "get": {
+        "description": "Os dispositivos com sessão aberta neste acesso. A atual vem marcada.",
+        "operationId": "PortalAuthController_listarSessoes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeSessoesDoPortal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sessões abertas",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/sessoes/{id}": {
+      "delete": {
+        "description": "Revoga uma das sessões do próprio acesso. Sessão de outra pessoa ou inexistente dá 404.",
+        "operationId": "PortalAuthController_encerrarSessao",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Encerrar uma sessão",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/sessoes/encerrar-outras": {
+      "post": {
+        "description": "Revoga todas as sessões do acesso, menos a atual.",
+        "operationId": "PortalAuthController_encerrarOutras",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sair em todos os outros dispositivos",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/primeiro-acesso": {
       "post": {
         "description": "Cria o usuário, a conta dona, a primeira empresa, as configurações e o membro administrador. Fechado por padrão em produção (`PRIMEIRO_ACESSO`): lá a primeira conta nasce pelo comando `node dist/criar-conta.js`. Limite de 5 por hora por IP.",
@@ -18484,7 +19553,7 @@
   },
   "info": {
     "title": "Leadtogo API",
-    "description": "API REST do Leadtogo (CRM multiempresa de gestão de carteira).\n\n**Autenticação.** Cookie de sessão `HttpOnly` emitido pela própria API (`leadtogo.session_token`, com o prefixo `__Secure-` em produção); chame sempre com `credentials: \"include\"`.\nLogin, logout, sessão, 2FA, recuperação de senha e verificação de e-mail são servidos pelo **Better Auth** em `/v1/auth/*`: use o cliente dele (`better-auth/client`) para essas rotas; elas não aparecem abaixo.\n\n**Empresa ativa.** Quase toda rota exige uma empresa ativa na sessão (`POST /v1/sessao/empresa-ativa`); a empresa nunca vem do cliente por cabeçalho, query ou corpo.\n\n**Erros.** Todos usam o schema `Erro`; trate pelo código estável em `erro`, não pela mensagem.",
+    "description": "API REST do Leadtogo (CRM multiempresa de gestão de carteira).\n\n**Autenticação.** Cookie de sessão `HttpOnly` emitido pela própria API (`leadtogo.session_token`, com o prefixo `__Secure-` em produção); chame sempre com `credentials: \"include\"`.\nLogin, logout, sessão, 2FA, recuperação de senha e verificação de e-mail são servidos pelo **Better Auth** em `/v1/auth/*`: use o cliente dele (`better-auth/client`) para essas rotas; elas não aparecem abaixo.\n\n**Portal do cliente.** As rotas `/v1/portal/*` (tag \"Portal do cliente\") usam outro cookie, `__Host-portal` (`portal_dev` fora de produção), emitido por `POST /v1/portal/link/consumir`; a sessão do CRM não vale nelas e a do portal não vale no CRM. Toda alteração exige o cabeçalho `Origin` do portal.\n\n**Empresa ativa.** Quase toda rota exige uma empresa ativa na sessão (`POST /v1/sessao/empresa-ativa`); a empresa nunca vem do cliente por cabeçalho, query ou corpo.\n\n**Erros.** Todos usam o schema `Erro`; trate pelo código estável em `erro`, não pela mensagem.",
     "version": "0.0.0",
     "contact": {}
   },
@@ -18513,6 +19582,11 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "leadtogo.session_token"
+      },
+      "sessaoPortal": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-portal"
       }
     },
     "schemas": {
@@ -20454,6 +21528,18 @@
         "required": ["municipios"],
         "additionalProperties": false
       },
+      "CodigoDeSegundoFatorEntrada": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 24
+          }
+        },
+        "required": ["codigo"],
+        "additionalProperties": false
+      },
       "ConcluirAtividadeEntrada": {
         "type": "object",
         "properties": {
@@ -20717,6 +21803,17 @@
         "required": ["consultadoEm", "fonte", "situacao", "situacaoAnterior", "mudancas"],
         "additionalProperties": false
       },
+      "ConsultaDoLinkEntrada": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.[A-Za-z0-9_-]{43}$"
+          }
+        },
+        "required": ["token"],
+        "additionalProperties": false
+      },
       "ConsultarConviteEntrada": {
         "type": "object",
         "properties": {
@@ -20752,6 +21849,20 @@
           }
         },
         "required": ["dados", "fonte", "consultadoEm", "doCache", "expirada", "cadastroBloqueado"],
+        "additionalProperties": false
+      },
+      "ConsumirLinkEntrada": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.[A-Za-z0-9_-]{43}$"
+          },
+          "aceitaPrivacidade": {
+            "type": "boolean"
+          }
+        },
+        "required": ["token"],
         "additionalProperties": false
       },
       "ContagensDaLista": {
@@ -24262,6 +25373,19 @@
         ],
         "additionalProperties": false
       },
+      "IniciarSegundoFatorResposta": {
+        "type": "object",
+        "properties": {
+          "segredo": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string"
+          }
+        },
+        "required": ["segredo", "uri"],
+        "additionalProperties": false
+      },
       "ItemDaListaDeContatos": {
         "type": "object",
         "properties": {
@@ -25450,6 +26574,19 @@
           }
         },
         "required": ["itens", "total"],
+        "additionalProperties": false
+      },
+      "ListaDeSessoesDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessaoAtivaDoPortal"
+            }
+          }
+        },
+        "required": ["itens"],
         "additionalProperties": false
       },
       "LoteDeImportacao": {
@@ -27264,6 +28401,10 @@
         "required": ["empresas", "ignoradas", "geradoEm"],
         "additionalProperties": false
       },
+      "PapelDoPortal": {
+        "type": "string",
+        "enum": ["responsavel", "colega"]
+      },
       "PapelNaDecisao": {
         "type": "object",
         "properties": {
@@ -27415,6 +28556,17 @@
         "required": ["rota", "adicionadas", "jaNaRota", "ignoradas", "excedentes"],
         "additionalProperties": false
       },
+      "PedirEntradaEntrada": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          }
+        },
+        "required": ["email"],
+        "additionalProperties": false
+      },
       "PedirEnvioDeAnexoEntrada": {
         "type": "object",
         "properties": {
@@ -27564,6 +28716,18 @@
           }
         },
         "required": ["membroId", "perfil"],
+        "additionalProperties": false
+      },
+      "PerfilDoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          }
+        },
+        "required": ["nome"],
         "additionalProperties": false
       },
       "PermissoesDoPerfil": {
@@ -28103,6 +29267,26 @@
         ],
         "additionalProperties": false
       },
+      "PreviaDoLink": {
+        "type": "object",
+        "properties": {
+          "finalidade": {
+            "type": "string",
+            "enum": ["convite", "entrada", "troca_email"]
+          },
+          "nomeDoPortal": {
+            "type": "string"
+          },
+          "empresaCliente": {
+            "type": "string"
+          },
+          "exigeAceiteDePrivacidade": {
+            "type": "boolean"
+          }
+        },
+        "required": ["finalidade", "nomeDoPortal", "empresaCliente", "exigeAceiteDePrivacidade"],
+        "additionalProperties": false
+      },
       "PreviaDoLoteGeo": {
         "type": "object",
         "properties": {
@@ -28443,6 +29627,16 @@
           "criadoEm",
           "atualizadoEm"
         ],
+        "additionalProperties": false
+      },
+      "RespostaDePedirEntrada": {
+        "type": "object",
+        "properties": {
+          "mensagem": {
+            "type": "string"
+          }
+        },
+        "required": ["mensagem"],
         "additionalProperties": false
       },
       "RespostaDeVisita": {
@@ -28974,6 +30168,19 @@
         "required": ["status", "version", "checks"],
         "additionalProperties": false
       },
+      "SegundoFatorConfirmado": {
+        "type": "object",
+        "properties": {
+          "codigosDeRecuperacao": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["codigosDeRecuperacao"],
+        "additionalProperties": false
+      },
       "SelecaoDoMapa": {
         "type": "object",
         "properties": {
@@ -29218,6 +30425,107 @@
           }
         ]
       },
+      "SessaoAtivaDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agente": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ip": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadaEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ultimoUsoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atual": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "agente", "ip", "criadaEm", "ultimoUsoEm", "atual"],
+        "additionalProperties": false
+      },
+      "SessaoDoPortal": {
+        "type": "object",
+        "properties": {
+          "acessoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contato": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome", "email"],
+            "additionalProperties": false
+          },
+          "empresaCliente": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "papel": {
+            "$ref": "#/components/schemas/PapelDoPortal"
+          },
+          "nomeDoPortal": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "segundoFatorAtivo": {
+            "type": "boolean"
+          },
+          "segundoFatorExigido": {
+            "type": "boolean"
+          },
+          "segundoFatorPendente": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "acessoId",
+          "contato",
+          "empresaCliente",
+          "papel",
+          "nomeDoPortal",
+          "logoUrl",
+          "segundoFatorAtivo",
+          "segundoFatorExigido",
+          "segundoFatorPendente"
+        ],
+        "additionalProperties": false
+      },
       "Solucao": {
         "type": "object",
         "properties": {
@@ -29456,6 +30764,17 @@
           }
         },
         "required": ["areaId"],
+        "additionalProperties": false
+      },
+      "TrocarEmailEntrada": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          }
+        },
+        "required": ["email"],
         "additionalProperties": false
       },
       "ValoresDoTipoDaImportacao": {

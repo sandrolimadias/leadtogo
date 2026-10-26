@@ -28,6 +28,7 @@ const padroes: Record<string, string> = {
   SMTP_PORT: '1025',
   MAILPIT_URL: 'http://localhost:8025',
   API_URL: 'http://localhost:3000',
+  PORTAL_URL: 'http://localhost:5174',
   TOKEN_ENCRYPTION_KEY: 'dGVzdGUtdGVzdGUtdGVzdGUtdGVzdGUtdGVzdGUtMTI=',
   S3_ENDPOINT: 'http://localhost:3900',
   S3_BUCKET: 'leadtogo-arquivos',

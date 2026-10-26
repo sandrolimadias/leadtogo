@@ -6,6 +6,7 @@ import { ModulesContainer } from '@nestjs/core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { CHAVE_PERMISSAO, CHAVE_TODO_MEMBRO } from '../acesso/acesso.decorators.js'
+import { CHAVE_PORTAL, CHAVE_PORTAL_PUBLICA } from '../portal/portal.decorators.js'
 import { CATALOGO_DE_PERMISSOES } from '@leadtogo/shared'
 import { criarAppComRotas } from '../testes/app-teste.js'
 
@@ -33,7 +34,24 @@ const FORA_DOS_PERFIS: Record<string, string> = {
   'ReceitaController.consultar': 'consulta de CNPJ do formulário: decidida pela rota que grava',
 }
 
-type Rota = { chave: string; metodo: string; caminho: string; marcas: string[] }
+/**
+ * Rotas do portal do cliente: o controle de acesso é outro (sessão do portal, por padrão), então não entram na
+ * regra de perfis do CRM. Aqui ficam, com o motivo, as ÚNICAS que dispensam a sessão do portal.
+ */
+const PORTAL_SEM_SESSAO: Record<string, string> = {
+  'PortalAuthController.pedirEntrada': 'pedir o link de entrada por e-mail (resposta sempre igual)',
+  'PortalAuthController.consultarLink': 'prévia do link, sem consumi-lo',
+  'PortalAuthController.consumirLink': 'troca o link de uso único pela sessão',
+}
+
+type Rota = {
+  chave: string
+  metodo: string
+  caminho: string
+  marcas: string[]
+  portal: boolean
+  portalPublica: boolean
+}
 
 let app: INestApplication<Server>
 const rotas: Rota[] = []
@@ -66,6 +84,10 @@ beforeAll(async () => {
           metodo: String(metodoHttp),
           caminho: `${String(Reflect.getMetadata(PATH_METADATA, classe))}/${String(Reflect.getMetadata(PATH_METADATA, handler))}`,
           marcas,
+          portal: Reflect.getMetadata(CHAVE_PORTAL, classe) === true,
+          portalPublica:
+            Reflect.getMetadata(CHAVE_PORTAL_PUBLICA, handler) === true ||
+            Reflect.getMetadata(CHAVE_PORTAL_PUBLICA, classe) === true,
         })
       }
     }
@@ -80,7 +102,7 @@ describe('nenhuma rota sem decisão', () => {
 
   it('toda rota de negócio declara @Permissao ou @TodoMembro', () => {
     const sem = rotas
-      .filter((r) => r.marcas.length === 0 && !(r.chave in FORA_DOS_PERFIS))
+      .filter((r) => !r.portal && r.marcas.length === 0 && !(r.chave in FORA_DOS_PERFIS))
       .map((r) => `${r.chave} (${r.caminho})`)
     expect(sem).toEqual([])
   })
@@ -93,6 +115,15 @@ describe('nenhuma rota sem decisão', () => {
       (c) => (porChave.get(c)?.marcas.length ?? 0) > 0,
     )
     expect(comMarca).toEqual([])
+  })
+
+  it('as rotas do portal exigem sessão, salvo as três da lista explícita (e a lista não tem sobras)', () => {
+    const doPortal = rotas.filter((r) => r.portal && !r.chave.startsWith('IsolamentoDeTeste.'))
+    expect(doPortal.length).toBeGreaterThan(10)
+    const publicas = doPortal.filter((r) => r.portalPublica).map((r) => r.chave)
+    expect(publicas.sort()).toEqual(Object.keys(PORTAL_SEM_SESSAO).sort())
+    // rota do portal não pode carregar permissão do CRM (os perfis da equipe não valem no portal)
+    expect(doPortal.filter((r) => r.marcas.length > 0).map((r) => r.chave)).toEqual([])
   })
 
   it('@Permissao só usa chaves do catálogo', () => {

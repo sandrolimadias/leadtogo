@@ -15,6 +15,9 @@ import { MeModule } from './me/me.module.js'
 import { ReceitaModule } from './receita/receita.module.js'
 import { PrimeiroAcessoModule } from './primeiro-acesso/primeiro-acesso.module.js'
 import { ConfiguracaoModule } from './configuracao/configuracao.module.js'
+import { PortalModule } from './portal/portal.module.js'
+import { PortalGuard } from './portal/portal.guard.js'
+import { PortalInterceptor } from './portal/portal.interceptor.js'
 import { PerfisModule } from './perfis/perfis.module.js'
 import { ConvitesModule } from './convites/convites.module.js'
 import { EmailModule } from './email/email.module.js'
@@ -44,10 +47,12 @@ export class AppModule {
       module: AppModule,
       providers: [
         { provide: APP_FILTER, useClass: FiltroDeExcecoes },
-        // Ordem: primeiro o rate limit, depois o controle de acesso (sessão, empresa, 2FA)
+        // Ordem: primeiro o rate limit, depois o controle de acesso do CRM (sessão, empresa, 2FA) e o do portal
         { provide: APP_GUARD, useClass: LimiteDeRequisicoesGuard },
         { provide: APP_GUARD, useClass: AcessoGuard },
+        { provide: APP_GUARD, useClass: PortalGuard },
         { provide: APP_INTERCEPTOR, useClass: TenantInterceptor },
+        { provide: APP_INTERCEPTOR, useClass: PortalInterceptor },
       ],
       imports: [
         ConfiguracaoModule.com(config),
@@ -70,6 +75,7 @@ export class AppModule {
         RotasModule,
         ChamadosModule,
         NotificacoesModule,
+        PortalModule,
         EmpresasModule,
         PrimeiroAcessoModule,
         ReceitaModule,

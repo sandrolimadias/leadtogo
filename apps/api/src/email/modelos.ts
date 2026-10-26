@@ -15,6 +15,7 @@ function montar(
   paragrafos: string[],
   botao: { texto: string; link: string },
   rodape: string,
+  assinatura = 'Leadtogo',
 ): ModeloDeEmail {
   const texto = [
     saudacao,
@@ -25,7 +26,7 @@ function montar(
     '',
     rodape,
     '',
-    '— Leadtogo',
+    `— ${assinatura}`,
   ].join('\n')
   const html = `<!doctype html><html lang="pt-BR"><body style="font-family:sans-serif;line-height:1.5;color:#1f2937">
 <p>${escapar(saudacao)}</p>
@@ -33,7 +34,7 @@ ${paragrafos.map((p) => `<p>${escapar(p)}</p>`).join('\n')}
 <p><a href="${escapar(botao.link)}" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px">${escapar(botao.texto)}</a></p>
 <p style="font-size:13px;color:#6b7280">Se o botão não funcionar, copie este endereço: ${escapar(botao.link)}</p>
 <p style="font-size:13px;color:#6b7280">${escapar(rodape)}</p>
-<p style="font-size:13px;color:#6b7280">— Leadtogo</p></body></html>`
+<p style="font-size:13px;color:#6b7280">— ${escapar(assinatura)}</p></body></html>`
   return { assunto, texto, html }
 }
 
@@ -105,5 +106,59 @@ export function emailChamado(p: {
     paragrafos,
     { texto: 'Abrir o chamado', link: p.link },
     'Você recebe este aviso porque participa deste chamado no Leadtogo.',
+  )
+}
+
+// ---- Portal do cliente: sem senha, o link é a chave (uso único, abre uma página com botão de confirmação) ----
+
+export function emailPortalConvite(p: {
+  nome: string
+  portal: string
+  empresa: string
+  convidadoPor: string
+  link: string
+}): ModeloDeEmail {
+  return montar(
+    `Seu acesso ao ${p.portal}`,
+    `Olá, ${p.nome}.`,
+    [
+      `${p.convidadoPor} deu a você acesso ao ${p.portal} da ${p.empresa}, onde você abre e acompanha chamados com a equipe.`,
+      'O convite vale por 7 dias e só pode ser usado uma vez. Não há senha: na próxima vez, peça um novo link de entrada.',
+    ],
+    { texto: 'Confirmar acesso', link: p.link },
+    'Se você não esperava este convite, ignore este e-mail: nada será ativado sem a sua confirmação.',
+    p.portal,
+  )
+}
+
+export function emailPortalEntrada(p: {
+  nome: string
+  portal: string
+  link: string
+}): ModeloDeEmail {
+  return montar(
+    `Seu link de entrada no ${p.portal}`,
+    `Olá, ${p.nome}.`,
+    ['Use o botão abaixo para entrar. O link vale por 15 minutos e só pode ser usado uma vez.'],
+    { texto: 'Entrar no portal', link: p.link },
+    'Se não foi você quem pediu, ignore este e-mail: ninguém entra sem este link.',
+    p.portal,
+  )
+}
+
+export function emailPortalTrocaDeEmail(p: {
+  nome: string
+  portal: string
+  link: string
+}): ModeloDeEmail {
+  return montar(
+    `Confirme o novo e-mail do ${p.portal}`,
+    `Olá, ${p.nome}.`,
+    [
+      'Recebemos um pedido para usar este endereço no seu acesso ao portal. O link vale por 1 hora e só pode ser usado uma vez.',
+    ],
+    { texto: 'Confirmar novo e-mail', link: p.link },
+    'Se não foi você, ignore este e-mail: o seu acesso continua no endereço anterior.',
+    p.portal,
   )
 }

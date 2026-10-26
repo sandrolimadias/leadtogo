@@ -25,6 +25,12 @@ const esquema = z
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     APP_URL: url(['http:', 'https:']),
     API_URL: url(['http:', 'https:']),
+    /**
+     * Endereço do portal do cliente (ex.: https://portal.aledias.com.br): origem permitida no CORS, base dos links
+     * dos e-mails e conferência do cabeçalho Origin nas rotas do portal. Sem ele o portal fica desligado
+     * (503 `portal_indisponivel`) e o CRM segue normal.
+     */
+    PORTAL_URL: opcional(url(['http:', 'https:'])),
     APP_VERSION: z.string().min(1).default('dev'),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
@@ -240,8 +246,10 @@ const esquema = z
     // Em produção o front e a API são servidos por HTTPS (cookie Secure). A única exceção é o próprio
     // computador (localhost): é como o `docker/compose.imagens.yml` roda as imagens de produção para teste, e
     // os navegadores aceitam cookie Secure em http://localhost.
-    for (const chave of ['APP_URL', 'API_URL'] as const) {
-      const { protocol, hostname } = new URL(env[chave])
+    for (const chave of ['APP_URL', 'API_URL', 'PORTAL_URL'] as const) {
+      const valor = env[chave]
+      if (!valor) continue
+      const { protocol, hostname } = new URL(valor)
       const local = ['localhost', '127.0.0.1', '[::1]'].includes(hostname)
       if (protocol !== 'https:' && !local) {
         ctx.addIssue({ code: 'custom', path: [chave], message: 'em produção deve ser https' })

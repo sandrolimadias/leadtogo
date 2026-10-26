@@ -39,9 +39,11 @@ describe('entradas do cliente', () => {
 
   it('normaliza o e-mail da entrada e exige formato de token', () => {
     expect(pedirEntradaSchema.parse({ email: '  Ana@Exemplo.com ' }).email).toBe('ana@exemplo.com')
-    expect(tokenDoLinkSchema.safeParse('a'.repeat(43)).success).toBe(true)
+    const token = `${crypto.randomUUID()}.${'a'.repeat(43)}`
+    expect(tokenDoLinkSchema.safeParse(token).success).toBe(true)
+    expect(tokenDoLinkSchema.safeParse('a'.repeat(43)).success).toBe(false)
     expect(tokenDoLinkSchema.safeParse('curto').success).toBe(false)
-    expect(consumirLinkSchema.safeParse({ token: 'a'.repeat(43), extra: 1 }).success).toBe(false)
+    expect(consumirLinkSchema.safeParse({ token, extra: 1 }).success).toBe(false)
   })
 
   it('a nota vai de 1 a 5', () => {

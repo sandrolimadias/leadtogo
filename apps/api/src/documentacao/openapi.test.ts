@@ -55,6 +55,7 @@ describe('OpenAPI', () => {
     for (const r of listarRotas(app).filter((x) => !x.rota.includes('/v1/auth/'))) {
       const operacao = doc.paths[r.caminhoOpenApi]?.[r.metodo]
       if (r.publica) expect(operacao?.security, r.rota).toEqual([])
+      else if (r.portal) expect(operacao?.security, r.rota).toEqual([{ sessaoPortal: [] }])
       else expect(operacao?.security, r.rota).toBeUndefined()
     }
   })
