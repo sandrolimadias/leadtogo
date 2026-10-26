@@ -379,6 +379,11 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       mensagem: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       nota: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       atendentes: vi.fn(async () => ok([])),
+      aguardarCliente: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      tarefas: {
+        listar: vi.fn(async () => ok({ itens: [] })),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      },
       anexos: {
         pedir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
         enviar: vi.fn(async () => ok(undefined)),
@@ -405,6 +410,26 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         excluirFeriado: vi.fn(async () => ok(undefined)),
       },
       metricas: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+    },
+    portal: {
+      indicadores: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      configuracao: {
+        obter: vi.fn(async () =>
+          ok({ ativo: false, nome: null, logoUrl: null, exigeDoisFatoresDoResponsavel: false }),
+        ),
+        atualizar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      },
+      acessos: {
+        listar: vi.fn(async () => ok({ itens: [], total: 0 })),
+        dar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        reenviar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        revogar: vi.fn(async () => ok(undefined)),
+      },
+      pedidos: {
+        listar: vi.fn(async () => ok({ itens: [], total: 0 })),
+        tratar: vi.fn(async () => ok(undefined)),
+      },
     },
     notificacoes: {
       listar: vi.fn(async () => ok({ itens: [], total: 0, naoLidas: 0 })),

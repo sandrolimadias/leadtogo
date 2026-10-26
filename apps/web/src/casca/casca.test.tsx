@@ -400,7 +400,7 @@ describe('casca no celular e no tablet', () => {
     const nomes = within(folha)
       .getAllByRole('link')
       .map((l) => l.textContent)
-    expect(nomes.slice(0, 3)).toEqual(['Contatos', 'Chamados', 'Mapa'])
+    expect(nomes.slice(0, 4)).toEqual(['Contatos', 'Chamados', 'Portal do Cliente', 'Mapa'])
     expect(nomes.at(-1)).toBe('Meu perfil')
     expect(within(folha).getByRole('link', { name: 'Contatos' })).toHaveAttribute(
       'aria-current',
@@ -458,8 +458,8 @@ describe('casca: teclado', () => {
     renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
     await screen.findByRole('navigation', { name: 'Principal' })
     const ordem: string[] = []
-    // 19 paradas: o menu ganhou 'Relatórios de visita' (G3b) e 'Chamados' (Fase 2)
-    for (let i = 0; i < 19; i++) {
+    // 20 paradas: o menu ganhou 'Relatórios de visita' (G3b), 'Chamados' (Fase 2) e 'Portal do Cliente' (Fase 3A)
+    for (let i = 0; i < 20; i++) {
       await userEvent.tab()
       const el = document.activeElement as HTMLElement
       ordem.push(el.getAttribute('aria-label') ?? el.textContent?.trim().replace(/\s+/g, ' ') ?? '')

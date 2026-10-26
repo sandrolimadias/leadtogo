@@ -5,6 +5,7 @@ import {
   Compass,
   Factory,
   FileSpreadsheet,
+  Globe,
   KeyRound,
   LifeBuoy,
   MapPin,
@@ -96,6 +97,12 @@ export const SECOES = [
     titulo: 'Chamados',
     icone: LifeBuoy,
     permissoes: ['chamados.gerir_areas'],
+  },
+  {
+    para: '/configuracoes/portal',
+    titulo: 'Portal do Cliente',
+    icone: Globe,
+    permissoes: ['portal.configurar'],
   },
   {
     para: '/configuracoes/seguranca',
