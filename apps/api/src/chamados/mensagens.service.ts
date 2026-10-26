@@ -26,7 +26,11 @@ export class MensagensService {
     private readonly chamados: ChamadosService,
   ) {}
 
-  async enviar(id: string, dados: EnviarMensagemEntrada): Promise<Chamado> {
+  async enviar(
+    id: string,
+    dados: EnviarMensagemEntrada,
+    opcoes: { notificar?: boolean } = {},
+  ): Promise<Chamado> {
     const l = await this.chamados.linhaVisivel(id)
     if (l.status === 'fechado') {
       throw new ErroApi('chamado_fechado', 'O chamado está fechado.', 409)
@@ -110,8 +114,27 @@ export class MensagensService {
         status_alterado_em = CASE WHEN ${status} <> ${l.status} THEN now() ELSE status_alterado_em END,
         atualizado_em = now(), atualizado_por = ${eu}
       WHERE id = ${id}`)
-    await this.chamados.notificar(id, 'mensagem', { mensagemId })
+    if (opcoes.notificar !== false) await this.chamados.notificar(id, 'mensagem', { mensagemId })
     return this.chamados.obter(id, true)
+  }
+
+  /**
+   * "Aguardar resposta do cliente": escreve ao cliente e passa o chamado a Aguardando cliente numa ação só (o
+   * relógio do prazo pausa). O cliente recebe UM aviso, com a mensagem, e não dois. Só vale para chamado aberto
+   * pelo portal (sem cliente no portal não há quem responder).
+   */
+  async aguardarCliente(id: string, dados: EnviarMensagemEntrada): Promise<Chamado> {
+    const l = await this.chamados.linhaVisivel(id)
+    if (l.origem !== 'portal') {
+      throw new ErroApi(
+        'chamado_sem_cliente',
+        'Este chamado não foi aberto pelo portal: não há cliente para aguardar.',
+        409,
+      )
+    }
+    const depois = await this.enviar(id, dados, { notificar: false })
+    const mensagemId = depois.mensagens.at(-1)?.id
+    return this.chamados.alterarStatus(id, 'aguardando_cliente', mensagemId ? { mensagemId } : {})
   }
 
   async anotar(id: string, dados: CriarNotaInternaEntrada): Promise<Chamado> {

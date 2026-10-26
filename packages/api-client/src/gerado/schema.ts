@@ -720,6 +720,26 @@ export interface paths {
         patch: operations["ChamadosController_alterar"];
         trace?: never;
     };
+    "/v1/chamados/{id}/aguardar-cliente": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aguardar resposta do cliente
+         * @description Exige `chamados.atender` no chamado. Escreve ao cliente do portal e passa o chamado a Aguardando cliente numa ação só (o prazo pausa); o cliente recebe um único aviso. Só para chamado aberto pelo portal (409 `chamado_sem_cliente`). Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.
+         */
+        post: operations["ConversaDoChamadoController_aguardarCliente"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/chamados/{id}/anexos": {
         parameters: {
             query?: never;
@@ -894,6 +914,30 @@ export interface paths {
          * @description Exige `chamados.atender` no alcance. Mudanças permitidas: Pendente, Em atendimento e Aguardando cliente (que pausa o prazo) entre si e para Resolvido; Resolvido só vai a Fechado (409 `transicao_invalida` nas demais). Para reabrir, use `/reabrir`. Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.
          */
         post: operations["ChamadosController_alterarStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chamados/{id}/tarefas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tarefas do chamado
+         * @description Exige `chamados.ver` e que o chamado seja visível para a pessoa.
+         */
+        get: operations["TarefasDoChamadoController_listar"];
+        put?: never;
+        /**
+         * Criar tarefa a partir do chamado
+         * @description Exige `chamados.atender` e `atividades.criar`. Cria uma Atividade do tipo Tarefa (pendente), ligada ao chamado e, se a pessoa pode editar a carteira da empresa-cliente, a ela. Escolher outro responsável vale as regras das atividades.
+         */
+        post: operations["TarefasDoChamadoController_criar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3372,6 +3416,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal-hub/indicadores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Indicadores do hub do portal
+         * @description Exige `portal.ver`. Dos chamados abertos pelos clientes: Em aberto e Prazo estourando (do momento), 1ª resposta no prazo e Nota média (na janela de `dias`, padrão 30), além de acessos ativos e pedidos pendentes. Vale o conjunto de TODOS os chamados do portal.
+         */
+        get: operations["PortalHubController_indicadores"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal-pedidos": {
         parameters: {
             query?: never;
@@ -5449,6 +5513,13 @@ export interface components {
             /** @default false */
             obrigatorio: boolean;
         };
+        CriarTarefaDoChamadoEntrada: {
+            titulo: string;
+            /** Format: uuid */
+            responsavelId?: string;
+            /** Format: date-time */
+            prazo?: string;
+        };
         CriarTipoAtividadeEntrada: {
             nome: string;
             icone: string;
@@ -6044,6 +6115,16 @@ export interface components {
             respostaNoPrazoPct: number | null;
             resolucaoNoPrazoPct: number | null;
         };
+        IndicadoresDoHub: {
+            periodoDias: number;
+            emAberto: number;
+            prazoEstourando: number;
+            primeiraRespostaNoPrazo: number | null;
+            notaMedia: number | null;
+            avaliacoes: number;
+            acessosAtivos: number;
+            pedidosPendentes: number;
+        };
         IniciarSegundoFatorResposta: {
             segredo: string;
             uri: string;
@@ -6393,6 +6474,9 @@ export interface components {
         };
         ListaDeSessoesDoPortal: {
             itens: components["schemas"]["SessaoAtivaDoPortal"][];
+        };
+        ListaDeTarefasDoChamado: {
+            itens: components["schemas"]["TarefaDoChamado"][];
         };
         LoteDeImportacao: {
             /** Format: uuid */
@@ -7595,6 +7679,19 @@ export interface components {
             ativo: boolean;
             ordem: number;
             tags: components["schemas"]["Tag"][];
+        };
+        TarefaDoChamado: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            situacao: string;
+            responsavel: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            /** Format: date-time */
+            dataInicio: string;
         };
         TelefoneDaEmpresaEntrada: {
             numero: string;
@@ -10459,6 +10556,7 @@ export interface operations {
                 prioridade?: components["schemas"]["PrioridadeDoChamado"];
                 responsavelId?: string;
                 empresaClienteId?: string;
+                origem?: "interna" | "portal";
                 busca?: string;
                 de?: string;
                 ate?: string;
@@ -10662,6 +10760,77 @@ export interface operations {
         responses: {
             /** @description Sucesso */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Chamado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ConversaDoChamadoController_aguardarCliente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarMensagemEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11323,6 +11492,144 @@ export interface operations {
             };
         };
     };
+    TarefasDoChamadoController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeTarefasDoChamado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    TarefasDoChamadoController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarTarefaDoChamadoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeTarefasDoChamado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     ChamadosController_triar: {
         parameters: {
             query?: never;
@@ -11866,6 +12173,7 @@ export interface operations {
                 prioridade?: components["schemas"]["PrioridadeDoChamado"];
                 responsavelId?: string;
                 empresaClienteId?: string;
+                origem?: "interna" | "portal";
                 busca?: string;
                 de?: string;
                 ate?: string;
@@ -21276,6 +21584,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConfiguracaoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalHubController_indicadores: {
+        parameters: {
+            query?: {
+                dias?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicadoresDoHub"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */

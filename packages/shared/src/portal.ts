@@ -534,8 +534,15 @@ export type InicioDoPortal = z.infer<typeof inicioDoPortalSchema>
 
 // ---- CRM: hub do portal (aba Chamados) ----
 
+export const consultaDoHubSchema = z
+  .object({ dias: z.coerce.number().int().min(7).max(365).default(30) })
+  .strict()
+export type ConsultaDoHub = z.infer<typeof consultaDoHubSchema>
+
 export const indicadoresDoHubSchema = z
   .object({
+    /** Janela dos indicadores de prazo e de nota (Em aberto e Prazo estourando são sempre do momento) */
+    periodoDias: z.number().int(),
     emAberto: z.number().int(),
     prazoEstourando: z.number().int(),
     /** Percentual (0 a 100) das primeiras respostas dentro da meta; nulo sem dados */
@@ -557,11 +564,26 @@ export const aguardarClienteSchema = z
   .meta({ id: 'AguardarClienteEntrada' })
 export type AguardarClienteEntrada = z.infer<typeof aguardarClienteSchema>
 
+export const tarefaDoChamadoSchema = z
+  .object({
+    id: z.uuid(),
+    titulo: z.string(),
+    situacao: z.string(),
+    responsavel: z.object({ id: z.uuid(), nome: z.string() }).nullable(),
+    dataInicio: z.iso.datetime(),
+  })
+  .meta({ id: 'TarefaDoChamado' })
+export type TarefaDoChamado = z.infer<typeof tarefaDoChamadoSchema>
+
+export const listaDeTarefasDoChamadoSchema = z
+  .object({ itens: z.array(tarefaDoChamadoSchema) })
+  .meta({ id: 'ListaDeTarefasDoChamado' })
+
 export const criarTarefaDoChamadoSchema = z
   .object({
     titulo: z.string().trim().min(3, 'informe o título').max(200),
     responsavelId: z.uuid().optional(),
-    prazo: z.iso.datetime().optional(),
+    prazo: z.iso.datetime({ offset: true }).optional(),
   })
   .strict()
   .meta({ id: 'CriarTarefaDoChamadoEntrada' })

@@ -187,7 +187,7 @@ export function manipuladorDeNotificacaoDeChamado(
           )
         : []
     let previa: string | null = null
-    if (p.tipo === 'mensagem' && p.mensagemId) {
+    if ((p.tipo === 'mensagem' || p.tipo === 'aguardando_cliente') && p.mensagemId) {
       const [m] = await tx.execute<{ corpo: string }>(sql`
         SELECT corpo FROM chamado_mensagens WHERE id = ${p.mensagemId}`)
       if (m) previa = m.corpo.length > PREVIA ? `${m.corpo.slice(0, PREVIA)}…` : m.corpo
@@ -322,7 +322,7 @@ async function notificarCliente(
       portal: a.portal_nome ?? a.empresa_nome,
       titulo,
       assunto: c.assunto,
-      previa: p.tipo === 'mensagem' ? previa : null,
+      previa: p.tipo === 'resolvido' ? null : previa,
       autor,
       link: `${new URL(config.PORTAL_URL).origin}${link}`,
     })
