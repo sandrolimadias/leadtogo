@@ -157,6 +157,10 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       marcarLida: vi.fn(async () => ok({ naoLidas: 0 })),
       marcarTodas: vi.fn(async () => ok({ naoLidas: 0 })),
     },
+    documentos: {
+      listar: vi.fn(async () => ok({ itens: [], total: 0 })),
+      baixar: vi.fn(async () => ok({ url: 'https://armazenamento/documento' })),
+    },
     publicacoes: {
       feed: vi.fn(async () => ok({ itens: [], total: 0 })),
       comentarios: vi.fn(async () => ok({ itens: [], comentariosAbertos: true })),
