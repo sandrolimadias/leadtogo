@@ -76,6 +76,7 @@ export const TELAS: TelaDoApp[] = [
       'portal.moderar',
       'portal.documentos',
       'portal.agenda',
+      'portal.avisos',
     ],
   },
   { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone, permissoes: ['empresas.ver'] },

@@ -22,6 +22,7 @@ export function TelaDeConfiguracoesDoPortal() {
     },
   })
   const [nome, setNome] = useState<string | null>(null)
+  const [limite, setLimite] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const c = consulta.data
@@ -48,6 +49,9 @@ export function TelaDeConfiguracoesDoPortal() {
     )
   if (!c) return <Skeleton lines={4} />
   const nomeAtual = nome ?? c.nome ?? ''
+  const limiteAtual = limite ?? String(c.avisosLimiteSemanal)
+  const limiteNumero = Number.parseInt(limiteAtual, 10)
+  const limiteValido = Number.isInteger(limiteNumero) && limiteNumero >= 1 && limiteNumero <= 20
   return (
     <div className="flex flex-col gap-4">
       <h2 className="m-0 text-xl font-semibold">Portal do Cliente</h2>
@@ -123,6 +127,30 @@ export function TelaDeConfiguracoesDoPortal() {
           Chave geral: desligada, ninguém comenta, em nenhuma publicação. Os comentários já feitos
           continuam visíveis.
         </p>
+      </section>
+      <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4">
+        <TextField
+          label="Avisos normais por semana, por empresa"
+          type="number"
+          min={1}
+          max={20}
+          value={limiteAtual}
+          onChange={(e) => setLimite(e.target.value)}
+          error={limiteValido ? undefined : 'Use um número de 1 a 20.'}
+          hint="Evita que o aviso vire ruído. Os avisos urgentes não contam. A semana vai de segunda a domingo."
+        />
+        <div>
+          <Button
+            variant="primary"
+            loading={salvando}
+            disabled={limite === null || !limiteValido || limiteNumero === c.avisosLimiteSemanal}
+            onClick={() =>
+              void salvar({ avisosLimiteSemanal: limiteNumero }, 'Limite de avisos atualizado')
+            }
+          >
+            Salvar limite
+          </Button>
+        </div>
       </section>
     </div>
   )

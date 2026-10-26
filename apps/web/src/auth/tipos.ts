@@ -106,6 +106,8 @@ import type {
   PontoDePartida,
   Rota,
   RotaDaEmpresa,
+  Aviso,
+  ListaDeAvisos,
 } from '@leadtogo/api-client'
 import type {
   AbrirChamadoEntrada,
@@ -200,6 +202,7 @@ import type {
   EditarDocumentoEntrada,
   CancelarEventoEntrada,
   SalvarEventoEntrada,
+  CriarAvisoEntrada,
 } from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
@@ -629,6 +632,7 @@ export interface ServicosDoPortalNoCrm {
       nome?: string | null
       exigeDoisFatoresDoResponsavel?: boolean
       comentariosAtivos?: boolean
+      avisosLimiteSemanal?: number
     }) => Promise<Resultado<ConfiguracaoDoPortal>>
   }
   /** Publicações do portal (Fase 3B): `portal.ver`/`publicar`/`moderar` para ver, `publicar` para escrever, `moderar` nos comentários */
@@ -650,6 +654,17 @@ export interface ServicosDoPortalNoCrm {
       comentarioId: string,
       dados: ModerarComentarioEntrada,
     ) => Promise<Resultado<ListaDeComentariosParaModeracao>>
+  }
+  /** Avisos do portal (Fase 3E): `portal.ver`/`avisos` para ver, `avisos` para enviar, agendar e cancelar */
+  avisos: {
+    listar: (consulta?: {
+      pagina?: number
+      porPagina?: number
+    }) => Promise<Resultado<ListaDeAvisos>>
+    /** 409 `limite_semanal` / `portal_desligado`; 422 `horario_no_passado` / `empresa_invalida` */
+    criar: (dados: CriarAvisoEntrada) => Promise<Resultado<Aviso>>
+    /** 409 `aviso_ja_enviado` */
+    cancelar: (id: string) => Promise<Resultado<Aviso>>
   }
   /** Agenda do portal (Fase 3D): `portal.ver`/`agenda` para ver, `agenda` para escrever e gerir os participantes */
   eventos: {

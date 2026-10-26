@@ -682,6 +682,38 @@ A equipe publica **eventos** com vagas; o cliente **confirma a presença**, entr
 ### Equipe
 Lista por **Próximos, Passados e Rascunhos** com vagas e fila; detalhe com a descrição, o alcance, os **Confirmados** e a **Lista de espera** (posição, pessoa, e-mail e empresa); **Tirar** um participante. Atos da equipe e do cliente (confirmar, entrar na lista, cancelar presença) são auditados.
 
+## 9G. Portal do Cliente, Fase 3E (avisos, preferências, push, PWA e busca)
+
+A equipe envia **avisos curtos** que chegam no sino, no e-mail e no **celular (push)**; o cliente escolhe **horário de silêncio** e **e-mail por tipo**, instala o portal como app e usa a **busca global**. Hub: Portal do Cliente → aba **Avisos**; cliente: **Perfil e empresa → Notificações**, campo de busca no topo e tela **Busca**. Roteiro em `roteiro_teste_portal_3e.md`.
+
+### Permissões (catálogo v9; só o Administrador recebe)
+`portal.avisos` (enviar, agendar e cancelar avisos). Quem só tem `portal.ver` vê a lista e as estatísticas. Limite semanal: Configurações → Portal (`portal.configurar`).
+
+### O aviso
+- **Mensagem** de 1 a **140 caracteres** (aparece inteira na notificação), **link** opcional (uma tela do portal, como `/agenda`, ou um endereço `http(s)`; nunca `//` nem `javascript:`), **audiência** (todos os clientes com acesso ativo ou empresas escolhidas, até 500), **envio** agora ou agendado (horário no futuro) e **urgência**.
+- **Situações:** agendado → **enviado** ou **cancelado**. Só o agendado se cancela; o que já saiu não volta. O envio é confirmado numa janela ("Vai para N empresas…"). A tela mostra a **prévia "como chega no celular"**.
+- **Urgente:** chega na hora, **mesmo no horário de silêncio**, e **não conta no limite**. **Normal:** o push espera o fim do silêncio de cada pessoa.
+- **Limite semanal:** no máximo **3 avisos normais por semana (segunda a domingo, horário de Brasília) por empresa-cliente** (configurável de 1 a 20). Conta os de alcance "todos" mais os do segmento que incluem a empresa; cancelados e urgentes não contam. Estourou: 409 `limite_semanal` e o botão fica desligado ("3 de 3"). Agendar para outra semana usa o limite daquela semana. Criar dois avisos ao mesmo tempo não passa do limite (trava por empresa-da-equipe).
+- **Entrega** (feita pelo worker, na hora ou pela varredura de cada minuto): para cada pessoa com acesso **ativo** da audiência, grava o **sino** (notificação "Aviso"), enfileira o **e-mail** (se ela não desligou) e marca quando o **push** pode sair. Portal desligado: o aviso é dado como enviado a 0 pessoas. A mesma pessoa com acesso em duas empresas recebe um sino e um e-mail só.
+- **Estatísticas** (equipe): **Entregues x de y**, **Lidos %** (ler a notificação no sino marca o aviso como lido), pushes aceitos e e-mails enfileirados.
+
+### Push (Web Push com VAPID)
+- **Consentimento é um clique:** em Perfil e empresa → Notificações → "Ativar avisos neste aparelho" (o navegador pede a permissão). Nunca se pede sozinho. Cada aparelho tem a sua inscrição; "Desativar neste aparelho" revoga.
+- **iPhone/iPad:** o push só funciona com o portal **instalado na tela de início** (Safari → Compartilhar → Adicionar à Tela de Início). Fora disso a tela explica e o cliente recebe só sino e e-mail.
+- **Estados mostrados:** sem suporte, instalar primeiro (iOS), bloqueado no navegador, desativado e ativo.
+- **No servidor:** sem as chaves `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` o push fica desligado (a tela do cliente explica; sino e e-mail seguem). O push sai **no máximo uma vez** por pessoa e aviso; aparelho que o serviço de push recusa (404/410) é revogado, e 5 falhas seguidas também revogam. O conteúdo do push é só a mensagem do aviso e o link.
+- O clique na notificação abre o link do aviso (ou o portal).
+
+### Preferências do cliente
+- **Horário de silêncio** (padrão: sem silêncio; ao ligar sugere 22:00 às 07:00; pode virar a noite): só adia o **push dos avisos normais**. **E-mail por tipo:** Chamados, Agenda e Avisos da equipe (padrão: todos ligados). O sino sempre mostra tudo. **E-mails de entrada e de segurança não são desligáveis.**
+
+### PWA e busca global
+- **PWA:** manifesto, ícones e service worker (`/sw.js`) tornam o portal instalável; o service worker **não guarda nada em cache** (só recebe push e abre o destino).
+- **Busca:** no topo do portal (lupa no celular), pesquisa **chamados da própria empresa** (assunto, descrição, código ou número), **documentos** limpos e visíveis, **eventos** publicados e **publicações**, sem acento e sem diferenciar maiúsculas; até 5 por tipo; mínimo de 2 letras. Roda dentro da sessão do cliente: as mesmas regras de visibilidade valem (rascunhos, documentos em varredura e eventos de outras empresas nunca aparecem).
+
+### Auditoria e privacidade
+Criar e cancelar aviso (equipe) e ativar push (cliente) são auditados. Ver `lgpd.md` (preferências, inscrições de push e leituras de aviso são dados pessoais).
+
 ---
 
 ## 10. Usuários, papéis e carteira

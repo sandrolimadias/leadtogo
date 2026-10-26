@@ -421,6 +421,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
             logoUrl: null,
             exigeDoisFatoresDoResponsavel: false,
             comentariosAtivos: true,
+            avisosLimiteSemanal: 3,
           }),
         ),
         atualizar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
@@ -444,6 +445,11 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         ),
         comentarios: vi.fn(async () => ok({ itens: [] })),
         moderar: vi.fn(async () => ok({ itens: [] })),
+      },
+      avisos: {
+        listar: vi.fn(async () => ok({ itens: [], total: 0, semana: { usados: 0, limite: 3 } })),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        cancelar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       },
       eventos: {
         listar: vi.fn(async () =>

@@ -878,6 +878,18 @@ export const servicosReais: ServicosDeAcesso = {
           ),
         ),
     },
+    avisos: {
+      listar: (consulta = {}) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-avisos', { params: { query: consulta } })),
+        ),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/portal-avisos', { body: dados }))),
+      cancelar: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-avisos/{id}/cancelar', { params: { path: { id } } })),
+        ),
+    },
     eventos: {
       listar: (consulta = {}) =>
         protegido(async () =>
