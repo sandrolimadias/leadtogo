@@ -239,6 +239,13 @@
       "when": 1792983437975,
       "tag": "0033_portal_chamados_origem",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792989405996,
+      "tag": "0034_portal_publicacoes",
+      "breakpoints": true
     }
   ]
 }
