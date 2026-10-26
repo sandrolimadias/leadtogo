@@ -204,7 +204,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        app: [api, web]
+        app: [api, web, portal]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Nome da imagem (minúsculas)
@@ -258,11 +258,12 @@ jobs:
       group: deploy-prod
       cancel-in-progress: false
     steps:
-      - name: Deploy no Coolify (api, worker, web)
+      - name: Deploy no Coolify (api, worker, web e portal)
         env:
           COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
-          UUIDS: ${{ secrets.COOLIFY_UUID_API }} ${{ secrets.COOLIFY_UUID_WORKER }} ${{ secrets.COOLIFY_UUID_WEB }}
+          # COOLIFY_UUID_PORTAL só existe depois de cadastrar o aplicativo do portal no Coolify (vazio, não dispara nada)
+          UUIDS: ${{ secrets.COOLIFY_UUID_API }} ${{ secrets.COOLIFY_UUID_WORKER }} ${{ secrets.COOLIFY_UUID_WEB }} ${{ secrets.COOLIFY_UUID_PORTAL }}
         run: |
           for uuid in $UUIDS; do
             # A API do Coolify aceita só POST em /deploy (o GET antigo responde 405)
@@ -300,6 +301,26 @@ jobs:
             echo "web: HTTP $codigo, tentando de novo"; sleep 10
           done
           echo "::error::o web não respondeu o app em 5 minutos"; exit 1
+      # Só quando o portal já foi cadastrado no Coolify: ligue a variável do repositório PORTAL_HOST (ex.: portal.aledias.com.br)
+      - name: Portal respondendo (portal.aledias.com.br)
+        if: vars.PORTAL_HOST != ''
+        env:
+          PORTAL_HOST: ${{ vars.PORTAL_HOST }}
+        run: |
+          for _ in $(seq 1 30); do
+            codigo=$(curl -sS -o corpo.html -w '%{http_code}' "https://$PORTAL_HOST/" || true)
+            if [ "$codigo" = 200 ] && grep -qi '<div id="root"' corpo.html; then
+              echo "portal: HTTP $codigo"
+              # o /v1/portal chega na API (a sessão sem cookie responde 401 nao_autenticado)
+              curl -sS "https://$PORTAL_HOST/v1/portal/sessao" -o sessao.txt || true
+              if grep -q 'nao_autenticado' sessao.txt; then echo "portal: /v1/portal chegou na API"; exit 0; fi
+              echo "portal: /v1/portal ainda não chegou na API"
+            else
+              echo "portal: HTTP $codigo, tentando de novo"
+            fi
+            sleep 10
+          done
+          echo "::error::o portal não respondeu em 5 minutos"; exit 1
       - name: Rota pública /v1 pelo domínio do usuário (roteamento do Traefik)
         run: |
           for _ in $(seq 1 30); do
@@ -334,7 +355,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
-          PACOTES: leadtogo-api leadtogo-web
+          PACOTES: leadtogo-api leadtogo-web leadtogo-portal
           PRODUCAO_SHA: ${{ steps.prod.outputs.sha }}
           COMMIT_SHA: ${{ github.sha }}
         run: bash scripts/limpar-ghcr.sh

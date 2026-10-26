@@ -14,6 +14,7 @@ COPY docker/pnpm-fixo.sh /tmp/pnpm-fixo.sh
 RUN sh /tmp/pnpm-fixo.sh
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
+COPY apps/portal/package.json apps/portal/
 COPY packages/db/package.json packages/db/
 COPY packages/shared/package.json packages/shared/
 COPY packages/api-client/package.json packages/api-client/
