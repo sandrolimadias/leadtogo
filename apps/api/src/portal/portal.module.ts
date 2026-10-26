@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common'
 
 import { LimitePorChave } from './limite-por-chave.js'
+import { CarteiraModule } from '../carteira/carteira.module.js'
+import { PortalHubService } from './portal-hub.service.js'
+import { PortalHubController, TarefasDoChamadoController } from './portal-hub.controller.js'
 import { ChamadosModule } from '../chamados/chamados.module.js'
 import { NotificacoesModule } from '../notificacoes/notificacoes.module.js'
 import { PortalAnexosService } from './portal-anexos.service.js'
@@ -27,7 +30,7 @@ import { PortalGuard } from './portal.guard.js'
 import { PortalInterceptor } from './portal.interceptor.js'
 
 @Module({
-  imports: [ChamadosModule, NotificacoesModule],
+  imports: [ChamadosModule, NotificacoesModule, CarteiraModule],
   controllers: [
     PortalAuthController,
     PortalChamadosController,
@@ -36,6 +39,8 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalAcessosController,
     PortalPedidosController,
     PortalConfiguracaoController,
+    PortalHubController,
+    TarefasDoChamadoController,
   ],
   providers: [
     LimitePorChave,
@@ -45,6 +50,7 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalSegundoFatorService,
     PortalAcessosService,
     PortalPedidosService,
+    PortalHubService,
     PortalChamadosService,
     PortalAnexosService,
     PortalNotificacoesService,

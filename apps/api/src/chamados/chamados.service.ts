@@ -284,6 +284,7 @@ export class ChamadosService {
     if (c.prioridade) filtros.push(sql`c.prioridade = ${c.prioridade}::prioridade_chamado`)
     if (c.responsavelId) filtros.push(sql`c.responsavel_id = ${c.responsavelId}`)
     if (c.empresaClienteId) filtros.push(sql`c.empresa_cliente_id = ${c.empresaClienteId}`)
+    if (c.origem) filtros.push(sql`c.origem = ${c.origem}::origem_chamado`)
     // o dia é o da empresa (fuso do expediente), não o da sessão do banco
     const fuso = c.de || c.ate ? (await this.expediente.calendario()).fusoHorario : ''
     if (c.de) filtros.push(sql`c.criado_em >= (${c.de}::date::timestamp AT TIME ZONE ${fuso})`)
@@ -641,7 +642,11 @@ export class ChamadosService {
     return this.obter(id, true)
   }
 
-  async alterarStatus(id: string, para: StatusDoChamado): Promise<Chamado> {
+  async alterarStatus(
+    id: string,
+    para: StatusDoChamado,
+    extra: Pick<PayloadDaNotificacao, 'mensagemId'> = {},
+  ): Promise<Chamado> {
     const l = await this.linhaVisivel(id)
     this.exigirAberto(l)
     if (!(await this.acesso.podeAtender(this.paraAcesso(l)))) throw semPermissao()
@@ -665,7 +670,7 @@ export class ChamadosService {
       statusDe: l.status,
       statusPara: para,
     })
-    if (para === 'aguardando_cliente' || para === 'resolvido') await this.notificar(id, para)
+    if (para === 'aguardando_cliente' || para === 'resolvido') await this.notificar(id, para, extra)
     return this.obter(id, true)
   }
 

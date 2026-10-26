@@ -3811,6 +3811,15 @@
             }
           },
           {
+            "name": "origem",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["interna", "portal"]
+            }
+          },
+          {
             "name": "busca",
             "required": false,
             "in": "query",
@@ -4150,6 +4159,96 @@
           }
         },
         "summary": "Mudar a prioridade ou a área",
+        "tags": ["Chamados"]
+      }
+    },
+    "/v1/chamados/{id}/aguardar-cliente": {
+      "post": {
+        "description": "Exige `chamados.atender` no chamado. Escreve ao cliente do portal e passa o chamado a Aguardando cliente numa ação só (o prazo pausa); o cliente recebe um único aviso. Só para chamado aberto pelo portal (409 `chamado_sem_cliente`). Chamado que a pessoa não vê: 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
+        "operationId": "ConversaDoChamadoController_aguardarCliente",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarMensagemEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Aguardar resposta do cliente",
         "tags": ["Chamados"]
       }
     },
@@ -4919,6 +5018,174 @@
         "tags": ["Chamados"]
       }
     },
+    "/v1/chamados/{id}/tarefas": {
+      "get": {
+        "description": "Exige `chamados.ver` e que o chamado seja visível para a pessoa.",
+        "operationId": "TarefasDoChamadoController_listar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeTarefasDoChamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Tarefas do chamado",
+        "tags": ["Chamados"]
+      },
+      "post": {
+        "description": "Exige `chamados.atender` e `atividades.criar`. Cria uma Atividade do tipo Tarefa (pendente), ligada ao chamado e, se a pessoa pode editar a carteira da empresa-cliente, a ela. Escolher outro responsável vale as regras das atividades.",
+        "operationId": "TarefasDoChamadoController_criar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarTarefaDoChamadoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeTarefasDoChamado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar tarefa a partir do chamado",
+        "tags": ["Chamados"]
+      }
+    },
     "/v1/chamados/{id}/triar": {
       "post": {
         "description": "Exige `chamados.triar` e ser quem tria (pessoa designada ou do perfil de triagem). Só em \"Aguardando triagem\" (409 `fora_da_triagem`): define a área, a prioridade e, se quiser, o responsável (que precisa atender a área, 400 `responsavel_invalido`) e o chamado vira Pendente. Chamado que a pessoa não vê (outra empresa, fora do alcance de `chamados.ver`, ou na fila de triagem sem ser quem tria): 404 `chamado_nao_encontrado`. Sem a ação permitida neste chamado: 403 `acesso_negado`.",
@@ -5632,6 +5899,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "origem",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["interna", "portal"]
             }
           },
           {
@@ -17422,6 +17698,79 @@
         "tags": ["Portal do cliente: gestão"]
       }
     },
+    "/v1/portal-hub/indicadores": {
+      "get": {
+        "description": "Exige `portal.ver`. Dos chamados abertos pelos clientes: Em aberto e Prazo estourando (do momento), 1ª resposta no prazo e Nota média (na janela de `dias`, padrão 30), além de acessos ativos e pedidos pendentes. Vale o conjunto de TODOS os chamados do portal.",
+        "operationId": "PortalHubController_indicadores",
+        "parameters": [
+          {
+            "name": "dias",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 365
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndicadoresDoHub"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Indicadores do hub do portal",
+        "tags": ["Portal do cliente: gestão"]
+      }
+    },
     "/v1/portal-pedidos": {
       "get": {
         "description": "Exige `portal.ver` ou `portal.acessos`. Pedidos que o Responsável de uma empresa-cliente fez para colegas (por padrão, os pendentes).",
@@ -25672,6 +26021,26 @@
         "required": ["nome", "selecao"],
         "additionalProperties": false
       },
+      "CriarTarefaDoChamadoEntrada": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200
+          },
+          "responsavelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prazo": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["titulo"],
+        "additionalProperties": false
+      },
       "CriarTipoAtividadeEntrada": {
         "type": "object",
         "properties": {
@@ -27948,6 +28317,60 @@
         ],
         "additionalProperties": false
       },
+      "IndicadoresDoHub": {
+        "type": "object",
+        "properties": {
+          "periodoDias": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "emAberto": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "prazoEstourando": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "primeiraRespostaNoPrazo": {
+            "nullable": true,
+            "type": "number"
+          },
+          "notaMedia": {
+            "nullable": true,
+            "type": "number"
+          },
+          "avaliacoes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "acessosAtivos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pedidosPendentes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "periodoDias",
+          "emAberto",
+          "prazoEstourando",
+          "primeiraRespostaNoPrazo",
+          "notaMedia",
+          "avaliacoes",
+          "acessosAtivos",
+          "pedidosPendentes"
+        ],
+        "additionalProperties": false
+      },
       "IniciarSegundoFatorResposta": {
         "type": "object",
         "properties": {
@@ -29345,6 +29768,19 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SessaoAtivaDoPortal"
+            }
+          }
+        },
+        "required": ["itens"],
+        "additionalProperties": false
+      },
+      "ListaDeTarefasDoChamado": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TarefaDoChamado"
             }
           }
         },
@@ -33692,6 +34128,42 @@
           "ordem",
           "tags"
         ],
+        "additionalProperties": false
+      },
+      "TarefaDoChamado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "responsavel": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "dataInicio": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "titulo", "situacao", "responsavel", "dataInicio"],
         "additionalProperties": false
       },
       "TelefoneDaEmpresaEntrada": {

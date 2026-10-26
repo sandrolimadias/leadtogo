@@ -53,6 +53,23 @@ export class ConversaDoChamadoController {
   }
 
   @Documenta({
+    resumo: 'Aguardar resposta do cliente',
+    descricao: `Exige \`chamados.atender\` no chamado. Escreve ao cliente do portal e passa o chamado a Aguardando cliente numa ação só (o prazo pausa); o cliente recebe um único aviso. Só para chamado aberto pelo portal (409 \`chamado_sem_cliente\`). ${VISIVEL}`,
+    corpo: enviarMensagemSchema,
+    resposta: chamadoSchema,
+    status: 201,
+    erros: [400, 401, 403, 404, 409],
+  })
+  @Permissao('chamados.atender')
+  @Post(':id/aguardar-cliente')
+  aguardarCliente(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(enviarMensagemSchema)) dados: EnviarMensagemEntrada,
+  ): Promise<Chamado> {
+    return this.mensagens.aguardarCliente(id, dados)
+  }
+
+  @Documenta({
     resumo: 'Fazer uma nota interna',
     descricao: `Exige \`chamados.atender\`. A nota é só da equipe: nunca entra na conversa nem aparece para o solicitante. ${VISIVEL}`,
     corpo: criarNotaInternaSchema,

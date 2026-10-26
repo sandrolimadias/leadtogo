@@ -118,6 +118,8 @@ export const consultaDeChamadosSchema = z
     prioridade: prioridadeDoChamadoSchema.optional(),
     responsavelId: z.uuid().optional(),
     empresaClienteId: z.uuid().optional(),
+    /** `portal` = só os abertos pelo cliente no portal (o hub do portal usa) */
+    origem: z.enum(['interna', 'portal']).optional(),
     /** Número (CH-0042 ou 42) ou parte do assunto */
     busca: z.string().trim().max(100).optional(),
     de: z.iso.date().optional(),
