@@ -82,6 +82,8 @@ O cliente usa a mesma central da Fase 2 pela porta do portal.
 
 ## 7. Publicações, documentos e agenda
 
+> **Ajustes na execução da 3B:** (1) comentários visíveis aparecem para todos os clientes que veem a publicação, com o **nome reduzido ("Nome S.") e sem a empresa**, guardado no próprio comentário (o cliente não lê o cadastro de outra empresa); (2) publicação sem anexo (arquivos ficam em Documentos, 3C); (3) publicar não gera notificação (o push é dos Avisos, 3E); (4) o cliente não edita nem apaga o próprio comentário.
+
 - **Publicações:** rascunho, agendada (job), publicada; fixar (uma por vez); alcance "todos" ou empresas; Markdown restrito sem HTML; reações Curtir, Apoiar e Parabéns (uma de cada por pessoa, clicar de novo desfaz); comentários em texto puro, com limites, bloqueio por publicação e chave geral; **denúncia** (spam, ofensivo, outro); moderação Manter, Ocultar (com motivo; não apaga) ou Bloquear comentários; **alcance** medido por leituras (dado pessoal, vai para a LGPD).
 - **Documentos:** a equipe publica (todas as empresas ou algumas) pelo pipeline de arquivos e antivírus; o cliente lista e baixa; cada download é registrado.
 - **Agenda:** evento com vagas totais, vagas por empresa, prazo de confirmação e alcance; "Confirmar", "Você vai", "Confirme presença", "Lotado · lista de espera". Confirmar e cancelar em transação com trava de linha; o cancelamento promove o primeiro da fila da empresa com vaga livre. Lembrete 24 h antes e `.ics`.

@@ -616,6 +616,32 @@ Indicadores (chamados abertos pelo portal, tempo de resposta, avaliação média
 ### Isolamento (resumo)
 Duas camadas no banco: o **tenant** (RLS como em todo o sistema) e a **empresa-cliente** (variáveis `app.portal_*` preenchidas só pela sessão do portal, com políticas restritivas). As tabelas internas **negam tudo** à sessão do portal. Detalhe em `modelagem_banco.md`.
 
+## 9D. Portal do Cliente, Fase 3B (publicações)
+
+A equipe publica **comunicados** no feed do portal; o cliente lê, reage, comenta e denuncia. Hub: Portal do Cliente → aba **Publicações**; cliente: **Início** do portal. Roteiro em `roteiro_teste_portal_3b.md`.
+
+### Permissões (catálogo v6; só o Administrador recebe)
+`portal.publicar` (criar, editar, agendar, fixar e excluir) e `portal.moderar` (comentários, denúncias e bloqueio). Quem só tem uma delas vê a aba Publicações e só o que ela permite. A chave geral dos comentários é `portal.configurar`.
+
+### Publicação
+- **Situações:** rascunho → agendada → publicada. **Agendada** é publicada sozinha pelo worker (confere a cada minuto) e exige horário no futuro. **Publicada** não volta a rascunho nem agenda (edita-se o texto ou exclui-se). Excluir é lógico: some do portal e da lista.
+- **Texto:** Markdown restrito (negrito, itálico, links `http`, `https` e `mailto`, listas, subtítulos e parágrafos). **HTML nunca é interpretado**: aparece como texto. Título até 160 e texto até 10 mil caracteres.
+- **Alcance:** todos os clientes, ou empresas-clientes escolhidas (até 500). O cliente só vê o que é do alcance da empresa dele.
+- **Fixar:** uma publicação fixada por empresa (fixar outra desafixa a anterior); só a publicada fixa. A fixada vem primeiro no feed.
+- **Anexos:** não há anexo nas publicações; arquivos para os clientes entram em **Documentos** (Fase 3C).
+
+### O cliente
+- **Reações:** Curtir, Apoiar e Parabéns, uma de cada por pessoa; clicar de novo desfaz. Ele vê o **total de todas as empresas** e quais ele marcou, **nunca quem reagiu**.
+- **Comentários:** texto puro de 1 a 1000 caracteres. **Os comentários visíveis aparecem para todos os clientes que veem a publicação, mostrando "Nome S." (primeiro nome e inicial do sobrenome), sem a empresa.** O cliente não edita nem apaga o próprio comentário (pode pedir à equipe ocultar). Fecham com o bloqueio da publicação ou com a chave geral (409 `comentarios_fechados`).
+- **Denúncia:** de comentário alheio, com motivo (spam, ofensivo, outro); uma por pessoa e comentário; a pessoa não vê as denúncias dos outros.
+- **Leitura:** a publicação é marcada como lida quando aparece na tela dele (uma vez por pessoa). É dado pessoal (ver `lgpd.md`).
+
+### A equipe
+- **Métricas por publicação:** alcance (leitores ÷ pessoas com acesso ativo dentro do alcance), reações, comentários (e ocultos) e empresas com ao menos uma leitura.
+- **Moderação:** **Manter** (dispensa as denúncias), **Ocultar** (com motivo; some para os outros clientes, **não apaga**; o autor continua vendo o comentário e o motivo) e **Reexibir**. **Bloquear comentários** por publicação. Lista com o aviso das denúncias abertas.
+- **Auditoria:** atos da equipe e do cliente (comentar, denunciar) são auditados; reagir e ler não.
+- **Sem notificação:** publicar não gera sino nem e-mail para o cliente nesta fase; o aviso com push chega na Fase 3E (Avisos).
+
 ---
 
 ## 10. Usuários, papéis e carteira

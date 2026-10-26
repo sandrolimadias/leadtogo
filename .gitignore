@@ -51,3 +51,7 @@ apps/portal/src/styles/tokens.css
 apps/portal/src/styles/tailwind-theme.css
 apps/portal/src/styles/fonts/
 apps/portal/src/styles/assets/
+
+# Dump do Valkey/Redis local
+dump.rdb
+*.rdb
