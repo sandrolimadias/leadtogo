@@ -348,14 +348,16 @@ const textoSchema = z
   .min(1, 'escreva a mensagem')
   .max(10_000, 'use até 10.000 caracteres')
 
-/** Empresa-cliente e solicitante vêm da sessão, nunca do corpo (`.strict()` recusa o excedente). */
+/**
+ * Empresa-cliente e solicitante vêm da sessão, nunca do corpo (`.strict()` recusa o excedente). Os anexos entram
+ * pela conversa, depois que o chamado existe (o arquivo precisa de um chamado para ser guardado).
+ */
 export const abrirChamadoNoPortalSchema = z
   .object({
     assunto: assuntoSchema,
     descricao: z.string().trim().max(10_000).nullable().optional(),
     /** Só áreas visíveis no portal; nulo = "não sei" (vai para a triagem) */
     areaId: z.uuid().nullable().optional(),
-    anexoIds: z.array(z.uuid()).max(MAXIMO_DE_ANEXOS_POR_MENSAGEM).default([]),
   })
   .strict()
   .meta({ id: 'AbrirChamadoNoPortalEntrada' })
@@ -435,14 +437,8 @@ export type MensagemDoPortal = z.infer<typeof mensagemDoPortalSchema>
 
 export const marcoDoChamadoSchema = z
   .object({
-    tipo: z.enum([
-      'aberto',
-      'em_atendimento',
-      'aguardando_voce',
-      'resolvido',
-      'reaberto',
-      'fechado',
-    ]),
+    // Derivados das datas do próprio chamado: a linha do tempo interna não chega ao cliente
+    tipo: z.enum(['aberto', 'em_atendimento', 'resolvido', 'fechado']),
     em: z.iso.datetime(),
   })
   .meta({ id: 'MarcoDoChamadoNoPortal' })
@@ -521,6 +517,10 @@ export type NotificacaoDoPortal = z.infer<typeof notificacaoDoPortalSchema>
 export const listaDeNotificacoesDoPortalSchema = z
   .object({ itens: z.array(notificacaoDoPortalSchema), naoLidas: z.number().int() })
   .meta({ id: 'ListaDeNotificacoesDoPortal' })
+
+export const naoLidasDoPortalSchema = z
+  .object({ naoLidas: z.number().int() })
+  .meta({ id: 'NaoLidasDoPortal' })
 
 export const inicioDoPortalSchema = z
   .object({

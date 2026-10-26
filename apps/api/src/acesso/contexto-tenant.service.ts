@@ -42,6 +42,11 @@ export class ContextoTenantService {
     return this.armazenamento.run(contexto, fn)
   }
 
+  /** Como `executar`, para quem devolve um fluxo (SSE) em vez de uma promessa: o contexto vale durante a chamada. */
+  executarSincrono<T>(contexto: ContextoDaRequisicao, fn: () => T): T {
+    return this.armazenamento.run(contexto, fn)
+  }
+
   private atual(): ContextoDaRequisicao {
     const contexto = this.armazenamento.getStore()
     if (!contexto) {

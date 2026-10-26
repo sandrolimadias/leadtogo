@@ -8,7 +8,7 @@ import {
   type NestInterceptor,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { type Observable, from, lastValueFrom } from 'rxjs'
+import { Observable, from, lastValueFrom, switchMap } from 'rxjs'
 
 import {
   ContextoTenantService,
@@ -18,10 +18,15 @@ import { ErroApi } from '../http/erro-api.js'
 import { identificarNoLog } from '../log/contexto-log.js'
 import { BANCO } from '../infra/infra.module.js'
 import { MonitorDoPool } from '../infra/monitor-do-pool.js'
-import { CHAVE_PORTAL, CHAVE_PORTAL_PUBLICA, CHAVE_PORTAL_SEM_2FA } from './portal.decorators.js'
+import {
+  CHAVE_PORTAL,
+  CHAVE_PORTAL_PUBLICA,
+  CHAVE_PORTAL_SEM_2FA,
+  CHAVE_PORTAL_SOB_DEMANDA,
+} from './portal.decorators.js'
 import { PortalSessaoService } from './portal-sessao.service.js'
 import { tenantDoToken } from './portal-token.js'
-import type { RequisicaoDoPortal } from './portal.tipos.js'
+import type { ContextoDoPortal, RequisicaoDoPortal } from './portal.tipos.js'
 
 /**
  * Transação das rotas protegidas do portal, com as DUAS camadas de isolamento:
@@ -55,12 +60,19 @@ export class PortalInterceptor implements NestInterceptor {
     if (!token || !tenantId) throw new ErroApi('nao_autenticado', 'Entre para continuar.', 401)
     const permiteSem2fa = marca(CHAVE_PORTAL_SEM_2FA)
 
-    this.monitor.iniciar()
-    return from(
-      this.banco.db
+    const sobDemanda = marca(CHAVE_PORTAL_SOB_DEMANDA)
+
+    // Abre a transação (conta no monitor do pool), preenche as duas camadas de isolamento e entrega o contexto.
+    // `conhecido`: segunda transação da mesma requisição (rotas sob demanda), sessão já conferida.
+    const abrir = <T>(
+      fn: (ctx: ContextoDaRequisicao) => Promise<T>,
+      conhecido?: ContextoDoPortal,
+    ): Promise<T> => {
+      this.monitor.iniciar()
+      return this.banco.db
         .transaction(async (tx) => {
           await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)
-          const portal = await this.sessoes.resolver(tx, tenantId, token)
+          const portal = conhecido ?? (await this.sessoes.resolver(tx, tenantId, token))
           // Só agora, com a sessão conferida, as políticas por empresa-cliente passam a valer
           await tx.execute(sql`
             SELECT set_config('app.portal_acesso_id', ${portal.acessoId}, true),
@@ -74,18 +86,32 @@ export class PortalInterceptor implements NestInterceptor {
               403,
             )
           }
-          const ctx: ContextoDaRequisicao = {
-            usuarioId: portal.acessoId,
-            tx,
-            ip: req.ip,
-            tenantId,
-            portal,
-          }
-          return this.contexto.executar(ctx, () =>
-            lastValueFrom(proximo.handle() as Observable<unknown>, { defaultValue: undefined }),
-          )
+          return fn({ usuarioId: portal.acessoId, tx, ip: req.ip, tenantId, portal })
         })
-        .finally(() => this.monitor.terminar()),
+        .finally(() => this.monitor.terminar())
+    }
+
+    const rodar = (ctx: ContextoDaRequisicao) =>
+      this.contexto.executar(ctx, () =>
+        lastValueFrom(proximo.handle() as Observable<unknown>, { defaultValue: undefined }),
+      )
+
+    if (!sobDemanda) return from(abrir(rodar))
+    // Sob demanda: a transação curta só confere a sessão. O handler roda a seguir, sem transação aberta e com o
+    // contexto ligado ao fluxo (um SSE devolve um fluxo que nunca termina, então nada de esperar o fim dele)
+    return from(abrir((ctx) => Promise.resolve(ctx))).pipe(
+      switchMap(
+        (conferido) =>
+          new Observable<unknown>((assinante) => {
+            const ctx: ContextoDaRequisicao = {
+              ...conferido,
+              tx: undefined,
+              abrirTransacao: <T>(fn: (c: ContextoDaRequisicao) => Promise<T>) =>
+                abrir(fn, conferido.portal),
+            }
+            return this.contexto.executarSincrono(ctx, () => proximo.handle().subscribe(assinante))
+          }),
+      ),
     )
   }
 }
