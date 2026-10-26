@@ -8,15 +8,16 @@ import { PaginaDeTabela } from '@leadtogo/ui/pagina'
 import { Tabs } from '@leadtogo/ui/tabs'
 
 import { AcessosDoPortal } from './acessos'
+import { AgendaDoPortal } from './agenda'
 import { ChamadosDoPortal } from './chamados'
 import { DocumentosDoPortal } from './documentos'
 import { PublicacoesDoPortal } from './publicacoes'
 
-type Aba = 'publicacoes' | 'chamados' | 'documentos' | 'acessos'
+type Aba = 'publicacoes' | 'chamados' | 'documentos' | 'agenda' | 'acessos'
 
 /**
  * O hub do Portal do Cliente: o que a equipe publica e vê do que acontece no portal. Hoje: publicações (3B),
- * documentos (3C), chamados dos clientes e acessos (3A); agenda e avisos entram nas próximas fases.
+ * documentos (3C), agenda (3D), chamados dos clientes e acessos (3A); os avisos entram na próxima fase.
  */
 export function TelaDoPortal() {
   const servicos = useServicos()
@@ -69,6 +70,7 @@ export function TelaDoPortal() {
           ...(verHub || pode('portal.documentos')
             ? [{ value: 'documentos', label: 'Documentos' }]
             : []),
+          ...(verHub || pode('portal.agenda') ? [{ value: 'agenda', label: 'Agenda' }] : []),
           ...(verHub || pode('portal.acessos')
             ? [
                 {
@@ -86,6 +88,8 @@ export function TelaDoPortal() {
         <ChamadosDoPortal />
       ) : aba === 'documentos' ? (
         <DocumentosDoPortal />
+      ) : aba === 'agenda' ? (
+        <AgendaDoPortal />
       ) : (
         <AcessosDoPortal />
       )}
