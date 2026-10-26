@@ -162,6 +162,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   portalExigeDoisFatoresResponsavel: boolean().notNull().default(false),
   /** Chave geral dos comentários nas publicações do portal (Fase 3B): desligada, ninguém comenta */
   portalComentariosAtivos: boolean().notNull().default(true),
+  /** Avisos NORMAIS por semana (a semana é de segunda a domingo, no fuso de São Paulo); urgentes não contam (Fase 3E) */
+  portalAvisosLimiteSemanal: smallint().notNull().default(3),
   ...carimbos(),
 })
 
