@@ -825,3 +825,143 @@ fabricas['feriados'] = definirFabrica({
     return id
   },
 })
+
+// Portal do Cliente (Fase 3A)
+interface PaisDoPortal {
+  empresaId: string
+  contatoId: string
+  membroId: string
+}
+/** Empresa-cliente, contato e membro (o pai das tabelas do portal). */
+const prepararPortal = (owner: Sql, tenantId: string) =>
+  comTenant(owner, tenantId, async (tx): Promise<PaisDoPortal> => {
+    const membroId = await membroDeChamado(tx, tenantId)
+    const empresaId = novoId()
+    const contatoId = novoId()
+    await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id) VALUES (${empresaId}, ${tenantId}, ${`Cliente ${empresaId}`}, ${membroId})`
+    await tx`INSERT INTO contatos (id, tenant_id, nome) VALUES (${contatoId}, ${tenantId}, ${`Contato ${contatoId}`})`
+    return { empresaId, contatoId, membroId }
+  })
+
+const inserirAcessoDoPortal = async (
+  tx: TransactionSql,
+  tenantId: string,
+  pais: PaisDoPortal,
+  extra: { contatoId?: string; email?: string } = {},
+): Promise<string> => {
+  const id = novoId()
+  await tx`INSERT INTO portal_acessos (id, tenant_id, contato_id, empresa_id, email, situacao)
+    VALUES (${id}, ${tenantId}, ${extra.contatoId ?? pais.contatoId}, ${pais.empresaId},
+      ${extra.email ?? `cliente-${id}@exemplo.com.br`}, 'ativo')`
+  return id
+}
+
+fabricas['portal_acessos'] = definirFabrica<PaisDoPortal>({
+  colunaAlteravel: 'email',
+  preparar: prepararPortal,
+  criar: (tx, tenantId, pais) => inserirAcessoDoPortal(tx, tenantId, pais),
+})
+
+fabricas['portal_links'] = definirFabrica<{ acessoId: string }>({
+  colunaAlteravel: 'ip',
+  preparar: async (owner, tenantId) => {
+    const pais = await prepararPortal(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => ({
+      acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+    }))
+  },
+  criar: async (tx, tenantId, { acessoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO portal_links (id, tenant_id, acesso_id, finalidade, token_hash, expira_em)
+      VALUES (${id}, ${tenantId}, ${acessoId}, 'entrada', ${`hash-${id}`}, now() + interval '15 minutes')`
+    return id
+  },
+})
+
+fabricas['portal_sessoes'] = definirFabrica<{ acessoId: string }>({
+  colunaAlteravel: 'agente',
+  preparar: async (owner, tenantId) => {
+    const pais = await prepararPortal(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => ({
+      acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+    }))
+  },
+  criar: async (tx, tenantId, { acessoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO portal_sessoes (id, tenant_id, acesso_id, token_hash, expira_em, valida_ate_em)
+      VALUES (${id}, ${tenantId}, ${acessoId}, ${`hash-${id}`}, now() + interval '30 days', now() + interval '90 days')`
+    return id
+  },
+})
+
+fabricas['portal_segundo_fator'] = definirFabrica<{ acessoId: string }>({
+  colunaAlteravel: 'segredo_cifrado',
+  preparar: async (owner, tenantId) => {
+    const pais = await prepararPortal(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => ({
+      acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+    }))
+  },
+  criar: async (tx, tenantId, { acessoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO portal_segundo_fator (id, tenant_id, acesso_id, segredo_cifrado)
+      VALUES (${id}, ${tenantId}, ${acessoId}, 'segredo-cifrado')`
+    return id
+  },
+})
+
+fabricas['portal_pedidos_acesso'] = definirFabrica<{ acessoId: string; empresaId: string }>({
+  colunaAlteravel: 'nome',
+  preparar: async (owner, tenantId) => {
+    const pais = await prepararPortal(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => ({
+      acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+      empresaId: pais.empresaId,
+    }))
+  },
+  criar: async (tx, tenantId, { acessoId, empresaId }) => {
+    const id = novoId()
+    await tx`INSERT INTO portal_pedidos_acesso (id, tenant_id, empresa_id, pedido_por, nome, email)
+      VALUES (${id}, ${tenantId}, ${empresaId}, ${acessoId}, 'Colega', ${`colega-${id}@exemplo.com.br`})`
+    return id
+  },
+})
+
+fabricas['chamado_avaliacoes'] = definirFabrica<{ acessoId: string; chamadoId: string }>({
+  colunaAlteravel: 'comentario',
+  preparar: async (owner, tenantId) => {
+    const pais = await prepararPortal(owner, tenantId)
+    const { chamadoId } = await prepararChamado(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => ({
+      acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+      chamadoId,
+    }))
+  },
+  criar: async (tx, tenantId, { acessoId, chamadoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO chamado_avaliacoes (id, tenant_id, chamado_id, acesso_id, nota)
+      VALUES (${id}, ${tenantId}, ${chamadoId}, ${acessoId}, 5)`
+    return id
+  },
+})
+
+fabricas['chamado_atividades'] = definirFabrica<{ chamadoId: string; atividadeId: string }>({
+  colunaAlteravel: 'excluido_em',
+  preparar: async (owner, tenantId) => {
+    const { chamadoId, membroId } = await prepararChamado(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => {
+      const tipoId = novoId()
+      const atividadeId = novoId()
+      await tx`INSERT INTO tipos_atividade (id, tenant_id, nome, icone) VALUES (${tipoId}, ${tenantId}, 'Tipo de teste', 'phone')`
+      await tx`INSERT INTO atividades (id, tenant_id, tipo_atividade_id, titulo, responsavel_id, data_inicio)
+        VALUES (${atividadeId}, ${tenantId}, ${tipoId}, 'Tarefa do chamado', ${membroId}, now())`
+      return { chamadoId, atividadeId }
+    })
+  },
+  criar: async (tx, tenantId, { chamadoId, atividadeId }) => {
+    const id = novoId()
+    await tx`INSERT INTO chamado_atividades (id, tenant_id, chamado_id, atividade_id)
+      VALUES (${id}, ${tenantId}, ${chamadoId}, ${atividadeId})`
+    return id
+  },
+})

@@ -225,6 +225,13 @@
       "when": 1792773835724,
       "tag": "0031_chamados",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792980066971,
+      "tag": "0032_portal_acesso",
+      "breakpoints": true
     }
   ]
 }
