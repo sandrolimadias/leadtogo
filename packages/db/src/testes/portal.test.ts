@@ -357,6 +357,60 @@ describe('portal: regras das tabelas', () => {
   })
 })
 
+describe('portal: chamados internos e numeração (migração 0033)', () => {
+  it('o chamado interno que cita a empresa-cliente fica invisível; o do portal aparece', async () => {
+    const c = await cenario()
+    const interno = novoId()
+    await comTenant(
+      owner,
+      c.tenantId,
+      (tx) =>
+        tx`INSERT INTO chamados (id, tenant_id, numero, assunto, area_id, origem, solicitante_membro_id, empresa_cliente_id)
+        VALUES (${interno}, ${c.tenantId}, 50, 'Entre a equipe', ${c.ids.area}, 'interna', ${c.ids.membro}, ${c.ids.empresaA})`,
+    )
+    await comoCliente(c, c.sessaoA, async (tx) => {
+      const ids = (await tx`SELECT id FROM chamados`).map((l) => String(l['id']))
+      expect(ids).toEqual([c.ids.chamadoA])
+      expect(await tx`SELECT id FROM chamados WHERE id = ${interno}`).toHaveLength(0)
+      expect(
+        await tx`UPDATE chamados SET assunto = 'X' WHERE id = ${interno} RETURNING id`,
+      ).toHaveLength(0)
+    })
+    // a equipe (sem as variáveis do portal) continua vendo os dois
+    await comTenant(owner, c.tenantId, async (tx) => {
+      expect(
+        await tx`SELECT id FROM chamados WHERE empresa_cliente_id = ${c.ids.empresaA}`,
+      ).toHaveLength(2)
+    })
+  })
+
+  it('a função de numeração incrementa só a empresa da sessão, mesmo para o cliente', async () => {
+    const c = await cenario()
+    const outro = await cenario()
+    const numero = () =>
+      comoCliente(c, c.sessaoA, async (tx) => {
+        const [r] = await tx`SELECT app_proximo_numero_chamado() AS n`
+        return Number(r?.['n'])
+      })
+    expect(await numero()).toBe(1)
+    expect(await numero()).toBe(2)
+    await comTenant(owner, outro.tenantId, async (tx) => {
+      const [l] = await tx`SELECT chamado_ultimo_numero AS n FROM tenant_configuracoes`
+      expect(Number(l?.['n'])).toBe(0)
+    })
+    // a tabela continua só leitura para o cliente: nenhuma escrita direta
+    await comoCliente(c, c.sessaoA, async (tx) => {
+      expect(
+        await tx`UPDATE tenant_configuracoes SET chamado_ultimo_numero = 999 RETURNING tenant_id`,
+      ).toHaveLength(0)
+    })
+    // sem empresa na sessão a função recusa
+    await expect(app.begin((tx) => tx`SELECT app_proximo_numero_chamado()`)).rejects.toThrow(
+      /sem empresa/,
+    )
+  })
+})
+
 describe('portal: catálogo', () => {
   it('toda tabela com RLS por tenant tem política do portal (negada por padrão, escopada ou liberada de propósito)', async () => {
     const tabelas = await owner<{ tabela: string; com_portal: boolean }[]>`
@@ -366,8 +420,8 @@ describe('portal: catálogo', () => {
             OR pg_get_expr(q.polwithcheck, q.polrelid) ILIKE '%app_portal%')) AS com_portal
       FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
       WHERE p.polname = 'tenant_select' ORDER BY 1`
-    // liberadas de propósito: a abertura do chamado grava numeração, auditoria e outbox
-    const liberadas = ['tenant_configuracoes', 'auditoria', 'eventos_outbox']
+    // liberadas de propósito: o cliente grava auditoria e outbox (a numeração dos chamados passa por função)
+    const liberadas = ['auditoria', 'eventos_outbox']
     const sem = tabelas
       .filter((t) => !t.com_portal && !liberadas.includes(t.tabela))
       .map((t) => t.tabela)

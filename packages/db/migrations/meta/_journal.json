@@ -232,6 +232,13 @@
       "when": 1792980066971,
       "tag": "0032_portal_acesso",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792983437975,
+      "tag": "0033_portal_chamados_origem",
+      "breakpoints": true
     }
   ]
 }
