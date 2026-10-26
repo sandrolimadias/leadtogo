@@ -869,3 +869,29 @@ Só expansão (a migração não altera nem remove nada que existia). Onze tabel
 
 **Catálogo de permissões v4:** as oito chaves `chamados.*` (`ver`, `criar`, `atender`, `triar`, `atribuir`, `gerir_areas`, `ver_metricas`, `exportar`). Só o Administrador as recebe; o Gestor **não** herda o prefixo `chamados.`. Sincronizado na partida da API (`sincronizarCatalogoDoTenant`).
 
+
+## Portal do Cliente, Fase 3A (migração 0032; plano em `plano_portal_cliente.md`)
+
+Só expansão. Sete tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_tenant`), colunas padrão (as de log mínimo, sem `criado_por`, onde o autor é o próprio cliente) e teste de isolamento:
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `portal_acessos` | contato_id, empresa_id, email (citext), papel (`responsavel` · `colega`), situacao (`convidado` · `ativo` · `suspenso` · `revogado`), convidado_por, aceito_em, ultimo_acesso_em, privacidade_aceita_em | Um acesso por `(contato, empresa)` e e-mail único por empresa, entre os não revogados |
+| `portal_links` | acesso_id, finalidade (`convite` · `entrada` · `troca_email`), token_hash, email_destino, expira_em, usado_em, ip | Só o **hash** do token; uso único; `troca_email` exige o endereço novo (CHECK) |
+| `portal_sessoes` | acesso_id, token_hash, expira_em (30 dias deslizantes), valida_ate_em (teto de 90), ultimo_uso_em, ip, agente, segundo_fator_em, revogada_em | O cookie guarda `<tenant>.<token>`; o banco, o hash |
+| `portal_segundo_fator` | acesso_id, segredo_cifrado, confirmado_em, codigos_recuperacao (hashes) | Um por acesso; mesma cifra dos segredos do CRM |
+| `portal_pedidos_acesso` | empresa_id, pedido_por (acesso), nome, email, cargo, situacao (`pendente` · `aprovado` · `recusado`), tratado_por, tratado_em, motivo | O Responsável pede, a equipe trata (CHECK: tratado só com data) |
+| `chamado_avaliacoes` | chamado_id, acesso_id, nota (1 a 5, CHECK), comentario | Uma por chamado (único) |
+| `chamado_atividades` | chamado_id, atividade_id | "Criar tarefa" a partir do chamado |
+
+**Colunas novas:** `tenant_configuracoes.portal_ativo`, `portal_nome` e `portal_exige_dois_fatores_responsavel`.
+
+**Isolamento em duas camadas.** (1) O tenant, como sempre. (2) A **empresa-cliente**: a sessão do portal preenche `app.portal_acesso_id`, `app.portal_empresa_id` e `app.portal_contato_id` (funções `app_portal_ativo()`, `app_portal_empresa()`, `app_portal_contato()` e `app_portal_acesso()` leem as variáveis; o CRM nunca as preenche). Com elas preenchidas valem **políticas restritivas**, que só estreitam as do tenant:
+
+- **Escopadas:** `chamados` (pela `empresa_cliente_id`), `chamado_mensagens` e `chamado_anexos` (pelo chamado), `chamado_eventos` (grava, não lê), `notificacoes` (as do contato), `empresas`, `empresa_contatos`, `contatos` (o próprio e os da empresa; só o próprio é alterável), `contato_telefones`, `contato_emails`, e as tabelas do portal (cada sessão vê as da própria empresa ou acesso).
+- **Somente leitura:** `membros`, `areas_atendimento`, `calendario_expediente`, `feriados`, `config_triagem`, `triagem_membros`, `tenants`.
+- **Liberadas de propósito:** `tenant_configuracoes` (a abertura do chamado reserva o número), `auditoria` e `eventos_outbox` (a abertura grava).
+- **Negadas** (`portal_negado`): todas as demais, inclusive `chamado_notas_internas`, `area_membros`, `atividades` e `oportunidades`. A função `aplicar_rls_tenant` passou a criar essa política em **toda tabela nova**: quem precisa de uma tabela no portal troca a política pelas suas.
+- **Falha fechada:** acesso preenchido e empresa vazia não enxerga nenhuma linha escopada.
+
+**Funções `SECURITY DEFINER`** (mesmo padrão das migrações 0016, 0026 e 0031): `app_portal_acessos_por_email(citext)` devolve só `(tenant_id, acesso_id)` dos acessos **ativos** daquele e-mail, em qualquer empresa (a entrada ainda não tem tenant); `app_portal_limpar()` apaga links vencidos há 30 dias e sessões vencidas há 90 (job de manutenção).

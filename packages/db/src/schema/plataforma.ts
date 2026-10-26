@@ -154,6 +154,12 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   chamadoUltimoNumero: integer().notNull().default(0),
   /** Quando as áreas, o expediente, os feriados e a triagem padrão foram criados (Fase 2); preenchido, nunca mais se recria */
   chamadosPadroesCriadosEm: timestamp({ withTimezone: true }),
+  /** Portal do Cliente ligado para esta empresa (Fase 3A) */
+  portalAtivo: boolean().notNull().default(false),
+  /** Nome que o portal mostra no topo (vazio = o nome da empresa) */
+  portalNome: text(),
+  /** A equipe exige 2FA do Responsável da empresa-cliente */
+  portalExigeDoisFatoresResponsavel: boolean().notNull().default(false),
   ...carimbos(),
 })
 

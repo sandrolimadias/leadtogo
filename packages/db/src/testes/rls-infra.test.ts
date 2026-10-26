@@ -67,7 +67,7 @@ describe('app_tenant_id() e app_tenant_ids()', () => {
 })
 
 describe('aplicar_rls_tenant()', () => {
-  it('liga, força e cria as quatro políticas, e concede o DML ao app', async () => {
+  it('liga, força e cria as quatro políticas (mais a do portal), e concede o DML ao app', async () => {
     await owner`SELECT aplicar_rls_tenant('zz_rls_infra')`
     const [rel] = await owner<{ rls: boolean; forca: boolean }[]>`
       SELECT relrowsecurity AS rls, relforcerowsecurity AS forca FROM pg_class WHERE relname = 'zz_rls_infra'`
@@ -75,6 +75,7 @@ describe('aplicar_rls_tenant()', () => {
     const pol = await owner<{ polname: string }[]>`
       SELECT polname FROM pg_policy WHERE polrelid = 'zz_rls_infra'::regclass ORDER BY polname`
     expect(pol.map((p) => p.polname)).toEqual([
+      'portal_negado', // toda tabela nova nasce negada ao portal (migração 0032)
       'tenant_delete',
       'tenant_insert',
       'tenant_select',

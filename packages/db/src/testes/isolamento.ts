@@ -96,10 +96,12 @@ export async function problemasDeCatalogo(sql: Sql, tabelas?: string[]): Promise
       WHERE n.nspname = 'public' AND c.relname = ${tabela}`
     if (!rel?.habilitado) problemas.push(`${tabela}: RLS não habilitado`)
     if (!rel?.forcado) problemas.push(`${tabela}: RLS não forçado (o dono ignoraria as políticas)`)
+    // só as permissivas dão acesso; as restritivas (portal) apenas estreitam e não cobrem comando nenhum
     const politicas = await sql<{ cmd: string }[]>`
       SELECT p.polcmd AS cmd FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
       JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE n.nspname = 'public' AND c.relname = ${tabela}`
+      WHERE n.nspname = 'public' AND c.relname = ${tabela}
+        AND p.polpermissive`
     const comandos = new Set(politicas.map((p) => p.cmd))
     const todos = comandos.has('*')
     for (const [cmd, nome] of [
