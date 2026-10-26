@@ -70,7 +70,7 @@ export const TELAS: TelaDoApp[] = [
     titulo: 'Portal do Cliente',
     icone: Globe,
     rotuloCurto: 'Portal',
-    permissoes: ['portal.ver'],
+    permissoes: ['portal.ver', 'portal.publicar', 'portal.moderar'],
   },
   { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone, permissoes: ['empresas.ver'] },
   {

@@ -818,6 +818,66 @@ export const servicosReais: ServicosDeAcesso = {
       atualizar: (dados) =>
         protegido(async () => daApi(await api.PUT('/v1/portal-configuracao', { body: dados }))),
     },
+    publicacoes: {
+      listar: (consulta = {}) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-publicacoes', { params: { query: consulta } })),
+        ),
+      obter: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-publicacoes/{id}', { params: { path: { id } } })),
+        ),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/portal-publicacoes', { body: dados }))),
+      editar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/portal-publicacoes/{id}', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/portal-publicacoes/{id}', { params: { path: { id } } })),
+        ),
+      fixar: (id, fixada) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/portal-publicacoes/{id}/fixada', {
+              params: { path: { id } },
+              body: { fixada },
+            }),
+          ),
+        ),
+      bloquearComentarios: (id, bloqueados) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/portal-publicacoes/{id}/comentarios-bloqueados', {
+              params: { path: { id } },
+              body: { bloqueados },
+            }),
+          ),
+        ),
+      comentarios: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/portal-publicacoes/{id}/comentarios', {
+              params: { path: { id } },
+            }),
+          ),
+        ),
+      moderar: (id, comentarioId, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/portal-publicacoes/{id}/comentarios/{comentarioId}', {
+              params: { path: { id, comentarioId } },
+              body: dados,
+            }),
+          ),
+        ),
+    },
     acessos: {
       listar: (consulta = {}) =>
         protegido(async () =>

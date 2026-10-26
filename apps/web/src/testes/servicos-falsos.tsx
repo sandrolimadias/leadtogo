@@ -425,6 +425,26 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         ),
         atualizar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       },
+      publicacoes: {
+        listar: vi.fn(async () =>
+          ok({
+            itens: [],
+            total: 0,
+            abas: { todas: 0, publicadas: 0, agendadas: 0, rascunhos: 0 },
+            denunciasAbertas: 0,
+          }),
+        ),
+        obter: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        editar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        fixar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        bloquearComentarios: vi.fn(async () =>
+          falha('indisponivel', 'Não configurado no teste.', 500),
+        ),
+        comentarios: vi.fn(async () => ok({ itens: [] })),
+        moderar: vi.fn(async () => ok({ itens: [] })),
+      },
       acessos: {
         listar: vi.fn(async () => ok({ itens: [], total: 0 })),
         dar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),

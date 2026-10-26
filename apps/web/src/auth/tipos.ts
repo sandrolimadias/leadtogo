@@ -2,6 +2,9 @@ import type {
   AcessoDoPortal,
   ConfiguracaoDoPortal,
   IndicadoresDoHub,
+  ListaDeComentariosParaModeracao,
+  ListaDePublicacoes,
+  Publicacao,
   ListaDeAcessosDoPortal,
   ListaDePedidosDeAcesso,
   ListaDeTarefasDoChamado,
@@ -184,6 +187,8 @@ import type {
   PrimeiroAcessoEntrada,
   PrimeiroAcessoResultado,
   Tag,
+  ModerarComentarioEntrada,
+  SalvarPublicacaoEntrada,
 } from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
@@ -614,6 +619,26 @@ export interface ServicosDoPortalNoCrm {
       exigeDoisFatoresDoResponsavel?: boolean
       comentariosAtivos?: boolean
     }) => Promise<Resultado<ConfiguracaoDoPortal>>
+  }
+  /** Publicações do portal (Fase 3B): `portal.ver`/`publicar`/`moderar` para ver, `publicar` para escrever, `moderar` nos comentários */
+  publicacoes: {
+    listar: (consulta?: {
+      aba?: 'todas' | 'publicadas' | 'agendadas' | 'rascunhos'
+      pagina?: number
+      porPagina?: number
+    }) => Promise<Resultado<ListaDePublicacoes>>
+    obter: (id: string) => Promise<Resultado<Publicacao>>
+    criar: (dados: SalvarPublicacaoEntrada) => Promise<Resultado<Publicacao>>
+    editar: (id: string, dados: SalvarPublicacaoEntrada) => Promise<Resultado<Publicacao>>
+    excluir: (id: string) => Promise<Resultado>
+    fixar: (id: string, fixada: boolean) => Promise<Resultado<Publicacao>>
+    bloquearComentarios: (id: string, bloqueados: boolean) => Promise<Resultado<Publicacao>>
+    comentarios: (id: string) => Promise<Resultado<ListaDeComentariosParaModeracao>>
+    moderar: (
+      id: string,
+      comentarioId: string,
+      dados: ModerarComentarioEntrada,
+    ) => Promise<Resultado<ListaDeComentariosParaModeracao>>
   }
   acessos: {
     listar: (consulta?: {
