@@ -1,5 +1,6 @@
 import type {
   ChamadoDoPortal,
+  EventoDoPortal,
   InicioDoPortal,
   PublicacaoDoPortal,
   ItemDeChamadoDoPortal,
@@ -60,6 +61,26 @@ export const chamado = (extra: Partial<ChamadoDoPortal> = {}): ChamadoDoPortal =
   marcos: [{ tipo: 'aberto', em: '2026-10-20T09:14:00.000Z' }],
   avaliacao: null,
   acoes: { responder: true, reabrir: false, avaliar: false },
+  ...extra,
+})
+
+export const evento = (extra: Partial<EventoDoPortal> = {}): EventoDoPortal => ({
+  id: id(80),
+  titulo: 'Encontro anual de clientes 2026',
+  descricao: 'Um dia de **troca** entre clientes e equipe.',
+  local: 'Auditório da sede',
+  linkOnline: null,
+  inicioEm: '2026-11-12T21:30:00.000Z',
+  fimEm: '2026-11-13T01:00:00.000Z',
+  prazoConfirmacao: null,
+  cancelado: false,
+  vagasRestantes: 8,
+  lotado: false,
+  vagasDaEmpresa: { limite: 2, confirmados: 0 },
+  minhaSituacao: 'nenhuma',
+  podeConfirmar: true,
+  podeCancelar: false,
+  motivoDoBloqueio: null,
   ...extra,
 })
 
@@ -156,6 +177,16 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       listar: vi.fn(async () => ok({ itens: [], naoLidas: 0 })),
       marcarLida: vi.fn(async () => ok({ naoLidas: 0 })),
       marcarTodas: vi.fn(async () => ok({ naoLidas: 0 })),
+    },
+    eventos: {
+      listar: vi.fn(async () => ok({ itens: [], total: 0 })),
+      proximos: vi.fn(async () => ok({ itens: [] })),
+      confirmar: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      cancelar: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
     },
     documentos: {
       listar: vi.fn(async () => ok({ itens: [], total: 0 })),

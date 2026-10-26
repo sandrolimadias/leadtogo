@@ -1,7 +1,7 @@
 import type { SessaoDoPortal } from '@leadtogo/api-client'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useRouter } from '@tanstack/react-router'
-import { Bell, FileText, Home, LifeBuoy, Plus, User } from 'lucide-react'
+import { Bell, CalendarDays, FileText, Home, LifeBuoy, Plus, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { type ReactNode, useCallback } from 'react'
 
@@ -18,7 +18,7 @@ import { useFluxoDoSino } from './fluxo-do-sino'
 import { primeiroNome } from './rotulos'
 
 interface ItemDoMenu {
-  para: '/' | '/chamados' | '/documentos' | '/notificacoes' | '/perfil'
+  para: '/' | '/chamados' | '/documentos' | '/agenda' | '/notificacoes' | '/perfil'
   rotulo: string
   icone: LucideIcon
   contagem?: number
@@ -80,6 +80,7 @@ export function Casca({
     { para: '/', rotulo: 'Início', icone: Home, exato: true },
     { para: '/chamados', rotulo: 'Chamados', icone: LifeBuoy, contagem: aguardando },
     { para: '/documentos', rotulo: 'Documentos', icone: FileText },
+    { para: '/agenda', rotulo: 'Agenda', icone: CalendarDays },
     { para: '/notificacoes', rotulo: 'Notificações', icone: Bell, contagem: naoLidas },
     { para: '/perfil', rotulo: 'Perfil e empresa', icone: User },
   ]

@@ -156,6 +156,25 @@ export const servicosReais: ServicosDoPortal = {
     marcarTodas: () =>
       protegido(async () => daApi(await api.POST('/v1/portal/notificacoes/lidas'))),
   },
+  eventos: {
+    listar: (aba, pagina) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/portal/eventos', {
+            params: { query: { aba, ...(pagina ? { pagina } : {}) } },
+          }),
+        ),
+      ),
+    proximos: () => protegido(async () => daApi(await api.GET('/v1/portal/eventos/proximos'))),
+    confirmar: (id) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/eventos/{id}/confirmacao', chave(id))),
+      ),
+    cancelar: (id) =>
+      protegido(async () =>
+        daApi(await api.DELETE('/v1/portal/eventos/{id}/confirmacao', chave(id))),
+      ),
+  },
   documentos: {
     listar: (consulta) =>
       protegido(async () =>
