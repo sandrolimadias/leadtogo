@@ -1,12 +1,13 @@
 import type { SessaoDoPortal } from '@leadtogo/api-client'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useRouter } from '@tanstack/react-router'
-import { Bell, CalendarDays, FileText, Home, LifeBuoy, Plus, User } from 'lucide-react'
+import { Link, useNavigate, useRouter } from '@tanstack/react-router'
+import { Bell, CalendarDays, FileText, Home, LifeBuoy, Plus, Search, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { type ReactNode, useCallback } from 'react'
+import { type FormEvent, type ReactNode, useCallback, useState } from 'react'
 
 import { Avatar } from '@leadtogo/ui/exibicao'
 import { Button } from '@leadtogo/ui/button'
+import { TextField } from '@leadtogo/ui/campos'
 import { cn } from '@leadtogo/ui/cn'
 import { toast } from '@leadtogo/ui/toast'
 
@@ -58,6 +59,30 @@ function useContagens() {
   return { aguardando: inicio.data?.aguardandoVoce ?? 0, naoLidas: notificacoes.data ?? 0 }
 }
 
+/** O campo de busca do cabeçalho: Enter leva à tela de resultados. */
+function CampoDeBusca() {
+  const navegar = useNavigate()
+  const [texto, setTexto] = useState('')
+  const buscar = (e: FormEvent) => {
+    e.preventDefault()
+    const q = texto.trim()
+    if (q.length >= 2) void navegar({ to: '/busca', search: { q } })
+  }
+  return (
+    <form role="search" onSubmit={buscar} className="mr-auto w-full max-w-sm">
+      <TextField
+        aria-label="Buscar no portal"
+        placeholder="Buscar chamados, documentos, agenda…"
+        icon={Search}
+        type="search"
+        value={texto}
+        maxLength={100}
+        onChange={(e) => setTexto(e.target.value)}
+      />
+    </form>
+  )
+}
+
 /** A casca do portal: menu lateral no desktop e no tablet; cabeçalho e barra inferior no celular. */
 export function Casca({
   sessao: inicial,
@@ -95,6 +120,14 @@ export function Casca({
             <p className="m-0 truncate text-sm leading-5 font-semibold">{sessao.nomeDoPortal}</p>
             <p className="m-0 truncate text-xs leading-4 text-ink-muted">Portal do Cliente</p>
           </div>
+          <Link
+            to="/busca"
+            search={{ q: '' }}
+            aria-label="Buscar"
+            className="inline-flex size-9 items-center justify-center rounded-sm text-ink hover:bg-surface-hover"
+          >
+            <Search size={20} strokeWidth={1.75} aria-hidden="true" />
+          </Link>
           <Button size="sm" variant="primary" icon={Plus} onClick={abrirChamado}>
             Chamado
           </Button>
@@ -176,9 +209,8 @@ export function Casca({
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-end gap-3 border-b border-border bg-surface px-6 py-3">
-          <p className="m-0 mr-auto text-sm text-ink-muted">
-            Olá, {primeiroNome(sessao.contato.nome)}
-          </p>
+          <p className="m-0 text-sm text-ink-muted">Olá, {primeiroNome(sessao.contato.nome)}</p>
+          <CampoDeBusca />
           <Button variant="primary" icon={Plus} onClick={abrirChamado}>
             Abrir chamado
           </Button>

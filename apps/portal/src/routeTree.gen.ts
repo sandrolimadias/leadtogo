@@ -15,6 +15,7 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as VerificacaoRouteImport } from './routes/verificacao'
 import { Route as PortalIndexRouteImport } from './routes/_portal.index'
 import { Route as PortalAgendaRouteImport } from './routes/_portal.agenda'
+import { Route as PortalBuscaRouteImport } from './routes/_portal.busca'
 import { Route as PortalDocumentosRouteImport } from './routes/_portal.documentos'
 import { Route as PortalNotificacoesRouteImport } from './routes/_portal.notificacoes'
 import { Route as PortalPerfilRouteImport } from './routes/_portal.perfil'
@@ -49,6 +50,11 @@ const PortalIndexRoute = PortalIndexRouteImport.update({
 const PortalAgendaRoute = PortalAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalBuscaRoute = PortalBuscaRouteImport.update({
+  id: '/busca',
+  path: '/busca',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalDocumentosRoute = PortalDocumentosRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/verificacao': typeof VerificacaoRoute
   '/agenda': typeof PortalAgendaRoute
+  '/busca': typeof PortalBuscaRoute
   '/documentos': typeof PortalDocumentosRoute
   '/notificacoes': typeof PortalNotificacoesRoute
   '/perfil': typeof PortalPerfilRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarRoute
   '/verificacao': typeof VerificacaoRoute
   '/agenda': typeof PortalAgendaRoute
+  '/busca': typeof PortalBuscaRoute
   '/documentos': typeof PortalDocumentosRoute
   '/notificacoes': typeof PortalNotificacoesRoute
   '/perfil': typeof PortalPerfilRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/verificacao': typeof VerificacaoRoute
   '/_portal/agenda': typeof PortalAgendaRoute
+  '/_portal/busca': typeof PortalBuscaRoute
   '/_portal/documentos': typeof PortalDocumentosRoute
   '/_portal/notificacoes': typeof PortalNotificacoesRoute
   '/_portal/perfil': typeof PortalPerfilRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/verificacao'
     | '/agenda'
+    | '/busca'
     | '/documentos'
     | '/notificacoes'
     | '/perfil'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/verificacao'
     | '/agenda'
+    | '/busca'
     | '/documentos'
     | '/notificacoes'
     | '/perfil'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/verificacao'
     | '/_portal/agenda'
+    | '/_portal/busca'
     | '/_portal/documentos'
     | '/_portal/notificacoes'
     | '/_portal/perfil'
@@ -217,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalAgendaRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/_portal/busca': {
+      id: '/_portal/busca'
+      path: '/busca'
+      fullPath: '/busca'
+      preLoaderRoute: typeof PortalBuscaRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/_portal/documentos': {
       id: '/_portal/documentos'
       path: '/documentos'
@@ -264,6 +283,7 @@ declare module '@tanstack/react-router' {
 
 interface PortalRouteChildren {
   PortalAgendaRoute: typeof PortalAgendaRoute
+  PortalBuscaRoute: typeof PortalBuscaRoute
   PortalDocumentosRoute: typeof PortalDocumentosRoute
   PortalNotificacoesRoute: typeof PortalNotificacoesRoute
   PortalPerfilRoute: typeof PortalPerfilRoute
@@ -275,6 +295,7 @@ interface PortalRouteChildren {
 
 const PortalRouteChildren: PortalRouteChildren = {
   PortalAgendaRoute: PortalAgendaRoute,
+  PortalBuscaRoute: PortalBuscaRoute,
   PortalDocumentosRoute: PortalDocumentosRoute,
   PortalNotificacoesRoute: PortalNotificacoesRoute,
   PortalPerfilRoute: PortalPerfilRoute,

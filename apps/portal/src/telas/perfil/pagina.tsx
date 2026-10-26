@@ -17,6 +17,7 @@ import { useSessaoAtual } from '@/app/sessao'
 import { dataEHora } from '@/casca/rotulos'
 import { useServicos } from '@/servicos/contexto'
 import { AtivarSegundoFator } from '../acesso/verificacao'
+import { Preferencias } from './preferencias'
 
 function useAtualizarSessao() {
   const queryClient = useQueryClient()
@@ -440,6 +441,7 @@ export function TelaPerfil({ inicial }: { inicial: SessaoDoPortal }) {
         items={[
           { value: 'perfil', label: 'Meu perfil' },
           { value: 'empresa', label: 'Minha empresa' },
+          { value: 'notificacoes', label: 'Notificações' },
           { value: 'seguranca', label: 'Segurança' },
         ]}
       >
@@ -448,6 +450,9 @@ export function TelaPerfil({ inicial }: { inicial: SessaoDoPortal }) {
         </ConteudoDaAba>
         <ConteudoDaAba value="empresa" className="pt-4">
           <MinhaEmpresa sessao={sessao} />
+        </ConteudoDaAba>
+        <ConteudoDaAba value="notificacoes" className="pt-4">
+          <Preferencias />
         </ConteudoDaAba>
         <ConteudoDaAba value="seguranca" className="pt-4">
           <Seguranca sessao={sessao} />
