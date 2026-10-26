@@ -125,6 +125,35 @@ export const pedidoDeAcessoSchema = z
   .meta({ id: 'PedidoDeAcesso' })
 export type PedidoDeAcesso = z.infer<typeof pedidoDeAcessoSchema>
 
+export const consultaDePedidosDeAcessoSchema = z
+  .object({ situacao: situacaoDoPedidoDeAcessoSchema.default('pendente') })
+  .strict()
+export type ConsultaDePedidosDeAcesso = z.infer<typeof consultaDePedidosDeAcessoSchema>
+
+export const listaDePedidosDeAcessoSchema = z
+  .object({ itens: z.array(pedidoDeAcessoSchema), total: z.number().int() })
+  .meta({ id: 'ListaDePedidosDeAcesso' })
+export type ListaDePedidosDeAcesso = z.infer<typeof listaDePedidosDeAcessoSchema>
+
+/** O que o Responsável vê dos pedidos que fez (a equipe decide; o motivo da recusa aparece para ele). */
+export const pedidoDoClienteSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    email: z.string(),
+    cargo: z.string().nullable(),
+    situacao: situacaoDoPedidoDeAcessoSchema,
+    motivo: z.string().nullable(),
+    criadoEm: z.iso.datetime(),
+  })
+  .meta({ id: 'PedidoDeAcessoDoCliente' })
+export type PedidoDoCliente = z.infer<typeof pedidoDoClienteSchema>
+
+export const listaDePedidosDoClienteSchema = z
+  .object({ itens: z.array(pedidoDoClienteSchema) })
+  .meta({ id: 'ListaDePedidosDoCliente' })
+export type ListaDePedidosDoCliente = z.infer<typeof listaDePedidosDoClienteSchema>
+
 export const tratarPedidoDeAcessoSchema = z
   .object({
     decisao: z.enum(['aprovar', 'recusar']),

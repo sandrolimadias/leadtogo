@@ -57,12 +57,12 @@ export async function configurarPortal(
   await noTenant(tenantId, async (tx) => {
     const r = await tx`
       UPDATE tenant_configuracoes
-      SET portal_ativo = ${c.ativo ?? true}, portal_nome = ${c.nome ?? 'Portal de Teste'},
+      SET portal_ativo = ${c.ativo ?? true}, portal_nome = ${c.nome === undefined ? 'Portal de Teste' : c.nome},
           portal_exige_dois_fatores_responsavel = ${c.exige2fa ?? false}
       WHERE tenant_id = ${tenantId}`
     if (r.count === 0) {
       await tx`INSERT INTO tenant_configuracoes (tenant_id, portal_ativo, portal_nome, portal_exige_dois_fatores_responsavel)
-        VALUES (${tenantId}, ${c.ativo ?? true}, ${c.nome ?? 'Portal de Teste'}, ${c.exige2fa ?? false})`
+        VALUES (${tenantId}, ${c.ativo ?? true}, ${c.nome === undefined ? 'Portal de Teste' : c.nome}, ${c.exige2fa ?? false})`
     }
   })
 }
@@ -90,6 +90,7 @@ export async function novoAcesso(
         VALUES (${empresaId}, ${d.tenantId}, ${`Cliente ${empresaId.slice(-8)} Ltda`}, ${m?.id ?? null})`
     }
     await tx`INSERT INTO contatos (id, tenant_id, nome) VALUES (${contatoId}, ${d.tenantId}, ${opcoes.nome ?? `Contato ${contatoId.slice(-6)}`})`
+    await tx`INSERT INTO empresa_contatos (id, tenant_id, empresa_id, contato_id, cargo) VALUES (${novoId()}, ${d.tenantId}, ${empresaId}, ${contatoId}, 'Compras')`
     await tx`INSERT INTO portal_acessos (id, tenant_id, contato_id, empresa_id, email, papel, situacao, aceito_em)
       VALUES (${acessoId}, ${d.tenantId}, ${contatoId}, ${empresaId}, ${email},
         ${opcoes.papel ?? 'colega'}::papel_portal, ${opcoes.situacao ?? 'ativo'}::situacao_acesso_portal,
@@ -147,3 +148,32 @@ export const cookieDe = (r: { headers: Record<string, unknown> }): string => {
 }
 
 export const hashDe = hashDoTokenDoPortal
+
+/** Contato (e-mail opcional) vinculado à empresa-cliente, ainda sem acesso ao portal. */
+export async function novoContatoVinculado(
+  tenantId: string,
+  empresaId: string,
+  opcoes: { email?: string; vincular?: boolean; nome?: string } = {},
+): Promise<{ contatoId: string }> {
+  const contatoId = novoId()
+  await noTenant(tenantId, async (tx) => {
+    await tx`INSERT INTO contatos (id, tenant_id, nome) VALUES (${contatoId}, ${tenantId}, ${opcoes.nome ?? `Contato ${contatoId.slice(-6)}`})`
+    if (opcoes.vincular !== false) {
+      await tx`INSERT INTO empresa_contatos (id, tenant_id, empresa_id, contato_id, cargo) VALUES (${novoId()}, ${tenantId}, ${empresaId}, ${contatoId}, 'Compras')`
+    }
+    if (opcoes.email) {
+      await tx`INSERT INTO contato_emails (id, tenant_id, contato_id, email, principal) VALUES (${novoId()}, ${tenantId}, ${contatoId}, ${opcoes.email}, true)`
+    }
+  })
+  return { contatoId }
+}
+
+/** Empresa-cliente nova no tenant. */
+export async function novaEmpresaCliente(d: Dono): Promise<string> {
+  const empresaId = novoId()
+  await noTenant(d.tenantId, async (tx) => {
+    const [m] = await tx<{ id: string }[]>`SELECT id FROM membros WHERE usuario_id = ${d.usuarioId}`
+    await tx`INSERT INTO empresas (id, tenant_id, razao_social, vendedor_id) VALUES (${empresaId}, ${d.tenantId}, ${`Cliente ${empresaId.slice(-8)} Ltda`}, ${m?.id ?? null})`
+  })
+  return empresaId
+}
