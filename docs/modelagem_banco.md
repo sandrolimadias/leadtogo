@@ -902,3 +902,26 @@ Só expansão. Sete tabelas novas, todas com `tenant_id`, **RLS habilitado e for
 - **`tenant_configuracoes` é somente leitura para o portal:** a 0032 esqueceu esta tabela na lista; agora o papel `leadtogo_app` em sessão do portal não insere, altera nem apaga nela (política restritiva `TO leadtogo_app`).
 - **`app_proximo_numero_chamado()`:** função `SECURITY DEFINER` (EXECUTE só para `leadtogo_app`) que incrementa `chamado_ultimo_numero` **somente** do tenant da sessão e devolve o número. É o único jeito de o cliente abrir um chamado sem ter escrita na configuração.
 - **Auditoria do cliente:** `auditoria.membro_id` fica nulo e o ator vai em `alteracoes.ator` (`{ tipo: 'contato', acessoId, contatoId }`); não há coluna nova.
+
+## Portal do Cliente, Fase 3B: publicações (migração 0034, só expansão)
+
+Seis tabelas novas, todas com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_tenant`) e teste de isolamento (`packages/db/src/testes/publicacoes.test.ts` e o teste genérico de isolamento). Coluna nova: `tenant_configuracoes.portal_comentarios_ativos` (chave geral dos comentários, ligada por padrão).
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `publicacoes` | titulo (160), corpo (Markdown restrito), situacao (`rascunho` · `agendada` · `publicada`), alcance (`todos` · `empresas`), fixada, agendada_para, publicada_em, comentarios_bloqueados, total_curtir/apoiar/parabens | Uma **fixada** por empresa (índice único parcial). CHECK: `agendada` exige `agendada_para`; `publicada` exige `publicada_em` |
+| `publicacao_empresas` | publicacao_id, empresa_id | Alcance "empresas" (único por par) |
+| `publicacao_reacoes` | publicacao_id, acesso_id, empresa_id, tipo (`curtir` · `apoiar` · `parabens`) | Único por (publicação, acesso, tipo); clicar de novo apaga a linha. **Gatilho** `app_publicacao_reacao_total` mantém os totais em `publicacoes` (SECURITY DEFINER) |
+| `publicacao_comentarios` | publicacao_id, acesso_id, empresa_id, autor_nome (snapshot "Nome S."), corpo (1 a 1000, texto puro), situacao (`visivel` · `oculto`), oculto_motivo/por/em | **Ocultar não apaga**. CHECK: oculto exige `oculto_em` |
+| `publicacao_denuncias` | comentario_id, acesso_id, motivo (`spam` · `ofensivo` · `outro`), tratada_por/em | Única por (comentário, acesso); aberta = `tratada_em` nulo |
+| `publicacao_leituras` | publicacao_id, acesso_id, empresa_id, lida_em | Única por (publicação, acesso); base do **alcance**; dado pessoal (ver `lgpd.md`) |
+
+**O que a sessão do portal enxerga e grava** (políticas restritivas, mesmo desenho da 0032):
+- `publicacoes`: lê só `publicada`, não excluída, com alcance `todos` ou que inclua a empresa dela; não grava (a restrição vale `TO leadtogo_app`, porque o gatilho dos totais roda como dono).
+- `publicacao_empresas`: lê as linhas da própria empresa; não grava.
+- `publicacao_reacoes`: lê e desfaz só as da própria empresa/acesso; cria só em nome do próprio acesso e empresa, em publicação visível.
+- `publicacao_comentarios`: lê **todos os visíveis das publicações que enxerga** (de qualquer empresa, com o nome já reduzido em `autor_nome`) e os próprios, mesmo ocultos; cria só em nome próprio, em publicação sem bloqueio e com a chave geral ligada; **não edita nem apaga**.
+- `publicacao_denuncias`: lê só as próprias; denuncia só comentário que enxerga.
+- `publicacao_leituras`: lê só as próprias; registra só em publicação visível.
+
+**Publicação agendada:** `app_publicar_agendadas()` (SECURITY DEFINER, mesmo padrão das limpezas da 0009: política só para `leadtogo_owner`, travada na variável `app.publicando_agendadas`) publica as vencidas em todas as empresas; o worker a chama a cada minuto.

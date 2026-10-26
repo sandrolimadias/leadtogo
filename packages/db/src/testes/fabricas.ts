@@ -965,3 +965,95 @@ fabricas['chamado_atividades'] = definirFabrica<{ chamadoId: string; atividadeId
     return id
   },
 })
+
+// Portal do Cliente (Fase 3B): publicações
+interface PaisDaPublicacao {
+  acessoId: string
+  empresaId: string
+  publicacaoId: string
+}
+const prepararPublicacao = async (owner: Sql, tenantId: string): Promise<PaisDaPublicacao> => {
+  const pais = await prepararPortal(owner, tenantId)
+  return comTenant(owner, tenantId, async (tx) => {
+    const publicacaoId = novoId()
+    await tx`INSERT INTO publicacoes (id, tenant_id, titulo, corpo, situacao, publicada_em)
+      VALUES (${publicacaoId}, ${tenantId}, 'Aviso', 'Corpo', 'publicada', now())`
+    return {
+      acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+      empresaId: pais.empresaId,
+      publicacaoId,
+    }
+  })
+}
+
+fabricas['publicacoes'] = definirFabrica({
+  colunaAlteravel: 'titulo',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO publicacoes (id, tenant_id, titulo, corpo) VALUES (${id}, ${tenantId}, 'Rascunho', 'Corpo')`
+    return id
+  },
+})
+
+fabricas['publicacao_empresas'] = definirFabrica<PaisDaPublicacao>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararPublicacao,
+  criar: async (tx, tenantId, { empresaId, publicacaoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO publicacao_empresas (id, tenant_id, publicacao_id, empresa_id)
+      VALUES (${id}, ${tenantId}, ${publicacaoId}, ${empresaId})`
+    return id
+  },
+})
+
+fabricas['publicacao_reacoes'] = definirFabrica<PaisDaPublicacao>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararPublicacao,
+  criar: async (tx, tenantId, { acessoId, empresaId, publicacaoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO publicacao_reacoes (id, tenant_id, publicacao_id, acesso_id, empresa_id, tipo)
+      VALUES (${id}, ${tenantId}, ${publicacaoId}, ${acessoId}, ${empresaId}, 'curtir')`
+    return id
+  },
+})
+
+fabricas['publicacao_comentarios'] = definirFabrica<PaisDaPublicacao>({
+  colunaAlteravel: 'corpo',
+  preparar: prepararPublicacao,
+  criar: async (tx, tenantId, { acessoId, empresaId, publicacaoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO publicacao_comentarios (id, tenant_id, publicacao_id, acesso_id, empresa_id, autor_nome, corpo)
+      VALUES (${id}, ${tenantId}, ${publicacaoId}, ${acessoId}, ${empresaId}, 'Maria S.', 'Comentário')`
+    return id
+  },
+})
+
+fabricas['publicacao_denuncias'] = definirFabrica<PaisDaPublicacao & { comentarioId: string }>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: async (owner, tenantId) => {
+    const pais = await prepararPublicacao(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => {
+      const comentarioId = novoId()
+      await tx`INSERT INTO publicacao_comentarios (id, tenant_id, publicacao_id, acesso_id, empresa_id, autor_nome, corpo)
+        VALUES (${comentarioId}, ${tenantId}, ${pais.publicacaoId}, ${pais.acessoId}, ${pais.empresaId}, 'Maria S.', 'Comentário')`
+      return { ...pais, comentarioId }
+    })
+  },
+  criar: async (tx, tenantId, { acessoId, comentarioId }) => {
+    const id = novoId()
+    await tx`INSERT INTO publicacao_denuncias (id, tenant_id, comentario_id, acesso_id, motivo)
+      VALUES (${id}, ${tenantId}, ${comentarioId}, ${acessoId}, 'spam')`
+    return id
+  },
+})
+
+fabricas['publicacao_leituras'] = definirFabrica<PaisDaPublicacao>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararPublicacao,
+  criar: async (tx, tenantId, { acessoId, empresaId, publicacaoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO publicacao_leituras (id, tenant_id, publicacao_id, acesso_id, empresa_id)
+      VALUES (${id}, ${tenantId}, ${publicacaoId}, ${acessoId}, ${empresaId})`
+    return id
+  },
+})
