@@ -956,3 +956,19 @@ Três tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 - `app_eventos_a_lembrar()`: para o worker achar, em todas as empresas, os eventos publicados que começam em até 24 horas e ainda sem lembrete (política só para o dono, travada numa variável, como as limpezas da 0009).
 
 **O que a sessão do portal enxerga:** `eventos` publicados ou cancelados (nunca rascunho), não excluídos e do alcance da empresa dela; `evento_empresas` e `evento_confirmacoes` só da **própria empresa** (para contar as vagas dela). **Não grava em nenhuma das três.** As políticas restritivas dessas tabelas valem só para o papel da API (`TO leadtogo_app`), para as funções, que rodam como dono, enxergarem todas as confirmações do evento.
+
+## Portal do Cliente, Fase 3E: avisos, preferências e push (migração 0037, só expansão)
+
+Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de isolamento (`packages/db/src/testes/avisos.test.ts` e o teste genérico), mais a coluna `tenant_configuracoes.portal_avisos_limite_semanal` (`smallint`, padrão 3; a API valida de 1 a 20).
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `avisos` | mensagem (1 a 140), link (caminho do portal ou http/https), urgencia (`normal` · `urgente`), alcance (`todos` · `empresas`), situacao (`agendado` · `enviado` · `cancelado`), enviar_em, enviado_em, cancelado_em, destinatarios | CHECKs: mensagem não vazia e até 140; link `/caminho` ou `http(s)://` (nunca `//` nem `javascript:`); `enviado` exige `enviado_em`; `cancelado` exige `cancelado_em` |
+| `aviso_empresas` | aviso_id, empresa_id | Alcance "empresas" |
+| `aviso_entregas` | aviso_id, acesso_id, empresa_id, notificacao_id, push_enviar_em, push_enviado_em, push_aceitos, email_enfileirado_em, lido_em | **Uma entrega por aviso e pessoa** (único). `push_enviar_em` já considera o horário de silêncio; `push_enviado_em` é o "claim" que garante envio no máximo uma vez |
+| `portal_preferencias` | acesso_id (único), silencio_inicio, silencio_fim, email_chamados, email_eventos, email_avisos | Silêncio exige os dois horários e que sejam diferentes |
+| `portal_push_inscricoes` | acesso_id, endpoint (único), chave_p256dh, chave_auth, falhas, revogada_em | Uma por navegador/aparelho; 404/410 do serviço de push revoga |
+
+**O que a sessão do portal enxerga:** `avisos` e `aviso_empresas` ficam **fechados** (política `portal_negado`: só a equipe e o worker). `aviso_entregas`: lê e marca como lida **só a própria**, sem criar nem apagar. `portal_preferencias`: lê, cria e atualiza só a própria (sem apagar). `portal_push_inscricoes`: gerencia só as próprias.
+
+**Varredura do worker (cross-tenant):** `app_avisos_a_enviar()` (avisos agendados que venceram) e `app_pushes_pendentes()` (entregas com `push_enviar_em` vencido e sem envio), ambas devolvem `(id, tenant_id)` com LIMIT 200 e usam políticas só para o dono travadas em `app.varrendo_avisos`, como nas fases anteriores.

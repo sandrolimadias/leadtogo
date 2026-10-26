@@ -260,6 +260,13 @@
       "when": 1792995813583,
       "tag": "0036_portal_agenda",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793000872584,
+      "tag": "0037_portal_avisos",
+      "breakpoints": true
     }
   ]
 }

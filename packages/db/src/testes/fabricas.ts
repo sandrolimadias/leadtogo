@@ -1155,3 +1155,80 @@ fabricas['evento_confirmacoes'] = definirFabrica<PaisDoEvento>({
     return id
   },
 })
+
+// Portal do Cliente (Fase 3E): avisos, preferências e push
+interface PaisDoAviso {
+  acessoId: string
+  empresaId: string
+  avisoId: string
+}
+const inserirAviso = async (tx: TransactionSql, tenantId: string) => {
+  const avisoId = novoId()
+  await tx`INSERT INTO avisos (id, tenant_id, mensagem) VALUES (${avisoId}, ${tenantId}, 'Expediente encerra às 14h')`
+  return avisoId
+}
+const prepararAviso = async (owner: Sql, tenantId: string): Promise<PaisDoAviso> => {
+  const pais = await prepararPortal(owner, tenantId)
+  return comTenant(owner, tenantId, async (tx) => ({
+    acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+    empresaId: pais.empresaId,
+    avisoId: await inserirAviso(tx, tenantId),
+  }))
+}
+
+fabricas['avisos'] = definirFabrica({
+  colunaAlteravel: 'mensagem',
+  criar: (tx, tenantId) => inserirAviso(tx, tenantId),
+})
+
+fabricas['aviso_empresas'] = definirFabrica<PaisDoAviso>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararAviso,
+  criar: async (tx, tenantId, { empresaId, avisoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO aviso_empresas (id, tenant_id, aviso_id, empresa_id) VALUES (${id}, ${tenantId}, ${avisoId}, ${empresaId})`
+    return id
+  },
+})
+
+fabricas['aviso_entregas'] = definirFabrica<PaisDoAviso>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararAviso,
+  criar: async (tx, tenantId, { acessoId, empresaId, avisoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO aviso_entregas (id, tenant_id, aviso_id, acesso_id, empresa_id)
+      VALUES (${id}, ${tenantId}, ${avisoId}, ${acessoId}, ${empresaId})`
+    return id
+  },
+})
+
+fabricas['portal_preferencias'] = definirFabrica<{ acessoId: string }>({
+  colunaAlteravel: 'email_avisos',
+  preparar: async (owner, tenantId) => {
+    const pais = await prepararPortal(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => ({
+      acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+    }))
+  },
+  criar: async (tx, tenantId, { acessoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO portal_preferencias (id, tenant_id, acesso_id) VALUES (${id}, ${tenantId}, ${acessoId})`
+    return id
+  },
+})
+
+fabricas['portal_push_inscricoes'] = definirFabrica<{ acessoId: string }>({
+  colunaAlteravel: 'agente',
+  preparar: async (owner, tenantId) => {
+    const pais = await prepararPortal(owner, tenantId)
+    return comTenant(owner, tenantId, async (tx) => ({
+      acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+    }))
+  },
+  criar: async (tx, tenantId, { acessoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO portal_push_inscricoes (id, tenant_id, acesso_id, endpoint, chave_p256dh, chave_auth)
+      VALUES (${id}, ${tenantId}, ${acessoId}, ${`https://push.exemplo.com/${id}`}, 'p256dh', 'auth')`
+    return id
+  },
+})
