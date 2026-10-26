@@ -549,7 +549,7 @@ Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o 
 
 ## 9B. Central de chamados (Fase 2, interna)
 
-A equipe abre **chamados** para as áreas da própria empresa (Jurídico, Financeiro...), conversa, anota e resolve, com prazos contados no expediente e métricas. É **interna**: o portal do cliente (origem `portal`, `contato_id`) fica para a fase seguinte; a base já existe no banco.
+A equipe abre **chamados** para as áreas da própria empresa (Jurídico, Financeiro...), conversa, anota e resolve, com prazos contados no expediente e métricas. Na Fase 2 era **só interna**; com o **Portal do Cliente (seção 9C)**, o contato também abre e acompanha chamados pelo portal (origem `portal`).
 
 ### Permissões (catálogo v4; só o Administrador recebe, os demais perfis ganham por configuração)
 `chamados.ver` (lista e detalhe), `chamados.criar`, `chamados.atender` (assumir, mudar o estado, responder, nota interna), `chamados.triar`, `chamados.atribuir`, `chamados.gerir_areas` (áreas, triagem, expediente e feriados), `chamados.ver_metricas` e `chamados.exportar` (CSV). O alcance (própria, equipe, todas) vale para ver e para as métricas. Sem `chamados.ver`: sem tela e **403 `acesso_negado`** na API. O enum `papel_conta` não muda.
@@ -585,6 +585,36 @@ Sino do CRM (com atualização em tempo real por SSE) e e-mail, gravados por **e
 
 ### Telas
 Lista com as abas **Triagem, Pendentes, Meus e Todos** (contagem em cada), busca por número ou assunto e filtros; card **Chamados pendentes** no Dashboard; detalhe com conversa, notas, histórico e ações; Configurações → **Chamados** (áreas, triagem, expediente e feriados); **Métricas** (tempo até a 1ª resposta, tempo de resolução, dias em aberto, % no prazo, por área e por responsável) e **Exportar CSV**.
+
+## 9C. Portal do Cliente, Fase 3A (acesso e chamados)
+
+Espaço do **contato da empresa-cliente** (`portal.aledias.com.br`, app `apps/portal`), separado do CRM: outro domínio, outro cookie, outra CSP e DTOs próprios. Plano e decisões em `plano_portal_cliente.md`; roteiro de teste em `roteiro_teste_portal_3a.md`. Esta seção cobre a **3A**; publicações, documentos, agenda e avisos entram nas fases 3B a 3E.
+
+### Permissões da equipe (catálogo v5; só o Administrador recebe)
+`portal.ver` (hub: indicadores, chamados e acessos em leitura), `portal.acessos` (dar, reenviar, suspender, reativar e revogar acessos; tratar pedidos) e `portal.configurar` (ativar o portal, nome, exigência de 2FA). O Gestor **não herda** o prefixo `portal.`. O enum `papel_conta` não muda.
+
+### Acesso do cliente (sem senha)
+- **Convite:** quem tem `portal.acessos` dá o acesso ao contato (empresa-cliente + papel **Responsável** ou **Colega**). O e-mail leva um link `portal.../acesso#<token>` (token de 256 bits, só o **hash** no banco, vale 7 dias, uso único). A página mostra o botão **Confirmar acesso**: o link é consumido por `POST`, **nunca** ao abrir a página (verificadores de e-mail não o gastam). No primeiro acesso o cliente aceita o **aviso de privacidade** (registrado).
+- **Entrada:** o cliente informa o e-mail e recebe um **link mágico** de 15 minutos, uso único. A resposta é **sempre a mesma**, exista o e-mail ou não.
+- **Sessão:** cookie `__Host-portal` (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`); 30 dias deslizantes, no máximo 90; mudanças no portal só valem com `Origin` igual a `PORTAL_URL`. Suspender ou revogar o acesso derruba as sessões. Sem `PORTAL_URL` as rotas respondem `503 portal_indisponivel`.
+- **Limites contra abuso:** pedido de link por IP (20/h) e por e-mail (5/h); consumo de link 30/h; 2FA com 8 tentativas por 15 minutos.
+- **Segurança da conta:** lista e encerramento de sessões, **2FA por aplicativo (TOTP)** com códigos de recuperação (código usado não repete), troca de e-mail por link enviado ao **endereço novo**. A empresa pode **exigir 2FA do Responsável**.
+- **Perfil:** o cliente edita só o **nome**; o cargo vem do vínculo contato–empresa e é somente leitura.
+- **Pedido de acesso para colegas:** o Responsável pede, a equipe aprova ou recusa (com motivo) no hub.
+
+### Chamados pelo portal
+- O cliente **abre**, **acompanha**, **responde**, **reabre** (Resolvido, até 7 dias) e **avalia** (nota de 1 a 5 e comentário, uma por chamado) os chamados da **sua empresa-cliente** (os de colegas também aparecem). O número vem da mesma sequência dos chamados internos.
+- Estados vistos pelo cliente: **Aberto, Em atendimento, Aguardando sua resposta, Resolvido, Fechado**. Ele só vê chamados `origem = 'portal'`; chamados internos da equipe que citam a empresa **nunca** aparecem.
+- **O cliente nunca vê:** notas internas, prioridade, responsável, prazos, triagem, eventos. A linha do tempo dele são **marcos** derivados das datas do chamado.
+- **Anexos:** os mesmos da Fase 2 (25 MB, 5 por mensagem, URL pré-assinada, ClamAV, download por 60 s só de arquivo limpo). Desligados enquanto o antivírus não estiver configurado.
+- **Notificações do cliente:** sino no portal (tempo real por SSE) e e-mail, pelo mesmo outbox da equipe, **sem avisar quem fez o ato**. Sem Web Push (3E).
+- **Auditoria:** todo ato do cliente é auditado com `membro_id` nulo e `alteracoes.ator = { tipo: 'contato', acessoId, contatoId }`.
+
+### Hub "Portal do Cliente" no CRM
+Indicadores (chamados abertos pelo portal, tempo de resposta, avaliação média, acessos ativos, com período), lista de **chamados do portal**, **acessos** (dar, reenviar, suspender, reativar, revogar), **pedidos de acesso** e a **configuração** (portal ativo, nome, 2FA do Responsável). No detalhe do chamado, **Criar tarefa** vincula uma tarefa ao chamado (com prazo opcional) e a avaliação do cliente aparece junto.
+
+### Isolamento (resumo)
+Duas camadas no banco: o **tenant** (RLS como em todo o sistema) e a **empresa-cliente** (variáveis `app.portal_*` preenchidas só pela sessão do portal, com políticas restritivas). As tabelas internas **negam tudo** à sessão do portal. Detalhe em `modelagem_banco.md`.
 
 ---
 

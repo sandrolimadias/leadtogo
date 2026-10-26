@@ -15,7 +15,9 @@ try {
 
 export const PORTA_API = 3100
 export const PORTA_WEB = 5183
+export const PORTA_PORTAL = 5184
 export const URL_WEB = `http://localhost:${PORTA_WEB}`
+export const URL_PORTAL = `http://localhost:${PORTA_PORTAL}`
 export const URL_API = `http://localhost:${PORTA_API}`
 export const REDIS_E2E =
   (process.env['REDIS_URL'] ?? 'redis://localhost:6379').replace(/\/\d*$/, '') + '/2'
@@ -25,6 +27,8 @@ const ambienteDaApi = {
   NODE_ENV: 'development',
   APP_URL: URL_WEB,
   API_URL: URL_API,
+  // o portal do cliente (apps/portal): origem que a API confere nas alterações e base dos links dos e-mails
+  PORTAL_URL: URL_PORTAL,
   PORT: String(PORTA_API),
   REDIS_URL: REDIS_E2E,
   LOG_LEVEL: 'warn',
@@ -69,6 +73,15 @@ export default defineConfig({
       cwd: import.meta.dirname,
       env: { ...process.env, VITE_API_PROXY: URL_API },
       url: `${URL_WEB}/login`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      // o portal do cliente: outro app, outra origem, a mesma API (o proxy do Vite leva /v1 até ela)
+      command: `pnpm exec vite --port ${PORTA_PORTAL} --strictPort`,
+      cwd: join(raiz, 'apps/portal'),
+      env: { ...process.env, VITE_API_PROXY: URL_API },
+      url: `${URL_PORTAL}/entrar`,
       reuseExistingServer: false,
       timeout: 120_000,
     },

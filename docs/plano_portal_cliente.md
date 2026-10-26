@@ -7,11 +7,11 @@
 
 | Fase | Entrega | Migração |
 |---|---|---|
-| **3A** | Acesso do cliente (convite e link mágico), chamados no portal, avaliação, notificações do cliente, perfil/empresa/segurança, hub no CRM (aba Chamados, acessos, pedidos), app `apps/portal`, pacote `packages/ui` | 0032 |
-| **3B** | Publicações: feed, reações, comentários, denúncia, moderação, alcance | 0033 |
-| **3C** | Documentos | 0034 |
-| **3D** | Agenda: eventos, confirmação, vagas por empresa, lista de espera, lembretes, `.ics` | 0035 |
-| **3E** | **Avisos** (comunicado curto com push), busca global, preferências (horário de silêncio), PWA e Web Push | 0036 |
+| **3A** | Acesso do cliente (convite e link mágico), chamados no portal, avaliação, notificações do cliente, perfil/empresa/segurança, hub no CRM (aba Chamados, acessos, pedidos), app `apps/portal`, pacote `packages/ui` | 0032 e 0033 |
+| **3B** | Publicações: feed, reações, comentários, denúncia, moderação, alcance | 0034 |
+| **3C** | Documentos | 0035 |
+| **3D** | Agenda: eventos, confirmação, vagas por empresa, lista de espera, lembretes, `.ics` | 0036 |
+| **3E** | **Avisos** (comunicado curto com push), busca global, preferências (horário de silêncio), PWA e Web Push | 0037 |
 
 Cada fase termina em portão: gate verde, CI verde, deploy, roteiro de teste e aceite do Ale. Migração só de expansão; **Backup Now antes do deploy de cada fase**.
 
@@ -53,13 +53,16 @@ Cada fase termina em portão: gate verde, CI verde, deploy, roteiro de teste e a
 
 ## 5. Modelo de dados
 
+> **Ajuste na execução:** a logo do portal (`portal_logo`) ficou fora da 3A (o cabeçalho usa só o nome); entra com o envio de imagem, ver `backlog_pos_mvp.md`.
+
 Regras do projeto: português, uuid v7, `tenant_id`, RLS forçado, colunas padrão, teste de isolamento, só expansão.
 
-- **0032 (3A):** `portal_acessos`, `portal_links`, `portal_sessoes`, `portal_segundo_fator`, `portal_pedidos_acesso`, `chamado_avaliacoes`, `chamado_atividades`; colunas em `tenant_configuracoes` (`portal_ativo`, `portal_nome`, `portal_logo`, `portal_exige_2fa_responsavel`) e `notificacoes.acesso_id`; políticas restritivas nas tabelas dos chamados; funções `SECURITY DEFINER` para localizar link e sessão antes de saber o tenant.
-- **0033 (3B):** `publicacoes`, `publicacao_empresas`, `publicacao_reacoes`, `publicacao_comentarios`, `publicacao_denuncias`, `publicacao_leituras`.
-- **0034 (3C):** `documentos`, `documento_empresas`, `documento_acessos`.
-- **0035 (3D):** `eventos`, `evento_empresas`, `evento_confirmacoes`.
-- **0036 (3E):** `avisos`, `aviso_entregas`, `portal_preferencias` (e-mail por tipo, horário de silêncio), `portal_push_inscricoes`, índices de busca (`tsvector`).
+- **0032 (3A):** `portal_acessos`, `portal_links`, `portal_sessoes`, `portal_segundo_fator`, `portal_pedidos_acesso`, `chamado_avaliacoes`, `chamado_atividades`; colunas em `tenant_configuracoes` (`portal_ativo`, `portal_nome`, `portal_exige_dois_fatores_responsavel`) e `notificacoes.acesso_id`; políticas restritivas nas tabelas dos chamados; funções `SECURITY DEFINER` para localizar link e sessão antes de saber o tenant.
+- **0033 (3A, parte 2):** reforço do isolamento: o cliente só enxerga chamados `origem = 'portal'`; `tenant_configuracoes` somente leitura para o portal; função `app_proximo_numero_chamado()`. Detalhe em `modelagem_banco.md`.
+- **0034 (3B):** `publicacoes`, `publicacao_empresas`, `publicacao_reacoes`, `publicacao_comentarios`, `publicacao_denuncias`, `publicacao_leituras`.
+- **0035 (3C):** `documentos`, `documento_empresas`, `documento_acessos`.
+- **0036 (3D):** `eventos`, `evento_empresas`, `evento_confirmacoes`.
+- **0037 (3E):** `avisos`, `aviso_entregas`, `portal_preferencias` (e-mail por tipo, horário de silêncio), `portal_push_inscricoes`, índices de busca (`tsvector`).
 
 ## 6. Chamados
 

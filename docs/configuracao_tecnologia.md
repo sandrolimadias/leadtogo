@@ -70,9 +70,11 @@ crm/
 ├── apps/
 │   ├── api/          → NestJS (REST + OpenAPI) + entrypoint do worker (src/worker.ts → dist/worker.js):
 │   │                   processos em segundo plano (filas, sync de e-mail/agenda, webhooks)
-│   └── web/          → React + Vite (PWA) — também empacotado pelo Capacitor
+│   ├── web/          → React + Vite (PWA) — também empacotado pelo Capacitor
+│   └── portal/       → React + Vite (PWA), o Portal do Cliente (portal.aledias.com.br); fala só com /v1/portal/*
 ├── packages/
 │   ├── shared/       → schemas Zod, tipos, enums, regras comuns
+│   ├── ui/           → componentes e tokens compartilhados entre o CRM e o portal (@leadtogo/ui)
 │   ├── db/           → schema Drizzle, migrações, políticas RLS, seeds
 │   └── api-client/   → cliente TypeScript gerado do OpenAPI
 ├── docker/           → Dockerfiles e docker-compose (dev local)

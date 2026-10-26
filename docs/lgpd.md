@@ -39,6 +39,7 @@ Legenda: **PD** = dado pessoal; **PD (PJ)** = dado de pessoa jurídica que pode 
 | **Auditoria** | `auditoria` (particionada por mês) | quem alterou o quê (antes/depois em `jsonb`), `membro_id`, **IP** (passa a ser gravado desde a E16a, a partir do mesmo `req.ip` do rate limit: respeita `TRUST_PROXY` e ignora `X-Forwarded-For` forjado), origem, data | **PD** (e pode copiar dados pessoais dos registros alterados) |
 | **Outbox** | `eventos_outbox` | eventos para notificações e webhooks, com `payload` em `jsonb` | **PD** possível, conforme o evento |
 | **Notificações e filtros** | `notificacoes`, `preferencias_notificacao`, `filtros_salvos`, `importacoes` | mensagens internas, preferências; planilhas importadas (arquivos em `arquivos`) | PD possível |
+| **Portal do cliente** (3A) | `portal_acessos`, `portal_links`, `portal_sessoes`, `portal_segundo_fator`, `portal_pedidos_acesso`, `chamado_avaliacoes` | nome, **e-mail**, cargo e empresa do **contato** que acessa o portal; **IP e aparelho** das sessões e dos links; segredo do 2FA (cifrado) e hashes dos códigos de recuperação; **registro do aceite do aviso de privacidade** (data e versão); mensagens, anexos e avaliação dos chamados que ele abre. Tokens só em **hash** | **PD** (o cliente final é o titular) |
 | **Cadastros auxiliares** | tags, funis, origens, produtos etc. | sem dado pessoal | não |
 
 **Dados sensíveis (art. 11):** o sistema **não prevê** coletar dados sensíveis (origem racial ou étnica, saúde, convicção religiosa, opinião política, filiação sindical, vida sexual, genéticos, biométricos). Campos de texto livre (observações, comentários, anexos) podem receber esse tipo de informação por decisão do usuário; a orientação à empresa cliente é **não registrá-los**, e isso deve constar no DPA e nos termos de uso.
@@ -111,6 +112,7 @@ Transferência internacional (arts. 33 a 36):
 | Arquivos (Garage) e espelho no R2 | espelho diário; versões antigas, alteradas ou apagadas ficam em `garage-alterados/<data>/` por **90 dias** (regra de ciclo de vida do R2) | |
 | Auditoria | partições mensais; o job mensal só **cria** partições (12 meses à frente) e **nunca descarta** as antigas, então hoje a retenção é ilimitada, **e ela agora também guarda o IP de quem fez o ato**. **Login e logout não são gravados na auditoria** (ela registra alterações de dados) | **prazo de retenção** e descarte das partições antigas |
 | Registros de acesso (`acessos_log`) | **6 meses**, depois apagados (partição mensal descartada pelo job de manutenção). Decisão na seção 5.1; **ainda não implementado** | implementação (prioridade alta) |
+| Portal do cliente (links, sessões, pedidos) | **Proposta aprovada no plano:** links usados ou vencidos por 30 dias, sessões expiradas ou revogadas por 90 dias, leituras (3B em diante) por 24 meses. **A rotina que apaga ainda não foi implementada** (hoje ficam no banco); entra junto com a rotina de `acessos_log` | rotina de limpeza no job de manutenção |
 | Outbox | eventos processados ficam na tabela | prazo de limpeza dos processados |
 | Filas no Valkey | jobs concluídos por 24 h, falhos por 14 dias | |
 | Eventos do GlitchTip | **90 dias** (padrão do GlitchTip, `GLITCHTIP_MAX_EVENT_LIFE_DAYS`), self-hosted em São Paulo | |
@@ -143,6 +145,7 @@ Canal de atendimento: `<e-mail do encarregado/atendimento>` (definir). Prazo de 
 | **Exclusão / anonimização** | desativar o membro e anonimizar ou apagar o usuário (hoje depende de procedimento manual; ver seção 9) | a empresa cliente exclui o contato; o expurgo definitivo depende da rotina da seção 9 |
 | **Portabilidade** | exportação em formato estruturado (JSON/CSV) | a empresa cliente exporta; o Leadtogo oferece a exportação por tenant |
 | **Informação sobre compartilhamento** | lista de suboperadores (seção 4) | idem, via empresa cliente |
+| **Portal do cliente** (contato que acessa) | a empresa cliente atende pelo CRM: **suspender/revogar o acesso** corta o uso na hora; o contato corrige o **nome** no próprio perfil e pode encerrar sessões. **Exportação e anonimização do titular do portal** (desligamento): **pendentes**, entram com a rotina da seção 9 | idem |
 | **Revogação de consentimento / oposição** | n/a (base contratual) | o contato é marcado com `aceita_email=false` e `aceita_whatsapp=false`; a empresa cliente deixa de contatar |
 
 Quando um titular escrever ao Leadtogo sobre dados de um tenant, o Leadtogo **repassa à empresa cliente** em prazo curto e avisa o titular de que fez isso.
