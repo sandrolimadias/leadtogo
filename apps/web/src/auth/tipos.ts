@@ -3,7 +3,10 @@ import type {
   ConfiguracaoDoPortal,
   IndicadoresDoHub,
   Documento,
+  Evento,
   EnvioDeDocumento,
+  ListaDeEventos,
+  ListaDeParticipantes,
   ListaDeBaixasDeDocumento,
   ListaDeComentariosParaModeracao,
   ListaDeDocumentos,
@@ -195,6 +198,8 @@ import type {
   SalvarPublicacaoEntrada,
   CriarDocumentoEntrada,
   EditarDocumentoEntrada,
+  CancelarEventoEntrada,
+  SalvarEventoEntrada,
 } from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
@@ -645,6 +650,27 @@ export interface ServicosDoPortalNoCrm {
       comentarioId: string,
       dados: ModerarComentarioEntrada,
     ) => Promise<Resultado<ListaDeComentariosParaModeracao>>
+  }
+  /** Agenda do portal (Fase 3D): `portal.ver`/`agenda` para ver, `agenda` para escrever e gerir os participantes */
+  eventos: {
+    listar: (consulta?: {
+      aba?: 'proximos' | 'passados' | 'rascunhos'
+      pagina?: number
+      porPagina?: number
+    }) => Promise<Resultado<ListaDeEventos>>
+    obter: (id: string) => Promise<Resultado<Evento>>
+    criar: (dados: SalvarEventoEntrada) => Promise<Resultado<Evento>>
+    editar: (id: string, dados: SalvarEventoEntrada) => Promise<Resultado<Evento>>
+    /** 422 `inicio_no_passado` */
+    publicar: (id: string) => Promise<Resultado<Evento>>
+    cancelar: (id: string, dados: CancelarEventoEntrada) => Promise<Resultado<Evento>>
+    /** 409 `cancele_antes_de_excluir` */
+    excluir: (id: string) => Promise<Resultado>
+    participantes: (id: string) => Promise<Resultado<ListaDeParticipantes>>
+    removerParticipante: (
+      id: string,
+      confirmacaoId: string,
+    ) => Promise<Resultado<ListaDeParticipantes>>
   }
   /** Documentos do portal (Fase 3C): `portal.ver`/`documentos` para ver, `documentos` para escrever */
   documentos: {

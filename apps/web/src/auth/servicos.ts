@@ -878,6 +878,55 @@ export const servicosReais: ServicosDeAcesso = {
           ),
         ),
     },
+    eventos: {
+      listar: (consulta = {}) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-eventos', { params: { query: consulta } })),
+        ),
+      obter: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-eventos/{id}', { params: { path: { id } } })),
+        ),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/portal-eventos', { body: dados }))),
+      editar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/portal-eventos/{id}', { params: { path: { id } }, body: dados }),
+          ),
+        ),
+      publicar: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-eventos/{id}/publicar', { params: { path: { id } } })),
+        ),
+      cancelar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-eventos/{id}/cancelar', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/portal-eventos/{id}', { params: { path: { id } } })),
+        ),
+      participantes: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/portal-eventos/{id}/participantes', { params: { path: { id } } }),
+          ),
+        ),
+      removerParticipante: (id, confirmacaoId) =>
+        protegido(async () =>
+          daApi(
+            await api.DELETE('/v1/portal-eventos/{id}/participantes/{confirmacaoId}', {
+              params: { path: { id, confirmacaoId } },
+            }),
+          ),
+        ),
+    },
     documentos: {
       listar: (consulta = {}) =>
         protegido(async () =>
