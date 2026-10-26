@@ -5,10 +5,11 @@ import { codigoDoChamado } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
-import { emailChamado } from '../email/modelos.js'
+import { emailChamado, emailPortalChamado } from '../email/modelos.js'
 import { chavesDe, cifrar } from '../seguranca/cifra.js'
 import { FILAS } from '../worker/filas.js'
 import type { ManipuladorDeEvento } from '../worker/outbox/relay.js'
+import type { WorkerFilas } from '../worker/worker-filas.service.js'
 
 /** Tipo do evento do outbox que vira notificações (sino e e-mail) dos chamados. */
 export const EVENTO_NOTIFICAR_CHAMADO = 'chamado.notificar'
@@ -28,8 +29,10 @@ export type TipoDeNotificacaoDeChamado = (typeof TIPOS_DE_NOTIFICACAO_DE_CHAMADO
 export interface PayloadDaNotificacao {
   chamadoId: string
   tipo: TipoDeNotificacaoDeChamado
-  /** Quem fez (nunca é notificado do que ele mesmo fez) */
+  /** Quem fez, se for da equipe (nunca é notificado do que ele mesmo fez) */
   atorId: string | null
+  /** Quem fez, se for o cliente do portal (contato) */
+  atorContatoId?: string
   mensagemId?: string
 }
 
@@ -62,6 +65,8 @@ type ChamadoParaNotificar = {
   area_nome: string | null
   responsavel_id: string | null
   solicitante_membro_id: string | null
+  origem: 'interna' | 'portal'
+  contato_id: string | null
 }
 
 interface Destinatario {
@@ -141,6 +146,8 @@ async function destinatarios(
     case 'resolvido':
       return membros([c.solicitante_membro_id], p.tipo !== 'assumido')
     case 'mensagem':
+      // O cliente do portal respondeu: quem atende fica sabendo
+      if (p.atorContatoId) return responsavelOuArea(true)
       return p.atorId === c.solicitante_membro_id
         ? responsavelOuArea(true)
         : membros([c.solicitante_membro_id], true)
@@ -168,13 +175,17 @@ export function manipuladorDeNotificacaoDeChamado(
     const p = evento.payload as PayloadDaNotificacao
     const [c] = await tx.execute<ChamadoParaNotificar>(sql`
       SELECT c.id, c.numero, c.assunto, c.status, c.area_id, a.nome AS area_nome, c.responsavel_id,
-        c.solicitante_membro_id
+        c.solicitante_membro_id, c.origem::text AS origem, c.contato_id
       FROM chamados c LEFT JOIN areas_atendimento a ON a.id = c.area_id
       WHERE c.id = ${p.chamadoId} AND c.excluido_em IS NULL`)
     if (!c) return
     const [ator] = p.atorId
       ? await tx.execute<{ nome: string }>(sql`SELECT nome FROM membros WHERE id = ${p.atorId}`)
-      : []
+      : p.atorContatoId
+        ? await tx.execute<{ nome: string }>(
+            sql`SELECT nome FROM contatos WHERE id = ${p.atorContatoId}`,
+          )
+        : []
     let previa: string | null = null
     if (p.tipo === 'mensagem' && p.mensagemId) {
       const [m] = await tx.execute<{ corpo: string }>(sql`
@@ -190,7 +201,7 @@ export function manipuladorDeNotificacaoDeChamado(
     const lista = (await destinatarios(tx, c, p)).filter((d) => d.id !== p.atorId)
     const unicos = [...new Map(lista.map((d) => [d.id, d])).values()]
 
-    const novos: { membroId: string; id: string; tipo: string }[] = []
+    const novos: { membroId: string; id: string; tipo: string; titulo: string }[] = []
     for (const d of unicos) {
       const id = idDeterministico(evento.id, d.id, 'sino')
       const [feita] = await tx.execute<{ id: string }>(sql`
@@ -198,7 +209,7 @@ export function manipuladorDeNotificacaoDeChamado(
         VALUES (${id}, ${evento.tenantId}, 'membro', ${d.id}, 'sino', ${c.id}, ${`chamado.${p.tipo}`}, ${titulo}, ${mensagem}, ${link})
         ON CONFLICT (id) DO NOTHING RETURNING id`)
       if (!feita) continue
-      novos.push({ membroId: d.id, id, tipo: `chamado.${p.tipo}` })
+      novos.push({ membroId: d.id, id, tipo: `chamado.${p.tipo}`, titulo })
       if (d.direto && d.email && config.TOKEN_ENCRYPTION_KEY && config.SMTP_HOST) {
         const idEmail = idDeterministico(evento.id, d.id, 'email')
         await tx.execute(sql`
@@ -225,14 +236,106 @@ export function manipuladorDeNotificacaoDeChamado(
         )
       }
     }
+
+    // O cliente do portal (o contato que abriu o chamado) fica sabendo da resposta da equipe, de que a bola
+    // está com ele e de que o chamado foi resolvido: sino no portal e e-mail
+    const doCliente = await notificarCliente(
+      config,
+      tx,
+      filas,
+      evento,
+      c,
+      p,
+      ator?.nome ?? null,
+      previa,
+    )
+    if (doCliente) novos.push(doCliente)
+
     if (novos.length === 0) return
     return async () => {
       for (const n of novos) {
         await publicar(
           canalDoSino(config, evento.tenantId, n.membroId),
-          JSON.stringify({ id: n.id, tipo: n.tipo, titulo }),
+          JSON.stringify({ id: n.id, tipo: n.tipo, titulo: n.titulo }),
         ).catch(() => undefined)
       }
     }
   }
+}
+
+const TEXTO_DO_CLIENTE: Partial<Record<TipoDeNotificacaoDeChamado, (c: string) => string>> = {
+  mensagem: (c) => `${c} · Nova resposta da equipe`,
+  aguardando_cliente: (c) => `${c} · Aguardando a sua resposta`,
+  resolvido: (c) => `${c} · Chamado resolvido`,
+}
+
+/**
+ * Aviso ao contato que abriu o chamado pelo portal (sino e e-mail). Só quando a equipe age (a resposta do
+ * próprio cliente não o avisa dele mesmo) e só se o contato tem acesso ativo e o portal está ligado.
+ * Devolve o aviso do sino (para o tempo real), ou nulo.
+ */
+async function notificarCliente(
+  config: Configuracao,
+  tx: Transacao,
+  filas: WorkerFilas,
+  evento: { id: string; tenantId: string },
+  c: ChamadoParaNotificar,
+  p: PayloadDaNotificacao,
+  autor: string | null,
+  previa: string | null,
+): Promise<{ membroId: string; id: string; tipo: string; titulo: string } | null> {
+  const texto = TEXTO_DO_CLIENTE[p.tipo]
+  if (!texto || c.origem !== 'portal' || !c.contato_id || p.atorContatoId) return null
+  const [a] = await tx.execute<{
+    nome: string
+    email: string
+    portal_ativo: boolean | null
+    portal_nome: string | null
+    empresa_nome: string
+  }>(sql`
+    SELECT ct.nome, pa.email::text AS email, tc.portal_ativo, tc.portal_nome,
+           coalesce(e.nome_fantasia, e.razao_social) AS empresa_nome
+    FROM portal_acessos pa
+    JOIN contatos ct ON ct.id = pa.contato_id
+    JOIN empresas e ON e.id = pa.empresa_id
+    LEFT JOIN tenant_configuracoes tc ON tc.tenant_id = pa.tenant_id
+    WHERE pa.contato_id = ${c.contato_id} AND pa.situacao = 'ativo' AND pa.excluido_em IS NULL
+    ORDER BY pa.criado_em LIMIT 1`)
+  if (!a || a.portal_ativo !== true) return null
+  const titulo = texto(codigoDoChamado(c.numero))
+  const mensagem = c.assunto
+  const link = `/chamados/${c.id}`
+  const id = idDeterministico(evento.id, c.contato_id, 'sino-cliente')
+  const [feita] = await tx.execute<{ id: string }>(sql`
+    INSERT INTO notificacoes (id, tenant_id, destinatario_tipo, contato_id, canal, chamado_id, tipo, titulo, mensagem, link)
+    VALUES (${id}, ${evento.tenantId}, 'contato', ${c.contato_id}, 'sino', ${c.id}, ${`chamado.${p.tipo}`}, ${titulo}, ${mensagem}, ${link})
+    ON CONFLICT (id) DO NOTHING RETURNING id`)
+  if (!feita) return null
+  if (config.PORTAL_URL && config.TOKEN_ENCRYPTION_KEY && config.SMTP_HOST) {
+    const idEmail = idDeterministico(evento.id, c.contato_id, 'email-cliente')
+    await tx.execute(sql`
+      INSERT INTO notificacoes (id, tenant_id, destinatario_tipo, contato_id, canal, chamado_id, tipo, titulo, mensagem, link, enviada_em)
+      VALUES (${idEmail}, ${evento.tenantId}, 'contato', ${c.contato_id}, 'email', ${c.id}, ${`chamado.${p.tipo}`}, ${titulo}, ${mensagem}, ${link}, now())
+      ON CONFLICT (id) DO NOTHING`)
+    const modelo = emailPortalChamado({
+      nome: a.nome,
+      portal: a.portal_nome ?? a.empresa_nome,
+      titulo,
+      assunto: c.assunto,
+      previa: p.tipo === 'mensagem' ? previa : null,
+      autor,
+      link: `${new URL(config.PORTAL_URL).origin}${link}`,
+    })
+    const conteudo = cifrar(JSON.stringify({ para: a.email, ...modelo }), chavesDe(config))
+    await filas.fila(FILAS.email).add(
+      'enviar',
+      { p: conteudo },
+      {
+        jobId: `chamado-email-${idEmail}`,
+        attempts: config.EMAIL_TENTATIVAS,
+        backoff: { type: 'exponential', delay: config.EMAIL_ESPERA_MS },
+      },
+    )
+  }
+  return { membroId: c.contato_id, id, tipo: `chamado.${p.tipo}`, titulo }
 }

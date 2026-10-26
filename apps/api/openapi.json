@@ -17967,6 +17967,986 @@
         ]
       }
     },
+    "/v1/portal/areas": {
+      "get": {
+        "description": "Só as áreas marcadas como visíveis no portal. \"Não sei\" (sem área) vai para a triagem.",
+        "operationId": "PortalChamadosController_areas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeAreasDoPortal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Áreas para abrir chamado",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/chamados": {
+      "get": {
+        "description": "Os chamados da empresa-cliente abertos pelo portal (os de colegas também aparecem). O estado é o que o cliente vê: Aberto, Em atendimento, Aguardando sua resposta, Resolvido ou Fechado.",
+        "operationId": "PortalChamadosController_listar",
+        "parameters": [
+          {
+            "name": "aba",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "abertos",
+              "type": "string",
+              "enum": ["abertos", "todos"]
+            }
+          },
+          {
+            "name": "busca",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeChamadosDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Meus chamados",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      },
+      "post": {
+        "description": "A empresa-cliente e o solicitante são os da sessão (o corpo não os aceita). Só áreas visíveis no portal; sem área, o chamado vai para a triagem. Os anexos entram depois, pela conversa.",
+        "operationId": "PortalChamadosController_abrir",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbrirChamadoNoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChamadoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abrir um chamado",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/chamados/{id}": {
+      "get": {
+        "description": "Conversa, anexos, marcos e o que o cliente pode fazer agora. Chamado de outra empresa-cliente (ou interno) dá 404.",
+        "operationId": "PortalChamadosController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChamadoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Detalhe de um chamado",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/chamados/{id}/anexos": {
+      "post": {
+        "description": "Devolve uma URL pré-assinada (PUT, 15 minutos) para enviar o arquivo (até 25 MB) direto ao armazenamento. Depois do PUT, chame `/confirmar`. Sem antivírus configurado: 503 `anexos_indisponiveis`.",
+        "operationId": "PortalChamadosController_pedirEnvio",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedirEnvioDeAnexoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvioDeAnexo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Pedir o envio de um anexo",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/chamados/{id}/anexos/{anexoId}/confirmar": {
+      "post": {
+        "description": "Depois do PUT: confere o arquivo no armazenamento e manda o antivírus varrê-lo. Só se baixa o que estiver \"limpo\".",
+        "operationId": "PortalChamadosController_confirmar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "anexoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "estado": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "estado"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Confirmar o envio de um anexo",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/chamados/{id}/anexos/{anexoId}/download": {
+      "get": {
+        "description": "URL pré-assinada de 60 segundos, só de anexo \"limpo\" de chamado da própria empresa. Sempre como download.",
+        "operationId": "PortalChamadosController_baixar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "anexoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadDeAnexo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Baixar um anexo",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/chamados/{id}/avaliacao": {
+      "post": {
+        "description": "Nota de 1 a 5 e comentário opcional, uma vez por chamado resolvido ou fechado (409 `ja_avaliado`).",
+        "operationId": "PortalChamadosController_avaliar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvaliarChamadoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChamadoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Avaliar um chamado",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/chamados/{id}/mensagens": {
+      "post": {
+        "description": "Em \"Aguardando sua resposta\" devolve o chamado ao atendimento. Resolvido: 409 `chamado_resolvido` (reabra antes); fechado: 409 `chamado_fechado`. Até 5 anexos já enviados e confirmados por quem escreve.",
+        "operationId": "PortalChamadosController_responder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponderChamadoNoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChamadoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Responder um chamado",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/chamados/{id}/reabrir": {
+      "post": {
+        "description": "Até 7 dias depois de Resolvido (409 `prazo_de_reabertura_vencido`); depois, abra um novo chamado.",
+        "operationId": "PortalChamadosController_reabrir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChamadoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reabrir um chamado resolvido",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/email/troca": {
       "post": {
         "description": "Envia um link ao e-mail NOVO (válido por 1 hora, uso único). O e-mail só muda quando o link é confirmado. E-mail já usado por outro acesso da empresa dá 409.",
@@ -18126,6 +19106,62 @@
         "summary": "Pedir o link de entrada",
         "tags": ["Portal do cliente: acesso"],
         "security": []
+      }
+    },
+    "/v1/portal/inicio": {
+      "get": {
+        "description": "Contagens (em aberto, aguardando você, para avaliar) e os chamados mais recentes.",
+        "operationId": "PortalChamadosController_inicio",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InicioDoPortal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Início do portal",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
       }
     },
     "/v1/portal/link/consulta": {
@@ -18310,6 +19346,293 @@
         "summary": "Confirmar o link e entrar",
         "tags": ["Portal do cliente: acesso"],
         "security": []
+      }
+    },
+    "/v1/portal/notificacoes": {
+      "get": {
+        "description": "Só as do próprio contato, da mais nova para a mais antiga. `naoLidas` é o número do sino.",
+        "operationId": "PortalNotificacoesController_listar",
+        "parameters": [
+          {
+            "name": "somenteNaoLidas",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeNotificacoesDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Minhas notificações",
+        "tags": ["Portal do cliente: notificações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/notificacoes/{id}/lida": {
+      "post": {
+        "operationId": "PortalNotificacoesController_marcarComoLida",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NaoLidasDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Marcar uma notificação como lida",
+        "tags": ["Portal do cliente: notificações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/notificacoes/fluxo": {
+      "get": {
+        "description": "`text/event-stream`. Eventos: `nova` (dados `{ id, tipo, titulo }`) e `sinal` (a cada 25 s). Só as notificações do contato da sessão. O app reconecta sozinho e relê a lista.",
+        "operationId": "PortalNotificacoesController_fluxo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso, sem corpo"
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Fluxo em tempo real do sino (SSE)",
+        "tags": ["Portal do cliente: notificações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/notificacoes/lidas": {
+      "post": {
+        "operationId": "PortalNotificacoesController_marcarTodas",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NaoLidasDoPortal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Marcar todas como lidas",
+        "tags": ["Portal do cliente: notificações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
       }
     },
     "/v1/portal/pedidos-de-acesso": {
@@ -20546,6 +21869,28 @@
         "required": ["assunto"],
         "additionalProperties": false
       },
+      "AbrirChamadoNoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "assunto": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 10000
+          },
+          "areaId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["assunto"],
+        "additionalProperties": false
+      },
       "AceitarConviteEntrada": {
         "type": "object",
         "properties": {
@@ -21835,6 +23180,20 @@
         ],
         "additionalProperties": false
       },
+      "AreaDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "nome"],
+        "additionalProperties": false
+      },
       "AtendenteDoChamado": {
         "type": "object",
         "properties": {
@@ -22051,6 +23410,43 @@
             "type": "boolean"
           }
         },
+        "additionalProperties": false
+      },
+      "AvaliacaoDoChamado": {
+        "type": "object",
+        "properties": {
+          "nota": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "comentario": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadaEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["nota", "comentario", "criadaEm"],
+        "additionalProperties": false
+      },
+      "AvaliarChamadoEntrada": {
+        "type": "object",
+        "properties": {
+          "nota": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comentario": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["nota"],
         "additionalProperties": false
       },
       "BaseDoMapa": {
@@ -22372,6 +23768,101 @@
           "mensagens",
           "notasInternas",
           "eventos",
+          "acoes"
+        ],
+        "additionalProperties": false
+      },
+      "ChamadoDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoDoChamadoNoPortal"
+          },
+          "area": {
+            "nullable": true,
+            "type": "string"
+          },
+          "abertoPor": {
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string"
+          },
+          "resolvidoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "mensagens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MensagemDoPortal"
+            }
+          },
+          "marcos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarcoDoChamadoNoPortal"
+            }
+          },
+          "avaliacao": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AvaliacaoDoChamado"
+              }
+            ]
+          },
+          "acoes": {
+            "type": "object",
+            "properties": {
+              "responder": {
+                "type": "boolean"
+              },
+              "reabrir": {
+                "type": "boolean"
+              },
+              "avaliar": {
+                "type": "boolean"
+              }
+            },
+            "required": ["responder", "reabrir", "avaliar"],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "assunto",
+          "estado",
+          "area",
+          "abertoPor",
+          "criadoEm",
+          "atualizadoEm",
+          "descricao",
+          "resolvidoEm",
+          "mensagens",
+          "marcos",
+          "avaliacao",
           "acoes"
         ],
         "additionalProperties": false
@@ -25996,6 +27487,10 @@
         "type": "string",
         "enum": ["pendente_varredura", "limpo", "infectado"]
       },
+      "EstadoDoChamadoNoPortal": {
+        "type": "string",
+        "enum": ["aberto", "em_atendimento", "aguardando_voce", "resolvido", "fechado"]
+      },
       "EventoDoChamado": {
         "type": "object",
         "properties": {
@@ -26466,6 +27961,34 @@
         "required": ["segredo", "uri"],
         "additionalProperties": false
       },
+      "InicioDoPortal": {
+        "type": "object",
+        "properties": {
+          "chamadosAbertos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "aguardandoVoce": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "resolvidosParaAvaliar": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "recentes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeChamadoDoPortal"
+            }
+          }
+        },
+        "required": ["chamadosAbertos", "aguardandoVoce", "resolvidosParaAvaliar", "recentes"],
+        "additionalProperties": false
+      },
       "ItemDaListaDeContatos": {
         "type": "object",
         "properties": {
@@ -26823,6 +28346,50 @@
           "resolvidoEm",
           "prazoResposta",
           "prazoResolucao"
+        ],
+        "additionalProperties": false
+      },
+      "ItemDeChamadoDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoDoChamadoNoPortal"
+          },
+          "area": {
+            "nullable": true,
+            "type": "string"
+          },
+          "abertoPor": {
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "assunto",
+          "estado",
+          "area",
+          "abertoPor",
+          "criadoEm",
+          "atualizadoEm"
         ],
         "additionalProperties": false
       },
@@ -27300,6 +28867,19 @@
         "required": ["itens", "total"],
         "additionalProperties": false
       },
+      "ListaDeAreasDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AreaDoPortal"
+            }
+          }
+        },
+        "required": ["itens"],
+        "additionalProperties": false
+      },
       "ListaDeAtividades": {
         "type": "object",
         "properties": {
@@ -27399,6 +28979,41 @@
               }
             },
             "required": ["triagem", "pendentes", "meus", "todos"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["itens", "total", "abas"],
+        "additionalProperties": false
+      },
+      "ListaDeChamadosDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeChamadoDoPortal"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "abas": {
+            "type": "object",
+            "properties": {
+              "abertos": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "todos": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["abertos", "todos"],
             "additionalProperties": false
           }
         },
@@ -27610,6 +29225,24 @@
           }
         },
         "required": ["itens", "total", "naoLidas"],
+        "additionalProperties": false
+      },
+      "ListaDeNotificacoesDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificacaoDoPortal"
+            }
+          },
+          "naoLidas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "naoLidas"],
         "additionalProperties": false
       },
       "ListaDeOportunidades": {
@@ -27971,6 +29604,21 @@
         "required": ["marcadas", "naoLidas"],
         "additionalProperties": false
       },
+      "MarcoDoChamadoNoPortal": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": ["aberto", "em_atendimento", "resolvido", "fechado"]
+          },
+          "em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["tipo", "em"],
+        "additionalProperties": false
+      },
       "MembroDaArea": {
         "type": "object",
         "properties": {
@@ -28111,6 +29759,68 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AnexoDoChamado"
+            }
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "autor", "corpo", "anexos", "criadoEm"],
+        "additionalProperties": false
+      },
+      "MensagemDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "autor": {
+            "type": "object",
+            "properties": {
+              "nome": {
+                "type": "string"
+              },
+              "daEquipe": {
+                "type": "boolean"
+              },
+              "voce": {
+                "type": "boolean"
+              }
+            },
+            "required": ["nome", "daEquipe", "voce"],
+            "additionalProperties": false
+          },
+          "corpo": {
+            "type": "string"
+          },
+          "anexos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "mime": {
+                  "type": "string"
+                },
+                "tamanho": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "estado": {
+                  "$ref": "#/components/schemas/EstadoDeAnexo"
+                }
+              },
+              "required": ["id", "nome", "mime", "tamanho", "estado"],
+              "additionalProperties": false
             }
           },
           "criadoEm": {
@@ -28481,6 +30191,18 @@
         "required": ["faseId"],
         "additionalProperties": false
       },
+      "NaoLidasDoPortal": {
+        "type": "object",
+        "properties": {
+          "naoLidas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["naoLidas"],
+        "additionalProperties": false
+      },
       "NotaInterna": {
         "type": "object",
         "properties": {
@@ -28548,6 +30270,38 @@
           }
         },
         "required": ["id", "tipo", "titulo", "mensagem", "link", "chamadoId", "lida", "criadoEm"],
+        "additionalProperties": false
+      },
+      "NotificacaoDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "corpo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "destino": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lida": {
+            "type": "boolean"
+          },
+          "criadaEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "tipo", "titulo", "corpo", "destino", "lida", "criadaEm"],
         "additionalProperties": false
       },
       "NovaOrdemEntrada": {
@@ -30876,6 +32630,27 @@
           "criadoEm",
           "atualizadoEm"
         ],
+        "additionalProperties": false
+      },
+      "ResponderChamadoNoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "corpo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "anexoIds": {
+            "default": [],
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": ["corpo"],
         "additionalProperties": false
       },
       "RespostaDePedirEntrada": {

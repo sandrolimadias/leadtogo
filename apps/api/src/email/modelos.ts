@@ -162,3 +162,25 @@ export function emailPortalTrocaDeEmail(p: {
     p.portal,
   )
 }
+
+/** Aviso de chamado para o CLIENTE do portal: sem senha, o link abre o chamado (pede o link de entrada se preciso). */
+export function emailPortalChamado(p: {
+  nome: string
+  portal: string
+  titulo: string
+  assunto: string
+  previa: string | null
+  autor: string | null
+  link: string
+}): ModeloDeEmail {
+  const paragrafos = [p.assunto]
+  if (p.previa) paragrafos.push(`${p.autor ?? 'A equipe'} escreveu: ${p.previa}`)
+  return montar(
+    p.titulo,
+    `Olá, ${p.nome}.`,
+    paragrafos,
+    { texto: 'Abrir o chamado', link: p.link },
+    `Você recebe este aviso porque abriu ou acompanha este chamado no ${p.portal}.`,
+    p.portal,
+  )
+}
