@@ -2,7 +2,7 @@ import { Tabs as AbasDoRadix } from 'radix-ui'
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { cn } from '@/lib/cn'
+import { cn } from './cn'
 
 export interface ItemDeAba {
   value: string

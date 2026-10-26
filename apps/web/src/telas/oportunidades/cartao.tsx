@@ -3,8 +3,8 @@ import { Link } from '@tanstack/react-router'
 import { CalendarClock, GripVertical, Hourglass, TriangleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Avatar } from '@/components/ui/exibicao'
-import { cn } from '@/lib/cn'
+import { Avatar } from '@leadtogo/ui/exibicao'
+import { cn } from '@leadtogo/ui/cn'
 import { quandoDaAtividade } from '@/telas/atividades/formatos'
 import { BolhaDoTipo } from '@/telas/cadastros/tipos-de-atividade'
 

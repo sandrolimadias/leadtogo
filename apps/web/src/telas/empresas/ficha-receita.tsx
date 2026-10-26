@@ -1,7 +1,7 @@
 import type { ConsultaDaReceitaDaEmpresa } from '@leadtogo/api-client'
 
-import { Button } from '@/components/ui/button'
-import { Alert } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { Alert } from '@leadtogo/ui/feedback'
 import { Janela } from '@/telas/cadastros/base'
 
 import { dataCurta } from './formatos'

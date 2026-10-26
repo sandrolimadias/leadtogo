@@ -7,10 +7,10 @@ import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { usePermissoes } from '@/auth/permissoes'
-import { TextField } from '@/components/ui/campos'
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { PaginaDeTabela } from '@/components/ui/pagina'
-import { cn } from '@/lib/cn'
+import { TextField } from '@leadtogo/ui/campos'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { PaginaDeTabela } from '@leadtogo/ui/pagina'
+import { cn } from '@leadtogo/ui/cn'
 
 import { duracaoUtil } from './duracao'
 

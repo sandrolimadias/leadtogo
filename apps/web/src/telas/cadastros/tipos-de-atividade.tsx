@@ -26,11 +26,11 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { Select } from '@/components/ui/campos'
-import { Switch } from '@/components/ui/checkbox'
-import { classeDaCor } from '@/components/ui/cores'
-import { Badge } from '@/components/ui/exibicao'
-import { cn } from '@/lib/cn'
+import { Select } from '@leadtogo/ui/campos'
+import { Switch } from '@leadtogo/ui/checkbox'
+import { classeDaCor } from '@leadtogo/ui/cores'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { cn } from '@leadtogo/ui/cn'
 
 import { SeletorDeCor } from './base'
 import { type ConfigDaLista, ListaDeCadastro } from './lista'

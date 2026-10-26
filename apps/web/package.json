@@ -23,6 +23,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@leadtogo/api-client": "workspace:*",
     "@leadtogo/shared": "workspace:*",
+    "@leadtogo/ui": "workspace:*",
     "@protomaps/basemaps": "^5.7.2",
     "@sentry/react": "^11.6.0",
     "@tailwindcss/vite": "^4.3.3",

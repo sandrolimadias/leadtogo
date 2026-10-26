@@ -20,6 +20,7 @@ COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
 COPY packages/shared/package.json packages/shared/
 COPY packages/api-client/package.json packages/api-client/
+COPY packages/ui/package.json packages/ui/
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts --filter "@leadtogo/api..."
 COPY tsconfig.base.json ./
@@ -40,6 +41,7 @@ COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
 COPY packages/shared/package.json packages/shared/
 COPY packages/api-client/package.json packages/api-client/
+COPY packages/ui/package.json packages/ui/
 RUN --mount=type=cache,id=pnpm-store-prod,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts --prod --filter "@leadtogo/api..." \
  && find /repo -path '*/node_modules/*' \( -name '*.map' -o -name '*.d.ts' -o -name '*.d.mts' -o -name '*.d.cts' \

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { ConteudoDaAba, Tabs } from '@/components/ui/tabs'
+import { ConteudoDaAba, Tabs } from '@leadtogo/ui/tabs'
 import { CabecalhoDeSecao, Carregamento } from '@/telas/cadastros/base'
 
 import { AbaDoCheckin } from './checkin'

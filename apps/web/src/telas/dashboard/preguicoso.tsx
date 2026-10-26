@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 
-import { Skeleton } from '@/components/ui/feedback'
+import { Skeleton } from '@leadtogo/ui/feedback'
 
 // A biblioteca de gráficos (Recharts) só é baixada na rota do Dashboard: as outras telas não pagam por ela.
 const PaginaDoDashboard = lazy(() =>

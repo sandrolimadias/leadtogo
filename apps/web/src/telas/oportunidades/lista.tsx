@@ -2,9 +2,9 @@ import type { Oportunidade } from '@leadtogo/api-client'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
-import { Badge } from '@/components/ui/exibicao'
-import { cn } from '@/lib/cn'
-import { classeDaCor } from '@/components/ui/cores'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { cn } from '@leadtogo/ui/cn'
+import { classeDaCor } from '@leadtogo/ui/cores'
 
 import { diaDoBanco, previsaoEmPalavras, reais, rotuloDoStatus, TOM_DO_STATUS } from './formatos'
 

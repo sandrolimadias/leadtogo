@@ -2,9 +2,9 @@ import type { PosicaoDaEmpresa } from '@leadtogo/shared'
 import { RAIO_DE_INCERTEZA_M } from '@leadtogo/shared'
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
-import { Alert } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { Dialog } from '@leadtogo/ui/dialog'
+import { Alert } from '@leadtogo/ui/feedback'
 import { MapaBase } from '@/components/mapa/mapa-base'
 
 /** Centro do mapa quando nem a empresa nem o município têm posição: o meio do Brasil (a pessoa ajusta o zoom). */

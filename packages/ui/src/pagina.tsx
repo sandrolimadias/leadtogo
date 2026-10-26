@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { cn } from '@/lib/cn'
+import { cn } from './cn'
 
 /*
  * Regra de rolagem do app (docs/design_system.md, "Layout e rolagem"): a PÁGINA nunca rola. Ficam fixos o

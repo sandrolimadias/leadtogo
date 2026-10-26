@@ -3,6 +3,8 @@
 @import 'tailwindcss';
 @import './tokens.css';
 @import './tailwind-theme.css';
+/* os componentes base vivem em packages/ui: o Tailwind precisa varrer as classes de lá */
+@source '../../../../packages/ui/src';
 
 /* Densidade: define a altura dos controles (botões, campos, selects). O app põe data-density="touch"
    no celular; "compact" é para barras de filtro e tabelas densas. */

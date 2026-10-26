@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-// Apoio dos gráficos (docs/design_system.md, seção "Gráficos"); o componente fica em components/ui/grafico.tsx.
+// Apoio dos gráficos (docs/design_system.md, seção "Gráficos"); o componente fica em packages/ui/src/grafico.tsx.
 
 /** A cor de uma tag (`teal`, `blue`...) como variável CSS dos tokens. */
 export const corDaTag = (cor: string): string => `var(--tag-${cor}-fg)`

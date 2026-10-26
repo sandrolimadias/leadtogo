@@ -2,7 +2,7 @@ import type { EntradaDaLegenda } from '@leadtogo/shared'
 import { tokenDaCorDoMapa } from '@leadtogo/shared'
 import { Check } from 'lucide-react'
 
-import { cn } from '@/lib/cn'
+import { cn } from '@leadtogo/ui/cn'
 
 /** Uma amostra de pin: gota na cor do estado, com o visto quando a empresa já foi visitada. */
 export function AmostraDePin({ token, visitada }: { token: string; visitada?: boolean }) {

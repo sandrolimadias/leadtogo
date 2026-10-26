@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { Tabs } from '@/components/ui/tabs'
+import { Tabs } from '@leadtogo/ui/tabs'
 
 import { AreasDeAtendimento } from './areas-de-atendimento'
 import { ExpedienteDosChamados } from './expediente'

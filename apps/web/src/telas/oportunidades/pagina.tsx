@@ -6,20 +6,20 @@ import { useEffect, useState } from 'react'
 import { useServicos } from '@/auth/contexto'
 import { useDispositivo } from '@/casca/dispositivo'
 import { usePorPagina } from '@/casca/preferencias'
-import { Button } from '@/components/ui/button'
-import { Select, TextField } from '@/components/ui/campos'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { Select, TextField } from '@leadtogo/ui/campos'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import {
   AreaDaTabela,
   CabecalhoDoQuadro,
   CorpoDaTabela,
   PaginaDeQuadro,
   PaginaDeTabela,
-} from '@/components/ui/pagina'
-import { Paginacao } from '@/components/ui/paginacao'
-import { SegmentedControl } from '@/components/ui/segmented-control'
-import { toast } from '@/components/ui/toast'
-import { cn } from '@/lib/cn'
+} from '@leadtogo/ui/pagina'
+import { Paginacao } from '@leadtogo/ui/paginacao'
+import { SegmentedControl } from '@leadtogo/ui/segmented-control'
+import { toast } from '@leadtogo/ui/toast'
+import { cn } from '@leadtogo/ui/cn'
 
 import { useAcoesDaOportunidade } from './acoes'
 import { type BuscaDeOportunidades, lerBusca } from './busca'

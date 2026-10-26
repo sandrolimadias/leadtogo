@@ -1,9 +1,9 @@
 import type { CampoDeVisita, ContatoDaResposta, ProximoPassoDaResposta } from '@leadtogo/shared'
 import { ROTULO_DO_CAMPO_DA_EMPRESA } from '@leadtogo/shared'
 
-import { Select, TextArea, TextField } from '@/components/ui/campos'
-import { Checkbox } from '@/components/ui/checkbox'
-import { cn } from '@/lib/cn'
+import { Select, TextArea, TextField } from '@leadtogo/ui/campos'
+import { Checkbox } from '@leadtogo/ui/checkbox'
+import { cn } from '@leadtogo/ui/cn'
 
 export type Valores = Record<string, unknown>
 

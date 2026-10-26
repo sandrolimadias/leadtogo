@@ -8,11 +8,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Select, TextArea, TextField } from '@/components/ui/campos'
-import { Dialog } from '@/components/ui/dialog'
-import { Alert } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { Select, TextArea, TextField } from '@leadtogo/ui/campos'
+import { Dialog } from '@leadtogo/ui/dialog'
+import { Alert } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 
 import { useAreasDeAtendimento } from './areas'
 

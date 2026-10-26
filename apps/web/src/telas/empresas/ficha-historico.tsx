@@ -15,8 +15,8 @@ import {
 
 import { useServicos } from '@/auth/contexto'
 import type { Resultado } from '@/auth/tipos'
-import { Button } from '@/components/ui/button'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 
 import { dataEHora } from './formatos'
 

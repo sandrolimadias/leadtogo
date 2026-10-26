@@ -2,10 +2,10 @@ import type { ConfiguracaoDaCarteira } from '@leadtogo/api-client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/checkbox'
-import { Alert, Skeleton } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { Switch } from '@leadtogo/ui/checkbox'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 import { useEnvio } from '@/telas/acesso/comum'
 
 const chaveDaCarteira = ['configuracao-da-carteira'] as const

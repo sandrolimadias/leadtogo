@@ -2,7 +2,7 @@ import { CircleCheck, CircleX } from 'lucide-react'
 
 import { SENHA_MIN } from '@leadtogo/shared'
 
-import { cn } from '@/lib/cn'
+import { cn } from '@leadtogo/ui/cn'
 
 export interface RegraDeSenha {
   rotulo: string

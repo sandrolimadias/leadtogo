@@ -3,9 +3,9 @@ import { formatarTelefone } from '@leadtogo/shared'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Avatar, Badge } from '@/components/ui/exibicao'
-import { cn } from '@/lib/cn'
+import { Button } from '@leadtogo/ui/button'
+import { Avatar, Badge } from '@leadtogo/ui/exibicao'
+import { cn } from '@leadtogo/ui/cn'
 
 import { dataCurta, documentoFormatado } from './formatos'
 import { PORTES } from './nova-empresa-dados'

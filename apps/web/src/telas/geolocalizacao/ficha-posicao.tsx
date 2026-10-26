@@ -6,9 +6,9 @@ import { MapPin, Pencil, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Alert } from '@/components/ui/feedback'
-import { toast } from '@/components/ui/toast'
+import { Button } from '@leadtogo/ui/button'
+import { Alert } from '@leadtogo/ui/feedback'
+import { toast } from '@leadtogo/ui/toast'
 import { Cartao } from '@/telas/empresas/ficha-resumo'
 import { dataCurta } from '@/telas/empresas/formatos'
 

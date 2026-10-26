@@ -4,9 +4,9 @@ import { Ban, Check, Ellipsis, Pencil, Trash2 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { IconButton } from '@/components/ui/button'
-import { Menu, type ItemDeMenu } from '@/components/ui/menu'
-import { toast } from '@/components/ui/toast'
+import { IconButton } from '@leadtogo/ui/button'
+import { Menu, type ItemDeMenu } from '@leadtogo/ui/menu'
+import { toast } from '@leadtogo/ui/toast'
 import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
 
 import { doCampoDeDataEHora } from './formatos'

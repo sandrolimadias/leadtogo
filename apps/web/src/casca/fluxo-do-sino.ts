@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 
-import { toast } from '@/components/ui/toast'
+import { toast } from '@leadtogo/ui/toast'
 
 /** Endereço do fluxo em tempo real do sino (SSE; mesma origem, com o cookie da sessão). */
 export const ENDERECO_DO_FLUXO = '/v1/notificacoes/fluxo'

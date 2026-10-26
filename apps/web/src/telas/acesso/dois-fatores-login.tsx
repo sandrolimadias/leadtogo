@@ -6,9 +6,9 @@ import { useServicos } from '@/auth/contexto'
 import { chaveDoMe, destinoSeguro } from '@/auth/guardas'
 import { CampoDeCodigo } from '@/components/acesso/campo-de-codigo'
 import { Cabecalho } from '@/components/acesso/layout'
-import { Button } from '@/components/ui/button'
-import { TextField } from '@/components/ui/campos'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@leadtogo/ui/button'
+import { TextField } from '@leadtogo/ui/campos'
+import { Checkbox } from '@leadtogo/ui/checkbox'
 
 import { classeDoLink, classeDoLinkSuave, focarCampo, useEnvio } from './comum'
 

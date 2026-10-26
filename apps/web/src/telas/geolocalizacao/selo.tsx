@@ -1,7 +1,7 @@
 import type { PosicaoDaEmpresa } from '@leadtogo/shared'
 import { CircleAlert, CircleCheck, CircleDashed, MapPin } from 'lucide-react'
 
-import { Badge } from '@/components/ui/exibicao'
+import { Badge } from '@leadtogo/ui/exibicao'
 
 import { ROTULO_DO_ESTADO, TOM_DO_ESTADO } from './rotulos'
 

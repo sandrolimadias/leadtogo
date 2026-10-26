@@ -1,9 +1,9 @@
 import type { Atividade } from '@leadtogo/api-client'
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { TextArea, TextField } from '@/components/ui/campos'
-import { Alert } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { TextArea, TextField } from '@leadtogo/ui/campos'
+import { Alert } from '@leadtogo/ui/feedback'
 import { Janela } from '@/telas/cadastros/base'
 
 import { paraCampoDeDataEHora } from './formatos'

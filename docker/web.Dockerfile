@@ -17,11 +17,13 @@ COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
 COPY packages/shared/package.json packages/shared/
 COPY packages/api-client/package.json packages/api-client/
+COPY packages/ui/package.json packages/ui/
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts --filter "@leadtogo/web..."
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY packages/api-client packages/api-client
+COPY packages/ui packages/ui
 # o build do web copia tokens.css, tailwind-theme.css e as fontes daqui (apps/web/scripts/sincronizar-design-system.mjs)
 COPY docs/design-system docs/design-system
 COPY apps/web apps/web

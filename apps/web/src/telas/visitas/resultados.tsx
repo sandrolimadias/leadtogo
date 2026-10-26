@@ -5,8 +5,8 @@ import type {
 } from '@leadtogo/shared'
 import { ClipboardCheck } from 'lucide-react'
 
-import { Select } from '@/components/ui/campos'
-import { Badge } from '@/components/ui/exibicao'
+import { Select } from '@leadtogo/ui/campos'
+import { Badge } from '@leadtogo/ui/exibicao'
 import { type ConfigDaLista, ListaDeCadastro } from '@/telas/cadastros/lista'
 
 interface Estado {

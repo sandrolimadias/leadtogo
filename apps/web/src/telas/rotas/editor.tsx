@@ -21,12 +21,12 @@ import {
 import { AlertTriangle, Flag, GripVertical, Navigation, X, Zap } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
-import { Button, IconButton } from '@/components/ui/button'
-import { Select, TextField } from '@/components/ui/campos'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/exibicao'
-import { Alert } from '@/components/ui/feedback'
-import { cn } from '@/lib/cn'
+import { Button, IconButton } from '@leadtogo/ui/button'
+import { Select, TextField } from '@leadtogo/ui/campos'
+import { Checkbox } from '@leadtogo/ui/checkbox'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { Alert } from '@leadtogo/ui/feedback'
+import { cn } from '@leadtogo/ui/cn'
 
 import { LinksDeNavegacao } from './navegacao'
 import {

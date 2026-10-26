@@ -4,7 +4,7 @@ import { LifeBuoy } from 'lucide-react'
 
 import { useServicos } from '@/auth/contexto'
 import { usePermissoes } from '@/auth/permissoes'
-import { Badge } from '@/components/ui/exibicao'
+import { Badge } from '@leadtogo/ui/exibicao'
 
 import { selosDoPrazo } from './rotulos'
 

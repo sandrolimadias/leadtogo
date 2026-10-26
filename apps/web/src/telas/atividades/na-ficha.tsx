@@ -4,9 +4,9 @@ import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { usePorPagina } from '@/casca/preferencias'
-import { Button } from '@/components/ui/button'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
-import { Paginacao } from '@/components/ui/paginacao'
+import { Button } from '@leadtogo/ui/button'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
+import { Paginacao } from '@leadtogo/ui/paginacao'
 
 import { useAcoesDaAtividade } from './acoes'
 import { ItemDeAtividade } from './item'

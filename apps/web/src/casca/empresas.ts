@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 
 import { useServicos } from '@/auth/contexto'
-import { toast } from '@/components/ui/toast'
+import { toast } from '@leadtogo/ui/toast'
 
 /**
  * Troca a empresa ativa da sessão. Tudo o que depende da empresa (preferências, listas) é recarregado; a

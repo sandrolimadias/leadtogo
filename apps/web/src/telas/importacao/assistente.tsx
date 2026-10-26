@@ -4,7 +4,7 @@ import { getRouteApi, Link } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Alert, Skeleton } from '@/components/ui/feedback'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
 
 import { PassoImportar, PassoRelatorio } from './acompanhamento'
 import { chaveDoLote, PASSO, useQuemImporta } from './comum'

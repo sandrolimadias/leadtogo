@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react'
 import { useServicos } from '@/auth/contexto'
 import { usePermissoes } from '@/auth/permissoes'
 import type { RotaDesenhada } from '@/components/mapa/mapa-base'
-import { toast } from '@/components/ui/toast'
+import { toast } from '@leadtogo/ui/toast'
 
 import {
   adicionarParadas,

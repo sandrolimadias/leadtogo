@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react'
 import { registrarAoPerderAEmpresa } from '@/api/cliente'
 import { useServicos } from '@/auth/contexto'
 import { chaveDoMe } from '@/auth/guardas'
-import { toast } from '@/components/ui/toast'
+import { toast } from '@leadtogo/ui/toast'
 
 import { useTrocarEmpresa } from './empresas'
 import { nomeDaEmpresa } from './utilidades'

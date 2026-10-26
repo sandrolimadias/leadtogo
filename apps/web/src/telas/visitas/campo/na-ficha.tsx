@@ -4,8 +4,8 @@ import { MapPinOff, TriangleAlert } from 'lucide-react'
 import { useEffect } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Badge } from '@/components/ui/exibicao'
-import { Skeleton } from '@/components/ui/feedback'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { Skeleton } from '@leadtogo/ui/feedback'
 import { guardarEmpresas } from '@/lib/offline/visitas'
 import { Cartao } from '@/telas/empresas/ficha-resumo'
 

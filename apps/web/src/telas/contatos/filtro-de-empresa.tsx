@@ -4,7 +4,7 @@ import { Popover } from 'radix-ui'
 import { useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { cn } from '@/lib/cn'
+import { cn } from '@leadtogo/ui/cn'
 import { documentoFormatado } from '@/telas/empresas/formatos'
 
 /** Quantas empresas a busca traz por vez; quem procura refina digitando mais. */

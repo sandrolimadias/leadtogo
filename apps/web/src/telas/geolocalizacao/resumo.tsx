@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { TriangleAlert } from 'lucide-react'
 
 import { useServicos } from '@/auth/contexto'
-import { Alert, Skeleton } from '@/components/ui/feedback'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
 
 import { chaveDoResumo } from './consultas'
 

@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 
 import { useServicos } from '@/auth/contexto'
-import { Button } from '@/components/ui/button'
-import { Alert, Skeleton } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
 import { Janela } from '@/telas/cadastros/base'
 
 import { diaDoBanco, reais } from './formatos'

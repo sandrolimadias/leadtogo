@@ -2,11 +2,11 @@ import { formatarTelefone, ROTULO_DO_REGIME, type RegimeTributario } from '@lead
 import { Plus } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Select, TextArea, TextField } from '@/components/ui/campos'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/exibicao'
-import { cn } from '@/lib/cn'
+import { Button } from '@leadtogo/ui/button'
+import { Select, TextArea, TextField } from '@leadtogo/ui/campos'
+import { Checkbox } from '@leadtogo/ui/checkbox'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { cn } from '@leadtogo/ui/cn'
 
 import {
   type Formulario,

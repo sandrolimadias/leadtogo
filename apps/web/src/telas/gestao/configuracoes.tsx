@@ -1,8 +1,8 @@
 import { Link, Outlet } from '@tanstack/react-router'
 
 import { usePermissoes } from '@/auth/permissoes'
-import { Icon } from '@/components/ui/icone'
-import { cn } from '@/lib/cn'
+import { Icon } from '@leadtogo/ui/icone'
+import { cn } from '@leadtogo/ui/cn'
 
 import { SECOES } from './secoes-das-configuracoes'
 

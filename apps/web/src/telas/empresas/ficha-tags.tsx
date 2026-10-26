@@ -1,9 +1,9 @@
 import type { EmpresaCarteira, TagGrupo } from '@leadtogo/api-client'
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Alert } from '@/components/ui/feedback'
+import { Button } from '@leadtogo/ui/button'
+import { Checkbox } from '@leadtogo/ui/checkbox'
+import { Alert } from '@leadtogo/ui/feedback'
 import { Janela } from '@/telas/cadastros/base'
 
 /** Os grupos que a pessoa pode mexer: os manuais e ativos (a Visitação é do sistema). */

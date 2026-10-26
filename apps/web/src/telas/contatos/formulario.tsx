@@ -4,10 +4,10 @@ import { Plus, Search, Trash2 } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
-import { Button, IconButton } from '@/components/ui/button'
-import { Select, TextArea, TextField } from '@/components/ui/campos'
-import { Checkbox, Switch } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/exibicao'
+import { Button, IconButton } from '@leadtogo/ui/button'
+import { Select, TextArea, TextField } from '@leadtogo/ui/campos'
+import { Checkbox, Switch } from '@leadtogo/ui/checkbox'
+import { Badge } from '@leadtogo/ui/exibicao'
 import { documentoFormatado } from '@/telas/empresas/formatos'
 
 import {

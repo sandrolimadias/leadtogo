@@ -6,7 +6,7 @@ import {
   type StatusDoChamado,
 } from '@leadtogo/shared'
 
-import type { TomDoBadge } from '@/components/ui/exibicao'
+import type { TomDoBadge } from '@leadtogo/ui/exibicao'
 
 export const TOM_DO_STATUS: Record<StatusDoChamado, TomDoBadge> = {
   aguardando_triagem: 'warning',

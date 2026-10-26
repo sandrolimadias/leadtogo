@@ -15,12 +15,12 @@ import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { usePermissoes } from '@/auth/permissoes'
-import { Select, TextField } from '@/components/ui/campos'
-import { Badge } from '@/components/ui/exibicao'
-import { Alert, EmptyState, Skeleton } from '@/components/ui/feedback'
-import { PaginaDeTabela } from '@/components/ui/pagina'
-import { Paginacao } from '@/components/ui/paginacao'
-import { cn } from '@/lib/cn'
+import { Select, TextField } from '@leadtogo/ui/campos'
+import { Badge } from '@leadtogo/ui/exibicao'
+import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
+import { PaginaDeTabela } from '@leadtogo/ui/pagina'
+import { Paginacao } from '@leadtogo/ui/paginacao'
+import { cn } from '@leadtogo/ui/cn'
 
 import { TOM_DA_SITUACAO } from './situacao'
 
