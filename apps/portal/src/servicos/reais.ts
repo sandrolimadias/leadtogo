@@ -156,6 +156,48 @@ export const servicosReais: ServicosDoPortal = {
     marcarTodas: () =>
       protegido(async () => daApi(await api.POST('/v1/portal/notificacoes/lidas'))),
   },
+  publicacoes: {
+    feed: (pagina) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/portal/publicacoes', {
+            params: { query: { ...(pagina ? { pagina } : {}) } },
+          }),
+        ),
+      ),
+    comentarios: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/portal/publicacoes/{id}/comentarios', chave(id))),
+      ),
+    comentar: (id, corpo) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/portal/publicacoes/{id}/comentarios', {
+            ...chave(id),
+            body: { corpo },
+          }),
+        ),
+      ),
+    reagir: (id, tipo) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/portal/publicacoes/{id}/reacoes', { ...chave(id), body: { tipo } }),
+        ),
+      ),
+    denunciar: (comentarioId, motivo) =>
+      protegido(async () =>
+        semCorpo(
+          await api.POST('/v1/portal/publicacoes/comentarios/{comentarioId}/denuncia', {
+            params: { path: { comentarioId } },
+            body: { motivo },
+          }),
+        ),
+      ),
+    marcarLidas: (ids) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/publicacoes/leituras', { body: { ids } })),
+      ),
+  },
   pedidos: {
     listar: () => protegido(async () => daApi(await api.GET('/v1/portal/pedidos-de-acesso'))),
     pedir: (dados) =>
