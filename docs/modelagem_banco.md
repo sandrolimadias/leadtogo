@@ -895,3 +895,10 @@ Só expansão. Sete tabelas novas, todas com `tenant_id`, **RLS habilitado e for
 - **Falha fechada:** acesso preenchido e empresa vazia não enxerga nenhuma linha escopada.
 
 **Funções `SECURITY DEFINER`** (mesmo padrão das migrações 0016, 0026 e 0031): `app_portal_acessos_por_email(citext)` devolve só `(tenant_id, acesso_id)` dos acessos **ativos** daquele e-mail, em qualquer empresa (a entrada ainda não tem tenant); `app_portal_limpar()` apaga links vencidos há 30 dias e sessões vencidas há 90 (job de manutenção).
+
+### Portal do Cliente, Fase 3A, parte 2 (migração 0033, só expansão)
+
+- **Chamados do portal:** a política restritiva `portal_escopo` de `chamados` passa a exigir `origem = 'portal'` além da empresa-cliente. O chamado **interno** que cita a empresa (a equipe abre chamados entre si) não aparece ao cliente, nem para leitura nem para alteração.
+- **`tenant_configuracoes` é somente leitura para o portal:** a 0032 esqueceu esta tabela na lista; agora o papel `leadtogo_app` em sessão do portal não insere, altera nem apaga nela (política restritiva `TO leadtogo_app`).
+- **`app_proximo_numero_chamado()`:** função `SECURITY DEFINER` (EXECUTE só para `leadtogo_app`) que incrementa `chamado_ultimo_numero` **somente** do tenant da sessão e devolve o número. É o único jeito de o cliente abrir um chamado sem ter escrita na configuração.
+- **Auditoria do cliente:** `auditoria.membro_id` fica nulo e o ator vai em `alteracoes.ator` (`{ tipo: 'contato', acessoId, contatoId }`); não há coluna nova.
