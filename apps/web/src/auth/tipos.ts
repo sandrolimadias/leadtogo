@@ -2,7 +2,11 @@ import type {
   AcessoDoPortal,
   ConfiguracaoDoPortal,
   IndicadoresDoHub,
+  Documento,
+  EnvioDeDocumento,
+  ListaDeBaixasDeDocumento,
   ListaDeComentariosParaModeracao,
+  ListaDeDocumentos,
   ListaDePublicacoes,
   Publicacao,
   ListaDeAcessosDoPortal,
@@ -189,6 +193,8 @@ import type {
   Tag,
   ModerarComentarioEntrada,
   SalvarPublicacaoEntrada,
+  CriarDocumentoEntrada,
+  EditarDocumentoEntrada,
 } from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
@@ -639,6 +645,26 @@ export interface ServicosDoPortalNoCrm {
       comentarioId: string,
       dados: ModerarComentarioEntrada,
     ) => Promise<Resultado<ListaDeComentariosParaModeracao>>
+  }
+  /** Documentos do portal (Fase 3C): `portal.ver`/`documentos` para ver, `documentos` para escrever */
+  documentos: {
+    listar: (consulta?: {
+      busca?: string
+      pagina?: number
+      porPagina?: number
+    }) => Promise<Resultado<ListaDeDocumentos>>
+    obter: (id: string) => Promise<Resultado<Documento>>
+    /** Passo 1: cadastra e reserva o arquivo (503 `anexos_indisponiveis` sem antivírus) */
+    criar: (dados: CriarDocumentoEntrada) => Promise<Resultado<EnvioDeDocumento>>
+    /** O PUT em si (o navegador envia o arquivo ao Garage) */
+    enviar: (url: string, arquivo: Blob) => Promise<Resultado>
+    /** Passo 2: confere o arquivo e manda o antivírus varrer */
+    confirmar: (id: string) => Promise<Resultado<Documento>>
+    editar: (id: string, dados: EditarDocumentoEntrada) => Promise<Resultado<Documento>>
+    excluir: (id: string) => Promise<Resultado>
+    /** 409 `anexo_em_verificacao` / `anexo_bloqueado` */
+    baixar: (id: string) => Promise<Resultado<{ url: string; expiraEm: string }>>
+    baixas: (id: string) => Promise<Resultado<ListaDeBaixasDeDocumento>>
   }
   acessos: {
     listar: (consulta?: {

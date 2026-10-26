@@ -1,11 +1,9 @@
 import type { Publicacao } from '@leadtogo/api-client'
 import {
-  MAXIMO_DE_EMPRESAS_NO_ALCANCE,
   type SalvarPublicacaoEntrada,
   TAMANHO_MAXIMO_DA_PUBLICACAO,
   TAMANHO_MAXIMO_DO_TITULO,
 } from '@leadtogo/shared'
-import { X } from 'lucide-react'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -16,7 +14,7 @@ import { Alert } from '@leadtogo/ui/feedback'
 import { Markdown } from '@leadtogo/ui/markdown'
 import { toast } from '@leadtogo/ui/toast'
 
-import { BuscaDeEmpresa } from '../atividades/busca-de-empresa'
+import { SelecaoDeEmpresas } from './selecao-de-empresas'
 
 type Quando = 'rascunho' | 'publicada' | 'agendada'
 
@@ -54,7 +52,6 @@ export function EditorDePublicacao({
     inicial?.situacao === 'publicada' ? 'publicada' : (inicial?.situacao ?? 'rascunho'),
   )
   const [agendarPara, setAgendarPara] = useState(paraLocal(inicial?.agendadaPara ?? null))
-  const [chaveDaBusca, setChaveDaBusca] = useState(0)
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [previa, setPrevia] = useState(false)
@@ -177,44 +174,7 @@ export function EditorDePublicacao({
           onChange={(e) => setAlcance(e.target.value as 'todos' | 'empresas')}
         />
         {alcance === 'empresas' ? (
-          <div className="flex flex-col gap-2">
-            {empresas.length > 0 ? (
-              <ul
-                aria-label="Empresas do alcance"
-                className="m-0 flex list-none flex-wrap gap-2 p-0"
-              >
-                {empresas.map((e) => (
-                  <li
-                    key={e.id}
-                    className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-sunken py-0.5 pr-1 pl-3 text-[13px]"
-                  >
-                    {e.nome}
-                    <button
-                      type="button"
-                      aria-label={`Tirar ${e.nome}`}
-                      onClick={() => setEmpresas((l) => l.filter((x) => x.id !== e.id))}
-                      className="inline-flex size-5 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-ink-muted hover:bg-surface-hover"
-                    >
-                      <X size={12} aria-hidden="true" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            {empresas.length < MAXIMO_DE_EMPRESAS_NO_ALCANCE ? (
-              <BuscaDeEmpresa
-                key={chaveDaBusca}
-                valor={null}
-                obrigatoria={false}
-                rotuloOpcional="adicione uma a uma"
-                aoMudar={(e) => {
-                  if (!e) return
-                  setEmpresas((l) => (l.some((x) => x.id === e.id) ? l : [...l, e]))
-                  setChaveDaBusca((k) => k + 1)
-                }}
-              />
-            ) : null}
-          </div>
+          <SelecaoDeEmpresas empresas={empresas} aoMudar={setEmpresas} />
         ) : null}
 
         {jaPublicada ? null : (
