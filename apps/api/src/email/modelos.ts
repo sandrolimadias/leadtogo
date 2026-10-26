@@ -184,3 +184,21 @@ export function emailPortalChamado(p: {
     p.portal,
   )
 }
+
+/** Aviso ao cliente sobre um evento da agenda do portal (vaga confirmada, cancelamento, lembrete). */
+export function emailPortalEvento(p: {
+  nome: string
+  portal: string
+  titulo: string
+  linhas: string[]
+  link: string
+}): ModeloDeEmail {
+  return montar(
+    p.titulo,
+    `Olá, ${p.nome}.`,
+    p.linhas,
+    { texto: 'Abrir a agenda', link: p.link },
+    `Você recebe este aviso porque tem presença ou lista de espera num evento da agenda do ${p.portal}.`,
+    p.portal,
+  )
+}

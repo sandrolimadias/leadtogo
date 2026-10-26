@@ -1,8 +1,9 @@
-import type { Conexao } from '@leadtogo/db'
+import { type Conexao, sql } from '@leadtogo/db'
 import type { Job } from 'bullmq'
 import type { Logger } from 'pino'
 
 import { varrerImportacoesParadas } from '../importacao/varredura.js'
+import { agendarNotificacaoDeEvento } from '../portal/notificar-evento.js'
 import { FILAS } from './filas.js'
 import type { WorkerFilas } from './worker-filas.service.js'
 
@@ -15,6 +16,7 @@ export interface Agendador {
     | 'limpar-outbox'
     | 'varrer-importacoes'
     | 'publicar-agendadas'
+    | 'lembrar-eventos'
     | (string & {})
   /** Cron (UTC) ou intervalo em ms (só os testes usam intervalo) */
   quando: { pattern: string } | { every: number }
@@ -34,6 +36,8 @@ export const AGENDADORES: readonly Agendador[] = [
   { id: 'varredura-importacoes', tarefa: 'varrer-importacoes', quando: { every: 60_000 } },
   // A cada minuto: publica as publicações do portal agendadas que já venceram (em todas as empresas)
   { id: 'publicar-agendadas', tarefa: 'publicar-agendadas', quando: { every: 60_000 } },
+  // A cada 5 minutos: avisa quem está confirmado nos eventos que começam em até 24 horas (uma vez por evento)
+  { id: 'lembrar-eventos', tarefa: 'lembrar-eventos', quando: { every: 300_000 } },
 ]
 
 const TAMANHO_DO_LOTE = 500
@@ -78,6 +82,30 @@ async function emLotes(
   return total
 }
 
+/**
+ * Lembrete de 24 horas: acha (em todas as empresas) os eventos publicados que começam em até 24 horas e ainda sem
+ * lembrete, e para cada um, dentro da empresa dele, marca o lembrete e grava o evento do outbox que avisa os
+ * confirmados. A marca e o evento saem na mesma transação: se falhar, o evento é achado de novo na próxima rodada.
+ */
+async function lembrarEventos(banco: Conexao): Promise<number> {
+  const achados = await banco.cliente<{ id: string; tenant_id: string }[]>`
+    SELECT id, tenant_id FROM app_eventos_a_lembrar()`
+  let lembrados = 0
+  for (const { id, tenant_id: tenantId } of achados) {
+    const feito = await banco.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)
+      const marcado = await tx.execute(sql`
+        UPDATE eventos SET lembrete_enviado_em = now(), atualizado_em = now()
+        WHERE id = ${id} AND lembrete_enviado_em IS NULL AND situacao = 'publicado' RETURNING id`)
+      if (marcado.length === 0) return false
+      await agendarNotificacaoDeEvento(tx, tenantId, { tipo: 'lembrete', eventoId: id })
+      return true
+    })
+    if (feito) lembrados += 1
+  }
+  return lembrados
+}
+
 export function processadorDeManutencao(banco: Conexao, log: Logger, filas?: WorkerFilas) {
   return async (job: Job): Promise<{ tarefa: string; resultado: number }> => {
     let resultado: number
@@ -100,6 +128,9 @@ export function processadorDeManutencao(banco: Conexao, log: Logger, filas?: Wor
         resultado = Number(linha?.n ?? 0)
         break
       }
+      case 'lembrar-eventos':
+        resultado = await lembrarEventos(banco)
+        break
       case 'varrer-importacoes':
         if (!filas) throw new Error('varredura de importações sem acesso às filas')
         resultado = await varrerImportacoesParadas({ banco, fila: filas.fila(FILAS.importacao) })

@@ -34,6 +34,10 @@ import { DocumentosController } from './documentos.controller.js'
 import { DocumentosService } from './documentos.service.js'
 import { PortalDocumentosController } from './portal-documentos.controller.js'
 import { PortalDocumentosService } from './portal-documentos.service.js'
+import { EventosController } from './eventos.controller.js'
+import { EventosService } from './eventos.service.js'
+import { PortalEventosController } from './portal-eventos.controller.js'
+import { PortalEventosService } from './portal-eventos.service.js'
 import { PortalGuard } from './portal.guard.js'
 import { PortalInterceptor } from './portal.interceptor.js'
 
@@ -53,6 +57,8 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalPublicacoesController,
     DocumentosController,
     PortalDocumentosController,
+    EventosController,
+    PortalEventosController,
   ],
   providers: [
     LimitePorChave,
@@ -62,6 +68,8 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalPublicacoesService,
     DocumentosService,
     PortalDocumentosService,
+    EventosService,
+    PortalEventosService,
     PortalEntradaService,
     PortalSegundoFatorService,
     PortalAcessosService,
