@@ -115,10 +115,13 @@ function Detalhe({
   id,
   aoMudar,
   aoEditar,
+  aoPublicar,
 }: {
   id: string
   aoMudar: () => void
   aoEditar: (e: Evento) => void
+  /** O rascunho virou publicado: a lista passa para "Próximos", onde ele agora aparece */
+  aoPublicar: () => void
 }) {
   const servicos = useServicos()
   const { pode } = usePermissoes()
@@ -193,6 +196,7 @@ function Detalhe({
                       if (!r.ok) toast.error(r.erro.mensagem)
                       else {
                         toast.success('Evento publicado')
+                        aoPublicar()
                         recarregar()
                       }
                     })
@@ -509,6 +513,7 @@ export function AgendaDoPortal() {
               id={idAtivo}
               aoMudar={recarregar}
               aoEditar={(e) => setEditando(e)}
+              aoPublicar={() => setAba('proximos')}
             />
           </div>
         ) : null}
@@ -520,6 +525,8 @@ export function AgendaDoPortal() {
           aoSalvar={(e) => {
             setEditando(null)
             setEscolhido(e.id)
+            // o rascunho não está em "Próximos": leva a pessoa para onde o evento aparece
+            if (e.situacao === 'rascunho') setAba('rascunhos')
             recarregar()
             void queryClient.invalidateQueries({ queryKey: ['portal', 'evento', e.id] })
           }}

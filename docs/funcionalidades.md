@@ -657,6 +657,31 @@ A equipe publica **arquivos** para os clientes; o cliente lista e baixa; **cada 
 - **Registro:** cada download do cliente grava quem (o acesso), de que empresa-cliente e quando, e a equipe vê o total e a lista (os 200 mais recentes). É dado pessoal (ver `lgpd.md`). O ato do cliente também entra na auditoria (ator contato).
 - **Busca do cliente:** por título e descrição, sem diferença de acento ou caixa.
 
+## 9F. Portal do Cliente, Fase 3D (agenda e eventos)
+
+A equipe publica **eventos** com vagas; o cliente **confirma a presença**, entra na **lista de espera** quando lota e é **promovido sozinho** quando abre uma vaga. Hub: Portal do Cliente → aba **Agenda**; cliente: **Agenda** no menu e painel **Próximos eventos** no Início. Roteiro em `roteiro_teste_portal_3d.md`.
+
+### Permissões (catálogo v8; só o Administrador recebe)
+`portal.agenda` (criar, editar, publicar, cancelar e excluir eventos, e tirar participantes). Quem só tem `portal.ver` vê a agenda, as vagas e os participantes.
+
+### O evento
+- **Dados:** título (até 160), descrição (Markdown restrito, até 5 mil), local, link online (`http` ou `https`), início e fim, **vagas totais** e **vagas por empresa** (vazio = sem limite), **prazo de confirmação** (vazio = até o início; nunca depois do início) e alcance (todos os clientes ou empresas escolhidas, até 500).
+- **Situações:** **rascunho** (o cliente não vê) → **publicado** (início no futuro) → **cancelado** (com motivo, que é enviado aos participantes). Evento cancelado não se edita. Só rascunho ou cancelado se exclui (exclusão lógica).
+
+### Confirmar, lista de espera e promoção (regras)
+- **Confirmar:** com vaga livre no total **e** na empresa do cliente, fica **confirmado**; senão entra na **lista de espera**. Idempotente: pedir de novo devolve a situação atual. Recusas: evento cancelado, já iniciado ou prazo encerrado.
+- **Cancelar a própria presença:** vale até o início do evento (o prazo de confirmação não impede cancelar). Se a pessoa estava confirmada, a vaga é oferecida à fila.
+- **Promoção:** na **ordem da fila**, o primeiro que cabe nas vagas **do total e da empresa dele**; quem está com a empresa no limite é **pulado** (continua esperando). Quem sai da fila e volta, volta ao **fim**. A mesma promoção roda quando a equipe **tira um participante** ou **aumenta as vagas**.
+- **Sem passar do limite:** confirmar e cancelar são funções do banco que **travam a linha do evento**, então vários cliques ao mesmo tempo nunca passam do limite (há testes de concorrência no banco e pela API).
+- **Privacidade:** o cliente vê **quantas vagas restam**, as vagas da empresa dele (limite e quantos colegas confirmaram) e a situação dele; **nunca** o nome de outro participante.
+
+### Avisos e lembrete
+- **Promovido da fila:** sino e e-mail ao cliente ("Vaga confirmada"). **Evento cancelado:** sino e e-mail a confirmados e lista de espera, com o motivo. **Lembrete de 24 horas:** sino e e-mail aos **confirmados** dos eventos que começam em até 24 horas, **uma vez por evento** (o worker confere a cada 5 minutos). O e-mail depende de `PORTAL_URL` e do SMTP; sem eles só o sino sai.
+- **.ics:** o cliente baixa o arquivo de calendário de qualquer evento que enxerga ("Adicionar à agenda").
+
+### Equipe
+Lista por **Próximos, Passados e Rascunhos** com vagas e fila; detalhe com a descrição, o alcance, os **Confirmados** e a **Lista de espera** (posição, pessoa, e-mail e empresa); **Tirar** um participante. Atos da equipe e do cliente (confirmar, entrar na lista, cancelar presença) são auditados.
+
 ---
 
 ## 10. Usuários, papéis e carteira
