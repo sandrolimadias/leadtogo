@@ -1057,3 +1057,52 @@ fabricas['publicacao_leituras'] = definirFabrica<PaisDaPublicacao>({
     return id
   },
 })
+
+// Portal do Cliente (Fase 3C): documentos
+interface PaisDoDocumento {
+  acessoId: string
+  empresaId: string
+  documentoId: string
+}
+const inserirDocumento = async (tx: TransactionSql, tenantId: string, estado = 'limpo') => {
+  const documentoId = novoId()
+  await tx`INSERT INTO documentos (id, tenant_id, titulo, chave_arquivo, nome, mime, tamanho, estado, enviado_em)
+    VALUES (${documentoId}, ${tenantId}, 'Guia rápido', ${`${tenantId}/documentos/${documentoId}`},
+      'guia.pdf', 'application/pdf', 1024, ${estado}::estado_anexo, now())`
+  return documentoId
+}
+const prepararDocumento = async (owner: Sql, tenantId: string): Promise<PaisDoDocumento> => {
+  const pais = await prepararPortal(owner, tenantId)
+  return comTenant(owner, tenantId, async (tx) => ({
+    acessoId: await inserirAcessoDoPortal(tx, tenantId, pais),
+    empresaId: pais.empresaId,
+    documentoId: await inserirDocumento(tx, tenantId),
+  }))
+}
+
+fabricas['documentos'] = definirFabrica({
+  colunaAlteravel: 'titulo',
+  criar: (tx, tenantId) => inserirDocumento(tx, tenantId, 'pendente_varredura'),
+})
+
+fabricas['documento_empresas'] = definirFabrica<PaisDoDocumento>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararDocumento,
+  criar: async (tx, tenantId, { empresaId, documentoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO documento_empresas (id, tenant_id, documento_id, empresa_id)
+      VALUES (${id}, ${tenantId}, ${documentoId}, ${empresaId})`
+    return id
+  },
+})
+
+fabricas['documento_acessos'] = definirFabrica<PaisDoDocumento>({
+  colunaAlteravel: 'atualizado_em',
+  preparar: prepararDocumento,
+  criar: async (tx, tenantId, { acessoId, empresaId, documentoId }) => {
+    const id = novoId()
+    await tx`INSERT INTO documento_acessos (id, tenant_id, documento_id, acesso_id, empresa_id)
+      VALUES (${id}, ${tenantId}, ${documentoId}, ${acessoId}, ${empresaId})`
+    return id
+  },
+})
