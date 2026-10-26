@@ -25,8 +25,10 @@ import {
 import { useRef, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePermissoes } from '@/auth/permissoes'
 import { Button } from '@leadtogo/ui/button'
-import { Select, TextArea } from '@leadtogo/ui/campos'
+import { Select, TextArea, TextField } from '@leadtogo/ui/campos'
+import { Checkbox } from '@leadtogo/ui/checkbox'
 import { Dialog } from '@leadtogo/ui/dialog'
 import { Badge } from '@leadtogo/ui/exibicao'
 import { Alert, Skeleton } from '@leadtogo/ui/feedback'
@@ -169,6 +171,9 @@ function Resposta({ c, aoAtualizar }: { c: Chamado; aoAtualizar: (n: Chamado) =>
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const seletor = useRef<HTMLInputElement>(null)
+  // Chamado do portal: escrever ao cliente pode passar o chamado a "Aguardando cliente" na mesma ação
+  const doPortal = c.origem === 'portal'
+  const [aguardar, setAguardar] = useState(doPortal && c.status !== 'aguardando_cliente')
 
   const escolher = (lista: FileList | null) => {
     if (!lista) return
@@ -203,7 +208,11 @@ function Resposta({ c, aoAtualizar }: { c: Chamado; aoAtualizar: (n: Chamado) =>
       if (!confirmado.ok) return falhar(`${arquivo.name}: ${confirmado.erro.mensagem}`)
       anexoIds.push(pedido.dados.anexoId)
     }
-    const r = await servicos.chamados.mensagem(c.id, { corpo: corpo.trim(), anexoIds })
+    const dados = { corpo: corpo.trim(), anexoIds }
+    const r =
+      doPortal && aguardar
+        ? await servicos.chamados.aguardarCliente(c.id, dados)
+        : await servicos.chamados.mensagem(c.id, dados)
     setEnviando(false)
     if (!r.ok) {
       setErro(r.erro.mensagem)
@@ -277,6 +286,14 @@ function Resposta({ c, aoAtualizar }: { c: Chamado; aoAtualizar: (n: Chamado) =>
         <span className="flex-1 text-xs text-ink-muted">
           Até {MAXIMO_DE_ANEXOS_POR_MENSAGEM} arquivos de 25 MB, verificados pelo antivírus.
         </span>
+        {doPortal ? (
+          <Checkbox
+            checked={aguardar}
+            onChange={(e) => setAguardar(e.target.checked)}
+            label="Aguardar resposta do cliente"
+            description="O cliente vê a mensagem, é avisado e o prazo pausa."
+          />
+        ) : null}
         <Button
           type="submit"
           variant="primary"
@@ -288,6 +305,100 @@ function Resposta({ c, aoAtualizar }: { c: Chamado; aoAtualizar: (n: Chamado) =>
         </Button>
       </div>
     </form>
+  )
+}
+
+/** Tarefas (Atividades) criadas a partir do chamado; quem atende e registra atividades cria novas. */
+function TarefasDoChamado({ c }: { c: Chamado }) {
+  const servicos = useServicos()
+  const { pode } = usePermissoes()
+  const queryClient = useQueryClient()
+  const [abrindo, setAbrindo] = useState(false)
+  const [titulo, setTitulo] = useState('')
+  const [prazo, setPrazo] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const tarefas = useQuery({
+    queryKey: ['chamados', 'tarefas', c.id],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.chamados.tarefas.listar(c.id)
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.itens
+    },
+  })
+  const podeCriar = c.acoes.notaInterna && pode('atividades.criar')
+  const criar = async () => {
+    setSalvando(true)
+    setErro(null)
+    const r = await servicos.chamados.tarefas.criar(c.id, {
+      titulo: titulo.trim(),
+      ...(prazo ? { prazo: new Date(prazo).toISOString() } : {}),
+    })
+    setSalvando(false)
+    if (!r.ok) {
+      setErro(r.erro.mensagem)
+      return
+    }
+    queryClient.setQueryData(['chamados', 'tarefas', c.id], r.dados.itens)
+    setAbrindo(false)
+    setTitulo('')
+    setPrazo('')
+    toast.success('Tarefa criada')
+  }
+  if (!podeCriar && (tarefas.data ?? []).length === 0) return null
+  return (
+    <section
+      aria-label="Tarefas"
+      className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3"
+    >
+      <h2 className="m-0 text-sm font-semibold">Tarefas</h2>
+      {(tarefas.data ?? []).length > 0 ? (
+        <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13px]">
+          {(tarefas.data ?? []).map((t) => (
+            <li key={t.id} className="flex flex-col">
+              <span className="font-medium">{t.titulo}</span>
+              <span className="text-xs text-ink-muted">
+                {t.responsavel?.nome ?? 'Sem responsável'} · {dataHora(t.dataInicio)} · {t.situacao}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="m-0 text-[13px] text-ink-muted">Nenhuma tarefa ligada a este chamado.</p>
+      )}
+      {podeCriar ? <Button onClick={() => setAbrindo(true)}>Criar tarefa</Button> : null}
+      <Dialog
+        open={abrindo}
+        onOpenChange={setAbrindo}
+        title="Criar tarefa"
+        description="Cria uma atividade do tipo Tarefa ligada a este chamado e à empresa do cliente."
+        footer={
+          <>
+            <Button onClick={() => setAbrindo(false)}>Cancelar</Button>
+            <Button
+              variant="primary"
+              loading={salvando}
+              disabled={titulo.trim().length < 3}
+              onClick={() => void criar()}
+            >
+              Criar tarefa
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          {erro ? <Alert tone="danger">{erro}</Alert> : null}
+          <TextField label="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+          <TextField
+            label="Prazo (opcional)"
+            type="datetime-local"
+            value={prazo}
+            onChange={(e) => setPrazo(e.target.value)}
+          />
+        </div>
+      </Dialog>
+    </section>
   )
 }
 
@@ -700,6 +811,7 @@ export function TelaDoChamado({ chamadoId }: { chamadoId: string }) {
             {c.resolvidoEm ? <Dado rotulo="Resolvido em">{dataHora(c.resolvidoEm)}</Dado> : null}
             {c.reaberturas > 0 ? <Dado rotulo="Reaberturas">{c.reaberturas}</Dado> : null}
           </dl>
+          <TarefasDoChamado c={c} />
           {c.prazoResposta || c.prazoResolucao ? (
             <dl className="m-0 flex flex-col gap-2 rounded-md border border-border bg-surface p-3 text-[13px]">
               {[

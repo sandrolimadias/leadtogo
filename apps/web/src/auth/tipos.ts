@@ -1,4 +1,10 @@
 import type {
+  AcessoDoPortal,
+  ConfiguracaoDoPortal,
+  IndicadoresDoHub,
+  ListaDeAcessosDoPortal,
+  ListaDePedidosDeAcesso,
+  ListaDeTarefasDoChamado,
   Atividade,
   Dashboard,
   KanbanDeOportunidades,
@@ -582,8 +588,63 @@ export interface ServicosDeChamados {
     gerarFeriados: (ano: number) => Promise<Resultado<{ criados: number }>>
     excluirFeriado: (id: string) => Promise<Resultado>
   }
+  /** "Aguardar resposta do cliente": escreve ao cliente do portal e muda o estado numa ação só */
+  aguardarCliente: (id: string, dados: EnviarMensagemEntrada) => Promise<Resultado<Chamado>>
+  /** Tarefas (Atividades) criadas a partir do chamado */
+  tarefas: {
+    listar: (id: string) => Promise<Resultado<ListaDeTarefasDoChamado>>
+    criar: (
+      id: string,
+      dados: { titulo: string; responsavelId?: string; prazo?: string },
+    ) => Promise<Resultado<ListaDeTarefasDoChamado>>
+  }
   /** Só `chamados.ver_metricas` */
   metricas: (consulta: ConsultaDeMetricas) => Promise<Resultado<MetricasDeChamados>>
+}
+
+/** Gestão do portal do cliente pela equipe (Fase 3A): hub, acessos, pedidos dos colegas e configuração. */
+export interface ServicosDoPortalNoCrm {
+  /** Indicadores do hub (`portal.ver`); `dias` é a janela de 1ª resposta e nota (padrão 30) */
+  indicadores: (dias?: number) => Promise<Resultado<IndicadoresDoHub>>
+  configuracao: {
+    obter: () => Promise<Resultado<ConfiguracaoDoPortal>>
+    atualizar: (dados: {
+      ativo?: boolean
+      nome?: string | null
+      exigeDoisFatoresDoResponsavel?: boolean
+    }) => Promise<Resultado<ConfiguracaoDoPortal>>
+  }
+  acessos: {
+    listar: (consulta?: {
+      empresaClienteId?: string
+      contatoId?: string
+      situacao?: AcessoDoPortal['situacao']
+      busca?: string
+      pagina?: number
+    }) => Promise<Resultado<ListaDeAcessosDoPortal>>
+    /** 409 `portal_desligado`, `acesso_ja_existe`, `email_em_uso`; 422 `contato_fora_da_empresa`, `email_obrigatorio` */
+    dar: (dados: {
+      contatoId: string
+      empresaClienteId: string
+      email?: string
+      papel: 'responsavel' | 'colega'
+    }) => Promise<Resultado<AcessoDoPortal>>
+    reenviar: (id: string) => Promise<Resultado<AcessoDoPortal>>
+    alterar: (
+      id: string,
+      dados: { papel?: 'responsavel' | 'colega'; situacao?: 'ativo' | 'suspenso' },
+    ) => Promise<Resultado<AcessoDoPortal>>
+    revogar: (id: string) => Promise<Resultado>
+  }
+  pedidos: {
+    listar: (
+      situacao?: 'pendente' | 'aprovado' | 'recusado',
+    ) => Promise<Resultado<ListaDePedidosDeAcesso>>
+    tratar: (
+      id: string,
+      dados: { decisao: 'aprovar' | 'recusar'; motivo?: string },
+    ) => Promise<Resultado>
+  }
 }
 
 /** O sino do CRM: as notificações do próprio membro. */
@@ -676,6 +737,8 @@ export interface ServicosDeAcesso {
 
   // Central de chamados (Fase 2) e o sino
   chamados: ServicosDeChamados
+  // Portal do cliente (Fase 3): a gestão feita pela equipe
+  portal: ServicosDoPortalNoCrm
   notificacoes: ServicosDeNotificacoes
 
   // Atividades (Módulo 5)

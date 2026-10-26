@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   ClipboardList,
   Handshake,
+  Globe,
   LifeBuoy,
   Target,
   Users,
@@ -43,6 +44,7 @@ export const PERMISSOES_DAS_CONFIGURACOES = [
   'geolocalizacao.legenda',
   'seguranca.gerir',
   'chamados.gerir_areas',
+  'portal.configurar',
 ] as const
 
 export const TELAS: TelaDoApp[] = [
@@ -63,6 +65,13 @@ export const TELAS: TelaDoApp[] = [
     permissoes: ['atividades.ver'],
   },
   { caminho: '/chamados', titulo: 'Chamados', icone: LifeBuoy, permissoes: ['chamados.ver'] },
+  {
+    caminho: '/portal',
+    titulo: 'Portal do Cliente',
+    icone: Globe,
+    rotuloCurto: 'Portal',
+    permissoes: ['portal.ver'],
+  },
   { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone, permissoes: ['empresas.ver'] },
   {
     caminho: '/visitas',

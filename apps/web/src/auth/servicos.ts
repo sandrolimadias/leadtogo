@@ -777,10 +777,88 @@ export const servicosReais: ServicosDeAcesso = {
           semCorpo(await api.DELETE('/v1/chamados/feriados/{id}', { params: { path: { id } } })),
         ),
     },
+    aguardarCliente: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/chamados/{id}/aguardar-cliente', {
+            params: { path: { id } },
+            body: dados,
+          }),
+        ),
+      ),
+    tarefas: {
+      listar: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/chamados/{id}/tarefas', { params: { path: { id } } })),
+        ),
+      criar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/chamados/{id}/tarefas', { params: { path: { id } }, body: dados }),
+          ),
+        ),
+    },
     metricas: (consulta) =>
       protegido(async () =>
         daApi(await api.GET('/v1/chamados/metricas', { params: { query: consulta } })),
       ),
+  },
+
+  portal: {
+    indicadores: (dias) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/portal-hub/indicadores', {
+            params: { query: dias ? { dias } : {} },
+          }),
+        ),
+      ),
+    configuracao: {
+      obter: () => protegido(async () => daApi(await api.GET('/v1/portal-configuracao'))),
+      atualizar: (dados) =>
+        protegido(async () => daApi(await api.PUT('/v1/portal-configuracao', { body: dados }))),
+    },
+    acessos: {
+      listar: (consulta = {}) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-acessos', { params: { query: consulta } })),
+        ),
+      dar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/portal-acessos', { body: dados }))),
+      reenviar: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-acessos/{id}/reenviar', { params: { path: { id } } })),
+        ),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/portal-acessos/{id}', { params: { path: { id } }, body: dados }),
+          ),
+        ),
+      revogar: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/portal-acessos/{id}', { params: { path: { id } } })),
+        ),
+    },
+    pedidos: {
+      listar: (situacao) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/portal-pedidos', {
+              params: { query: situacao ? { situacao } : {} },
+            }),
+          ),
+        ),
+      tratar: (id, dados) =>
+        protegido(async () =>
+          semCorpo(
+            await api.POST('/v1/portal-pedidos/{id}/tratar', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+    },
   },
 
   notificacoes: {
