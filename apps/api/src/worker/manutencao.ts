@@ -9,7 +9,13 @@ import type { WorkerFilas } from './worker-filas.service.js'
 /** Tarefa agendada: o `id` do agendador do BullMQ é único, então reexecutar o registro não duplica nada. */
 export interface Agendador {
   id: string
-  tarefa: 'particoes' | 'limpar-convites' | 'limpar-outbox' | 'varrer-importacoes' | (string & {})
+  tarefa:
+    | 'particoes'
+    | 'limpar-convites'
+    | 'limpar-outbox'
+    | 'varrer-importacoes'
+    | 'publicar-agendadas'
+    | (string & {})
   /** Cron (UTC) ou intervalo em ms (só os testes usam intervalo) */
   quando: { pattern: string } | { every: number }
 }
@@ -26,6 +32,8 @@ export const AGENDADORES: readonly Agendador[] = [
   { id: 'limpeza-outbox', tarefa: 'limpar-outbox', quando: { pattern: '15 4 * * *' } },
   // A cada minuto: reenfileira o lote de importação em andamento que parou de andar
   { id: 'varredura-importacoes', tarefa: 'varrer-importacoes', quando: { every: 60_000 } },
+  // A cada minuto: publica as publicações do portal agendadas que já venceram (em todas as empresas)
+  { id: 'publicar-agendadas', tarefa: 'publicar-agendadas', quando: { every: 60_000 } },
 ]
 
 const TAMANHO_DO_LOTE = 500
@@ -87,6 +95,11 @@ export function processadorDeManutencao(banco: Conexao, log: Logger, filas?: Wor
       case 'limpar-outbox':
         resultado = await emLotes(banco, 'app_limpar_outbox')
         break
+      case 'publicar-agendadas': {
+        const [linha] = await banco.cliente<{ n: number }[]>`SELECT app_publicar_agendadas() AS n`
+        resultado = Number(linha?.n ?? 0)
+        break
+      }
       case 'varrer-importacoes':
         if (!filas) throw new Error('varredura de importações sem acesso às filas')
         resultado = await varrerImportacoesParadas({ banco, fila: filas.fila(FILAS.importacao) })

@@ -17946,6 +17946,716 @@
         "tags": ["Portal do cliente: gestão"]
       }
     },
+    "/v1/portal-publicacoes": {
+      "get": {
+        "description": "Exige `portal.ver`, `portal.publicar` ou `portal.moderar`. Por aba (todas, publicadas, agendadas, rascunhos), com alcance, reações, comentários e denúncias de cada uma e o total de denúncias abertas.",
+        "operationId": "PublicacoesController_listar",
+        "parameters": [
+          {
+            "name": "aba",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "todas",
+              "type": "string",
+              "enum": ["todas", "publicadas", "agendadas", "rascunhos"]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDePublicacoes"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Publicações do portal",
+        "tags": ["Portal do cliente: publicações"]
+      },
+      "post": {
+        "description": "Exige `portal.publicar`. `situacao`: rascunho, publicada (publica agora) ou agendada (exige `agendadaPara` no futuro; 422 `agenda_no_passado`). Alcance \"empresas\" exige a lista de empresas (422 `empresa_invalida` se alguma não existe). O texto é Markdown restrito, sem HTML.",
+        "operationId": "PublicacoesController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarPublicacaoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Publicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar uma publicação",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
+    "/v1/portal-publicacoes/{id}": {
+      "get": {
+        "description": "Exige `portal.ver`, `portal.publicar` ou `portal.moderar`.",
+        "operationId": "PublicacoesController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Publicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ver uma publicação",
+        "tags": ["Portal do cliente: publicações"]
+      },
+      "patch": {
+        "description": "Exige `portal.publicar`. Rascunho e agendada mudam livremente (inclusive para publicada). Publicada só tem o conteúdo e o alcance editados: voltar a rascunho ou agenda dá 409 `publicacao_ja_publicada`.",
+        "operationId": "PublicacoesController_editar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarPublicacaoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Publicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar uma publicação",
+        "tags": ["Portal do cliente: publicações"]
+      },
+      "delete": {
+        "description": "Exige `portal.publicar`. Exclusão lógica: some do portal e da lista, os dados ficam guardados.",
+        "operationId": "PublicacoesController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir uma publicação",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
+    "/v1/portal-publicacoes/{id}/comentarios": {
+      "get": {
+        "description": "Exige `portal.moderar`. Todos os comentários da publicação, inclusive os ocultos (com o motivo e quem ocultou), com a empresa do autor e as denúncias abertas.",
+        "operationId": "PublicacoesController_comentarios",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeComentariosParaModeracao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Comentários para moderar",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
+    "/v1/portal-publicacoes/{id}/comentarios-bloqueados": {
+      "put": {
+        "description": "Exige `portal.moderar`. Bloqueada, ninguém comenta; os comentários que já existem continuam visíveis.",
+        "operationId": "PublicacoesController_bloquear",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BloquearComentariosEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Publicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Bloquear ou liberar os comentários da publicação",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
+    "/v1/portal-publicacoes/{id}/comentarios/{comentarioId}": {
+      "patch": {
+        "description": "Exige `portal.moderar`. `manter` dispensa as denúncias; `ocultar` (com motivo) esconde dos outros clientes sem apagar (o autor continua vendo, com o motivo) e encerra as denúncias; `reexibir` desfaz.",
+        "operationId": "PublicacoesController_moderar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "comentarioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerarComentarioEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeComentariosParaModeracao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Moderar um comentário",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
+    "/v1/portal-publicacoes/{id}/fixada": {
+      "put": {
+        "description": "Exige `portal.publicar`. Só uma publicação fica fixada por vez (fixar outra desafixa a anterior); só a já publicada pode ser fixada (409 `so_publicada_fixa`).",
+        "operationId": "PublicacoesController_fixar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixarPublicacaoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Publicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Fixar ou desafixar",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
     "/v1/portal/2fa/conferir": {
       "post": {
         "description": "Código do aplicativo ou código de recuperação (que se gasta). Libera as rotas do portal nesta sessão. Limite de tentativas por acesso.",
@@ -20203,6 +20913,646 @@
         ]
       }
     },
+    "/v1/portal/publicacoes": {
+      "get": {
+        "description": "Só as publicadas e do alcance da empresa do cliente, a fixada primeiro. As reações vêm como total (nunca quem reagiu).",
+        "operationId": "PortalPublicacoesController_feed",
+        "parameters": [
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Feed de publicações",
+        "tags": ["Portal do cliente: publicações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/publicacoes/{id}": {
+      "get": {
+        "operationId": "PortalPublicacoesController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicacaoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ver uma publicação",
+        "tags": ["Portal do cliente: publicações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/publicacoes/{id}/comentarios": {
+      "get": {
+        "description": "Os visíveis (de todas as empresas, com o nome reduzido do autor) e os próprios, mesmo ocultos, com o motivo.",
+        "operationId": "PortalPublicacoesController_comentarios",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeComentariosDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Comentários da publicação",
+        "tags": ["Portal do cliente: publicações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      },
+      "post": {
+        "description": "Texto puro de 1 a 1000 caracteres. 409 `comentarios_fechados` se a publicação está bloqueada ou a chave geral está desligada.",
+        "operationId": "PortalPublicacoesController_comentar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComentarNoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComentarioDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Comentar",
+        "tags": ["Portal do cliente: publicações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/publicacoes/{id}/reacoes": {
+      "post": {
+        "description": "Clicar liga a reação (curtir, apoiar ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.",
+        "operationId": "PortalPublicacoesController_reagir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReagirNoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReacoesDaPublicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reagir (ou desfazer a reação)",
+        "tags": ["Portal do cliente: publicações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/publicacoes/comentarios/{comentarioId}/denuncia": {
+      "post": {
+        "description": "Só comentário que o cliente enxerga e que não é dele (422 `denuncia_propria`). Denunciar duas vezes é inofensivo. A equipe trata no hub.",
+        "operationId": "PortalPublicacoesController_denunciar",
+        "parameters": [
+          {
+            "name": "comentarioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DenunciarNoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Denunciar um comentário",
+        "tags": ["Portal do cliente: publicações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/publicacoes/leituras": {
+      "post": {
+        "description": "Registra a leitura (uma por pessoa e publicação) das que o cliente enxerga; as outras são ignoradas. Base do alcance que a equipe vê.",
+        "operationId": "PortalPublicacoesController_leituras",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarcarLeiturasEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeiturasMarcadas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Marcar publicações como lidas",
+        "tags": ["Portal do cliente: publicações"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/sair": {
       "post": {
         "description": "Revoga a sessão atual e apaga o cookie.",
@@ -22414,6 +23764,10 @@
         "required": ["latitude", "longitude"],
         "additionalProperties": false
       },
+      "AlcanceDaPublicacao": {
+        "type": "string",
+        "enum": ["todos", "empresas"]
+      },
       "Alertas": {
         "type": "object",
         "properties": {
@@ -23813,6 +25167,16 @@
         "required": ["url"],
         "additionalProperties": false
       },
+      "BloquearComentariosEntrada": {
+        "type": "object",
+        "properties": {
+          "bloqueados": {
+            "type": "boolean"
+          }
+        },
+        "required": ["bloqueados"],
+        "additionalProperties": false
+      },
       "CampoDeVisita": {
         "oneOf": [
           {
@@ -24413,6 +25777,120 @@
           }
         },
         "required": ["codigo"],
+        "additionalProperties": false
+      },
+      "ComentarioDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "autorNome": {
+            "type": "string"
+          },
+          "corpo": {
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "meu": {
+            "type": "boolean"
+          },
+          "oculto": {
+            "type": "boolean"
+          },
+          "ocultoMotivo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "denunciado": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "autorNome",
+          "corpo",
+          "criadoEm",
+          "meu",
+          "oculto",
+          "ocultoMotivo",
+          "denunciado"
+        ],
+        "additionalProperties": false
+      },
+      "ComentarioParaModeracao": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "autorNome": {
+            "type": "string"
+          },
+          "empresaNome": {
+            "type": "string"
+          },
+          "corpo": {
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "oculto": {
+            "type": "boolean"
+          },
+          "ocultoMotivo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ocultoPorNome": {
+            "nullable": true,
+            "type": "string"
+          },
+          "denunciasAbertas": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "motivoDaDenuncia": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MotivoDeDenuncia"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "autorNome",
+          "empresaNome",
+          "corpo",
+          "criadoEm",
+          "oculto",
+          "ocultoMotivo",
+          "ocultoPorNome",
+          "denunciasAbertas",
+          "motivoDaDenuncia"
+        ],
+        "additionalProperties": false
+      },
+      "ComentarNoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "corpo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": ["corpo"],
         "additionalProperties": false
       },
       "ConcluirAtividadeEntrada": {
@@ -26831,6 +28309,16 @@
         "required": ["tagIds"],
         "additionalProperties": false
       },
+      "DenunciarNoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "$ref": "#/components/schemas/MotivoDeDenuncia"
+          }
+        },
+        "required": ["motivo"],
+        "additionalProperties": false
+      },
       "DistanciaDoCheckin": {
         "type": "object",
         "properties": {
@@ -28053,6 +29541,24 @@
         "required": ["status"],
         "additionalProperties": false
       },
+      "FeedDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicacaoDoPortal"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
+        "additionalProperties": false
+      },
       "Feriado": {
         "type": "object",
         "properties": {
@@ -28141,6 +29647,16 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina"],
+        "additionalProperties": false
+      },
+      "FixarPublicacaoEntrada": {
+        "type": "object",
+        "properties": {
+          "fixada": {
+            "type": "boolean"
+          }
+        },
+        "required": ["fixada"],
         "additionalProperties": false
       },
       "Funil": {
@@ -28828,6 +30344,60 @@
         ],
         "additionalProperties": false
       },
+      "ItemDePublicacao": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDaPublicacao"
+          },
+          "alcance": {
+            "$ref": "#/components/schemas/AlcanceDaPublicacao"
+          },
+          "fixada": {
+            "type": "boolean"
+          },
+          "agendadaPara": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "publicadaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "comentariosBloqueados": {
+            "type": "boolean"
+          },
+          "metricas": {
+            "$ref": "#/components/schemas/MetricasDaPublicacao"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "situacao",
+          "alcance",
+          "fixada",
+          "agendadaPara",
+          "publicadaEm",
+          "atualizadoEm",
+          "comentariosBloqueados",
+          "metricas"
+        ],
+        "additionalProperties": false
+      },
       "ItemDeRota": {
         "type": "object",
         "properties": {
@@ -29139,6 +30709,18 @@
           }
         },
         "required": ["entradas"],
+        "additionalProperties": false
+      },
+      "LeiturasMarcadas": {
+        "type": "object",
+        "properties": {
+          "marcadas": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["marcadas"],
         "additionalProperties": false
       },
       "LevarParaOfflineEntrada": {
@@ -29455,6 +31037,35 @@
         "required": ["itens", "total", "abas"],
         "additionalProperties": false
       },
+      "ListaDeComentariosDoPortal": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComentarioDoPortal"
+            }
+          },
+          "comentariosAbertos": {
+            "type": "boolean"
+          }
+        },
+        "required": ["itens", "comentariosAbertos"],
+        "additionalProperties": false
+      },
+      "ListaDeComentariosParaModeracao": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComentarioParaModeracao"
+            }
+          }
+        },
+        "required": ["itens"],
+        "additionalProperties": false
+      },
       "ListaDeContatos": {
         "type": "object",
         "properties": {
@@ -29755,6 +31366,56 @@
         "required": ["itens"],
         "additionalProperties": false
       },
+      "ListaDePublicacoes": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDePublicacao"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "abas": {
+            "type": "object",
+            "properties": {
+              "todas": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "publicadas": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "agendadas": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rascunhos": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["todas", "publicadas", "agendadas", "rascunhos"],
+            "additionalProperties": false
+          },
+          "denunciasAbertas": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total", "abas", "denunciasAbertas"],
+        "additionalProperties": false
+      },
       "ListaDeRotas": {
         "type": "object",
         "properties": {
@@ -30050,6 +31711,22 @@
           }
         },
         "required": ["marcadas", "naoLidas"],
+        "additionalProperties": false
+      },
+      "MarcarLeiturasEntrada": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": ["ids"],
         "additionalProperties": false
       },
       "MarcoDoChamadoNoPortal": {
@@ -30363,6 +32040,73 @@
         ],
         "additionalProperties": false
       },
+      "MetricasDaPublicacao": {
+        "type": "object",
+        "properties": {
+          "leitores": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "alvo": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "empresasAlcancadas": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "reacoes": {
+            "type": "object",
+            "properties": {
+              "curtir": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "apoiar": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "parabens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["curtir", "apoiar", "parabens"],
+            "additionalProperties": false
+          },
+          "comentarios": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "comentariosOcultos": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "denunciasAbertas": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "leitores",
+          "alvo",
+          "empresasAlcancadas",
+          "reacoes",
+          "comentarios",
+          "comentariosOcultos",
+          "denunciasAbertas"
+        ],
+        "additionalProperties": false
+      },
       "MetricasDeChamados": {
         "type": "object",
         "properties": {
@@ -30599,6 +32343,22 @@
         ],
         "additionalProperties": false
       },
+      "ModerarComentarioEntrada": {
+        "type": "object",
+        "properties": {
+          "acao": {
+            "type": "string",
+            "enum": ["manter", "ocultar", "reexibir"]
+          },
+          "motivo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": ["acao"],
+        "additionalProperties": false
+      },
       "Motivo": {
         "type": "object",
         "properties": {
@@ -30627,6 +32387,10 @@
         },
         "required": ["id", "nome", "aplicaA", "ativo", "ordem"],
         "additionalProperties": false
+      },
+      "MotivoDeDenuncia": {
+        "type": "string",
+        "enum": ["spam", "ofensivo", "outro"]
       },
       "MoverOportunidadeEntrada": {
         "type": "object",
@@ -32865,6 +34629,162 @@
         "type": "string",
         "enum": ["baixa", "normal", "alta", "urgente"]
       },
+      "Publicacao": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDaPublicacao"
+          },
+          "alcance": {
+            "$ref": "#/components/schemas/AlcanceDaPublicacao"
+          },
+          "fixada": {
+            "type": "boolean"
+          },
+          "agendadaPara": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "publicadaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "comentariosBloqueados": {
+            "type": "boolean"
+          },
+          "metricas": {
+            "$ref": "#/components/schemas/MetricasDaPublicacao"
+          },
+          "corpo": {
+            "type": "string"
+          },
+          "autorNome": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "empresas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "situacao",
+          "alcance",
+          "fixada",
+          "agendadaPara",
+          "publicadaEm",
+          "atualizadoEm",
+          "comentariosBloqueados",
+          "metricas",
+          "corpo",
+          "autorNome",
+          "criadoEm",
+          "empresas"
+        ],
+        "additionalProperties": false
+      },
+      "PublicacaoDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "corpo": {
+            "type": "string"
+          },
+          "publicadaEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fixada": {
+            "type": "boolean"
+          },
+          "reacoes": {
+            "type": "object",
+            "properties": {
+              "curtir": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "apoiar": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "parabens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["curtir", "apoiar", "parabens"],
+            "additionalProperties": false
+          },
+          "minhasReacoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TipoDeReacao"
+            }
+          },
+          "comentarios": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "comentariosAbertos": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "corpo",
+          "publicadaEm",
+          "fixada",
+          "reacoes",
+          "minhasReacoes",
+          "comentarios",
+          "comentariosAbertos"
+        ],
+        "additionalProperties": false
+      },
       "PularParadaEntrada": {
         "type": "object",
         "properties": {
@@ -32875,6 +34795,51 @@
           }
         },
         "required": ["motivo"],
+        "additionalProperties": false
+      },
+      "ReacoesDaPublicacao": {
+        "type": "object",
+        "properties": {
+          "reacoes": {
+            "type": "object",
+            "properties": {
+              "curtir": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "apoiar": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "parabens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["curtir", "apoiar", "parabens"],
+            "additionalProperties": false
+          },
+          "minhasReacoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TipoDeReacao"
+            }
+          }
+        },
+        "required": ["reacoes", "minhasReacoes"],
+        "additionalProperties": false
+      },
+      "ReagirNoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "$ref": "#/components/schemas/TipoDeReacao"
+          }
+        },
+        "required": ["tipo"],
         "additionalProperties": false
       },
       "RegiaoGeo": {
@@ -33456,6 +35421,44 @@
         "required": ["rotaId", "codigo", "nome", "data", "ordem", "situacaoParada"],
         "additionalProperties": false
       },
+      "SalvarPublicacaoEntrada": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 160
+          },
+          "corpo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "alcance": {
+            "$ref": "#/components/schemas/AlcanceDaPublicacao"
+          },
+          "empresaIds": {
+            "default": [],
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDaPublicacao"
+          },
+          "agendadaPara": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["titulo", "corpo", "alcance", "situacao"],
+        "additionalProperties": false
+      },
       "SalvarRegiao": {
         "type": "object",
         "properties": {
@@ -33998,6 +36001,10 @@
         ],
         "additionalProperties": false
       },
+      "SituacaoDaPublicacao": {
+        "type": "string",
+        "enum": ["rascunho", "agendada", "publicada"]
+      },
       "SituacaoDoAcesso": {
         "type": "string",
         "enum": ["convidado", "ativo", "suspenso", "revogado"]
@@ -34254,6 +36261,10 @@
           "chaveSistema"
         ],
         "additionalProperties": false
+      },
+      "TipoDeReacao": {
+        "type": "string",
+        "enum": ["curtir", "apoiar", "parabens"]
       },
       "TratarPedidoDeAcessoEntrada": {
         "type": "object",

@@ -26,6 +26,10 @@ import { PortalEntradaService } from './portal-entrada.service.js'
 import { PortalLinksService } from './portal-links.service.js'
 import { PortalSegundoFatorService } from './portal-segundo-fator.service.js'
 import { PortalSessaoService } from './portal-sessao.service.js'
+import { PortalPublicacoesController } from './portal-publicacoes.controller.js'
+import { PortalPublicacoesService } from './portal-publicacoes.service.js'
+import { PublicacoesController } from './publicacoes.controller.js'
+import { PublicacoesService } from './publicacoes.service.js'
 import { PortalGuard } from './portal.guard.js'
 import { PortalInterceptor } from './portal.interceptor.js'
 
@@ -41,11 +45,15 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalConfiguracaoController,
     PortalHubController,
     TarefasDoChamadoController,
+    PublicacoesController,
+    PortalPublicacoesController,
   ],
   providers: [
     LimitePorChave,
     PortalLinksService,
     PortalSessaoService,
+    PublicacoesService,
+    PortalPublicacoesService,
     PortalEntradaService,
     PortalSegundoFatorService,
     PortalAcessosService,
