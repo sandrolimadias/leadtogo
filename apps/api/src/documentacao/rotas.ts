@@ -2,6 +2,7 @@ import { RequestMethod, type INestApplication } from '@nestjs/common'
 import { ModulesContainer } from '@nestjs/core'
 
 import { CHAVE_PUBLICA } from '../acesso/acesso.decorators.js'
+import { CHAVE_PORTAL, CHAVE_PORTAL_PUBLICA } from '../portal/portal.decorators.js'
 
 export interface RotaRegistrada {
   /** `METODO /caminho`, com os parâmetros como `:id` e o curinga do Better Auth como `{*caminho}` */
@@ -11,8 +12,10 @@ export interface RotaRegistrada {
   caminhoOpenApi: string
   /** Caminho pronto para chamar (parâmetros trocados por um uuid) */
   url: string
-  /** Marcada com `@Publica()` (sem login) */
+  /** Sem login: `@Publica()` no CRM, `@PortalPublica()` no portal */
   publica: boolean
+  /** Rota do portal do cliente (`/v1/portal/*`): outro cookie, outro guarda, outro 401 */
+  portal: boolean
 }
 
 const METODOS: Record<number, RotaRegistrada['metodo']> = {
@@ -35,6 +38,7 @@ export function listarRotas(app: INestApplication): RotaRegistrada[] {
       if (!classe) continue
       const prefixo = Reflect.getMetadata('path', classe) as string | undefined
       if (prefixo === undefined) continue
+      const portal = Reflect.getMetadata(CHAVE_PORTAL, classe) === true
       const classePublica = Reflect.getMetadata(CHAVE_PUBLICA, classe) === true
       for (const nome of Object.getOwnPropertyNames(classe.prototype)) {
         const funcao = (classe.prototype as Record<string, unknown>)[nome]
@@ -51,7 +55,10 @@ export function listarRotas(app: INestApplication): RotaRegistrada[] {
           metodo,
           caminhoOpenApi: bruto.replace(/:([a-zA-Z]+)/g, '{$1}'),
           url: bruto.replace(/:[a-zA-Z]+/g, UUID_DE_EXEMPLO).replace('{*caminho}', 'x'),
-          publica: classePublica || Reflect.getMetadata(CHAVE_PUBLICA, funcao) === true,
+          portal,
+          publica: portal
+            ? Reflect.getMetadata(CHAVE_PORTAL_PUBLICA, funcao) === true
+            : classePublica || Reflect.getMetadata(CHAVE_PUBLICA, funcao) === true,
         })
       }
     }

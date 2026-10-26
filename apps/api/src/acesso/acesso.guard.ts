@@ -5,6 +5,7 @@ import type { Request } from 'express'
 import { AuthService } from '../auth/auth.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { identificarNoLog } from '../log/contexto-log.js'
+import { CHAVE_PORTAL } from '../portal/portal.decorators.js'
 import { doisFatoresPendente } from './dois-fatores.js'
 import {
   CHAVE_CONSOLIDADO,
@@ -40,6 +41,8 @@ export class AcessoGuard implements CanActivate {
         contexto.getClass(),
       ]) === true
     if (marca(CHAVE_PUBLICA)) return true
+    // O portal tem guarda, cookie e transação próprios (portal.guard.ts, portal.interceptor.ts)
+    if (marca(CHAVE_PORTAL)) return true
 
     const req = contexto.switchToHttp().getRequest<Request>() as RequisicaoAutenticada
     const sessao = await this.sessaoDe(req)

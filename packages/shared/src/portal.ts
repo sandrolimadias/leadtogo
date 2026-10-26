@@ -41,8 +41,13 @@ export const VALIDADE_DO_DOWNLOAD_SEGUNDOS = 60
 
 const emailSchema = z.string().trim().toLowerCase().max(254).pipe(z.email('e-mail inválido'))
 
-/** O token do link: 256 bits em base64url (43 caracteres). */
-export const tokenDoLinkSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'link inválido')
+/** O token do link: `<empresa>.<256 bits em base64url>` (a empresa permite achar o link antes do login). */
+export const tokenDoLinkSchema = z
+  .string()
+  .regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[A-Za-z0-9_-]{43}$/,
+    'link inválido',
+  )
 
 // ---- Equipe: dar e gerir acessos (CRM) ----
 
@@ -202,7 +207,11 @@ export const sessaoDoPortalSchema = z
     papel: papelDoPortalSchema,
     nomeDoPortal: z.string(),
     logoUrl: z.string().nullable(),
-    /** A empresa exige 2FA do responsável e ainda não foi concluído nesta sessão */
+    /** A pessoa já ligou o 2FA */
+    segundoFatorAtivo: z.boolean(),
+    /** O 2FA vale para esta pessoa (ligado por ela ou exigido pela empresa ao Responsável) */
+    segundoFatorExigido: z.boolean(),
+    /** Exigido e ainda não conferido nesta sessão: o portal só deixa ativar ou conferir o 2FA */
     segundoFatorPendente: z.boolean(),
   })
   .meta({ id: 'SessaoDoPortal' })
@@ -224,17 +233,37 @@ export const listaDeSessoesSchema = z
   .object({ itens: z.array(sessaoAtivaSchema) })
   .meta({ id: 'ListaDeSessoesDoPortal' })
 
+// ---- Cliente: verificação em duas etapas (aplicativo autenticador, TOTP) ----
+
+export const iniciarSegundoFatorRespostaSchema = z
+  .object({
+    /** O segredo em base32, para digitar no aplicativo */
+    segredo: z.string(),
+    /** otpauth://..., que a tela mostra como QR code */
+    uri: z.string(),
+  })
+  .meta({ id: 'IniciarSegundoFatorResposta' })
+
+/** Código de 6 dígitos do aplicativo, ou um código de recuperação (uso único). */
+export const codigoDeSegundoFatorSchema = z
+  .object({ codigo: z.string().trim().min(6, 'informe o código').max(24) })
+  .strict()
+  .meta({ id: 'CodigoDeSegundoFatorEntrada' })
+export type CodigoDeSegundoFatorEntrada = z.infer<typeof codigoDeSegundoFatorSchema>
+
+export const segundoFatorConfirmadoSchema = z
+  .object({ codigosDeRecuperacao: z.array(z.string()) })
+  .meta({ id: 'SegundoFatorConfirmado' })
+
 export const trocarEmailSchema = z
   .object({ email: emailSchema })
   .strict()
   .meta({ id: 'TrocarEmailEntrada' })
+export type TrocarEmailEntrada = z.infer<typeof trocarEmailSchema>
 
+/** O cliente corrige só o próprio nome; cargo e vínculo são da equipe (a empresa é cadastro do CRM). */
 export const perfilDoPortalSchema = z
-  .object({
-    nome: z.string().trim().min(2, 'informe o nome').max(120),
-    cargo: z.string().trim().max(80).nullable().optional(),
-    telefone: z.string().trim().max(30).nullable().optional(),
-  })
+  .object({ nome: z.string().trim().min(2, 'informe o nome').max(120) })
   .strict()
   .meta({ id: 'PerfilDoPortalEntrada' })
 export type PerfilDoPortalEntrada = z.infer<typeof perfilDoPortalSchema>

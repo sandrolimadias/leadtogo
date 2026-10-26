@@ -299,6 +299,10 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
     'POST /v1/primeiro-acesso',
     'POST /v1/convites/consultar',
     'POST /v1/convites/aceitar',
+    // Portal do cliente: só estas três dispensam a sessão do portal (o resto é varrido em portal-auth.test.ts)
+    'POST /v1/portal/entrada',
+    'POST /v1/portal/link/consulta',
+    'POST /v1/portal/link/consumir',
   ]
 
   const rotas = () => listarRotas(app)
@@ -333,7 +337,7 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
   }
 
   it('toda rota que não é pública responde 401 sem login', async () => {
-    for (const r of rotas().filter((x) => !x.publica)) {
+    for (const r of rotas().filter((x) => !x.publica && !x.portal)) {
       const resposta = await chamar(r.metodo, r.url)
       expect(resposta.status, r.rota).toBe(401)
       expect(erroDe(resposta).erro, r.rota).toBe('nao_autenticado')

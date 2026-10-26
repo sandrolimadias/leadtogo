@@ -36,6 +36,8 @@ function traduzirErroDeParser(erro: unknown): unknown {
 /** Helmet, CORS só para o front e parser de corpo próprio. */
 export function aplicarSegurancaHttp(app: INestApplication, config: Configuracao): void {
   const origemDoFront = new URL(config.APP_URL).origin
+  const origensPermitidas = new Set([origemDoFront])
+  if (config.PORTAL_URL) origensPermitidas.add(new URL(config.PORTAL_URL).origin)
 
   // IP real do cliente atrás do Traefik: só confia em X-Forwarded-For pelo número de proxies configurado
   const proxies = config.TRUST_PROXY ?? (config.NODE_ENV === 'production' ? 1 : 0)
@@ -51,11 +53,11 @@ export function aplicarSegurancaHttp(app: INestApplication, config: Configuracao
   )
 
   app.enableCors({
-    // Só o front: qualquer outra origem não recebe cabeçalho CORS e o navegador bloqueia
+    // Só o front e o portal: qualquer outra origem não recebe cabeçalho CORS e o navegador bloqueia
     origin: (
       origem: string | undefined,
       resposta: (erro: Error | null, permitir?: boolean) => void,
-    ) => resposta(null, origem === origemDoFront),
+    ) => resposta(null, origem !== undefined && origensPermitidas.has(origem)),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],

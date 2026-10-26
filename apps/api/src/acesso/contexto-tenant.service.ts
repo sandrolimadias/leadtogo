@@ -4,6 +4,7 @@ import type { Conexao } from '@leadtogo/db'
 import { Injectable } from '@nestjs/common'
 
 import { ErroApi } from '../http/erro-api.js'
+import type { ContextoDoPortal } from '../portal/portal.tipos.js'
 import type { MembroDaRequisicao } from './requisicao.js'
 
 /** A transação da requisição, já com o tenant (ou o consolidado) definido. */
@@ -20,6 +21,8 @@ export interface ContextoDaRequisicao {
   /** Empresas do consolidado (só leitura) */
   tenantIds?: string[]
   membro?: MembroDaRequisicao
+  /** Rotas do portal: o cliente da sessão (a transação já leva as variáveis `app.portal_*`) */
+  portal?: ContextoDoPortal
   /** Valores calculados uma vez por requisição (ex.: os membros da equipe) */
   memoria?: Map<string, Promise<unknown>>
   /** IP do cliente (`req.ip`, que respeita TRUST_PROXY: o mesmo do rate limit; X-Forwarded-For forjado não vale) */
@@ -99,6 +102,13 @@ export class ContextoTenantService {
       contexto.memoria.set(chave, valor)
     }
     return valor
+  }
+
+  /** O cliente do portal da requisição (só nas rotas do portal). */
+  get portal(): ContextoDoPortal {
+    const { portal } = this.atual()
+    if (!portal) throw new ErroApi('nao_autenticado', 'Entre para continuar.', 401)
+    return portal
   }
 
   get membro(): MembroDaRequisicao {
