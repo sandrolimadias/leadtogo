@@ -65,6 +65,7 @@ function servicos(
             nome: 'Dias Automação',
             logoUrl: null,
             exigeDoisFatoresDoResponsavel: false,
+            comentariosAtivos: true,
           }),
         ),
       },
@@ -121,7 +122,13 @@ describe('hub do portal: chamados', () => {
       configuracao: {
         ...base.portal.configuracao,
         obter: vi.fn(async () =>
-          ok({ ativo: false, nome: null, logoUrl: null, exigeDoisFatoresDoResponsavel: false }),
+          ok({
+            ativo: false,
+            nome: null,
+            logoUrl: null,
+            exigeDoisFatoresDoResponsavel: false,
+            comentariosAtivos: true,
+          }),
         ),
       },
     })
@@ -375,7 +382,13 @@ describe('configurações do portal', () => {
     const s = servicos({
       configuracao: {
         obter: vi.fn(async () =>
-          ok({ ativo: false, nome: null, logoUrl: null, exigeDoisFatoresDoResponsavel: false }),
+          ok({
+            ativo: false,
+            nome: null,
+            logoUrl: null,
+            exigeDoisFatoresDoResponsavel: false,
+            comentariosAtivos: true,
+          }),
         ),
         atualizar,
       },

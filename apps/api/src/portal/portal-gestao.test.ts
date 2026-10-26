@@ -91,17 +91,20 @@ describe('configuração', () => {
       ativo: false,
       nome: null,
       exigeDoisFatoresDoResponsavel: false,
+      comentariosAtivos: true,
     })
     const r = await crm('put', gestor.cookie, '/portal-configuracao', {
       ativo: true,
       nome: 'Portal Acme',
       exigeDoisFatoresDoResponsavel: true,
+      comentariosAtivos: false,
     })
     expect(r.status).toBe(200)
     expect(r.body).toMatchObject({
       ativo: true,
       nome: 'Portal Acme',
       exigeDoisFatoresDoResponsavel: true,
+      comentariosAtivos: false,
     })
     expect((await crm('put', gestor.cookie, '/portal-configuracao', { nome: 'x' })).status).toBe(
       400,

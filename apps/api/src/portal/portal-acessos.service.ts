@@ -305,14 +305,17 @@ export class PortalAcessosService {
       ativo: boolean
       nome: string | null
       exige: boolean
+      comentarios: boolean
     }>(sql`
-      SELECT portal_ativo AS ativo, portal_nome AS nome, portal_exige_dois_fatores_responsavel AS exige
+      SELECT portal_ativo AS ativo, portal_nome AS nome, portal_exige_dois_fatores_responsavel AS exige,
+             portal_comentarios_ativos AS comentarios
       FROM tenant_configuracoes`)
     return {
       ativo: c?.ativo ?? false,
       nome: c?.nome ?? null,
       logoUrl: null,
       exigeDoisFatoresDoResponsavel: c?.exige ?? false,
+      comentariosAtivos: c?.comentarios ?? true,
     }
   }
 
@@ -325,6 +328,7 @@ export class PortalAcessosService {
       SET portal_ativo = ${d.ativo ?? antes.ativo},
           portal_nome = ${d.nome === undefined ? antes.nome : d.nome},
           portal_exige_dois_fatores_responsavel = ${d.exigeDoisFatoresDoResponsavel ?? antes.exigeDoisFatoresDoResponsavel},
+          portal_comentarios_ativos = ${d.comentariosAtivos ?? antes.comentariosAtivos},
           atualizado_em = now()`)
     const depois = await this.configuracao()
     await this.auditoria.registrar({

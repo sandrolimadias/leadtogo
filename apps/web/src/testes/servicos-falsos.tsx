@@ -415,7 +415,13 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       indicadores: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       configuracao: {
         obter: vi.fn(async () =>
-          ok({ ativo: false, nome: null, logoUrl: null, exigeDoisFatoresDoResponsavel: false }),
+          ok({
+            ativo: false,
+            nome: null,
+            logoUrl: null,
+            exigeDoisFatoresDoResponsavel: false,
+            comentariosAtivos: true,
+          }),
         ),
         atualizar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       },
