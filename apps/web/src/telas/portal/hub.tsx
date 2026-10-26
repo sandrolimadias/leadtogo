@@ -3,21 +3,26 @@ import { ExternalLink } from 'lucide-react'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePermissoes } from '@/auth/permissoes'
 import { PaginaDeTabela } from '@leadtogo/ui/pagina'
 import { Tabs } from '@leadtogo/ui/tabs'
 
 import { AcessosDoPortal } from './acessos'
 import { ChamadosDoPortal } from './chamados'
+import { PublicacoesDoPortal } from './publicacoes'
 
-type Aba = 'chamados' | 'acessos'
+type Aba = 'publicacoes' | 'chamados' | 'acessos'
 
 /**
- * O hub do Portal do Cliente (Fase 3A): o que a equipe vê do que acontece no portal. Hoje: chamados dos clientes
- * e acessos; publicações, documentos, agenda e avisos entram nas próximas fases.
+ * O hub do Portal do Cliente: o que a equipe publica e vê do que acontece no portal. Hoje: publicações (3B),
+ * chamados dos clientes e acessos (3A); documentos, agenda e avisos entram nas próximas fases.
  */
 export function TelaDoPortal() {
   const servicos = useServicos()
-  const [aba, setAba] = useState<Aba>('chamados')
+  const { pode } = usePermissoes()
+  const verHub = pode('portal.ver')
+  const [escolha, setAba] = useState<Aba | null>(null)
+  const aba: Aba = escolha ?? (verHub ? 'chamados' : 'publicacoes')
   const pedidos = useQuery({
     queryKey: ['portal', 'pedidos'],
     retry: false,
@@ -58,11 +63,26 @@ export function TelaDoPortal() {
         value={aba}
         onChange={(v) => setAba(v as Aba)}
         items={[
-          { value: 'chamados', label: 'Chamados' },
-          { value: 'acessos', label: 'Acessos', ...(pendentes > 0 ? { count: pendentes } : {}) },
+          { value: 'publicacoes', label: 'Publicações' },
+          ...(verHub ? [{ value: 'chamados', label: 'Chamados' }] : []),
+          ...(verHub || pode('portal.acessos')
+            ? [
+                {
+                  value: 'acessos',
+                  label: 'Acessos',
+                  ...(pendentes > 0 ? { count: pendentes } : {}),
+                },
+              ]
+            : []),
         ]}
       />
-      {aba === 'chamados' ? <ChamadosDoPortal /> : <AcessosDoPortal />}
+      {aba === 'publicacoes' ? (
+        <PublicacoesDoPortal />
+      ) : aba === 'chamados' ? (
+        <ChamadosDoPortal />
+      ) : (
+        <AcessosDoPortal />
+      )}
     </PaginaDeTabela>
   )
 }
