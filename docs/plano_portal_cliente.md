@@ -88,6 +88,8 @@ O cliente usa a mesma central da Fase 2 pela porta do portal.
 > **Ajustes na execução da 3C:** (1) o documento tem **um arquivo** e não troca (outra versão = outro documento); (2) a equipe pode **tirar do portal sem excluir**; (3) sem o ClamAV configurado o envio fica desligado, como nos anexos; (4) sem categorias nem pastas nesta fase.
 
 - **Documentos:** a equipe publica (todas as empresas ou algumas) pelo pipeline de arquivos e antivírus; o cliente lista e baixa; cada download é registrado.
+> **Ajustes na execução da 3D:** (1) confirmar, cancelar e promover são **funções do banco** (travam a linha do evento), não código da API; (2) o limite por empresa também manda para a **lista de espera** (não só recusa), e a promoção **pula** quem a empresa já está no limite; (3) cancelar a própria presença vale **até o início** (o prazo só vale para confirmar); (4) o lembrete é de **até 24 horas** (conferido a cada 5 minutos); (5) o cliente **não vê a posição na fila** nem nomes de outros participantes; (6) sem categorias, recorrência nem ingresso.
+
 - **Agenda:** evento com vagas totais, vagas por empresa, prazo de confirmação e alcance; "Confirmar", "Você vai", "Confirme presença", "Lotado · lista de espera". Confirmar e cancelar em transação com trava de linha; o cancelamento promove o primeiro da fila da empresa com vaga livre. Lembrete 24 h antes e `.ics`.
 
 ## 8. Avisos (3E): comunicado curto com push
