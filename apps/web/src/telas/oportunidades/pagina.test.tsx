@@ -1,5 +1,5 @@
 import type { KanbanDeOportunidades } from '@leadtogo/api-client'
-import { screen, waitFor, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -189,6 +189,14 @@ describe('Oportunidades: Kanban', () => {
     await screen.findByRole('article', { name: 'Oportunidade 1' })
     expect(screen.queryByRole('button', { name: 'Ações de Oportunidade 1' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Arrastar Oportunidade 1' })).toBeNull()
+  })
+
+  it('"Importar planilha" só para quem importa (administrador e gestor)', async () => {
+    await abrir(servicos(kanban([[], [], []])))
+    expect(await screen.findByRole('button', { name: 'Importar planilha' })).toBeInTheDocument()
+    cleanup()
+    await abrir(servicos(kanban([[], [], []]), 'vendedor'))
+    expect(screen.queryByRole('button', { name: 'Importar planilha' })).toBeNull()
   })
 
   it('erro da API aparece como alerta', async () => {

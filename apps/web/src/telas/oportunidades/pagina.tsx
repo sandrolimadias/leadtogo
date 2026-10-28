@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
-import { LayoutList, Plus, Search, SquareKanban, X } from 'lucide-react'
+import { getRouteApi, useNavigate } from '@tanstack/react-router'
+import { LayoutList, Plus, Search, SquareKanban, Upload, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -20,6 +20,7 @@ import { Paginacao } from '@leadtogo/ui/paginacao'
 import { SegmentedControl } from '@leadtogo/ui/segmented-control'
 import { toast } from '@leadtogo/ui/toast'
 import { cn } from '@leadtogo/ui/cn'
+import { usePodeImportar } from '@/telas/importacao/comum'
 
 import { useAcoesDaOportunidade } from './acoes'
 import { type BuscaDeOportunidades, lerBusca } from './busca'
@@ -48,6 +49,8 @@ export function PaginaDeOportunidades() {
   const { abrir } = useFormularioDeOportunidade()
   const busca = rota.useSearch({ select: (s) => lerBusca(s) })
   const navegar = rota.useNavigate()
+  const navegarParaFora = useNavigate()
+  const podeImportar = usePodeImportar()
   const lista = busca.visao === 'lista'
   const [suspensasAbertas, setSuspensasAbertas] = useState(false)
 
@@ -227,6 +230,19 @@ export function PaginaDeOportunidades() {
                 mudar({ visao: v === 'lista' ? 'lista' : undefined, status: undefined })
               }
             />
+            {podeImportar && !celular ? (
+              <Button
+                icon={Upload}
+                onClick={() =>
+                  void navegarParaFora({
+                    to: '/importacao/nova',
+                    search: { tipo: 'oportunidades' },
+                  })
+                }
+              >
+                Importar planilha
+              </Button>
+            ) : null}
             <Button
               variant="primary"
               icon={Plus}

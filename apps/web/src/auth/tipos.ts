@@ -216,6 +216,7 @@ import type {
   CancelarEventoEntrada,
   SalvarEventoEntrada,
   CriarAvisoEntrada,
+  CampoComValores,
 } from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
@@ -467,8 +468,13 @@ export interface ServicosDeImportacao {
       nome?: string,
       tipo?: TipoDeImportacao,
     ) => Promise<Resultado<LoteDeImportacao>>
-    /** Atividades: cada valor da coluna Tipo da planilha e o tipo que valerá */
-    valoresDoTipo: (id: string, coluna?: string) => Promise<Resultado<ValoresDoTipoDaImportacao>>
+    /** Atividades: cada valor da coluna Tipo e o tipo que valerá; oportunidades: o mesmo para o `campo`
+     * (fase, motivo, origem ou solução) */
+    valoresDoTipo: (
+      id: string,
+      coluna?: string,
+      campo?: CampoComValores,
+    ) => Promise<Resultado<ValoresDoTipoDaImportacao>>
     detalhar: (id: string) => Promise<Resultado<LoteDeImportacao>>
     alterar: (id: string, dados: AlterarLoteEntrada) => Promise<Resultado<LoteDeImportacao>>
     previa: (id: string) => Promise<Resultado<PreviaDaImportacao>>

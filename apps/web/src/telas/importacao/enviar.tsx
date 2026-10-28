@@ -115,6 +115,7 @@ export function EnviarPlanilha() {
         <h2 className="m-0 text-[15px] leading-5 font-semibold">O que você vai importar?</h2>
         <SegmentedControl
           label="O que importar"
+          className="max-w-full flex-wrap"
           options={TIPOS_DE_IMPORTACAO.map((t) => ({
             value: t,
             label: ROTULO_DO_TIPO_DE_IMPORTACAO[t],

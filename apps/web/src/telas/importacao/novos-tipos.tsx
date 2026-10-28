@@ -1,4 +1,5 @@
 import {
+  CAMPOS_COM_VALORES_DA_OPORTUNIDADE,
   campoDoTipo,
   rotuloDoResultado,
   type ResultadoDaLinha,
@@ -17,9 +18,12 @@ import { useEnvio } from '@/telas/acesso/comum'
 
 import { PASSO, TEXTOS_DO_TIPO, TOM_DO_RESULTADO, usePrevia } from './comum'
 import { Pagina } from './pagina'
+import { EscolhasDoLoteDeOportunidades, ValoresDaColuna } from './mapear-oportunidades'
 import { cartao, type PropsDoPasso, Rodape } from './passos'
+import { type EscolhasDeValores, valoresParaEnviar } from './valores-de-campo'
 
-// Contatos e atividades: Enviar · Mapear colunas · Prévia · Importar · Relatório (sem Regras nem Carteira).
+// Contatos, atividades e oportunidades: Enviar · Mapear colunas · Prévia · Importar · Relatório (sem Regras
+// nem Carteira).
 
 const IGNORAR = ''
 const PULAR = 'pular'
@@ -28,7 +32,8 @@ const invertido = (campos: Record<string, string>): Record<string, string> =>
   Object.fromEntries(Object.entries(campos).map(([campo, coluna]) => [coluna, campo]))
 
 // ---------------------------------------------------------------------------------------------------
-// Passo 2: Mapear colunas (e, nas atividades, apontar cada valor da coluna Tipo)
+// Passo 2: Mapear colunas (e apontar cada valor da coluna Tipo, nas atividades, e das colunas Fase,
+// Motivo, Origem e Solução, nas oportunidades)
 
 export function PassoMapearDoTipo({ lote, ir, aoAlterar }: PropsDoPasso) {
   const tipo = lote.tipo as Exclude<TipoDeImportacao, 'empresas'>
@@ -45,6 +50,9 @@ export function PassoMapearDoTipo({ lote, ir, aoAlterar }: PropsDoPasso) {
   const [erro, setErro] = useState<string>()
   // Atividades: o que a pessoa escolheu para cada valor da coluna Tipo (chave → id do tipo | "pular" | "")
   const [escolhas, setEscolhas] = useState<Record<string, string>>({})
+  // Oportunidades: o mesmo, por campo
+  const [escolhasDeValores, setEscolhasDeValores] = useState<EscolhasDeValores>({})
+  const colunaDo = (campo: string) => Object.entries(mapa).find(([, c]) => c === campo)?.[0]
 
   const usos = new Map<string, number>()
   for (const campo of Object.values(mapa)) if (campo) usos.set(campo, (usos.get(campo) ?? 0) + 1)
@@ -94,10 +102,14 @@ export function PassoMapearDoTipo({ lote, ir, aoAlterar }: PropsDoPasso) {
         if (v === PULAR) tiposDeAtividade[i.chave] = null
         else if (v !== '') tiposDeAtividade[i.chave] = v
       }
+      const valoresDeCampo = valoresParaEnviar(escolhasDeValores)
       const r = await servicos.importacao.lotes.alterar(lote.id, {
         campos,
         ...(tipo === 'atividades' && Object.keys(tiposDeAtividade).length > 0
           ? { tiposDeAtividade }
+          : {}),
+        ...(tipo === 'oportunidades' && Object.keys(valoresDeCampo).length > 0
+          ? { valoresDeCampo }
           : {}),
       })
       if (!r.ok) {
@@ -198,6 +210,30 @@ export function PassoMapearDoTipo({ lote, ir, aoAlterar }: PropsDoPasso) {
         ) : null}
       </section>
 
+      {tipo === 'oportunidades' ? (
+        <>
+          <EscolhasDoLoteDeOportunidades lote={lote} aoAlterar={aoAlterar} />
+          {CAMPOS_COM_VALORES_DA_OPORTUNIDADE.map((campo) => {
+            const coluna = colunaDo(campo)
+            return coluna ? (
+              <ValoresDaColuna
+                key={campo}
+                lote={lote}
+                campo={campo}
+                coluna={coluna}
+                escolhas={escolhasDeValores[campo] ?? {}}
+                aoEscolher={(chave, valor) =>
+                  setEscolhasDeValores({
+                    ...escolhasDeValores,
+                    [campo]: { ...escolhasDeValores[campo], [chave]: valor },
+                  })
+                }
+              />
+            ) : null
+          })}
+        </>
+      ) : null}
+
       {tipo === 'atividades' && colunaDoTipo ? (
         <section aria-label="Tipos de atividade" className={cartao}>
           <div className="flex flex-col gap-0.5">
@@ -259,6 +295,13 @@ export function PassoMapearDoTipo({ lote, ir, aoAlterar }: PropsDoPasso) {
 // ---------------------------------------------------------------------------------------------------
 // Passo 3: Prévia
 
+/** O que a prévia conta, no singular e no plural. */
+const NOME_NA_PREVIA: Record<Exclude<TipoDeImportacao, 'empresas'>, [string, string]> = {
+  contatos: ['contato', 'contatos'],
+  atividades: ['atividade', 'atividades'],
+  oportunidades: ['oportunidade', 'oportunidades'],
+}
+
 const ORDEM_DA_PREVISAO: ResultadoDaLinha[] = [
   'criada',
   'vinculada',
@@ -307,7 +350,7 @@ export function PassoPreviaDoTipo({ lote, ir, aoAlterar }: PropsDoPasso) {
           rotulo={
             p === undefined
               ? 'Importar'
-              : `Importar ${p.aImportar.toLocaleString('pt-BR')} ${tipo === 'contatos' ? (p.aImportar === 1 ? 'contato' : 'contatos') : p.aImportar === 1 ? 'atividade' : 'atividades'}`
+              : `Importar ${p.aImportar.toLocaleString('pt-BR')} ${NOME_NA_PREVIA[tipo][p.aImportar === 1 ? 0 : 1]}`
           }
           icone={Upload}
           desabilitado={!p || p.aImportar === 0}
@@ -352,6 +395,14 @@ export function PassoPreviaDoTipo({ lote, ir, aoAlterar }: PropsDoPasso) {
               {(p.comAviso ?? 0).toLocaleString('pt-BR')}{' '}
               {p.comAviso === 1 ? 'linha entra' : 'linhas entram'} com aviso (por exemplo, um campo
               que não valeu); os avisos aparecem no relatório.
+            </Alert>
+          ) : null}
+          {tipo === 'oportunidades' && (previsao['fechadas'] ?? 0) > 0 ? (
+            <Alert tone="info">
+              {(previsao['fechadas'] ?? 0).toLocaleString('pt-BR')}{' '}
+              {previsao['fechadas'] === 1 ? 'oportunidade entra' : 'oportunidades entram'} já
+              {previsao['fechadas'] === 1 ? ' fechada' : ' fechadas'} (conquistada, perdida,
+              cancelada ou suspensa), com o histórico e a fase em que parou.
             </Alert>
           ) : null}
           {tipo === 'atividades' && (previsao['ficam_com_voce'] ?? 0) > 0 ? (

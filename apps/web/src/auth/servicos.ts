@@ -1341,11 +1341,14 @@ export const servicosReais: ServicosDeAcesso = {
             }),
           ),
         ),
-      valoresDoTipo: (id, coluna) =>
+      valoresDoTipo: (id, coluna, campo) =>
         protegido(async () =>
           daApi(
             await api.GET('/v1/importacao/lotes/{id}/valores-do-tipo', {
-              params: { path: { id }, query: coluna ? { coluna } : {} },
+              params: {
+                path: { id },
+                query: { ...(coluna ? { coluna } : {}), ...(campo ? { campo } : {}) },
+              },
             }),
           ),
         ),
