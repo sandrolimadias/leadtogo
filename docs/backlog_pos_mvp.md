@@ -123,6 +123,7 @@
 | Item | Motivo de ter ficado fora | Origem |
 |---|---|---|
 | **Mercado Pago (não esquecer).** Segundo gateway do módulo financeiro: PIX, boleto e cartão pelo mesmo `ProvedorCobranca` do ASAAS; o boleto do MP não muda o vencimento (prorrogar = cancelar e emitir outro) | O ASAAS vem primeiro; o MP é a fase F7 de `plano_financeiro.md` | Pedido do Ale no chat de planejamento, 28/10/2026 |
+| Emissor de NFS-e independente do gateway (Focus NFe, PlugNotas, NFE.io) pela mesma interface `EmissorNfse` | Decidido emitir só pelo ASAAS (F-D8); entra quando houver cliente sem ASAAS | Decisão do Ale no chat de planejamento, 28/10/2026 |
 
 ## SaaS (vários clientes)
 | Item | Motivo de ter ficado fora | Origem |

@@ -1,6 +1,6 @@
 # Plano do Módulo Financeiro (Fase 4)
 
-> **Status: em discussão com o Ale (chat de planejamento, 28/10/2026).** As decisões da seção 2 já foram dadas; as perguntas da seção 12 ainda estão abertas. Nada de código até o plano ser aprovado.
+> **Status: em discussão com o Ale (chat de planejamento, 28/10/2026).** As decisões da seção 2 já foram dadas (duas rodadas); restam as perguntas da seção 12. Nada de código até o plano ser aprovado.
 > **Referência de escopo:** o menu "Finanças" da Omie (contas correntes, lançamentos, contas a pagar e a receber, boletos, PIX, extrato, orçamento de caixa, pesquisa de títulos, movimentos financeiros e resumo), mais gateways de pagamento, plano de contas, DRE e relatórios gerenciais mês a mês.
 > Quando aprovado, as regras vão para `funcionalidades.md` (seção nova) e as tabelas para `modelagem_banco.md`, no mesmo commit de cada fase.
 
@@ -32,10 +32,16 @@ O que já existe e o financeiro aproveita:
 | F-D5 | Títulos da venda: **as duas opções, configuráveis**: gerados a partir da oportunidade conquistada **ou** lançados manualmente pelo financeiro |
 | F-D6 | **NFS-e entra no escopo** |
 | F-D7 | **ASAAS primeiro; Mercado Pago depois, sem esquecer** (fase própria na seção 11 e linha no `backlog_pos_mvp.md`) |
+| F-D8 | **NFS-e só pelo ASAAS.** Sem emissor independente por enquanto (fica no backlog para quem não usa o ASAAS) |
+| F-D9 | Padrão de `financeiro_titulos_da_venda` = **`rascunho`** |
+| F-D10 | Empresa que é **só fornecedor** fica **fora da carteira, do funil e do mapa** por padrão |
+| F-D11 | **Cartão de crédito da empresa entra na F1** |
+| F-D12 | **Comissões por vendedor e por solução**, com três formas de cálculo: percentual sobre o recebido, **valor fixo** e **percentual sobre a primeira mensalidade** (seção 9.7) |
+| F-D13 | **ASAAS antes da DRE**: a cobrança vem logo depois da base (seção 11) |
 
 ## 3. Conceitos
 
-- **Conta financeira:** corrente, poupança/aplicação, caixa físico, cartão de crédito e **carteira do gateway**. O saldo no ASAAS (ou no MP) é uma conta: o recebimento cai nela e o saque é uma **transferência** para o banco. Assim a conciliação fecha centavo a centavo.
+- **Conta financeira:** corrente, poupança/aplicação, caixa físico, **cartão de crédito** (seção 4.1) e **carteira do gateway**. O saldo no ASAAS (ou no MP) é uma conta: o recebimento cai nela e o saque é uma **transferência** para o banco. Assim a conciliação fecha centavo a centavo.
 - **Título:** a receber ou a pagar, com uma ou mais **parcelas**. Toda parcela tem **três datas**: competência, vencimento e pagamento. A DRE usa a competência e o fluxo de caixa usa o pagamento.
 - **Baixa:** quitação total ou parcial de uma parcela, com juros, multa, desconto e tarifa. Uma parcela pode ter várias baixas. Baixa errada se **estorna**, nunca se exclui.
 - **Lançamento:** o movimento que mexe no saldo de uma conta (é o extrato). Baixas, transferências, tarifas e lançamentos avulsos (sem título) geram lançamentos.
@@ -44,6 +50,7 @@ O que já existe e o financeiro aproveita:
 - **Contrato:** a recorrência de uma venda (itens mensais/anuais), com vigência, dia de vencimento, forma de cobrança e reajuste. Gera as parcelas mês a mês.
 - **Cobrança:** a parcela emitida num gateway (boleto, PIX ou cartão), com o identificador externo e o status do gateway.
 - **Nota fiscal:** NFS-e emitida para uma parcela, para um título ou avulsa.
+- **Fornecedor:** `empresa` com a tag de sistema "Fornecedor". A que é **só** fornecedor (sem tag de Status comercial nem oportunidade) não aparece na carteira, no funil, no mapa nem no Dashboard comercial; aparece nas telas do financeiro e na lista de Empresas com o filtro "Fornecedores". A que também é cliente aparece nos dois lados.
 
 ## 4. Funcionalidades básicas (equivalência com a Omie)
 
@@ -67,6 +74,15 @@ Além da Omie:
 - **Fechamento mensal:** fechado o mês, nada com data de competência ou pagamento naquele mês se cria, edita ou estorna sem **reabrir** (permissão própria, registrada na auditoria).
 - **Aprovação de pagamentos (alçada):** títulos a pagar acima de um valor configurável ficam "aguardando aprovação"; quem lançou não aprova.
 - **Anexos** no Garage, no mesmo pipeline dos chamados (antivírus, limites).
+
+### 4.1 Cartão de crédito (F1)
+
+- Conta financeira do tipo **cartão**: bandeira, final do cartão, limite, **dia de fechamento** e **dia de vencimento**, conta corrente que paga a fatura.
+- **Compra no cartão:** data, fornecedor, categoria (com rateio), valor e **parcelas**. Cada parcela cai na fatura do mês certo pelo dia de fechamento.
+- **Fatura:** aberta → fechada → paga. Ao fechar, vira um **título a pagar** com o total (compras, parcelas, estornos, anuidade, juros e IOF). O pagamento é uma **transferência** da conta corrente para o cartão; pagamento parcial deixa o saldo para a próxima fatura.
+- **DRE pela data da compra** (competência de cada parcela); **fluxo de caixa pelo vencimento da fatura**.
+- Limite disponível = limite − parcelas em aberto; alerta perto do limite.
+- Conferência da fatura: importação do OFX/CSV do cartão casa as compras (na F5, junto da conciliação; até lá, conferência manual).
 
 ## 5. Plano de contas
 
@@ -109,7 +125,7 @@ Configuração da empresa **`financeiro_titulos_da_venda`**:
 | Valor | Comportamento |
 |---|---|
 | `manual` | A conquista não gera nada; o financeiro lança títulos e contratos à mão |
-| `rascunho` (**proposta de padrão**) | A conquista cria o **contrato em rascunho** com os itens da oportunidade; o financeiro revisa (vencimento, forma de cobrança, conta, categoria) e ativa |
+| `rascunho` (**padrão**, F-D9) | A conquista cria o **contrato em rascunho** com os itens da oportunidade; o financeiro revisa (vencimento, forma de cobrança, conta, categoria) e ativa |
 | `automatico` | A conquista cria e ativa o contrato e gera os títulos, com os padrões da configuração |
 
 - Itens com cobrança **única** viram um título a receber (com parcelamento opcional); itens **mensais/anuais** viram o **contrato**.
@@ -178,12 +194,12 @@ prorrogar · cancelar · segundaVia · processarWebhook · listarMovimentos (rec
 - **Webhook:** `POST /v1/webhooks/{gateway}/{id-da-integracao}`, com o token ou a assinatura do gateway validados. O evento é gravado em `gateway_eventos` com **chave única pelo id externo (idempotência)** e processado na fila do BullMQ. O processamento faz a **baixa automática**, lança a **tarifa** do gateway como despesa (categoria de sistema) e notifica o responsável.
 - **Reconciliação diária:** job que consulta os movimentos do gateway e cobre webhooks perdidos. Diferenças viram alerta, nunca baixa silenciosa.
 - **Saque/repasse** do gateway para o banco vira transferência entre contas.
-- **ASAAS (F3):** boleto com PIX na mesma cobrança, prorrogação, cancelamento, juros, multa e desconto por antecipação configurados na cobrança, notificações do próprio ASAAS **desligadas** (a régua é do Leadtogo).
+- **ASAAS (F2):** boleto com PIX na mesma cobrança, prorrogação, cancelamento, juros, multa e desconto por antecipação configurados na cobrança, notificações do próprio ASAAS **desligadas** (a régua é do Leadtogo).
 - **Mercado Pago (F7, não esquecer):** PIX, boleto e cartão (link de pagamento). Diferença conhecida a confirmar na fase: o boleto do MP **não permite mudar o vencimento**, então "prorrogar" vira cancelar e emitir outro; o adaptador esconde isso da tela.
 
 ### 9.2 NFS-e (F-D6)
 
-- Interface `EmissorNfse` (emitir, consultar, cancelar, baixar PDF e XML), com o primeiro adaptador **pelo ASAAS** (já integrado na F3 e sem contratação extra). Um emissor independente do gateway (por exemplo Focus NFe, PlugNotas ou NFE.io) fica como segundo adaptador para quem não usa o ASAAS: ver pergunta 1 da seção 12.
+- **Só pelo ASAAS (F-D8)**, que já estará integrado na F2 e não exige contratação extra. A interface `EmissorNfse` (emitir, consultar, cancelar, baixar PDF e XML) existe para que um emissor independente possa entrar depois sem refazer nada; ele fica no backlog. Empresa sem ASAAS configurado não emite nota pelo Leadtogo.
 - **Padrão nacional da NFS-e** e campos de **CBS/IBS** considerados desde o início.
 - Emissão manual (pela parcela ou pelo título) ou automática (configuração do contrato: ao emitir a cobrança ou ao receber).
 - PDF e XML guardados no Garage e disponíveis no portal do cliente.
@@ -199,7 +215,22 @@ Passos configuráveis (ex.: 3 dias antes, no dia, 3, 7 e 15 dias depois), canal 
 O item do backlog passa a ser alimentado pelo próprio financeiro: grupo de tags de sistema **Financeiro** (Adimplente; Inadimplente até 30, 31–60, 61–90 e +90 dias), recalculado no job diário e a cada baixa. A conexão com ERP deixa de ser pré-requisito.
 
 ### 9.6 Migração da Omie
-Importação única (planilha ou API da Omie) do plano de contas, contas correntes, títulos em aberto e saldos iniciais, para trocar de sistema sem redigitar. Detalhada na fase F2.
+Importação única (planilha ou API da Omie) do plano de contas, contas correntes, títulos em aberto e saldos iniciais, para trocar de sistema sem redigitar. Detalhada na fase F3.
+
+### 9.7 Comissões (F-D12)
+
+**Regras** (cadastro com vigência), por **vendedor**, por **solução** ou por **vendedor + solução**. Cada regra escolhe uma forma de cálculo (ou combina mais de uma):
+
+| Forma | Como calcula | Quando nasce |
+|---|---|---|
+| **Percentual sobre o recebido** | % sobre cada parcela recebida do contrato ou do título, opcionalmente por **até N meses** | A cada baixa |
+| **Valor fixo** | R$ X por venda (por contrato ou por item da solução) | Quando a **primeira parcela** é recebida |
+| **Percentual sobre a primeira mensalidade** | % do valor da primeira mensalidade (para venda só com itens únicos, sobre o valor único) | Quando a **primeira mensalidade** é recebida |
+
+- **Sempre sobre o que foi recebido**, nunca sobre o vendido: venda que não paga não gera comissão.
+- Estorno da baixa estorna a comissão; cancelamento do contrato em até N dias (configurável) pode **descontar** a comissão já gerada da próxima apuração.
+- **Apuração mensal:** a lista de comissões do mês é conferida, aprovada e vira um **título a pagar** por vendedor (categoria "Comissões", que entra na DRE como despesa comercial).
+- O vendedor vê **só as próprias comissões** (permissão `financeiro.comissoes_proprias`).
 
 ## 10. Permissões, segurança e boas práticas
 
@@ -213,6 +244,8 @@ Importação única (planilha ou API da Omie) do plano de contas, contas corrent
 | `financeiro.aprovar` | Aprovar pagamentos acima da alçada |
 | `financeiro.cobrar` | Emitir, prorrogar e cancelar cobranças e notas |
 | `financeiro.configurar` | Plano de contas, contas financeiras, gateways, regime tributário, régua, fechar e reabrir mês |
+| `financeiro.comissoes` | Regras, apuração e aprovação das comissões |
+| `financeiro.comissoes_proprias` | O vendedor vê só as próprias comissões |
 | `financeiro.situacao_cliente` | Ver só a situação financeira (tags e títulos) das empresas da **própria carteira**: é o que o vendedor recebe; não dá acesso ao caixa |
 
 Não confundir com o `papel_conta = financeiro`, que trata da cobrança da conta no próprio Leadtogo e não muda.
@@ -231,13 +264,13 @@ Não confundir com o `papel_conta = financeiro`, que trata da cobrança da conta
 
 | Fase | Entrega |
 |---|---|
-| **F1** | Ativação do módulo (assistente: regime tributário, modelo de plano de contas, contas financeiras e saldos iniciais), tag "Fornecedor", plano de contas, centros de custo, títulos a pagar e a receber com parcelas e rateio, baixas e estornos, lançamentos avulsos, transferências, extrato, anexos, pesquisa de títulos, painel Resumo, permissões |
-| **F2** | DRE (modelo configurável), fluxo de caixa (12 meses e 13 semanas), aging, relatórios mês a mês, fechamento mensal, provisão de impostos, importação da Omie |
-| **F3** | **ASAAS**: credenciais, cliente, boleto+PIX, prorrogar, cancelar, webhooks, baixa automática, tarifas, reconciliação diária, 2ª via no portal |
-| **F4** | Contratos e recorrência, `financeiro_titulos_da_venda` (manual, rascunho, automático), reajuste anual, régua de cobrança, tags de situação financeira, MRR contratado × recebido |
-| **F5** | **NFS-e** (adaptador ASAAS; emissor independente se aprovado), notas no portal |
-| **F6** | Conciliação por OFX/CSV, orçamento anual, aprovação de pagamentos, indicadores |
-| **F7** | **Mercado Pago** (PIX, boleto e cartão), comissão de vendedores sobre o recebido, DRE consolidada com eliminações |
+| **F1** | Ativação do módulo (assistente: regime tributário, modelo de plano de contas, contas financeiras e saldos iniciais), tag "Fornecedor" (e a saída do só-fornecedor das telas comerciais), plano de contas, centros de custo, títulos a pagar e a receber com parcelas e rateio, baixas e estornos, lançamentos avulsos, transferências, **cartão de crédito e faturas**, extrato, anexos, pesquisa de títulos, painel Resumo, permissões |
+| **F2** | **ASAAS**: credenciais, cliente, boleto+PIX, prorrogar, cancelar, webhooks, baixa automática, tarifas, reconciliação diária, 2ª via no portal |
+| **F3** | DRE (modelo configurável), fluxo de caixa (12 meses e 13 semanas), aging, relatórios mês a mês, fechamento mensal, provisão de impostos, importação da Omie |
+| **F4** | Contratos e recorrência, `financeiro_titulos_da_venda` (manual, **rascunho** como padrão, automático), reajuste anual, régua de cobrança, tags de situação financeira, MRR contratado × recebido |
+| **F5** | **NFS-e pelo ASAAS**, notas no portal; conciliação por OFX/CSV (contas e faturas do cartão) |
+| **F6** | Orçamento anual, aprovação de pagamentos, indicadores, **comissões** (seção 9.7) |
+| **F7** | **Mercado Pago** (PIX, boleto e cartão), DRE consolidada com eliminações |
 
 Cada fase termina em portão, como no portal: gate verde, CI verde, deploy, roteiro de teste e aceite do Ale. Migrações só de expansão.
 
@@ -245,19 +278,16 @@ Cada fase termina em portão, como no portal: gate verde, CI verde, deploy, rote
 
 | Fase | Tabelas |
 |---|---|
-| F1 | `contas_financeiras`, `categorias_financeiras`, `centros_custo`, `titulos`, `titulo_parcelas`, `titulo_rateios`, `baixas`, `lancamentos`, `lancamento_rateios`, `transferencias`; colunas de regime tributário e de configuração do financeiro em `tenants`/`tenant_configuracoes` |
-| F2 | `dre_modelos`, `dre_linhas`, `dre_linha_categorias`, `periodos_fechados`, `aliquotas_referencia` 🌐 |
-| F3 | `gateway_integracoes` (credencial cifrada), `cobrancas`, `gateway_eventos` (único por gateway + id externo) |
+| F1 | `contas_financeiras` (inclui os dados do cartão), `categorias_financeiras`, `centros_custo`, `titulos`, `titulo_parcelas`, `titulo_rateios`, `baixas`, `lancamentos`, `lancamento_rateios`, `transferencias`, `cartao_faturas`, `cartao_compras`; colunas de regime tributário e de configuração do financeiro em `tenants`/`tenant_configuracoes` |
+| F2 | `gateway_integracoes` (credencial cifrada), `cobrancas`, `gateway_eventos` (único por gateway + id externo) |
+| F3 | `dre_modelos`, `dre_linhas`, `dre_linha_categorias`, `periodos_fechados`, `aliquotas_referencia` 🌐 |
 | F4 | `contratos`, `contrato_itens`, `contrato_reajustes`, `reguas_cobranca`, `regua_passos`, `regua_envios` |
-| F5 | `notas_fiscais`, `nfse_configuracoes` |
-| F6 | `extratos_importados`, `extrato_linhas`, `conciliacoes`, `orcamentos`, `orcamento_valores`, `aprovacoes_pagamento` |
-| F7 | `comissoes`, `comissao_regras` |
+| F5 | `notas_fiscais`, `nfse_configuracoes`, `extratos_importados`, `extrato_linhas`, `conciliacoes` |
+| F6 | `orcamentos`, `orcamento_valores`, `aprovacoes_pagamento`, `comissao_regras`, `comissoes`, `comissao_apuracoes` |
+| F7 | (só o adaptador do Mercado Pago; reaproveita as tabelas da F2) |
 
 ## 12. Perguntas em aberto
 
-1. **Emissor de NFS-e:** começar só pelo ASAAS (sem custo extra, mas só para quem usa o ASAAS) ou já contratar um emissor independente (funciona com qualquer gateway, tem custo por nota)?
-2. **Padrão de `financeiro_titulos_da_venda`:** `rascunho`, como proposto?
-3. **Fornecedor nas telas comerciais:** empresa que é **só** fornecedor fica fora da carteira, do funil e do mapa por padrão?
-4. **Cartão de crédito da empresa** (fatura com várias compras) entra na F1 ou depois?
-5. **Comissões** (F7): sobre o recebido, com percentual por vendedor, por solução ou pelos dois?
-6. **Ordem das fases:** o ASAAS (F3) antes da DRE (F2), para começar a cobrar mais cedo?
+1. **Comissão com duas regras que valem ao mesmo tempo** (uma do vendedor e outra da solução): proposta é **a mais específica vence** (vendedor + solução → solução → vendedor), sem somar. Ou devem somar?
+2. **Base da comissão sobre o recebido:** valor **bruto** recebido ou **líquido** de impostos e tarifas do gateway? (Proposta: bruto, mais simples de explicar ao vendedor; configurável depois.)
+3. **Desconto da comissão** quando o cliente cancela cedo: liga por padrão, e com quantos dias (proposta: desligado; quando ligado, 90 dias)?
