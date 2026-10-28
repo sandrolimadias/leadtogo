@@ -82,10 +82,12 @@ Com a chave do passo 1 (com cadastrar e editar empresas):
    do nó *Formulário do site* com `cnpj`, `empresa`, `nome`, `email`, `telefone`, `mensagem`: a empresa (Lead), o
    contato e a tarefa "Retornar o contato do site" aparecem no Leadtogo.
 3. Importe `leadtogo-listar-associados.json` e execute à mão: um item por associado (CNPJ), de todas as páginas.
+4. Importe `leadtogo-listar-empresas.json` e execute à mão: uma linha por empresa da carteira. Ponha `status` = `lead`
+   no nó **Configuração** e execute de novo: só os Leads.
 
 ## 5. Aceite
 
 - [ ] Chaves: criar, usar, escopo, IP, rotacionar, revogar; membro de integração fora da equipe.
 - [ ] API pública: criar com idempotência, histórico com o autor "Integração", tag pela chave do sistema, cursor, lote.
 - [ ] Webhooks: teste, eventos reais, assinatura conferida no n8n, falha e reenvio, troca de segredo.
-- [ ] n8n: credencial e os três workflows importados e funcionando.
+- [ ] n8n: credencial e os quatro workflows importados e funcionando.

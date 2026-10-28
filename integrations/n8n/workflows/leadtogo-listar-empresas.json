@@ -1,0 +1,185 @@
+{
+  "name": "Leadtogo: listar empresas",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6b0c8f3e-2a51-5d7e-9f43-1c8e7a2b9d01",
+      "name": "Executar à mão",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "leadtogo",
+              "value": "https://crm.aledias.com.br",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "status",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "tag",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "c4",
+              "name": "responsavel_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "c5",
+              "name": "atualizado_desde",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2f7d4a90-81c3-5b6e-a2d4-7e9f0c3b5a12",
+      "name": "Configuração",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ (() => { const c = $('Configuração').first().json; const filtros = ['status', 'tag', 'responsavel_id', 'atualizado_desde'].filter((k) => String(c[k] ?? '').trim()).map((k) => k + '=' + encodeURIComponent(String(c[k]).trim())); return c.leadtogo + '/v1/publica/empresas?' + ['limite=200', ...filtros].join('&'); })() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "cursor",
+                    "value": "={{ $response.body.proximo_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.proximo_cursor }}",
+              "limitPagesFetched": true,
+              "maxRequests": 500,
+              "requestInterval": 600
+            }
+          }
+        }
+      },
+      "id": "9a3e5c71-4d28-5f0b-b6e1-3c7a9d2f8e43",
+      "name": "Leadtogo: empresas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Leadtogo API (chave)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Uma linha por empresa, com os campos planos (pronta para planilha, banco ou o próximo passo)\nconst empresas = $input.all().flatMap((i) => i.json.dados || []);\nreturn empresas.map((e) => {\n  const telefone = e.telefones.find((t) => t.principal) || e.telefones[0];\n  return {\n    json: {\n      empresa_id: e.id,\n      nome: e.nome,\n      razao_social: e.razao_social,\n      nome_fantasia: e.nome_fantasia,\n      tipo_documento: e.tipo_documento,\n      documento: e.documento,\n      status: e.status ? e.status.nome : null,\n      status_chave: e.status ? e.status.chave_sistema : null,\n      tags: e.tags.map((t) => t.nome).join(', '),\n      responsavel: e.responsavel.nome,\n      responsavel_email: e.responsavel.email,\n      vertical: e.vertical ? e.vertical.nome : null,\n      telefone: telefone ? telefone.numero : null,\n      website: e.website,\n      municipio: e.endereco.municipio,\n      uf: e.endereco.uf,\n      ultimo_contato_em: e.ultimo_contato_em,\n      proxima_atividade_em: e.proxima_atividade_em,\n      criado_em: e.criado_em,\n      atualizado_em: e.atualizado_em,\n    },\n  };\n});\n"
+      },
+      "id": "e4b1f6a2-7c95-5d38-8a0e-5f2c1b9d7a64",
+      "name": "Uma linha por empresa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {},
+      "id": "1d8c3b5e-9f07-5a62-b4e3-8a1f6c0d2e75",
+      "name": "Usar as empresas aqui",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "content": "## Empresas do Leadtogo\nLista as empresas da carteira pela API pública, página por página (cursor, 200 por página), e entrega **um item por empresa** com os campos planos.\n- Chave com o modelo *Leitura da carteira* (permissão `empresas.ver`): a chave vê todas as empresas da conta.\n- **Filtros** (nó *Configuração*, vazio = sem filtro):\n  - `status`: `lead`, `prospect`, `cliente` ou `inativo` (pela chave do sistema, vale mesmo com a tag renomeada);\n  - `tag`: qualquer tag, pela chave do sistema ou pelo id;\n  - `responsavel_id`: o id do vendedor;\n  - `atualizado_desde`: ISO 8601 (ex.: `2026-10-01T00:00:00Z`), só o que mudou desde então.\n- Troque *Executar à mão* por um *Schedule Trigger* para rodar sozinho e o nó final por uma planilha, banco etc.\n- 0,6 s entre as páginas (limite de 120 req/min por chave).",
+        "height": 400,
+        "width": 420
+      },
+      "id": "7f2a9e4c-3b16-5c80-9d57-2e6b8f1a3c86",
+      "name": "Leia-me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-460, -320]
+    }
+  ],
+  "connections": {
+    "Executar à mão": {
+      "main": [
+        [
+          {
+            "node": "Configuração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuração": {
+      "main": [
+        [
+          {
+            "node": "Leadtogo: empresas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leadtogo: empresas": {
+      "main": [
+        [
+          {
+            "node": "Uma linha por empresa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uma linha por empresa": {
+      "main": [
+        [
+          {
+            "node": "Usar as empresas aqui",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "leadtogo"
+    }
+  ]
+}
