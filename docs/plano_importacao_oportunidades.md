@@ -1,6 +1,6 @@
 # Plano da importação de oportunidades por planilha
 
-*Proposta de 28/10/2026, **a aprovar pelo Ale**. Estende a importação do Módulo 4 e a de contatos e atividades (16/10/2026) com um quarto tipo: **oportunidades**. Regras do cadastro manual em `funcionalidades.md` (seções 6 e 7) e tabela em `modelagem_banco.md` (seção 9.1).*
+*Proposta de 28/10/2026, **aprovada pelo Ale em 28/10/2026** (as cinco perguntas da seção 10 decididas como recomendado). Estende a importação do Módulo 4 e a de contatos e atividades (16/10/2026) com um quarto tipo: **oportunidades**. Regras do cadastro manual em `funcionalidades.md` (seções 6 e 7) e tabela em `modelagem_banco.md` (seção 9.1).*
 
 ## 1. Objetivo
 
@@ -21,7 +21,7 @@ Trazer para o Leadtogo a carteira de negócios que o cliente já tem em outro CR
 
 **Sem consulta à Receita**, como contatos e atividades.
 
-## 3. Decisões propostas (o Ale confirma ou muda)
+## 3. Decisões (aprovadas pelo Ale em 28/10/2026)
 
 1. **Empresa pelo CNPJ**, obrigatório e já na carteira (com ou sem pontuação). CNPJ fora da carteira pula (`pulada_empresa_inexistente`). Ordem recomendada na dica do primeiro passo: empresas → contatos → **oportunidades** → atividades (a atividade importada passa a poder apontar a oportunidade, ver 9).
 2. **Um funil por lote**, escolhido no passo Mapear (padrão: o funil padrão). A fase vem da coluna **Fase**, com o mapeamento de valores para as fases **ativas** daquele funil; coluna sem valor ou sem coluna = primeira fase ativa. Motivo: o limite de 6 fases e "mover de funil" (fora do MVP) tornam o funil por linha confuso. *Alternativa:* coluna Funil + Fase; fica no backlog.
@@ -29,7 +29,7 @@ Trazer para o Leadtogo a carteira de negócios que o cliente já tem em outro CR
    - grava `fase_parou_em_id` = a fase da linha e `data_fechamento` = coluna **Data de fechamento** (sem ela, o instante da importação, com aviso);
    - **Perdido, Cancelado e Suspenso exigem o Motivo** (mapeamento de valores para os motivos que valem para aquele status); sem motivo válido, a linha **pula** (`pulada_invalida`), como no cadastro manual;
    - **Suspenso exige "Retomar em"** e cria a atividade de retomada, como o fechamento manual; "Retomar em" no passado pula a linha.
-4. **Conquistado não muda a empresa para Cliente sozinho.** Chave no passo Mapear: *"Conquistadas mudam o Status da empresa para Cliente"*, **desligada por padrão** (histórico antigo não deve mexer na carteira sem a pessoa pedir). *Recomendação do Claude; o Ale pode preferir seguir a configuração da empresa.*
+4. **Conquistado não muda a empresa para Cliente sozinho.** Chave no passo Mapear: *"Conquistadas mudam o Status da empresa para Cliente"*, **desligada por padrão** (histórico antigo não deve mexer na carteira sem a pessoa pedir). *Decidido pelo Ale (28/10/2026).*
 5. **Valores** como no Módulo 6: Valor único, Valor mensal e Meses (inteiro ≥ 0; vazio com mensal > 0 = 12). O total e o ponderado **nunca** vêm da planilha (colunas geradas). Aceita `R$`, ponto de milhar e vírgula decimal ("1.234,56") e também "1234.56"; negativo ou acima de `VALOR_MAXIMO` pula a linha.
 6. **Probabilidade** opcional (0 a 100, aceita "40%"). Vazia = a da fase; diferente da fase = marcada como editada à mão (`probabilidade_manual`), igual ao `criar` manual.
 7. **Responsável** pelo e-mail de um membro ativo com alcance na empresa; vazio ou desconhecido = **vendedor da empresa** (com aviso quando veio e não casou). Diferente da atividade (lá vale quem importa), porque na oportunidade a regra do cadastro é o vendedor da empresa.
@@ -116,9 +116,9 @@ Extrair de `OportunidadesService.criar` e `fechar`, sem mudar o comportamento, f
 - Itens/produtos e mais de um contato (dependem de `oportunidade_itens` e `oportunidade_contatos`, fora do MVP).
 - Criar origem, solução ou motivo que não existe a partir da planilha.
 
-## 10. Perguntas em aberto (com a recomendação)
+## 10. Perguntas decididas (28/10/2026)
 
-| # | Pergunta | Recomendação |
+| # | Pergunta | Decisão do Ale |
 |---|---|---|
 | 1 | Conquistada importada muda a empresa para Cliente? | Chave no passo Mapear, **desligada** por padrão |
 | 2 | Um funil por lote ou coluna Funil? | **Um por lote** |
