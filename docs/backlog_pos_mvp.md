@@ -117,7 +117,12 @@
 | Agendas Google e Microsoft | Idem | Seção 3 |
 | n8n e API pública / webhooks (formulário do site cria empresa + oportunidade + atividade) | Idem | Seção 3 |
 | Link público de agendamento (estilo Calendly) | Idem | `funcionalidades.md` |
-| **Integração com ERP, Omie primeiro.** A regra de situação financeira fica no CRM, alimentada por conectores nativos (liga/desliga por empresa, só leitura) e pela API aberta. Grupo de tags de sistema **Financeiro**: Adimplente; Inadimplente até 30, 31–60, 61–90 e +90 dias; Sem cadastro no ERP. Só mensalidades, sem tolerância; a consulta é pelo CNPJ e só para empresas com a tag de sistema "cliente". **Ordem:** chaves de API e API aberta, depois o recurso financeiro, depois o conector Omie. **Em aberto:** como identificar a mensalidade na Omie | Fase de integrações; depende da API aberta | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+| ~~**Integração com ERP, Omie primeiro.** A regra de situação financeira fica no CRM, alimentada por conectores nativos (liga/desliga por empresa, só leitura) e pela API aberta. Grupo de tags de sistema **Financeiro**: Adimplente; Inadimplente até 30, 31–60, 61–90 e +90 dias; Sem cadastro no ERP. Só mensalidades, sem tolerância; a consulta é pelo CNPJ e só para empresas com a tag de sistema "cliente". **Ordem:** chaves de API e API aberta, depois o recurso financeiro, depois o conector Omie. **Em aberto:** como identificar a mensalidade na Omie~~ **Substituído em 28/10/2026:** com o módulo financeiro próprio (`plano_financeiro.md`, decisão F-D1), as tags de situação financeira passam a ser calculadas pelo Leadtogo e a Omie vira só origem de uma importação única (seção 9.6 do plano) | Fase de integrações; depende da API aberta | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+
+## Financeiro
+| Item | Motivo de ter ficado fora | Origem |
+|---|---|---|
+| **Mercado Pago (não esquecer).** Segundo gateway do módulo financeiro: PIX, boleto e cartão pelo mesmo `ProvedorCobranca` do ASAAS; o boleto do MP não muda o vencimento (prorrogar = cancelar e emitir outro) | O ASAAS vem primeiro; o MP é a fase F7 de `plano_financeiro.md` | Pedido do Ale no chat de planejamento, 28/10/2026 |
 
 ## SaaS (vários clientes)
 | Item | Motivo de ter ficado fora | Origem |

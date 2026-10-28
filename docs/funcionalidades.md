@@ -1017,6 +1017,7 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 | 5 — n8n | Webhooks de saída, chaves de API e automações (ver seção 13.2) |
 | 6 — E-mail | Conexão Google/Microsoft + BCC, registro automático, envio pelo CRM com modelos, rastreamento de abertura/cliques (ver seção 13.3) |
 | 7 — Agendas | Sincronização com Google Agenda e Microsoft, convites, Meet/Teams, disponibilidade (ver seção 13.4) |
+| Financeiro | **Em planejamento (28/10/2026), ver `plano_financeiro.md`.** Financeiro gerencial completo: contas financeiras, contas a pagar e a receber, plano de contas, DRE, fluxo de caixa, relatórios mês a mês, gateways (ASAAS primeiro, depois Mercado Pago), contratos e recorrência a partir da oportunidade, régua de cobrança e NFS-e. As regras entram neste documento quando cada fase for aprovada |
 | Futuro | Propostas/orçamentos em PDF, metas por vendedor, link público de agendamento, relatórios avançados |
 
 > O **Status da oportunidade** e o **histórico de fases e status** já deixam a base pronta para metas, relatórios de conversão e automações.
