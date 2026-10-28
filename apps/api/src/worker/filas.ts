@@ -17,6 +17,8 @@ export const FILAS = {
   importacao: 'importacao',
   /** Geocodificação de endereços (automática e em lote): concorrência baixa e limite por minuto, a CPU da VPS é curta */
   geocodificacao: 'geocodificacao',
+  /** Entregas dos webhooks de saída (POST assinado, reenvio com espera progressiva) */
+  webhooks: 'webhooks',
   /** Varredura dos anexos dos chamados no ClamAV (poucos por vez; o clamd é pesado) */
   antivirus: 'antivirus',
   /** Só existe fora de produção: os testes do worker (encerramento, retenção) usam. */

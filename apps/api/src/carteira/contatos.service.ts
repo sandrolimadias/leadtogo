@@ -12,6 +12,8 @@ import { ContextoTenantService, type Transacao } from '../acesso/contexto-tenant
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
+import { lerContato as lerContatoPublico } from '../integracoes/publica/leitura.js'
+import { emitirEvento, paraSnake } from '../integracoes/webhooks/eventos.js'
 import { lerContato } from './contato-leitura.js'
 import {
   type EscopoDaCarteira,
@@ -141,6 +143,13 @@ export class ContatosService {
           : {}),
       },
     })
+    await emitirEvento(this.ctx.db(), {
+      tenantId: this.ctx.tenantId,
+      tipo: 'contato.criado',
+      entidadeId: id,
+      membroId: this.ctx.membro.id,
+      dados: async () => ({ contato: await lerContatoPublico(this.ctx.db(), id) }),
+    })
     return this.detalhar(id)
   }
 
@@ -253,6 +262,16 @@ export class ContatosService {
       entidadeId: id,
       acao: 'alterar',
       alteracoes,
+    })
+    await emitirEvento(this.ctx.db(), {
+      tenantId: this.ctx.tenantId,
+      tipo: 'contato.atualizado',
+      entidadeId: id,
+      membroId: this.ctx.membro.id,
+      dados: async () => ({
+        contato: await lerContatoPublico(this.ctx.db(), id),
+        campos: Object.keys(alteracoes).map(paraSnake),
+      }),
     })
     return this.detalhar(id)
   }

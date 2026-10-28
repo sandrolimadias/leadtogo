@@ -1,7 +1,9 @@
 import { sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
+  boolean,
   char,
+  integer,
   jsonb,
   smallint,
   check,
@@ -108,5 +110,77 @@ export const idempotenciaChaves = pgTable(
   (t) => [
     uniqueIndex('idempotencia_chaves_uq').on(t.tenantId, t.chaveApiId, t.chave),
     index('idempotencia_chaves_criado_idx').on(t.criadoEm),
+  ],
+)
+
+/**
+ * Webhook de saída (I3): o destino, os eventos assinados e o segredo que assina as entregas (cifrado com a
+ * TOKEN_ENCRYPTION_KEY; na rotação, o anterior continua assinando junto até `segredo_anterior_ate`).
+ */
+export const webhooks = pgTable(
+  'webhooks',
+  {
+    id: chaveUuid(),
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    descricao: varchar({ length: 120 }).notNull(),
+    url: text().notNull(),
+    eventos: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    segredo: text().notNull(),
+    segredoAnterior: text(),
+    segredoAnteriorAte: timestamp({ withTimezone: true }),
+    ativo: boolean().notNull().default(true),
+    /** `falhas` (3 dias falhando) ou `410` (o destino não existe mais); nulo se desligado à mão */
+    desativadoMotivo: varchar({ length: 20 }),
+    ultimoSucessoEm: timestamp({ withTimezone: true }),
+    falhandoDesde: timestamp({ withTimezone: true }),
+    ...autoria(),
+  },
+  (t) => [
+    index('webhooks_lista_idx').on(t.tenantId, t.criadoEm),
+    check('webhooks_descricao_chk', sql`char_length(btrim(${t.descricao})) BETWEEN 1 AND 120`),
+    check('webhooks_url_chk', sql`${t.url} ~ '^https?://' AND char_length(${t.url}) <= 500`),
+  ],
+)
+
+/** Uma entrega de um evento a um webhook: o corpo enviado, as tentativas e a última resposta (log). */
+export const webhookEntregas = pgTable(
+  'webhook_entregas',
+  {
+    id: chaveUuid(),
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    webhookId: uuid()
+      .notNull()
+      .references(() => webhooks.id),
+    /** O `id` do envelope do evento (o consumidor deduplica por ele) */
+    eventoId: uuid().notNull(),
+    tipo: varchar({ length: 60 }).notNull(),
+    corpo: jsonb().notNull(),
+    /** Teste: sai mesmo com o webhook desligado */
+    avulsa: boolean().notNull().default(false),
+    situacao: varchar({ length: 10 }).notNull().default('pendente'),
+    tentativas: smallint().notNull().default(0),
+    statusHttp: smallint(),
+    duracaoMs: integer(),
+    resposta: text(),
+    erro: text(),
+    proximaTentativaEm: timestamp({ withTimezone: true }).defaultNow(),
+    reservadaAte: timestamp({ withTimezone: true }),
+    entregueEm: timestamp({ withTimezone: true }),
+    ...carimbos(),
+  },
+  (t) => [
+    uniqueIndex('webhook_entregas_evento_uq').on(t.webhookId, t.eventoId),
+    index('webhook_entregas_log_idx').on(t.tenantId, t.webhookId, t.criadoEm.desc()),
+    index('webhook_entregas_pendentes_idx')
+      .on(t.proximaTentativaEm)
+      .where(sql`${t.situacao} = 'pendente'`),
+    check('webhook_entregas_situacao_chk', sql`${t.situacao} IN ('pendente', 'sucesso', 'falhou')`),
   ],
 )

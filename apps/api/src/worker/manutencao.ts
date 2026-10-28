@@ -4,6 +4,7 @@ import type { Logger } from 'pino'
 
 import { varrerImportacoesParadas } from '../importacao/varredura.js'
 import { avisarChavesAVencer } from '../integracoes/vencimento-chaves.js'
+import { reenfileirarEntregasAtrasadas } from '../integracoes/webhooks/processador.js'
 import { agendarEnvioDoAviso, EVENTO_ENVIAR_AVISO } from '../portal/notificar-aviso.js'
 import { agendarNotificacaoDeEvento } from '../portal/notificar-evento.js'
 import { type EnviadorDePush, enviarPushesPendentes } from '../portal/push.js'
@@ -24,6 +25,8 @@ export interface Agendador {
     | 'enviar-avisos'
     | 'enviar-pushes'
     | 'avisar-chaves'
+    | 'varrer-webhooks'
+    | 'limpar-webhooks'
     | (string & {})
   /** Cron (UTC) ou intervalo em ms (só os testes usam intervalo) */
   quando: { pattern: string } | { every: number }
@@ -53,6 +56,10 @@ export const AGENDADORES: readonly Agendador[] = [
   { id: 'enviar-pushes', tarefa: 'enviar-pushes', quando: { every: 60_000 } },
   // Todo dia, 11:00 UTC (08:00 em Brasília): avisa as chaves de API que vencem em até 15 dias e no último dia
   { id: 'avisar-chaves', tarefa: 'avisar-chaves', quando: { pattern: '0 11 * * *' } },
+  // A cada minuto: entregas de webhook pendentes cuja vez passou e que saíram da fila voltam a ela
+  { id: 'varrer-webhooks', tarefa: 'varrer-webhooks', quando: { every: 60_000 } },
+  // Todo dia: o log de entregas (sucesso com mais de 30 dias, falha com mais de 90)
+  { id: 'limpeza-webhooks', tarefa: 'limpar-webhooks', quando: { pattern: '45 4 * * *' } },
 ]
 
 const TAMANHO_DO_LOTE = 500
@@ -83,7 +90,11 @@ export async function garantirParticoesNaPartida(filas: WorkerFilas): Promise<vo
 
 async function emLotes(
   banco: Conexao,
-  funcao: 'app_limpar_convites' | 'app_limpar_outbox' | 'app_limpar_idempotencia',
+  funcao:
+    | 'app_limpar_convites'
+    | 'app_limpar_outbox'
+    | 'app_limpar_idempotencia'
+    | 'app_limpar_webhook_entregas',
 ): Promise<number> {
   let total = 0
   for (let i = 0; i < MAX_LOTES; i++) {
@@ -185,6 +196,13 @@ export function processadorDeManutencao(
         break
       case 'avisar-chaves':
         resultado = await avisarChavesAVencer(banco)
+        break
+      case 'varrer-webhooks':
+        if (!filas) throw new Error('varredura de webhooks sem acesso às filas')
+        resultado = await reenfileirarEntregasAtrasadas(banco, filas.fila(FILAS.webhooks))
+        break
+      case 'limpar-webhooks':
+        resultado = await emLotes(banco, 'app_limpar_webhook_entregas')
         break
       case 'varrer-importacoes':
         if (!filas) throw new Error('varredura de importações sem acesso às filas')

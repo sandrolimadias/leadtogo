@@ -922,7 +922,7 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 | Oportunidade | criada · fase alterada · status alterado (conquistada, perdida, cancelada, suspensa) · parada (alerta) |
 | WhatsApp | conversa registrada · número não identificado |
 
-- Payload JSON padronizado (evento, data, tenant, dados do registro e quem alterou).
+- Payload JSON padronizado (evento, data, tenant, dados do registro e quem alterou): o envelope de `plano_api_aberta.md` §6.2, com o registro no formato da API pública. Também `importacao.concluida` (um por lote; a importação não avisa empresa por empresa).
 - **Assinatura HMAC** para o n8n validar a origem.
 - **Reenvio automático** com espera progressiva em caso de falha, além de um **log de entregas** com status e botão "reenviar".
 
@@ -1001,7 +1001,7 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 - Telefones armazenados também no formato **E.164** (padrão para comparar com o WhatsApp).
 - Atividades com campo **Origem** (Manual · WhatsApp · Integração/API) e **ID externo** (evita duplicidade na importação).
 - **Registro interno de eventos** (toda alteração relevante gera um evento), que depois alimenta os webhooks.
-- Tela **Configurações → Integrações** prevista no menu (chaves de API, webhooks, conexões WhatsApp, logs).
+- Tela **Configurações → Integrações** (chaves de API e webhooks com o log de entregas, entregues com a API aberta; conexões WhatsApp ficam para a fase delas).
 - Anexos de atividades já suportados (Garage), usados para as mídias do WhatsApp e anexos de e-mail.
 - E-mails de contatos normalizados (minúsculas) e **domínio** da empresa cadastrado, para identificar e-mails automaticamente.
 - Atividades com **participantes** (vários contatos) e **ID externo** também para e-mail (thread) e eventos de agenda.

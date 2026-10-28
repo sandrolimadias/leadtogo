@@ -293,7 +293,7 @@ O n8n e a Evolution API **já estão instalados e rodando** na mesma VPS/Coolify
 - Conferir a versão da Evolution em uso (v2.x) e travar a versão da imagem no Coolify para evitar quebras em atualizações automáticas.
 
 **CRM ↔ n8n**
-- CRM → n8n: webhooks de saída por evento (outbox + BullMQ, HMAC, retry).
+- CRM → n8n: webhooks de saída por evento (outbox + BullMQ, HMAC, retry). Para chamar o n8n pela rede interna (`http://n8n:5678/...`), cadastre o host em `WEBHOOK_HOSTS_INTERNOS` (ex.: `n8n:5678`); fora da lista, em produção, só `https` e nada de IP interno.
 - n8n → CRM: nó *HTTP Request* com **chave de API do tenant** (credencial *Header Auth* no n8n).
 - Os fluxos do n8n que pertencem ao CRM ficam numa **pasta ou projeto próprio** no n8n e são versionados (exportados para o repositório em `/integrations/n8n`).
 

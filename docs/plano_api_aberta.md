@@ -258,3 +258,14 @@ A `TOKEN_ENCRYPTION_KEY`, que já existe, cifra os segredos dos webhooks.
 - Contrato: `docs/api/publica-v1.openapi.json` (gerado por `pnpm --filter @leadtogo/api api:publica:atualizar`, que **recusa mudança não aditiva**, salvo `--quebrar` numa v2); o teste `openapi-publica.test.ts` confere que o retrato está em dia, que toda rota pública está nele e que a página e o JSON são servidos. O documento interno (`apps/api/openapi.json`) não traz as rotas públicas.
 - Documentação aberta em produção: `/v1/publica/docs` (Swagger UI) e `/v1/publica/openapi.json`.
 - Testes: `apps/api/src/integracoes/publica/publica.test.ts` (identidade, cadastros, empresas, tags pela chave do sistema, cursor, lote, transferência, idempotência, contatos, atividades com `id_externo`, oportunidades, escopo e isolamento) e a rede de segurança de `isolamento-http.test.ts` (toda rota pública dá 401 `chave_invalida` sem chave).
+
+### I3 — Webhooks de saída (migração 0040)
+- Entregue como na seção 6. Código em `apps/api/src/integracoes/webhooks/`: `eventos.ts` (envelope e emissão no outbox), `entrega.ts` (POST assinado, proteção contra SSRF), `processador.ts` (distribuição, entrega, reenvio, desligamento, varredura) e a gestão em `/v1/integracoes/webhooks` (`integracoes.gerir`; criar e trocar o segredo exigem 2FA).
+- Eventos emitidos: `empresa.criada` (não na importação), `empresa.atualizada` (com `campos`), `empresa.tag_alterada` (inclusive as automáticas, como Visitada e Contactada; não no cadastro), `empresa.responsavel_alterado`, `contato.criado`, `contato.atualizado`, `atividade.criada`, `atividade.concluida`, `oportunidade.criada`, `oportunidade.fase_alterada`, `oportunidade.status_alterado` (fechar e reabrir) e `importacao.concluida` (um por lote).
+- Ajustes na execução:
+  - o segredo é `whsec_` + 256 bits e a assinatura vai em `X-Leadtogo-Assinatura: t=<unix>,v1=<hex>`; na rotação, dois `v1` por 24 h;
+  - a fila nova `webhooks` (concorrência 5) só é consumida com a `TOKEN_ENCRYPTION_KEY` definida (sem ela não há como decifrar o segredo);
+  - o reenvio é nosso (não o do BullMQ): a entrega guarda `proxima_tentativa_em`, e a varredura `varrer-webhooks` (a cada minuto) devolve à fila a que se perdeu;
+  - "Enviar teste" sai mesmo com o webhook desligado (entrega `avulsa`); o reenvio manual zera as tentativas;
+  - variáveis novas: `WEBHOOK_HOSTS_INTERNOS` (lista) e `WEBHOOK_TIMEOUT_MS` (padrão 10 s).
+- Testes: `apps/api/src/integracoes/webhooks/webhooks.test.ts` (entrega de ponta a ponta com destino falso e assinatura conferida, sem assinante nada no outbox, rollback sem evento, teste avulso, falha com reagendamento, reenvio, desistência na 8ª, redirecionamento não seguido, 410, 3 dias falhando, religar, rotação do segredo, 2FA, segredo cifrado, URL interna recusada, isolamento, exclusão, SSRF por IP literal e por DNS) e `packages/db/src/testes/integracoes.test.ts` (varredura e limpeza).

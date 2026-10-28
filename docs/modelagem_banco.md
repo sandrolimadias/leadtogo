@@ -702,7 +702,7 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | Tabela | Uso |
 |---|---|
 | `api_chaves` | ✅ **Criada na migração 0038 (I1)**, ver abaixo |
-| `webhooks`, `webhook_entregas` | Destinos e log de entregas |
+| `webhooks`, `webhook_entregas` | ✅ **Criadas na migração 0040 (I3)**, ver abaixo |
 | `contas_conectadas` | Google/Microsoft/WhatsApp por membro (tokens **criptografados**) |
 | `mensagens` | Mensagens de e-mail e WhatsApp ligadas a uma atividade (direção, remetente, corpo, id_externo) |
 | `email_rastreios` | Aberturas e cliques |
@@ -723,6 +723,12 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 > **Implementação (I2, migração 0039, só expansão) — API pública** (`plano_api_aberta.md`, seção 5):
 > - `idempotencia_chaves`: chave_api_id, chave `varchar(100)`, hash_corpo `char(64)` (SHA-256 do método, do caminho e do corpo), status_http, resposta `jsonb`, criado_em. Única `(tenant_id, chave_api_id, chave)`. RLS por tenant. `app_limpar_idempotencia(lote)` (owner, variável `app.limpeza_idempotencia`) apaga as com mais de 24 h (tarefa `limpar-idempotencia`, 04:30 UTC).
 > - `atividades.id_externo varchar(200)` com o índice único parcial `(tenant_id, origem, id_externo)` (o mesmo desenho previsto acima, agora criado). A API pública grava `origem = api`.
+
+> **Implementação (I3, migração 0040, só expansão) — webhooks de saída** (`plano_api_aberta.md`, seção 6):
+> - `webhooks`: descricao `varchar(120)`, url (CHECK `^https?://`, até 500), eventos `text[]`, segredo e segredo_anterior **cifrados** (AES-256-GCM, `TOKEN_ENCRYPTION_KEY`, prefixo `v1:`), segredo_anterior_ate (rotação: as duas assinaturas por 24 h), ativo, desativado_motivo (`falhas` · `410`), ultimo_sucesso_em, falhando_desde, colunas padrão.
+> - `webhook_entregas`: webhook_id, evento_id (o `id` do envelope; único com o webhook), tipo, corpo `jsonb` (o envelope enviado), avulsa (teste), situacao (`pendente` · `sucesso` · `falhou`), tentativas, status_http, duracao_ms, resposta (até 2 KB), erro, proxima_tentativa_em, reservada_ate (2 min, contra entrega dupla), entregue_em. Índices do log `(tenant_id, webhook_id, criado_em DESC)` e das pendentes `(proxima_tentativa_em) WHERE situacao = 'pendente'`.
+> - `app_entregas_atrasadas()` (owner, variável `app.varrendo_webhooks`): pendentes vencidas há mais de 2 min e sem reserva, para a varredura de cada minuto as recolocar na fila. `app_limpar_webhook_entregas(lote)`: sucesso com mais de 30 dias e falha com mais de 90.
+> - Os eventos de domínio vão para o `eventos_outbox` como `webhook.distribuir` (o envelope no `payload`), na mesma transação do dado, e só se a empresa tem webhook ativo que assina o tipo.
 
 #### `tenant_smtp` 🏢 (1:1 com tenant) 🔮 — futura, não implementar agora
 SMTP que a empresa pode cadastrar em Configurações → E-mail (ver `funcionalidades.md`, seção 11). Sem linha (ou com `ativo = false`), os e-mails da empresa saem pelo SMTP da plataforma. Os e-mails de acesso (verificação, recuperação de senha, convites e 2FA) **nunca** usam esta tabela.
@@ -784,9 +790,9 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 | Oportunidades | oportunidades, oportunidade_itens, oportunidade_contatos, oportunidade_historico | 4 |
 | Prospecção | prospeccoes, prospeccao_resultados | 2 |
 | Sistema | arquivos, comentarios, notificacoes, preferencias_notificacao, filtros_salvos, importacoes, auditoria, eventos_outbox | 8 |
-| Integrações (API aberta) | api_chaves (0038) | 1 |
+| Integrações (API aberta) | api_chaves (0038), idempotencia_chaves (0039), webhooks e webhook_entregas (0040) | 4 |
 | **Fase 1** | | **61** |
-| Futuras 🔮 | webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp, financeiro_titulos, financeiro_situacoes | 12 |
+| Futuras 🔮 | contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp, financeiro_titulos, financeiro_situacoes | 10 |
 
 ---
 

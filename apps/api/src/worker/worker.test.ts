@@ -235,12 +235,14 @@ describe('manutenção agendada com dois workers de verdade', () => {
         'limpeza-convites',
         'limpeza-idempotencia',
         'limpeza-outbox',
+        'limpeza-webhooks',
         'publicar-agendadas',
         'varredura-importacoes',
+        'varrer-webhooks',
       ])
       // Os agendadores por cron esperam a hora; os de intervalo (varredura de importações, publicação das
-      // agendadas, lembrete de eventos, avisos e pushes) rodam já na partida
-      await esperarAte(async () => (await q.getJobCounts('completed'))['completed'] === 6)
+      // agendadas, lembrete de eventos, avisos, pushes e webhooks atrasados) rodam já na partida
+      await esperarAte(async () => (await q.getJobCounts('completed'))['completed'] === 7)
       const concluidos = await q.getJobs(['completed'])
       // só UMA execução de cada, mesmo com dois workers
       expect(concluidos.map((j) => j.name).sort()).toEqual([
@@ -250,6 +252,7 @@ describe('manutenção agendada com dois workers de verdade', () => {
         'particoes',
         'publicar-agendadas',
         'varrer-importacoes',
+        'varrer-webhooks',
       ])
     } finally {
       await q.obliterate({ force: true }).catch(() => undefined)

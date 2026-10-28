@@ -1272,3 +1272,28 @@ fabricas['idempotencia_chaves'] = definirFabrica<{ chaveId: string }>({
     return id
   },
 })
+
+// API aberta (I3): webhooks de saída e o log de entregas
+const inserirWebhook = async (tx: Sql | TransactionSql, tenantId: string): Promise<string> => {
+  const id = novoId()
+  await tx`INSERT INTO webhooks (id, tenant_id, descricao, url, eventos, segredo)
+    VALUES (${id}, ${tenantId}, 'n8n', 'https://n8n.exemplo.com/webhook/x', '{empresa.criada}', 'v1:cifrado')`
+  return id
+}
+
+fabricas['webhooks'] = definirFabrica({
+  colunaAlteravel: 'descricao',
+  criar: (tx, tenantId) => inserirWebhook(tx, tenantId),
+})
+
+fabricas['webhook_entregas'] = definirFabrica<{ webhookId: string }>({
+  colunaAlteravel: 'tipo',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => ({ webhookId: await inserirWebhook(tx, tenantId) })),
+  criar: async (tx, tenantId, { webhookId }) => {
+    const id = novoId()
+    await tx`INSERT INTO webhook_entregas (id, tenant_id, webhook_id, evento_id, tipo, corpo)
+      VALUES (${id}, ${tenantId}, ${webhookId}, ${novoId()}, 'empresa.criada', '{}'::jsonb)`
+    return id
+  },
+})

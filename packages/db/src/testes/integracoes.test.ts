@@ -56,3 +56,48 @@ describe('api_chaves: localizar a chave antes de saber a empresa', () => {
     ).rejects.toThrow(/api_chaves_hash_chk/)
   })
 })
+
+describe('webhook_entregas: varredura e limpeza do worker', () => {
+  it('app_entregas_atrasadas acha só as pendentes vencidas e livres; a limpeza respeita a retenção', async () => {
+    const tenantId = novoId()
+    await prepararTenants(owner, [tenantId])
+    const webhookId = novoId()
+    const ids = {
+      atrasada: novoId(),
+      recente: novoId(),
+      reservada: novoId(),
+      sucessoVelho: novoId(),
+      falhaNova: novoId(),
+    }
+    await comTenant(owner, tenantId, async (tx) => {
+      await tx`INSERT INTO webhooks (id, tenant_id, descricao, url, segredo)
+        VALUES (${webhookId}, ${tenantId}, 'n8n', 'https://n8n.exemplo.com/x', 'v1:x')`
+      const entrega = (id: string, extra: string) =>
+        tx.unsafe(`INSERT INTO webhook_entregas (id, tenant_id, webhook_id, evento_id, tipo, corpo, situacao,
+            proxima_tentativa_em, reservada_ate, criado_em)
+          VALUES ('${id}', '${tenantId}', '${webhookId}', '${novoId()}', 'empresa.criada', '{}', ${extra})`)
+      await entrega(ids.atrasada, `'pendente', now() - interval '10 minutes', NULL, now()`)
+      await entrega(ids.recente, `'pendente', now() + interval '1 minute', NULL, now()`)
+      await entrega(
+        ids.reservada,
+        `'pendente', now() - interval '10 minutes', now() + interval '1 minute', now()`,
+      )
+      await entrega(ids.sucessoVelho, `'sucesso', NULL, NULL, now() - interval '31 days'`)
+      await entrega(ids.falhaNova, `'falhou', NULL, NULL, now() - interval '31 days'`)
+    })
+    const achadas = await app<{ id: string }[]>`SELECT id FROM app_entregas_atrasadas()`
+    const minhas = achadas.map((a) => a.id).filter((id) => Object.values(ids).includes(id))
+    expect(minhas).toEqual([ids.atrasada])
+    expect(await app`SELECT id FROM webhook_entregas`).toHaveLength(0)
+
+    await app`SELECT app_limpar_webhook_entregas(5000)`
+    const restantes = await comTenant(
+      owner,
+      tenantId,
+      (tx) => tx<{ id: string }[]>`SELECT id FROM webhook_entregas`,
+    )
+    expect(restantes.map((r) => r.id).sort()).toEqual(
+      [ids.atrasada, ids.recente, ids.reservada, ids.falhaNova].sort(),
+    )
+  })
+})
