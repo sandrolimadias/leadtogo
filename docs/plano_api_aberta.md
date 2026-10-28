@@ -269,3 +269,8 @@ A `TOKEN_ENCRYPTION_KEY`, que já existe, cifra os segredos dos webhooks.
   - "Enviar teste" sai mesmo com o webhook desligado (entrega `avulsa`); o reenvio manual zera as tentativas;
   - variáveis novas: `WEBHOOK_HOSTS_INTERNOS` (lista) e `WEBHOOK_TIMEOUT_MS` (padrão 10 s).
 - Testes: `apps/api/src/integracoes/webhooks/webhooks.test.ts` (entrega de ponta a ponta com destino falso e assinatura conferida, sem assinante nada no outbox, rollback sem evento, teste avulso, falha com reagendamento, reenvio, desistência na 8ª, redirecionamento não seguido, 410, 3 dias falhando, religar, rotação do segredo, 2FA, segredo cifrado, URL interna recusada, isolamento, exclusão, SSRF por IP literal e por DNS) e `packages/db/src/testes/integracoes.test.ts` (varredura e limpeza).
+
+### I4 — Pacote do n8n
+- `integrations/n8n/README.md` (credencial, endereço, `NODE_FUNCTION_ALLOW_BUILTIN=crypto`, convenções da API, como receber eventos e versionar) e três workflows modelo em `integrations/n8n/workflows/`: receber eventos com a assinatura conferida, formulário do site → Lead + contato + tarefa, e a lista diária dos associados (o primeiro passo da integração com o Omie).
+- O código de conferência da assinatura do workflow foi testado contra a assinatura que a API gera (corpo bruto e corpo reserializado aceitos; corpo adulterado e carimbo com mais de 5 minutos recusados). A importação dos JSON no n8n é conferida no roteiro de teste (não há n8n no ambiente de desenvolvimento).
+- Roteiro de teste de ponta a ponta das quatro fases: [`roteiro_teste_api_aberta.md`](roteiro_teste_api_aberta.md).

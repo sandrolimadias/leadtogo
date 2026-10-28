@@ -1,0 +1,195 @@
+{
+  "name": "Leadtogo: formulário do site cria Lead, contato e tarefa",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "formulario-site",
+        "options": {}
+      },
+      "id": "912c745b-14ef-5dd9-88c8-90230ec5ce66",
+      "name": "Formulário do site",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "c50c3434-3587-59ea-9cf7-2af153afb72f"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "leadtogo",
+              "value": "https://crm.aledias.com.br",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da142f55-a36f-5263-8e10-b575b5224bed",
+      "name": "Configuração",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').first().json.leadtogo }}/v1/publica/empresas",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ 'site-empresa-' + $('Formulário do site').first().json.body.cnpj }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ documento: $('Formulário do site').first().json.body.cnpj, razao_social: $('Formulário do site').first().json.body.empresa, status: 'lead', telefones: $('Formulário do site').first().json.body.telefone ? [{ numero: $('Formulário do site').first().json.body.telefone }] : undefined }) }}"
+      },
+      "id": "221b1362-dc6f-561d-bb6d-f4ffa08b9efe",
+      "name": "Leadtogo: empresa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Leadtogo API (chave)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').first().json.leadtogo }}/v1/publica/contatos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ 'site-contato-' + $('Formulário do site').first().json.body.email }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ nome: $('Formulário do site').first().json.body.nome, empresa_id: $('Leadtogo: empresa').first().json.id, emails: [$('Formulário do site').first().json.body.email], ignorar_duplicado: true }) }}"
+      },
+      "id": "85aec775-97bc-5fdc-bdfe-df72f0bc61e8",
+      "name": "Leadtogo: contato",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Leadtogo API (chave)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').first().json.leadtogo }}/v1/publica/atividades",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tipo: 'tarefa', titulo: 'Retornar o contato do site', empresa_id: $('Leadtogo: empresa').first().json.id, contato_id: $('Leadtogo: contato').first().json.id, inicio: new Date(Date.now() + 86400000).toISOString(), observacoes: $('Formulário do site').first().json.body.mensagem || null, id_externo: 'site-' + $execution.id }) }}"
+      },
+      "id": "664d1155-5fd6-52cf-90e7-f315e5d89a51",
+      "name": "Leadtogo: tarefa de retorno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Leadtogo API (chave)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Formulário do site → Lead\nO site envia `cnpj`, `empresa`, `nome`, `email`, `telefone` e `mensagem`.\n- Credencial **Leadtogo API (chave)**: Header Auth, nome `Authorization`, valor `Bearer ltg_live_...` (chave com o modelo *Formulário do site*).\n- A chave precisa de **responsável padrão** (ou mande `responsavel_email`).\n- O `Idempotency-Key` evita duplicar se o formulário for reenviado.\n- Ajuste a URL do Leadtogo no nó **Configuração**.",
+        "height": 300,
+        "width": 380
+      },
+      "id": "c04a3e1d-f70f-5156-beb8-69b7e49ec80a",
+      "name": "Leia-me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-420, -260]
+    }
+  ],
+  "connections": {
+    "Formulário do site": {
+      "main": [
+        [
+          {
+            "node": "Configuração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuração": {
+      "main": [
+        [
+          {
+            "node": "Leadtogo: empresa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leadtogo: empresa": {
+      "main": [
+        [
+          {
+            "node": "Leadtogo: contato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leadtogo: contato": {
+      "main": [
+        [
+          {
+            "node": "Leadtogo: tarefa de retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "leadtogo"
+    }
+  ]
+}
