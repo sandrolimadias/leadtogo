@@ -1,6 +1,6 @@
 # Plano do Módulo Financeiro (Fase 4)
 
-> **Status: em discussão com o Ale (chat de planejamento, 28/10/2026).** As decisões da seção 2 já foram dadas (duas rodadas); restam as perguntas da seção 12. Nada de código até o plano ser aprovado.
+> **Status: em discussão com o Ale (chat de planejamento, 28/10/2026).** Todas as perguntas foram respondidas (seção 2, três rodadas); o plano está completo e aguarda a aprovação do Ale. Nada de código até lá.
 > **Referência de escopo:** o menu "Finanças" da Omie (contas correntes, lançamentos, contas a pagar e a receber, boletos, PIX, extrato, orçamento de caixa, pesquisa de títulos, movimentos financeiros e resumo), mais gateways de pagamento, plano de contas, DRE e relatórios gerenciais mês a mês.
 > Quando aprovado, as regras vão para `funcionalidades.md` (seção nova) e as tabelas para `modelagem_banco.md`, no mesmo commit de cada fase.
 
@@ -38,6 +38,9 @@ O que já existe e o financeiro aproveita:
 | F-D11 | **Cartão de crédito da empresa entra na F1** |
 | F-D12 | **Comissões por vendedor e por solução**, com três formas de cálculo: percentual sobre o recebido, **valor fixo** e **percentual sobre a primeira mensalidade** (seção 9.7) |
 | F-D13 | **ASAAS antes da DRE**: a cobrança vem logo depois da base (seção 11) |
+| F-D14 | Regras de comissão que valem ao mesmo tempo **podem somar ou não**, conforme a regra (seção 9.7) |
+| F-D15 | Percentual sobre o recebido calculado sobre o valor **bruto** |
+| F-D16 | **Desconto da comissão** quando o cliente cancela cedo: **ligado**, com prazo configurável (padrão 90 dias) |
 
 ## 3. Conceitos
 
@@ -227,8 +230,13 @@ Importação única (planilha ou API da Omie) do plano de contas, contas corrent
 | **Valor fixo** | R$ X por venda (por contrato ou por item da solução) | Quando a **primeira parcela** é recebida |
 | **Percentual sobre a primeira mensalidade** | % do valor da primeira mensalidade (para venda só com itens únicos, sobre o valor único) | Quando a **primeira mensalidade** é recebida |
 
-- **Sempre sobre o que foi recebido**, nunca sobre o vendido: venda que não paga não gera comissão.
-- Estorno da baixa estorna a comissão; cancelamento do contrato em até N dias (configurável) pode **descontar** a comissão já gerada da próxima apuração.
+- **Mais de uma regra para a mesma venda (F-D14):** cada regra tem a marca **"soma com as demais"**.
+  - Entre as regras **sem** a marca, vale só a **mais específica**: vendedor + solução → solução → vendedor.
+  - As regras **com** a marca sempre se somam à escolhida acima (ex.: a regra da solução paga 5% e uma regra do vendedor marcada como cumulativa paga mais R$ 200 fixos).
+  - A apuração mostra qual regra gerou cada valor.
+- **Sempre sobre o que foi recebido**, nunca sobre o vendido: venda que não paga não gera comissão. A base é o valor **bruto** recebido (F-D15), sem descontar impostos nem tarifas do gateway; juros e multa por atraso não entram na base.
+- Estorno da baixa estorna a comissão.
+- **Cancelamento cedo (F-D16):** se o contrato for cancelado em até N dias do início (configuração da empresa, **ligada**, padrão **90 dias**), a comissão já gerada daquela venda é **descontada** da próxima apuração do vendedor. Se a apuração ficar negativa, o saldo passa para o mês seguinte (nunca vira cobrança ao vendedor).
 - **Apuração mensal:** a lista de comissões do mês é conferida, aprovada e vira um **título a pagar** por vendedor (categoria "Comissões", que entra na DRE como despesa comercial).
 - O vendedor vê **só as próprias comissões** (permissão `financeiro.comissoes_proprias`).
 
@@ -288,6 +296,4 @@ Cada fase termina em portão, como no portal: gate verde, CI verde, deploy, rote
 
 ## 12. Perguntas em aberto
 
-1. **Comissão com duas regras que valem ao mesmo tempo** (uma do vendedor e outra da solução): proposta é **a mais específica vence** (vendedor + solução → solução → vendedor), sem somar. Ou devem somar?
-2. **Base da comissão sobre o recebido:** valor **bruto** recebido ou **líquido** de impostos e tarifas do gateway? (Proposta: bruto, mais simples de explicar ao vendedor; configurável depois.)
-3. **Desconto da comissão** quando o cliente cancela cedo: liga por padrão, e com quantos dias (proposta: desligado; quando ligado, 90 dias)?
+Nenhuma. Próximo passo, depois da aprovação: detalhar a **F1** em `funcionalidades.md` (regras) e `modelagem_banco.md` (tabelas e migração), com o roteiro de teste, antes do código.
