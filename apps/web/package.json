@@ -59,7 +59,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "ioredis": "^6.0.0",
     "jsdom": "^30.1.2",
-    "pixelmatch": "^7.2.0",
+    "pixelmatch": "^8.0.0",
     "playwright": "^1.64.0",
     "pngjs": "^7.0.0",
     "vite": "^8.3.4",
