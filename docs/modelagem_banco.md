@@ -710,6 +710,8 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | `conversas_nao_identificadas` | Números/e-mails desconhecidos |
 | `territorios` | Áreas fixas por vendedor (as rotas entraram no G4, migração 0030) |
 | `metas` | Metas por vendedor/período |
+| `financeiro_titulos` | Títulos em aberto por empresa, recebidos do ERP: empresa_id, fonte (`omie`, `api`…), id_externo, parcela, vencimento `date`, valor `numeric(15,2)`, sincronizado_em. Único `(tenant_id, fonte, id_externo)`. A posição de um CNPJ substitui a anterior da mesma fonte (`funcionalidades.md` §13.6) |
+| `financeiro_situacoes` | Uma linha por empresa e fonte: situacao (`adimplente` · `inadimplente` · `desassociacao` · `sem_cadastro_erp`), dias_atraso, valor_vencido `numeric(15,2)`, vencimento_mais_antigo, sincronizado_em. Base da tag do grupo Financeiro e do webhook. Tolerância em `tenant_configuracoes.financeiro_tolerancia_dias` (padrão 0) |
 | `tenant_smtp` | SMTP próprio da empresa (futura; detalhe abaixo) |
 
 #### `tenant_smtp` 🏢 (1:1 com tenant) 🔮 — futura, não implementar agora
@@ -773,7 +775,7 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 | Prospecção | prospeccoes, prospeccao_resultados | 2 |
 | Sistema | arquivos, comentarios, notificacoes, preferencias_notificacao, filtros_salvos, importacoes, auditoria, eventos_outbox | 8 |
 | **Fase 1** | | **61** |
-| Futuras 🔮 | api_chaves, webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp | 11 |
+| Futuras 🔮 | api_chaves, webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp, financeiro_titulos, financeiro_situacoes | 13 |
 
 ---
 

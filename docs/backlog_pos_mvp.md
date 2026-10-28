@@ -117,7 +117,7 @@
 | Agendas Google e Microsoft | Idem | Seção 3 |
 | n8n e API pública / webhooks (formulário do site cria empresa + oportunidade + atividade) | Idem | Seção 3 |
 | Link público de agendamento (estilo Calendly) | Idem | `funcionalidades.md` |
-| **Integração com ERP, Omie primeiro.** A regra de situação financeira fica no CRM, alimentada por conectores nativos (liga/desliga por empresa, só leitura) e pela API aberta. Grupo de tags de sistema **Financeiro**: Adimplente; Inadimplente até 30, 31–60, 61–90 e +90 dias; Sem cadastro no ERP. Só mensalidades, sem tolerância; a consulta é pelo CNPJ e só para empresas com a tag de sistema "cliente". **Ordem:** chaves de API e API aberta, depois o recurso financeiro, depois o conector Omie. **Em aberto:** como identificar a mensalidade na Omie | Fase de integrações; depende da API aberta | Decisão do Ale fora do repositório (chat de planejamento), 13/10/2026 |
+| **Integração com ERP, Omie primeiro (situação financeira).** Regra no CRM, dados pela API aberta; o Omie entra por um workflow do n8n (*middleware*). Faixas: Adimplente (até a tolerância configurável), Inadimplente (1–90 dias), Desassociação (+90 dias, só marca e avisa) e Sem cadastro no ERP. Conta todo título em aberto do cliente (o Omie não identifica a mensalidade). **Ordem:** chaves de API e API aberta, depois o recurso financeiro, depois o workflow do Omie. Detalhe em `funcionalidades.md` §13.6 | Fase de integrações; depende da API aberta | Decisões do Ale de 13/10/2026, revistas em 28/10/2026 (faixas, tolerância, Desassociação, mensalidade) |
 
 ## SaaS (vários clientes)
 | Item | Motivo de ter ficado fora | Origem |
