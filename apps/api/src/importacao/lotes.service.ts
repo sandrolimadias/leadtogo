@@ -2,6 +2,7 @@ import { DeleteObjectCommand, PutObjectCommand, type S3Client } from '@aws-sdk/c
 import { and, eq, inArray, isNull, schema, sql } from '@leadtogo/db'
 import {
   type AlterarLoteEntrada,
+  type CampoComValores,
   type ConsultaDoEnvio,
   type FonteDosDados,
   DIAS_PARA_DESFAZER,
@@ -24,15 +25,20 @@ import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ARMAZENAMENTO } from '../infra/infra.module.js'
+import type { MapeamentoDeOportunidades } from './cadastros-da-oportunidade.js'
 import { lerPlanilha, type Planilha } from './planilha.js'
 
 const {
   arquivos,
+  funilFases,
+  funis,
   importacaoLinhas,
   importacaoPerfis,
   importacoes,
   membros,
+  motivos,
   origens,
+  solucoes,
   tagGrupos,
   tags,
   tiposAtividade,
@@ -59,6 +65,11 @@ const colunasDe = (lote: Lote): string[] =>
   (lote.mapeamento as { colunas?: string[] }).colunas ?? []
 const camposDe = (lote: Lote): Record<string, string> =>
   (lote.mapeamento as { campos?: Record<string, string> }).campos ?? {}
+const mapeamentoDe = (lote: Lote) =>
+  lote.mapeamento as MapeamentoDeOportunidades & {
+    colunas?: string[]
+    tipos?: Record<string, string | null>
+  }
 
 /** O que falta para o lote poder ser importado (vazio = pronta). */
 function pendenciasDe(lote: Lote, colunas: string[], campos: Record<string, string>): string[] {
@@ -231,11 +242,27 @@ export class LotesDeImportacaoService {
           [{ campo: enviado, mensagem: 'Esta escolha vale só para a importação de empresas.' }],
         )
       }
-    } else if (dados.tiposDeAtividade) {
+    }
+    if (dados.tiposDeAtividade && atual.tipo !== 'atividades') {
       throw new ErroApi(
         'campo_so_de_atividades',
         'A escolha dos tipos vale só para a importação de atividades.',
         400,
+      )
+    }
+    const soDeOportunidades = ['funilId', 'clienteAoConquistar', 'valoresDeCampo'] as const
+    const deOportunidades = soDeOportunidades.find((c) => c in dados)
+    if (deOportunidades && atual.tipo !== 'oportunidades') {
+      throw new ErroApi(
+        'campo_so_de_oportunidades',
+        'Esta escolha vale só para a importação de oportunidades.',
+        400,
+        [
+          {
+            campo: deOportunidades,
+            mensagem: 'Esta escolha vale só para a importação de oportunidades.',
+          },
+        ],
       )
     }
     if (dados.campos && atual.tipo !== 'empresas') {
@@ -290,11 +317,50 @@ export class LotesDeImportacaoService {
         }
       }
     }
-    if (dados.campos || dados.tiposDeAtividade) {
+    const atualDoMapa = mapeamentoDe(atual)
+    const funilMudou =
+      dados.funilId !== undefined && (dados.funilId ?? undefined) !== atualDoMapa.funilId
+    const funilId = dados.funilId !== undefined ? (dados.funilId ?? undefined) : atualDoMapa.funilId
+    if (dados.funilId) {
+      await this.exigir(
+        db
+          .select({ id: funis.id })
+          .from(funis)
+          .where(and(eq(funis.id, dados.funilId), eq(funis.ativo, true), isNull(funis.excluidoEm))),
+        'funilId',
+        'Escolha um funil ativo.',
+      )
+    }
+    if (dados.valoresDeCampo) await this.exigirValoresDeCampo(dados.valoresDeCampo, funilId)
+    if (
+      dados.campos ||
+      dados.tiposDeAtividade ||
+      dados.funilId !== undefined ||
+      dados.clienteAoConquistar !== undefined ||
+      dados.valoresDeCampo
+    ) {
       const tipos = dados.tiposDeAtividade
         ? { ...tiposAtuais, ...dados.tiposDeAtividade }
         : tiposAtuais
-      valores.mapeamento = { colunas, campos, ...(tipos ? { tipos } : {}) }
+      // Trocar o funil esquece as fases apontadas (eram de outro funil)
+      const anteriores = funilMudou
+        ? { ...atualDoMapa.valores, fase: {} }
+        : (atualDoMapa.valores ?? {})
+      const novos = dados.valoresDeCampo ?? {}
+      const valoresDeCampo = Object.fromEntries(
+        (['fase', 'motivo', 'origem', 'solucao'] as const).flatMap((c) =>
+          anteriores[c] || novos[c] ? [[c, { ...anteriores[c], ...novos[c] }]] : [],
+        ),
+      )
+      const clienteAoConquistar = dados.clienteAoConquistar ?? atualDoMapa.clienteAoConquistar
+      valores.mapeamento = {
+        colunas,
+        campos,
+        ...(tipos ? { tipos } : {}),
+        ...(funilId ? { funilId } : {}),
+        ...(clienteAoConquistar !== undefined ? { clienteAoConquistar } : {}),
+        ...(Object.keys(valoresDeCampo).length > 0 ? { valores: valoresDeCampo } : {}),
+      }
     }
     if (dados.perfilId !== undefined) {
       valores.perfilId = dados.perfilId
@@ -400,19 +466,35 @@ export class LotesDeImportacaoService {
    * Atividades: cada valor distinto da coluna Tipo da planilha, com quantas linhas tem e o tipo que valerá
    * (o que a pessoa apontou, ou o tipo de mesmo nome). É a lista do passo "Mapear colunas".
    */
-  async valoresDoTipo(id: string, colunaEscolhida?: string): Promise<ValoresDoTipo> {
+  async valoresDoTipo(
+    id: string,
+    colunaEscolhida?: string,
+    campo?: CampoComValores,
+  ): Promise<ValoresDoTipo> {
     const db = this.ctx.db()
     const lote = await this.achar(id)
-    if (lote.tipo !== 'atividades') {
-      throw new ErroApi('tipo_sem_valores', 'Só a importação de atividades mapeia tipos.', 409)
+    if (lote.tipo !== 'atividades' && lote.tipo !== 'oportunidades') {
+      throw new ErroApi(
+        'tipo_sem_valores',
+        'Só as importações de atividades e de oportunidades apontam valores para cadastros.',
+        409,
+      )
     }
+    if (lote.tipo === 'oportunidades' && !campo) {
+      throw new ErroApi(
+        'campo_obrigatorio',
+        'Diga de qual campo (fase, motivo, origem ou solucao) são os valores.',
+        400,
+      )
+    }
+    const chaveDoCampo = lote.tipo === 'oportunidades' ? (campo as CampoComValores) : 'tipo'
     // A tela pode perguntar antes de gravar o mapeamento: `coluna` é a escolhida agora, no passo
-    const coluna = colunaEscolhida ?? camposDe(lote)['tipo']
+    const coluna = colunaEscolhida ?? camposDe(lote)[chaveDoCampo]
     if (colunaEscolhida && !colunasDe(lote).includes(colunaEscolhida)) {
       throw new ErroApi('coluna_invalida', 'Essa coluna não existe na planilha.', 400)
     }
     if (!coluna) {
-      throw new ErroApi('mapeamento_incompleto', 'Indique a coluna do Tipo primeiro.', 409)
+      throw new ErroApi('mapeamento_incompleto', 'Indique a coluna primeiro.', 409)
     }
     const rs = await db.execute<{ valor: string | null; n: number }>(sql`
       SELECT dados ->> ${coluna} AS valor, count(*)::int AS n
@@ -433,11 +515,17 @@ export class LotesDeImportacaoService {
         409,
       )
     }
-    const cadastrados = await db
-      .select({ id: tiposAtividade.id, nome: tiposAtividade.nome })
-      .from(tiposAtividade)
-      .where(and(eq(tiposAtividade.ativo, true), isNull(tiposAtividade.excluidoEm)))
-    const escolhidos = (lote.mapeamento as { tipos?: Record<string, string | null> }).tipos ?? {}
+    const cadastrados =
+      lote.tipo === 'oportunidades'
+        ? await this.cadastrosDoCampo(chaveDoCampo as CampoComValores, mapeamentoDe(lote).funilId)
+        : await db
+            .select({ id: tiposAtividade.id, nome: tiposAtividade.nome })
+            .from(tiposAtividade)
+            .where(and(eq(tiposAtividade.ativo, true), isNull(tiposAtividade.excluidoEm)))
+    const escolhidos =
+      (lote.tipo === 'oportunidades'
+        ? mapeamentoDe(lote).valores?.[chaveDoCampo as CampoComValores]
+        : mapeamentoDe(lote).tipos) ?? {}
     return {
       itens: [...porChave.entries()].map(([chave, v]) => {
         const automatico = cadastrados.find((t) => paraComparar(t.nome) === chave)?.id ?? null
@@ -458,6 +546,61 @@ export class LotesDeImportacaoService {
           origem,
         }
       }),
+    }
+  }
+
+  /**
+   * Oportunidades: os cadastros ativos que um campo aceita. Fase: as fases ativas do funil do lote (sem funil
+   * escolhido, o padrão); motivo, origem e solução: os ativos da empresa.
+   */
+  private async cadastrosDoCampo(
+    campo: CampoComValores,
+    funilId: string | undefined,
+  ): Promise<{ id: string; nome: string }[]> {
+    const db = this.ctx.db()
+    if (campo === 'fase') {
+      return db
+        .select({ id: funilFases.id, nome: funilFases.nome })
+        .from(funilFases)
+        .innerJoin(funis, eq(funis.id, funilFases.funilId))
+        .where(
+          and(
+            funilId ? eq(funis.id, funilId) : eq(funis.padrao, true),
+            isNull(funis.excluidoEm),
+            eq(funilFases.ativo, true),
+            isNull(funilFases.excluidoEm),
+          ),
+        )
+        .orderBy(funilFases.ordem, funilFases.nome)
+    }
+    const tabela = campo === 'motivo' ? motivos : campo === 'origem' ? origens : solucoes
+    return db
+      .select({ id: tabela.id, nome: tabela.nome })
+      .from(tabela)
+      .where(and(eq(tabela.ativo, true), isNull(tabela.excluidoEm)))
+      .orderBy(tabela.nome)
+  }
+
+  /** Os cadastros apontados no mapeamento de valores existem e estão ativos (as fases, no funil do lote). */
+  private async exigirValoresDeCampo(
+    valores: NonNullable<AlterarLoteEntrada['valoresDeCampo']>,
+    funilId: string | undefined,
+  ): Promise<void> {
+    for (const campo of ['fase', 'motivo', 'origem', 'solucao'] as const) {
+      const ids = [
+        ...new Set(Object.values(valores[campo] ?? {}).filter((v): v is string => v !== null)),
+      ]
+      if (ids.length === 0) continue
+      const validos = new Set((await this.cadastrosDoCampo(campo, funilId)).map((c) => c.id))
+      if (ids.some((i) => !validos.has(i))) {
+        const mensagem =
+          campo === 'fase'
+            ? 'Escolha fases ativas do funil da importação.'
+            : 'Escolha cadastros ativos.'
+        throw new ErroApi('valor_invalido', mensagem, 400, [
+          { campo: `valoresDeCampo.${campo}`, mensagem },
+        ])
+      }
     }
   }
 
@@ -523,7 +666,10 @@ export class LotesDeImportacaoService {
       statusTagId: lote.statusTagId,
       origemId: lote.origemId,
       verticalId: lote.verticalId,
-      tiposDeAtividade: (lote.mapeamento as { tipos?: Record<string, string | null> }).tipos ?? {},
+      tiposDeAtividade: mapeamentoDe(lote).tipos ?? {},
+      funilId: mapeamentoDe(lote).funilId ?? null,
+      clienteAoConquistar: mapeamentoDe(lote).clienteAoConquistar ?? false,
+      valoresDeCampo: mapeamentoDe(lote).valores ?? {},
       pendencias: pendenciasDe(lote, colunas, campos),
       criadoEm: lote.criadoEm.toISOString(),
       concluidoEm: lote.concluidoEm?.toISOString() ?? null,

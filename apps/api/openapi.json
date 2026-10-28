@@ -13525,7 +13525,7 @@
             "schema": {
               "default": "empresas",
               "type": "string",
-              "enum": ["empresas", "contatos", "atividades"]
+              "enum": ["empresas", "contatos", "atividades", "oportunidades"]
             }
           }
         ],
@@ -13627,7 +13627,7 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["empresas", "contatos", "atividades"]
+              "enum": ["empresas", "contatos", "atividades", "oportunidades"]
             }
           }
         ],
@@ -14570,7 +14570,7 @@
     },
     "/v1/importacao/lotes/{id}/valores-do-tipo": {
       "get": {
-        "description": "Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Só no lote de atividades: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Sem `coluna`, vale a coluna do Tipo já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.",
+        "description": "Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). No lote de atividades: cada valor distinto da coluna Tipo, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. No lote de oportunidades, o mesmo para a coluna do `campo` (`fase`, `motivo`, `origem` ou `solucao`, obrigatório), com o cadastro em `tipoId` (as fases são as ativas do funil do lote). Sem `coluna`, vale a coluna já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro cadastro, `PATCH` do lote com `tiposDeAtividade` ou `valoresDeCampo`.",
         "operationId": "LotesDeImportacaoController_valoresDoTipo",
         "parameters": [
           {
@@ -14587,6 +14587,15 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "campo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["fase", "motivo", "origem", "solucao"]
             }
           }
         ],
@@ -14642,13 +14651,13 @@
             }
           }
         },
-        "summary": "Valores da coluna Tipo (atividades)",
+        "summary": "Valores de uma coluna (Tipo das atividades; Fase, Motivo, Origem e Solução das oportunidades)",
         "tags": ["Importação: lotes"]
       }
     },
     "/v1/importacao/modelo": {
       "get": {
-        "description": "Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.",
+        "description": "Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos`, `atividades` ou `oportunidades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.",
         "operationId": "LotesDeImportacaoController_modelo",
         "parameters": [
           {
@@ -14658,7 +14667,7 @@
             "schema": {
               "default": "empresas",
               "type": "string",
-              "enum": ["empresas", "contatos", "atividades"]
+              "enum": ["empresas", "contatos", "atividades", "oportunidades"]
             }
           }
         ],
@@ -28109,6 +28118,52 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "funilId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "clienteAoConquistar": {
+            "type": "boolean"
+          },
+          "valoresDeCampo": {
+            "type": "object",
+            "properties": {
+              "fase": {
+                "type": "object",
+                "additionalProperties": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "motivo": {
+                "type": "object",
+                "additionalProperties": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "origem": {
+                "type": "object",
+                "additionalProperties": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "solucao": {
+                "type": "object",
+                "additionalProperties": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false
@@ -35807,6 +35862,15 @@
                   "nullable": true,
                   "type": "string"
                 },
+                "oportunidadeId": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "oportunidadeTitulo": {
+                  "nullable": true,
+                  "type": "string"
+                },
                 "avisos": {
                   "type": "array",
                   "items": {
@@ -35832,6 +35896,8 @@
                 "contatoNome",
                 "atividadeId",
                 "atividadeTitulo",
+                "oportunidadeId",
+                "oportunidadeTitulo",
                 "avisos",
                 "dados"
               ],
@@ -36325,7 +36391,7 @@
                 },
                 "tipo": {
                   "type": "string",
-                  "enum": ["empresas", "contatos", "atividades"]
+                  "enum": ["empresas", "contatos", "atividades", "oportunidades"]
                 },
                 "nomeArquivo": {
                   "type": "string"
@@ -36690,7 +36756,7 @@
           },
           "tipo": {
             "type": "string",
-            "enum": ["empresas", "contatos", "atividades"]
+            "enum": ["empresas", "contatos", "atividades", "oportunidades"]
           },
           "nomeArquivo": {
             "type": "string"
@@ -36776,6 +36842,52 @@
               "format": "uuid"
             }
           },
+          "funilId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "clienteAoConquistar": {
+            "type": "boolean"
+          },
+          "valoresDeCampo": {
+            "type": "object",
+            "properties": {
+              "fase": {
+                "type": "object",
+                "additionalProperties": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "motivo": {
+                "type": "object",
+                "additionalProperties": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "origem": {
+                "type": "object",
+                "additionalProperties": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "solucao": {
+                "type": "object",
+                "additionalProperties": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
           "pendencias": {
             "type": "array",
             "items": {
@@ -36830,6 +36942,9 @@
           "origemId",
           "verticalId",
           "tiposDeAtividade",
+          "funilId",
+          "clienteAoConquistar",
+          "valoresDeCampo",
           "pendencias",
           "criadoEm",
           "concluidoEm",

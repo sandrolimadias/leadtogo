@@ -88,3 +88,45 @@ export async function desfazerAtividades(
     SELECT count(*)::int AS n FROM atividades WHERE importacao_id = ${loteId} AND excluido_em IS NULL`)
   return { removidas: removidas.length, mantidas: n }
 }
+
+/**
+ * Desfaz um lote de OPORTUNIDADES: saem (exclusão lógica, como a manual) as que o lote criou e ninguém
+ * mexeu depois do fim do lote: sem auditoria além da criação, sem mudança de fase ou de status, sem edição
+ * e sem atividade ligada além da retomada que a própria importação criou (e que não foi tocada). A
+ * retomada sai junto e a carteira da empresa é recalculada. A empresa que virou Cliente pela importação
+ * continua Cliente (a troca de Status tem histórico próprio e pode ter sido usada depois).
+ */
+export async function desfazerOportunidades(
+  db: Transacao,
+  tenantId: string,
+  loteId: string,
+  membroId: string,
+  limite: Date,
+): Promise<ResultadoDoDesfazer> {
+  const ate = limite.toISOString()
+  const removidas = await db.execute<{ empresa_id: string; retomada: string | null }>(sql`
+    UPDATE oportunidades o SET excluido_em = now(), atualizado_por = ${membroId}
+    WHERE o.importacao_id = ${loteId} AND o.excluido_em IS NULL
+      AND o.atualizado_em <= ${ate}::timestamptz
+      AND NOT EXISTS (SELECT 1 FROM auditoria x WHERE x.entidade = 'oportunidade'
+            AND x.entidade_id = o.id AND x.acao <> 'criar')
+      AND NOT EXISTS (SELECT 1 FROM oportunidade_historico h
+            WHERE h.oportunidade_id = o.id AND h.em > ${ate}::timestamptz)
+      AND NOT EXISTS (SELECT 1 FROM atividades a
+            WHERE a.oportunidade_id = o.id AND a.excluido_em IS NULL
+              AND (a.id IS DISTINCT FROM o.atividade_retomada_id OR a.atualizado_em > ${ate}::timestamptz
+                   OR EXISTS (SELECT 1 FROM auditoria y WHERE y.entidade = 'atividade'
+                         AND y.entidade_id = a.id AND y.acao <> 'criar')))
+    RETURNING o.empresa_id, o.atividade_retomada_id AS retomada`)
+  const retomadas = removidas.flatMap((r) => (r.retomada ? [r.retomada] : []))
+  if (retomadas.length > 0) {
+    await db.execute(sql`
+      UPDATE atividades SET excluido_em = now(), atualizado_por = ${membroId}
+      WHERE id = ANY(${arraySql(retomadas, 'uuid')}) AND excluido_em IS NULL`)
+    const empresas = [...new Set(removidas.flatMap((r) => (r.retomada ? [r.empresa_id] : [])))]
+    for (const empresaId of empresas) await recalcularCarteira(db, tenantId, empresaId, membroId)
+  }
+  const [{ n } = { n: 0 }] = await db.execute<{ n: number }>(sql`
+    SELECT count(*)::int AS n FROM oportunidades WHERE importacao_id = ${loteId} AND excluido_em IS NULL`)
+  return { removidas: removidas.length, mantidas: n }
+}

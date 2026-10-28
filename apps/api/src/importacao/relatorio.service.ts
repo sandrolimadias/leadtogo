@@ -17,7 +17,8 @@ import { ErroApi } from '../http/erro-api.js'
 import { agendarExecucao } from './evento.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
 
-const { atividades, contatos, empresas, importacaoLinhas, importacoes, membros } = schema
+const { atividades, contatos, empresas, importacaoLinhas, importacoes, membros, oportunidades } =
+  schema
 
 /**
  * Uma célula de CSV segura para abrir no Excel: texto que começa com `=`, `+`, `-`, `@`, tabulação ou
@@ -99,9 +100,11 @@ export class RelatorioDaImportacaoService {
         empresaId: importacaoLinhas.empresaId,
         contatoId: importacaoLinhas.contatoId,
         atividadeId: importacaoLinhas.atividadeId,
+        oportunidadeId: importacaoLinhas.oportunidadeId,
         avisos: importacaoLinhas.avisos,
         contatoNome: contatos.nome,
         atividadeTitulo: atividades.titulo,
+        oportunidadeTitulo: oportunidades.titulo,
         dados: importacaoLinhas.dados,
         empresaNome: sql<
           string | null
@@ -115,6 +118,7 @@ export class RelatorioDaImportacaoService {
       .leftJoin(empresas, eq(empresas.id, importacaoLinhas.empresaId))
       .leftJoin(contatos, eq(contatos.id, importacaoLinhas.contatoId))
       .leftJoin(atividades, eq(atividades.id, importacaoLinhas.atividadeId))
+      .leftJoin(oportunidades, eq(oportunidades.id, importacaoLinhas.oportunidadeId))
       .where(onde)
       .orderBy(importacaoLinhas.numero)
       .limit(consulta.porPagina)

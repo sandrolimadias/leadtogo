@@ -65,6 +65,9 @@ const lote = (
   origemId: null,
   verticalId: null,
   tiposDeAtividade: {},
+  funilId: null,
+  clienteAoConquistar: false,
+  valoresDeCampo: {},
   pendencias: [],
   criadoEm: '2026-10-16T12:00:00.000Z',
   concluidoEm: null,
@@ -184,7 +187,7 @@ describe('Importar planilha: a alternância Empresas, Contatos e Atividades', ()
       'aria-pressed',
       'true',
     )
-    expect(screen.getByText(/empresas → contatos → atividades/)).toBeInTheDocument()
+    expect(screen.getByText(/empresas → contatos → oportunidades → atividades/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Baixar modelo/ })).toHaveAttribute(
       'href',
       '/v1/importacao/modelo',
@@ -360,6 +363,8 @@ describe('Importar contatos e atividades: o relatório', () => {
     contatoNome: null,
     atividadeId: null,
     atividadeTitulo: null,
+    oportunidadeId: null,
+    oportunidadeTitulo: null,
     avisos: [],
     dados: { CNPJ: '1', Nome: 'x' },
     ...extra,

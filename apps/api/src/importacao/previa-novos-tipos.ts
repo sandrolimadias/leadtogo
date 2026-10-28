@@ -1,15 +1,24 @@
 import { type schema, sql } from '@leadtogo/db'
 import {
   decidirAtividade,
+  decidirOportunidade,
   documentoDaPlanilha,
   lerLinhaDeAtividade,
   lerLinhaDeContato,
+  lerLinhaDeOportunidade,
   paraComparar,
   PROBLEMAS_NA_PREVIA,
   type PreviaDaImportacao,
+  tituloSugerido,
 } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
+import { ErroApi } from '../http/erro-api.js'
+import {
+  carregarCadastros,
+  type MapeamentoDeOportunidades,
+  resolverCadastros,
+} from './cadastros-da-oportunidade.js'
 import { arraySql } from './sql-array.js'
 
 type Lote = typeof schema.importacoes.$inferSelect
@@ -304,5 +313,105 @@ export async function preverAtividades(
   const previa = acc.paraPrevia(linhas.length, aImportar)
   // quantas ficarão com quem importa como responsável (sem o e-mail do responsável)
   previa.previsao = { ...previa.previsao, ficam_com_voce: comoVoce }
+  return previa
+}
+
+/**
+ * Prévia da importação de oportunidades: o mesmo código do worker (`lerLinhaDeOportunidade`,
+ * `decidirOportunidade` e `resolverCadastros`). Oportunidade igual (empresa, funil e título) que já existe,
+ * ou que a própria planilha repete, conta como "já existe".
+ */
+export async function preverOportunidades(
+  db: Transacao,
+  lote: Lote,
+  linhas: LinhaDaPlanilha[],
+  fuso: string,
+): Promise<PreviaDaImportacao> {
+  const mapeamento = lote.mapeamento as MapeamentoDeOportunidades
+  const campos = mapeamento.campos ?? {}
+  const colunaDoCnpj = campos['documento'] as string
+  const acc = new Acumulador()
+  const agora = new Date()
+
+  const cadastros = await carregarCadastros(db, mapeamento)
+  if ('falha' in cadastros) {
+    throw new ErroApi('funil_invalido', cadastros.falha, 409)
+  }
+  const lidas = linhas.map((l) => ({
+    numero: l.numero,
+    documento: documentoDaPlanilha(l.dados[colunaDoCnpj] ?? ''),
+    leitura: lerLinhaDeOportunidade(l.dados, campos),
+  }))
+  const empresas = await empresasPorDocumento(
+    db,
+    lidas.flatMap((l) => (l.documento ? [l.documento] : [])),
+  )
+  // Nomes das empresas (título sugerido) e oportunidades que já existem no funil
+  const nomes = new Map<string, string>()
+  const existentes = new Set<string>()
+  const idsDeEmpresas = [...new Set(empresas.values())]
+  for (let i = 0; i < idsDeEmpresas.length; i += 2000) {
+    const parte = arraySql(idsDeEmpresas.slice(i, i + 2000), 'uuid')
+    for (const r of await db.execute<{ id: string; nome: string }>(sql`
+      SELECT id, coalesce(nome_fantasia, razao_social) AS nome FROM empresas WHERE id = ANY(${parte})`)) {
+      nomes.set(r.id, r.nome)
+    }
+    for (const r of await db.execute<{ empresa_id: string; titulo: string }>(sql`
+      SELECT empresa_id, titulo FROM oportunidades
+      WHERE empresa_id = ANY(${parte}) AND funil_id = ${cadastros.funil.id} AND excluido_em IS NULL
+        AND importacao_id IS DISTINCT FROM ${lote.id}::uuid`)) {
+      existentes.add(`${r.empresa_id}|${paraComparar(r.titulo)}`)
+    }
+  }
+  const vistas = new Set<string>()
+  let aImportar = 0
+  let fechadas = 0
+  for (const l of lidas) {
+    if (!l.documento) {
+      acc.semCnpjValido += 1
+      acc.conta('pulada_sem_cnpj')
+      acc.anota(l.numero, 'CNPJ em branco ou inválido')
+      continue
+    }
+    if (!l.leitura.ok) {
+      acc.conta('pulada_invalida')
+      acc.anota(l.numero, l.leitura.motivo)
+      continue
+    }
+    const o = l.leitura.oportunidade
+    const decisao = decidirOportunidade(o, agora, fuso)
+    if (!decisao.ok) {
+      acc.conta('pulada_invalida')
+      acc.anota(l.numero, decisao.motivo)
+      continue
+    }
+    const cad = resolverCadastros(o, cadastros)
+    if (!cad.ok) {
+      acc.conta('pulada_invalida')
+      acc.anota(l.numero, cad.motivo)
+      continue
+    }
+    const empresaId = empresas.get(l.documento)
+    if (!empresaId) {
+      acc.conta('pulada_empresa_inexistente')
+      acc.anota(l.numero, `O CNPJ ${l.documento} não está na carteira`)
+      continue
+    }
+    const titulo = o.titulo ?? tituloSugerido(nomes.get(empresaId) ?? '', cad.solucao?.nome ?? null)
+    const chave = `${empresaId}|${paraComparar(titulo)}`
+    if (existentes.has(chave) || vistas.has(chave)) {
+      acc.conta('pulada_duplicada')
+      acc.anota(l.numero, 'Já existe uma oportunidade com este título na empresa, no mesmo funil')
+      continue
+    }
+    vistas.add(chave)
+    acc.conta('criada')
+    aImportar += 1
+    if (o.status !== 'ativo') fechadas += 1
+    if (l.leitura.avisos.length + decisao.avisos.length + cad.avisos.length > 0) acc.comAviso += 1
+  }
+  const previa = acc.paraPrevia(linhas.length, aImportar)
+  // quantas entram já fechadas (Conquistada, Perdida, Cancelada ou Suspensa)
+  previa.previsao = { ...previa.previsao, fechadas }
   return previa
 }

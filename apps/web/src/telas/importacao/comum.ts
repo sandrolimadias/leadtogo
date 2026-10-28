@@ -58,7 +58,7 @@ export const TEXTOS_DO_TIPO: Record<
     plural: string
     trilha: string
     verTudo: string
-    destino: '/empresas' | '/contatos' | '/atividades'
+    destino: '/empresas' | '/contatos' | '/atividades' | '/oportunidades'
   }
 > = {
   empresas: {
@@ -78,6 +78,12 @@ export const TEXTOS_DO_TIPO: Record<
     trilha: 'Atividades',
     verTudo: 'Ver atividades',
     destino: '/atividades',
+  },
+  oportunidades: {
+    plural: 'oportunidades',
+    trilha: 'Oportunidades',
+    verTudo: 'Ver oportunidades',
+    destino: '/oportunidades',
   },
 }
 

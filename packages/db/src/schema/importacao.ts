@@ -19,6 +19,7 @@ import { atividades } from './atividades.js'
 import { origens, tags, verticais } from './cadastros.js'
 import { empresas } from './carteira.js'
 import { contatos } from './contatos.js'
+import { oportunidades } from './oportunidades.js'
 import { membros, tenants } from './plataforma.js'
 import { arquivos } from './sistema.js'
 import { carimbos, chaveUuid } from './tipos.js'
@@ -27,7 +28,12 @@ import { carimbos, chaveUuid } from './tipos.js'
 // RLS, FORCE e GRANTs ficam na migração. `empresas.importacao_id` tem a FK só no SQL da migração
 // (importar `importacoes` em `carteira.ts` faria ciclo de módulos), como `empresa_socios.contato_id`.
 
-export const tipoImportacao = pgEnum('tipo_importacao', ['empresas', 'contatos', 'atividades'])
+export const tipoImportacao = pgEnum('tipo_importacao', [
+  'empresas',
+  'contatos',
+  'atividades',
+  'oportunidades',
+])
 /** De onde vêm os dados da empresa: a planilha, tudo da Receita ou a planilha completada pela Receita. */
 export const fonteDadosImportacao = pgEnum('fonte_dados_importacao', [
   'planilha',
@@ -181,6 +187,8 @@ export const importacaoLinhas = pgTable(
     contatoId: uuid().references(() => contatos.id),
     /** Atividade criada por esta linha, na importação de atividades */
     atividadeId: uuid().references(() => atividades.id),
+    /** Oportunidade criada por esta linha (ou a que já existia, nas duplicadas), na importação de oportunidades */
+    oportunidadeId: uuid().references(() => oportunidades.id),
     /** O que entrou, mas com ressalva (papel inexistente, responsável trocado...): lista de textos */
     avisos: jsonb()
       .notNull()

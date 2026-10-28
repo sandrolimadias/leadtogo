@@ -39,7 +39,7 @@ Trazer para o Leadtogo a carteira de negócios que o cliente já tem em outro CR
 11. **Título** obrigatório? **Não:** vazio vira a sugestão do cadastro, "Empresa – Solução" (ou só o nome da empresa).
 12. Quem importa: **administrador e gestor** (permissão `importacao.executar`); vendedor não vê o tipo e a API recusa com 403.
 13. Blocos de **200 linhas** (`LIMITES_DO_BLOCO_DE_OPORTUNIDADES`), sem espera de Receita.
-14. **Eventos:** nenhum `oportunidade.criada` por linha; o lote sai como **um** `importacao.concluida` (regra de `plano_api_aberta.md` §6.1). A auditoria registra a criação de cada oportunidade com o id do lote (`importacaoId` nas alterações).
+14. **Eventos:** nenhum `oportunidade.criada` por linha; o lote sai como **um** `importacao.concluida` (regra de `plano_api_aberta.md` §6.1). Como nas atividades importadas, não há registro de auditoria por linha: o lote (`importacao`) é o registro, e `oportunidades.importacao_id` liga cada oportunidade a ele. *(Ajuste na implementação: o plano previa uma auditoria por oportunidade.)*
 
 ## 4. Colunas do modelo ("Baixar modelo")
 
@@ -90,7 +90,7 @@ Extrair de `OportunidadesService.criar` e `fechar`, sem mudar o comportamento, f
 - `GET .../valores?campo=fase|motivo|origem|solucao` (generaliza o de "valores da coluna Tipo"), até `MAX_VALORES_DE_TIPO`.
 - Modelo (`.xlsx` com as colunas da seção 4 e duas linhas de exemplo: uma ativa e uma perdida).
 - Relatório e CSV com Título, Empresa, Fase e Status.
-- **Desfazer** (`desfazerOportunidades`): exclusão lógica das oportunidades do lote **que ninguém alterou depois** (sem auditoria além de `criar`, sem histórico além do da importação, sem atividade ligada além da retomada criada pelo lote); a retomada sai junto; a empresa que virou Cliente pela importação **não volta** sozinha (conta em "mantidas", com aviso no relatório). Recalcula a carteira das empresas afetadas.
+- **Desfazer** (`desfazerOportunidades`): exclusão lógica das oportunidades do lote **que ninguém alterou depois** (sem auditoria além de `criar`, sem histórico além do da importação, sem atividade ligada além da retomada criada pelo lote); a retomada sai junto; a empresa que virou Cliente pela importação **não volta** sozinha (a troca de Status tem histórico próprio e pode ter sido usada depois; a tela do desfazer avisa). Recalcula a carteira das empresas que tinham retomada. **Junto (implementação):** o desfazer de um lote de **empresas** passou a manter a empresa que tem oportunidade na carteira (antes só olhava contatos e atividades).
 
 ## 7. Telas (`apps/web`)
 
@@ -126,14 +126,13 @@ Extrair de `OportunidadesService.criar` e `fechar`, sem mudar o comportamento, f
 | 4 | Responsável vazio: vendedor da empresa ou quem importa? | **Vendedor da empresa** (regra do cadastro) |
 | 5 | Duplicada por empresa + título + funil basta? | Sim no MVP; o ID externo resolve de vez (backlog) |
 
-## 11. Execução (commits pequenos, cada um com os testes e `pnpm lint && pnpm typecheck && pnpm test` verde)
+## 11. Execução
+
+*Ajuste na implementação (28/10/2026): o valor novo do enum `tipo_importacao` chega aos tipos da API, então a migração não compila sozinha. Banco, regras e API foram num commit só; o resto seguiu o plano.*
 
 1. `refactor(api): regras de criar e fechar oportunidade reutilizáveis` (6.1, sem mudança de comportamento).
-2. `feat(db): importação de oportunidades, migração 0041` (seção 5) + `modelagem_banco.md`.
-3. `feat(shared): leitura e regras da importação de oportunidades` (6.2).
-4. `feat(api): executor, prévia, valores e modelo da importação de oportunidades` (6.3 e 6.4, menos o desfazer).
-5. `feat(api): desfazer lote de oportunidades`.
-6. `feat(web): tipo Oportunidades no assistente de importação` (seção 7).
-7. `test(web): E2E da importação de oportunidades` + `docs/roteiro_teste_importacao_oportunidades.md`, `funcionalidades.md` (seção 3, "Importação por planilha") e `escopo_mvp.md`.
+2. `feat(api): importação de oportunidades por planilha` (seções 5 e 6: migração 0041, regras puras, executor, prévia, valores, modelo, relatório e desfazer), com os testes de regras e de API.
+3. `feat(web): tipo Oportunidades no assistente de importação` (seção 7).
+4. `test(web): E2E da importação de oportunidades` + `docs/roteiro_teste_importacao_oportunidades.md`, `funcionalidades.md` (seção 3, "Importação por planilha") e `escopo_mvp.md`.
 
 Nenhuma variável de ambiente nova. Migração só de acréscimo, sem `BREAKING-DB`.

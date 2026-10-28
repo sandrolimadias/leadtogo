@@ -13,6 +13,7 @@ import { agendarExecucao } from './evento.js'
 import {
   desfazerAtividades,
   desfazerContatos,
+  desfazerOportunidades,
   type ResultadoDoDesfazer,
 } from './desfazer-novos-tipos.js'
 import { LotesDeImportacaoService } from './lotes.service.js'
@@ -107,7 +108,7 @@ export class ExecucaoDaImportacaoService {
         409,
       )
     }
-    // O que mudou depois do fim do lote "foi alterado" (contatos e atividades usam esta marca)
+    // O que mudou depois do fim do lote "foi alterado" (contatos, atividades e oportunidades usam esta marca)
     const [tempos] = await db
       .select({
         concluidoEm: importacoes.concluidoEm,
@@ -166,8 +167,11 @@ export class ExecucaoDaImportacaoService {
           // ...nenhum contato vinculado...
           sql`NOT EXISTS (SELECT 1 FROM empresa_contatos ec
                 WHERE ec.empresa_id = ${empresas.id} AND ec.ativo)`,
-          // ...e nenhuma atividade (mesmo a já excluída: alguém trabalhou nesta empresa)
+          // ...nenhuma atividade (mesmo a já excluída: alguém trabalhou nesta empresa)...
           sql`NOT EXISTS (SELECT 1 FROM atividades at WHERE at.empresa_id = ${empresas.id})`,
+          // ...e nenhuma oportunidade que ainda está na carteira
+          sql`NOT EXISTS (SELECT 1 FROM oportunidades o
+                WHERE o.empresa_id = ${empresas.id} AND o.excluido_em IS NULL)`,
         ),
       )
       .returning({ id: empresas.id })
@@ -252,5 +256,6 @@ async function desfazerDoTipo(
   limite: Date,
 ): Promise<ResultadoDoDesfazer> {
   if (tipo === 'contatos') return desfazerContatos(db, id, membroId, limite)
+  if (tipo === 'oportunidades') return desfazerOportunidades(db, tenantId, id, membroId, limite)
   return desfazerAtividades(db, tenantId, id, membroId, limite)
 }

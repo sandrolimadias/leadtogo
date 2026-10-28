@@ -16,6 +16,8 @@ import {
   listaDeLotesSchema,
   type ResultadoDaLinha,
   resultadoDaLinhaSchema,
+  campoComValoresSchema,
+  type CampoComValores,
   campoDoTipo,
   tipoDeImportacaoSchema,
   type TipoDeImportacao,
@@ -257,28 +259,36 @@ export class LotesDeImportacaoController {
   }
 
   @Documenta({
-    resumo: 'Valores da coluna Tipo (atividades)',
+    resumo:
+      'Valores de uma coluna (Tipo das atividades; Fase, Motivo, Origem e Solução das oportunidades)',
     descricao:
       QUEM +
-      ' Só no lote de atividades: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Sem `coluna`, vale a coluna do Tipo já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.',
-    consulta: z.object({ coluna: z.string().optional() }),
+      ' No lote de atividades: cada valor distinto da coluna Tipo, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. No lote de oportunidades, o mesmo para a coluna do `campo` (`fase`, `motivo`, `origem` ou `solucao`, obrigatório), com o cadastro em `tipoId` (as fases são as ativas do funil do lote). Sem `coluna`, vale a coluna já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro cadastro, `PATCH` do lote com `tiposDeAtividade` ou `valoresDeCampo`.',
+    consulta: z.object({ coluna: z.string().optional(), campo: campoComValoresSchema.optional() }),
     resposta: valoresDoTipoSchema,
     erros: [401, 403, 404, 409],
   })
   @Get('lotes/:id/valores-do-tipo')
   valoresDoTipo(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Query(new ZodPipe(z.object({ coluna: z.string().trim().min(1).max(300).optional() })))
-    consulta: { coluna?: string },
+    @Query(
+      new ZodPipe(
+        z.object({
+          coluna: z.string().trim().min(1).max(300).optional(),
+          campo: campoComValoresSchema.optional(),
+        }),
+      ),
+    )
+    consulta: { coluna?: string; campo?: CampoComValores },
   ): Promise<ValoresDoTipo> {
-    return this.servico.valoresDoTipo(id, consulta.coluna)
+    return this.servico.valoresDoTipo(id, consulta.coluna, consulta.campo)
   }
 
   @Documenta({
     resumo: 'Baixar a planilha modelo',
     descricao:
       QUEM +
-      ' Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.',
+      ' Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos`, `atividades` ou `oportunidades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.',
     consulta: z.object({ tipo: tipoDeImportacaoSchema.default('empresas') }),
     erros: [400, 401, 403, 409],
   })
@@ -311,7 +321,7 @@ export class LotesDeImportacaoController {
 const AJUDA_COMUM = [
   'Até 10.000 linhas e 10 MB por arquivo. Também é possível enviar CSV (separado por ; , ou tabulação).',
   'Os títulos podem ter outros nomes: você liga cada coluna ao campo certo na próxima etapa.',
-  'Ordem recomendada: empresas, depois contatos, depois atividades. O CNPJ precisa já estar na carteira.',
+  'Ordem recomendada: empresas, depois contatos, oportunidades e atividades. O CNPJ precisa já estar na carteira.',
 ]
 
 /** O que cada modelo traz: aba, nome do arquivo, linhas de exemplo (inventadas) e as instruções. */
@@ -384,6 +394,61 @@ const MODELOS: Record<
       'Situação: Realizada, Pendente ou Cancelada. Em branco: data passada vira Realizada e data futura vira Pendente. Realizada exige o Resultado e não pode ter data no futuro.',
       'E-mail do contato: só vale se o contato tiver vínculo com a empresa da linha. E-mail do responsável: um usuário da empresa; sem ele, vale quem está importando.',
       'Atividade igual (mesma empresa, tipo, data, hora e título) que já existe é pulada.',
+      ...AJUDA_COMUM,
+    ],
+  },
+  oportunidades: {
+    aba: 'Oportunidades',
+    arquivo: 'oportunidades',
+    exemplos: [
+      [
+        '11.222.333/0001-81',
+        'Contrato anual 2027',
+        'Proposta',
+        'Ativo',
+        '',
+        '',
+        '',
+        '',
+        '2.000,00',
+        '500,00',
+        '12',
+        '',
+        '15/12/2026',
+        'Indicação',
+        '',
+        'maria@exemplo.com.br',
+        'vendedor@suaempresa.com.br',
+        'Linha de exemplo: apague antes de importar.',
+      ],
+      [
+        '11.222.333/0001-81',
+        'Renovação 2026',
+        'Negociação',
+        'Perdido',
+        'Preço',
+        'Fechou com o concorrente.',
+        '',
+        '10/03/2026',
+        '0',
+        '800,00',
+        '12',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        'Linha de exemplo: apague antes de importar.',
+      ],
+    ],
+    ajuda: [
+      'Uma oportunidade por linha. Só o CNPJ da empresa é obrigatório, e ele precisa estar na carteira (importe as empresas antes).',
+      'Todas as linhas entram no mesmo funil, escolhido na próxima etapa (o padrão já vem marcado). Fase: o nome de uma fase do funil; em branco, a primeira fase. Na próxima etapa você aponta cada valor da planilha para uma fase, um motivo, uma origem e uma solução cadastrados.',
+      'Status: Ativo, Conquistado, Perdido, Cancelado ou Suspenso (em branco, Ativo). Perdido, Cancelado e Suspenso exigem o Motivo; Suspenso exige "Retomar em" (hoje ou depois) e cria a atividade de retomada. A data de fechamento não pode estar no futuro; sem ela, vale a data da importação.',
+      'Valores em reais (1.234,56). Total = valor único + valor mensal × meses; sem Meses e com valor mensal, valem 12. Probabilidade de 0 a 100; em branco, a da fase.',
+      'Título em branco: "Empresa – Solução". Oportunidade com o mesmo título, na mesma empresa e no mesmo funil, que já existe é pulada (a importação nunca altera o que já existe).',
+      'E-mail do responsável: um usuário da empresa; sem ele, o vendedor da empresa. E-mail do contato: só vale se o contato tiver vínculo com a empresa. Origem ou solução que não existe entra vazia, com aviso.',
       ...AJUDA_COMUM,
     ],
   },

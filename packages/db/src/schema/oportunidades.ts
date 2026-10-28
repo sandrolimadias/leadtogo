@@ -86,6 +86,8 @@ export const oportunidades = pgTable(
     proximaAtividadeId: uuid(),
     proximaAtividadeEm: timestamp({ withTimezone: true }),
     observacoes: text(),
+    /** O lote de importação que criou a oportunidade (sem FK, como `atividades.importacao_id`) */
+    importacaoId: uuid(),
     ...carimbos(),
     criadoPor: uuid().references((): AnyPgColumn => membros.id),
     atualizadoPor: uuid().references((): AnyPgColumn => membros.id),
@@ -96,6 +98,7 @@ export const oportunidades = pgTable(
     index('oportunidades_responsavel_idx').on(t.tenantId, t.responsavelId, t.status),
     index('oportunidades_empresa_idx').on(t.tenantId, t.empresaId),
     index('oportunidades_previsao_idx').on(t.tenantId, t.dataPrevistaFechamento),
+    index('oportunidades_importacao_idx').on(t.tenantId, t.importacaoId),
     check('oportunidades_probabilidade', sql`${t.probabilidade} BETWEEN 0 AND 100`),
     check('oportunidades_valores', sql`${t.valorUnico} >= 0 AND ${t.valorMensal} >= 0`),
     check('oportunidades_meses', sql`${t.meses} >= 0`),

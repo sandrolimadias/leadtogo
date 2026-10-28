@@ -31,6 +31,8 @@ export interface NovaOportunidade {
   probabilidade?: number | undefined
   dataPrevistaFechamento: string | null
   observacoes: string | null
+  /** Importação por planilha: o lote que criou a oportunidade */
+  importacaoId?: string | undefined
 }
 
 /** Insere a oportunidade (Ativa) e o histórico `criada`; devolve o id. */
@@ -61,6 +63,7 @@ export async function inserirOportunidade(
       probabilidadeManual: manual,
       dataPrevistaFechamento: d.dataPrevistaFechamento,
       observacoes: d.observacoes,
+      importacaoId: d.importacaoId ?? null,
       criadoPor: membroId,
       atualizadoPor: membroId,
     })
@@ -86,6 +89,10 @@ export interface Fechamento {
   retomarEm: string | null
   /** Conquistado: troca o Status da empresa para Cliente */
   viraCliente: boolean
+  /** Importação: a data de fechamento da planilha (sem ela, agora) */
+  dataFechamento?: Date | null | undefined
+  /** Importação: o lote, que marca a atividade de retomada como importada */
+  importacaoId?: string | undefined
 }
 
 /**
@@ -110,7 +117,7 @@ export async function registrarFechamento(
       motivoId,
       motivoDetalhe: f.detalhe,
       suspensaAte: f.status === 'suspenso' ? f.retomarEm : null,
-      dataFechamento: new Date(),
+      dataFechamento: f.dataFechamento ?? new Date(),
       atualizadoPor: membroId,
     })
     .where(eq(oportunidades.id, o.id))
@@ -132,7 +139,7 @@ export async function registrarFechamento(
     if (r.mudou) virouCliente = r.nomeDaTag
   }
   if (f.status === 'suspenso' && f.retomarEm) {
-    await criarRetomada(db, tenantId, o, f.retomarEm, fuso, membroId)
+    await criarRetomada(db, tenantId, o, f.retomarEm, fuso, membroId, f.importacaoId)
     await recalcularCarteira(db, tenantId, o.empresaId, membroId)
     await recalcularOportunidade(db, tenantId, o.id)
   }
@@ -147,6 +154,7 @@ export async function criarRetomada(
   retomarEm: string,
   fuso: string,
   membroId: string,
+  importacaoId?: string,
 ): Promise<void> {
   const [tipo] = await db
     .select({ id: tiposAtividade.id })
@@ -168,7 +176,8 @@ export async function criarRetomada(
       dataInicio: inicioDoDiaNoFuso(retomarEm, fuso),
       diaInteiro: true,
       situacao: 'pendente',
-      origem: 'manual',
+      origem: importacaoId ? 'importacao' : 'manual',
+      importacaoId: importacaoId ?? null,
       criadoPor: membroId,
       atualizadoPor: membroId,
     })
