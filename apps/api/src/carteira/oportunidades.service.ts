@@ -1,10 +1,9 @@
-import { and, asc, eq, inArray, isNull, schema, sql } from '@leadtogo/db'
+import { and, asc, eq, isNull, schema, sql } from '@leadtogo/db'
 import {
   type AlterarOportunidade,
   type CriarOportunidade,
   diaNoFuso,
   type FecharOportunidade,
-  inicioDoDiaNoFuso,
   MESES_PADRAO,
   type Oportunidade,
   type OportunidadeDetalhada,
@@ -27,7 +26,13 @@ import {
   condicaoDeVisibilidadeDaOportunidade,
   lerOportunidade,
 } from './oportunidades-leitura.js'
-import { empresaViraCliente, recalcularOportunidade } from './oportunidades-efeitos.js'
+import { recalcularOportunidade } from './oportunidades-efeitos.js'
+import {
+  cancelarRetomada,
+  inserirOportunidade,
+  type LinhaDeOportunidade,
+  registrarFechamento,
+} from './oportunidades-gravacao.js'
 import {
   alcanca,
   type EscopoDaCarteira,
@@ -37,7 +42,6 @@ import {
 } from './regras-de-carteira.js'
 
 const {
-  atividades,
   empresaContatos,
   contatos,
   empresas,
@@ -49,7 +53,6 @@ const {
   oportunidades,
   origens,
   solucoes,
-  tiposAtividade,
 } = schema
 
 const naoEncontrada = () =>
@@ -63,8 +66,6 @@ const naoAtiva = () =>
     'Só uma oportunidade ativa muda de fase ou se fecha. Reabra antes.',
     409,
   )
-
-type LinhaDeOportunidade = typeof oportunidades.$inferSelect
 
 /**
  * Oportunidades da carteira: cadastro, mover de fase, fechar (Conquistado, Perdido, Cancelado,
@@ -105,45 +106,25 @@ export class OportunidadesService {
       if (!original) throw naoEncontrada()
     }
 
-    const meses = dados.meses ?? (dados.valorMensal > 0 ? MESES_PADRAO : 0)
-    const manual =
-      dados.probabilidade !== undefined && dados.probabilidade !== fase.probabilidadePadrao
-    const [criada] = await db
-      .insert(oportunidades)
-      .values({
-        tenantId,
-        titulo: dados.titulo,
-        empresaId: dados.empresaId,
-        contatoId: dados.contatoId ?? null,
-        solucaoId: dados.solucaoId ?? null,
-        origemId: dados.origemId ?? null,
-        funilId: funil.id,
-        faseId: fase.id,
-        responsavelId,
-        valorUnico: dados.valorUnico.toFixed(2),
-        valorMensal: dados.valorMensal.toFixed(2),
-        meses,
-        probabilidade: manual ? (dados.probabilidade ?? 0) : fase.probabilidadePadrao,
-        probabilidadeManual: manual,
-        dataPrevistaFechamento: dados.dataPrevistaFechamento ?? null,
-        observacoes: dados.observacoes ?? null,
-        criadoPor: escopo.membroId,
-        atualizadoPor: escopo.membroId,
-      })
-      .returning({ id: oportunidades.id })
-    if (!criada) throw new Error('INSERT de oportunidade sem retorno')
-
-    await db.insert(oportunidadeHistorico).values({
-      tenantId,
-      oportunidadeId: criada.id,
-      acao: 'criada',
-      faseParaId: fase.id,
-      statusPara: 'ativo',
-      por: escopo.membroId,
+    const id = await inserirOportunidade(db, tenantId, escopo.membroId, {
+      titulo: dados.titulo,
+      empresaId: dados.empresaId,
+      contatoId: dados.contatoId ?? null,
+      solucaoId: dados.solucaoId ?? null,
+      origemId: dados.origemId ?? null,
+      funilId: funil.id,
+      fase,
+      responsavelId,
+      valorUnico: dados.valorUnico,
+      valorMensal: dados.valorMensal,
+      meses: dados.meses,
+      probabilidade: dados.probabilidade,
+      dataPrevistaFechamento: dados.dataPrevistaFechamento ?? null,
+      observacoes: dados.observacoes ?? null,
     })
     await this.auditoria.registrar({
       entidade: 'oportunidade',
-      entidadeId: criada.id,
+      entidadeId: id,
       acao: 'criar',
       alteracoes: {
         titulo: dados.titulo,
@@ -155,11 +136,11 @@ export class OportunidadesService {
     await emitirEvento(this.ctx.db(), {
       tenantId: this.ctx.tenantId,
       tipo: 'oportunidade.criada',
-      entidadeId: criada.id,
+      entidadeId: id,
       membroId: this.ctx.membro.id,
-      dados: async () => ({ oportunidade: await lerOportunidadePublica(this.ctx.db(), criada.id) }),
+      dados: async () => ({ oportunidade: await lerOportunidadePublica(this.ctx.db(), id) }),
     })
-    return this.ler(criada.id)
+    return this.ler(id)
   }
 
   async alterar(id: string, dados: AlterarOportunidade): Promise<Oportunidade> {
@@ -324,43 +305,20 @@ export class OportunidadesService {
       )
     }
 
-    const agora = new Date()
-    await db
-      .update(oportunidades)
-      .set({
-        status: dados.status,
-        faseParouEmId: atual.faseId,
-        motivoId: dados.status === 'conquistado' ? null : (dados.motivoId ?? null),
-        motivoDetalhe: dados.detalhe ?? null,
-        suspensaAte: dados.status === 'suspenso' ? (dados.retomarEm ?? null) : null,
-        dataFechamento: agora,
-        atualizadoPor: escopo.membroId,
-      })
-      .where(eq(oportunidades.id, id))
-    await db.insert(oportunidadeHistorico).values({
+    const { virouCliente } = await registrarFechamento(
+      db,
       tenantId,
-      oportunidadeId: id,
-      acao: 'status',
-      faseDeId: atual.faseId,
-      statusDe: 'ativo',
-      statusPara: dados.status,
-      motivoId: dados.status === 'conquistado' ? null : (dados.motivoId ?? null),
-      detalhe: dados.detalhe ?? null,
-      por: escopo.membroId,
-    })
-
-    let virouCliente: string | null = null
-    if (dados.status === 'conquistado') {
-      if (dados.empresaViraCliente ?? escopo.clienteAoConquistar) {
-        const r = await empresaViraCliente(db, tenantId, atual.empresaId, escopo.membroId)
-        if (r.mudou) virouCliente = r.nomeDaTag
-      }
-    }
-    if (dados.status === 'suspenso' && dados.retomarEm) {
-      await this.criarRetomada(db, tenantId, atual, dados.retomarEm, fuso, escopo.membroId)
-      await recalcularCarteira(db, tenantId, atual.empresaId, escopo.membroId)
-      await recalcularOportunidade(db, tenantId, id)
-    }
+      escopo.membroId,
+      atual,
+      {
+        status: dados.status,
+        motivoId: dados.motivoId ?? null,
+        detalhe: dados.detalhe ?? null,
+        retomarEm: dados.retomarEm ?? null,
+        viraCliente: dados.empresaViraCliente ?? escopo.clienteAoConquistar,
+      },
+      fuso,
+    )
     await this.auditoria.registrar({
       entidade: 'oportunidade',
       entidadeId: id,
@@ -424,7 +382,7 @@ export class OportunidadesService {
       statusPara: 'ativo',
       por: escopo.membroId,
     })
-    await this.cancelarRetomada(db, atual)
+    await cancelarRetomada(db, atual)
     await recalcularCarteira(db, tenantId, atual.empresaId, escopo.membroId)
     await recalcularOportunidade(db, tenantId, id)
     await this.auditoria.registrar({
@@ -471,7 +429,7 @@ export class OportunidadesService {
       .set({ excluidoEm: new Date(), atualizadoPor: escopo.membroId })
       .where(eq(oportunidades.id, id))
     // a atividade de retomada não fica solta na agenda
-    await this.cancelarRetomada(db, atual.o)
+    await cancelarRetomada(db, atual.o)
     await recalcularCarteira(db, this.ctx.tenantId, atual.o.empresaId, escopo.membroId)
     await this.auditoria.registrar({
       entidade: 'oportunidade',
@@ -605,64 +563,6 @@ export class OportunidadesService {
       .from(membros)
       .where(and(eq(membros.id, membroId), eq(membros.ativo, true), isNull(membros.excluidoEm)))
     if (!m) throw invalido('responsavelId', 'responsavel_invalido', 'Responsável não encontrado.')
-  }
-
-  /** Suspensa: cria a atividade de retomada (Tarefa de dia inteiro na data), com a mesma empresa e o mesmo responsável. */
-  private async criarRetomada(
-    db: Transacao,
-    tenantId: string,
-    o: LinhaDeOportunidade,
-    retomarEm: string,
-    fuso: string,
-    membroId: string,
-  ): Promise<void> {
-    const [tipo] = await db
-      .select({ id: tiposAtividade.id })
-      .from(tiposAtividade)
-      .where(and(eq(tiposAtividade.chaveSistema, 'tarefa'), isNull(tiposAtividade.excluidoEm)))
-    if (!tipo) {
-      throw new ErroApi('tipo_tarefa_ausente', 'O tipo de atividade Tarefa não existe.', 409)
-    }
-    const [criada] = await db
-      .insert(atividades)
-      .values({
-        tenantId,
-        tipoAtividadeId: tipo.id,
-        titulo: `Retomar: ${o.titulo}`,
-        empresaId: o.empresaId,
-        contatoId: o.contatoId,
-        oportunidadeId: o.id,
-        responsavelId: o.responsavelId,
-        dataInicio: inicioDoDiaNoFuso(retomarEm, fuso),
-        diaInteiro: true,
-        situacao: 'pendente',
-        origem: 'manual',
-        criadoPor: membroId,
-        atualizadoPor: membroId,
-      })
-      .returning({ id: atividades.id })
-    await db
-      .update(oportunidades)
-      .set({ atividadeRetomadaId: criada?.id ?? null })
-      .where(eq(oportunidades.id, o.id))
-  }
-
-  /** Cancela a atividade de retomada que ainda está aberta (a oportunidade voltou a Ativa ou saiu). */
-  private async cancelarRetomada(db: Transacao, o: LinhaDeOportunidade): Promise<void> {
-    if (!o.atividadeRetomadaId) return
-    await db
-      .update(atividades)
-      .set({ situacao: 'cancelada', realizadaEm: null })
-      .where(
-        and(
-          eq(atividades.id, o.atividadeRetomadaId),
-          inArray(atividades.situacao, ['pendente', 'em_execucao']),
-        ),
-      )
-    await db
-      .update(oportunidades)
-      .set({ atividadeRetomadaId: null })
-      .where(eq(oportunidades.id, o.id))
   }
 
   /** O histórico em palavras (nomes no lugar de ids), do mais recente ao mais antigo. */
