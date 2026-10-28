@@ -10,6 +10,14 @@ import type { MembroDaRequisicao } from './requisicao.js'
 /** A transação da requisição, já com o tenant (ou o consolidado) definido. */
 export type Transacao = Parameters<Parameters<Conexao['db']['transaction']>[0]>[0]
 
+/** A chave de API da requisição (rotas `@ApiPublica`). */
+export interface ChaveDaRequisicao {
+  id: string
+  nome: string
+  /** Responsável usado quando a integração cria registro sem informar um */
+  responsavelPadraoId: string | null
+}
+
 export interface ContextoDaRequisicao {
   usuarioId: string
   /** Ausente nas rotas `@TransacaoSobDemanda`, fora do bloco `transacao()` */
@@ -25,6 +33,8 @@ export interface ContextoDaRequisicao {
   portal?: ContextoDoPortal
   /** Valores calculados uma vez por requisição (ex.: os membros da equipe) */
   memoria?: Map<string, Promise<unknown>>
+  /** Rotas da API pública (`/v1/publica/*`): a chave de API que fez a requisição (age como o membro de integração) */
+  chaveApi?: ChaveDaRequisicao | undefined
   /** IP do cliente (`req.ip`, que respeita TRUST_PROXY: o mesmo do rate limit; X-Forwarded-For forjado não vale) */
   ip?: string | undefined
 }
@@ -87,6 +97,11 @@ export class ContextoTenantService {
     const { tenantId } = this.atual()
     if (!tenantId) throw new ErroApi('sem_empresa_ativa', 'Esta rota exige uma empresa ativa.', 409)
     return tenantId
+  }
+
+  /** A chave de API da requisição, ou `undefined` na sessão do app. */
+  get chaveApi(): ChaveDaRequisicao | undefined {
+    return this.atual().chaveApi
   }
 
   get ip(): string | undefined {

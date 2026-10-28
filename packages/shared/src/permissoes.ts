@@ -54,6 +54,7 @@ export const ROTULO_DO_MODULO: Record<string, string> = {
   perfis: 'Perfis de acesso',
   seguranca: 'Segurança',
   carteira: 'Regras da carteira',
+  integracoes: 'Integrações',
 }
 
 export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
@@ -114,6 +115,11 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
   p('perfis', 'gerir', 'Gerir perfis de acesso e atribuí-los aos membros'),
   p('seguranca', 'gerir', 'Definir quem precisa de verificação em duas etapas'),
   p('carteira', 'configurar', 'Configurar as regras da carteira'),
+  p(
+    'integracoes',
+    'gerir',
+    'Criar e revogar chaves de API e webhooks, e ver o log das integrações',
+  ),
 ]
 
 /**
@@ -122,7 +128,7 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
  * os perfis de SISTEMA das empresas com versão menor recebem as chaves novas que o seu padrão tem (as
  * outras permissões não mudam). Perfis criados pela empresa nunca recebem permissão automaticamente.
  */
-export const VERSAO_DO_CATALOGO = 9
+export const VERSAO_DO_CATALOGO = 10
 
 /** As chaves que cada versão acrescentou (a versão 1 é o catálogo inicial). */
 export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
@@ -143,6 +149,7 @@ export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
   7: ['portal.documentos'],
   8: ['portal.agenda'],
   9: ['portal.avisos'],
+  10: ['integracoes.gerir'],
 }
 
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
@@ -219,6 +226,7 @@ export const PERMISSOES_PADRAO: Record<ChaveDeSistema, PermissoesDoPerfil> = {
           'perfis.gerir',
           'seguranca.gerir',
           'carteira.configurar',
+          'integracoes.gerir',
         ].includes(c) &&
         !c.startsWith('chamados.') &&
         !c.startsWith('portal.'),
@@ -273,4 +281,35 @@ export const nomeDoPerfilDeSistema: Record<ChaveDeSistema, string> = {
   admin: 'Administrador',
   gestor: 'Gestor',
   vendedor: 'Vendedor',
+}
+
+/**
+ * Permissões que uma chave de API pode receber (docs/plano_api_aberta.md, seção 4.3). Ficam de fora a gestão
+ * de equipe, perfis, segurança, integrações e regras da carteira, o portal e a importação (tela própria).
+ * Uma permissão nova do catálogo NÃO entra aqui sozinha: é uma decisão a cada fase.
+ */
+export const PERMISSOES_DE_INTEGRACAO: readonly string[] = [
+  'empresas.ver',
+  'empresas.criar',
+  'empresas.editar',
+  'contatos.ver',
+  'contatos.criar',
+  'contatos.editar',
+  'oportunidades.ver',
+  'oportunidades.criar',
+  'oportunidades.editar',
+  'atividades.ver',
+  'atividades.criar',
+  'atividades.editar',
+]
+
+/** As permissões da chave como as de um perfil: alcance sempre "todas" (a integração age na empresa toda). */
+export function permissoesDaChave(chaves: readonly string[]): PermissoesDoPerfil {
+  const saida: PermissoesDoPerfil = {}
+  for (const c of chaves) {
+    if (!PERMISSOES_DE_INTEGRACAO.includes(c)) continue
+    const def = definicaoDaPermissao(c)
+    if (def) saida[c] = def.admiteAlcance ? 'todas' : true
+  }
+  return saida
 }

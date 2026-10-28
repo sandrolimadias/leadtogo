@@ -1232,3 +1232,22 @@ fabricas['portal_push_inscricoes'] = definirFabrica<{ acessoId: string }>({
     return id
   },
 })
+
+// API aberta (I1): chaves de API, cada uma com o seu membro de integração
+fabricas['api_chaves'] = definirFabrica<{ membroId: string }>({
+  colunaAlteravel: 'nome',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const membroId = novoId()
+      await tx`INSERT INTO membros (id, tenant_id, nome, tipo, ativo)
+        VALUES (${membroId}, ${tenantId}, 'Integração: teste', 'integracao', false)`
+      return { membroId }
+    }),
+  criar: async (tx, tenantId, { membroId }) => {
+    const id = novoId()
+    const hash = id.replace(/-/g, '').padEnd(64, '0')
+    await tx`INSERT INTO api_chaves (id, tenant_id, nome, prefixo, hash, ambiente, membro_id)
+      VALUES (${id}, ${tenantId}, 'n8n', 'abcdefgh', ${hash}, 'test', ${membroId})`
+    return id
+  },
+})

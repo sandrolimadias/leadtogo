@@ -701,7 +701,7 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 ### 11.1 Integrações 🔮 (estrutura prevista, criada nas fases 4–7)
 | Tabela | Uso |
 |---|---|
-| `api_chaves` | Chaves de API por tenant (hash, escopos, validade) — n8n. Colunas propostas em `plano_api_aberta.md` §7, com `membros.tipo` e `idempotencia_chaves` |
+| `api_chaves` | ✅ **Criada na migração 0038 (I1)**, ver abaixo |
 | `webhooks`, `webhook_entregas` | Destinos e log de entregas |
 | `contas_conectadas` | Google/Microsoft/WhatsApp por membro (tokens **criptografados**) |
 | `mensagens` | Mensagens de e-mail e WhatsApp ligadas a uma atividade (direção, remetente, corpo, id_externo) |
@@ -713,6 +713,12 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 | `financeiro_titulos` | Títulos em aberto por empresa, recebidos do ERP: empresa_id, fonte (`omie`, `api`…), id_externo, parcela, vencimento `date`, valor `numeric(15,2)`, sincronizado_em. Único `(tenant_id, fonte, id_externo)`. A posição de um CNPJ substitui a anterior da mesma fonte (`funcionalidades.md` §13.6) |
 | `financeiro_situacoes` | Uma linha por empresa e fonte: situacao (`adimplente` · `inadimplente` · `desassociacao` · `sem_cadastro_erp`), dias_atraso, valor_vencido `numeric(15,2)`, vencimento_mais_antigo, sincronizado_em. Base da tag do grupo Financeiro e do webhook. Tolerância em `tenant_configuracoes.financeiro_tolerancia_dias` (padrão 0) |
 | `tenant_smtp` | SMTP próprio da empresa (futura; detalhe abaixo) |
+
+> **Implementação (I1, migração 0038, só expansão) — chaves de API** (`plano_api_aberta.md`, seção 4):
+> - `api_chaves`: nome `varchar(80)`, prefixo `char(8)` (os 8 primeiros caracteres do segredo, para a tela), hash `char(64)` (**SHA-256 em hexadecimal** do token; único; CHECK `^[0-9a-f]{64}$`), ambiente (`live` · `test`), `membro_id` (o membro de integração), permissoes `text[]` (só as de `PERMISSOES_DE_INTEGRACAO`, alcance sempre "todas"), `responsavel_padrao_id`, `ips_permitidos text[]` (IP ou faixa, comparados como `inet`), `expira_em`, `revogada_em` + `revogada_por` (CHECK: os dois juntos), `substituida_por` (rotação), `ultimo_uso_em`, `ultimo_ip`, `aviso_vencimento_em`, colunas padrão. RLS por tenant e negado ao portal.
+> - `membros.tipo` (enum `tipo_membro`: `pessoa` · `integracao`, padrão `pessoa`). O membro de integração nasce com a chave: sem login, **inativo** (fica fora de toda escolha de responsável, que exige membro ativo), chamado "Integração: <nome da chave>" (é o autor que o histórico mostra). `perfilEfetivo` ignora o membro de integração (as permissões dele vêm da chave), e a lista da equipe filtra `tipo = 'pessoa'`. A rotação reaproveita o mesmo membro.
+> - `app_localizar_chave(hash)` (`SECURITY DEFINER` do owner, `search_path` fixo, `EXECUTE` só para o `leadtogo_app`): acha a chave válida (não revogada, não excluída, no prazo) antes de saber a empresa e devolve só `(chave_id, tenant_id)`. Política `TO leadtogo_owner` travada na variável `app.localizando_chave`, como as varreduras da 0037. `app_chaves_a_vencer()`: as chaves que vencem em até 15 dias e ainda não tiveram o aviso da vez (o worker avisa às 08:00 de Brasília).
+> - Na auditoria, o que a chave faz sai com `origem = integracao` e `membro_id` = o membro de integração.
 
 #### `tenant_smtp` 🏢 (1:1 com tenant) 🔮 — futura, não implementar agora
 SMTP que a empresa pode cadastrar em Configurações → E-mail (ver `funcionalidades.md`, seção 11). Sem linha (ou com `ativo = false`), os e-mails da empresa saem pelo SMTP da plataforma. Os e-mails de acesso (verificação, recuperação de senha, convites e 2FA) **nunca** usam esta tabela.
@@ -774,8 +780,9 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 | Oportunidades | oportunidades, oportunidade_itens, oportunidade_contatos, oportunidade_historico | 4 |
 | Prospecção | prospeccoes, prospeccao_resultados | 2 |
 | Sistema | arquivos, comentarios, notificacoes, preferencias_notificacao, filtros_salvos, importacoes, auditoria, eventos_outbox | 8 |
+| Integrações (API aberta) | api_chaves (0038) | 1 |
 | **Fase 1** | | **61** |
-| Futuras 🔮 | api_chaves, webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp, financeiro_titulos, financeiro_situacoes | 13 |
+| Futuras 🔮 | webhooks, webhook_entregas, contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp, financeiro_titulos, financeiro_situacoes | 12 |
 
 ---
 

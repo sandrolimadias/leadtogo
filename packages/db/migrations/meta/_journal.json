@@ -267,6 +267,13 @@
       "when": 1793000872584,
       "tag": "0037_portal_avisos",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793159029980,
+      "tag": "0038_api_chaves",
+      "breakpoints": true
     }
   ]
 }

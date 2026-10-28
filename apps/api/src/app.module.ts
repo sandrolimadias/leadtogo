@@ -31,6 +31,9 @@ import { RotasModule } from './rotas/rotas.module.js'
 import { ChamadosModule } from './chamados/chamados.module.js'
 import { NotificacoesModule } from './notificacoes/notificacoes.module.js'
 import { InfraModule } from './infra/infra.module.js'
+import { ChaveGuard } from './integracoes/chave.guard.js'
+import { ChaveInterceptor } from './integracoes/chave.interceptor.js'
+import { IntegracoesModule } from './integracoes/integracoes.module.js'
 import { LogModule } from './log/log.module.js'
 import { LimiteDeRequisicoesGuard } from './rate-limit/limite.guard.js'
 import { VisitasModule } from './visitas/visitas.module.js'
@@ -47,12 +50,15 @@ export class AppModule {
       module: AppModule,
       providers: [
         { provide: APP_FILTER, useClass: FiltroDeExcecoes },
-        // Ordem: primeiro o rate limit, depois o controle de acesso do CRM (sessão, empresa, 2FA) e o do portal
+        // Ordem: primeiro o rate limit, depois o controle de acesso do CRM (sessão, empresa, 2FA), o do portal e o da API pública
         { provide: APP_GUARD, useClass: LimiteDeRequisicoesGuard },
         { provide: APP_GUARD, useClass: AcessoGuard },
         { provide: APP_GUARD, useClass: PortalGuard },
+        // API pública (`/v1/publica/*`): só chave de API (docs/plano_api_aberta.md)
+        { provide: APP_GUARD, useClass: ChaveGuard },
         { provide: APP_INTERCEPTOR, useClass: TenantInterceptor },
         { provide: APP_INTERCEPTOR, useClass: PortalInterceptor },
+        { provide: APP_INTERCEPTOR, useClass: ChaveInterceptor },
       ],
       imports: [
         ConfiguracaoModule.com(config),
@@ -76,6 +82,7 @@ export class AppModule {
         ChamadosModule,
         NotificacoesModule,
         PortalModule,
+        IntegracoesModule,
         EmpresasModule,
         PrimeiroAcessoModule,
         ReceitaModule,

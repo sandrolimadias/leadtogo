@@ -42,10 +42,11 @@ export async function carregarPermissoes(
 /**
  * Condição SQL do perfil efetivo do membro `m` ser o perfil `p` (a mesma regra de `carregarPermissoes`):
  * o perfil do membro ou, enquanto ele não tem, o de sistema do papel; só perfil ativo e não excluído.
- * `m` e `p` são os apelidos das tabelas `membros` e `perfis_acesso` na consulta.
+ * `m` e `p` são os apelidos das tabelas `membros` e `perfis_acesso` na consulta. O membro de integração (chave de
+ * API) não tem perfil: as permissões dele vêm da chave.
  */
 export const perfilEfetivo = (m: SQL, p: SQL): SQL => sql`(${p}.tenant_id = ${m}.tenant_id
-  AND ${p}.excluido_em IS NULL AND ${p}.ativo
+  AND ${m}.tipo = 'pessoa' AND ${p}.excluido_em IS NULL AND ${p}.ativo
   AND (${p}.id = ${m}.perfil_id
     OR (${m}.perfil_id IS NULL AND ${p}.chave_sistema::text = ${m}.papel::text)))`
 

@@ -33,6 +33,8 @@ export const alcancePermissao = pgEnum('alcance_permissao', ['propria', 'equipe'
 export const chavePerfilSistema = pgEnum('chave_perfil_sistema', ['admin', 'gestor', 'vendedor'])
 export const situacaoTenant = pgEnum('situacao_tenant', ['teste', 'ativo', 'suspenso', 'cancelado'])
 export const papelMembro = pgEnum('papel_membro', ['admin', 'gestor', 'vendedor'])
+/** Pessoa da equipe ou o membro técnico de uma chave de API (plano_api_aberta.md, seção 4.4) */
+export const tipoMembro = pgEnum('tipo_membro', ['pessoa', 'integracao'])
 /** Quem precisa de 2FA para usar a empresa (`tenant_configuracoes.dois_fatores_exigido`) */
 /** Check-in da visita (G3): avisar a distância, bloquear além do limite ou só gravar. */
 export const modoCheckin = pgEnum('modo_checkin', ['avisar', 'bloquear', 'so_gravar'])
@@ -184,6 +186,8 @@ export const membros = pgTable(
     email: citext(),
     /** Legado até a contração: nenhuma regra nova lê o papel (vale o perfil de acesso) */
     papel: papelMembro().notNull().default('vendedor'),
+    /** `integracao`: o membro técnico de uma chave de API (sem login, inativo, fora das listas da equipe) */
+    tipo: tipoMembro().notNull().default('pessoa'),
     /** Perfil de acesso; nulo só até o backfill (contração: NOT NULL) */
     perfilId: uuid().references((): AnyPgColumn => perfisAcesso.id),
     gestorId: uuid().references((): AnyPgColumn => membros.id),

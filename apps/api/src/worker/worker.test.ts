@@ -228,6 +228,7 @@ describe('manutenção agendada com dois workers de verdade', () => {
       const agendadores = await q.getJobSchedulers()
       expect(agendadores.map((a) => a.key).sort()).toEqual([
         'auditoria-particoes',
+        'avisar-chaves',
         'enviar-avisos',
         'enviar-pushes',
         'lembrar-eventos',

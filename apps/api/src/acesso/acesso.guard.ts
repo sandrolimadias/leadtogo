@@ -5,6 +5,7 @@ import type { Request } from 'express'
 import { AuthService } from '../auth/auth.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { identificarNoLog } from '../log/contexto-log.js'
+import { CHAVE_API_PUBLICA } from '../integracoes/chave.decorators.js'
 import { CHAVE_PORTAL } from '../portal/portal.decorators.js'
 import { doisFatoresPendente } from './dois-fatores.js'
 import {
@@ -43,6 +44,8 @@ export class AcessoGuard implements CanActivate {
     if (marca(CHAVE_PUBLICA)) return true
     // O portal tem guarda, cookie e transação próprios (portal.guard.ts, portal.interceptor.ts)
     if (marca(CHAVE_PORTAL)) return true
+    // A API pública só aceita chave de API (chave.guard.ts); a sessão do app não vale lá
+    if (marca(CHAVE_API_PUBLICA)) return true
 
     const req = contexto.switchToHttp().getRequest<Request>() as RequisicaoAutenticada
     const sessao = await this.sessaoDe(req)

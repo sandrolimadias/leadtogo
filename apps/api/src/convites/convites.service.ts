@@ -193,7 +193,7 @@ export class ConvitesService {
               FROM auth.session s WHERE s.user_id = m.usuario_id) AS ultimo_acesso,
              p.id AS perfil_id, p.nome AS perfil_nome
       FROM membros m LEFT JOIN perfis_acesso p ON ${perfilEfetivo(sql`m`, sql`p`)}
-      WHERE m.excluido_em IS NULL AND (${incluirInativos} OR m.ativo)
+      WHERE m.excluido_em IS NULL AND m.tipo = 'pessoa' AND (${incluirInativos} OR m.ativo)
       ORDER BY lower(m.nome), m.id`)
     return [...linhas].map((m) => ({
       id: m.id,

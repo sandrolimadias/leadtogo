@@ -2868,6 +2868,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/integracoes/chaves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Chaves de API da empresa
+         * @description Exige `integracoes.gerir`. Ativas primeiro, depois as revogadas. O token nunca volta: só o prefixo (`ltg_live_a1B2c3D4`).
+         */
+        get: operations["ChavesController_listar"];
+        put?: never;
+        /**
+         * Criar uma chave de API
+         * @description Exige `integracoes.gerir` e o 2FA ativo de quem cria (403 `2fa_obrigatorio`). Devolve o **token uma única vez**. Permissões só entre as liberadas para integração; alcance sempre "todas". 422 `responsavel_invalido`, `validade_no_passado` ou `ip_invalido`.
+         */
+        post: operations["ChavesController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/chaves/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Alterar uma chave de API
+         * @description Exige `integracoes.gerir`. Nome, permissões, IPs, responsável padrão e validade; o token não muda. 409 `chave_revogada`.
+         */
+        patch: operations["ChavesController_alterar"];
+        trace?: never;
+    };
+    "/v1/integracoes/chaves/{id}/revogar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revogar uma chave de API
+         * @description Exige `integracoes.gerir`. Efeito imediato; a chave fica na lista, revogada. 409 `chave_revogada`.
+         */
+        post: operations["ChavesController_revogar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/chaves/{id}/rotacionar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotacionar uma chave de API
+         * @description Exige `integracoes.gerir` e o 2FA ativo. Cria uma chave nova com os mesmos dados (devolve o token uma vez) e a antiga vale por mais `prazoDias` (0 a 7; 0 revoga agora). 409 `chave_revogada` ou `chave_ja_rotacionada`.
+         */
+        post: operations["ChavesController_rotacionar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/mapa/base": {
         parameters: {
             query?: never;
@@ -5317,6 +5401,15 @@ export interface components {
             /** Format: uuid */
             areaId?: string;
         };
+        AlterarChaveDeApi: {
+            nome?: string;
+            permissoes?: string[];
+            /** Format: uuid */
+            responsavelPadraoId?: string | null;
+            ipsPermitidos?: string[];
+            /** Format: date-time */
+            expiraEm?: string | null;
+        };
         AlterarConfiguracaoDeRotasEntrada: {
             minutosPorVisita: number;
         };
@@ -5801,6 +5894,42 @@ export interface components {
                 avaliar: boolean;
             };
         };
+        ChaveDeApi: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            prefixo: string;
+            /** @enum {string} */
+            ambiente: "live" | "test";
+            permissoes: string[];
+            responsavelPadrao: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            ipsPermitidos: string[];
+            /** Format: date-time */
+            expiraEm: string | null;
+            /** Format: date-time */
+            revogadaEm: string | null;
+            /** Format: uuid */
+            substituidaPor: string | null;
+            /** Format: date-time */
+            ultimoUsoEm: string | null;
+            ultimoIp: string | null;
+            situacao: components["schemas"]["SituacaoDaChave"];
+            /** Format: date-time */
+            criadoEm: string;
+            criadoPor: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+        };
+        ChaveDeApiCriada: {
+            chave: components["schemas"]["ChaveDeApi"];
+            token: string;
+        };
         CheckinDaVisita: {
             /** Format: date-time */
             em: string;
@@ -6183,6 +6312,15 @@ export interface components {
             empresaIds: string[];
             /** Format: date-time */
             enviarEm?: string | null;
+        };
+        CriarChaveDeApi: {
+            nome: string;
+            permissoes: string[];
+            /** Format: uuid */
+            responsavelPadraoId?: string | null;
+            ipsPermitidos?: string[];
+            /** Format: date-time */
+            expiraEm?: string | null;
         };
         CriarContatoEntrada: {
             nome: string;
@@ -7456,6 +7594,9 @@ export interface components {
                 todos: number;
             };
         };
+        ListaDeChavesDeApi: {
+            itens: components["schemas"]["ChaveDeApi"][];
+        };
         ListaDeComentariosDoPortal: {
             itens: components["schemas"]["ComentarioDoPortal"][];
             comentariosAbertos: boolean;
@@ -8695,6 +8836,10 @@ export interface components {
             paradas: components["schemas"]["ParadaDaRota"][];
             podeEditar: boolean;
         };
+        RotacionarChaveDeApi: {
+            /** @default 1 */
+            prazoDias: number;
+        };
         RotaDaEmpresa: {
             /** Format: uuid */
             rotaId: string;
@@ -8899,6 +9044,8 @@ export interface components {
             segundoFatorExigido: boolean;
             segundoFatorPendente: boolean;
         };
+        /** @enum {string} */
+        SituacaoDaChave: "ativa" | "substituida" | "vencida" | "revogada";
         /** @enum {string} */
         SituacaoDaConfirmacao: "confirmado" | "lista_espera" | "cancelado";
         /** @enum {string} */
@@ -20929,6 +21076,322 @@ export interface operations {
             };
             /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeChavesDeApi"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarChaveDeApi"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChaveDeApiCriada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarChaveDeApi"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChaveDeApi"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_revogar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChaveDeApi"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_rotacionar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RotacionarChaveDeApi"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChaveDeApiCriada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

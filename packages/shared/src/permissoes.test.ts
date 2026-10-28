@@ -7,6 +7,8 @@ import {
   PERMISSOES_PADRAO,
   PERMISSOES_PROTEGIDAS_DO_ADMIN,
   NOVAS_POR_VERSAO,
+  PERMISSOES_DE_INTEGRACAO,
+  permissoesDaChave,
   VERSAO_DO_CATALOGO,
   alcanceMaisAmplo,
   exige2faDaPoliticaAntiga,
@@ -73,10 +75,10 @@ describe('catálogo de permissões', () => {
 })
 
 describe('versão do catálogo', () => {
-  it('a versão 9 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
-    expect(VERSAO_DO_CATALOGO).toBe(9)
+  it('a versão 10 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
+    expect(VERSAO_DO_CATALOGO).toBe(10)
     // `atividades.excluir` saiu (6d): excluir a atividade é parte de editá-la, como antes dos perfis
-    expect(CHAVES_DE_PERMISSAO).toHaveLength(49)
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(50)
     expect(NOVAS_POR_VERSAO).toEqual({
       2: ['visitas.ver_localizacao'],
       3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
@@ -95,7 +97,14 @@ describe('versão do catálogo', () => {
       7: ['portal.documentos'],
       8: ['portal.agenda'],
       9: ['portal.avisos'],
+      10: ['integracoes.gerir'],
     })
+  })
+
+  it('v10: só o Administrador recebe integracoes.gerir; Gestor e Vendedor não ganham nada', () => {
+    expect(PERMISSOES_PADRAO.admin['integracoes.gerir']).toBe(true)
+    expect(PERMISSOES_PADRAO.gestor['integracoes.gerir']).toBeUndefined()
+    expect(PERMISSOES_PADRAO.vendedor['integracoes.gerir']).toBeUndefined()
   })
 
   it('v4: só o Administrador recebe as permissões dos chamados; Gestor e Vendedor não ganham nada novo', () => {
@@ -172,5 +181,28 @@ describe('2FA por perfil', () => {
       vendedor: false,
     })
     expect(exige2faDaPoliticaAntiga('todos')).toEqual({ admin: true, gestor: true, vendedor: true })
+  })
+})
+
+describe('permissões de integração (chaves de API)', () => {
+  it('só tem chaves do catálogo, e nenhuma de gestão', () => {
+    for (const c of PERMISSOES_DE_INTEGRACAO) expect(CHAVES_DE_PERMISSAO).toContain(c)
+    for (const proibida of [
+      'perfis.gerir',
+      'equipe.gerir',
+      'equipe.ver_emails',
+      'seguranca.gerir',
+      'integracoes.gerir',
+      'carteira.configurar',
+      'importacao.executar',
+    ])
+      expect(PERMISSOES_DE_INTEGRACAO).not.toContain(proibida)
+    expect(PERMISSOES_DE_INTEGRACAO.some((c) => c.startsWith('portal.'))).toBe(false)
+  })
+
+  it('a chave age com alcance "todas" e ignora o que não é liberado', () => {
+    expect(
+      permissoesDaChave(['empresas.ver', 'empresas.criar', 'perfis.gerir', 'inventada.x']),
+    ).toEqual({ 'empresas.ver': 'todas', 'empresas.criar': true })
   })
 })

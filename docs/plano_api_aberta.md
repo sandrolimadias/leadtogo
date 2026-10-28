@@ -1,6 +1,6 @@
 # Plano da API aberta: chaves de API, API pública e webhooks (Fase de integrações)
 
-> **Status:** proposta de 28/10/2026, **aguardando aprovação do Ale** (as perguntas em aberto estão na seção 11, cada uma com a recomendação).
+> **Status:** **aprovado pelo Ale em 28/10/2026**, com as recomendações deste documento para todas as perguntas da seção 11. Execução registrada na seção 13.
 > **Escopo:** a base de todas as integrações: **chaves de API** por empresa, **API pública** `/v1/publica/*` e **webhooks de saída**. É o primeiro passo da ordem decidida para a situação financeira (`funcionalidades.md` §13.6) e substitui, como plano de execução, o que `funcionalidades.md` §13.2 e `configuracao_tecnologia.md` §4 e §11.1 descrevem como regra.
 > **Primeiro consumidor:** o n8n, como *middleware* (Omie → Leadtogo; Leadtogo → cobrança e avisos). O desenho não depende do n8n: qualquer sistema que fale HTTP usa o mesmo contrato.
 
@@ -232,3 +232,16 @@ Regras do projeto: português, uuid v7, `tenant_id`, RLS forçado, colunas padr�
 | `WEBHOOK_HOSTS_INTERNOS` | I3 | Hosts da rede Docker liberados para webhook `http` (ex.: `n8n:5678`); vazio = nenhum |
 
 A `TOKEN_ENCRYPTION_KEY`, que já existe, cifra os segredos dos webhooks.
+
+## 13. Execução
+
+### I1 — Chaves de API (migração 0038)
+- Entregue como na seção 4, com estes ajustes:
+  - o hash é `char(64)` em hexadecimal (não `bytea`): mais simples de conferir e de indexar, mesma segurança;
+  - o membro de integração nasce **inativo** (`ativo = false`): assim nenhuma escolha de responsável o oferece, porque todas exigem membro ativo; ele assina o que a chave faz e aparece no histórico como "Integração: <nome>";
+  - criar e rotacionar exigem o **2FA ativo** de quem age (403 `2fa_obrigatorio`); a reconfirmação do código depois de 15 minutos ficou para depois (o Better Auth não expõe a hora da última verificação);
+  - o limite por chave (120/min e 20.000/dia) é fixo no código; o ajuste por chave pelo suporte ficou para depois;
+  - IP fora da lista dá 401 `chave_invalida`, com a mesma mensagem dos outros casos.
+- Gestão: `GET/POST /v1/integracoes/chaves`, `PATCH /v1/integracoes/chaves/{id}`, `POST .../{id}/rotacionar` e `POST .../{id}/revogar`, todas com `integracoes.gerir` (catálogo **v10**, só o perfil Administrador recebe).
+- Aviso de vencimento: tarefa `avisar-chaves` do worker, todo dia às 11:00 UTC (08:00 de Brasília).
+- Testes: `apps/api/src/integracoes/chaves.test.ts` (gestão, 2FA, escopos, 401/403, IP, revogação, vencimento, isolamento, sessão × chave, rotação, aviso) e `packages/db/src/testes/integracoes.test.ts` (função de localização, RLS sem empresa, CHECK do hash), além da fábrica de isolamento.

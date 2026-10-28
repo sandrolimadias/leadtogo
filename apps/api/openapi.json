@@ -15087,6 +15087,386 @@
         "tags": ["Importação: perfis de regras"]
       }
     },
+    "/v1/integracoes/chaves": {
+      "get": {
+        "description": "Exige `integracoes.gerir`. Ativas primeiro, depois as revogadas. O token nunca volta: só o prefixo (`ltg_live_a1B2c3D4`).",
+        "operationId": "ChavesController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeChavesDeApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Chaves de API da empresa",
+        "tags": ["Integrações: chaves de API"]
+      },
+      "post": {
+        "description": "Exige `integracoes.gerir` e o 2FA ativo de quem cria (403 `2fa_obrigatorio`). Devolve o **token uma única vez**. Permissões só entre as liberadas para integração; alcance sempre \"todas\". 422 `responsavel_invalido`, `validade_no_passado` ou `ip_invalido`.",
+        "operationId": "ChavesController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarChaveDeApi"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChaveDeApiCriada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar uma chave de API",
+        "tags": ["Integrações: chaves de API"]
+      }
+    },
+    "/v1/integracoes/chaves/{id}": {
+      "patch": {
+        "description": "Exige `integracoes.gerir`. Nome, permissões, IPs, responsável padrão e validade; o token não muda. 409 `chave_revogada`.",
+        "operationId": "ChavesController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarChaveDeApi"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChaveDeApi"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar uma chave de API",
+        "tags": ["Integrações: chaves de API"]
+      }
+    },
+    "/v1/integracoes/chaves/{id}/revogar": {
+      "post": {
+        "description": "Exige `integracoes.gerir`. Efeito imediato; a chave fica na lista, revogada. 409 `chave_revogada`.",
+        "operationId": "ChavesController_revogar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChaveDeApi"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Revogar uma chave de API",
+        "tags": ["Integrações: chaves de API"]
+      }
+    },
+    "/v1/integracoes/chaves/{id}/rotacionar": {
+      "post": {
+        "description": "Exige `integracoes.gerir` e o 2FA ativo. Cria uma chave nova com os mesmos dados (devolve o token uma vez) e a antiga vale por mais `prazoDias` (0 a 7; 0 revoga agora). 409 `chave_revogada` ou `chave_ja_rotacionada`.",
+        "operationId": "ChavesController_rotacionar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotacionarChaveDeApi"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChaveDeApiCriada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Rotacionar uma chave de API",
+        "tags": ["Integrações: chaves de API"]
+      }
+    },
     "/v1/mapa/base": {
       "get": {
         "description": "Qualquer membro logado. Devolve a URL pública do PMTiles versionado (`MAPA_BASE_URL`, bucket público do Garage). Sem a variável (só em desenvolvimento; em produção ela é obrigatória), `url` vem nulo e o app mostra o mapa sem a base.",
@@ -26704,6 +27084,41 @@
         },
         "additionalProperties": false
       },
+      "AlterarChaveDeApi": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "permissoes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "responsavelPadraoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "ipsPermitidos": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiraEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarConfiguracaoDeRotasEntrada": {
         "type": "object",
         "properties": {
@@ -28488,6 +28903,129 @@
         ],
         "additionalProperties": false
       },
+      "ChaveDeApi": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "prefixo": {
+            "type": "string"
+          },
+          "ambiente": {
+            "type": "string",
+            "enum": ["live", "test"]
+          },
+          "permissoes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "responsavelPadrao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "ipsPermitidos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiraEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "revogadaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "substituidaPor": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "ultimoUsoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "ultimoIp": {
+            "nullable": true,
+            "type": "string"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDaChave"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "criadoPor": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "prefixo",
+          "ambiente",
+          "permissoes",
+          "responsavelPadrao",
+          "ipsPermitidos",
+          "expiraEm",
+          "revogadaEm",
+          "substituidaPor",
+          "ultimoUsoEm",
+          "ultimoIp",
+          "situacao",
+          "criadoEm",
+          "criadoPor"
+        ],
+        "additionalProperties": false
+      },
+      "ChaveDeApiCriada": {
+        "type": "object",
+        "properties": {
+          "chave": {
+            "$ref": "#/components/schemas/ChaveDeApi"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": ["chave", "token"],
+        "additionalProperties": false
+      },
       "CheckinDaVisita": {
         "type": "object",
         "properties": {
@@ -29837,6 +30375,42 @@
           }
         },
         "required": ["mensagem", "alcance"],
+        "additionalProperties": false
+      },
+      "CriarChaveDeApi": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "permissoes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "responsavelPadraoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "ipsPermitidos": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiraEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["nome", "permissoes"],
         "additionalProperties": false
       },
       "CriarContatoEntrada": {
@@ -34638,6 +35212,19 @@
         "required": ["itens", "total", "abas"],
         "additionalProperties": false
       },
+      "ListaDeChavesDeApi": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChaveDeApi"
+            }
+          }
+        },
+        "required": ["itens"],
+        "additionalProperties": false
+      },
       "ListaDeComentariosDoPortal": {
         "type": "object",
         "properties": {
@@ -39265,6 +39852,18 @@
         ],
         "additionalProperties": false
       },
+      "RotacionarChaveDeApi": {
+        "type": "object",
+        "properties": {
+          "prazoDias": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          }
+        },
+        "additionalProperties": false
+      },
       "RotaDaEmpresa": {
         "type": "object",
         "properties": {
@@ -39971,6 +40570,10 @@
           "segundoFatorPendente"
         ],
         "additionalProperties": false
+      },
+      "SituacaoDaChave": {
+        "type": "string",
+        "enum": ["ativa", "substituida", "vencida", "revogada"]
       },
       "SituacaoDaConfirmacao": {
         "type": "string",

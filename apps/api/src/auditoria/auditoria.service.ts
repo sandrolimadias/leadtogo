@@ -15,11 +15,13 @@ export interface RegistroDeAuditoria {
   alteracoes?: Record<string, unknown> | undefined
   /** IP do cliente; sem ele, usa o da requisição (`ContextoTenantService.ip`). Valor inválido vira nulo */
   ip?: string | undefined
+  /** `app` (padrão) ou `integracao` (chave de API); `registrar` decide pelo contexto da requisição */
+  origem?: 'app' | 'integracao' | undefined
 }
 
 /**
  * Registra no log de auditoria (`auditoria`, só de acréscimo) um ato da empresa ativa, feito pelo
- * membro da requisição. Grava na transação da requisição: se o ato for desfeito, o registro também.
+ * membro da requisição (na API pública, o membro de integração da chave, com `origem = integracao`). Grava na transação da requisição: se o ato for desfeito, o registro também.
  */
 @Injectable()
 export class AuditoriaService {
@@ -29,6 +31,7 @@ export class AuditoriaService {
     await this.registrarEm(this.ctx.db(), this.ctx.tenantId, this.ctx.membro.id, {
       ...registro,
       ip: registro.ip ?? this.ctx.ip,
+      origem: registro.origem ?? (this.ctx.chaveApi ? 'integracao' : 'app'),
     })
   }
 
@@ -42,7 +45,7 @@ export class AuditoriaService {
     await tx.execute(sql`
       INSERT INTO auditoria (tenant_id, entidade, entidade_id, acao, alteracoes, membro_id, origem, ip)
       VALUES (${tenantId}, ${registro.entidade}, ${registro.entidadeId ?? null}, ${registro.acao},
-              ${registro.alteracoes ? JSON.stringify(registro.alteracoes) : null}::jsonb, ${membroId}, 'app',
+              ${registro.alteracoes ? JSON.stringify(registro.alteracoes) : null}::jsonb, ${membroId}, ${registro.origem ?? 'app'}::origem_auditoria,
               ${registro.ip && isIP(registro.ip) ? registro.ip : null}::inet)`)
   }
 }
