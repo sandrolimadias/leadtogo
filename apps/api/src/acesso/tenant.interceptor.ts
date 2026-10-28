@@ -11,6 +11,7 @@ import { Reflector } from '@nestjs/core'
 import { type Observable, from, lastValueFrom } from 'rxjs'
 
 import { ErroApi } from '../http/erro-api.js'
+import { CHAVE_API_PUBLICA } from '../integracoes/chave.decorators.js'
 import { BANCO } from '../infra/infra.module.js'
 import { MonitorDoPool } from '../infra/monitor-do-pool.js'
 import {
@@ -49,6 +50,8 @@ export class TenantInterceptor implements NestInterceptor {
         execucao.getHandler(),
         execucao.getClass(),
       ])
+    // A API pública tem interceptador próprio (chave.interceptor.ts)
+    if (marca(CHAVE_API_PUBLICA)) return proximo.handle()
     const requeridas = this.reflector.getAllAndOverride<string[] | undefined>(CHAVE_PERMISSAO, [
       execucao.getHandler(),
       execucao.getClass(),

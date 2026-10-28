@@ -15,6 +15,8 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
+import { lerEmpresa as lerEmpresaPublica } from '../integracoes/publica/leitura.js'
+import { emitirEvento, paraSnake } from '../integracoes/webhooks/eventos.js'
 import { sqlstateDe } from '../http/sqlstate.js'
 import { type ConsultaDeCnpj, ReceitaService } from '../receita/receita.service.js'
 import {
@@ -92,7 +94,7 @@ const CAMPOS_DO_ENDERECO = [
 export interface OpcoesDeCriacao {
   /** Lote que criou a empresa: liga a linha ao lote para filtrar e desfazer */
   importacaoId?: string
-  origemCadastro?: 'importacao'
+  origemCadastro?: 'importacao' | 'api'
   /**
    * A consulta à Receita que o chamador já fez (não consulta de novo), ou `'nenhuma'` quando a
    * importação não consulta (sem regras, sem bloqueio e com os dados da planilha).
@@ -143,7 +145,7 @@ export class EmpresasDaCarteiraService {
     const tenantId = this.ctx.tenantId
     const escopo = await escopoDaCarteira(this.ctx)
     const vendedorId = dados.vendedorId ?? escopo.membroId
-    if (vendedorId !== escopo.membroId && !podeTransferir(escopo)) {
+    if (vendedorId !== escopo.membroId && !podeTransferir(escopo) && !escopo.integracao) {
       throw negado('Vendedor só cadastra empresas na própria carteira.')
     }
     await this.exigirVendedorAtivo(db, vendedorId)
@@ -243,6 +245,7 @@ export class EmpresasDaCarteiraService {
       new Set(),
       new Set([status, ...(opcoes.tagsExtras ?? [])]),
       escopo.membroId,
+      false,
     )
     if (matrizFilial && documento) await this.ligarMatrizEFiliais(db, id, matrizFilial, documento)
     if (naoVerificada) {
@@ -266,6 +269,16 @@ export class EmpresasDaCarteiraService {
         situacaoNaoVerificada: naoVerificada,
       },
     })
+    // Webhooks: a importação avisa uma vez, no fim do lote (`importacao.concluida`), não por empresa
+    if (!opcoes.importacaoId) {
+      await emitirEvento(db, {
+        tenantId,
+        tipo: 'empresa.criada',
+        entidadeId: id,
+        membroId: escopo.membroId,
+        dados: async () => ({ empresa: await lerEmpresaPublica(db, id) }),
+      })
+    }
     return this.detalhar(id)
   }
 
@@ -364,6 +377,29 @@ export class EmpresasDaCarteiraService {
       acao: 'alterar',
       alteracoes,
     })
+    await emitirEvento(db, {
+      tenantId,
+      tipo: 'empresa.atualizada',
+      entidadeId: id,
+      membroId: escopo.membroId,
+      dados: async () => ({
+        empresa: await lerEmpresaPublica(db, id),
+        campos: Object.keys(alteracoes).map(paraSnake),
+      }),
+    })
+    if (dados.vendedorId !== undefined && dados.vendedorId !== atual.vendedorId) {
+      const de = atual.vendedorId
+      await emitirEvento(db, {
+        tenantId,
+        tipo: 'empresa.responsavel_alterado',
+        entidadeId: id,
+        membroId: escopo.membroId,
+        dados: async () => ({
+          empresa: await lerEmpresaPublica(db, id),
+          alteracoes: { responsavel: { antes: { id: de }, depois: { id: dados.vendedorId } } },
+        }),
+      })
+    }
     return this.detalhar(id)
   }
 

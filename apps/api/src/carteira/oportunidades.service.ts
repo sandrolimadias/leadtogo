@@ -18,6 +18,8 @@ import { ContextoTenantService, type Transacao } from '../acesso/contexto-tenant
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
+import { lerOportunidade as lerOportunidadePublica } from '../integracoes/publica/leitura.js'
+import { emitirEvento } from '../integracoes/webhooks/eventos.js'
 import { recalcularCarteira } from './atividades-efeitos.js'
 import { fusoDaEmpresa } from './atividades-leitura.js'
 import {
@@ -150,6 +152,13 @@ export class OportunidadesService {
         ...(dados.duplicadaDeId && { duplicadaDeId: dados.duplicadaDeId }),
       },
     })
+    await emitirEvento(this.ctx.db(), {
+      tenantId: this.ctx.tenantId,
+      tipo: 'oportunidade.criada',
+      entidadeId: criada.id,
+      membroId: this.ctx.membro.id,
+      dados: async () => ({ oportunidade: await lerOportunidadePublica(this.ctx.db(), criada.id) }),
+    })
     return this.ler(criada.id)
   }
 
@@ -264,6 +273,17 @@ export class OportunidadesService {
       acao: 'mover',
       alteracoes: { fase: { de: daAnterior?.nome ?? null, para: fase.nome } },
     })
+    await emitirEvento(this.ctx.db(), {
+      tenantId: this.ctx.tenantId,
+      tipo: 'oportunidade.fase_alterada',
+      entidadeId: id,
+      membroId: this.ctx.membro.id,
+      dados: async () => ({
+        oportunidade: await lerOportunidadePublica(this.ctx.db(), id),
+        alteracoes: { fase: { antes: { id: atual.faseId }, depois: { id: fase.id } } },
+      }),
+    })
+
     const aviso =
       atual.probabilidadeManual && atual.probabilidade !== fase.probabilidadePadrao
         ? { atual: atual.probabilidade, sugerida: fase.probabilidadePadrao }
@@ -351,6 +371,16 @@ export class OportunidadesService {
         ...(virouCliente ? { empresaViraCliente: virouCliente } : {}),
       },
     })
+    await emitirEvento(this.ctx.db(), {
+      tenantId: this.ctx.tenantId,
+      tipo: 'oportunidade.status_alterado',
+      entidadeId: id,
+      membroId: this.ctx.membro.id,
+      dados: async () => ({
+        oportunidade: await lerOportunidadePublica(this.ctx.db(), id),
+        alteracoes: { status: { antes: 'ativo', depois: dados.status } },
+      }),
+    })
     return this.ler(id)
   }
 
@@ -402,6 +432,16 @@ export class OportunidadesService {
       entidadeId: id,
       acao: 'reabrir',
       alteracoes: { status: { de: atual.status, para: 'ativo' } },
+    })
+    await emitirEvento(this.ctx.db(), {
+      tenantId: this.ctx.tenantId,
+      tipo: 'oportunidade.status_alterado',
+      entidadeId: id,
+      membroId: this.ctx.membro.id,
+      dados: async () => ({
+        oportunidade: await lerOportunidadePublica(this.ctx.db(), id),
+        alteracoes: { status: { antes: atual.status, depois: 'ativo' } },
+      }),
     })
     return this.ler(id)
   }

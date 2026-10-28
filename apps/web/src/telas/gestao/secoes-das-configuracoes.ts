@@ -10,6 +10,7 @@ import {
   LifeBuoy,
   MapPin,
   Funnel,
+  Plug,
   Route as RotaIcone,
   Scale,
   ShieldCheck,
@@ -103,6 +104,12 @@ export const SECOES = [
     titulo: 'Portal do Cliente',
     icone: Globe,
     permissoes: ['portal.configurar'],
+  },
+  {
+    para: '/configuracoes/integracoes',
+    titulo: 'Integrações',
+    icone: Plug,
+    permissoes: ['integracoes.gerir'],
   },
   {
     para: '/configuracoes/seguranca',

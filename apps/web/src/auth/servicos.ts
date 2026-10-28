@@ -804,6 +804,94 @@ export const servicosReais: ServicosDeAcesso = {
       ),
   },
 
+  integracoes: {
+    chaves: {
+      listar: () => protegido(async () => daApi(await api.GET('/v1/integracoes/chaves'))),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/integracoes/chaves', { body: dados }))),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/integracoes/chaves/{id}', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      rotacionar: (id, prazoDias) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/integracoes/chaves/{id}/rotacionar', {
+              params: { path: { id } },
+              body: { prazoDias },
+            }),
+          ),
+        ),
+      revogar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/integracoes/chaves/{id}/revogar', { params: { path: { id } } }),
+          ),
+        ),
+    },
+    webhooks: {
+      listar: () => protegido(async () => daApi(await api.GET('/v1/integracoes/webhooks'))),
+      criar: (dados) =>
+        protegido(async () => daApi(await api.POST('/v1/integracoes/webhooks', { body: dados }))),
+      alterar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PATCH('/v1/integracoes/webhooks/{id}', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/integracoes/webhooks/{id}', { params: { path: { id } } })),
+        ),
+      rotacionarSegredo: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/integracoes/webhooks/{id}/rotacionar-segredo', {
+              params: { path: { id } },
+            }),
+          ),
+        ),
+      testar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/integracoes/webhooks/{id}/testar', { params: { path: { id } } }),
+          ),
+        ),
+      entregas: (id, consulta = {}) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/integracoes/webhooks/{id}/entregas', {
+              params: { path: { id }, query: consulta },
+            }),
+          ),
+        ),
+      reenviar: (id, entregaId) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/integracoes/webhooks/{id}/entregas/{entregaId}/reenviar', {
+              params: { path: { id, entregaId } },
+            }),
+          ),
+        ),
+      reenviarFalhas: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/integracoes/webhooks/{id}/entregas/reenviar-falhas', {
+              params: { path: { id } },
+            }),
+          ),
+        ),
+    },
+  },
+
   portal: {
     indicadores: (dias) =>
       protegido(async () =>

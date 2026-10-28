@@ -1,0 +1,183 @@
+{
+  "name": "Leadtogo: listar associados (base da integração com o ERP)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "4e4f8fa7-b538-5e30-90a3-38bd973fcf3c",
+      "name": "Todo dia às 6h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "leadtogo",
+              "value": "https://crm.aledias.com.br",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da142f55-a36f-5263-8e10-b575b5224bed",
+      "name": "Configuração",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Configuração').first().json.leadtogo }}/v1/publica/empresas",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "cursor",
+                    "value": "={{ $response.body.proximo_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.proximo_cursor }}",
+              "limitPagesFetched": true,
+              "maxRequests": 500,
+              "requestInterval": 600
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "cliente"
+            },
+            {
+              "name": "limite",
+              "value": "200"
+            }
+          ]
+        }
+      },
+      "id": "17a55735-a1df-5870-be7b-4dfa0402046b",
+      "name": "Leadtogo: associados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Leadtogo API (chave)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Uma linha por associado: o CNPJ (sem máscara) e o id no Leadtogo, prontos para consultar o ERP\nconst empresas = $input.all().flatMap((i) => i.json.dados || []);\nreturn empresas\n  .filter((e) => e.tipo_documento === 'cnpj' && e.documento)\n  .map((e) => ({ json: { empresa_id: e.id, cnpj: e.documento, nome: e.nome, responsavel: e.responsavel.email } }));\n"
+      },
+      "id": "10501819-7799-5051-85d4-e9615f2127a6",
+      "name": "Um CNPJ por item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {},
+      "id": "bf851cc6-27e5-5987-a919-ccc6182d1093",
+      "name": "Consultar o ERP aqui",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "content": "## Associados do Leadtogo\nBusca todas as empresas com Status **Cliente** (\"Associado\": a API acha pela chave do sistema, não pelo nome), página por página (cursor), e entrega um item por CNPJ.\n- Chave com o modelo *Leitura da carteira* (ou *Financeiro*).\n- É o primeiro passo da integração com o Omie: o próximo nó consulta o contas a receber e, quando o recurso financeiro (§13.6) estiver no ar, envia a posição ao Leadtogo.\n- A paginação espera 0,6 s entre as páginas (limite de 120 req/min por chave).",
+        "height": 300,
+        "width": 380
+      },
+      "id": "c04a3e1d-f70f-5156-beb8-69b7e49ec80a",
+      "name": "Leia-me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-420, -260]
+    }
+  ],
+  "connections": {
+    "Todo dia às 6h": {
+      "main": [
+        [
+          {
+            "node": "Configuração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuração": {
+      "main": [
+        [
+          {
+            "node": "Leadtogo: associados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leadtogo: associados": {
+      "main": [
+        [
+          {
+            "node": "Um CNPJ por item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Um CNPJ por item": {
+      "main": [
+        [
+          {
+            "node": "Consultar o ERP aqui",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "leadtogo"
+    }
+  ]
+}

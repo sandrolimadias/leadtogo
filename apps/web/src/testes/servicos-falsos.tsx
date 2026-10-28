@@ -411,6 +411,28 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       },
       metricas: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
+    integracoes: {
+      chaves: {
+        listar: vi.fn(async () => ok({ itens: [] })),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        rotacionar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        revogar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      },
+      webhooks: {
+        listar: vi.fn(async () => ok({ itens: [] })),
+        criar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        excluir: vi.fn(async () => ok(undefined)),
+        rotacionarSegredo: vi.fn(async () =>
+          falha('indisponivel', 'Não configurado no teste.', 500),
+        ),
+        testar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        entregas: vi.fn(async () => ok({ itens: [], total: 0, pagina: 1, porPagina: 25 })),
+        reenviar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        reenviarFalhas: vi.fn(async () => ok({ reenviadas: 0 })),
+      },
+    },
     portal: {
       indicadores: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       configuracao: {

@@ -20,6 +20,7 @@ import { EnviadorSmtp } from '../email/enviador.js'
 import { criarClienteS3 } from '../infra/s3.js'
 import { processadorDeAntivirus } from '../chamados/processador-antivirus.js'
 import { processadorDaGeocodificacao } from '../geolocalizacao/processador.js'
+import { processadorDeWebhooks } from '../integracoes/webhooks/processador.js'
 import { ReceitaService, provedoresPadrao } from '../receita/receita.service.js'
 import { chavesDe } from '../seguranca/cifra.js'
 import {
@@ -86,6 +87,15 @@ export async function iniciarWorker(deps: {
     processadorDeAntivirus({ config, banco, s3: armazenamento, log }),
     { concorrencia: 2 },
   )
+
+  // Webhooks de saída (API aberta, I3): POST assinado, reenvio com espera progressiva (sem a chave de cifra, desligado)
+  if (config.TOKEN_ENCRYPTION_KEY) {
+    filas.consumir(
+      FILAS.webhooks,
+      processadorDeWebhooks({ banco, config, fila: () => filas.fila(FILAS.webhooks), log }),
+      { concorrencia: 5 },
+    )
+  }
 
   // Manutenção agendada (partições da auditoria e limpezas), via funções SECURITY DEFINER do banco
   filas.consumir(FILAS.manutencao, processadorDeManutencao(banco, log, filas, enviadorDePush), {

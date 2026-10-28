@@ -1,0 +1,161 @@
+{
+  "name": "Leadtogo: receber eventos (webhook assinado)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "leadtogo-eventos",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "65187efa-9449-58dc-8fe9-f6d79196e0c1",
+      "name": "Leadtogo: evento",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "82808d2a-6a93-5a19-b03a-62eb0d206f0b"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Confere a assinatura do Leadtogo (X-Leadtogo-Assinatura: t=<unix>,v1=<hex>[,v1=<hex>]).\n// Exige NODE_FUNCTION_ALLOW_BUILTIN=crypto no n8n. O segredo (whsec_...) é o mostrado ao cadastrar o webhook.\nconst crypto = require('crypto');\nconst SEGREDO = 'whsec_COLE_AQUI_O_SEGREDO_DO_WEBHOOK';\nconst TOLERANCIA_S = 300;\n\nconst item = $input.first();\nconst cab = item.json.headers || {};\nconst assinatura = String(cab['x-leadtogo-assinatura'] || '');\n// Corpo bruto (opção \"Raw Body\" do nó Webhook); sem ela, o JSON recebido serializado de novo dá o mesmo texto\nconst bruto = item.binary && item.binary.data\n  ? Buffer.from(item.binary.data.data, 'base64').toString('utf8')\n  : JSON.stringify(item.json.body);\n\nconst t = Number((/(?:^|,)t=(\\d+)/.exec(assinatura) || [])[1] || 0);\nconst recebidas = [...assinatura.matchAll(/v1=([0-9a-f]{64})/g)].map((m) => m[1]);\nconst esperada = crypto.createHmac('sha256', SEGREDO).update(`${t}.${bruto}`, 'utf8').digest('hex');\nconst noPrazo = Math.abs(Date.now() / 1000 - t) <= TOLERANCIA_S;\nconst confere = recebidas.some((r) =>\n  crypto.timingSafeEqual(Buffer.from(r, 'hex'), Buffer.from(esperada, 'hex')),\n);\nconst evento = JSON.parse(bruto);\nreturn [{ json: { valido: noPrazo && confere, evento, entrega: cab['x-leadtogo-entrega'] || null } }];\n"
+      },
+      "id": "899e9f23-cfb6-54f0-a6cf-436346bcc3e4",
+      "name": "Conferir assinatura",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valido }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "d7db1562-66c3-503d-9aeb-fbdce8108f50",
+      "name": "Assinatura válida?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "2a9ffc48-d810-585f-918b-4f4814377d0a",
+      "name": "Responder 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [660, -100]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": false } }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "6ee45c92-c475-54e8-9a90-d41c9eb9cad0",
+      "name": "Responder 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [660, 120]
+    },
+    {
+      "parameters": {},
+      "id": "31ba7bae-7f88-5646-a027-58988388879e",
+      "name": "Tratar o evento aqui",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [880, -100]
+    },
+    {
+      "parameters": {
+        "content": "## Receber eventos do Leadtogo\n1. Ative o workflow e copie a URL de produção do nó **Leadtogo: evento**.\n2. No Leadtogo: Configurações → Integrações → Webhooks → **Novo webhook** com essa URL e os eventos.\n3. Cole o segredo (whsec_...) no nó **Conferir assinatura**.\n4. O evento chega em `$json.evento` (tipo, ator, dados). Deduplique por `$json.evento.id`.\n\nNo n8n: `NODE_FUNCTION_ALLOW_BUILTIN=crypto`.",
+        "height": 300,
+        "width": 380
+      },
+      "id": "c04a3e1d-f70f-5156-beb8-69b7e49ec80a",
+      "name": "Leia-me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-420, -260]
+    }
+  ],
+  "connections": {
+    "Leadtogo: evento": {
+      "main": [
+        [
+          {
+            "node": "Conferir assinatura",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conferir assinatura": {
+      "main": [
+        [
+          {
+            "node": "Assinatura válida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assinatura válida?": {
+      "main": [
+        [
+          {
+            "node": "Responder 200",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder 200": {
+      "main": [
+        [
+          {
+            "node": "Tratar o evento aqui",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "leadtogo"
+    }
+  ]
+}

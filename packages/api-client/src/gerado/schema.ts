@@ -2868,6 +2868,258 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/integracoes/chaves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Chaves de API da empresa
+         * @description Exige `integracoes.gerir`. Ativas primeiro, depois as revogadas. O token nunca volta: só o prefixo (`ltg_live_a1B2c3D4`).
+         */
+        get: operations["ChavesController_listar"];
+        put?: never;
+        /**
+         * Criar uma chave de API
+         * @description Exige `integracoes.gerir` e o 2FA ativo de quem cria (403 `2fa_obrigatorio`). Devolve o **token uma única vez**. Permissões só entre as liberadas para integração; alcance sempre "todas". 422 `responsavel_invalido`, `validade_no_passado` ou `ip_invalido`.
+         */
+        post: operations["ChavesController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/chaves/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Alterar uma chave de API
+         * @description Exige `integracoes.gerir`. Nome, permissões, IPs, responsável padrão e validade; o token não muda. 409 `chave_revogada`.
+         */
+        patch: operations["ChavesController_alterar"];
+        trace?: never;
+    };
+    "/v1/integracoes/chaves/{id}/revogar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revogar uma chave de API
+         * @description Exige `integracoes.gerir`. Efeito imediato; a chave fica na lista, revogada. 409 `chave_revogada`.
+         */
+        post: operations["ChavesController_revogar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/chaves/{id}/rotacionar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotacionar uma chave de API
+         * @description Exige `integracoes.gerir` e o 2FA ativo. Cria uma chave nova com os mesmos dados (devolve o token uma vez) e a antiga vale por mais `prazoDias` (0 a 7; 0 revoga agora). 409 `chave_revogada` ou `chave_ja_rotacionada`.
+         */
+        post: operations["ChavesController_rotacionar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Webhooks da empresa
+         * @description Exige `integracoes.gerir`. Com as entregas das últimas 24 h. O segredo nunca volta (só na criação e na rotação).
+         */
+        get: operations["WebhooksController_listar"];
+        put?: never;
+        /**
+         * Cadastrar webhook
+         * @description Exige `integracoes.gerir` e o 2FA ativo. Devolve o **segredo uma única vez** (assina as entregas: `X-Leadtogo-Assinatura`). Em produção só `https`, salvo os hosts de `WEBHOOK_HOSTS_INTERNOS`; endereço de rede interna é recusado (422 `url_invalida`).
+         */
+        post: operations["WebhooksController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/webhooks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Excluir webhook
+         * @description Exige `integracoes.gerir`. Só sem entregas no log (409 `webhook_com_entregas`: desative).
+         */
+        delete: operations["WebhooksController_excluir"];
+        options?: never;
+        head?: never;
+        /**
+         * Alterar webhook
+         * @description Exige `integracoes.gerir`. Descrição, endereço, eventos e `ativo` (religar zera a contagem de falhas).
+         */
+        patch: operations["WebhooksController_alterar"];
+        trace?: never;
+    };
+    "/v1/integracoes/webhooks/{id}/entregas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Log de entregas
+         * @description Exige `integracoes.gerir`. Da mais nova para a mais antiga; filtros por situação e tipo. Guardado por 30 dias (sucesso) e 90 dias (falha).
+         */
+        get: operations["WebhooksController_entregas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/webhooks/{id}/entregas/{entregaId}/reenviar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reenviar uma entrega
+         * @description Exige `integracoes.gerir`. Volta a pendente, com as tentativas zeradas.
+         */
+        post: operations["WebhooksController_reenviar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/webhooks/{id}/entregas/reenviar-falhas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reenviar as falhas
+         * @description Exige `integracoes.gerir`. Todas as entregas que falharam (até 500 por vez).
+         */
+        post: operations["WebhooksController_reenviarFalhas"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/webhooks/{id}/rotacionar-segredo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trocar o segredo
+         * @description Exige `integracoes.gerir` e o 2FA ativo. Devolve o segredo novo uma vez; o antigo continua assinando junto por 24 h.
+         */
+        post: operations["WebhooksController_rotacionarSegredo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/webhooks/{id}/testar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enviar teste
+         * @description Exige `integracoes.gerir`. Envia o evento `webhook.teste` só para este webhook; acompanhe no log.
+         */
+        post: operations["WebhooksController_testar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integracoes/webhooks/eventos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Eventos que um webhook pode assinar
+         * @description Exige `integracoes.gerir`.
+         */
+        get: operations["WebhooksController_eventos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/mapa/base": {
         parameters: {
             query?: never;
@@ -5317,6 +5569,15 @@ export interface components {
             /** Format: uuid */
             areaId?: string;
         };
+        AlterarChaveDeApi: {
+            nome?: string;
+            permissoes?: string[];
+            /** Format: uuid */
+            responsavelPadraoId?: string | null;
+            ipsPermitidos?: string[];
+            /** Format: date-time */
+            expiraEm?: string | null;
+        };
         AlterarConfiguracaoDeRotasEntrada: {
             minutosPorVisita: number;
         };
@@ -5508,6 +5769,12 @@ export interface components {
         AlterarVinculoEntrada: {
             cargo?: string | null;
             principal?: boolean;
+            ativo?: boolean;
+        };
+        AlterarWebhook: {
+            descricao?: string;
+            url?: string;
+            eventos?: components["schemas"]["EventoDeWebhook"][];
             ativo?: boolean;
         };
         AndamentoDaImportacao: {
@@ -5726,6 +5993,12 @@ export interface components {
         CancelarEventoEntrada: {
             motivo: string;
         };
+        CatalogoDeEventosDeWebhook: {
+            itens: {
+                tipo: string;
+                rotulo: string;
+            }[];
+        };
         Chamado: {
             /** Format: uuid */
             id: string;
@@ -5800,6 +6073,42 @@ export interface components {
                 reabrir: boolean;
                 avaliar: boolean;
             };
+        };
+        ChaveDeApi: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            prefixo: string;
+            /** @enum {string} */
+            ambiente: "live" | "test";
+            permissoes: string[];
+            responsavelPadrao: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+            ipsPermitidos: string[];
+            /** Format: date-time */
+            expiraEm: string | null;
+            /** Format: date-time */
+            revogadaEm: string | null;
+            /** Format: uuid */
+            substituidaPor: string | null;
+            /** Format: date-time */
+            ultimoUsoEm: string | null;
+            ultimoIp: string | null;
+            situacao: components["schemas"]["SituacaoDaChave"];
+            /** Format: date-time */
+            criadoEm: string;
+            criadoPor: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+        };
+        ChaveDeApiCriada: {
+            chave: components["schemas"]["ChaveDeApi"];
+            token: string;
         };
         CheckinDaVisita: {
             /** Format: date-time */
@@ -6184,6 +6493,15 @@ export interface components {
             /** Format: date-time */
             enviarEm?: string | null;
         };
+        CriarChaveDeApi: {
+            nome: string;
+            permissoes: string[];
+            /** Format: uuid */
+            responsavelPadraoId?: string | null;
+            ipsPermitidos?: string[];
+            /** Format: date-time */
+            expiraEm?: string | null;
+        };
         CriarContatoEntrada: {
             nome: string;
             /** Format: uuid */
@@ -6408,6 +6726,11 @@ export interface components {
             nome: string;
             /** @default gray */
             cor: components["schemas"]["CorDeTag"];
+        };
+        CriarWebhook: {
+            descricao: string;
+            url: string;
+            eventos: components["schemas"]["EventoDeWebhook"][];
         };
         DadosDaReceita: {
             cnpj: string;
@@ -6883,6 +7206,25 @@ export interface components {
             titulo: string;
             detalhe: string | null;
         };
+        EntregaDeWebhook: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            eventoId: string;
+            tipo: string;
+            situacao: components["schemas"]["SituacaoDaEntrega"];
+            tentativas: number;
+            statusHttp: number | null;
+            duracaoMs: number | null;
+            resposta: string | null;
+            erro: string | null;
+            /** Format: date-time */
+            proximaTentativaEm: string | null;
+            /** Format: date-time */
+            entregueEm: string | null;
+            /** Format: date-time */
+            criadoEm: string;
+        };
         EnviarMensagemEntrada: {
             corpo: string;
             /** @default [] */
@@ -6960,6 +7302,8 @@ export interface components {
                 nome: string;
             }[];
         };
+        /** @enum {string} */
+        EventoDeWebhook: "empresa.criada" | "empresa.atualizada" | "empresa.tag_alterada" | "empresa.responsavel_alterado" | "contato.criado" | "contato.atualizado" | "atividade.criada" | "atividade.concluida" | "oportunidade.criada" | "oportunidade.fase_alterada" | "oportunidade.status_alterado" | "importacao.concluida";
         EventoDoChamado: {
             /** Format: uuid */
             id: string;
@@ -7456,6 +7800,9 @@ export interface components {
                 todos: number;
             };
         };
+        ListaDeChavesDeApi: {
+            itens: components["schemas"]["ChaveDeApi"][];
+        };
         ListaDeComentariosDoPortal: {
             itens: components["schemas"]["ComentarioDoPortal"][];
             comentariosAbertos: boolean;
@@ -7479,6 +7826,12 @@ export interface components {
         };
         ListaDeEmpresas: {
             itens: components["schemas"]["ItemDaListaDeEmpresas"][];
+            total: number;
+            pagina: number;
+            porPagina: number;
+        };
+        ListaDeEntregasDeWebhook: {
+            itens: components["schemas"]["EntregaDeWebhook"][];
             total: number;
             pagina: number;
             porPagina: number;
@@ -7575,6 +7928,9 @@ export interface components {
         };
         ListaDeTarefasDoChamado: {
             itens: components["schemas"]["TarefaDoChamado"][];
+        };
+        ListaDeWebhooks: {
+            itens: components["schemas"]["Webhook"][];
         };
         LoteDeImportacao: {
             /** Format: uuid */
@@ -8532,6 +8888,9 @@ export interface components {
         ReagirNoPortalEntrada: {
             tipo: components["schemas"]["TipoDeReacao"];
         };
+        ReenvioDeEntregas: {
+            reenviadas: number;
+        };
         RegiaoGeo: {
             id: string;
             /** @enum {string} */
@@ -8694,6 +9053,10 @@ export interface components {
             concluidaEm: string | null;
             paradas: components["schemas"]["ParadaDaRota"][];
             podeEditar: boolean;
+        };
+        RotacionarChaveDeApi: {
+            /** @default 1 */
+            prazoDias: number;
         };
         RotaDaEmpresa: {
             /** Format: uuid */
@@ -8900,7 +9263,11 @@ export interface components {
             segundoFatorPendente: boolean;
         };
         /** @enum {string} */
+        SituacaoDaChave: "ativa" | "substituida" | "vencida" | "revogada";
+        /** @enum {string} */
         SituacaoDaConfirmacao: "confirmado" | "lista_espera" | "cancelado";
+        /** @enum {string} */
+        SituacaoDaEntrega: "pendente" | "sucesso" | "falhou";
         /** @enum {string} */
         SituacaoDaPublicacao: "rascunho" | "agendada" | "publicada";
         /** @enum {string} */
@@ -9036,6 +9403,37 @@ export interface components {
             empresaId: string;
             cargo?: string | null;
             principal?: boolean;
+        };
+        Webhook: {
+            /** Format: uuid */
+            id: string;
+            descricao: string;
+            url: string;
+            eventos: string[];
+            ativo: boolean;
+            desativadoMotivo: string | null;
+            /** Format: date-time */
+            segredoAnteriorAte: string | null;
+            /** Format: date-time */
+            ultimoSucessoEm: string | null;
+            /** Format: date-time */
+            falhandoDesde: string | null;
+            entregas24h: {
+                sucesso: number;
+                falhou: number;
+                pendente: number;
+            };
+            /** Format: date-time */
+            criadoEm: string;
+            criadoPor: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+            } | null;
+        };
+        WebhookCriado: {
+            webhook: components["schemas"]["Webhook"];
+            segredo: string;
         };
     };
     responses: never;
@@ -20938,6 +21336,890 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeChavesDeApi"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarChaveDeApi"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChaveDeApiCriada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarChaveDeApi"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChaveDeApi"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_revogar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChaveDeApi"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ChavesController_rotacionar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RotacionarChaveDeApi"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChaveDeApiCriada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeWebhooks"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarWebhook"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookCriado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarWebhook"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Webhook"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_entregas: {
+        parameters: {
+            query?: {
+                situacao?: components["schemas"]["SituacaoDaEntrega"];
+                tipo?: string;
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeEntregasDeWebhook"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_reenviar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                entregaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntregaDeWebhook"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_reenviarFalhas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReenvioDeEntregas"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_rotacionarSegredo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookCriado"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_testar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntregaDeWebhook"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    WebhooksController_eventos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogoDeEventosDeWebhook"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

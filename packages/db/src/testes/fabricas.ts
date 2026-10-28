@@ -1232,3 +1232,68 @@ fabricas['portal_push_inscricoes'] = definirFabrica<{ acessoId: string }>({
     return id
   },
 })
+
+// API aberta (I1): chaves de API, cada uma com o seu membro de integração
+fabricas['api_chaves'] = definirFabrica<{ membroId: string }>({
+  colunaAlteravel: 'nome',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const membroId = novoId()
+      await tx`INSERT INTO membros (id, tenant_id, nome, tipo, ativo)
+        VALUES (${membroId}, ${tenantId}, 'Integração: teste', 'integracao', false)`
+      return { membroId }
+    }),
+  criar: async (tx, tenantId, { membroId }) => {
+    const id = novoId()
+    const hash = id.replace(/-/g, '').padEnd(64, '0')
+    await tx`INSERT INTO api_chaves (id, tenant_id, nome, prefixo, hash, ambiente, membro_id)
+      VALUES (${id}, ${tenantId}, 'n8n', 'abcdefgh', ${hash}, 'test', ${membroId})`
+    return id
+  },
+})
+
+// API aberta (I2): a resposta guardada do Idempotency-Key, de uma chave de API
+fabricas['idempotencia_chaves'] = definirFabrica<{ chaveId: string }>({
+  colunaAlteravel: 'chave',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const membroId = novoId()
+      const chaveId = novoId()
+      await tx`INSERT INTO membros (id, tenant_id, nome, tipo, ativo)
+        VALUES (${membroId}, ${tenantId}, 'Integração: teste', 'integracao', false)`
+      await tx`INSERT INTO api_chaves (id, tenant_id, nome, prefixo, hash, ambiente, membro_id)
+        VALUES (${chaveId}, ${tenantId}, 'n8n', 'abcdefgh', ${chaveId.replace(/-/g, '').padEnd(64, '0')}, 'test', ${membroId})`
+      return { chaveId }
+    }),
+  criar: async (tx, tenantId, { chaveId }) => {
+    const id = novoId()
+    await tx`INSERT INTO idempotencia_chaves (id, tenant_id, chave_api_id, chave, hash_corpo)
+      VALUES (${id}, ${tenantId}, ${chaveId}, ${`chave-${id}`}, ${'a'.repeat(64)})`
+    return id
+  },
+})
+
+// API aberta (I3): webhooks de saída e o log de entregas
+const inserirWebhook = async (tx: Sql | TransactionSql, tenantId: string): Promise<string> => {
+  const id = novoId()
+  await tx`INSERT INTO webhooks (id, tenant_id, descricao, url, eventos, segredo)
+    VALUES (${id}, ${tenantId}, 'n8n', 'https://n8n.exemplo.com/webhook/x', '{empresa.criada}', 'v1:cifrado')`
+  return id
+}
+
+fabricas['webhooks'] = definirFabrica({
+  colunaAlteravel: 'descricao',
+  criar: (tx, tenantId) => inserirWebhook(tx, tenantId),
+})
+
+fabricas['webhook_entregas'] = definirFabrica<{ webhookId: string }>({
+  colunaAlteravel: 'tipo',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => ({ webhookId: await inserirWebhook(tx, tenantId) })),
+  criar: async (tx, tenantId, { webhookId }) => {
+    const id = novoId()
+    await tx`INSERT INTO webhook_entregas (id, tenant_id, webhook_id, evento_id, tipo, corpo)
+      VALUES (${id}, ${tenantId}, ${webhookId}, ${novoId()}, 'empresa.criada', '{}'::jsonb)`
+    return id
+  },
+})

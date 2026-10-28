@@ -116,6 +116,20 @@ const esquema = z
     /** Falhas finais de jobs nas últimas 24 h a partir das quais o /health/alertas responde 503 */
     ALERTAS_LIMITE_JOBS_FALHOS: z.coerce.number().int().min(1).default(1),
 
+    // Webhooks de saída (docs/plano_api_aberta.md, seção 6.4). Em produção só https e nada de rede interna, salvo
+    // os hosts desta lista (separados por vírgula, `host` ou `host:porta`), ex.: `n8n:5678` na rede do Coolify.
+    WEBHOOK_HOSTS_INTERNOS: z
+      .string()
+      .default('')
+      .transform((v) =>
+        v
+          .split(',')
+          .map((h) => h.trim())
+          .filter(Boolean),
+      ),
+    /** Prazo de cada entrega de webhook (padrão 10 s) */
+    WEBHOOK_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(10_000),
+
     // Consulta de CNPJ (docs/configuracao_tecnologia.md, seção 17). Padrões servem para produção;
     // apontar `MINHA_RECEITA_URL` para uma instância própria da Minha Receita não exige mudar código.
     MINHA_RECEITA_URL: url(['http:', 'https:']).default('https://minhareceita.org'),

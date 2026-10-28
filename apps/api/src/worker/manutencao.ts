@@ -3,6 +3,8 @@ import type { Job } from 'bullmq'
 import type { Logger } from 'pino'
 
 import { varrerImportacoesParadas } from '../importacao/varredura.js'
+import { avisarChavesAVencer } from '../integracoes/vencimento-chaves.js'
+import { reenfileirarEntregasAtrasadas } from '../integracoes/webhooks/processador.js'
 import { agendarEnvioDoAviso, EVENTO_ENVIAR_AVISO } from '../portal/notificar-aviso.js'
 import { agendarNotificacaoDeEvento } from '../portal/notificar-evento.js'
 import { type EnviadorDePush, enviarPushesPendentes } from '../portal/push.js'
@@ -16,11 +18,15 @@ export interface Agendador {
     | 'particoes'
     | 'limpar-convites'
     | 'limpar-outbox'
+    | 'limpar-idempotencia'
     | 'varrer-importacoes'
     | 'publicar-agendadas'
     | 'lembrar-eventos'
     | 'enviar-avisos'
     | 'enviar-pushes'
+    | 'avisar-chaves'
+    | 'varrer-webhooks'
+    | 'limpar-webhooks'
     | (string & {})
   /** Cron (UTC) ou intervalo em ms (só os testes usam intervalo) */
   quando: { pattern: string } | { every: number }
@@ -36,6 +42,8 @@ export const AGENDADORES: readonly Agendador[] = [
   // Todo dia: convites cancelados/vencidos há mais de 30 dias e eventos entregues há mais de 14
   { id: 'limpeza-convites', tarefa: 'limpar-convites', quando: { pattern: '0 4 * * *' } },
   { id: 'limpeza-outbox', tarefa: 'limpar-outbox', quando: { pattern: '15 4 * * *' } },
+  // Todo dia: as respostas guardadas do Idempotency-Key da API pública com mais de 24 h
+  { id: 'limpeza-idempotencia', tarefa: 'limpar-idempotencia', quando: { pattern: '30 4 * * *' } },
   // A cada minuto: reenfileira o lote de importação em andamento que parou de andar
   { id: 'varredura-importacoes', tarefa: 'varrer-importacoes', quando: { every: 60_000 } },
   // A cada minuto: publica as publicações do portal agendadas que já venceram (em todas as empresas)
@@ -46,6 +54,12 @@ export const AGENDADORES: readonly Agendador[] = [
   { id: 'enviar-avisos', tarefa: 'enviar-avisos', quando: { every: 60_000 } },
   // A cada minuto: envia os pushes que já podem sair (os que esperaram o fim do horário de silêncio)
   { id: 'enviar-pushes', tarefa: 'enviar-pushes', quando: { every: 60_000 } },
+  // Todo dia, 11:00 UTC (08:00 em Brasília): avisa as chaves de API que vencem em até 15 dias e no último dia
+  { id: 'avisar-chaves', tarefa: 'avisar-chaves', quando: { pattern: '0 11 * * *' } },
+  // A cada minuto: entregas de webhook pendentes cuja vez passou e que saíram da fila voltam a ela
+  { id: 'varrer-webhooks', tarefa: 'varrer-webhooks', quando: { every: 60_000 } },
+  // Todo dia: o log de entregas (sucesso com mais de 30 dias, falha com mais de 90)
+  { id: 'limpeza-webhooks', tarefa: 'limpar-webhooks', quando: { pattern: '45 4 * * *' } },
 ]
 
 const TAMANHO_DO_LOTE = 500
@@ -76,7 +90,11 @@ export async function garantirParticoesNaPartida(filas: WorkerFilas): Promise<vo
 
 async function emLotes(
   banco: Conexao,
-  funcao: 'app_limpar_convites' | 'app_limpar_outbox',
+  funcao:
+    | 'app_limpar_convites'
+    | 'app_limpar_outbox'
+    | 'app_limpar_idempotencia'
+    | 'app_limpar_webhook_entregas',
 ): Promise<number> {
   let total = 0
   for (let i = 0; i < MAX_LOTES; i++) {
@@ -159,6 +177,9 @@ export function processadorDeManutencao(
       case 'limpar-outbox':
         resultado = await emLotes(banco, 'app_limpar_outbox')
         break
+      case 'limpar-idempotencia':
+        resultado = await emLotes(banco, 'app_limpar_idempotencia')
+        break
       case 'publicar-agendadas': {
         const [linha] = await banco.cliente<{ n: number }[]>`SELECT app_publicar_agendadas() AS n`
         resultado = Number(linha?.n ?? 0)
@@ -172,6 +193,16 @@ export function processadorDeManutencao(
         break
       case 'enviar-pushes':
         resultado = await enviarPushesPendentes(banco, enviadorDePush, log)
+        break
+      case 'avisar-chaves':
+        resultado = await avisarChavesAVencer(banco)
+        break
+      case 'varrer-webhooks':
+        if (!filas) throw new Error('varredura de webhooks sem acesso às filas')
+        resultado = await reenfileirarEntregasAtrasadas(banco, filas.fila(FILAS.webhooks))
+        break
+      case 'limpar-webhooks':
+        resultado = await emLotes(banco, 'app_limpar_webhook_entregas')
         break
       case 'varrer-importacoes':
         if (!filas) throw new Error('varredura de importações sem acesso às filas')

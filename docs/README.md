@@ -18,6 +18,9 @@
 | [roteiro_teste_portal_3a.md](roteiro_teste_portal_3a.md) | Roteiro de teste do Portal do Cliente, Fase 3A (acesso do cliente e chamados), com DNS, Coolify, `PORTAL_URL` e verificação no servidor |
 | [roteiro_garage_anexos.md](roteiro_garage_anexos.md) | Garage dos anexos dos chamados: endereço público, CORS do bucket, CSP e como conferir |
 | [plano_portal_cliente.md](plano_portal_cliente.md) | Plano aprovado do Portal do Cliente (Fase 3: acesso, chamados, publicações, documentos, agenda, avisos), com as telas em `prototipo-portal/` |
+| [plano_api_aberta.md](plano_api_aberta.md) | Plano da API aberta (chaves de API, API pública `/v1/publica/*` e webhooks de saída), base das integrações com n8n e ERPs; aprovado e executado (fases I1 a I4) |
+| [roteiro_teste_api_aberta.md](roteiro_teste_api_aberta.md) | Roteiro de teste da API aberta: chaves, API pública, webhooks e os workflows do n8n |
+| [api/publica-v1.openapi.json](api/publica-v1.openapi.json) | Retrato do contrato da API pública v1 (gerado; só mudanças aditivas) |
 | [plano_prospeccao.md](plano_prospeccao.md) | Plano da Prospecção (busca por CNAE e município na base da Receita), guardado para a próxima fase |
 | [plano_implantacao.md](plano_implantacao.md) | Plano da Fase 0: estrutura, infraestrutura e primeiro deploy |
 | [prototipo/](prototipo/README.md) | Protótipo das telas (Claude Design) e especificação de interface |

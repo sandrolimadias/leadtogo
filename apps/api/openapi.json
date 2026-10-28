@@ -15087,6 +15087,1099 @@
         "tags": ["Importação: perfis de regras"]
       }
     },
+    "/v1/integracoes/chaves": {
+      "get": {
+        "description": "Exige `integracoes.gerir`. Ativas primeiro, depois as revogadas. O token nunca volta: só o prefixo (`ltg_live_a1B2c3D4`).",
+        "operationId": "ChavesController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeChavesDeApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Chaves de API da empresa",
+        "tags": ["Integrações: chaves de API"]
+      },
+      "post": {
+        "description": "Exige `integracoes.gerir` e o 2FA ativo de quem cria (403 `2fa_obrigatorio`). Devolve o **token uma única vez**. Permissões só entre as liberadas para integração; alcance sempre \"todas\". 422 `responsavel_invalido`, `validade_no_passado` ou `ip_invalido`.",
+        "operationId": "ChavesController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarChaveDeApi"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChaveDeApiCriada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar uma chave de API",
+        "tags": ["Integrações: chaves de API"]
+      }
+    },
+    "/v1/integracoes/chaves/{id}": {
+      "patch": {
+        "description": "Exige `integracoes.gerir`. Nome, permissões, IPs, responsável padrão e validade; o token não muda. 409 `chave_revogada`.",
+        "operationId": "ChavesController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarChaveDeApi"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChaveDeApi"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar uma chave de API",
+        "tags": ["Integrações: chaves de API"]
+      }
+    },
+    "/v1/integracoes/chaves/{id}/revogar": {
+      "post": {
+        "description": "Exige `integracoes.gerir`. Efeito imediato; a chave fica na lista, revogada. 409 `chave_revogada`.",
+        "operationId": "ChavesController_revogar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChaveDeApi"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Revogar uma chave de API",
+        "tags": ["Integrações: chaves de API"]
+      }
+    },
+    "/v1/integracoes/chaves/{id}/rotacionar": {
+      "post": {
+        "description": "Exige `integracoes.gerir` e o 2FA ativo. Cria uma chave nova com os mesmos dados (devolve o token uma vez) e a antiga vale por mais `prazoDias` (0 a 7; 0 revoga agora). 409 `chave_revogada` ou `chave_ja_rotacionada`.",
+        "operationId": "ChavesController_rotacionar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotacionarChaveDeApi"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChaveDeApiCriada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Rotacionar uma chave de API",
+        "tags": ["Integrações: chaves de API"]
+      }
+    },
+    "/v1/integracoes/webhooks": {
+      "get": {
+        "description": "Exige `integracoes.gerir`. Com as entregas das últimas 24 h. O segredo nunca volta (só na criação e na rotação).",
+        "operationId": "WebhooksController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeWebhooks"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Webhooks da empresa",
+        "tags": ["Integrações: webhooks"]
+      },
+      "post": {
+        "description": "Exige `integracoes.gerir` e o 2FA ativo. Devolve o **segredo uma única vez** (assina as entregas: `X-Leadtogo-Assinatura`). Em produção só `https`, salvo os hosts de `WEBHOOK_HOSTS_INTERNOS`; endereço de rede interna é recusado (422 `url_invalida`).",
+        "operationId": "WebhooksController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarWebhook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookCriado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar webhook",
+        "tags": ["Integrações: webhooks"]
+      }
+    },
+    "/v1/integracoes/webhooks/{id}": {
+      "patch": {
+        "description": "Exige `integracoes.gerir`. Descrição, endereço, eventos e `ativo` (religar zera a contagem de falhas).",
+        "operationId": "WebhooksController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarWebhook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Webhook"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar webhook",
+        "tags": ["Integrações: webhooks"]
+      },
+      "delete": {
+        "description": "Exige `integracoes.gerir`. Só sem entregas no log (409 `webhook_com_entregas`: desative).",
+        "operationId": "WebhooksController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir webhook",
+        "tags": ["Integrações: webhooks"]
+      }
+    },
+    "/v1/integracoes/webhooks/{id}/entregas": {
+      "get": {
+        "description": "Exige `integracoes.gerir`. Da mais nova para a mais antiga; filtros por situação e tipo. Guardado por 30 dias (sucesso) e 90 dias (falha).",
+        "operationId": "WebhooksController_entregas",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "situacao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/SituacaoDaEntrega"
+                }
+              ]
+            }
+          },
+          {
+            "name": "tipo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeEntregasDeWebhook"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Log de entregas",
+        "tags": ["Integrações: webhooks"]
+      }
+    },
+    "/v1/integracoes/webhooks/{id}/entregas/{entregaId}/reenviar": {
+      "post": {
+        "description": "Exige `integracoes.gerir`. Volta a pendente, com as tentativas zeradas.",
+        "operationId": "WebhooksController_reenviar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entregaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntregaDeWebhook"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reenviar uma entrega",
+        "tags": ["Integrações: webhooks"]
+      }
+    },
+    "/v1/integracoes/webhooks/{id}/entregas/reenviar-falhas": {
+      "post": {
+        "description": "Exige `integracoes.gerir`. Todas as entregas que falharam (até 500 por vez).",
+        "operationId": "WebhooksController_reenviarFalhas",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReenvioDeEntregas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reenviar as falhas",
+        "tags": ["Integrações: webhooks"]
+      }
+    },
+    "/v1/integracoes/webhooks/{id}/rotacionar-segredo": {
+      "post": {
+        "description": "Exige `integracoes.gerir` e o 2FA ativo. Devolve o segredo novo uma vez; o antigo continua assinando junto por 24 h.",
+        "operationId": "WebhooksController_rotacionarSegredo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookCriado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Trocar o segredo",
+        "tags": ["Integrações: webhooks"]
+      }
+    },
+    "/v1/integracoes/webhooks/{id}/testar": {
+      "post": {
+        "description": "Exige `integracoes.gerir`. Envia o evento `webhook.teste` só para este webhook; acompanhe no log.",
+        "operationId": "WebhooksController_testar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntregaDeWebhook"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Enviar teste",
+        "tags": ["Integrações: webhooks"]
+      }
+    },
+    "/v1/integracoes/webhooks/eventos": {
+      "get": {
+        "description": "Exige `integracoes.gerir`.",
+        "operationId": "WebhooksController_eventos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogoDeEventosDeWebhook"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Eventos que um webhook pode assinar",
+        "tags": ["Integrações: webhooks"]
+      }
+    },
     "/v1/mapa/base": {
       "get": {
         "description": "Qualquer membro logado. Devolve a URL pública do PMTiles versionado (`MAPA_BASE_URL`, bucket público do Garage). Sem a variável (só em desenvolvimento; em produção ela é obrigatória), `url` vem nulo e o app mostra o mapa sem a base.",
@@ -26704,6 +27797,41 @@
         },
         "additionalProperties": false
       },
+      "AlterarChaveDeApi": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "permissoes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "responsavelPadraoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "ipsPermitidos": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiraEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarConfiguracaoDeRotasEntrada": {
         "type": "object",
         "properties": {
@@ -27398,6 +28526,32 @@
           },
           "principal": {
             "type": "boolean"
+          },
+          "ativo": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlterarWebhook": {
+        "type": "object",
+        "properties": {
+          "descricao": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "eventos": {
+            "minItems": 1,
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoDeWebhook"
+            }
           },
           "ativo": {
             "type": "boolean"
@@ -28203,6 +29357,29 @@
         "required": ["motivo"],
         "additionalProperties": false
       },
+      "CatalogoDeEventosDeWebhook": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tipo": {
+                  "type": "string"
+                },
+                "rotulo": {
+                  "type": "string"
+                }
+              },
+              "required": ["tipo", "rotulo"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["itens"],
+        "additionalProperties": false
+      },
       "Chamado": {
         "type": "object",
         "properties": {
@@ -28486,6 +29663,129 @@
           "avaliacao",
           "acoes"
         ],
+        "additionalProperties": false
+      },
+      "ChaveDeApi": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "prefixo": {
+            "type": "string"
+          },
+          "ambiente": {
+            "type": "string",
+            "enum": ["live", "test"]
+          },
+          "permissoes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "responsavelPadrao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "ipsPermitidos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiraEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "revogadaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "substituidaPor": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "ultimoUsoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "ultimoIp": {
+            "nullable": true,
+            "type": "string"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDaChave"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "criadoPor": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "prefixo",
+          "ambiente",
+          "permissoes",
+          "responsavelPadrao",
+          "ipsPermitidos",
+          "expiraEm",
+          "revogadaEm",
+          "substituidaPor",
+          "ultimoUsoEm",
+          "ultimoIp",
+          "situacao",
+          "criadoEm",
+          "criadoPor"
+        ],
+        "additionalProperties": false
+      },
+      "ChaveDeApiCriada": {
+        "type": "object",
+        "properties": {
+          "chave": {
+            "$ref": "#/components/schemas/ChaveDeApi"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": ["chave", "token"],
         "additionalProperties": false
       },
       "CheckinDaVisita": {
@@ -29839,6 +31139,42 @@
         "required": ["mensagem", "alcance"],
         "additionalProperties": false
       },
+      "CriarChaveDeApi": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "permissoes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "responsavelPadraoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "ipsPermitidos": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiraEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["nome", "permissoes"],
+        "additionalProperties": false
+      },
       "CriarContatoEntrada": {
         "type": "object",
         "properties": {
@@ -30591,6 +31927,30 @@
           }
         },
         "required": ["nome"],
+        "additionalProperties": false
+      },
+      "CriarWebhook": {
+        "type": "object",
+        "properties": {
+          "descricao": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "eventos": {
+            "minItems": 1,
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoDeWebhook"
+            }
+          }
+        },
+        "required": ["descricao", "url", "eventos"],
         "additionalProperties": false
       },
       "DadosDaReceita": {
@@ -32401,6 +33761,79 @@
         "required": ["id", "em", "por", "acao", "titulo", "detalhe"],
         "additionalProperties": false
       },
+      "EntregaDeWebhook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDaEntrega"
+          },
+          "tentativas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "statusHttp": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "duracaoMs": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "resposta": {
+            "nullable": true,
+            "type": "string"
+          },
+          "erro": {
+            "nullable": true,
+            "type": "string"
+          },
+          "proximaTentativaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "entregueEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "eventoId",
+          "tipo",
+          "situacao",
+          "tentativas",
+          "statusHttp",
+          "duracaoMs",
+          "resposta",
+          "erro",
+          "proximaTentativaEm",
+          "entregueEm",
+          "criadoEm"
+        ],
+        "additionalProperties": false
+      },
       "EnviarMensagemEntrada": {
         "type": "object",
         "properties": {
@@ -32650,6 +34083,23 @@
           "empresas"
         ],
         "additionalProperties": false
+      },
+      "EventoDeWebhook": {
+        "type": "string",
+        "enum": [
+          "empresa.criada",
+          "empresa.atualizada",
+          "empresa.tag_alterada",
+          "empresa.responsavel_alterado",
+          "contato.criado",
+          "contato.atualizado",
+          "atividade.criada",
+          "atividade.concluida",
+          "oportunidade.criada",
+          "oportunidade.fase_alterada",
+          "oportunidade.status_alterado",
+          "importacao.concluida"
+        ]
       },
       "EventoDoChamado": {
         "type": "object",
@@ -34638,6 +36088,19 @@
         "required": ["itens", "total", "abas"],
         "additionalProperties": false
       },
+      "ListaDeChavesDeApi": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChaveDeApi"
+            }
+          }
+        },
+        "required": ["itens"],
+        "additionalProperties": false
+      },
       "ListaDeComentariosDoPortal": {
         "type": "object",
         "properties": {
@@ -34738,6 +36201,34 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ItemDaListaDeEmpresas"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total", "pagina", "porPagina"],
+        "additionalProperties": false
+      },
+      "ListaDeEntregasDeWebhook": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntregaDeWebhook"
             }
           },
           "total": {
@@ -35168,6 +36659,19 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TarefaDoChamado"
+            }
+          }
+        },
+        "required": ["itens"],
+        "additionalProperties": false
+      },
+      "ListaDeWebhooks": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Webhook"
             }
           }
         },
@@ -38663,6 +40167,18 @@
         "required": ["tipo"],
         "additionalProperties": false
       },
+      "ReenvioDeEntregas": {
+        "type": "object",
+        "properties": {
+          "reenviadas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["reenviadas"],
+        "additionalProperties": false
+      },
       "RegiaoGeo": {
         "type": "object",
         "properties": {
@@ -39263,6 +40779,18 @@
           "paradas",
           "podeEditar"
         ],
+        "additionalProperties": false
+      },
+      "RotacionarChaveDeApi": {
+        "type": "object",
+        "properties": {
+          "prazoDias": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          }
+        },
         "additionalProperties": false
       },
       "RotaDaEmpresa": {
@@ -39972,9 +41500,17 @@
         ],
         "additionalProperties": false
       },
+      "SituacaoDaChave": {
+        "type": "string",
+        "enum": ["ativa", "substituida", "vencida", "revogada"]
+      },
       "SituacaoDaConfirmacao": {
         "type": "string",
         "enum": ["confirmado", "lista_espera", "cancelado"]
+      },
+      "SituacaoDaEntrega": {
+        "type": "string",
+        "enum": ["pendente", "sucesso", "falhou"]
       },
       "SituacaoDaPublicacao": {
         "type": "string",
@@ -40425,6 +41961,118 @@
           }
         },
         "required": ["empresaId"],
+        "additionalProperties": false
+      },
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "eventos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "desativadoMotivo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "segredoAnteriorAte": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "ultimoSucessoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "falhandoDesde": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "entregas24h": {
+            "type": "object",
+            "properties": {
+              "sucesso": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "falhou": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "pendente": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["sucesso", "falhou", "pendente"],
+            "additionalProperties": false
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "criadoPor": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "descricao",
+          "url",
+          "eventos",
+          "ativo",
+          "desativadoMotivo",
+          "segredoAnteriorAte",
+          "ultimoSucessoEm",
+          "falhandoDesde",
+          "entregas24h",
+          "criadoEm",
+          "criadoPor"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookCriado": {
+        "type": "object",
+        "properties": {
+          "webhook": {
+            "$ref": "#/components/schemas/Webhook"
+          },
+          "segredo": {
+            "type": "string"
+          }
+        },
+        "required": ["webhook", "segredo"],
         "additionalProperties": false
       }
     }

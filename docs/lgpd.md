@@ -106,6 +106,14 @@ Transferência internacional (arts. 33 a 36):
 - **Cloudflare R2:** os backups ficam na jurisdição **ENAM (leste da América do Norte)**, portanto há transferência internacional de dados pessoais (cópias do banco e dos anexos). Definir o mecanismo (cláusulas-padrão, adequação) com o advogado e informar no DPA e na política pública. **Alternativa futura:** Object Storage da Oracle em São Paulo, que mantém os backups no Brasil.
 - **Resend e GitHub:** a região de envio do Resend é São Paulo, mas a empresa é estrangeira (confirmar com o advogado se há acesso ou transferência a considerar); o GitHub só recebe código, sem dados pessoais de clientes.
 
+### 4.1 Compartilhamento com integrações (API aberta, `plano_api_aberta.md`)
+
+- **Chaves de API e webhooks são decisão do cliente (controlador).** O administrador da empresa cria a chave (o sistema dele lê e grava pela API pública) e cadastra os webhooks (o Leadtogo envia os eventos ao destino escolhido). O destino (o n8n, o ERP) é operador ou suboperador **do cliente**, não do Leadtogo.
+- **O que sai nos webhooks:** o registro no formato da API pública (empresa, contato com nome, e-mails e telefones, atividade, oportunidade) e quem fez a alteração. A tela de cadastro do webhook avisa isso; a criação, a alteração e a troca de segredo ficam na auditoria.
+- **Segurança:** a chave aparece uma vez e fica só em hash; o segredo do webhook fica cifrado; as entregas são assinadas (HMAC), só por `https` em produção e nunca para a rede interna (salvo os hosts liberados em `WEBHOOK_HOSTS_INTERNOS`, como o n8n da própria VPS).
+- **Retenção:** o log de entregas guarda o corpo enviado por 30 dias (sucesso) ou 90 dias (falha); as respostas guardadas do `Idempotency-Key`, por 24 h.
+- **Pendência:** citar as integrações no DPA (o cliente responde pelo destino que cadastra) e na política pública.
+
 ## 5. Retenção e exclusão
 
 | Dado | Regra atual | A definir |

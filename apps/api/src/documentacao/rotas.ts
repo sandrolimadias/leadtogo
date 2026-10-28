@@ -2,6 +2,7 @@ import { RequestMethod, type INestApplication } from '@nestjs/common'
 import { ModulesContainer } from '@nestjs/core'
 
 import { CHAVE_PUBLICA } from '../acesso/acesso.decorators.js'
+import { CHAVE_API_PUBLICA } from '../integracoes/chave.decorators.js'
 import { CHAVE_PORTAL, CHAVE_PORTAL_PUBLICA } from '../portal/portal.decorators.js'
 
 export interface RotaRegistrada {
@@ -16,6 +17,8 @@ export interface RotaRegistrada {
   publica: boolean
   /** Rota do portal do cliente (`/v1/portal/*`): outro cookie, outro guarda, outro 401 */
   portal: boolean
+  /** Rota da API pública (`/v1/publica/*`): só chave de API; documento próprio */
+  apiPublica: boolean
 }
 
 const METODOS: Record<number, RotaRegistrada['metodo']> = {
@@ -40,6 +43,7 @@ export function listarRotas(app: INestApplication): RotaRegistrada[] {
       if (prefixo === undefined) continue
       const portal = Reflect.getMetadata(CHAVE_PORTAL, classe) === true
       const classePublica = Reflect.getMetadata(CHAVE_PUBLICA, classe) === true
+      const apiPublica = Reflect.getMetadata(CHAVE_API_PUBLICA, classe) === true
       for (const nome of Object.getOwnPropertyNames(classe.prototype)) {
         const funcao = (classe.prototype as Record<string, unknown>)[nome]
         if (typeof funcao !== 'function') continue
@@ -56,6 +60,7 @@ export function listarRotas(app: INestApplication): RotaRegistrada[] {
           caminhoOpenApi: bruto.replace(/:([a-zA-Z]+)/g, '{$1}'),
           url: bruto.replace(/:[a-zA-Z]+/g, UUID_DE_EXEMPLO).replace('{*caminho}', 'x'),
           portal,
+          apiPublica,
           publica: portal
             ? Reflect.getMetadata(CHAVE_PORTAL_PUBLICA, funcao) === true
             : classePublica || Reflect.getMetadata(CHAVE_PUBLICA, funcao) === true,

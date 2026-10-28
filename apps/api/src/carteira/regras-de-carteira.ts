@@ -30,6 +30,12 @@ export interface EscopoDaCarteira {
   /** Escolher outro responsável na oportunidade / na atividade */
   atribuirOportunidade: boolean
   atribuirAtividade: boolean
+  /**
+   * A requisição é de uma chave de API (o membro de integração nunca é o responsável): pode cadastrar empresa,
+   * oportunidade e atividade em nome de qualquer membro ativo. Mudar o responsável de uma empresa que já existe
+   * continua exigindo `empresas.transferir`.
+   */
+  integracao: boolean
   /** Bloqueia o cadastro de CNPJ que não esteja ativo na Receita */
   bloquearNaoAtiva: boolean
   /** Conquistar uma oportunidade muda a empresa para Cliente, salvo se a pessoa desligar no fechamento */
@@ -47,6 +53,7 @@ export async function escopoDaCarteira(ctx: ContextoTenantService): Promise<Esco
     .from(schema.tenantConfiguracoes)
     .where(eq(schema.tenantConfiguracoes.tenantId, ctx.tenantId))
   const membroId = ctx.membro.id
+  const integracao = ctx.chaveApi !== undefined
   const alcances = (chave: string): Alcance | undefined => permissao.alcance(chave)
   const precisaEquipe = Object.values(ctx.membro.permissoes).includes('equipe')
   const equipe = precisaEquipe ? await permissao.equipe() : []
@@ -80,8 +87,9 @@ export async function escopoDaCarteira(ctx: ContextoTenantService): Promise<Esco
     },
     transferir: permissao.pode('empresas.transferir'),
     contatoSemEmpresa: permissao.pode('contatos.criar_sem_empresa'),
-    atribuirOportunidade: permissao.pode('oportunidades.atribuir_responsavel'),
-    atribuirAtividade: permissao.pode('atividades.atribuir_responsavel'),
+    atribuirOportunidade: integracao || permissao.pode('oportunidades.atribuir_responsavel'),
+    atribuirAtividade: integracao || permissao.pode('atividades.atribuir_responsavel'),
+    integracao,
     bloquearNaoAtiva: config?.bloquear ?? true,
     clienteAoConquistar: config?.clienteAoConquistar ?? true,
   }

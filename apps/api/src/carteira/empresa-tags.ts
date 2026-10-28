@@ -1,7 +1,9 @@
-import { and, eq, inArray, isNull, schema } from '@leadtogo/db'
+import { and, eq, inArray, isNull, schema, sql } from '@leadtogo/db'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { lerEmpresa as lerEmpresaPublica } from '../integracoes/publica/leitura.js'
+import { emitirEvento } from '../integracoes/webhooks/eventos.js'
 
 const { empresaTags, empresaTagsHistorico, tagGrupos, tags } = schema
 
@@ -97,7 +99,8 @@ export async function tagsAtuaisDaEmpresa(db: Transacao, empresaId: string): Pro
 
 /**
  * Grava a diferença entre as tags atuais e as finais, com o histórico (base da conversão
- * Lead → Cliente): cada tag que entra ou sai vira uma linha em `empresa_tags_historico`.
+ * Lead → Cliente): cada tag que entra ou sai vira uma linha em `empresa_tags_historico`. Houve mudança: o evento
+ * `empresa.tag_alterada` dos webhooks (salvo `evento: false`, como no cadastro, que já avisa `empresa.criada`).
  */
 export async function gravarDiferencaDeTags(
   db: Transacao,
@@ -107,6 +110,7 @@ export async function gravarDiferencaDeTags(
   finais: ReadonlySet<string>,
   /** Quem mudou; nulo = o sistema (ex.: a geocodificação) */
   membroId: string | null,
+  evento = true,
 ): Promise<{ adicionadas: string[]; removidas: string[] }> {
   const adicionadas = [...finais].filter((id) => !atuais.has(id))
   const removidas = [...atuais].filter((id) => !finais.has(id))
@@ -137,6 +141,28 @@ export async function gravarDiferencaDeTags(
         por: membroId,
       })),
     )
+  }
+  if (evento && (adicionadas.length > 0 || removidas.length > 0)) {
+    await emitirEvento(db, {
+      tenantId,
+      tipo: 'empresa.tag_alterada',
+      entidadeId: empresaId,
+      membroId,
+      dados: async () => {
+        const tags = await db.execute<{
+          id: string
+          nome: string
+          chave_sistema: string | null
+        }>(sql`
+          SELECT id, nome, chave_sistema FROM tags
+          WHERE id = ANY (${`{${[...adicionadas, ...removidas].join(',')}}`}::uuid[])`)
+        const da = (ids: string[]) => tags.filter((t) => ids.includes(t.id))
+        return {
+          empresa: await lerEmpresaPublica(db, empresaId),
+          alteracoes: { adicionadas: da(adicionadas), removidas: da(removidas) },
+        }
+      },
+    })
   }
   return { adicionadas, removidas }
 }

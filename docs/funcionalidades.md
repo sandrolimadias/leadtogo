@@ -2,6 +2,7 @@
 
 > Documento de definições funcionais do projeto.
 > Status: **Aprovado (v1.7)** · Data: 13/10/2026
+> 28/10/2026: §13.6 **Situação financeira** (adimplência alimentada pelo ERP via API aberta; Omie pelo n8n), decisões do Ale
 > v1.7: **Módulo 2 (Empresas)**: decisões do Ale em 13/10/2026 sobre a lista, o cadastro, a ficha e o bloqueio de empresa não ativa (ver as seções "Decisões de 13/10/2026" abaixo; valem sobre o protótipo)
 > v1.1: incluídas as integrações WhatsApp (Evolution API) e n8n
 > v1.2: incluídos Tarefas (Kanban do vendedor), E-mail (registro, envio e rastreamento), Agendas Google/Microsoft e Central de notificações
@@ -908,6 +909,8 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 
 ### 13.2 n8n — Automações
 
+> **Plano de execução:** [`plano_api_aberta.md`](plano_api_aberta.md) (chaves de API, API pública `/v1/publica/*` e webhooks; fases I1 a I4).
+
 **O CRM avisa o n8n (webhooks de saída)**
 - O admin cadastra **webhooks** e escolhe os **eventos**:
 
@@ -919,13 +922,13 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 | Oportunidade | criada · fase alterada · status alterado (conquistada, perdida, cancelada, suspensa) · parada (alerta) |
 | WhatsApp | conversa registrada · número não identificado |
 
-- Payload JSON padronizado (evento, data, tenant, dados do registro e quem alterou).
+- Payload JSON padronizado (evento, data, tenant, dados do registro e quem alterou): o envelope de `plano_api_aberta.md` §6.2, com o registro no formato da API pública. Também `importacao.concluida` (um por lote; a importação não avisa empresa por empresa).
 - **Assinatura HMAC** para o n8n validar a origem.
 - **Reenvio automático** com espera progressiva em caso de falha, além de um **log de entregas** com status e botão "reenviar".
 
 **O n8n atua no CRM (API REST)**
 - **Chaves de API por tenant**, com nome, permissões (leitura/escrita por módulo), validade e revogação.
-- O n8n usa a API REST documentada (OpenAPI/Swagger) pelo nó *HTTP Request*. Futuramente pode haver um **nó próprio do CRM** para o n8n.
+- O n8n usa a **API pública** (`/v1/publica/*`, documentação aberta em `/v1/publica/docs`) pelo nó *HTTP Request*, com a chave no cabeçalho `Authorization: Bearer`. Futuramente pode haver um **nó próprio do CRM** para o n8n.
 - As ações feitas via API ficam no log de auditoria como *"Integração: <nome da chave>"*.
 
 **Exemplos de automações**
@@ -998,12 +1001,47 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 - Telefones armazenados também no formato **E.164** (padrão para comparar com o WhatsApp).
 - Atividades com campo **Origem** (Manual · WhatsApp · Integração/API) e **ID externo** (evita duplicidade na importação).
 - **Registro interno de eventos** (toda alteração relevante gera um evento), que depois alimenta os webhooks.
-- Tela **Configurações → Integrações** prevista no menu (chaves de API, webhooks, conexões WhatsApp, logs).
+- Tela **Configurações → Integrações** (chaves de API e webhooks com o log de entregas, entregues com a API aberta; conexões WhatsApp ficam para a fase delas).
 - Anexos de atividades já suportados (Garage), usados para as mídias do WhatsApp e anexos de e-mail.
 - E-mails de contatos normalizados (minúsculas) e **domínio** da empresa cadastrado, para identificar e-mails automaticamente.
 - Atividades com **participantes** (vários contatos) e **ID externo** também para e-mail (thread) e eventos de agenda.
 - Estrutura de **contas conectadas** por usuário (WhatsApp hoje; Google/Microsoft depois).
 - **Central de notificações** já na Fase 1 (usada por tarefas e atividades atrasadas).
+
+---
+
+### 13.6 Situação financeira (adimplência) — decisão do Ale, 28/10/2026
+
+**Objetivo:** marcar sozinho, nas empresas com Status **Cliente** (na empresa do Ale, "Associado"), se as cobranças estão em dia. Vale para qualquer ERP e, no futuro, para o módulo financeiro do próprio Leadtogo.
+
+**Quem faz o quê**
+- **O CRM guarda os títulos e decide a tag.** A regra fica no CRM: é testada, auditada e configurável por tenant.
+- **O ERP só fornece os dados**, por um conector externo (hoje um workflow do **n8n** que funciona como *middleware* com o **Omie**) que grava na **API aberta** (§13.2) com uma chave de escopo `financeiro.escrita`. Conector nativo do Omie só se a demanda justificar, e grava pelo mesmo contrato.
+- **Quem é associado é definido no CRM** (tag de Status com `chave_sistema = 'cliente'`, nunca pelo nome). A planilha de associados do Google Drive deixa de ser a fonte: o n8n pede a lista ao CRM.
+
+**Contrato (independente de ERP)**
+- `GET /v1/publica/empresas?status=cliente`: CNPJs que o conector precisa consultar.
+- `POST /v1/publica/financeiro/posicoes`: `fonte`, `referencia_em` e, por empresa, o `cnpj` e os **títulos em aberto** (`id_externo`, `vencimento`, `valor`, `parcela`), ou `sem_cadastro: true` quando o CNPJ não existe no ERP. A lista de cada CNPJ **substitui** a anterior daquela fonte: o título que some foi recebido ou cancelado. Idempotente por `fonte + id_externo`.
+- A chave do contrato é o **CNPJ**. Ligar o CNPJ ao código interno do ERP (no Omie, `codigo_cliente_fornecedor`) é trabalho do conector.
+- **Títulos considerados:** todos os títulos em aberto do cliente no ERP (no Omie, `A VENCER` e `ATRASADO`; `RECEBIDO` e `CANCELADO` não são enviados). Não há no Omie um campo que identifique a mensalidade; se for preciso excluir algum tipo de título, o filtro fica no conector.
+
+**Regra (grupo de tags de sistema Financeiro: seleção única, automático, não aceita aplicação manual; tags renomeáveis, com chave de sistema)**
+| Situação | Tag (`chave_sistema`) |
+|---|---|
+| Nenhum título vencido há mais que a tolerância | **Adimplente** (`adimplente`) |
+| Título vencido mais antigo com atraso de 1 a 90 dias | **Inadimplente** (`inadimplente`) |
+| Título vencido mais antigo com atraso acima de 90 dias | **Desassociação** (`desassociacao`) |
+| CNPJ não encontrado no ERP | **Sem cadastro no ERP** (`sem_cadastro_erp`) |
+
+- Atraso em **dias corridos** pelo título vencido mais antigo, no fuso da empresa.
+- **Tolerância configurável** por tenant (padrão 0 dia): atraso até a tolerância conta como Adimplente. A tolerância **não** desloca o limite de 90 dias.
+- Só empresas com Status Cliente. A empresa que deixa de ser Cliente perde a tag Financeiro.
+- Pagou: volta sozinha para Adimplente. Toda troca entra no histórico (origem "Integração: <nome da chave>").
+- **Desassociação só marca e avisa** (notificação ao gestor e ao admin); **nunca** muda o Status sozinha. Desassociar é decisão humana.
+
+**Webhooks de saída:** `empresa.situacao_financeira_alterada` (cobrança por WhatsApp ou e-mail, aviso ao gestor) e `empresa.tag_alterada` ao virar Cliente (o conector consulta na hora, sem esperar a rodada diária).
+
+**Ordem:** 1) chaves de API e API aberta; 2) recurso financeiro (tabelas, regra, grupo de tags, tela em Configurações, webhook); 3) workflow modelo do n8n para o Omie.
 
 ---
 

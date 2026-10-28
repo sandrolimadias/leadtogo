@@ -15,6 +15,8 @@ import { ContextoTenantService, type Transacao } from '../acesso/contexto-tenant
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { diferencas } from '../cadastros/cadastros.base.js'
 import { ErroApi } from '../http/erro-api.js'
+import { lerAtividade as lerAtividadePublica } from '../integracoes/publica/leitura.js'
+import { emitirEvento } from '../integracoes/webhooks/eventos.js'
 import { recalcularCarteira } from './atividades-efeitos.js'
 import { recalcularOportunidade } from './oportunidades-efeitos.js'
 import {
@@ -68,7 +70,11 @@ export class AtividadesService {
     return a
   }
 
-  async criar(dados: CriarAtividade): Promise<Atividade> {
+  async criar(
+    dados: CriarAtividade,
+    /** API pública: `origem = api` e o identificador no sistema de origem */
+    opcoes: { origem?: 'manual' | 'api'; idExterno?: string | null } = {},
+  ): Promise<Atividade> {
     const db = this.ctx.db()
     const tenantId = this.ctx.tenantId
     const escopo = await escopoDaCarteira(this.ctx)
@@ -121,7 +127,8 @@ export class AtividadesService {
         importante: dados.importante,
         urgente: dados.urgente,
         observacoes: dados.observacoes ?? null,
-        origem: 'manual',
+        origem: opcoes.origem ?? 'manual',
+        idExterno: opcoes.idExterno ?? null,
         criadoPor: escopo.membroId,
         atualizadoPor: escopo.membroId,
       })
@@ -141,6 +148,13 @@ export class AtividadesService {
         ...(empresaId ? { empresaId } : {}),
         ...(contatoId ? { contatoId } : {}),
       },
+    })
+    await emitirEvento(this.ctx.db(), {
+      tenantId: this.ctx.tenantId,
+      tipo: 'atividade.criada',
+      entidadeId: criada.id,
+      membroId: this.ctx.membro.id,
+      dados: async () => ({ atividade: await lerAtividadePublica(this.ctx.db(), criada.id) }),
     })
     return this.detalhar(criada.id)
   }
@@ -300,6 +314,13 @@ export class AtividadesService {
       entidadeId: id,
       acao: 'concluir',
       alteracoes: { titulo: atual.titulo, realizadaEm: realizadaEm.toISOString() },
+    })
+    await emitirEvento(this.ctx.db(), {
+      tenantId: this.ctx.tenantId,
+      tipo: 'atividade.concluida',
+      entidadeId: id,
+      membroId: this.ctx.membro.id,
+      dados: async () => ({ atividade: await lerAtividadePublica(this.ctx.db(), id) }),
     })
     return this.detalhar(id)
   }

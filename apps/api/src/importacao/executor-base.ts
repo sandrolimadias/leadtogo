@@ -4,6 +4,7 @@ import { documentoDaPlanilha, type ResultadoDaLinha } from '@leadtogo/shared'
 import { carregarPermissoes } from '../acesso/permissoes-do-membro.js'
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
 import type { PapelMembro } from '../acesso/requisicao.js'
+import { emitirEvento, SILENCIO } from '../integracoes/webhooks/eventos.js'
 import type { ReceitaService } from '../receita/receita.service.js'
 
 const { importacaoLinhas, importacoes, membros } = schema
@@ -149,6 +150,8 @@ export abstract class ExecutorBase<Estado> {
   protected noTenant<T>(tenantId: string, fn: (tx: Transacao) => Promise<T>): Promise<T> {
     return this.deps.banco.db.transaction(async (tx) => {
       await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)
+      // Webhooks: a importação avisa uma vez, no fim do lote, e não a cada empresa, contato ou tag das linhas
+      await tx.execute(sql`SELECT set_config(${SILENCIO}, '1', true)`)
       return fn(tx)
     })
   }
@@ -423,6 +426,20 @@ export abstract class ExecutorBase<Estado> {
           VALUES (${lote.id}, ${tenantId}, ${lote.criadoPor}, 'importacao.fim',
                   ${n.titulo}, ${n.mensagem}, ${n.link})
           ON CONFLICT (id) DO UPDATE SET titulo = EXCLUDED.titulo, mensagem = EXCLUDED.mensagem, lida_em = NULL`)
+      }
+      // Webhooks: um evento por lote concluído (não um por empresa); o destino busca o que mudou pela API pública
+      if (mudou.length > 0 && situacao === 'concluida') {
+        await emitirEvento(tx, {
+          tenantId,
+          tipo: 'importacao.concluida',
+          entidadeId: lote.id,
+          membroId: lote.criadoPor,
+          ignorarSilencio: true,
+          dados: () =>
+            Promise.resolve({
+              importacao: { id: lote.id, nome: lote.nome, tipo: lote.tipo, totais },
+            }),
+        })
       }
     })
     this.deps.log.info({ importacaoId: lote.id, situacao, totais }, 'importação encerrada')

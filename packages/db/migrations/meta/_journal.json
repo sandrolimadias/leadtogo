@@ -267,6 +267,27 @@
       "when": 1793000872584,
       "tag": "0037_portal_avisos",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793159029980,
+      "tag": "0038_api_chaves",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793161851751,
+      "tag": "0039_api_publica",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793162352684,
+      "tag": "0040_webhooks",
+      "breakpoints": true
     }
   ]
 }

@@ -27,6 +27,11 @@ import {
   EVENTO_NOTIFICAR_EVENTO,
   manipuladorDeNotificacaoDeEvento,
 } from '../../portal/notificar-evento.js'
+import { EVENTO_DISTRIBUIR, EVENTO_ENTREGAR } from '../../integracoes/webhooks/eventos.js'
+import {
+  manipuladorDaDistribuicao,
+  manipuladorDaEntregaAvulsa,
+} from '../../integracoes/webhooks/processador.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
 
@@ -182,6 +187,10 @@ export function manipuladoresPadrao(
 
   /** Avisos do portal: sino, e-mail e a marca do push de cada pessoa (o push sai do job `enviar-pushes`). */
   manipuladores[EVENTO_ENVIAR_AVISO] = manipuladorDeEnvioDeAviso(config, publicar)
+
+  /** Webhooks de saída: o evento de domínio vira uma entrega por webhook assinante; o teste e o reenvio, a fila */
+  manipuladores[EVENTO_DISTRIBUIR] = manipuladorDaDistribuicao()
+  manipuladores[EVENTO_ENTREGAR] = manipuladorDaEntregaAvulsa()
 
   if (receita) {
     manipuladores[EVENTO_VERIFICAR_SITUACAO] = manipuladorDaSituacao(receita.banco, receita.servico)
