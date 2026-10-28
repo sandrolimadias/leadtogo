@@ -720,6 +720,10 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 > - `app_localizar_chave(hash)` (`SECURITY DEFINER` do owner, `search_path` fixo, `EXECUTE` só para o `leadtogo_app`): acha a chave válida (não revogada, não excluída, no prazo) antes de saber a empresa e devolve só `(chave_id, tenant_id)`. Política `TO leadtogo_owner` travada na variável `app.localizando_chave`, como as varreduras da 0037. `app_chaves_a_vencer()`: as chaves que vencem em até 15 dias e ainda não tiveram o aviso da vez (o worker avisa às 08:00 de Brasília).
 > - Na auditoria, o que a chave faz sai com `origem = integracao` e `membro_id` = o membro de integração.
 
+> **Implementação (I2, migração 0039, só expansão) — API pública** (`plano_api_aberta.md`, seção 5):
+> - `idempotencia_chaves`: chave_api_id, chave `varchar(100)`, hash_corpo `char(64)` (SHA-256 do método, do caminho e do corpo), status_http, resposta `jsonb`, criado_em. Única `(tenant_id, chave_api_id, chave)`. RLS por tenant. `app_limpar_idempotencia(lote)` (owner, variável `app.limpeza_idempotencia`) apaga as com mais de 24 h (tarefa `limpar-idempotencia`, 04:30 UTC).
+> - `atividades.id_externo varchar(200)` com o índice único parcial `(tenant_id, origem, id_externo)` (o mesmo desenho previsto acima, agora criado). A API pública grava `origem = api`.
+
 #### `tenant_smtp` 🏢 (1:1 com tenant) 🔮 — futura, não implementar agora
 SMTP que a empresa pode cadastrar em Configurações → E-mail (ver `funcionalidades.md`, seção 11). Sem linha (ou com `ativo = false`), os e-mails da empresa saem pelo SMTP da plataforma. Os e-mails de acesso (verificação, recuperação de senha, convites e 2FA) **nunca** usam esta tabela.
 

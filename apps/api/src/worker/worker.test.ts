@@ -233,6 +233,7 @@ describe('manutenção agendada com dois workers de verdade', () => {
         'enviar-pushes',
         'lembrar-eventos',
         'limpeza-convites',
+        'limpeza-idempotencia',
         'limpeza-outbox',
         'publicar-agendadas',
         'varredura-importacoes',

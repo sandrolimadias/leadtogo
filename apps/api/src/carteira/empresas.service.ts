@@ -92,7 +92,7 @@ const CAMPOS_DO_ENDERECO = [
 export interface OpcoesDeCriacao {
   /** Lote que criou a empresa: liga a linha ao lote para filtrar e desfazer */
   importacaoId?: string
-  origemCadastro?: 'importacao'
+  origemCadastro?: 'importacao' | 'api'
   /**
    * A consulta à Receita que o chamador já fez (não consulta de novo), ou `'nenhuma'` quando a
    * importação não consulta (sem regras, sem bloqueio e com os dados da planilha).
@@ -143,7 +143,7 @@ export class EmpresasDaCarteiraService {
     const tenantId = this.ctx.tenantId
     const escopo = await escopoDaCarteira(this.ctx)
     const vendedorId = dados.vendedorId ?? escopo.membroId
-    if (vendedorId !== escopo.membroId && !podeTransferir(escopo)) {
+    if (vendedorId !== escopo.membroId && !podeTransferir(escopo) && !escopo.integracao) {
       throw negado('Vendedor só cadastra empresas na própria carteira.')
     }
     await this.exigirVendedorAtivo(db, vendedorId)

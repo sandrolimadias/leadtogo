@@ -1251,3 +1251,24 @@ fabricas['api_chaves'] = definirFabrica<{ membroId: string }>({
     return id
   },
 })
+
+// API aberta (I2): a resposta guardada do Idempotency-Key, de uma chave de API
+fabricas['idempotencia_chaves'] = definirFabrica<{ chaveId: string }>({
+  colunaAlteravel: 'chave',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const membroId = novoId()
+      const chaveId = novoId()
+      await tx`INSERT INTO membros (id, tenant_id, nome, tipo, ativo)
+        VALUES (${membroId}, ${tenantId}, 'Integração: teste', 'integracao', false)`
+      await tx`INSERT INTO api_chaves (id, tenant_id, nome, prefixo, hash, ambiente, membro_id)
+        VALUES (${chaveId}, ${tenantId}, 'n8n', 'abcdefgh', ${chaveId.replace(/-/g, '').padEnd(64, '0')}, 'test', ${membroId})`
+      return { chaveId }
+    }),
+  criar: async (tx, tenantId, { chaveId }) => {
+    const id = novoId()
+    await tx`INSERT INTO idempotencia_chaves (id, tenant_id, chave_api_id, chave, hash_corpo)
+      VALUES (${id}, ${tenantId}, ${chaveId}, ${`chave-${id}`}, ${'a'.repeat(64)})`
+    return id
+  },
+})

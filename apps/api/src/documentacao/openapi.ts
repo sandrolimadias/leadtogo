@@ -69,8 +69,96 @@ export function montarDocumento(app: INestApplication, versao: string): OpenAPIO
       else if (doPortal.has(`${metodo} ${caminho}`)) operacao.security = [{ sessaoPortal: [] }]
     }
   }
+  // A API pública tem documento próprio (montarDocumentoPublico): fica fora deste
   documento.paths = Object.fromEntries(
-    Object.entries(documento.paths).sort(([a], [b]) => a.localeCompare(b)),
+    Object.entries(documento.paths)
+      .filter(([caminho]) => !caminho.startsWith(PREFIXO_PUBLICO))
+      .sort(([a], [b]) => a.localeCompare(b)),
   )
+  // Os schemas da API pública (`PublicaEmpresa`...) também ficam só no documento dela
+  documento.components.schemas = Object.fromEntries(
+    Object.entries(documento.components.schemas).filter(([nome]) => !/^Publica[A-Z]/.test(nome)),
+  )
+  documento.tags = (documento.tags ?? []).filter((t) => !t.name.startsWith('API pública'))
   return documento
+}
+
+/** Prefixo das rotas da API pública (`@ApiPublica`, docs/plano_api_aberta.md). */
+export const PREFIXO_PUBLICO = '/v1/publica'
+
+/** Os componentes que o documento usa, direta ou indiretamente (os da outra API ficam de fora). */
+function apenasReferenciados(
+  documento: OpenAPIObject,
+  todos: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const usados = new Set<string>()
+  const visitar = (valor: unknown) => {
+    for (const m of JSON.stringify(valor).matchAll(/#\/components\/schemas\/([^"]+)/g)) {
+      const nome = m[1] ?? ''
+      if (usados.has(nome)) continue
+      usados.add(nome)
+      visitar(todos[nome])
+    }
+  }
+  visitar(documento.paths)
+  return Object.fromEntries(Object.entries(todos).filter(([nome]) => usados.has(nome)))
+}
+
+/**
+ * O documento da API pública (`/v1/publica/*`): só as rotas públicas, autenticação por chave de API (Bearer), aberto
+ * em produção em `/v1/publica/openapi.json` e `/v1/publica/docs`. O retrato versionado fica em
+ * docs/api/publica-v1.openapi.json e o CI confere que está em dia e que a mudança foi só aditiva.
+ */
+export function montarDocumentoPublico(app: INestApplication): OpenAPIObject {
+  const configuracao = new DocumentBuilder()
+    .setTitle('Leadtogo — API pública')
+    .setDescription(
+      [
+        'API para integrações (n8n, ERPs, site). Contrato estável: dentro da v1 só entram mudanças **aditivas**.',
+        '',
+        '**Autenticação.** Chave de API da empresa, criada em Configurações → Integrações, no cabeçalho `Authorization: Bearer ltg_live_…` (nunca na URL). A chave age com as permissões dela em todas as carteiras; o que ela faz aparece no histórico como "Integração: nome da chave".',
+        '',
+        '**Limites.** 120 requisições por minuto e 20.000 por dia por chave (cabeçalhos `X-RateLimit-*`; 429 com `Retry-After`). Corpo de até 1 MB; lotes de até 500 itens.',
+        '',
+        '**Convenções.** Campos em português e `snake_case`; datas em ISO 8601 com fuso; dinheiro como string decimal (`"350.00"`); tags pela `chave_sistema` (ou pelo id), nunca pelo nome. Listas paginadas por cursor: `limite` e `cursor` (o `proximo_cursor` da página anterior); `atualizado_desde` para sincronizar.',
+        '',
+        '**Idempotência.** Os POST aceitam `Idempotency-Key`: repetir a mesma chave com o mesmo corpo devolve a mesma resposta por 24 h (`Idempotent-Replayed: true`); com outro corpo, 409.',
+        '',
+        '**Erros.** Formato `Erro`; trate pelo código estável em `erro` (`chave_invalida`, `escopo_insuficiente`, `responsavel_obrigatorio`...), não pela mensagem.',
+      ].join('\n'),
+    )
+    .setVersion('1')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'ltg_live_…' }, 'chaveApi')
+    .addSecurityRequirements('chaveApi')
+    .build()
+  const documento = SwaggerModule.createDocument(app, configuracao)
+  documento.components = documento.components ?? {}
+  const todos = { ...(documento.components.schemas ?? {}), ...componentesRegistrados() }
+  documento.paths = Object.fromEntries(
+    Object.entries(documento.paths)
+      .filter(([caminho]) => caminho.startsWith(PREFIXO_PUBLICO))
+      .sort(([a], [b]) => a.localeCompare(b)),
+  )
+  documento.components.schemas = Object.fromEntries(
+    Object.entries(apenasReferenciados(documento, todos)).sort(([a], [b]) => a.localeCompare(b)),
+  ) as NonNullable<OpenAPIObject['components']>['schemas']
+  documento.tags = [
+    ...new Set(
+      Object.values(documento.paths).flatMap((ops) =>
+        Object.values(ops as Record<string, { tags?: string[] }>).flatMap((o) => o.tags ?? []),
+      ),
+    ),
+  ]
+    .sort()
+    .map((name) => ({ name, description: '' }))
+  return documento
+}
+
+/** Serve o documento da API pública (aberto também em produção: só descreve o que é público). */
+export function servirDocumentacaoPublica(app: INestApplication): void {
+  SwaggerModule.setup('v1/publica/docs', app, () => montarDocumentoPublico(app), {
+    jsonDocumentUrl: 'v1/publica/openapi.json',
+    yamlDocumentUrl: 'v1/publica/openapi.yaml',
+    customSiteTitle: 'Leadtogo — API pública',
+  })
 }

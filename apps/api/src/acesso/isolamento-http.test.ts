@@ -337,10 +337,20 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
   }
 
   it('toda rota que não é pública responde 401 sem login', async () => {
-    for (const r of rotas().filter((x) => !x.publica && !x.portal)) {
+    for (const r of rotas().filter((x) => !x.publica && !x.portal && !x.apiPublica)) {
       const resposta = await chamar(r.metodo, r.url)
       expect(resposta.status, r.rota).toBe(401)
       expect(erroDe(resposta).erro, r.rota).toBe('nao_autenticado')
+    }
+  })
+
+  it('toda rota da API pública responde 401 sem chave de API', async () => {
+    const daApi = rotas().filter((x) => x.apiPublica)
+    expect(daApi.length).toBeGreaterThanOrEqual(18)
+    for (const r of daApi) {
+      const resposta = await chamar(r.metodo, r.url)
+      expect(resposta.status, r.rota).toBe(401)
+      expect(erroDe(resposta).erro, r.rota).toBe('chave_invalida')
     }
   })
 })

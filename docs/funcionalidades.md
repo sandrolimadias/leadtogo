@@ -928,7 +928,7 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 
 **O n8n atua no CRM (API REST)**
 - **Chaves de API por tenant**, com nome, permissões (leitura/escrita por módulo), validade e revogação.
-- O n8n usa a API REST documentada (OpenAPI/Swagger) pelo nó *HTTP Request*. Futuramente pode haver um **nó próprio do CRM** para o n8n.
+- O n8n usa a **API pública** (`/v1/publica/*`, documentação aberta em `/v1/publica/docs`) pelo nó *HTTP Request*, com a chave no cabeçalho `Authorization: Bearer`. Futuramente pode haver um **nó próprio do CRM** para o n8n.
 - As ações feitas via API ficam no log de auditoria como *"Integração: <nome da chave>"*.
 
 **Exemplos de automações**

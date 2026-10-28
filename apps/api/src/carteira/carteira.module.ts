@@ -48,6 +48,6 @@ import { ListaDeEmpresasService } from './lista.service.js'
     DashboardService,
   ],
   // Visitas (G3b) cria o contato e o próximo passo do relatório pelas mesmas regras da carteira
-  exports: [ContatosService, AtividadesService],
+  exports: [ContatosService, AtividadesService, EmpresasDaCarteiraService, OportunidadesService],
 })
 export class CarteiraModule {}

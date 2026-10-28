@@ -45,6 +45,7 @@ describe('agendadores (upsertJobScheduler)', () => {
       'auditoria-particoes',
       'limpeza-convites',
       'limpeza-outbox',
+      'limpeza-idempotencia',
       'varredura-importacoes',
       'publicar-agendadas',
       'lembrar-eventos',

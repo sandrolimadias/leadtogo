@@ -292,6 +292,7 @@ export const PERMISSOES_DE_INTEGRACAO: readonly string[] = [
   'empresas.ver',
   'empresas.criar',
   'empresas.editar',
+  'empresas.transferir',
   'contatos.ver',
   'contatos.criar',
   'contatos.editar',

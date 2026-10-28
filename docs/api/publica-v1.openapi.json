@@ -1,0 +1,4065 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/publica/atividades": {
+      "get": {
+        "description": "Exige `atividades.ver`. Filtros: `empresa_id`, `responsavel_id`, `situacao`, `id_externo` e `atualizado_desde`; paginação por cursor.",
+        "operationId": "PublicaAtividadesController_listar",
+        "parameters": [
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "atualizado_desde",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "empresa_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "responsavel_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "situacao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["pendente", "realizada", "cancelada"]
+            }
+          },
+          {
+            "name": "id_externo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeAtividades"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar atividades",
+        "tags": ["API pública: atividades"]
+      },
+      "post": {
+        "description": "Exige `atividades.criar`. O tipo pela chave do sistema (`ligacao`, `whatsapp`, `email`, `visita`, `reuniao`, `tarefa`) ou pelo id. Sem responsável: o padrão da chave ou o vendedor da empresa. `origem = api`. Com `id_externo` já registrado, devolve a atividade existente com **200** (não cria outra). A atividade realizada atualiza a última visita, o último contato e as tags da empresa como no app. Aceita o cabeçalho `Idempotency-Key` (até 100 caracteres): repetir a chave com o mesmo corpo devolve a mesma resposta por 24 h; com outro corpo, 409 `idempotencia_conflito`.",
+        "operationId": "PublicaAtividadesController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaCriarAtividade"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaAtividade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Registrar atividade",
+        "tags": ["API pública: atividades"]
+      }
+    },
+    "/v1/publica/atividades/{id}": {
+      "get": {
+        "description": "Exige `atividades.ver`.",
+        "operationId": "PublicaAtividadesController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaAtividade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Atividade",
+        "tags": ["API pública: atividades"]
+      }
+    },
+    "/v1/publica/atividades/{id}/concluir": {
+      "post": {
+        "description": "Exige `atividades.editar`. Resultado obrigatório; `realizada_em` padrão agora.",
+        "operationId": "PublicaAtividadesController_concluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaConcluirAtividade"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaAtividade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Concluir atividade",
+        "tags": ["API pública: atividades"]
+      }
+    },
+    "/v1/publica/contatos": {
+      "get": {
+        "description": "Exige `contatos.ver`. Filtros: `email`, `telefone` (E.164 ou como digitado), `empresa_id` e `atualizado_desde`; paginação por cursor.",
+        "operationId": "PublicaContatosController_listar",
+        "parameters": [
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "atualizado_desde",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "email",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 254
+            }
+          },
+          {
+            "name": "telefone",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 30
+            }
+          },
+          {
+            "name": "empresa_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeContatos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar contatos",
+        "tags": ["API pública: contatos"]
+      },
+      "post": {
+        "description": "Exige `contatos.criar` e a empresa (`empresa_id` ou `empresa_cnpj`). Mesmo e-mail ou telefone de outro contato: 409 `contato_duplicado`, salvo `ignorar_duplicado`. Aceita o cabeçalho `Idempotency-Key` (até 100 caracteres): repetir a chave com o mesmo corpo devolve a mesma resposta por 24 h; com outro corpo, 409 `idempotencia_conflito`.",
+        "operationId": "PublicaContatosController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaCriarContato"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaContato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar contato",
+        "tags": ["API pública: contatos"]
+      }
+    },
+    "/v1/publica/contatos/{id}": {
+      "get": {
+        "description": "Exige `contatos.ver`.",
+        "operationId": "PublicaContatosController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaContato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Contato",
+        "tags": ["API pública: contatos"]
+      },
+      "patch": {
+        "description": "Exige `contatos.editar`. Só o que vier muda; `emails` e `telefones` substituem os atuais.",
+        "operationId": "PublicaContatosController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaAlterarContato"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaContato"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar contato",
+        "tags": ["API pública: contatos"]
+      }
+    },
+    "/v1/publica/empresas": {
+      "get": {
+        "description": "Exige `empresas.ver`. Filtros: `cnpj`, `status` (chave do sistema: `lead`, `prospect`, `cliente`, `inativo`, ou o id da tag), `tag`, `responsavel_id` e `atualizado_desde`. Paginação por cursor: `limite` (1 a 200, padrão 50) e `cursor` (o `proximo_cursor` da página anterior).",
+        "operationId": "PublicaEmpresasController_listar",
+        "parameters": [
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "atualizado_desde",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cnpj",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 30
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "tag",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "responsavel_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeEmpresas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar empresas",
+        "tags": ["API pública: empresas"]
+      },
+      "post": {
+        "description": "Exige `empresas.criar`. Responsável por `responsavel_id` ou `responsavel_email`; sem eles, o responsável padrão da chave (422 `responsavel_obrigatorio`). Com CNPJ e `consultar_receita` (padrão), a consulta à Receita vai para a fila do worker: a resposta volta na hora com `receita.situacao_nao_verificada = true` e o vendedor é avisado se a empresa não estiver ativa. 409 `documento_ja_cadastrado`; 422 `tag_invalida`. Aceita o cabeçalho `Idempotency-Key` (até 100 caracteres): repetir a chave com o mesmo corpo devolve a mesma resposta por 24 h; com outro corpo, 409 `idempotencia_conflito`.",
+        "operationId": "PublicaEmpresasController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaCriarEmpresa"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar empresa",
+        "tags": ["API pública: empresas"]
+      }
+    },
+    "/v1/publica/empresas/{id}": {
+      "get": {
+        "description": "Exige `empresas.ver`. 404 `empresa_nao_encontrada`.",
+        "operationId": "PublicaEmpresasController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Empresa",
+        "tags": ["API pública: empresas"]
+      },
+      "patch": {
+        "description": "Exige `empresas.editar`; trocar o responsável exige também `empresas.transferir`. Só o que vier muda; `telefones` e `endereco` substituem os atuais.",
+        "operationId": "PublicaEmpresasController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaAlterarEmpresa"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar empresa",
+        "tags": ["API pública: empresas"]
+      }
+    },
+    "/v1/publica/empresas/{id}/tags/{tag}": {
+      "put": {
+        "description": "Exige `empresas.editar`. A tag pela chave do sistema ou pelo id. Grupo de seleção única (Status) substitui a tag do grupo; grupo automático (Visitação) não aceita (400). Aplicar a tag que a empresa já tem não muda nada.",
+        "operationId": "PublicaEmpresasController_aplicarTag",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Aplicar uma tag",
+        "tags": ["API pública: empresas"]
+      },
+      "delete": {
+        "description": "Exige `empresas.editar`. A tag de grupo obrigatório (Status) não sai sozinha: aplique outra do grupo (422).",
+        "operationId": "PublicaEmpresasController_removerTag",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Retirar uma tag",
+        "tags": ["API pública: empresas"]
+      }
+    },
+    "/v1/publica/empresas/cnpj/{documento}": {
+      "get": {
+        "description": "Exige `empresas.ver`. Com ou sem máscara. 404 `empresa_nao_encontrada`.",
+        "operationId": "PublicaEmpresasController_porDocumento",
+        "parameters": [
+          {
+            "name": "documento",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Empresa pelo CNPJ (ou CPF)",
+        "tags": ["API pública: empresas"]
+      }
+    },
+    "/v1/publica/empresas/lote": {
+      "post": {
+        "description": "Exige `empresas.criar` e `empresas.editar`. Até 500 itens no formato de \"Cadastrar empresa\": o documento (CNPJ ou CPF) decide se cria ou atualiza (na atualização, `status`, `tags` e `consultar_receita` não se aplicam). Cada item é independente: um item ruim não derruba o lote, e o resultado diz o que aconteceu com cada um. Aceita o cabeçalho `Idempotency-Key` (até 100 caracteres): repetir a chave com o mesmo corpo devolve a mesma resposta por 24 h; com outro corpo, 409 `idempotencia_conflito`.",
+        "operationId": "PublicaEmpresasController_lote",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaLoteDeEmpresas"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaResultadoDoLote"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastrar ou atualizar empresas em lote",
+        "tags": ["API pública: empresas"]
+      }
+    },
+    "/v1/publica/eu": {
+      "get": {
+        "description": "Qualquer chave válida. A empresa, o nome da chave, as permissões dela e os limites.",
+        "operationId": "PublicaController_eu",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaEu"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Quem é esta chave",
+        "tags": ["API pública"]
+      }
+    },
+    "/v1/publica/funis": {
+      "get": {
+        "description": "Exige `empresas.ver`.",
+        "operationId": "PublicaController_funis",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeFunis"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Funis e fases",
+        "tags": ["API pública"]
+      }
+    },
+    "/v1/publica/membros": {
+      "get": {
+        "description": "Exige `empresas.ver`. Id, nome e e-mail de quem pode ser responsável (os membros de integração não aparecem).",
+        "operationId": "PublicaController_membros",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeMembros"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Membros da equipe",
+        "tags": ["API pública"]
+      }
+    },
+    "/v1/publica/oportunidades": {
+      "get": {
+        "description": "Exige `oportunidades.ver`. Filtros: `empresa_id`, `funil_id`, `fase_id`, `status`, `responsavel_id` e `atualizado_desde`; paginação por cursor. Valores em string decimal (\"350.00\").",
+        "operationId": "PublicaOportunidadesController_listar",
+        "parameters": [
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "atualizado_desde",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "empresa_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "funil_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fase_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 30
+            }
+          },
+          {
+            "name": "responsavel_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeOportunidades"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar oportunidades",
+        "tags": ["API pública: oportunidades"]
+      },
+      "post": {
+        "description": "Exige `oportunidades.criar`. Sem funil, o padrão; sem fase, a primeira ativa; sem responsável, o vendedor da empresa. Aceita o cabeçalho `Idempotency-Key` (até 100 caracteres): repetir a chave com o mesmo corpo devolve a mesma resposta por 24 h; com outro corpo, 409 `idempotencia_conflito`.",
+        "operationId": "PublicaOportunidadesController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaCriarOportunidade"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaOportunidade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar oportunidade",
+        "tags": ["API pública: oportunidades"]
+      }
+    },
+    "/v1/publica/oportunidades/{id}": {
+      "get": {
+        "description": "Exige `oportunidades.ver`.",
+        "operationId": "PublicaOportunidadesController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaOportunidade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Oportunidade",
+        "tags": ["API pública: oportunidades"]
+      },
+      "patch": {
+        "description": "Exige `oportunidades.editar`. Título, valores, previsão, responsável e fase (`fase_id`, do mesmo funil). Fechar (conquistar, perder) fica no app.",
+        "operationId": "PublicaOportunidadesController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicaAlterarOportunidade"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaOportunidade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar oportunidade",
+        "tags": ["API pública: oportunidades"]
+      }
+    },
+    "/v1/publica/origens": {
+      "get": {
+        "description": "Exige `empresas.ver`.",
+        "operationId": "PublicaController_origens",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeCadastros"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Origens",
+        "tags": ["API pública"]
+      }
+    },
+    "/v1/publica/tags": {
+      "get": {
+        "description": "Exige `empresas.ver`. Use `chave_sistema` (ou o `id`) para aplicar e filtrar: o nome a empresa pode trocar.",
+        "operationId": "PublicaController_tags",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeTags"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Tags (com o grupo)",
+        "tags": ["API pública"]
+      }
+    },
+    "/v1/publica/tipos-atividade": {
+      "get": {
+        "description": "Exige `empresas.ver`.",
+        "operationId": "PublicaController_tiposDeAtividade",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicaListaDeCadastros"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Tipos de atividade",
+        "tags": ["API pública"]
+      }
+    }
+  },
+  "info": {
+    "title": "Leadtogo — API pública",
+    "description": "API para integrações (n8n, ERPs, site). Contrato estável: dentro da v1 só entram mudanças **aditivas**.\n\n**Autenticação.** Chave de API da empresa, criada em Configurações → Integrações, no cabeçalho `Authorization: Bearer ltg_live_…` (nunca na URL). A chave age com as permissões dela em todas as carteiras; o que ela faz aparece no histórico como \"Integração: nome da chave\".\n\n**Limites.** 120 requisições por minuto e 20.000 por dia por chave (cabeçalhos `X-RateLimit-*`; 429 com `Retry-After`). Corpo de até 1 MB; lotes de até 500 itens.\n\n**Convenções.** Campos em português e `snake_case`; datas em ISO 8601 com fuso; dinheiro como string decimal (`\"350.00\"`); tags pela `chave_sistema` (ou pelo id), nunca pelo nome. Listas paginadas por cursor: `limite` e `cursor` (o `proximo_cursor` da página anterior); `atualizado_desde` para sincronizar.\n\n**Idempotência.** Os POST aceitam `Idempotency-Key`: repetir a mesma chave com o mesmo corpo devolve a mesma resposta por 24 h (`Idempotent-Replayed: true`); com outro corpo, 409.\n\n**Erros.** Formato `Erro`; trate pelo código estável em `erro` (`chave_invalida`, `escopo_insuficiente`, `responsavel_obrigatorio`...), não pela mensagem.",
+    "version": "1",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "API pública",
+      "description": ""
+    },
+    {
+      "name": "API pública: atividades",
+      "description": ""
+    },
+    {
+      "name": "API pública: contatos",
+      "description": ""
+    },
+    {
+      "name": "API pública: empresas",
+      "description": ""
+    },
+    {
+      "name": "API pública: oportunidades",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "chaveApi": {
+        "scheme": "bearer",
+        "bearerFormat": "ltg_live_…",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "Erro": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "erro": {
+            "type": "string"
+          },
+          "mensagem": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "detalhes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "campo": {
+                  "type": "string"
+                },
+                "mensagem": {
+                  "type": "string"
+                }
+              },
+              "required": ["campo", "mensagem"],
+              "additionalProperties": false
+            }
+          },
+          "dados": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": ["statusCode", "erro", "mensagem"],
+        "additionalProperties": false
+      },
+      "PublicaAlterarContato": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "emails": {
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "telefones": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 30
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["numero"],
+              "additionalProperties": false
+            }
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "aceita_whatsapp": {
+            "type": "boolean"
+          },
+          "aceita_email": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicaAlterarEmpresa": {
+        "type": "object",
+        "properties": {
+          "razao_social": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "nome_fantasia": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "website": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "telefones": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 30
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["numero"],
+              "additionalProperties": false
+            }
+          },
+          "endereco": {
+            "type": "object",
+            "properties": {
+              "cep": {
+                "nullable": true,
+                "type": "string"
+              },
+              "logradouro": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 200
+              },
+              "numero": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 30
+              },
+              "complemento": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 200
+              },
+              "bairro": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 100
+              },
+              "municipio_ibge": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991
+              }
+            },
+            "additionalProperties": false
+          },
+          "responsavel_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel_email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicaAlterarOportunidade": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "fase_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "valor_unico": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{1,13}(\\.\\d{1,2})?$"
+              },
+              {
+                "type": "number",
+                "minimum": 0
+              }
+            ]
+          },
+          "valor_mensal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{1,13}(\\.\\d{1,2})?$"
+              },
+              {
+                "type": "number",
+                "minimum": 0
+              }
+            ]
+          },
+          "meses": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600
+          },
+          "previsao_fechamento": {
+            "nullable": true,
+            "type": "string",
+            "format": "date"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicaAtividade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "chave_sistema": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome", "chave_sistema"],
+            "additionalProperties": false
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["pendente", "realizada", "cancelada"]
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "dia_inteiro": {
+            "type": "boolean"
+          },
+          "realizada_em": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "resultado": {
+            "nullable": true,
+            "type": "string"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "empresa_id": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "contato_id": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "oportunidade_id": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "email": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome", "email"],
+            "additionalProperties": false
+          },
+          "origem": {
+            "type": "string"
+          },
+          "id_externo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criado_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizado_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "titulo",
+          "situacao",
+          "inicio",
+          "fim",
+          "dia_inteiro",
+          "realizada_em",
+          "resultado",
+          "observacoes",
+          "empresa_id",
+          "contato_id",
+          "oportunidade_id",
+          "responsavel",
+          "origem",
+          "id_externo",
+          "criado_em",
+          "atualizado_em"
+        ],
+        "additionalProperties": false
+      },
+      "PublicaConcluirAtividade": {
+        "type": "object",
+        "properties": {
+          "resultado": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "realizada_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["resultado"],
+        "additionalProperties": false
+      },
+      "PublicaContato": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "emails": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["email", "principal"],
+              "additionalProperties": false
+            }
+          },
+          "telefones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string"
+                },
+                "e164": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["numero", "e164", "tipo", "principal"],
+              "additionalProperties": false
+            }
+          },
+          "empresas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "cargo": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "nome", "cargo", "principal"],
+              "additionalProperties": false
+            }
+          },
+          "aceita_whatsapp": {
+            "type": "boolean"
+          },
+          "aceita_email": {
+            "type": "boolean"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criado_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizado_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "emails",
+          "telefones",
+          "empresas",
+          "aceita_whatsapp",
+          "aceita_email",
+          "observacoes",
+          "criado_em",
+          "atualizado_em"
+        ],
+        "additionalProperties": false
+      },
+      "PublicaCriarAtividade": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "titulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "empresa_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresa_cnpj": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "contato_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "oportunidade_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dia_inteiro": {
+            "default": false,
+            "type": "boolean"
+          },
+          "situacao": {
+            "default": "pendente",
+            "type": "string",
+            "enum": ["pendente", "realizada"]
+          },
+          "resultado": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "id_externo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": ["tipo", "titulo", "inicio"],
+        "additionalProperties": false
+      },
+      "PublicaCriarContato": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "emails": {
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "telefones": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 30
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["numero"],
+              "additionalProperties": false
+            }
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "aceita_whatsapp": {
+            "type": "boolean"
+          },
+          "aceita_email": {
+            "type": "boolean"
+          },
+          "empresa_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresa_cnpj": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 100
+          },
+          "principal": {
+            "type": "boolean"
+          },
+          "ignorar_duplicado": {
+            "type": "boolean"
+          }
+        },
+        "required": ["nome"],
+        "additionalProperties": false
+      },
+      "PublicaCriarEmpresa": {
+        "type": "object",
+        "properties": {
+          "tipo_documento": {
+            "default": "cnpj",
+            "type": "string",
+            "enum": ["cnpj", "cpf", "nenhum"]
+          },
+          "documento": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "razao_social": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "nome_fantasia": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "website": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          },
+          "telefones": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 30
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["numero"],
+              "additionalProperties": false
+            }
+          },
+          "endereco": {
+            "type": "object",
+            "properties": {
+              "cep": {
+                "nullable": true,
+                "type": "string"
+              },
+              "logradouro": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 200
+              },
+              "numero": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 30
+              },
+              "complemento": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 200
+              },
+              "bairro": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 100
+              },
+              "municipio_ibge": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991
+              }
+            },
+            "additionalProperties": false
+          },
+          "responsavel_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "tags": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "consultar_receita": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": ["razao_social"],
+        "additionalProperties": false
+      },
+      "PublicaCriarOportunidade": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "empresa_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "empresa_cnpj": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "contato_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "funil_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fase_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origem_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsavel_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "valor_unico": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{1,13}(\\.\\d{1,2})?$"
+              },
+              {
+                "type": "number",
+                "minimum": 0
+              }
+            ]
+          },
+          "valor_mensal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{1,13}(\\.\\d{1,2})?$"
+              },
+              {
+                "type": "number",
+                "minimum": 0
+              }
+            ]
+          },
+          "meses": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600
+          },
+          "previsao_fechamento": {
+            "type": "string",
+            "format": "date"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "required": ["titulo"],
+        "additionalProperties": false
+      },
+      "PublicaEmpresa": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo_documento": {
+            "type": "string",
+            "enum": ["cnpj", "cpf", "nenhum"]
+          },
+          "documento": {
+            "nullable": true,
+            "type": "string"
+          },
+          "razao_social": {
+            "type": "string"
+          },
+          "nome_fantasia": {
+            "nullable": true,
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "status": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicaTag"
+              }
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicaTag"
+            }
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "email": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome", "email"],
+            "additionalProperties": false
+          },
+          "vertical": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "website": {
+            "nullable": true,
+            "type": "string"
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "telefones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string"
+                },
+                "e164": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                },
+                "principal": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["numero", "e164", "tipo", "principal"],
+              "additionalProperties": false
+            }
+          },
+          "endereco": {
+            "type": "object",
+            "properties": {
+              "cep": {
+                "nullable": true,
+                "type": "string"
+              },
+              "logradouro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "numero": {
+                "nullable": true,
+                "type": "string"
+              },
+              "complemento": {
+                "nullable": true,
+                "type": "string"
+              },
+              "bairro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "municipio_ibge": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "municipio": {
+                "nullable": true,
+                "type": "string"
+              },
+              "uf": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "cep",
+              "logradouro",
+              "numero",
+              "complemento",
+              "bairro",
+              "municipio_ibge",
+              "municipio",
+              "uf"
+            ],
+            "additionalProperties": false
+          },
+          "receita": {
+            "type": "object",
+            "properties": {
+              "situacao_nao_verificada": {
+                "type": "boolean"
+              },
+              "atualizada_em": {
+                "nullable": true,
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": ["situacao_nao_verificada", "atualizada_em"],
+            "additionalProperties": false
+          },
+          "ultima_visita_em": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "ultimo_contato_em": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "proxima_atividade_em": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "criado_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizado_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "tipo_documento",
+          "documento",
+          "razao_social",
+          "nome_fantasia",
+          "nome",
+          "status",
+          "tags",
+          "responsavel",
+          "vertical",
+          "website",
+          "observacoes",
+          "telefones",
+          "endereco",
+          "receita",
+          "ultima_visita_em",
+          "ultimo_contato_em",
+          "proxima_atividade_em",
+          "criado_em",
+          "atualizado_em"
+        ],
+        "additionalProperties": false
+      },
+      "PublicaEu": {
+        "type": "object",
+        "properties": {
+          "empresa": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "chave": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "permissoes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "limites": {
+            "type": "object",
+            "properties": {
+              "por_minuto": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "por_dia": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["por_minuto", "por_dia"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["empresa", "chave", "permissoes", "limites"],
+        "additionalProperties": false
+      },
+      "PublicaListaDeAtividades": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicaAtividade"
+            }
+          },
+          "proximo_cursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["dados", "proximo_cursor"],
+        "additionalProperties": false
+      },
+      "PublicaListaDeCadastros": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "chave_sistema": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "ativo": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "nome", "chave_sistema", "ativo"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["dados"],
+        "additionalProperties": false
+      },
+      "PublicaListaDeContatos": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicaContato"
+            }
+          },
+          "proximo_cursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["dados", "proximo_cursor"],
+        "additionalProperties": false
+      },
+      "PublicaListaDeEmpresas": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicaEmpresa"
+            }
+          },
+          "proximo_cursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["dados", "proximo_cursor"],
+        "additionalProperties": false
+      },
+      "PublicaListaDeFunis": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "padrao": {
+                  "type": "boolean"
+                },
+                "ativo": {
+                  "type": "boolean"
+                },
+                "fases": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "nome": {
+                        "type": "string"
+                      },
+                      "ordem": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "ativa": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["id", "nome", "ordem", "ativa"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["id", "nome", "padrao", "ativo", "fases"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["dados"],
+        "additionalProperties": false
+      },
+      "PublicaListaDeMembros": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "email": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "ativo": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "nome", "email", "ativo"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["dados"],
+        "additionalProperties": false
+      },
+      "PublicaListaDeOportunidades": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicaOportunidade"
+            }
+          },
+          "proximo_cursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["dados", "proximo_cursor"],
+        "additionalProperties": false
+      },
+      "PublicaListaDeTags": {
+        "type": "object",
+        "properties": {
+          "dados": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "chave_sistema": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "grupo": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "chave_sistema": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "nome", "chave_sistema"],
+                  "additionalProperties": false
+                },
+                "ativa": {
+                  "type": "boolean"
+                },
+                "automatica": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "nome", "chave_sistema", "grupo", "ativa", "automatica"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["dados"],
+        "additionalProperties": false
+      },
+      "PublicaLoteDeEmpresas": {
+        "type": "object",
+        "properties": {
+          "empresas": {
+            "minItems": 1,
+            "maxItems": 500,
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": ["empresas"],
+        "additionalProperties": false
+      },
+      "PublicaOportunidade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "empresa_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contato_id": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "funil": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "fase": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "status": {
+            "type": "string"
+          },
+          "valor_unico": {
+            "type": "string"
+          },
+          "valor_mensal": {
+            "type": "string"
+          },
+          "meses": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "valor_total": {
+            "type": "string"
+          },
+          "probabilidade": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "previsao_fechamento": {
+            "nullable": true,
+            "type": "string",
+            "format": "date"
+          },
+          "data_fechamento": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "responsavel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "email": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome", "email"],
+            "additionalProperties": false
+          },
+          "origem": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome"],
+            "additionalProperties": false
+          },
+          "observacoes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "criado_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizado_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "empresa_id",
+          "contato_id",
+          "funil",
+          "fase",
+          "status",
+          "valor_unico",
+          "valor_mensal",
+          "meses",
+          "valor_total",
+          "probabilidade",
+          "previsao_fechamento",
+          "data_fechamento",
+          "responsavel",
+          "origem",
+          "observacoes",
+          "criado_em",
+          "atualizado_em"
+        ],
+        "additionalProperties": false
+      },
+      "PublicaResultadoDoLote": {
+        "type": "object",
+        "properties": {
+          "resumo": {
+            "type": "object",
+            "properties": {
+              "criados": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "atualizados": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "ignorados": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "erros": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["criados", "atualizados", "ignorados", "erros"],
+            "additionalProperties": false
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "indice": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "documento": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "resultado": {
+                  "type": "string",
+                  "enum": ["criado", "atualizado", "ignorado", "erro"]
+                },
+                "id": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "erro": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "mensagem": {
+                      "type": "string"
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["codigo", "mensagem", "campos"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["indice", "documento", "resultado", "id", "erro"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["resumo", "itens"],
+        "additionalProperties": false
+      },
+      "PublicaTag": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "chave_sistema": {
+            "nullable": true,
+            "type": "string"
+          },
+          "grupo": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "chave_sistema": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["id", "nome", "chave_sistema"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "nome", "chave_sistema", "grupo"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "security": [
+    {
+      "chaveApi": []
+    }
+  ]
+}

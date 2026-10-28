@@ -69,7 +69,7 @@
 | Vários contatos por atividade (`atividade_contatos`) | Decisão do Ale (15/10/2026): um contato por atividade | Módulo 5 |
 | Lembretes ("Notificar em") e recorrência ("Repetir") | Dependem da central de notificações e de rotinas no worker; o bloco "Mais opções" só tem Oportunidade e Responsável | Módulo 5 / seção 3 |
 | Checklist, etiquetas coloridas e anexos | Servem ao Kanban de Tarefas e ao WhatsApp | Módulo 5 |
-| `id_externo`, check-in com GPS da visita | Adiados pelo Ale (integrações e visita com localização); `origem` já existe | Módulo 5 |
+| Check-in com GPS da visita | Adiado pelo Ale (visita com localização); `origem` já existe. O `id_externo` entrou com a API pública (migração 0039) | Módulo 5 |
 | Situação "Em execução" na tela | Existe no banco e na API; a tela usa Realizada, Pendente e Cancelada | Módulo 5 |
 | Reabrir atividade cancelada ou realizada | Não pedido; refaz-se registrando outra | Módulo 5 |
 | Validade da tag de visita (`dias_validade_tag_visita`) | Opcional na regra, sem tela; a tag só sai quando não resta atividade realizada do tipo | Módulo 5 |
@@ -115,7 +115,7 @@
 | WhatsApp (Evolution API: conversas viram atividades, número por vendedor, caixa de não identificados) | Fases 4 a 7 de `funcionalidades.md` | Seção 3 |
 | E-mail (Gmail e Microsoft: registro, envio, rastreamento, thread como atividade) | Idem | Seção 3 |
 | Agendas Google e Microsoft | Idem | Seção 3 |
-| n8n e API pública / webhooks (formulário do site cria empresa + oportunidade + atividade) | Idem | Seção 3 |
+| ~~n8n e API pública / webhooks~~ **Entregue** (chaves de API, API pública `/v1/publica/*` e webhooks; `plano_api_aberta.md`) | — | Seção 3 |
 | Link público de agendamento (estilo Calendly) | Idem | `funcionalidades.md` |
 | **Integração com ERP, Omie primeiro (situação financeira).** Regra no CRM, dados pela API aberta; o Omie entra por um workflow do n8n (*middleware*). Faixas: Adimplente (até a tolerância configurável), Inadimplente (1–90 dias), Desassociação (+90 dias, só marca e avisa) e Sem cadastro no ERP. Conta todo título em aberto do cliente (o Omie não identifica a mensalidade). **Ordem:** chaves de API e API aberta, depois o recurso financeiro, depois o workflow do Omie. Detalhe em `funcionalidades.md` §13.6 | Fase de integrações; depende da API aberta | Decisões do Ale de 13/10/2026, revistas em 28/10/2026 (faixas, tolerância, Desassociação, mensalidade) |
 

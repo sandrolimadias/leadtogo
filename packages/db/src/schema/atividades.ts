@@ -8,7 +8,9 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
+  varchar,
 } from 'drizzle-orm/pg-core'
 
 import { tiposAtividade } from './cadastros.js'
@@ -74,6 +76,8 @@ export const atividades = pgTable(
     urgente: boolean().notNull().default(false),
     observacoes: text(),
     origem: origemAtividade().notNull().default('manual'),
+    /** Identificador no sistema de origem (API pública): repetir o mesmo não cria outra atividade */
+    idExterno: varchar({ length: 200 }),
     /**
      * Visita que NÃO conta para a empresa ("não localizada", G3b): não atualiza a última visita, o último
      * contato nem a tag Visitada. Nunca tira a atividade das contagens de esforço (Dashboard, indicadores, listas).
@@ -92,6 +96,9 @@ export const atividades = pgTable(
     index('atividades_oportunidade_idx').on(t.tenantId, t.oportunidadeId),
     index('atividades_contato_idx').on(t.tenantId, t.contatoId, t.dataInicio.desc()),
     index('atividades_importacao_idx').on(t.tenantId, t.importacaoId),
+    uniqueIndex('atividades_id_externo_uq')
+      .on(t.tenantId, t.origem, t.idExterno)
+      .where(sql`${t.idExterno} IS NOT NULL AND ${t.excluidoEm} IS NULL`),
     // "realizada" e "realizada_em" andam juntos; realizada exige o resultado
     check(
       'atividades_realizada_em',

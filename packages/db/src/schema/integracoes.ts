@@ -2,6 +2,8 @@ import { sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
   char,
+  jsonb,
+  smallint,
   check,
   index,
   inet,
@@ -79,5 +81,32 @@ export const apiChaves = pgTable(
     check('api_chaves_ambiente_chk', sql`${t.ambiente} IN ('live', 'test')`),
     check('api_chaves_hash_chk', sql`${t.hash} ~ '^[0-9a-f]{64}$'`),
     check('api_chaves_revogada_chk', sql`(${t.revogadaEm} IS NULL) = (${t.revogadaPor} IS NULL)`),
+  ],
+)
+
+/**
+ * `Idempotency-Key` da API pública (I2): a resposta do primeiro POST com a chave, devolvida de novo a quem
+ * repetir a mesma chave com o mesmo corpo por 24 h. Com outro corpo, 409. A limpeza do worker apaga depois.
+ */
+export const idempotenciaChaves = pgTable(
+  'idempotencia_chaves',
+  {
+    id: chaveUuid(),
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    chaveApiId: uuid()
+      .notNull()
+      .references(() => apiChaves.id),
+    chave: varchar({ length: 100 }).notNull(),
+    /** SHA-256 (hex) do método, do caminho e do corpo */
+    hashCorpo: char({ length: 64 }).notNull(),
+    statusHttp: smallint(),
+    resposta: jsonb(),
+    criadoEm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('idempotencia_chaves_uq').on(t.tenantId, t.chaveApiId, t.chave),
+    index('idempotencia_chaves_criado_idx').on(t.criadoEm),
   ],
 )

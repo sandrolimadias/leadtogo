@@ -17,6 +17,7 @@ export interface Agendador {
     | 'particoes'
     | 'limpar-convites'
     | 'limpar-outbox'
+    | 'limpar-idempotencia'
     | 'varrer-importacoes'
     | 'publicar-agendadas'
     | 'lembrar-eventos'
@@ -38,6 +39,8 @@ export const AGENDADORES: readonly Agendador[] = [
   // Todo dia: convites cancelados/vencidos há mais de 30 dias e eventos entregues há mais de 14
   { id: 'limpeza-convites', tarefa: 'limpar-convites', quando: { pattern: '0 4 * * *' } },
   { id: 'limpeza-outbox', tarefa: 'limpar-outbox', quando: { pattern: '15 4 * * *' } },
+  // Todo dia: as respostas guardadas do Idempotency-Key da API pública com mais de 24 h
+  { id: 'limpeza-idempotencia', tarefa: 'limpar-idempotencia', quando: { pattern: '30 4 * * *' } },
   // A cada minuto: reenfileira o lote de importação em andamento que parou de andar
   { id: 'varredura-importacoes', tarefa: 'varrer-importacoes', quando: { every: 60_000 } },
   // A cada minuto: publica as publicações do portal agendadas que já venceram (em todas as empresas)
@@ -80,7 +83,7 @@ export async function garantirParticoesNaPartida(filas: WorkerFilas): Promise<vo
 
 async function emLotes(
   banco: Conexao,
-  funcao: 'app_limpar_convites' | 'app_limpar_outbox',
+  funcao: 'app_limpar_convites' | 'app_limpar_outbox' | 'app_limpar_idempotencia',
 ): Promise<number> {
   let total = 0
   for (let i = 0; i < MAX_LOTES; i++) {
@@ -162,6 +165,9 @@ export function processadorDeManutencao(
         break
       case 'limpar-outbox':
         resultado = await emLotes(banco, 'app_limpar_outbox')
+        break
+      case 'limpar-idempotencia':
+        resultado = await emLotes(banco, 'app_limpar_idempotencia')
         break
       case 'publicar-agendadas': {
         const [linha] = await banco.cliente<{ n: number }[]>`SELECT app_publicar_agendadas() AS n`

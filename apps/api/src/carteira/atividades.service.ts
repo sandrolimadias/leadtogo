@@ -68,7 +68,11 @@ export class AtividadesService {
     return a
   }
 
-  async criar(dados: CriarAtividade): Promise<Atividade> {
+  async criar(
+    dados: CriarAtividade,
+    /** API pública: `origem = api` e o identificador no sistema de origem */
+    opcoes: { origem?: 'manual' | 'api'; idExterno?: string | null } = {},
+  ): Promise<Atividade> {
     const db = this.ctx.db()
     const tenantId = this.ctx.tenantId
     const escopo = await escopoDaCarteira(this.ctx)
@@ -121,7 +125,8 @@ export class AtividadesService {
         importante: dados.importante,
         urgente: dados.urgente,
         observacoes: dados.observacoes ?? null,
-        origem: 'manual',
+        origem: opcoes.origem ?? 'manual',
+        idExterno: opcoes.idExterno ?? null,
         criadoPor: escopo.membroId,
         atualizadoPor: escopo.membroId,
       })

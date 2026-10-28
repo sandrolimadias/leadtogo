@@ -2,7 +2,7 @@ import { SwaggerModule } from '@nestjs/swagger'
 
 import { criarApp } from './app.js'
 import { carregarConfiguracao, ErroConfiguracao } from './configuracao/configuracao.js'
-import { montarDocumento } from './documentacao/openapi.js'
+import { montarDocumento, servirDocumentacaoPublica } from './documentacao/openapi.js'
 import { iniciarObservabilidade } from './observabilidade/erros.js'
 
 // Falha ao iniciar, com a lista do que falta, se a configuração estiver inválida.
@@ -25,5 +25,8 @@ const app = await criarApp(config)
 if (config.NODE_ENV !== 'production') {
   SwaggerModule.setup('docs', app, montarDocumento(app, config.APP_VERSION))
 }
+
+// API pública: o documento dela fica aberto em produção (/v1/publica/docs e /v1/publica/openapi.json)
+servirDocumentacaoPublica(app)
 
 await app.listen(config.PORT, '0.0.0.0')

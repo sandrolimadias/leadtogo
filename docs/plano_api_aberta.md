@@ -245,3 +245,16 @@ A `TOKEN_ENCRYPTION_KEY`, que já existe, cifra os segredos dos webhooks.
 - Gestão: `GET/POST /v1/integracoes/chaves`, `PATCH /v1/integracoes/chaves/{id}`, `POST .../{id}/rotacionar` e `POST .../{id}/revogar`, todas com `integracoes.gerir` (catálogo **v10**, só o perfil Administrador recebe).
 - Aviso de vencimento: tarefa `avisar-chaves` do worker, todo dia às 11:00 UTC (08:00 de Brasília).
 - Testes: `apps/api/src/integracoes/chaves.test.ts` (gestão, 2FA, escopos, 401/403, IP, revogação, vencimento, isolamento, sessão × chave, rotação, aviso) e `packages/db/src/testes/integracoes.test.ts` (função de localização, RLS sem empresa, CHECK do hash), além da fábrica de isolamento.
+
+### I2 — API pública v1 (migração 0039)
+- Rotas como na seção 5.2, em `apps/api/src/integracoes/publica/`. As escritas passam pelos mesmos serviços do app (`EmpresasDaCarteiraService`, `ContatosService`, `AtividadesService`, `OportunidadesService`); a leitura é um modelo próprio (um SQL por página, DTO em lista de permissão).
+- Ajustes na execução:
+  - a chave cadastra empresa, oportunidade e atividade **em nome de qualquer membro ativo** (a integração nunca é a responsável), sem precisar de `empresas.transferir`; **trocar** o responsável de uma empresa que já existe continua exigindo `empresas.transferir`, que passou a ser uma permissão liberada para chaves;
+  - empresa nova com CNPJ: a Receita vai para a fila do worker (`receita.situacao_nao_verificada = true` na resposta), como planejado; `consultar_receita: false` não consulta;
+  - `origem` da atividade criada pela API é `api` (valor que o enum já tinha), não `integracao`;
+  - grupo automático (Visitação) recusado com **400** (a validação de tags que o app já usa), não 422;
+  - no lote, `status` e `tags` só se aplicam a empresa nova (na atualização, use `PUT /empresas/{id}/tags/{tag}`);
+  - `Idempotency-Key` também guarda o status HTTP e devolve `Idempotent-Replayed: true` na repetição.
+- Contrato: `docs/api/publica-v1.openapi.json` (gerado por `pnpm --filter @leadtogo/api api:publica:atualizar`, que **recusa mudança não aditiva**, salvo `--quebrar` numa v2); o teste `openapi-publica.test.ts` confere que o retrato está em dia, que toda rota pública está nele e que a página e o JSON são servidos. O documento interno (`apps/api/openapi.json`) não traz as rotas públicas.
+- Documentação aberta em produção: `/v1/publica/docs` (Swagger UI) e `/v1/publica/openapi.json`.
+- Testes: `apps/api/src/integracoes/publica/publica.test.ts` (identidade, cadastros, empresas, tags pela chave do sistema, cursor, lote, transferência, idempotência, contatos, atividades com `id_externo`, oportunidades, escopo e isolamento) e a rede de segurança de `isolamento-http.test.ts` (toda rota pública dá 401 `chave_invalida` sem chave).

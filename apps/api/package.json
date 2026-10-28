@@ -11,7 +11,8 @@
     "openapi": "tsc -p tsconfig.build.json && node dist/gerar-openapi.js && prettier --write openapi.json",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "api:publica:atualizar": "tsc -p tsconfig.build.json && node dist/gerar-openapi-publico.js && prettier --write ../../docs/api/publica-v1.openapi.json"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1149.0",

@@ -34,7 +34,7 @@ describe('OpenAPI', () => {
   it('toda rota do CRM está documentada, com resumo, resposta de sucesso e (se protegida) o 401', () => {
     const doc = JSON.parse(readFileSync(arquivo, 'utf8')) as Documento
     const doCrm = listarRotas(app).filter(
-      (r) => !r.rota.includes('/v1/auth/') && r.metodo !== 'all',
+      (r) => !r.rota.includes('/v1/auth/') && r.metodo !== 'all' && !r.apiPublica,
     )
     expect(doCrm.length).toBeGreaterThanOrEqual(10)
     for (const r of doCrm) {
@@ -52,7 +52,9 @@ describe('OpenAPI', () => {
 
   it('as rotas públicas ficam sem exigência de cookie; as protegidas usam a global', () => {
     const doc = JSON.parse(readFileSync(arquivo, 'utf8')) as Documento
-    for (const r of listarRotas(app).filter((x) => !x.rota.includes('/v1/auth/'))) {
+    for (const r of listarRotas(app).filter(
+      (x) => !x.rota.includes('/v1/auth/') && !x.apiPublica,
+    )) {
       const operacao = doc.paths[r.caminhoOpenApi]?.[r.metodo]
       if (r.publica) expect(operacao?.security, r.rota).toEqual([])
       else if (r.portal) expect(operacao?.security, r.rota).toEqual([{ sessaoPortal: [] }])
