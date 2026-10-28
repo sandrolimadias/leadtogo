@@ -108,6 +108,19 @@ import type {
   RotaDaEmpresa,
   Aviso,
   ListaDeAvisos,
+  AlterarChaveDeApi,
+  AlterarWebhook,
+  ChaveDeApi,
+  ChaveDeApiCriada,
+  CriarChaveDeApi,
+  CriarWebhook,
+  EntregaDeWebhook,
+  ListaDeChavesDeApi,
+  ListaDeEntregasDeWebhook,
+  ListaDeWebhooks,
+  ReenvioDeEntregas,
+  Webhook,
+  WebhookCriado,
 } from '@leadtogo/api-client'
 import type {
   AbrirChamadoEntrada,
@@ -747,6 +760,39 @@ export interface ServicosDeNotificacoes {
   marcarTodas: () => Promise<Resultado<MarcadasComoLidas>>
 }
 
+/** Configurações → Integrações (API aberta): chaves de API e webhooks. Só `integracoes.gerir`. */
+export interface ServicosDeIntegracoes {
+  chaves: {
+    listar: () => Promise<Resultado<ListaDeChavesDeApi>>
+    /** Devolve o token uma vez; 403 `2fa_obrigatorio` */
+    criar: (dados: CriarChaveDeApi) => Promise<Resultado<ChaveDeApiCriada>>
+    alterar: (id: string, dados: AlterarChaveDeApi) => Promise<Resultado<ChaveDeApi>>
+    /** A antiga vale por mais `prazoDias` (0 a 7; 0 revoga agora) */
+    rotacionar: (id: string, prazoDias: number) => Promise<Resultado<ChaveDeApiCriada>>
+    revogar: (id: string) => Promise<Resultado<ChaveDeApi>>
+  }
+  webhooks: {
+    listar: () => Promise<Resultado<ListaDeWebhooks>>
+    /** Devolve o segredo uma vez; 403 `2fa_obrigatorio`; 422 `url_invalida` */
+    criar: (dados: CriarWebhook) => Promise<Resultado<WebhookCriado>>
+    alterar: (id: string, dados: AlterarWebhook) => Promise<Resultado<Webhook>>
+    /** 409 `webhook_com_entregas` */
+    excluir: (id: string) => Promise<Resultado>
+    rotacionarSegredo: (id: string) => Promise<Resultado<WebhookCriado>>
+    testar: (id: string) => Promise<Resultado<EntregaDeWebhook>>
+    entregas: (
+      id: string,
+      consulta?: {
+        situacao?: 'pendente' | 'sucesso' | 'falhou'
+        pagina?: number
+        porPagina?: number
+      },
+    ) => Promise<Resultado<ListaDeEntregasDeWebhook>>
+    reenviar: (id: string, entregaId: string) => Promise<Resultado<EntregaDeWebhook>>
+    reenviarFalhas: (id: string) => Promise<Resultado<ReenvioDeEntregas>>
+  }
+}
+
 export interface ServicosDeAcesso {
   /** Sessão atual, ou null sem login */
   me: () => Promise<Me | null>
@@ -832,6 +878,8 @@ export interface ServicosDeAcesso {
   chamados: ServicosDeChamados
   // Portal do cliente (Fase 3): a gestão feita pela equipe
   portal: ServicosDoPortalNoCrm
+  // API aberta: chaves de API e webhooks (Configurações → Integrações)
+  integracoes: ServicosDeIntegracoes
   notificacoes: ServicosDeNotificacoes
 
   // Atividades (Módulo 5)

@@ -47,6 +47,7 @@ import { Route as AutenticadoConfiguracoesChamadosRouteImport } from './routes/_
 import { Route as AutenticadoConfiguracoesFunisRouteImport } from './routes/_autenticado.configuracoes.funis'
 import { Route as AutenticadoConfiguracoesGeolocalizacaoRouteImport } from './routes/_autenticado.configuracoes.geolocalizacao'
 import { Route as AutenticadoConfiguracoesImportacaoRouteImport } from './routes/_autenticado.configuracoes.importacao'
+import { Route as AutenticadoConfiguracoesIntegracoesRouteImport } from './routes/_autenticado.configuracoes.integracoes'
 import { Route as AutenticadoConfiguracoesOrigensEMotivosRouteImport } from './routes/_autenticado.configuracoes.origens-e-motivos'
 import { Route as AutenticadoConfiguracoesPapeisNaDecisaoRouteImport } from './routes/_autenticado.configuracoes.papeis-na-decisao'
 import { Route as AutenticadoConfiguracoesPerfisRouteImport } from './routes/_autenticado.configuracoes.perfis'
@@ -279,6 +280,12 @@ const AutenticadoConfiguracoesImportacaoRoute =
     path: '/importacao',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
+const AutenticadoConfiguracoesIntegracoesRoute =
+  AutenticadoConfiguracoesIntegracoesRouteImport.update({
+    id: '/integracoes',
+    path: '/integracoes',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
 const AutenticadoConfiguracoesOrigensEMotivosRoute =
   AutenticadoConfiguracoesOrigensEMotivosRouteImport.update({
     id: '/origens-e-motivos',
@@ -488,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
+  '/configuracoes/integracoes': typeof AutenticadoConfiguracoesIntegracoesRoute
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/configuracoes/perfis': typeof AutenticadoConfiguracoesPerfisRoute
@@ -546,6 +554,7 @@ export interface FileRoutesByTo {
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
+  '/configuracoes/integracoes': typeof AutenticadoConfiguracoesIntegracoesRoute
   '/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/configuracoes/perfis': typeof AutenticadoConfiguracoesPerfisRoute
@@ -617,6 +626,7 @@ export interface FileRoutesById {
   '/_autenticado/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/_autenticado/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/_autenticado/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
+  '/_autenticado/configuracoes/integracoes': typeof AutenticadoConfiguracoesIntegracoesRoute
   '/_autenticado/configuracoes/origens-e-motivos': typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   '/_autenticado/configuracoes/papeis-na-decisao': typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   '/_autenticado/configuracoes/perfis': typeof AutenticadoConfiguracoesPerfisRoute
@@ -687,6 +697,7 @@ export interface FileRouteTypes {
     | '/configuracoes/funis'
     | '/configuracoes/geolocalizacao'
     | '/configuracoes/importacao'
+    | '/configuracoes/integracoes'
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/papeis-na-decisao'
     | '/configuracoes/perfis'
@@ -745,6 +756,7 @@ export interface FileRouteTypes {
     | '/configuracoes/funis'
     | '/configuracoes/geolocalizacao'
     | '/configuracoes/importacao'
+    | '/configuracoes/integracoes'
     | '/configuracoes/origens-e-motivos'
     | '/configuracoes/papeis-na-decisao'
     | '/configuracoes/perfis'
@@ -815,6 +827,7 @@ export interface FileRouteTypes {
     | '/_autenticado/configuracoes/funis'
     | '/_autenticado/configuracoes/geolocalizacao'
     | '/_autenticado/configuracoes/importacao'
+    | '/_autenticado/configuracoes/integracoes'
     | '/_autenticado/configuracoes/origens-e-motivos'
     | '/_autenticado/configuracoes/papeis-na-decisao'
     | '/_autenticado/configuracoes/perfis'
@@ -1124,6 +1137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutenticadoConfiguracoesImportacaoRouteImport
       parentRoute: typeof AutenticadoConfiguracoesRoute
     }
+    '/_autenticado/configuracoes/integracoes': {
+      id: '/_autenticado/configuracoes/integracoes'
+      path: '/integracoes'
+      fullPath: '/configuracoes/integracoes'
+      preLoaderRoute: typeof AutenticadoConfiguracoesIntegracoesRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
     '/_autenticado/configuracoes/origens-e-motivos': {
       id: '/_autenticado/configuracoes/origens-e-motivos'
       path: '/origens-e-motivos'
@@ -1398,6 +1418,7 @@ interface AutenticadoConfiguracoesRouteChildren {
   AutenticadoConfiguracoesFunisRoute: typeof AutenticadoConfiguracoesFunisRoute
   AutenticadoConfiguracoesGeolocalizacaoRoute: typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   AutenticadoConfiguracoesImportacaoRoute: typeof AutenticadoConfiguracoesImportacaoRoute
+  AutenticadoConfiguracoesIntegracoesRoute: typeof AutenticadoConfiguracoesIntegracoesRoute
   AutenticadoConfiguracoesOrigensEMotivosRoute: typeof AutenticadoConfiguracoesOrigensEMotivosRoute
   AutenticadoConfiguracoesPapeisNaDecisaoRoute: typeof AutenticadoConfiguracoesPapeisNaDecisaoRoute
   AutenticadoConfiguracoesPerfisRoute: typeof AutenticadoConfiguracoesPerfisRoute
@@ -1423,6 +1444,8 @@ const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildr
       AutenticadoConfiguracoesGeolocalizacaoRoute,
     AutenticadoConfiguracoesImportacaoRoute:
       AutenticadoConfiguracoesImportacaoRoute,
+    AutenticadoConfiguracoesIntegracoesRoute:
+      AutenticadoConfiguracoesIntegracoesRoute,
     AutenticadoConfiguracoesOrigensEMotivosRoute:
       AutenticadoConfiguracoesOrigensEMotivosRoute,
     AutenticadoConfiguracoesPapeisNaDecisaoRoute:
