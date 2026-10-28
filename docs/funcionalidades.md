@@ -909,6 +909,8 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 
 ### 13.2 n8n — Automações
 
+> **Plano de execução:** [`plano_api_aberta.md`](plano_api_aberta.md) (chaves de API, API pública `/v1/publica/*` e webhooks; fases I1 a I4).
+
 **O CRM avisa o n8n (webhooks de saída)**
 - O admin cadastra **webhooks** e escolhe os **eventos**:
 
@@ -1018,8 +1020,8 @@ Para as integrações entrarem depois **sem retrabalho**, a Fase 1 já inclui:
 - **Quem é associado é definido no CRM** (tag de Status com `chave_sistema = 'cliente'`, nunca pelo nome). A planilha de associados do Google Drive deixa de ser a fonte: o n8n pede a lista ao CRM.
 
 **Contrato (independente de ERP)**
-- `GET /v1/empresas?status=cliente`: CNPJs que o conector precisa consultar.
-- `POST /v1/financeiro/posicoes`: `fonte`, `referencia_em` e, por empresa, o `cnpj` e os **títulos em aberto** (`id_externo`, `vencimento`, `valor`, `parcela`), ou `sem_cadastro: true` quando o CNPJ não existe no ERP. A lista de cada CNPJ **substitui** a anterior daquela fonte: o título que some foi recebido ou cancelado. Idempotente por `fonte + id_externo`.
+- `GET /v1/publica/empresas?status=cliente`: CNPJs que o conector precisa consultar.
+- `POST /v1/publica/financeiro/posicoes`: `fonte`, `referencia_em` e, por empresa, o `cnpj` e os **títulos em aberto** (`id_externo`, `vencimento`, `valor`, `parcela`), ou `sem_cadastro: true` quando o CNPJ não existe no ERP. A lista de cada CNPJ **substitui** a anterior daquela fonte: o título que some foi recebido ou cancelado. Idempotente por `fonte + id_externo`.
 - A chave do contrato é o **CNPJ**. Ligar o CNPJ ao código interno do ERP (no Omie, `codigo_cliente_fornecedor`) é trabalho do conector.
 - **Títulos considerados:** todos os títulos em aberto do cliente no ERP (no Omie, `A VENCER` e `ATRASADO`; `RECEBIDO` e `CANCELADO` não são enviados). Não há no Omie um campo que identifique a mensalidade; se for preciso excluir algum tipo de título, o filtro fica no conector.
 

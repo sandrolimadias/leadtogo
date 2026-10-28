@@ -701,7 +701,7 @@ Fluxo: buscar → revisar a lista (as empresas que já estão no CRM aparecem ma
 ### 11.1 Integrações 🔮 (estrutura prevista, criada nas fases 4–7)
 | Tabela | Uso |
 |---|---|
-| `api_chaves` | Chaves de API por tenant (hash, escopos, validade) — n8n |
+| `api_chaves` | Chaves de API por tenant (hash, escopos, validade) — n8n. Colunas propostas em `plano_api_aberta.md` §7, com `membros.tipo` e `idempotencia_chaves` |
 | `webhooks`, `webhook_entregas` | Destinos e log de entregas |
 | `contas_conectadas` | Google/Microsoft/WhatsApp por membro (tokens **criptografados**) |
 | `mensagens` | Mensagens de e-mail e WhatsApp ligadas a uma atividade (direção, remetente, corpo, id_externo) |

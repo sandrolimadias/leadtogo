@@ -97,7 +97,7 @@ crm/
 - **Webhooks** de saída e entrada previstos na arquitetura (ver seção 11.1):
   - **Saída (CRM → n8n):** tabela *outbox* de eventos + worker BullMQ que entrega com assinatura HMAC, retry com backoff e log de entregas.
   - **Entrada (Evolution → CRM):** endpoint `/v1/integrations/whatsapp/webhook/:instancia`, validado por token. A mensagem é gravada numa fila e processada em segundo plano, deixando a resposta ao webhook rápida.
-- **Chaves de API por tenant** (hash no banco, escopos por módulo, validade e revogação) para uso pelo n8n e outras integrações.
+- **Chaves de API por tenant** (hash no banco, escopos por módulo, validade e revogação) para uso pelo n8n e outras integrações. Plano de execução em `plano_api_aberta.md`.
 - Versionamento da API: prefixo `/v1`.
 
 ---
