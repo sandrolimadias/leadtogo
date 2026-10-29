@@ -333,7 +333,7 @@ Quarto tipo do assistente, com o mesmo worker em blocos, prévia, relatório, CS
 **Entregue:** migração 0041 (só acréscimos: `tipo_importacao` ganha `oportunidades`, `oportunidades.importacao_id` e `importacao_linhas.oportunidade_id`); regras puras em `@leadtogo/shared` (`importacao-oportunidades.ts`); `ExecutorDeOportunidades`; prévia, valores por campo (`GET .../valores-do-tipo?campo=`), modelo, relatório e desfazer; tela (funil, chave "vira Cliente", valores por coluna, prévia e relatório do tipo, botão em Oportunidades); testes de regras, de API (inclusive "igual ao cadastro manual", isolamento, dois executores e desfazer), de tela e 1 E2E.
 
 ### Transversal (entra junto dos módulos em que fizer sentido)
-- **Busca global** (empresas, contatos, oportunidades).
+- **Busca global** (empresas, contatos, oportunidades) ✅ — entregue em 29/10/2026, com as buscas recentes (`plano_busca_global.md`; roteiro em `roteiro_teste_busca_global.md`).
 - **Auditoria nas fichas** (aba Histórico).
 - ~~Aviso **"Nova versão disponível"** no PWA~~ — entregue em 21/10/2026 (ver `esteira_deploy.md`, seção do PWA).
 

@@ -23,7 +23,8 @@
 | Visão Equipe e transferência de carteira | Só há um usuário no MVP | Seção 3 |
 | Painel consolidado (várias empresas do grupo) | Só há uma empresa em uso | Seção 3 |
 | Copiar configurações entre empresas do grupo | Só há uma empresa em uso | Seção 3 |
-| Busca global (empresas, contatos, oportunidades) | Transversal ainda não entregue: a caixa da barra do topo avisa "em breve" | Transversal (`escopo_mvp.md`) |
+| ~~Busca global (empresas, contatos, oportunidades)~~ **Entregue** em 29/10/2026 (`plano_busca_global.md`), com as buscas recentes | Transversal | Transversal (`escopo_mvp.md`) |
+| Tarefas na busca global; abrir direto a ficha a partir da busca recente (guardar o registro aberto, não só o termo); busca por similaridade (erros de digitação) | Fora do plano da busca global (seção 9) | Transversal (`plano_busca_global.md`) |
 | Auditoria nas fichas além do que existe (Histórico de contato e empresa) | Transversal; hoje o Histórico mostra o essencial de empresa e contato | Transversal |
 | ~~Mapa e rotas (roteirização, "Rota" além do link para o mapa)~~ **Entregue:** G1+G2 (mapa) aprovados em 22/10/2026, G3 (check-in) em 22/10/2026 e G4 (rotas) em 23/10/2026 (`plano_geolocalizacao.md`) | Fases 2 e 3 de `funcionalidades.md` | Seção 3 |
 | Prospecção (busca por CNAE e município na base completa) | **Fase própria logo após o MVP**; exige a base completa de CNPJs e instância própria da Minha Receita | Seção 3 |

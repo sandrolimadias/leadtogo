@@ -851,7 +851,12 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 
 ## 12. Recursos transversais
 
-- **Busca global** (barra no topo): empresas, contatos, oportunidades e tarefas.
+- **Busca global** (barra no topo; plano em `plano_busca_global.md`, roteiro em `roteiro_teste_busca_global.md`): **empresas** (nome fantasia, razão social, cidade e CNPJ com ou sem máscara), **contatos** (nome, e-mail e telefone) e **oportunidades** (título e nome da empresa), sem acento e sem diferenciar maiúsculas. **Tarefas ficam para uma fase seguinte.**
+  - **Mínimo de 2 letras**; até **5 por tipo**; quem **começa** com o termo vem antes de quem só o contém, depois o atualizado mais recentemente.
+  - **Respeita a carteira:** cada tipo segue o alcance do perfil (`empresas.ver`, `contatos.ver`, `oportunidades.ver`); quem não vê um tipo não recebe resultados dele. Excluídos não aparecem.
+  - **Desktop e tablet:** sugestões enquanto digita, abaixo da caixa, em seções Empresas, Contatos e Oportunidades (a empresa mostra "Cidade/UF · vendedor" e o Status; o contato, a empresa e o cargo; a oportunidade, a empresa, a fase e o valor). Setas, Enter e Esc; **Ctrl+K** (⌘K) ou **/** levam o foco à busca. Escolher um item abre a ficha. **Enter** sem item marcado, ou "Ver todos os resultados", abre a tela **Busca** (`/busca?q=`).
+  - **Tela Busca** (e a **lupa do celular**): o termo fica na URL; cada seção tem **"Ver todos em Empresas/Contatos/Oportunidades"**, que abre a lista do tipo já filtrada.
+  - **Buscas recentes:** com a caixa vazia aparecem as **10 últimas buscas** da pessoa (guardadas no servidor, acompanham entre o desktop e o celular, separadas por empresa). Só entra a busca **concluída** (escolheu um resultado ou apertou Enter); termo repetido (até com acento diferente) volta ao topo. Um **x** apaga um termo e **"Limpar histórico"** apaga todos. **Ninguém vê o histórico de outra pessoa**, nem o administrador; desativar o membro apaga o histórico dele.
 - **Central de notificações** (sino no topo) + **notificações push** (PWA/app) + e-mail opcional. Eventos: tarefa atribuída, prazo próximo ou vencido, atividade atrasada, e-mail aberto ou clicado, mensagem de WhatsApp de número não identificado, oportunidade parada. Cada usuário escolhe o que recebe e por qual canal.
 - **Log de auditoria** em empresa, contato e oportunidade.
 - **Responsivo e PWA:** botões grandes no celular, ações rápidas (ligar, WhatsApp, rota) e um botão "+" flutuante para registrar atividade.

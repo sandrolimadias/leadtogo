@@ -40,7 +40,7 @@ A caixa da barra do topo ("Buscar empresas, contatos e oportunidades") hoje só 
 - Clicar num item abre a ficha (`/empresas/$id`, `/contatos/$id`, `/oportunidades/$id`) e grava o termo no histórico.
 - **Teclado e acessibilidade:** ↑↓ percorre os itens, Enter abre o item marcado (ou a tela `/busca` se nenhum estiver marcado), Esc fecha. `role="combobox"` com `aria-expanded`, `aria-controls` e `aria-activedescendant`; a lista é `role="listbox"` com grupos rotulados.
 - **Tela `/busca`:** campo no topo com o termo da URL, as três seções e, com o campo vazio, as buscas recentes (é o que o celular mostra ao abrir).
-- Componentes do shadcn/ui (Popover/Command) com os tokens de `docs/design-system/`; ícones Lucide (`search`, `clock`, `x`, `building-2`, `users`, `handshake`).
+- Componentes do `@leadtogo/ui` (o pacote do design system: `TextField`, `Button`, `IconButton`, `Tag`, `Alert`, `EmptyState`), como a busca de empresa do "Registrar atividade"; a lista é própria (não há Popover/Command no pacote). Ícones Lucide (`search`, `clock`, `x`, `arrow-right`, `building-2`, `users`, `handshake`).
 
 ## 5. Modelo de dados (migração 0042, **só expansão**)
 
@@ -132,3 +132,10 @@ A caixa da barra do topo ("Buscar empresas, contatos e oportunidades") hoje só 
 | **B3** | Caixa de busca do topo: sugestões, buscas recentes, teclado, atalhos |
 | **B4** | Tela `/busca` (desktop e celular) e E2E |
 | **B5** | `funcionalidades.md` (seção 12), `lgpd.md`, `backlog_pos_mvp.md`, `plano_implantacao.md` e `roteiro_teste_busca_global.md` |
+
+**Entregue em 29/10/2026 (B1 a B5).** Ajustes feitos na execução:
+- As três consultas da busca rodam **em sequência**, não em paralelo: dividem a transação do tenant ativo.
+- O membro não é excluído, é desativado: **desativar apaga o histórico** de buscas dele.
+- A busca da **lista de Oportunidades** passou a ignorar também o acento do termo digitado (antes, "manutenção" não achava "manutencao" e vice-versa), por usar a mesma condição da busca global (`busca-texto.ts`).
+- A lista de Oportunidades aceita o termo pela URL (`?busca=`), para o "Ver todos em Oportunidades".
+- O `TextField` do `@leadtogo/ui` aceita `ref` (o atalho Ctrl+K leva o foco ao campo).
