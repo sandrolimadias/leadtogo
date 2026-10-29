@@ -68,6 +68,7 @@ export function ListaDeImportacoes() {
       </div>
       <SegmentedControl
         label="Tipo de importação"
+        className="max-w-full flex-wrap"
         options={[
           { value: '', label: 'Todas' },
           ...TIPOS_DE_IMPORTACAO.map((t) => ({ value: t, label: ROTULO_DO_TIPO_DE_IMPORTACAO[t] })),
@@ -99,7 +100,7 @@ export function ListaDeImportacoes() {
         <EmptyState
           icon={FileSpreadsheet}
           title="Nenhuma importação ainda"
-          description="Envie uma planilha Excel ou CSV para cadastrar várias empresas, contatos ou atividades de uma vez."
+          description="Envie uma planilha Excel ou CSV para cadastrar várias empresas, contatos, oportunidades ou atividades de uma vez."
           actions={
             <Button variant="primary" icon={Upload} onClick={nova}>
               Importar planilha

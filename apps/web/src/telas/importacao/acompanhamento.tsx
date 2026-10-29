@@ -29,6 +29,13 @@ import type { PropsDoPasso } from './passos'
 
 const chaveDoAndamento = (id: string) => ['importacao', 'andamento', id] as const
 
+/**
+ * A carteira mudou (o lote terminou ou foi desfeito): as listas, o Kanban e as fichas já carregadas deixam de
+ * valer, senão "Ver oportunidades" (ou contatos, atividades...) mostra o que estava em cache antes do lote.
+ */
+const invalidarACarteira = (queryClient: ReturnType<typeof useQueryClient>) =>
+  queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'importacao' })
+
 function useAndamento(id: string, acompanhar: boolean) {
   const servicos = useServicos()
   return useQuery({
@@ -49,6 +56,7 @@ function useAndamento(id: string, acompanhar: boolean) {
 
 export function PassoImportar({ lote, aoAlterar }: PropsDoPasso) {
   const servicos = useServicos()
+  const queryClient = useQueryClient()
   const { enviando, executar } = useEnvio()
   const andamento = useAndamento(lote.id, true)
   const a = andamento.data
@@ -57,10 +65,11 @@ export function PassoImportar({ lote, aoAlterar }: PropsDoPasso) {
   // Terminou (ou foi cancelada): busca o lote de novo e o assistente passa para o relatório
   useEffect(() => {
     if (!terminou) return
+    void invalidarACarteira(queryClient)
     void servicos.importacao.lotes.detalhar(lote.id).then((r) => {
       if (r.ok) aoAlterar(r.dados)
     })
-  }, [terminou, servicos, lote.id, aoAlterar])
+  }, [terminou, servicos, queryClient, lote.id, aoAlterar])
 
   const total = a?.totalLinhas ?? lote.totalLinhas
   const feitas = a?.processadas ?? 0
@@ -139,6 +148,9 @@ function textoDoDesfazer(tipo: LoteDeImportacao['tipo']): string {
   if (tipo === 'contatos') {
     return 'Tira os contatos que este lote criou e que ninguém alterou nem usou depois, e inativa os vínculos que ele criou com contatos que já existiam (esses contatos ficam). O que alguém mexeu ou usou numa atividade fica, e o resultado avisa quantos.'
   }
+  if (tipo === 'oportunidades') {
+    return 'Tira as oportunidades que este lote criou e que ninguém mexeu depois (as que alguém editou, moveu de fase, fechou, reabriu ou ligou a uma atividade ficam), junto com a atividade de retomada das suspensas. A empresa que virou Cliente por uma conquistada continua Cliente.'
+  }
   if (tipo === 'atividades') {
     return 'Tira as atividades que este lote criou e que ninguém alterou depois (as que alguém concluiu, editou ou cancelou ficam). Depois recalcula a última visita, o último contato, a próxima atividade e as tags de cada empresa afetada.'
   }
@@ -148,6 +160,9 @@ function textoDoDesfazer(tipo: LoteDeImportacao['tipo']): string {
 function descricaoDoDesfazer(tipo: LoteDeImportacao['tipo'], nome: string): string {
   if (tipo === 'contatos') {
     return `Os contatos criados por "${nome}" saem (menos os que alguém alterou ou usou depois) e os vínculos com contatos que já existiam são inativados; esses contatos ficam.`
+  }
+  if (tipo === 'oportunidades') {
+    return `As oportunidades criadas por "${nome}" saem (menos as que alguém mexeu depois), com a retomada das suspensas. O Status das empresas não volta.`
   }
   if (tipo === 'atividades') {
     return `As atividades criadas por "${nome}" saem (menos as que alguém alterou depois) e a carteira das empresas afetadas é recalculada.`
@@ -216,9 +231,13 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
           { rotulo: 'Puladas', n: puladasDoTipo + n('pulada_duplicada'), tom: 'neutral' as const },
           { rotulo: 'Com erro', n: n('erro'), tom: 'danger' as const },
         ]
-      : lote.tipo === 'atividades'
+      : lote.tipo === 'atividades' || lote.tipo === 'oportunidades'
         ? [
-            { rotulo: 'Atividades criadas', n: n('criada'), tom: 'success' as const },
+            {
+              rotulo: lote.tipo === 'atividades' ? 'Atividades criadas' : 'Oportunidades criadas',
+              n: n('criada'),
+              tom: 'success' as const,
+            },
             { rotulo: 'Já existiam', n: n('pulada_duplicada'), tom: 'neutral' as const },
             { rotulo: 'Puladas', n: puladasDoTipo, tom: 'warning' as const },
             { rotulo: 'Com erro', n: n('erro'), tom: 'danger' as const },
@@ -279,6 +298,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
       setDesfazendo(false)
       toast.success('Importação desfeita')
       await queryClient.invalidateQueries({ queryKey: ['importacao', 'linhas', lote.id] })
+      void invalidarACarteira(queryClient)
       aoAlterar(r.dados)
     })
   const podeDesfazer = lote.desfazerAte !== null && Date.parse(lote.desfazerAte) > agora
@@ -343,7 +363,7 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
         ) : (
           <>
             {lote.desfeito
-              ? `${lote.desfeito.removidas.toLocaleString('pt-BR')} ${lote.tipo === 'contatos' ? 'contatos e vínculos' : 'atividades'} desfeitos.`
+              ? `${lote.desfeito.removidas.toLocaleString('pt-BR')} ${lote.tipo === 'contatos' ? 'contatos e vínculos desfeitos' : lote.tipo === 'atividades' ? 'atividades desfeitas' : 'oportunidades desfeitas'}.`
               : 'O que este lote criou foi desfeito.'}
             {lote.desfeito && lote.desfeito.mantidas > 0
               ? ` ${lote.desfeito.mantidas.toLocaleString('pt-BR')} ficaram porque alguém alterou ou usou depois da importação.`
@@ -472,7 +492,9 @@ export function PassoRelatorio({ lote, aoAlterar }: PropsDoPasso) {
                           ? l.contatoNome
                           : lote.tipo === 'atividades'
                             ? l.atividadeTitulo
-                            : null) ??
+                            : lote.tipo === 'oportunidades'
+                              ? l.oportunidadeTitulo
+                              : null) ??
                           l.empresaNome ??
                           (dadoPrincipal(l.dados, linhas.data.colunas) || 'Sem dados')}
                       </span>

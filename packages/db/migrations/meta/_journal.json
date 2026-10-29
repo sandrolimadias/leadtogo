@@ -288,6 +288,13 @@
       "when": 1793162352684,
       "tag": "0040_webhooks",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793223662170,
+      "tag": "0041_importacao_oportunidades",
+      "breakpoints": true
     }
   ]
 }

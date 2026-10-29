@@ -3,6 +3,10 @@ import { z } from 'zod'
 import { nomeDeCadastroSchema } from './cadastros.js'
 import { CAMPOS_DA_ATIVIDADE_NA_IMPORTACAO } from './importacao-atividades.js'
 import { CAMPOS_DO_CONTATO_NA_IMPORTACAO } from './importacao-contatos.js'
+import {
+  CAMPOS_COM_VALORES_DA_OPORTUNIDADE,
+  CAMPOS_DA_OPORTUNIDADE_NA_IMPORTACAO,
+} from './importacao-oportunidades.js'
 import { porPaginaSchema } from './paginacao.js'
 
 // Importação de planilha (docs/escopo_mvp.md, Módulo 4): perfis de regras por empresa.
@@ -160,13 +164,14 @@ export const CAMPOS_DA_EMPRESA_NA_IMPORTACAO = [
 
 /** De onde vêm os dados da empresa: a planilha, tudo da Receita ou a planilha completada pela Receita. */
 /** O que o lote importa. O tipo é fixado no envio da planilha (não muda depois). */
-export const TIPOS_DE_IMPORTACAO = ['empresas', 'contatos', 'atividades'] as const
+export const TIPOS_DE_IMPORTACAO = ['empresas', 'contatos', 'atividades', 'oportunidades'] as const
 export const tipoDeImportacaoSchema = z.enum(TIPOS_DE_IMPORTACAO)
 export type TipoDeImportacao = z.infer<typeof tipoDeImportacaoSchema>
 export const ROTULO_DO_TIPO_DE_IMPORTACAO: Record<TipoDeImportacao, string> = {
   empresas: 'Empresas',
   contatos: 'Contatos',
   atividades: 'Atividades',
+  oportunidades: 'Oportunidades',
 }
 
 export const fonteDosDadosSchema = z.enum(['planilha', 'receita', 'completar'])
@@ -182,6 +187,19 @@ export const situacaoDaImportacaoSchema = z.enum([
   'desfeita',
 ])
 export type SituacaoDaImportacao = z.infer<typeof situacaoDaImportacaoSchema>
+
+/** Oportunidades: os campos cujos valores se apontam para um cadastro no passo Mapear colunas. */
+export const campoComValoresSchema = z.enum(CAMPOS_COM_VALORES_DA_OPORTUNIDADE)
+export const valoresDeCampoSchema = z
+  .object({
+    fase: z.record(z.string(), z.uuid().nullable()),
+    motivo: z.record(z.string(), z.uuid().nullable()),
+    origem: z.record(z.string(), z.uuid().nullable()),
+    solucao: z.record(z.string(), z.uuid().nullable()),
+  })
+  .partial()
+  .strict()
+export type ValoresDeCampo = z.infer<typeof valoresDeCampoSchema>
 
 export const loteDeImportacaoSchema = z
   .object({
@@ -207,6 +225,12 @@ export const loteDeImportacaoSchema = z
     verticalId: z.uuid().nullable(),
     /** Atividades: a escolha de cada valor da coluna Tipo (a chave é o valor sem acento e em minúsculas) */
     tiposDeAtividade: z.record(z.string(), z.uuid().nullable()),
+    /** Oportunidades: o funil do lote (nulo = o funil padrão) */
+    funilId: z.uuid().nullable(),
+    /** Oportunidades: as conquistadas mudam o Status da empresa para Cliente */
+    clienteAoConquistar: z.boolean(),
+    /** Oportunidades: a escolha de cada valor das colunas Fase, Motivo, Origem e Solução */
+    valoresDeCampo: valoresDeCampoSchema,
     /** O que falta para o lote ficar pronta; vazio = pronta (`situacao`) */
     pendencias: z.array(z.string()),
     criadoEm: z.string(),
@@ -246,6 +270,13 @@ export const alterarLoteSchema = z
     verticalId: z.uuid().nullable(),
     /** Atividades: valor da coluna Tipo (sem acento e em minúsculas) → tipo de atividade; nulo = pular essas linhas */
     tiposDeAtividade: z.record(z.string(), z.uuid().nullable()),
+    /** Oportunidades: o funil do lote; nulo = o funil padrão. Trocar o funil esquece as fases apontadas */
+    funilId: z.uuid().nullable(),
+    /** Oportunidades: as conquistadas mudam o Status da empresa para Cliente (padrão: não) */
+    clienteAoConquistar: z.boolean(),
+    /** Oportunidades: por campo, valor da coluna (sem acento e em minúsculas) → cadastro; nulo = pular essas
+     * linhas (Fase e Motivo) ou entrar sem o campo (Origem e Solução). Junta com o que já estava escolhido */
+    valoresDeCampo: valoresDeCampoSchema,
   })
   .partial()
   .strict()
@@ -351,6 +382,10 @@ export function rotuloDoResultado(resultado: ResultadoDaLinha, tipo: TipoDeImpor
     if (resultado === 'criada') return 'Atividade criada'
     if (resultado === 'pulada_duplicada') return 'Pulada: atividade idêntica já existe'
   }
+  if (tipo === 'oportunidades') {
+    if (resultado === 'criada') return 'Oportunidade criada'
+    if (resultado === 'pulada_duplicada') return 'Pulada: oportunidade igual já existe'
+  }
   return ROTULO_DO_RESULTADO[resultado]
 }
 
@@ -401,6 +436,9 @@ export const linhaDoRelatorioSchema = z.object({
   /** A atividade criada (importação de atividades) */
   atividadeId: z.uuid().nullable(),
   atividadeTitulo: z.string().nullable(),
+  /** A oportunidade criada (ou a que já existia, nas puladas por igual), na importação de oportunidades */
+  oportunidadeId: z.uuid().nullable(),
+  oportunidadeTitulo: z.string().nullable(),
   /** O que entrou com ressalva (papel inexistente, responsável trocado...) */
   avisos: z.array(z.string()),
   /** A linha como veio da planilha, por título de coluna */
@@ -466,7 +504,10 @@ export const consultaDosLotesSchema = z
   .strict()
 export type ConsultaDosLotes = z.infer<typeof consultaDosLotesSchema>
 
-/** Atividades: cada valor distinto da coluna Tipo da planilha, para apontar o tipo cadastrado. */
+/**
+ * Atividades: cada valor distinto da coluna Tipo da planilha, para apontar o tipo cadastrado. Oportunidades:
+ * o mesmo para as colunas Fase, Motivo, Origem e Solução (`tipoId` é então o id do cadastro).
+ */
 export const valorDoTipoSchema = z.object({
   /** Como está na planilha (a primeira grafia que apareceu) */
   valor: z.string(),
@@ -493,4 +534,6 @@ export const campoDoTipo = (tipo: TipoDeImportacao) =>
     ? CAMPOS_DO_CONTATO_NA_IMPORTACAO
     : tipo === 'atividades'
       ? CAMPOS_DA_ATIVIDADE_NA_IMPORTACAO
-      : CAMPOS_DA_EMPRESA_NA_IMPORTACAO
+      : tipo === 'oportunidades'
+        ? CAMPOS_DA_OPORTUNIDADE_NA_IMPORTACAO
+        : CAMPOS_DA_EMPRESA_NA_IMPORTACAO

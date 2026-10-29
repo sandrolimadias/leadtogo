@@ -51,6 +51,8 @@ export interface Resultado {
   contatoId?: string | null
   /** Atividades: a atividade criada */
   atividadeId?: string | null
+  /** Oportunidades: a criada, ou a que já existia (nas puladas por igual) */
+  oportunidadeId?: string | null
   /** O que entrou, mas com ressalva */
   avisos?: string[]
 }
@@ -380,6 +382,7 @@ export abstract class ExecutorBase<Estado> {
         empresaId: r.empresaId ?? null,
         contatoId: r.contatoId ?? null,
         atividadeId: r.atividadeId ?? null,
+        oportunidadeId: r.oportunidadeId ?? null,
         avisos: r.avisos ?? [],
         processadaEm: new Date(),
       })

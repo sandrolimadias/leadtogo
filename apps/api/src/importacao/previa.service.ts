@@ -13,7 +13,7 @@ import { escopoDaCarteira } from '../carteira/regras-de-carteira.js'
 import { ErroApi } from '../http/erro-api.js'
 import { VALIDADE_DO_CACHE_DIAS } from '../receita/receita.service.js'
 import { fusoDaEmpresa } from '../carteira/atividades-leitura.js'
-import { preverAtividades, preverContatos } from './previa-novos-tipos.js'
+import { preverAtividades, preverContatos, preverOportunidades } from './previa-novos-tipos.js'
 
 const { empresas, importacaoLinhas, importacoes, receitaConsultas } = schema
 
@@ -154,6 +154,7 @@ export class PreviaDaImportacaoService {
     ).map((l) => ({ numero: l.numero, dados: l.dados as Record<string, string> }))
     if (tipo === 'contatos') return preverContatos(db, lote, linhas)
     const fuso = await fusoDaEmpresa(db, this.ctx.tenantId)
+    if (tipo === 'oportunidades') return preverOportunidades(db, lote, linhas, fuso)
     return preverAtividades(db, lote, linhas, this.ctx.tenantId, fuso)
   }
 }

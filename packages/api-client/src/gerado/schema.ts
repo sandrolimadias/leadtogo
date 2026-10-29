@@ -2768,8 +2768,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Valores da coluna Tipo (atividades)
-         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Só no lote de atividades: cada valor distinto da coluna, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. Sem `coluna`, vale a coluna do Tipo já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro tipo, `PATCH` do lote com `tiposDeAtividade`.
+         * Valores de uma coluna (Tipo das atividades; Fase, Motivo, Origem e Solução das oportunidades)
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). No lote de atividades: cada valor distinto da coluna Tipo, com quantas linhas tem, o tipo de atividade que valerá (o que você apontou, ou o de mesmo nome) e de onde veio a escolha. No lote de oportunidades, o mesmo para a coluna do `campo` (`fase`, `motivo`, `origem` ou `solucao`, obrigatório), com o cadastro em `tipoId` (as fases são as ativas do funil do lote). Sem `coluna`, vale a coluna já mapeada; com `coluna` (um título da planilha), a que a tela está escolhendo agora. Para apontar outro cadastro, `PATCH` do lote com `tiposDeAtividade` ou `valoresDeCampo`.
          */
         get: operations["LotesDeImportacaoController_valoresDoTipo"];
         put?: never;
@@ -2789,7 +2789,7 @@ export interface paths {
         };
         /**
          * Baixar a planilha modelo
-         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos` ou `atividades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.
+         * @description Exige `importacao.executar` do perfil de acesso (403 `acesso_negado` sem ela). Um .xlsx só com os títulos das colunas que a importação do `tipo` (`empresas`, `contatos`, `atividades` ou `oportunidades`; padrão `empresas`) reconhece, com uma linha de exemplo inventada nos tipos novos, e uma aba com as instruções.
          */
         get: operations["LotesDeImportacaoController_modelo"];
         put?: never;
@@ -5651,6 +5651,23 @@ export interface components {
             tiposDeAtividade?: {
                 [key: string]: string | null;
             };
+            /** Format: uuid */
+            funilId?: string | null;
+            clienteAoConquistar?: boolean;
+            valoresDeCampo?: {
+                fase?: {
+                    [key: string]: string | null;
+                };
+                motivo?: {
+                    [key: string]: string | null;
+                };
+                origem?: {
+                    [key: string]: string | null;
+                };
+                solucao?: {
+                    [key: string]: string | null;
+                };
+            };
         };
         AlterarMembroEntrada: {
             /** @enum {string} */
@@ -7740,6 +7757,9 @@ export interface components {
                 /** Format: uuid */
                 atividadeId: string | null;
                 atividadeTitulo: string | null;
+                /** Format: uuid */
+                oportunidadeId: string | null;
+                oportunidadeTitulo: string | null;
                 avisos: string[];
                 dados: {
                     [key: string]: string;
@@ -7855,7 +7875,7 @@ export interface components {
                 id: string;
                 nome: string;
                 /** @enum {string} */
-                tipo: "empresas" | "contatos" | "atividades";
+                tipo: "empresas" | "contatos" | "atividades" | "oportunidades";
                 nomeArquivo: string;
                 /** @enum {string} */
                 situacao: "rascunho" | "pronta" | "em_andamento" | "concluida" | "falhou" | "cancelada" | "desfeita";
@@ -7937,7 +7957,7 @@ export interface components {
             id: string;
             nome: string;
             /** @enum {string} */
-            tipo: "empresas" | "contatos" | "atividades";
+            tipo: "empresas" | "contatos" | "atividades" | "oportunidades";
             nomeArquivo: string;
             /** @enum {string} */
             situacao: "rascunho" | "pronta" | "em_andamento" | "concluida" | "falhou" | "cancelada" | "desfeita";
@@ -7966,6 +7986,23 @@ export interface components {
             verticalId: string | null;
             tiposDeAtividade: {
                 [key: string]: string | null;
+            };
+            /** Format: uuid */
+            funilId: string | null;
+            clienteAoConquistar: boolean;
+            valoresDeCampo: {
+                fase?: {
+                    [key: string]: string | null;
+                };
+                motivo?: {
+                    [key: string]: string | null;
+                };
+                origem?: {
+                    [key: string]: string | null;
+                };
+                solucao?: {
+                    [key: string]: string | null;
+                };
             };
             pendencias: string[];
             criadoEm: string;
@@ -20114,7 +20151,7 @@ export interface operations {
             query?: {
                 pagina?: number;
                 porPagina?: number;
-                tipo?: "empresas" | "contatos" | "atividades";
+                tipo?: "empresas" | "contatos" | "atividades" | "oportunidades";
             };
             header?: never;
             path?: never;
@@ -20174,7 +20211,7 @@ export interface operations {
             query: {
                 arquivo: string;
                 nome?: string;
-                tipo?: "empresas" | "contatos" | "atividades";
+                tipo?: "empresas" | "contatos" | "atividades" | "oportunidades";
             };
             header?: never;
             path?: never;
@@ -20919,6 +20956,7 @@ export interface operations {
         parameters: {
             query?: {
                 coluna?: string;
+                campo?: "fase" | "motivo" | "origem" | "solucao";
             };
             header?: never;
             path: {
@@ -20978,7 +21016,7 @@ export interface operations {
     LotesDeImportacaoController_modelo: {
         parameters: {
             query?: {
-                tipo?: "empresas" | "contatos" | "atividades";
+                tipo?: "empresas" | "contatos" | "atividades" | "oportunidades";
             };
             header?: never;
             path?: never;

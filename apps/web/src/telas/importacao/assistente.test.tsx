@@ -93,6 +93,9 @@ const lote = (extra: Partial<LoteDeImportacao> = {}): LoteDeImportacao => ({
   origemId: null,
   verticalId: null,
   tiposDeAtividade: {},
+  funilId: null,
+  clienteAoConquistar: false,
+  valoresDeCampo: {},
   pendencias: ['Escolha o vendedor.'],
   criadoEm: '2026-10-15T12:00:00.000Z',
   concluidoEm: null,
@@ -507,6 +510,8 @@ describe('Importar planilha: andamento e relatório', () => {
     contatoNome: null,
     atividadeId: null,
     atividadeTitulo: null,
+    oportunidadeId: null,
+    oportunidadeTitulo: null,
     avisos: [],
     dados: { CNPJ: `000${n}`, Empresa: `Empresa ${n}`, Cidade: 'Vitória' },
   })

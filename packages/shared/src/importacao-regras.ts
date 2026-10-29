@@ -127,7 +127,7 @@ const SINONIMOS_DOS_NOVOS_TIPOS: Record<string, string[]> = {
   naoQuerContato: ['nao quer contato', 'nao contatar', 'optout', 'opt out'],
   observacoes: ['observacoes', 'observacao', 'obs'],
   tipo: ['tipo', 'tipo de atividade', 'tipo da atividade', 'atividade'],
-  titulo: ['titulo', 'assunto', 'descricao'],
+  titulo: ['titulo', 'assunto', 'descricao', 'oportunidade', 'nome da oportunidade', 'negocio'],
   data: ['data', 'data da atividade', 'data dd mm aaaa'],
   hora: ['hora', 'horario'],
   situacao: ['situacao', 'status'],
@@ -136,6 +136,25 @@ const SINONIMOS_DOS_NOVOS_TIPOS: Record<string, string[]> = {
   emailResponsavel: ['e mail do responsavel', 'email do responsavel', 'responsavel', 'vendedor'],
   importante: ['importante'],
   urgente: ['urgente'],
+  // Oportunidades
+  fase: ['fase', 'etapa', 'estagio', 'fase do funil'],
+  status: ['status', 'situacao da oportunidade', 'status da oportunidade'],
+  motivo: ['motivo', 'motivo da perda', 'motivo do fechamento'],
+  motivoDetalhe: ['detalhe do motivo', 'detalhe', 'motivo detalhe'],
+  retomarEm: ['retomar em', 'retomar', 'data de retomada'],
+  dataFechamento: ['data de fechamento', 'fechamento', 'fechada em', 'data do fechamento'],
+  valorUnico: ['valor unico', 'valor', 'valor total', 'valor da oportunidade', 'implantacao'],
+  valorMensal: ['valor mensal', 'mensalidade', 'mrr'],
+  meses: ['meses', 'duracao', 'duracao meses', 'prazo meses'],
+  probabilidade: ['probabilidade', 'chance'],
+  dataPrevista: [
+    'data prevista de fechamento',
+    'previsao',
+    'previsao de fechamento',
+    'data prevista',
+  ],
+  origem: ['origem', 'origem da oportunidade', 'fonte'],
+  solucao: ['solucao', 'produto', 'linha de solucao'],
 }
 
 /** O campo de cada coluna que o título indica, para qualquer tipo de lote (empresas segue `sugerirMapeamento`). */

@@ -31,6 +31,8 @@ const DESCRICAO_DO_TIPO: Record<TipoDeImportacao, string> = {
     'Cada linha vira um contato, ligado à empresa pelo CNPJ (a empresa precisa já estar na carteira). Contato que já existe (mesmo e-mail ou telefone) só é vinculado à empresa, sem mudar os dados dele.',
   atividades:
     'Cada linha vira uma atividade da empresa, ligada pelo CNPJ (a empresa precisa já estar na carteira). A realizada atualiza a última visita, o último contato e as tags da empresa, como se tivesse sido registrada à mão.',
+  oportunidades:
+    'Cada linha vira uma oportunidade da empresa, ligada pelo CNPJ (a empresa precisa já estar na carteira), num funil escolhido no próximo passo. A fechada (conquistada, perdida, cancelada ou suspensa) entra com o motivo e a fase em que parou, como se tivesse sido fechada à mão.',
 }
 
 /** O que está errado no arquivo escolhido, antes de enviar; `undefined` = pode enviar. */
@@ -113,6 +115,7 @@ export function EnviarPlanilha() {
         <h2 className="m-0 text-[15px] leading-5 font-semibold">O que você vai importar?</h2>
         <SegmentedControl
           label="O que importar"
+          className="max-w-full flex-wrap"
           options={TIPOS_DE_IMPORTACAO.map((t) => ({
             value: t,
             label: ROTULO_DO_TIPO_DE_IMPORTACAO[t],
@@ -122,8 +125,9 @@ export function EnviarPlanilha() {
         />
         <p className="m-0 text-[13px] text-ink-muted">{DESCRICAO_DO_TIPO[tipo]}</p>
         <Alert tone="info">
-          Ordem recomendada: <strong>empresas → contatos → atividades</strong>. Contatos e
-          atividades se ligam à empresa pelo CNPJ, que já precisa estar na carteira.
+          Ordem recomendada: <strong>empresas → contatos → oportunidades → atividades</strong>.
+          Contatos, oportunidades e atividades se ligam à empresa pelo CNPJ, que já precisa estar na
+          carteira.
         </Alert>
         {tipo !== 'empresas' ? (
           <p className="m-0 text-[13px] text-ink-muted">

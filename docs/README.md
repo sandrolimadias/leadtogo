@@ -21,6 +21,8 @@
 | [plano_api_aberta.md](plano_api_aberta.md) | Plano da API aberta (chaves de API, API pública `/v1/publica/*` e webhooks de saída), base das integrações com n8n e ERPs; aprovado e executado (fases I1 a I4) |
 | [roteiro_teste_api_aberta.md](roteiro_teste_api_aberta.md) | Roteiro de teste da API aberta: chaves, API pública, webhooks e os workflows do n8n |
 | [api/publica-v1.openapi.json](api/publica-v1.openapi.json) | Retrato do contrato da API pública v1 (gerado; só mudanças aditivas) |
+| [plano_importacao_oportunidades.md](plano_importacao_oportunidades.md) | Plano da importação de oportunidades por planilha (quarto tipo do assistente de importação); aprovado em 28/10/2026 |
+| [roteiro_teste_importacao_oportunidades.md](roteiro_teste_importacao_oportunidades.md) | Roteiro de teste da importação de oportunidades por planilha |
 | [plano_prospeccao.md](plano_prospeccao.md) | Plano da Prospecção (busca por CNAE e município na base da Receita), guardado para a próxima fase |
 | [plano_implantacao.md](plano_implantacao.md) | Plano da Fase 0: estrutura, infraestrutura e primeiro deploy |
 | [prototipo/](prototipo/README.md) | Protótipo das telas (Claude Design) e especificação de interface |

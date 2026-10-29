@@ -12,6 +12,7 @@ import {
 } from './executor-base.js'
 import { ExecutorDeAtividades } from './executor-atividades.js'
 import { ExecutorDeContatos } from './executor-contatos.js'
+import { ExecutorDeOportunidades } from './executor-oportunidades.js'
 import {
   ESPERAS_DA_RECEITA_MS,
   ExecutorDeEmpresas,
@@ -26,7 +27,7 @@ export type { DepsDoExecutor, DesfechoDaExecucao, LimitesDoBloco, ResultadoDoBlo
 /**
  * Executa lotes de importação, um bloco por vez. O envelope (conferir o lote e quem importa, blocos
  * curtos, cancelamento, progresso, totais e encerramento) é de `ExecutorBase`; o que muda de um tipo de
- * lote para outro (empresas, contatos, atividades) fica no executor do tipo.
+ * lote para outro (empresas, contatos, atividades, oportunidades) fica no executor do tipo.
  */
 export class ExecutorDaImportacao {
   private readonly esperar: (ms: number) => Promise<void>
@@ -38,6 +39,7 @@ export class ExecutorDaImportacao {
       empresas: new ExecutorDeEmpresas(deps) as ExecutorBase<never>,
       contatos: new ExecutorDeContatos(deps) as ExecutorBase<never>,
       atividades: new ExecutorDeAtividades(deps) as ExecutorBase<never>,
+      oportunidades: new ExecutorDeOportunidades(deps) as ExecutorBase<never>,
     }
   }
 

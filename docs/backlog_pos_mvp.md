@@ -61,6 +61,10 @@
 | Tarefa sem empresa, oportunidade, lembrete, recorrência e vários participantes na atividade importada | Não existem no formulário manual do MVP (o CNPJ é obrigatório, a atividade tem um contato só e não há oportunidade, lembrete nem repetição) | Importação de contatos e atividades |
 | Notificação de "importação concluída" para contatos e atividades | A central de notificações está fora do MVP (vale o mesmo motivo da importação de empresas) | Importação de contatos e atividades |
 | Relatório completo da importação de contatos e atividades em Excel | O CSV do que não entrou cobre a correção; o relatório inteiro está na tela, filtrável por resultado | Importação de contatos e atividades |
+| Importação de oportunidades: atualizar a que já existe (*upsert*) e **ID externo** para reimportar do CRM antigo sem duplicar | Decidido em 28/10/2026: a duplicada é a mesma empresa, funil e título, e a importação nunca altera o que existe | Importação de oportunidades |
+| Importação de oportunidades: coluna Funil (vários funis no mesmo lote) e o histórico de fases com as datas | Decidido em 28/10/2026: um funil por lote; a importada nasce com o histórico da criação e do fechamento | Importação de oportunidades |
+| Atividade importada apontando a oportunidade (coluna "Título da oportunidade" na importação de atividades) | Muda a outra importação; pequena, sugerida para logo depois | Importação de oportunidades |
+| Criar origem, solução ou motivo que não existe a partir da planilha | Os cadastros são do administrador; a importação só aponta para os que existem | Importação de oportunidades |
 | Recálculo da carteira em lote (uma consulta para todas as empresas do bloco, no lugar de uma por empresa) | Medido em 16/10/2026 com 10.000 linhas de atividades e 1.000 empresas: o recálculo por empresa soma 80 s dos 270 s do lote (7 ms por empresa) e o bloco de 200 linhas dura cerca de 5 s; só vale se um dia pesar, com teste de equivalência com `recalcularCarteira` | Importação de contatos e atividades |
 
 ## Atividades
