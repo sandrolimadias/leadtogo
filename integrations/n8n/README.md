@@ -6,11 +6,12 @@ Leadtogo: `https://crm.aledias.com.br/v1/publica/docs`.
 
 ## Workflows
 
-| Arquivo                                                                        | O que faz                                                                                                                           | Chave (modelo de permissões)              |
-| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| [`leadtogo-receber-eventos.json`](workflows/leadtogo-receber-eventos.json)     | Recebe os eventos do Leadtogo, confere a assinatura e responde 200 (ou 401)                                                         | — (usa o segredo do webhook)              |
-| [`leadtogo-formulario-site.json`](workflows/leadtogo-formulario-site.json)     | Formulário do site → empresa (Lead), contato e tarefa de retorno                                                                    | _Formulário do site_ + responsável padrão |
-| [`leadtogo-listar-associados.json`](workflows/leadtogo-listar-associados.json) | Todo dia, lista as empresas com Status Cliente ("Associado"), todas as páginas, um CNPJ por item: o começo da integração com o Omie | _Leitura da carteira_                     |
+| Arquivo                                                                        | O que faz                                                                                                                             | Chave (modelo de permissões)              |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| [`leadtogo-receber-eventos.json`](workflows/leadtogo-receber-eventos.json)     | Recebe os eventos do Leadtogo, confere a assinatura e responde 200 (ou 401)                                                           | — (usa o segredo do webhook)              |
+| [`leadtogo-formulario-site.json`](workflows/leadtogo-formulario-site.json)     | Formulário do site → empresa (Lead), contato e tarefa de retorno                                                                      | _Formulário do site_ + responsável padrão |
+| [`leadtogo-listar-associados.json`](workflows/leadtogo-listar-associados.json) | Todo dia, lista as empresas com Status Cliente ("Associado"), todas as páginas, um CNPJ por item: o começo da integração com o Omie   | _Leitura da carteira_                     |
+| [`leadtogo-listar-empresas.json`](workflows/leadtogo-listar-empresas.json)     | Lista as empresas cadastradas (filtros opcionais: status, tag, responsável, alteradas desde), todas as páginas, uma linha por empresa | _Leitura da carteira_                     |
 
 Para importar: n8n → **Workflows** → **Import from File**. Cada workflow tem uma nota "Leia-me" com o que ajustar.
 
