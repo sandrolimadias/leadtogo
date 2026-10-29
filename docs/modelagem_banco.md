@@ -992,3 +992,15 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 **O que a sessão do portal enxerga:** `avisos` e `aviso_empresas` ficam **fechados** (política `portal_negado`: só a equipe e o worker). `aviso_entregas`: lê e marca como lida **só a própria**, sem criar nem apagar. `portal_preferencias`: lê, cria e atualiza só a própria (sem apagar). `portal_push_inscricoes`: gerencia só as próprias.
 
 **Varredura do worker (cross-tenant):** `app_avisos_a_enviar()` (avisos agendados que venceram) e `app_pushes_pendentes()` (entregas com `push_enviar_em` vencido e sem envio), ambas devolvem `(id, tenant_id)` com LIMIT 200 e usam políticas só para o dono travadas em `app.varrendo_avisos`, como nas fases anteriores.
+
+## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
+
+**Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (busca das oportunidades pelo título, sem acento). Empresas e contatos já tinham os seus (0017 e 0018). Os índices trigram são criados por SQL na migração e não aparecem no schema do Drizzle nem nos snapshots, por isso o `db:generate` não os enxerga nem tenta apagá-los.
+
+Uma tabela nova, com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_tenant`) e teste de isolamento (`packages/db/src/testes/busca.test.ts` e o teste genérico):
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `buscas_recentes` | membro_id (FK `membros`, `ON DELETE CASCADE`), termo (2 a 100, como a pessoa digitou), termo_comparavel (sem acento, minúsculo, só letras e números: a chave de "mesmo termo"), buscado_em | **Único** em `(tenant_id, membro_id, termo_comparavel)`; índice `(tenant_id, membro_id, buscado_em DESC)`. Sem `excluido_em`: apagar um termo é apagar de fato (LGPD) |
+
+**Só do próprio membro:** a política do banco isola o tenant, e a API filtra toda leitura e escrita pelo membro da sessão (nem o admin lê o histórico de outra pessoa). A própria API mantém **no máximo 10** por membro (apaga as mais antigas na mesma transação da gravação). O membro não é excluído, é **desativado**: ao desativar, a API apaga o histórico dele (`PATCH` do membro); o `CASCADE` cobre uma exclusão física.

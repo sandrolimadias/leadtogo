@@ -46,7 +46,7 @@ A caixa da barra do topo ("Buscar empresas, contatos e oportunidades") hoje só 
 
 **Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (as oportunidades ainda não têm índice de busca). Avaliar com `EXPLAIN` também um índice trigram em `contato_emails.email`.
 
-**Conferência:** os índices trigram das migrações 0017 e 0018 não aparecem no schema do Drizzle (`packages/db/src/schema/carteira.ts` e `contatos.ts`). Se de fato não estiverem declarados, declará-los no schema, para um `pnpm db:generate` futuro não tentar apagá-los.
+**Conferência (feita):** os índices trigram das migrações 0017 e 0018 não estão no schema do Drizzle nem nos snapshots, então o `db:generate` não os enxerga e não tenta apagá-los. O índice novo segue o mesmo padrão (SQL na migração).
 
 **Tabela nova `buscas_recentes`:**
 
@@ -63,7 +63,7 @@ A caixa da barra do topo ("Buscar empresas, contatos e oportunidades") hoje só 
 - **Única** em `(tenant_id, membro_id, termo_comparavel)`; índice em `(tenant_id, membro_id, buscado_em DESC)`.
 - **RLS habilitado e forçado**, como as demais tabelas; teste de isolamento entre tenants.
 - A política de leitura e escrita é do tenant; a restrição **ao próprio membro** fica na API (toda consulta filtra `membro_id = membro atual`), com teste.
-- Apagar o membro apaga o histórico dele (`ON DELETE CASCADE`, ou a limpeza junto da remoção do membro, conforme o padrão de `membros`).
+- O membro não é excluído, é desativado: **desativar apaga o histórico dele** (na API); `ON DELETE CASCADE` cobre uma exclusão física.
 - `modelagem_banco.md` ganha a tabela e o índice.
 
 ## 6. Back-end (`apps/api`)
@@ -120,7 +120,7 @@ A caixa da barra do topo ("Buscar empresas, contatos e oportunidades") hoje só 
 
 - **Desempenho:** `LIKE '%termo%'` só usa o índice trigram com 3 letras ou mais; com 2 letras a consulta varre a carteira do tenant (aceitável com limite 5 e as carteiras atuais). Medir com `EXPLAIN ANALYZE` no seed; se pesar, subir o mínimo para 3.
 - **Segurança:** a busca é a forma mais fácil de descobrir a carteira de outra pessoa; por isso os testes de regra de carteira da seção 8 são obrigatórios. O contato segue `condicaoDeVisibilidadeDoContato` (ligado a uma empresa visível ou cadastrado sem empresa).
-- **LGPD:** o termo pode conter nome, telefone ou CPF. Guardamos só 10 por pessoa, a pessoa apaga quando quiser (apagar é definitivo), o histórico some com o membro e o tratamento entra em `lgpd.md`.
+- **LGPD:** o termo pode conter nome, telefone ou CPF. Guardamos só 10 por pessoa, a pessoa apaga quando quiser (apagar é definitivo), o histórico some quando o membro é desativado e o tratamento entra em `lgpd.md`.
 - **Sem variáveis de ambiente novas** (nada muda no `.env.example` nem no Coolify).
 
 ## 11. Execução
