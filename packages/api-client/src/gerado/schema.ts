@@ -64,6 +64,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/busca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Busca global
+         * @description Empresas (fantasia, razão social, cidade e CNPJ com ou sem máscara), contatos (nome, e-mail e telefone) e oportunidades (título e nome da empresa), sem acento e sem diferenciar maiúsculas. Cada tipo segue a sua regra de carteira (`empresas.ver`, `contatos.ver`, `oportunidades.ver`): sem a permissão, a lista do tipo volta vazia. Até `limite` por tipo (padrão 5, máximo 20); quem começa com o termo vem antes de quem só o contém, depois o atualizado mais recentemente. Mínimo de 2 letras. Só lê: o histórico é gravado por `POST /v1/busca/recentes`.
+         */
+        get: operations["BuscaGlobalController_buscar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/busca/recentes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Buscas recentes
+         * @description As até 10 últimas buscas concluídas, a mais recente primeiro. Só as buscas de quem pede: ninguém (nem o administrador) lê ou apaga o histórico de outra pessoa.
+         */
+        get: operations["BuscaGlobalController_recentes"];
+        put?: never;
+        /**
+         * Registrar uma busca recente
+         * @description Chamada quando a busca termina (a pessoa escolheu um resultado ou apertou Enter), nunca a cada letra. O mesmo termo (sem acento e sem maiúsculas) não duplica: volta ao topo. Passou de 10, a mais antiga sai. Devolve a lista atualizada. Só as buscas de quem pede: ninguém (nem o administrador) lê ou apaga o histórico de outra pessoa.
+         */
+        post: operations["BuscaGlobalController_registrar"];
+        /**
+         * Limpar as buscas recentes
+         * @description Apaga todo o histórico de quem pede. Só as buscas de quem pede: ninguém (nem o administrador) lê ou apaga o histórico de outra pessoa.
+         */
+        delete: operations["BuscaGlobalController_limpar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/busca/recentes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Apagar uma busca recente
+         * @description Apaga de fato (sem lixeira). Só as buscas de quem pede: ninguém (nem o administrador) lê ou apaga o histórico de outra pessoa. A de outra pessoa responde 404.
+         */
+        delete: operations["BuscaGlobalController_apagar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/carteira/atividades": {
         parameters: {
             query?: never;
@@ -5973,6 +6041,16 @@ export interface components {
         BloquearComentariosEntrada: {
             bloqueados: boolean;
         };
+        BuscaRecente: {
+            /** Format: uuid */
+            id: string;
+            termo: string;
+            /** Format: date-time */
+            buscadoEm: string;
+        };
+        BuscasRecentes: {
+            itens: components["schemas"]["BuscaRecente"][];
+        };
         CampoDeVisita: {
             /** Format: uuid */
             id: string;
@@ -7488,6 +7566,17 @@ export interface components {
                 auth: string;
             };
         };
+        ItemDaBuscaGlobal: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            subtitulo: string | null;
+            status: {
+                nome: string;
+                cor: string;
+            } | null;
+            destino: string;
+        };
         ItemDaListaDeContatos: {
             /** Format: uuid */
             id: string;
@@ -8272,6 +8361,9 @@ export interface components {
             /** Format: date-time */
             criadaEm: string;
         };
+        NovaBuscaRecente: {
+            termo: string;
+        };
         NovaOrdemEntrada: {
             ids: string[];
         };
@@ -9022,6 +9114,11 @@ export interface components {
         ResultadoDaBuscaDoPortal: {
             itens: components["schemas"]["ResultadoDaBusca"][];
         };
+        ResultadoDaBuscaGlobal: {
+            empresas: components["schemas"]["ItemDaBuscaGlobal"][];
+            contatos: components["schemas"]["ItemDaBuscaGlobal"][];
+            oportunidades: components["schemas"]["ItemDaBuscaGlobal"][];
+        };
         ResultadoDaTagEmMassa: {
             aplicadas: number;
             semMudanca: number;
@@ -9577,6 +9674,256 @@ export interface operations {
             };
             /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    BuscaGlobalController_buscar: {
+        parameters: {
+            query: {
+                q: string;
+                tipos?: ("empresas" | "contatos" | "oportunidades")[];
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoDaBuscaGlobal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    BuscaGlobalController_recentes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuscasRecentes"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    BuscaGlobalController_registrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovaBuscaRecente"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuscasRecentes"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    BuscaGlobalController_limpar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    BuscaGlobalController_apagar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

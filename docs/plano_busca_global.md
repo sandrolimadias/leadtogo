@@ -77,7 +77,7 @@ A caixa da barra do topo ("Buscar empresas, contatos e oportunidades") hoje só 
 
 ### 6.2 Busca: `GET /v1/busca`
 
-- `BuscaGlobalService` em `apps/api/src/carteira/`: três consultas em paralelo (`Promise.all`), cada uma com a sua condição de busca (de `busca-texto.ts`), a sua visibilidade e `excluido_em IS NULL`.
+- `BuscaGlobalService` em `apps/api/src/carteira/`: três consultas em sequência (dividem a transação do tenant ativo, que não aceita comandos em paralelo), cada uma com a sua condição de busca (de `busca-texto.ts`), a sua visibilidade e `excluido_em IS NULL`.
 - Só lê: **nunca grava no histórico** (as sugestões chamam a rota a cada pausa da digitação).
 - Sem a permissão de ver um tipo, a seção volta vazia (não dá erro).
 - Limite de requisições pelo módulo `rate-limit`.

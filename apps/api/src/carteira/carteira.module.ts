@@ -4,6 +4,8 @@ import { ReceitaModule } from '../receita/receita.module.js'
 import { AtualizarPelaReceitaService } from './atualizar-receita.service.js'
 import { AtividadesController } from './atividades.controller.js'
 import { AtividadesService } from './atividades.service.js'
+import { BuscaGlobalController } from './busca-global.controller.js'
+import { BuscaGlobalService } from './busca-global.service.js'
 import { ListaDeAtividadesService } from './lista-atividades.service.js'
 import { ListaDeOportunidadesService } from './lista-oportunidades.service.js'
 import { OportunidadesController } from './oportunidades.controller.js'
@@ -30,6 +32,7 @@ import { ListaDeEmpresasService } from './lista.service.js'
     AtividadesController,
     OportunidadesController,
     DashboardController,
+    BuscaGlobalController,
   ],
   providers: [
     EmpresasDaCarteiraService,
@@ -46,6 +49,7 @@ import { ListaDeEmpresasService } from './lista.service.js'
     OportunidadesService,
     ListaDeOportunidadesService,
     DashboardService,
+    BuscaGlobalService,
   ],
   // Visitas (G3b) cria o contato e o próximo passo do relatório pelas mesmas regras da carteira
   exports: [ContatosService, AtividadesService, EmpresasDaCarteiraService, OportunidadesService],

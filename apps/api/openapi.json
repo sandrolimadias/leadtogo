@@ -117,6 +117,307 @@
         "security": []
       }
     },
+    "/v1/busca": {
+      "get": {
+        "description": "Empresas (fantasia, razão social, cidade e CNPJ com ou sem máscara), contatos (nome, e-mail e telefone) e oportunidades (título e nome da empresa), sem acento e sem diferenciar maiúsculas. Cada tipo segue a sua regra de carteira (`empresas.ver`, `contatos.ver`, `oportunidades.ver`): sem a permissão, a lista do tipo volta vazia. Até `limite` por tipo (padrão 5, máximo 20); quem começa com o termo vem antes de quem só o contém, depois o atualizado mais recentemente. Mínimo de 2 letras. Só lê: o histórico é gravado por `POST /v1/busca/recentes`.",
+        "operationId": "BuscaGlobalController_buscar",
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "tipos",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["empresas", "contatos", "oportunidades"]
+              }
+            }
+          },
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 5,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDaBuscaGlobal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Busca global",
+        "tags": ["Busca global"]
+      }
+    },
+    "/v1/busca/recentes": {
+      "get": {
+        "description": "As até 10 últimas buscas concluídas, a mais recente primeiro. Só as buscas de quem pede: ninguém (nem o administrador) lê ou apaga o histórico de outra pessoa.",
+        "operationId": "BuscaGlobalController_recentes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuscasRecentes"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Buscas recentes",
+        "tags": ["Busca global"]
+      },
+      "post": {
+        "description": "Chamada quando a busca termina (a pessoa escolheu um resultado ou apertou Enter), nunca a cada letra. O mesmo termo (sem acento e sem maiúsculas) não duplica: volta ao topo. Passou de 10, a mais antiga sai. Devolve a lista atualizada. Só as buscas de quem pede: ninguém (nem o administrador) lê ou apaga o histórico de outra pessoa.",
+        "operationId": "BuscaGlobalController_registrar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NovaBuscaRecente"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuscasRecentes"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Registrar uma busca recente",
+        "tags": ["Busca global"]
+      },
+      "delete": {
+        "description": "Apaga todo o histórico de quem pede. Só as buscas de quem pede: ninguém (nem o administrador) lê ou apaga o histórico de outra pessoa.",
+        "operationId": "BuscaGlobalController_limpar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Limpar as buscas recentes",
+        "tags": ["Busca global"]
+      }
+    },
+    "/v1/busca/recentes/{id}": {
+      "delete": {
+        "description": "Apaga de fato (sem lixeira). Só as buscas de quem pede: ninguém (nem o administrador) lê ou apaga o histórico de outra pessoa. A de outra pessoa responde 404.",
+        "operationId": "BuscaGlobalController_apagar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Apagar uma busca recente",
+        "tags": ["Busca global"]
+      }
+    },
     "/v1/carteira/atividades": {
       "get": {
         "description": "Regra de carteira: admin e gestor veem e editam todas as atividades; o vendedor vê a atividade da empresa que ele vê (a própria carteira, ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita a da empresa dele; a Tarefa sem empresa só o responsável (e admin e gestor) vê. Atividade que o usuário não vê responde 404. Abas `agendadas` (abertas que ainda não passaram), `atrasadas` (abertas com a data passada; a de dia inteiro só atrasa depois do dia, no fuso da empresa) e `realizadas`; sem aba, a linha do tempo (as abertas primeiro, depois o histórico, com as canceladas). Filtros por empresa, contato, tipo, responsável, `minhas` e busca (título, empresa ou contato). Traz a contagem de cada aba com os mesmos filtros.",
@@ -29279,6 +29580,37 @@
         "required": ["bloqueados"],
         "additionalProperties": false
       },
+      "BuscaRecente": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "termo": {
+            "type": "string"
+          },
+          "buscadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "termo", "buscadoEm"],
+        "additionalProperties": false
+      },
+      "BuscasRecentes": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuscaRecente"
+            }
+          }
+        },
+        "required": ["itens"],
+        "additionalProperties": false
+      },
       "CampoDeVisita": {
         "oneOf": [
           {
@@ -34868,6 +35200,41 @@
         "required": ["endpoint", "keys"],
         "additionalProperties": false
       },
+      "ItemDaBuscaGlobal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "subtitulo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "nome": {
+                "type": "string"
+              },
+              "cor": {
+                "type": "string"
+              }
+            },
+            "required": ["nome", "cor"],
+            "additionalProperties": false
+          },
+          "destino": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "titulo", "subtitulo", "status", "destino"],
+        "additionalProperties": false
+      },
       "ItemDaListaDeContatos": {
         "type": "object",
         "properties": {
@@ -37857,6 +38224,18 @@
         "required": ["id", "tipo", "titulo", "corpo", "destino", "lida", "criadaEm"],
         "additionalProperties": false
       },
+      "NovaBuscaRecente": {
+        "type": "object",
+        "properties": {
+          "termo": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          }
+        },
+        "required": ["termo"],
+        "additionalProperties": false
+      },
       "NovaOrdemEntrada": {
         "type": "object",
         "properties": {
@@ -40607,6 +40986,31 @@
           }
         },
         "required": ["itens"],
+        "additionalProperties": false
+      },
+      "ResultadoDaBuscaGlobal": {
+        "type": "object",
+        "properties": {
+          "empresas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDaBuscaGlobal"
+            }
+          },
+          "contatos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDaBuscaGlobal"
+            }
+          },
+          "oportunidades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDaBuscaGlobal"
+            }
+          }
+        },
+        "required": ["empresas", "contatos", "oportunidades"],
         "additionalProperties": false
       },
       "ResultadoDaTagEmMassa": {

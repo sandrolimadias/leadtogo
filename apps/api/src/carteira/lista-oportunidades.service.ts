@@ -10,6 +10,7 @@ import {
 import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
+import { buscaDaOportunidade } from './busca-texto.js'
 import { ErroApi } from '../http/erro-api.js'
 import { fusoDaEmpresa } from './atividades-leitura.js'
 import {
@@ -21,8 +22,6 @@ import { escopoDaCarteira } from './regras-de-carteira.js'
 
 const { empresas, funilFases, funis, oportunidades } = schema
 
-const semAcento = (valor: unknown) => sql`lower(f_unaccent(${valor}))`
-const literalParaLike = (texto: string): string => texto.replace(/[\\%_]/g, (c) => `\\${c}`)
 const numero = (v: unknown): number => Number(v ?? 0)
 
 /** O dia seguinte a AAAA-MM-DD (para "até o dia X" valer o dia todo). */
@@ -38,11 +37,7 @@ export class ListaDeOportunidadesService {
   constructor(private readonly ctx: ContextoTenantService) {}
 
   private buscaSql(busca: string | undefined): SQL | undefined {
-    if (!busca) return undefined
-    const termo = `%${literalParaLike(busca.toLowerCase())}%`
-    return sql`(${semAcento(oportunidades.titulo)} LIKE ${termo} ESCAPE '\\'
-      OR ${semAcento(empresas.razaoSocial)} LIKE ${termo} ESCAPE '\\'
-      OR ${semAcento(sql`coalesce(${empresas.nomeFantasia}, '')`)} LIKE ${termo} ESCAPE '\\')`
+    return busca ? buscaDaOportunidade(busca) : undefined
   }
 
   async kanban(consulta: ConsultaDoKanban): Promise<KanbanDeOportunidades> {

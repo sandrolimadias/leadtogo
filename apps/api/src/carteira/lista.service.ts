@@ -9,6 +9,7 @@ import type {
 import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
+import { buscaDaEmpresa, semAcento } from './busca-texto.js'
 import {
   condicaoDeVisibilidade,
   type EscopoDaCarteira,
@@ -18,12 +19,6 @@ import {
 
 const { empresas, empresaTags, empresaTelefones, membros, municipios, tags, tenantConfiguracoes } =
   schema
-
-/** Texto sem acento e em minúsculas, do mesmo jeito que os índices de busca (`f_unaccent`). */
-const semAcento = (valor: unknown) => sql`lower(f_unaccent(${valor}))`
-
-/** Escapa `%`, `_` e `\` para o texto digitado valer literalmente no LIKE. */
-const literalParaLike = (texto: string): string => texto.replace(/[\\%_]/g, (c) => `\\${c}`)
 
 /** O Status da empresa é Cliente ou Prospect (pelas chaves do sistema, que sobrevivem a renomear). */
 const statusClienteOuProspect = sql`EXISTS (
@@ -220,7 +215,7 @@ export class ListaDeEmpresasService {
         break
     }
 
-    if (c.busca) condicoes.push(this.busca(c.busca))
+    if (c.busca) condicoes.push(buscaDaEmpresa(c.busca))
     for (const tagId of c.tags ?? []) condicoes.push(temATag(tagId))
     if (c.vendedorId) condicoes.push(eq(empresas.vendedorId, c.vendedorId))
     if (c.semContato) {
@@ -258,20 +253,6 @@ export class ListaDeEmpresasService {
   }
 
   /** Nome, razão social e cidade sem acento; documento por pedaço, com ou sem máscara. */
-  private busca(texto: string) {
-    const padrao = `%${literalParaLike(texto)}%`
-    const alternativas = [
-      sql`${semAcento(empresas.razaoSocial)} LIKE ${semAcento(padrao)}`,
-      sql`${semAcento(empresas.nomeFantasia)} LIKE ${semAcento(padrao)}`,
-      sql`${semAcento(municipios.nome)} LIKE ${semAcento(padrao)}`,
-    ]
-    const documento = texto.replace(/[^0-9A-Za-z]/g, '').toUpperCase()
-    if (documento.length >= 3 && documento === texto.replace(/[.\-/\s]/g, '').toUpperCase()) {
-      alternativas.push(sql`${empresas.documento} LIKE ${`%${documento}%`}`)
-    }
-    return or(...alternativas)
-  }
-
   private ordem(c: ConsultaDaLista) {
     const sentido = c.sentido === 'desc' ? desc : asc
     const desempate = asc(empresas.id)
