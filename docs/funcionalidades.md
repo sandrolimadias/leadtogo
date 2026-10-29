@@ -149,6 +149,13 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 - Ações em massa: **Aplicar tag** (única ação desta fase; Trocar vendedor e Exportar ficam para depois). Só no desktop e no tablet; marca só o que o usuário edita.
 - Celular: cartões com **Ligar, WhatsApp e Rota**; "Importar planilha" só aparece com o Módulo 4.
 
+**Decisões de 29/10/2026: lista (valem sobre as anteriores)**
+- **Chips:** Todas · Minha carteira · Nunca visitadas · Sem próxima atividade. O chip *Sem visita há 90 dias* **saiu da tela** (a API ainda o aceita; link antigo cai em *Todas*).
+- **Filtros:** Status, Visitação, Vendedor, Cidade, **Porte** (Micro Empresa, Empresa de Pequeno Porte, Demais, Não informado; "Não informado" inclui quem não tem porte) e **Regime tributário**. O filtro **Última visita saiu**. Porte e regime filtram mesmo sem aparecer como coluna. A grade de filtros se ajusta à largura e não passa do fundo (tablet).
+- **Colunas:** Empresa · Tags · **Cidade** · **Estado** (UF, em colunas separadas) · Último contato · Próxima atividade. **Saíram Última visita e Em aberto.**
+- **Tags na ordem dos grupos:** na lista e na ficha, as tags seguem a ordem dos grupos de *Configurações → Tags* (setas ↑ ↓ de cada bloco) e, dentro do grupo, a ordem das tags.
+- **Celular:** só a busca na linha; abaixo, o botão **Filtros** (com a quantidade ativa) abre os filtros um embaixo do outro e vira **Fechar filtros** para recolher a seção. O "+ Nova empresa" da linha saiu: fica no **+** do topo.
+
 ### Tela Empresa (detalhe)
 - Cabeçalho: nome, tags, responsável, última visita/contato e ações rápidas (nova atividade, nova oportunidade, ligar, WhatsApp).
 - Abas:

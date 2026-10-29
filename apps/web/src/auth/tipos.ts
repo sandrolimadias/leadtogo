@@ -220,6 +220,7 @@ import type {
   SalvarEventoEntrada,
   CriarAvisoEntrada,
   CampoComValores,
+  ConverterSocioEntrada,
 } from '@leadtogo/shared'
 
 /** Erro de uma chamada de acesso, já em pt-BR e com o código estável para o front decidir o que fazer. */
@@ -330,7 +331,12 @@ export interface ServicosDeContatos {
     dados: AlterarVinculoEntrada,
   ) => Promise<Resultado<Contato>>
   /** Converte o sócio da empresa em contato (vínculo com cargo = qualificação). 409 `socio_ja_convertido` */
-  converterSocio: (empresaId: string, socioId: string) => Promise<Resultado<Contato>>
+  /** Telefone e e-mail opcionais: em branco, o contato nasce sem eles */
+  converterSocio: (
+    empresaId: string,
+    socioId: string,
+    dados?: ConverterSocioEntrada,
+  ) => Promise<Resultado<Contato>>
   /** Aba Histórico do contato: auditoria legível, do mais recente ao mais antigo */
   historico: (id: string, pagina: number) => Promise<Resultado<HistoricoDaEmpresa>>
   /** Os contatos de uma empresa (aba Contatos da ficha): ativos primeiro, depois os inativos */
