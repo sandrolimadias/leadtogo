@@ -1297,3 +1297,20 @@ fabricas['webhook_entregas'] = definirFabrica<{ webhookId: string }>({
     return id
   },
 })
+
+// Busca global: as buscas recentes de um membro
+fabricas['buscas_recentes'] = definirFabrica<{ membroId: string }>({
+  colunaAlteravel: 'termo',
+  preparar: (owner, tenantId) =>
+    comTenant(owner, tenantId, async (tx) => {
+      const membroId = novoId()
+      await tx`INSERT INTO membros (id, tenant_id, nome) VALUES (${membroId}, ${tenantId}, 'Quem busca')`
+      return { membroId }
+    }),
+  criar: async (tx, tenantId, { membroId }) => {
+    const id = novoId()
+    await tx`INSERT INTO buscas_recentes (id, tenant_id, membro_id, termo, termo_comparavel)
+      VALUES (${id}, ${tenantId}, ${membroId}, ${`termo ${id}`}, ${`termo ${id}`})`
+    return id
+  },
+})

@@ -92,6 +92,10 @@ export class MembrosService {
         perfil_id = ${mudouPapel ? (perfil?.id ?? null) : sql`perfil_id`},
         atualizado_em = now(), atualizado_por = ${this.ctx.membro.id}
       WHERE id = ${alvo.id}`)
+    // Quem é desativado perde o histórico de buscas (LGPD: o termo pode conter dado pessoal)
+    if (mudouAtivo && !novoAtivo) {
+      await db.execute(sql`DELETE FROM buscas_recentes WHERE membro_id = ${alvo.id}`)
+    }
     await exigirQuemGerePerfis(this.ctx)
     if (mudouPapel) {
       await this.auditoria.registrar({

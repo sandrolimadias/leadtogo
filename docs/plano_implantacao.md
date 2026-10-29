@@ -344,7 +344,7 @@ Entregue:
 - **Tema** claro/escuro/sistema salvo por usuário (e no aparelho, para não piscar). `AppNav`/`TenantSwitcher` ganharam as variações recolhida, links do roteador e logotipo, sem alterar o catálogo (0 pixel de diferença no `comparar:catalogos`).
 - **Testes:** 15 de casca em jsdom (desktop, tablet, celular, seletor, tema, recolher, troca) e 2 E2E (duas empresas: seletor no login, última usada, troca pelo menu, menu recolhido que sobrevive ao recarregar; celular: barra inferior, folha de perfil, troca e Segurança). Capturas: `pnpm --filter @leadtogo/web capturar:casca` → `~/projetos/leadtogo-capturas/casca/` (1440, 820 e 390 px, claro e escuro).
 
-Ficam para as telas de negócio (hoje avisam "chega nas próximas etapas"): busca global, "Registrar atividade", notificações reais (o sino abre o painel vazio), contadores do menu (Oportunidades "paradas", Tarefas), "Painel consolidado" e "Criar empresa" no seletor, e o PWA (`vite-plugin-pwa`, manifest e ícones), que segue pendente do E9.
+Ficam para as telas de negócio (hoje avisam "chega nas próximas etapas"): busca global (entregue em 29/10/2026, `plano_busca_global.md`), "Registrar atividade", notificações reais (o sino abre o painel vazio), contadores do menu (Oportunidades "paradas", Tarefas), "Painel consolidado" e "Criar empresa" no seletor, e o PWA (`vite-plugin-pwa`, manifest e ícones), que segue pendente do E9.
 
 ### Pendências registradas para as próximas etapas (2FA para todos)
 

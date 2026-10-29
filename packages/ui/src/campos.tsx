@@ -2,6 +2,7 @@ import { ChevronDown, CircleAlert, type LucideIcon } from 'lucide-react'
 import {
   type InputHTMLAttributes,
   type ReactNode,
+  type Ref,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
   useId,
@@ -67,6 +68,8 @@ export type TextFieldProps = ComunsDoCampo &
     icon?: LucideIcon
     /** Ex.: botão "Consultar" dentro do campo */
     suffix?: ReactNode
+    /** O `<input>` (ex.: para levar o foco ao campo por um atalho) */
+    ref?: Ref<HTMLInputElement>
   }
 
 export function TextField({

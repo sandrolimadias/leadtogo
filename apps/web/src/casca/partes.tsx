@@ -1,11 +1,10 @@
 import type { Me } from '@leadtogo/api-client'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Check, Ellipsis, LogOut, Plus, Search, ShieldCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { permissoesDaAtiva } from '@/auth/permissoes'
 import { Button, IconButton } from '@leadtogo/ui/button'
-import { TextField } from '@leadtogo/ui/campos'
 import { Logo } from '@/components/acesso/logo'
 import { classeDaCor, corDoNome, iniciais } from '@leadtogo/ui/cores'
 import { Avatar } from '@leadtogo/ui/exibicao'
@@ -20,7 +19,8 @@ import { VERSAO_DO_APP } from './empresas'
 import { Notificacoes } from './sino'
 import { TELAS, TELAS_DA_BARRA_INFERIOR, estaAtiva, telaVisivel, telasDoMais } from './navegacao'
 import { useRegistrarAtividade } from '@/telas/atividades/registro-contexto'
-import { avisarEmBreve, nomeDaEmpresa, perfilDaEmpresa } from './utilidades'
+import { BuscaGlobal } from '@/telas/busca/caixa'
+import { nomeDaEmpresa, perfilDaEmpresa } from './utilidades'
 
 type Tema = 'claro' | 'escuro' | 'sistema'
 
@@ -70,15 +70,7 @@ export function BarraSuperior() {
   return (
     <header className="flex h-(--topbar-height) flex-none items-center gap-3 border-b border-border bg-surface px-6">
       <div className="w-[420px] max-w-full">
-        <TextField
-          icon={Search}
-          type="search"
-          aria-label="Buscar empresas, contatos e oportunidades"
-          placeholder="Buscar empresas, contatos e oportunidades"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') avisarEmBreve('Busca global')
-          }}
-        />
+        <BuscaGlobal />
       </div>
       <div className="ml-auto flex items-center gap-2">
         <Button icon={Plus} onClick={() => abrir()}>
@@ -101,6 +93,7 @@ export function CabecalhoDoCelular({
   aoAbrirPerfil: () => void
 }) {
   const { abrir } = useRegistrarAtividade()
+  const navegar = useNavigate()
   return (
     <header className="flex h-14 flex-none items-center gap-1 border-b border-border bg-surface pr-2 pl-3">
       <span className="mr-2 ml-1 inline-flex">
@@ -111,7 +104,7 @@ export function CabecalhoDoCelular({
         icon={Search}
         label="Buscar"
         size="lg"
-        onClick={() => avisarEmBreve('Busca global')}
+        onClick={() => void navegar({ to: '/busca' })}
       />
       <IconButton icon={Plus} label="Registrar atividade" size="lg" onClick={() => abrir()} />
       <Notificacoes tamanho="lg" />

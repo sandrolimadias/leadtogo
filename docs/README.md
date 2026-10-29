@@ -23,6 +23,8 @@
 | [api/publica-v1.openapi.json](api/publica-v1.openapi.json) | Retrato do contrato da API pública v1 (gerado; só mudanças aditivas) |
 | [plano_importacao_oportunidades.md](plano_importacao_oportunidades.md) | Plano da importação de oportunidades por planilha (quarto tipo do assistente de importação); aprovado em 28/10/2026 |
 | [roteiro_teste_importacao_oportunidades.md](roteiro_teste_importacao_oportunidades.md) | Roteiro de teste da importação de oportunidades por planilha |
+| [plano_busca_global.md](plano_busca_global.md) | Plano da busca global da barra do topo (empresas, contatos e oportunidades) e das buscas recentes; aprovado em 29/10/2026 |
+| [roteiro_teste_busca_global.md](roteiro_teste_busca_global.md) | Roteiro de teste da busca global |
 | [plano_prospeccao.md](plano_prospeccao.md) | Plano da Prospecção (busca por CNAE e município na base da Receita), guardado para a próxima fase |
 | [plano_implantacao.md](plano_implantacao.md) | Plano da Fase 0: estrutura, infraestrutura e primeiro deploy |
 | [prototipo/](prototipo/README.md) | Protótipo das telas (Claude Design) e especificação de interface |

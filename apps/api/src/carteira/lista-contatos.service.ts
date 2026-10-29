@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, or, schema, sql } from '@leadtogo/db'
+import { and, asc, desc, eq, inArray, isNull, schema, sql } from '@leadtogo/db'
 import type {
   ConsultaDeContatos,
   ItemDaListaDeContatos,
@@ -8,6 +8,7 @@ import type {
 import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
+import { buscaDoContato, semAcento } from './busca-texto.js'
 import {
   condicaoDeVisibilidade,
   type EscopoDaCarteira,
@@ -24,12 +25,6 @@ const {
   empresaTags,
   papeisDecisao,
 } = schema
-
-/** Texto sem acento e em minúsculas, do mesmo jeito que os índices de busca (`f_unaccent`). */
-const semAcento = (valor: unknown) => sql`lower(f_unaccent(${valor}))`
-
-/** Escapa `%`, `_` e `\` para o texto digitado valer literalmente no LIKE. */
-const literalParaLike = (texto: string): string => texto.replace(/[\\%_]/g, (c) => `\\${c}`)
 
 /** Lista de contatos da carteira: busca, filtros e paginação. */
 @Injectable()
@@ -185,7 +180,7 @@ export class ListaDeContatosService {
   private filtros(escopo: EscopoDaCarteira, c: ConsultaDeContatos) {
     const condicoes = []
     if (c.papelDecisaoId) condicoes.push(eq(contatos.papelDecisaoId, c.papelDecisaoId))
-    if (c.busca) condicoes.push(this.busca(c.busca))
+    if (c.busca) condicoes.push(buscaDoContato(c.busca))
 
     // Empresa, cargo e tag valem juntos para o MESMO vínculo ativo ("Diretor na Usidantec")
     if (c.empresaId || c.cargo || c.tagId) {
@@ -212,21 +207,6 @@ export class ListaDeContatosService {
   }
 
   /** Nome sem acento; e-mail por pedaço; telefone por pedaço dos dígitos (com ou sem máscara). */
-  private busca(texto: string) {
-    const padrao = `%${literalParaLike(texto)}%`
-    const alternativas = [
-      sql`${semAcento(contatos.nome)} LIKE ${semAcento(padrao)}`,
-      sql`EXISTS (SELECT 1 FROM ${contatoEmails} ce
-        WHERE ce.contato_id = ${contatos.id} AND ce.email::text ILIKE ${padrao})`,
-    ]
-    const digitos = texto.replace(/\D/g, '')
-    if (digitos.length >= 3 && digitos === texto.replace(/[\s()+-]/g, '')) {
-      alternativas.push(sql`EXISTS (SELECT 1 FROM ${contatoTelefones} ct
-        WHERE ct.contato_id = ${contatos.id} AND ct.numero_e164 LIKE ${`%${digitos}%`})`)
-    }
-    return or(...alternativas)
-  }
-
   private ordem(c: ConsultaDeContatos) {
     const sentido = c.sentido === 'desc' ? desc : asc
     const desempate = asc(contatos.id)
