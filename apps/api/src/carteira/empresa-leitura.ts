@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, schema, sql } from '@leadtogo/db'
+import { and, asc, desc, eq, isNull, schema, sql } from '@leadtogo/db'
 import { type EmpresaCarteira, normalizarRespostaDaReceita } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
@@ -24,6 +24,7 @@ const {
   portes,
   cnaes,
   qualificacoesSocio,
+  tagGrupos,
   tags,
 } = schema
 
@@ -97,7 +98,8 @@ export async function lerEmpresa(
         .from(empresaCnaes)
         .innerJoin(cnaes, eq(cnaes.codigo, empresaCnaes.cnaeCodigo))
         .where(eq(empresaCnaes.empresaId, id))
-        .orderBy(asc(empresaCnaes.cnaeCodigo)),
+        // o principal sempre primeiro; os secundários pelo código
+        .orderBy(desc(empresaCnaes.principal), asc(empresaCnaes.cnaeCodigo)),
       tx
         .select({
           id: empresaSocios.id,
@@ -123,8 +125,10 @@ export async function lerEmpresa(
         })
         .from(empresaTags)
         .innerJoin(tags, eq(tags.id, empresaTags.tagId))
+        .innerJoin(tagGrupos, eq(tagGrupos.id, tags.tagGrupoId))
         .where(eq(empresaTags.empresaId, id))
-        .orderBy(asc(tags.ordem), asc(tags.nome)),
+        // a ordem dos grupos (Configurações > Tags) manda; dentro do grupo, a ordem das tags
+        .orderBy(asc(tagGrupos.ordem), asc(tagGrupos.nome), asc(tags.ordem), asc(tags.nome)),
       r.matrizId
         ? tx
             .select({

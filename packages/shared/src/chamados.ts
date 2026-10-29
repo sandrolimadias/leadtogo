@@ -118,6 +118,8 @@ export const consultaDeChamadosSchema = z
     prioridade: prioridadeDoChamadoSchema.optional(),
     responsavelId: z.uuid().optional(),
     empresaClienteId: z.uuid().optional(),
+    /** `true` = só os abertos (nem resolvidos nem fechados): a aba Chamados da ficha da empresa usa */
+    abertos: z.enum(['true', 'false']).optional(),
     /** `portal` = só os abertos pelo cliente no portal (o hub do portal usa) */
     origem: z.enum(['interna', 'portal']).optional(),
     /** Número (CH-0042 ou 42) ou parte do assunto */

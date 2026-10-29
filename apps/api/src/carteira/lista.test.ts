@@ -26,6 +26,7 @@ afterAll(async () => {
 beforeAll(async () => {
   await dono`INSERT INTO estados (uf, nome, regiao) VALUES ('ES', 'Espírito Santo', 'Sudeste') ON CONFLICT DO NOTHING`
   await dono`INSERT INTO municipios (codigo_ibge, nome, uf) VALUES (3205309, 'VITORIA', 'ES'), (3201308, 'CARIACICA', 'ES') ON CONFLICT DO NOTHING`
+  await dono`INSERT INTO portes (codigo, descricao) VALUES (0, 'Não informado'), (1, 'Micro Empresa'), (3, 'Empresa de Pequeno Porte'), (5, 'Demais') ON CONFLICT DO NOTHING`
 })
 
 let app: INestApplication<Server>
@@ -359,9 +360,61 @@ describe('filtros', () => {
     expect(nomes(await lista(d.cookie, 'ultimaVisita=nunca'))).toEqual(['Gama'])
     expect(nomes(await lista(d.cookie, `tags=${status.cliente}&ultimaVisita=60`))).toEqual(['Beta'])
   })
+
+  it('porte e regime tributário; "não informado" do porte inclui quem não tem porte', async () => {
+    const { d } = await cenario()
+    await criar(d.cookie, 'Micro', { porteCodigo: 1, regimeTributario: 'simples_nacional' })
+    await criar(d.cookie, 'Demais', { porteCodigo: 5, regimeTributario: 'lucro_real' })
+    await criar(d.cookie, 'Zero', { porteCodigo: 0 })
+    await criar(d.cookie, 'Sem porte')
+
+    expect(nomes(await lista(d.cookie, 'porte=1'))).toEqual(['Micro'])
+    expect(nomes(await lista(d.cookie, 'porte=5'))).toEqual(['Demais'])
+    expect(nomes(await lista(d.cookie, 'porte=0'))).toEqual(['Sem porte', 'Zero'])
+    expect(nomes(await lista(d.cookie, 'regimeTributario=lucro_real'))).toEqual(['Demais'])
+    expect(nomes(await lista(d.cookie, 'regimeTributario=nao_informado'))).toEqual([
+      'Sem porte',
+      'Zero',
+    ])
+    expect(nomes(await lista(d.cookie, 'porte=1&regimeTributario=lucro_real'))).toEqual([])
+    expect((await chamar('get', d.cookie, '?regimeTributario=outro')).status).toBe(400)
+  })
 })
 
 describe('itens, ordem e paginação', () => {
+  it('as tags seguem a ordem dos grupos de Configurações > Tags, na lista e na ficha', async () => {
+    const { d, status } = await cenario()
+    const A = await criar(d.cookie, 'Alfa', { statusTagId: status.cliente })
+    await noTenant(
+      d.tenantId,
+      (tx) =>
+        tx`INSERT INTO empresa_tags (tenant_id, empresa_id, tag_id) VALUES (${d.tenantId}, ${A.id}, ${status.visitada})`,
+    )
+    const tagsDaLista = async () => (await lista(d.cookie)).itens[0]?.tags.map((t) => t.nome)
+    const tagsDaFicha = async () =>
+      ((await chamar('get', d.cookie, `/${A.id}`)).body as EmpresaCarteira).tags.map((t) => t.nome)
+    expect(await tagsDaLista()).toEqual(['Cliente', 'Visitada'])
+    expect(await tagsDaFicha()).toEqual(['Cliente', 'Visitada'])
+
+    // Visitação sobe para o topo: as tags dela passam a vir antes
+    const grupos = (
+      await request(app.getHttpServer())
+        .get('/v1/configuracoes/tag-grupos')
+        .set('Origin', ORIGEM_DO_FRONT)
+        .set('Cookie', d.cookie)
+    ).body as TagGrupo[]
+    const visitacao = grupos.find((g) => g.tags.some((t) => t.id === status.visitada))
+    const ids = [visitacao?.id, ...grupos.filter((g) => g !== visitacao).map((g) => g.id)]
+    const r = await request(app.getHttpServer())
+      .put('/v1/configuracoes/tag-grupos/ordem')
+      .set('Origin', ORIGEM_DO_FRONT)
+      .set('Cookie', d.cookie)
+      .send({ ids })
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    expect(await tagsDaLista()).toEqual(['Visitada', 'Cliente'])
+    expect(await tagsDaFicha()).toEqual(['Visitada', 'Cliente'])
+  })
+
   it('cada item traz todas as tags, o telefone principal e o endereço para a rota', async () => {
     const { d, status } = await cenario()
     await criar(d.cookie, 'Completa', {

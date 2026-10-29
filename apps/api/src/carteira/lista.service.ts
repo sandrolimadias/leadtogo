@@ -17,8 +17,16 @@ import {
   podeEditar,
 } from './regras-de-carteira.js'
 
-const { empresas, empresaTags, empresaTelefones, membros, municipios, tags, tenantConfiguracoes } =
-  schema
+const {
+  empresas,
+  empresaTags,
+  empresaTelefones,
+  membros,
+  municipios,
+  tagGrupos,
+  tags,
+  tenantConfiguracoes,
+} = schema
 
 /** O Status da empresa é Cliente ou Prospect (pelas chaves do sistema, que sobrevivem a renomear). */
 const statusClienteOuProspect = sql`EXISTS (
@@ -93,8 +101,10 @@ export class ListaDeEmpresasService {
               })
               .from(empresaTags)
               .innerJoin(tags, eq(tags.id, empresaTags.tagId))
+              .innerJoin(tagGrupos, eq(tagGrupos.id, tags.tagGrupoId))
               .where(inArray(empresaTags.empresaId, ids))
-              .orderBy(asc(tags.ordem), asc(tags.nome)),
+              // a ordem dos grupos (Configurações > Tags) manda; dentro do grupo, a ordem das tags
+              .orderBy(asc(tagGrupos.ordem), asc(tagGrupos.nome), asc(tags.ordem), asc(tags.nome)),
             db
               .select({ empresaId: empresaTelefones.empresaId, e164: empresaTelefones.numeroE164 })
               .from(empresaTelefones)
@@ -229,6 +239,15 @@ export class ListaDeEmpresasService {
       if (!incluirLeads) condicoes.push(statusClienteOuProspect)
     }
     if (c.municipio) condicoes.push(eq(empresas.municipioCodigo, c.municipio))
+    if (c.porte !== undefined) {
+      // "Não informado" (0) inclui quem não tem porte nenhum
+      condicoes.push(
+        c.porte === 0
+          ? or(isNull(empresas.porteCodigo), eq(empresas.porteCodigo, 0))
+          : eq(empresas.porteCodigo, c.porte),
+      )
+    }
+    if (c.regimeTributario) condicoes.push(eq(empresas.regimeTributario, c.regimeTributario))
     switch (c.ultimaVisita) {
       case '30':
         condicoes.push(sql`${empresas.ultimaVisitaEm} >= ${haDias(30)}`)
