@@ -42,7 +42,10 @@ export function Tabs({
     >
       <AbasDoRadix.List
         aria-label={label}
-        className="flex gap-1 overflow-x-auto border-b border-border"
+        // A linha de baixo é uma sombra interna (não borda) e o sublinhado da aba ativa fica dentro da lista:
+        // nada passa da altura, então não aparece barra de rolagem. Com muitas abas na tela estreita, rola
+        // na horizontal com o dedo, sem a barra.
+        className="flex gap-1 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--border)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {items.map((item) => (
           <AbasDoRadix.Trigger
@@ -50,7 +53,7 @@ export function Tabs({
             value={item.value}
             className={cn(
               'relative inline-flex cursor-pointer items-center gap-1.5 rounded-t-sm border-0 bg-transparent px-3 pt-2 pb-[10px] text-sm font-semibold whitespace-nowrap text-ink-muted hover:bg-surface-hover hover:text-ink data-[state=active]:text-ink',
-              "data-[state=active]:after:absolute data-[state=active]:after:inset-x-2 data-[state=active]:after:-bottom-px data-[state=active]:after:h-0.5 data-[state=active]:after:rounded-t-[2px] data-[state=active]:after:bg-brand data-[state=active]:after:content-['']",
+              "data-[state=active]:after:absolute data-[state=active]:after:inset-x-2 data-[state=active]:after:bottom-0 data-[state=active]:after:h-0.5 data-[state=active]:after:rounded-t-[2px] data-[state=active]:after:bg-brand data-[state=active]:after:content-['']",
             )}
           >
             {item.icon ? <item.icon size={15} strokeWidth={1.75} aria-hidden="true" /> : null}

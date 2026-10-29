@@ -9,6 +9,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { itemDeChamado } from '@/telas/chamados/fixtures'
 import { contato } from '@/telas/contatos/fixtures'
 import { falha, meDeAdmin, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 
@@ -310,26 +311,47 @@ describe('Ficha da empresa: cabeçalho', () => {
     expect(within(cabecalho).getByText('Cliente')).toBeInTheDocument()
     expect(within(cabecalho).getByText('Retrofit')).toBeInTheDocument()
     expect(within(cabecalho).getByRole('button', { name: 'Editar tags' })).toBeInTheDocument()
-    expect(within(cabecalho).getByRole('link', { name: 'Ligar' })).toHaveAttribute(
-      'href',
-      'tel:+552732431907',
-    )
+    // sem "Ligar": a ligação virá da integração com a telefonia
+    expect(within(cabecalho).queryByRole('link', { name: 'Ligar' })).toBeNull()
     expect(within(cabecalho).getByRole('link', { name: 'WhatsApp' })).toHaveAttribute(
       'href',
       'https://wa.me/552732431907',
     )
   })
 
-  it('as abas e os botões de cada módulo; nada de "chega no Módulo X"', async () => {
-    await abrir(servicos())
-    // Contatos (Módulo 3), Atividades (Módulo 5) e Oportunidades (Módulo 6) existem
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
-      'Resumo',
-      'Contatos (0)',
-      'Atividades',
-      'Oportunidades',
-      'Histórico',
-    ])
+  it('as abas, com o total de cada uma, e os botões de cada módulo; nada de "chega no Módulo X"', async () => {
+    const x = servicos()
+    const atividades = vi.fn(async (_c: Record<string, unknown>) =>
+      ok({ itens: [], total: 7, pagina: 1, porPagina: 1 }),
+    )
+    const oportunidades = vi.fn(async (_c: Record<string, unknown>) =>
+      ok({ itens: [], total: 3, pagina: 1, porPagina: 1 }),
+    )
+    const chamados = vi.fn(async (_c: Record<string, unknown>) =>
+      ok({ itens: [], total: 2, abas: { triagem: 0, pendentes: 0, meus: 0, todos: 2 } }),
+    )
+    x.s.atividades = { ...x.s.atividades, listar: atividades as never }
+    x.s.oportunidades = { ...x.s.oportunidades, listar: oportunidades as never }
+    x.s.chamados = { ...x.s.chamados, listar: chamados }
+    await abrir(x)
+    // Contatos (Módulo 3), Atividades (Módulo 5), Oportunidades (Módulo 6) e os chamados abertos
+    await waitFor(() =>
+      expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+        'Resumo',
+        'Contatos0',
+        'Atividades7',
+        'Oportunidades3',
+        'Chamados2',
+        'Histórico',
+      ]),
+    )
+    expect(atividades).toHaveBeenCalledWith({ empresaId: id(100), porPagina: 1 })
+    expect(oportunidades).toHaveBeenCalledWith({ empresaId: id(100), porPagina: 1 })
+    expect(chamados).toHaveBeenCalledWith({
+      empresaClienteId: id(100),
+      abertos: 'true',
+      porPagina: 100,
+    })
     expect(await screen.findByRole('button', { name: 'Nova atividade' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Nova oportunidade' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Vincular contato' })).toBeNull()
@@ -380,9 +402,54 @@ describe('Ficha da empresa: cabeçalho', () => {
     expect(screen.getByText('Situação não verificada')).toBeInTheDocument()
   })
 
-  it('sem telefone, Ligar e WhatsApp ficam desativados', async () => {
+  it('Check-in tem o mesmo tamanho dos outros botões do cabeçalho', async () => {
+    await abrir(servicos())
+    const checkin = screen.getByRole('button', { name: 'Check-in' })
+    const oportunidade = screen.getByRole('button', { name: 'Nova oportunidade' })
+    expect(checkin.className).not.toContain('--control-sm')
+    expect(oportunidade.className).not.toContain('--control-sm')
+  })
+
+  it('aba Chamados: os abertos da empresa, com "Abrir chamado" já ligado a ela', async () => {
+    const x = servicos()
+    const listar = vi.fn(async (_c: Record<string, unknown>) =>
+      ok({
+        itens: [itemDeChamado({ empresaCliente: { id: id(100), nome: 'Jacaraípe Usinagem' } })],
+        total: 1,
+        abas: { triagem: 0, pendentes: 1, meus: 0, todos: 1 },
+      }),
+    )
+    x.s.chamados = { ...x.s.chamados, listar: listar }
+    await abrir(x)
+    await userEvent.click(await screen.findByRole('tab', { name: /^Chamados/ }))
+    const lista = await screen.findByRole('list', { name: 'Chamados abertos' })
+    expect(
+      within(lista).getByRole('link', { name: /Revisar contrato do cliente/ }),
+    ).toHaveAttribute('href', `/chamados/${id(1)}`)
+    expect(screen.getByText('1 chamado aberto')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir chamado' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Abrir chamado' })
+    expect(within(dialogo).getByText('Jacaraípe Usinagem')).toBeInTheDocument()
+  })
+
+  it('aba Chamados vazia: diz que não há chamado aberto', async () => {
+    const x = servicos()
+    x.s.chamados = {
+      ...x.s.chamados,
+      listar: vi.fn(async () =>
+        ok({ itens: [], total: 0, abas: { triagem: 0, pendentes: 0, meus: 0, todos: 0 } }),
+      ),
+    }
+    await abrir(x)
+    await userEvent.click(await screen.findByRole('tab', { name: /^Chamados/ }))
+    expect(
+      await screen.findByRole('heading', { name: 'Nenhum chamado aberto' }),
+    ).toBeInTheDocument()
+  })
+
+  it('sem telefone, o WhatsApp fica desativado', async () => {
     await abrir(servicos({}, empresa({ telefones: [] })))
-    expect(screen.getByRole('link', { name: 'Ligar' })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByRole('link', { name: 'Ligar' })).toBeNull()
     expect(screen.getByRole('link', { name: 'WhatsApp' })).toHaveAttribute('aria-disabled', 'true')
   })
 })
@@ -415,6 +482,37 @@ describe('Ficha da empresa: aba Resumo', () => {
     expect(within(dados).queryByText(/Funcionários|Faturamento|personalizad/i)).toBeNull()
   })
 
+  it('Dados cadastrais: cada rótulo em negrito', async () => {
+    await abrir(servicos())
+    const dados = screen.getByRole('region', { name: 'Dados cadastrais' })
+    for (const rotulo of ['Razão social', 'Porte', 'Regime tributário', 'Cidade']) {
+      expect(within(dados).getByText(rotulo)).toHaveClass('font-bold')
+    }
+  })
+
+  it('o CNAE principal vem sempre primeiro', async () => {
+    await abrir(
+      servicos(
+        {},
+        empresa({
+          cnaes: [
+            { codigo: 2543800, descricao: 'Fabricação de ferramentas', principal: false },
+            {
+              codigo: 2539001,
+              descricao: 'Serviços de usinagem, tornearia e solda',
+              principal: true,
+            },
+          ],
+        }),
+      ),
+    )
+    const cnaes = screen.getByRole('region', { name: 'CNAEs' })
+    const linhas = within(cnaes).getAllByRole('listitem')
+    expect(within(linhas[0] as HTMLElement).getByText('Principal')).toBeInTheDocument()
+    expect(linhas[0]).toHaveTextContent('2539-0/01')
+    expect(linhas[1]).toHaveTextContent('2543-8/00')
+  })
+
   it('CNAEs com o principal marcado, Sócios e Observações', async () => {
     await abrir(servicos())
     const cnaes = screen.getByRole('region', { name: 'CNAEs' })
@@ -433,9 +531,9 @@ describe('Ficha da empresa: aba Resumo', () => {
     const convertido = (extra: Record<string, unknown> = {}) =>
       ({ ...contato({ id: id(555), nome: 'ROGERIO BINDACO' }), ...extra }) as never
 
-    it('converte, avisa e passa a mostrar o selo "Contato" no lugar do botão', async () => {
+    it('pede telefone e e-mail (opcionais), converte, avisa e passa a mostrar o selo "Contato"', async () => {
       const x = servicos({}, empresa())
-      const converter = vi.fn(async (_e: string, _s: string) => ok(convertido()))
+      const converter = vi.fn(async (_e: string, _s: string, _d?: unknown) => ok(convertido()))
       x.s.contatos = { ...x.s.contatos, converterSocio: converter }
       let convertidoJa = false
       x.c.detalhar.mockImplementation(async () =>
@@ -455,13 +553,36 @@ describe('Ficha da empresa: aba Resumo', () => {
       await abrir(x)
       convertidoJa = true
       await userEvent.click(screen.getByRole('button', { name: 'Converter em contato' }))
-      expect(converter).toHaveBeenCalledWith(id(100), id(401))
+      const dialogo = await screen.findByRole('dialog', {
+        name: 'Converter ROGERIO BINDACO em contato',
+      })
+      expect(converter).not.toHaveBeenCalled()
+      await userEvent.type(within(dialogo).getByLabelText('Telefone (opcional)'), '(27) 99847-2210')
+      await userEvent.type(within(dialogo).getByLabelText('E-mail (opcional)'), 'rogerio@x.com.br')
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Converter em contato' }))
+      expect(converter).toHaveBeenCalledWith(id(100), id(401), {
+        telefone: '(27) 99847-2210',
+        email: 'rogerio@x.com.br',
+      })
       expect(await screen.findByText('Sócio convertido em contato')).toBeInTheDocument()
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
       const socios = screen.getByRole('region', { name: 'Sócios' })
       expect(
         await within(socios).findByRole('link', { name: 'Abrir o contato ROGERIO BINDACO' }),
       ).toHaveAttribute('href', `/contatos/${id(555)}`)
       expect(within(socios).queryByRole('button', { name: 'Converter em contato' })).toBeNull()
+    })
+
+    it('sem telefone nem e-mail, converte do mesmo jeito (ficam para depois)', async () => {
+      const x = servicos({}, empresa())
+      const converter = vi.fn(async (_e: string, _s: string, _d?: unknown) => ok(convertido()))
+      x.s.contatos = { ...x.s.contatos, converterSocio: converter }
+      await abrir(x)
+      await userEvent.click(screen.getByRole('button', { name: 'Converter em contato' }))
+      const dialogo = await screen.findByRole('dialog')
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Converter em contato' }))
+      expect(converter).toHaveBeenCalledWith(id(100), id(401), {})
+      expect(await screen.findByText('Sócio convertido em contato')).toBeInTheDocument()
     })
 
     it('sócio já convertido mostra o selo e não o botão', async () => {
@@ -483,10 +604,13 @@ describe('Ficha da empresa: aba Resumo', () => {
       }
       await abrir(x)
       await userEvent.click(screen.getByRole('button', { name: 'Converter em contato' }))
+      const dialogo = await screen.findByRole('dialog')
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Converter em contato' }))
+      // o motivo fica no diálogo, que continua aberto para tentar de novo
       expect(
-        await screen.findByText('Este sócio já foi convertido em contato.'),
+        await within(dialogo).findByText('Este sócio já foi convertido em contato.'),
       ).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Converter em contato' })).toBeEnabled()
+      expect(within(dialogo).getByRole('button', { name: 'Converter em contato' })).toBeEnabled()
     })
 
     it('quem não edita a empresa não vê o botão', async () => {
@@ -805,7 +929,7 @@ describe('Ficha da empresa: Editar tags', () => {
 })
 
 describe('Ficha da empresa: no celular', () => {
-  it('traz Ligar, WhatsApp, Rota e Atividade em botões grandes, sem o caminho de volta', async () => {
+  it('traz WhatsApp, Rota e Atividade em botões grandes (sem Ligar), sem o caminho de volta', async () => {
     largura(390)
     const x = servicos()
     renderizar(x.s, `/empresas/${id(100)}`)
@@ -813,8 +937,8 @@ describe('Ficha da empresa: no celular', () => {
     const botoes = screen
       .getAllByRole('link')
       .filter((l) => ['Ligar', 'WhatsApp', 'Rota'].includes(l.textContent ?? ''))
-    expect(botoes.map((b) => b.textContent)).toEqual(['Ligar', 'WhatsApp', 'Rota'])
-    expect(botoes[2]?.getAttribute('href')).toContain(
+    expect(botoes.map((b) => b.textContent)).toEqual(['WhatsApp', 'Rota'])
+    expect(botoes[1]?.getAttribute('href')).toContain(
       'google.com/maps/dir/?api=1&destination=RUA%20PONTA',
     )
     expect(screen.queryByRole('navigation', { name: 'Você está em' })).toBeNull()
@@ -971,7 +1095,7 @@ describe('Ficha da empresa: aba Contatos', () => {
       doCadastro(3, { ativo: false }),
     ])
     await abrirAba(x)
-    expect(screen.getByRole('tab', { name: 'Contatos (2)' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /^Contatos/ })).toHaveTextContent('Contatos2')
     expect(await screen.findByText('2 contatos ativos e 1 inativo')).toBeInTheDocument()
     const itens = screen
       .getAllByRole('listitem')
@@ -1004,6 +1128,56 @@ describe('Ficha da empresa: aba Contatos', () => {
     expect(within(tres).getByText('Inativo')).toBeInTheDocument()
   })
 
+  it('cada cartão traz o acesso ao portal: a situação de quem já tem, ou o botão que convida', async () => {
+    const x = comContatos([doCadastro(1), doCadastro(2)])
+    const acessos = vi.fn(async (_c: Record<string, unknown>) =>
+      ok({
+        itens: [
+          {
+            id: id(700),
+            contato: { id: id(301), nome: 'Contato 1' },
+            empresaCliente: { id: id(100), nome: 'Jacaraípe Usinagem' },
+            email: 'contato1@exemplo.com.br',
+            papel: 'colega',
+            situacao: 'ativo',
+            convidadoEm: '2026-10-01T12:00:00.000Z',
+            aceitoEm: '2026-10-02T12:00:00.000Z',
+            ultimoAcessoEm: null,
+            conviteVencido: false,
+          },
+        ],
+        total: 1,
+      }),
+    )
+    const dar = vi.fn(async (_d: Record<string, unknown>) => ok({}))
+    x.s.portal = {
+      ...x.s.portal,
+      acessos: { ...x.s.portal.acessos, listar: acessos as never, dar: dar as never },
+    }
+    await abrirAba(x)
+    await waitFor(() => expect(acessos).toHaveBeenCalledWith({ empresaClienteId: id(100) }))
+    const itens = (await screen.findAllByRole('listitem')).filter((li) =>
+      li.textContent?.includes('Contato '),
+    )
+    const um = itens.find((li) => within(li).queryByText('Contato 1')) as HTMLElement
+    expect(await within(um).findByText('Portal: ativo')).toBeInTheDocument()
+    const dois = itens.find((li) => within(li).queryByText('Contato 2')) as HTMLElement
+    await userEvent.click(
+      within(dois).getByRole('button', { name: 'Dar acesso ao portal a Contato 2' }),
+    )
+    const dialogo = await screen.findByRole('dialog', { name: 'Dar acesso ao portal' })
+    // já vem com a empresa e o contato do cartão
+    expect(within(dialogo).getByText('Jacaraípe Usinagem')).toBeInTheDocument()
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Enviar convite' }))
+    await waitFor(() =>
+      expect(dar).toHaveBeenCalledWith({
+        contatoId: id(302),
+        empresaClienteId: id(100),
+        papel: 'colega',
+      }),
+    )
+  })
+
   it('clicar no nome abre a ficha do contato', async () => {
     const x = comContatos([doCadastro(1)])
     const { historico } = await abrirAba(x)
@@ -1017,7 +1191,7 @@ describe('Ficha da empresa: aba Contatos', () => {
     expect(
       await screen.findByRole('heading', { name: 'Nenhum contato nesta empresa' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Contatos (0)' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /^Contatos/ })).toHaveTextContent('Contatos0')
   })
 
   it('"Novo contato" abre o cadastro já com esta empresa', async () => {

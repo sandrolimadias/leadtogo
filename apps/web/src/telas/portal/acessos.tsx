@@ -27,13 +27,26 @@ const TOM_DA_SITUACAO = {
   revogado: 'neutral',
 } as const
 
-/** Dar acesso ao portal: escolhe a empresa-cliente, o contato dela, o papel e, se preciso, o e-mail. */
-function DarAcesso({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
+/**
+ * Dar acesso ao portal: escolhe a empresa-cliente, o contato dela, o papel e, se preciso, o e-mail. Da ficha
+ * da empresa (aba Contatos) já vem com a empresa e o contato escolhidos (`inicial`).
+ */
+export function DarAcesso({
+  aberto,
+  aoFechar,
+  inicial,
+}: {
+  aberto: boolean
+  aoFechar: () => void
+  inicial?: { empresa: { id: string; nome: string }; contatoId: string }
+}) {
   const servicos = useServicos()
   const queryClient = useQueryClient()
   const [busca, setBusca] = useState('')
-  const [empresa, setEmpresa] = useState<{ id: string; nome: string } | null>(null)
-  const [contatoId, setContatoId] = useState('')
+  const [empresa, setEmpresa] = useState<{ id: string; nome: string } | null>(
+    inicial?.empresa ?? null,
+  )
+  const [contatoId, setContatoId] = useState(inicial?.contatoId ?? '')
   const [papel, setPapel] = useState<PapelDoPortal>('colega')
   const [email, setEmail] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -60,8 +73,8 @@ function DarAcesso({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void
   })
   const fechar = () => {
     setBusca('')
-    setEmpresa(null)
-    setContatoId('')
+    setEmpresa(inicial?.empresa ?? null)
+    setContatoId(inicial?.contatoId ?? '')
     setPapel('colega')
     setEmail('')
     setErro(null)

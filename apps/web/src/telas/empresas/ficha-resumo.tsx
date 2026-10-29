@@ -1,9 +1,12 @@
 import type { EmpresaCarteira } from '@leadtogo/api-client'
 import { formatarTelefone } from '@leadtogo/shared'
 import { Link } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import { Button } from '@leadtogo/ui/button'
+import { TextField } from '@leadtogo/ui/campos'
+import { Alert } from '@leadtogo/ui/feedback'
+import { Janela } from '@/telas/cadastros/base'
 import { Avatar, Badge } from '@leadtogo/ui/exibicao'
 import { cn } from '@leadtogo/ui/cn'
 
@@ -67,7 +70,7 @@ function Campo({
 }) {
   return (
     <div className={cn('flex min-w-0 flex-col gap-0.5', largo && 'col-span-full')}>
-      <dt className="text-xs font-medium text-ink-muted">{rotulo}</dt>
+      <dt className="text-xs font-bold text-ink">{rotulo}</dt>
       <dd className={cn('m-0 text-sm [overflow-wrap:anywhere]', mono && 'font-mono text-[13px]')}>
         {children}
       </dd>
@@ -202,9 +205,11 @@ export function CnaesDaEmpresa({ cnaes }: { cnaes: EmpresaCarteira['cnaes'] }) {
   if (cnaes.length === 0) {
     return <p className="m-0 px-4 py-3.5 text-sm text-ink-muted">Nenhum CNAE informado.</p>
   }
+  // o principal sempre primeiro (a API já manda assim; aqui vale para qualquer origem)
+  const ordenados = [...cnaes].sort((a, b) => Number(b.principal) - Number(a.principal))
   return (
     <ul className="m-0 list-none p-0">
-      {cnaes.map((c) => (
+      {ordenados.map((c) => (
         <li
           key={c.codigo}
           className="flex items-start gap-3 border-b border-border px-4 py-2.5 last:border-b-0"
@@ -223,8 +228,8 @@ export function CnaesDaEmpresa({ cnaes }: { cnaes: EmpresaCarteira['cnaes'] }) {
 }
 
 /**
- * Sócios: só nome e qualificação (sem CPF, por LGPD). "Converter em contato" cria o contato; depois da
- * conversão o sócio mostra o selo "Contato", que abre a ficha dele.
+ * Sócios: só nome e qualificação (sem CPF, por LGPD). "Converter em contato" abre o diálogo de telefone e
+ * e-mail (opcionais) e cria o contato; depois da conversão o sócio mostra o selo "Contato", que abre a ficha.
  */
 export function SociosDaEmpresa({
   socios,
@@ -235,7 +240,7 @@ export function SociosDaEmpresa({
   socios: EmpresaCarteira['socios']
   podeConverter: boolean
   convertendo: string | null
-  aoConverter: (socioId: string) => void
+  aoConverter: (socio: { id: string; nome: string }) => void
 }) {
   return (
     <ul className="m-0 list-none p-0">
@@ -264,7 +269,7 @@ export function SociosDaEmpresa({
               variant="secondary"
               size="sm"
               disabled={convertendo !== null}
-              onClick={() => aoConverter(s.id)}
+              onClick={() => aoConverter({ id: s.id, nome: s.nome })}
             >
               {convertendo === s.id ? 'Convertendo…' : 'Converter em contato'}
             </Button>
@@ -272,5 +277,72 @@ export function SociosDaEmpresa({
         </li>
       ))}
     </ul>
+  )
+}
+
+/** "Converter em contato": telefone e e-mail, os dois opcionais (em branco, ficam para depois). */
+export function DialogoDeConverterSocio({
+  socio,
+  convertendo,
+  erro,
+  aoConverter,
+  aoFechar,
+}: {
+  socio: { id: string; nome: string }
+  convertendo: boolean
+  erro: string | undefined
+  aoConverter: (dados: { telefone: string; email: string }) => void
+  aoFechar: () => void
+}) {
+  const [telefone, setTelefone] = useState('')
+  const [email, setEmail] = useState('')
+  return (
+    <Janela
+      open
+      onOpenChange={(aberto) => {
+        if (!aberto && !convertendo) aoFechar()
+      }}
+      title={`Converter ${socio.nome} em contato`}
+      description="Telefone e e-mail não são obrigatórios: em branco, o contato é criado sem eles e você completa depois."
+      footer={
+        <>
+          <Button variant="ghost" onClick={aoFechar} disabled={convertendo}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            loading={convertendo}
+            onClick={() => aoConverter({ telefone: telefone.trim(), email: email.trim() })}
+          >
+            Converter em contato
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3.5">
+        <TextField
+          label="Telefone (opcional)"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          placeholder="(27) 99999-9999"
+          value={telefone}
+          onChange={(e) => setTelefone(e.target.value)}
+        />
+        <TextField
+          label="E-mail (opcional)"
+          type="email"
+          autoComplete="off"
+          placeholder="nome@empresa.com.br"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        {erro ? (
+          <Alert tone="danger" title="Não foi possível converter">
+            {erro}
+          </Alert>
+        ) : null}
+      </div>
+    </Janela>
   )
 }

@@ -16,8 +16,19 @@ import { toast } from '@leadtogo/ui/toast'
 
 import { useAreasDeAtendimento } from './areas'
 
-/** "Abrir chamado": assunto, o que está acontecendo, a área (ou "não sei") e a prioridade. */
-export function AbrirChamado({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
+/**
+ * "Abrir chamado": assunto, o que está acontecendo, a área (ou "não sei") e a prioridade. Da ficha da
+ * empresa, o chamado já nasce ligado a ela (`empresa`).
+ */
+export function AbrirChamado({
+  aberto,
+  aoFechar,
+  empresa,
+}: {
+  aberto: boolean
+  aoFechar: () => void
+  empresa?: { id: string; nome: string }
+}) {
   const servicos = useServicos()
   const queryClient = useQueryClient()
   const navegar = useNavigate()
@@ -41,6 +52,7 @@ export function AbrirChamado({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
       ...(descricao.trim() ? { descricao: descricao.trim() } : {}),
       areaId: areaId || null,
       prioridade,
+      ...(empresa ? { empresaClienteId: empresa.id } : {}),
     })
     setEnviando(false)
     if (!r.ok) {
@@ -78,6 +90,11 @@ export function AbrirChamado({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
     >
       <div className="flex flex-col gap-3">
         {erro ? <Alert tone="danger">{erro}</Alert> : null}
+        {empresa ? (
+          <p className="m-0 text-sm">
+            <span className="font-semibold">Empresa:</span> {empresa.nome}
+          </p>
+        ) : null}
         <TextField
           label="Assunto"
           required

@@ -179,6 +179,15 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 - **Editar** usa a mesma tela do cadastro, **sem o passo da Receita e sem o documento**. **Excluir** é só de administrador e gestor, é lógico e **não há lixeira** por enquanto (pendência pós-MVP).
 - A aba **Histórico** traz a auditoria **em português** (com nomes no lugar de ids) e as tags que o sistema aplicou ou tirou sozinho.
 
+**Decisões de 29/10/2026: ficha (valem sobre as anteriores)**
+- **Tags** na ordem dos grupos de *Configurações → Tags* (como na lista).
+- **Cabeçalho:** **Check-in** do mesmo tamanho de *Nova oportunidade* e *Nova atividade*. **Sem o botão Ligar** (no desktop e nos botões grandes do celular): a ligação virá da integração com a telefonia. Fica o WhatsApp. (Os cartões da aba Contatos e da lista no celular continuam com Ligar.)
+- **Abas** sem barra de rolagem; **Contatos, Atividades, Oportunidades e Chamados mostram o total** ao lado do nome.
+- Nova aba **Chamados** (quem tem `chamados.ver`): os chamados **abertos** da empresa (nem resolvidos nem fechados), com **Abrir chamado** já ligado a ela e o atalho para a central.
+- **Dados cadastrais:** cada rótulo em **negrito**. **CNAEs:** o **principal sempre primeiro**.
+- **Converter sócio em contato** abre um diálogo com **telefone e e-mail, os dois opcionais**; em branco, o contato nasce sem eles para completar depois. Telefone ou e-mail inválido não cria nada.
+- **Aba Contatos:** quem gere acessos ao portal (`portal.acessos`) vê, em cada cartão, a situação do acesso ao **portal do cliente** ou o botão **Acesso ao portal**, que abre o convite já com a empresa e o contato.
+
 **Cadastro: decisões de 13/10/2026 (v1.7)**
 - Três passos: **Documento** (CNPJ, CPF ou sem documento, com consulta à Receita), **Conferir dados da Receita** (editáveis) e **Carteira** (Vendedor, Vertical, Status padrão Lead, Website, Observações).
 - **Empresa não ativa na Receita** (baixada, inapta, suspensa, nula) **não pode ser cadastrada**: com o bloqueio ligado (padrão; Configurações → Carteira) a tela mostra a situação e o motivo e desabilita Salvar, e a API recusa (409 `empresa_nao_ativa`). Com a Receita fora do ar, a empresa é salva com o selo **"situação não verificada"** e o sistema reconsulta de hora em hora (até 24 vezes), avisando o vendedor se ela não estiver ativa. CPF e "sem documento" não são afetados. O mesmo bloqueio vale na importação (Módulo 4).
