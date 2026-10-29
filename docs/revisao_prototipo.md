@@ -72,3 +72,4 @@ Plano em `plano_contatos_filtros_e_tags.md`. Onde o protótipo e `funcionalidade
 | Protótipo | Documento | Decisão |
 |---|---|---|
 | Filtros em linha ao lado da busca no desktop; botão "Filtros · N" só no celular | filtros recolhíveis em todos os dispositivos | botão **"Filtros"** em todos, abrindo os filtros um abaixo do outro, com **"Fechar filtros"** |
+| Sem tags no contato | tags de contato em grupos próprios (seção 2) | coluna **Tags** e filtro **"Tag do contato"** na lista, tags e **"Editar tags"** na ficha, seção **Tags** no formulário e abas **Empresas / Contatos** em *Configurações → Tags* |

@@ -1,6 +1,6 @@
 # Plano: filtros recolhíveis e tags dos contatos
 
-*Proposta de 29/10/2026, **aguardando a aprovação do Ale** (decisões da seção 3). Duas melhorias na tela **Contatos**: (1) os filtros saem da barra e passam a abrir e fechar por um botão "Filtros", um abaixo do outro; (2) **funcionalidade nova:** tags próprias do contato, em grupos que não valem para empresas, com várias tags por contato. Regras em `funcionalidades.md` (seções 2 e 4) e modelo em `modelagem_banco.md` (seções de cadastros e de contatos), que serão atualizados nos mesmos commits.*
+*Proposta de 29/10/2026, **aprovada pelo Ale em 29/10/2026** (as decisões da seção 3 como recomendado; o que ficou para depois foi para `backlog_pos_mvp.md`, seção Contatos). Implementação descrita na seção 8. Duas melhorias na tela **Contatos**: (1) os filtros saem da barra e passam a abrir e fechar por um botão "Filtros", um abaixo do outro; (2) **funcionalidade nova:** tags próprias do contato, em grupos que não valem para empresas, com várias tags por contato. Regras em `funcionalidades.md` (seções 2 e 4) e modelo em `modelagem_banco.md` (seções de cadastros e de contatos), que serão atualizados nos mesmos commits.*
 
 ## 1. Objetivo
 
@@ -21,7 +21,7 @@
 | Auditoria do contato (aba Histórico em português) | `AuditoriaService`, `historico-contato.service.ts` | Ação nova `alterar_tags` |
 | Regra de carteira do contato | `condicaoDeVisibilidadeDoContato`, `regras-de-contato.ts` | Quem edita o contato edita as tags dele |
 
-## 3. Decisões (para o Ale aprovar)
+## 3. Decisões (aprovadas pelo Ale em 29/10/2026)
 
 1. **Modelo: as mesmas tabelas `tag_grupos`/`tags`, com a coluna nova `tag_grupos.aplica_a`** (`empresa` · `contato`, padrão `empresa`), e a tabela nova **`contato_tags`**. *Recomendado.* Reaproveita cores, ordem, inativação, nome único, proteção de exclusão e a tela de configuração inteira. A alternativa (tabelas `contato_tag_grupos` e `contato_tag_itens` separadas) isola 100% por construção, mas duplica cadastro, API e tela. O risco do modelo recomendado (uma tag de contato vazar para uma tela de empresa) é coberto pela seção 5 (todos os usos de empresa passam a filtrar `aplica_a = 'empresa'`) e por um **gatilho no banco** que recusa tag do destino errado em `empresa_tags` e em `contato_tags`.
 2. **O destino do grupo é escolhido na criação e não muda depois** (não se "move" um grupo de empresa para contato: as tags já aplicadas perderiam o sentido).
@@ -41,7 +41,7 @@
 
 - Barra: `TextField` da busca (largura total) + Button **"Filtros"** (ícone `Filter`, `aria-expanded`, `aria-controls` apontando a seção; com filtro ativo, "Filtros · N") + "Limpar filtros" (ghost, só com filtro ativo) + no celular o IconButton "+" (como hoje).
 - Seção de filtros (`id` estável, `role="region"`, `aria-label="Filtros"`): abaixo da barra, `flex flex-col gap-3`, `max-w-[420px]` em `md:` e largura total no celular; cada filtro com rótulo visível (o `Select` já aceita `label`; o `FiltroDeEmpresa` passa a aceitar); botão ghost **"Fechar filtros"** (ícone `ChevronUp`) no fim.
-- O estado aberto/fechado é local (`useState`), não vai para a URL; ao abrir, o foco vai para o primeiro filtro; ao fechar pelo botão de dentro, o foco volta para "Filtros".
+- O estado aberto/fechado é local (`useState`), não vai para a URL; ao fechar pelo botão de dentro, o foco volta para "Filtros".
 - Some o `minWidth: 4 * 200 + 3 * 8` e a grade de 4 colunas.
 - Tokens e alturas do design system (`data-density="compact"` 28px no desktop e no tablet, 44px de toque no celular); nada de cor ou espaçamento fora dos tokens.
 - **Testes (Vitest + Testing Library):** fechada por padrão; abre e mostra os filtros em coluna; escolher um filtro mantém a seção aberta e atualiza "Filtros · 1"; "Fechar filtros" recolhe e o filtro continua na URL e na consulta; "Limpar filtros" funciona com a seção fechada; desktop e celular.
@@ -122,3 +122,17 @@ A migração 0043 só **acrescenta** (coluna com padrão e tabela nova): nenhum 
 | Lista de contatos mais lenta com a coluna Tags | Uma consulta agregada por página (não por linha) e o índice `(tenant_id, tag_id)` |
 | Excluir grupo ou tag usada só por contatos | "Em uso" passa a olhar `contato_tags`; teste de 409 |
 | Copiar configurações entre empresas do grupo | Quando essa função existir, copia `aplica_a` junto (anotar em `funcionalidades.md`) |
+
+## 8. Como ficou (implementação de 29/10/2026)
+
+Diferenças em relação às seções 4 e 5, já refletidas em `funcionalidades.md` e `modelagem_banco.md`:
+
+- **`contato_tags`** segue os nomes de `empresa_tags`: `aplicada_em` e `aplicada_por` (no lugar de `criado_em` e `criado_por`).
+- **O gatilho roda `AFTER`** (e não `BEFORE`): assim a linha de outro tenant continua sendo recusada primeiro pela política de RLS, com a mensagem dela, como o teste de isolamento genérico espera.
+- **`GET /configuracoes/tag-grupos`** sem `aplicaA` devolve **só os grupos de empresa**; `aplicaA=contato` só os de contato e `aplicaA=todos` os dois (a tela de configuração). Assim toda tela de empresa existente continua vendo só tags de empresa sem mudar nada, e a API recusa tag de contato em qualquer gravação de empresa (`catalogoDeTags`, construtor de visita, campo "Tag" da visita, API pública).
+- A **aba** da configuração (Empresas · Contatos) é estado da tela, não vai para a URL (como em *Integrações*). Subir e Descer trocam o bloco com o vizinho **da mesma aba** e mandam à API a ordem de todos os grupos.
+- A janela **"Editar tags"** continua em `apps/web/src/telas/empresas/ficha-tags.tsx`, agora recebendo o nome e as tags atuais (serve à empresa e ao contato).
+- No **formulário**, as tags só vão no corpo da edição quando a pessoa mexeu nelas (como o consentimento); no cadastro, só quando há alguma marcada. A seção "Tags" só aparece quando existe grupo de contato com tag ativa (ou o contato já tem tag).
+- A coluna **Tags** da lista fica logo depois de "Contato".
+- Testes: `packages/db/src/testes/contatos.test.ts` (gatilho, unicidade, outro tenant) e a fábrica de isolamento; `apps/api/src/carteira/contato-tags.test.ts`; nas telas, `cadastros/tags.test.tsx` (abas), `contatos/lista.test.tsx`, `ficha.test.tsx` e `novo-contato.test.tsx`; E2E em `apps/web/e2e/contatos-layout.spec.ts`. Roteiro manual em `roteiro_teste_tags_contatos.md`.
+

@@ -560,7 +560,8 @@ export class VisitasDoCampoService {
     }>(sql`
       SELECT g.id AS grupo, g.selecao = 'unica' AS unica, g.automatico
       FROM tags t JOIN tag_grupos g ON g.id = t.tag_grupo_id
-      WHERE t.id = ${tagId} AND t.ativo AND t.excluido_em IS NULL AND g.excluido_em IS NULL`)
+      WHERE t.id = ${tagId} AND t.ativo AND t.excluido_em IS NULL AND g.excluido_em IS NULL
+        AND g.aplica_a = 'empresa'`)
     // a tag foi inativada ou o grupo virou automático depois do modelo: o campo não aplica nada
     if (!t || t.automatico) return
     if (t.unica) {

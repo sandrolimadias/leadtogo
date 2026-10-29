@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { falha, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 
-import { contato, id, itemDeEmpresa, meComPapel, papeis } from './fixtures'
+import { contato, gruposDeContato, id, itemDeEmpresa, meComPapel, papeis } from './fixtures'
 
 function servicos(
   extra: Record<string, unknown> = {},
@@ -29,6 +29,10 @@ function servicos(
     me: async () => meComPapel(papel),
     contatos: contatos,
     carteira: { ...base.carteira, listar },
+    tags: {
+      ...base.tags,
+      listar: vi.fn(async (a?: string) => ok(a === 'contato' ? gruposDeContato : [])),
+    },
     cadastros: {
       ...base.cadastros,
       papeisDecisao: { ...base.cadastros.papeisDecisao, listar: vi.fn(async () => ok(papeis)) },
@@ -71,6 +75,17 @@ describe('Novo contato', () => {
         'Influenciador', // o Técnico está inativo
       ]),
     )
+  })
+
+  it('seção Tags: as tags marcadas vão no cadastro', async () => {
+    const x = servicos()
+    await abrir(x)
+    const secao = await screen.findByRole('region', { name: 'Tags' })
+    await userEvent.type(nome(), 'Ana Souza')
+    await userEvent.click(within(secao).getByRole('checkbox', { name: 'Técnico' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar contato' }))
+    await waitFor(() => expect(x.contatos.criar).toHaveBeenCalled())
+    expect(corpo(x)).toMatchObject({ nome: 'Ana Souza', tagIds: [id(61)] })
   })
 
   it('salva só com o nome e vai para a edição do contato criado', async () => {

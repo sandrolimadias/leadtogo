@@ -39,8 +39,14 @@ describe('grupos de tags', () => {
       nome: 'Interesse',
       selecao: 'multipla',
       obrigatorio: false,
+      aplicaA: 'empresa',
     })
+    expect(
+      criarTagGrupoSchema.parse({ nome: 'Perfil', selecao: 'multipla', aplicaA: 'contato' }),
+    ).toMatchObject({ aplicaA: 'contato', obrigatorio: false })
     for (const ruim of [
+      { nome: 'Ok', selecao: 'unica', aplicaA: 'oportunidade' },
+      { nome: 'Ok', selecao: 'unica', aplicaA: 'contato', obrigatorio: true },
       { nome: '   ', selecao: 'unica' },
       { nome: 'x'.repeat(81), selecao: 'unica' },
       { nome: 'Ok' },
@@ -53,6 +59,8 @@ describe('grupos de tags', () => {
 
   it('alterar: ao menos um campo, e só os campos permitidos', () => {
     expect(alterarTagGrupoSchema.safeParse({}).success).toBe(false)
+    // o destino é escolhido na criação e não muda
+    expect(alterarTagGrupoSchema.safeParse({ aplicaA: 'contato' }).success).toBe(false)
     expect(alterarTagGrupoSchema.safeParse({ ativo: false }).success).toBe(true)
     expect(alterarTagGrupoSchema.safeParse({ sistema: false }).success).toBe(false)
     expect(alterarTagGrupoSchema.safeParse({ nome: ' ' }).success).toBe(false)

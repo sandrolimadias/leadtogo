@@ -61,6 +61,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 | Obrigatório | Se toda empresa precisa ter uma tag desse grupo |
 | Ordem | Ordem de exibição |
 | Sistema | Grupos criados pelo sistema não podem ser excluídos, apenas editados (nomes e cores das tags) |
+| **Aplica a** | **Empresas** ou **Contatos** (29/10/2026). Escolhido na criação e não muda depois. As tags de um grupo de contato só valem para contatos e nunca aparecem nas telas de empresa (lista, ficha, mapa, importação, visitas, API pública); as de empresa nunca aparecem para contatos |
 
 ### Tag
 | Campo | Descrição |
@@ -84,6 +85,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 - **Tag em uso não se exclui (v1.6):** uma tag aplicada a alguma empresa, **agora ou no histórico de Status**, só pode ser **inativada**; a exclusão fica para tags que nunca foram usadas (caso particular da regra geral da seção 11). Isso preserva o histórico de conversão (quantos Leads viraram Clientes e quando). Vale também para o grupo que contém tags em uso.
 - Filtros por tag em todas as listas (combinação **E / OU**).
 - **Automação opcional (configurável):** ao ganhar uma oportunidade, mudar o Status da empresa para *Cliente*.
+- **Tags de contato (29/10/2026; plano em `plano_contatos_filtros_e_tags.md`):** *Configurações → Tags* tem as abas **Empresas** e **Contatos**. Grupo de contato tem seleção única ou múltipla, **não é obrigatório nem automático** e nenhum nasce pronto (o admin cria). O nome do grupo é único entre os dois destinos. Um contato pode ter várias tags. Tag ou grupo usado por algum contato (mesmo excluído) só se inativa, como nas empresas. Não há histórico de conversão: a mudança fica na auditoria do contato (aba Histórico, "Tags alteradas").
 
 ---
 
@@ -110,6 +112,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 | Tags | Status, Visitação e demais grupos |
 | Data de registro | Data de cadastro no CRM (automática) |
 | Observações | Texto livre |
+| **Tags** | Várias, dos grupos de tags de contato (seção 2). Escolhidas no cadastro, na edição ou em **"Editar tags"** na ficha; quem edita o contato edita as tags |
 | Campos personalizados | Ver seção 8 |
 
 **Atualizar pela Receita:** um botão mostra campo a campo o valor atual e o da Receita, e o usuário escolhe o que aplicar. Uma rotina mensal consulta novamente a situação cadastral e **avisa** se a empresa estiver baixada, inapta ou suspensa.
@@ -305,8 +308,9 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 | Ativo | Desativa o vínculo (ex.: saiu da empresa) mantendo o histórico |
 
 ### Tela Contatos
-- Lista com busca (nome, telefone, e-mail), filtro por empresa, cargo e tags da empresa.
+- Lista com busca (nome, telefone, e-mail), filtro por empresa, cargo, papel na decisão, **tag do contato** e tag da empresa (nessa ordem). Coluna **Tags** (as do contato, todas, quebrando linha, na ordem dos grupos) e as mesmas etiquetas nos cartões do celular. O filtro "Tag do contato" só aparece quando existe algum grupo de tags de contato.
 - **Filtros recolhíveis (29/10/2026):** em todos os dispositivos a busca fica sozinha na barra, com o botão **"Filtros"** ("Filtros · N" com filtros ativos) ao lado. O botão abre, abaixo da busca, os filtros **um abaixo do outro** (cada um com o rótulo acima; até 420px de largura no desktop e no tablet), e **"Fechar filtros"** (ou o próprio botão) recolhe a seção sem tirar os filtros, que continuam na URL. A seção começa sempre fechada, mesmo com filtros na URL; "Limpar filtros" fica sempre à vista. Plano em `plano_contatos_filtros_e_tags.md`.
+- Detalhe do contato: as **tags** no cabeçalho, com **"Editar tags"** para quem edita o contato (some quando não há grupo de tags de contato com tag ativa).
 - Detalhe do contato: dados, **empresas vinculadas**, atividades e oportunidades em que participa (as duas últimas entram nos Módulos 5 e 6). Aba **Histórico** com a auditoria do contato em português; as linhas que citam empresa que o usuário não vê ficam de fora.
 - Ações rápidas: ligar, WhatsApp, e-mail.
 - Detecção de duplicados por e-mail ou telefone.

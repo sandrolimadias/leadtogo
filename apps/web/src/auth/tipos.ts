@@ -261,8 +261,11 @@ export interface ServicosDeFunis {
 
 /** Cadastro de grupos de tags e tags (Configurações → Tags). Só o administrador escreve. */
 export interface ServicosDeTags {
-  /** Grupos com as tags, inclusive as inativas (a tela as mostra com a palavra "Inativa") */
-  listar: () => Promise<Resultado<TagGrupo[]>>
+  /**
+   * Grupos com as tags, inclusive as inativas (a tela as mostra com a palavra "Inativa"). Sem `aplicaA`,
+   * só os grupos de empresa (as telas de empresa nunca veem tags de contato); `todos` é a configuração.
+   */
+  listar: (aplicaA?: 'empresa' | 'contato' | 'todos') => Promise<Resultado<TagGrupo[]>>
   criarGrupo: (dados: CriarTagGrupoEntrada) => Promise<Resultado<TagGrupo>>
   alterarGrupo: (id: string, dados: AlterarTagGrupoEntrada) => Promise<Resultado<TagGrupo>>
   excluirGrupo: (id: string) => Promise<Resultado>
@@ -320,6 +323,8 @@ export interface ServicosDeContatos {
   detalhar: (id: string) => Promise<Resultado<Contato>>
   /** Edita a pessoa (os vínculos com empresas têm operações próprias) */
   alterar: (id: string, dados: AlterarContatoEntrada) => Promise<Resultado<Contato>>
+  /** Troca as tags do contato (só de grupos de tags de contato) */
+  definirTags: (id: string, tagIds: string[]) => Promise<Resultado<Contato>>
   /** Exclusão lógica, só de gestor e administrador (o vendedor recebe 403) */
   excluir: (id: string) => Promise<Resultado>
   /** Liga o contato a outra empresa da carteira (reativa o vínculo inativo). 409 `vinculo_ja_existe` */

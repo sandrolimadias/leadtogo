@@ -40,6 +40,7 @@ const grupos: TagGrupo[] = [
     obrigatorio: true,
     sistema: true,
     automatico: false,
+    aplicaA: 'empresa' as const,
     ativo: true,
     ordem: 0,
     tags: [
@@ -85,6 +86,7 @@ const grupos: TagGrupo[] = [
     obrigatorio: false,
     sistema: true,
     automatico: true,
+    aplicaA: 'empresa' as const,
     ativo: true,
     ordem: 1,
     tags: [
@@ -108,6 +110,7 @@ const grupos: TagGrupo[] = [
     obrigatorio: false,
     sistema: false,
     automatico: false,
+    aplicaA: 'empresa' as const,
     ativo: true,
     ordem: 2,
     tags: [

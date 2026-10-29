@@ -328,6 +328,7 @@ function servicos(
               obrigatorio: false,
               sistema: false,
               automatico: false,
+              aplicaA: 'empresa' as const,
               ativo: true,
               ordem: 0,
               tags: [

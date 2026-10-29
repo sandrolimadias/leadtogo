@@ -30,6 +30,10 @@ export interface FormularioDeContato {
   naoQuerContato: boolean
   /** A pessoa mexeu na chave do consentimento (senão o consentimento não vai no corpo) */
   consentimentoMexido: boolean
+  /** As tags do contato (só de grupos de tags de contato) */
+  tagIds: string[]
+  /** A pessoa mexeu nas tags (senão as tags não vão no corpo da edição) */
+  tagsMexidas: boolean
   // O primeiro vínculo (só no cadastro)
   empresaId: string
   empresaNome: string
@@ -51,6 +55,8 @@ export const formularioVazio = (): FormularioDeContato => ({
   emails: [],
   naoQuerContato: false,
   consentimentoMexido: false,
+  tagIds: [],
+  tagsMexidas: false,
   empresaId: '',
   empresaNome: '',
   cargo: '',
@@ -80,6 +86,7 @@ export function formularioDoContato(c: Contato): FormularioDeContato {
       principal: e.principal,
     })),
     naoQuerContato: !c.aceitaWhatsapp && !c.aceitaEmail,
+    tagIds: c.tags.map((t) => t.id),
   }
 }
 
@@ -128,6 +135,7 @@ export function corpoDoCadastroDeContato(
     ...(f.empresaId
       ? { vinculo: { empresaId: f.empresaId, cargo: f.cargo, principal: f.principal } }
       : {}),
+    ...(f.tagIds.length > 0 ? { tagIds: f.tagIds } : {}),
     ...(ignorarDuplicado ? { ignorarDuplicado: true } : {}),
   }
 }
@@ -148,6 +156,7 @@ export function corpoDaEdicaoDeContato(
     ...(f.consentimentoMexido
       ? { aceitaWhatsapp: !f.naoQuerContato, aceitaEmail: !f.naoQuerContato }
       : {}),
+    ...(f.tagsMexidas ? { tagIds: f.tagIds } : {}),
     ...(ignorarDuplicado ? { ignorarDuplicado: true } : {}),
   }
 }

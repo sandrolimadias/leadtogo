@@ -223,6 +223,7 @@ describe('tags: método, caminho e corpo', () => {
   it('cada operação usa a rota certa', async () => {
     const t = servicosReais.tags
     await t.listar()
+    await t.listar('contato')
     await t.criarGrupo({ nome: 'G', selecao: 'multipla' })
     await t.alterarGrupo(ID, { nome: 'H' })
     await t.excluirGrupo(ID)
@@ -233,6 +234,7 @@ describe('tags: método, caminho e corpo', () => {
     await t.reordenarTags(ID, [ID])
     expect(chamadas.map((c) => `${c.metodo} ${c.caminho}${c.consulta}`)).toEqual([
       'GET /v1/configuracoes/tag-grupos?incluirInativos=true',
+      'GET /v1/configuracoes/tag-grupos?incluirInativos=true&aplicaA=contato',
       'POST /v1/configuracoes/tag-grupos',
       `PATCH /v1/configuracoes/tag-grupos/${ID}`,
       `DELETE /v1/configuracoes/tag-grupos/${ID}`,
@@ -243,8 +245,27 @@ describe('tags: método, caminho e corpo', () => {
       `PUT /v1/configuracoes/tag-grupos/${ID}/tags/ordem`,
     ])
     // os padrões que o cliente gerado trata como obrigatórios vão explícitos
-    expect(chamadas[1]?.corpo).toEqual({ nome: 'G', selecao: 'multipla', obrigatorio: false })
-    expect(chamadas[5]?.corpo).toEqual({ tagGrupoId: ID, nome: 'T', cor: 'gray' })
+    expect(chamadas[2]?.corpo).toEqual({
+      nome: 'G',
+      selecao: 'multipla',
+      obrigatorio: false,
+      aplicaA: 'empresa',
+    })
+    expect(chamadas[6]?.corpo).toEqual({ tagGrupoId: ID, nome: 'T', cor: 'gray' })
+  })
+})
+
+describe('contatos: tags', () => {
+  it('definirTags usa PUT /v1/carteira/contatos/{id}/tags com os ids', async () => {
+    await servicosReais.contatos.definirTags(ID, [ID])
+    expect(chamadas).toEqual([
+      {
+        metodo: 'PUT',
+        caminho: `/v1/carteira/contatos/${ID}/tags`,
+        consulta: '',
+        corpo: { tagIds: [ID] },
+      },
+    ])
   })
 })
 

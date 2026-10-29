@@ -18,6 +18,8 @@ const texto = (max: number) =>
 
 export const MAX_TELEFONES_DO_CONTATO = 10
 export const MAX_EMAILS_DO_CONTATO = 10
+/** Até quantas tags um contato tem (as dos grupos de tags de contato) */
+export const MAX_TAGS_DO_CONTATO = 50
 
 export const tipoEmailSchema = z.enum(['pessoal', 'trabalho'])
 export type TipoEmail = z.infer<typeof tipoEmailSchema>
@@ -69,6 +71,8 @@ const camposDoContato = {
   aceitaEmail: z.boolean().optional(),
   /** Já existe contato com o mesmo e-mail ou telefone: a pessoa viu o aviso e quer criar/salvar mesmo assim */
   ignorarDuplicado: z.boolean().optional(),
+  /** Se vier, substitui todas as tags do contato (só de grupos de tags de contato) */
+  tagIds: z.array(z.uuid()).max(MAX_TAGS_DO_CONTATO).optional(),
 }
 
 /** O primeiro vínculo, na criação: a empresa da carteira, o cargo e se é o contato principal dela. */
@@ -177,6 +181,27 @@ export const vinculoDoContatoSchema = z.object({
   editavel: z.boolean(),
 })
 
+/** Uma tag do contato (de um grupo de tags de contato), na ordem dos grupos e, dentro do grupo, das tags. */
+export const tagDoContatoSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    cor: z.string(),
+    tagGrupoId: z.uuid(),
+  })
+  .meta({ id: 'TagDoContato' })
+export type TagDoContato = z.infer<typeof tagDoContatoSchema>
+
+/**
+ * PUT /v1/carteira/contatos/{id}/tags: as tags que o contato passa a ter. Só tags ativas de grupos de
+ * tags de contato; grupo de seleção única aceita uma só.
+ */
+export const definirTagsDoContatoSchema = z
+  .object({ tagIds: z.array(z.uuid()).max(MAX_TAGS_DO_CONTATO) })
+  .strict()
+  .meta({ id: 'DefinirTagsDoContatoEntrada' })
+export type DefinirTagsDoContato = z.output<typeof definirTagsDoContatoSchema>
+
 export const contatoSchema = z
   .object({
     id: z.uuid(),
@@ -194,6 +219,7 @@ export const contatoSchema = z
     emails: z.array(emailDoContatoSchema),
     /** Só os vínculos com empresas que o usuário vê */
     vinculos: z.array(vinculoDoContatoSchema),
+    tags: z.array(tagDoContatoSchema),
     criadoEm: z.string(),
     atualizadoEm: z.string(),
     permissoes: z.object({ editar: z.boolean(), excluir: z.boolean() }),
@@ -229,7 +255,8 @@ const textoDeBusca = z
 
 /**
  * Consulta da lista. Tudo opcional; os filtros se somam. `empresaId`, `cargo` e `tagId` olham só os
- * vínculos **ativos** (o cargo é do vínculo; a tag é da empresa do vínculo).
+ * vínculos **ativos** (o cargo é do vínculo; a tag é da empresa do vínculo). `tagContatoId` é uma tag do
+ * próprio contato.
  */
 export const consultaDeContatosSchema = z
   .object({
@@ -239,6 +266,7 @@ export const consultaDeContatosSchema = z
     cargo: textoDeBusca,
     papelDecisaoId: z.uuid().optional(),
     tagId: z.uuid().optional(),
+    tagContatoId: z.uuid().optional(),
     ordem: z.enum(ORDENS_DA_LISTA_DE_CONTATOS).default('nome'),
     sentido: z.enum(['asc', 'desc']).default('asc'),
     pagina: z.coerce.number().int().min(1).default(1),
@@ -270,6 +298,7 @@ export const itemDaListaDeContatosSchema = z
     email: z.string().nullable(),
     /** Pediu para não receber contato (consentimento desligado para WhatsApp e e-mail) */
     naoQuerContato: z.boolean(),
+    tags: z.array(tagDoContatoSchema),
     /** O usuário pode editar o contato (o vendedor só edita o ligado a empresa dele) */
     editavel: z.boolean(),
   })

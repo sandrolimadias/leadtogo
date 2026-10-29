@@ -1,5 +1,6 @@
 import { and, asc, eq, isNull, schema, sql } from '@leadtogo/db'
 import {
+  type AlvoDeTag,
   type AlterarTagEntrada,
   type AlterarTagGrupoEntrada,
   CHAVES_DE_TAG_COM_REGRA,
@@ -43,6 +44,7 @@ const paraGrupo = (g: LinhaGrupo, itens: LinhaTag[]): TagGrupo => ({
   obrigatorio: g.obrigatorio,
   sistema: g.sistema,
   automatico: g.automatico,
+  aplicaA: g.aplicaA,
   ativo: g.ativo,
   ordem: g.ordem,
   tags: itens.map(paraTag),
@@ -56,14 +58,21 @@ export class TagsService {
     private readonly auditoria: AuditoriaService,
   ) {}
 
-  /** Grupos com suas tags, em ordem. Sem `incluirInativos`, esconde o que foi inativado. */
-  async listar(incluirInativos: boolean): Promise<TagGrupo[]> {
+  /**
+   * Grupos com suas tags, em ordem. Sem `incluirInativos`, esconde o que foi inativado. `aplicaA` limita aos
+   * grupos de empresa ou de contato (sem ele, todos: a tela de configuração).
+   */
+  async listar(incluirInativos: boolean, aplicaA?: AlvoDeTag): Promise<TagGrupo[]> {
     const db = this.ctx.db()
     const grupos = await db
       .select()
       .from(tagGrupos)
       .where(
-        and(isNull(tagGrupos.excluidoEm), incluirInativos ? undefined : eq(tagGrupos.ativo, true)),
+        and(
+          isNull(tagGrupos.excluidoEm),
+          incluirInativos ? undefined : eq(tagGrupos.ativo, true),
+          aplicaA ? eq(tagGrupos.aplicaA, aplicaA) : undefined,
+        ),
       )
       .orderBy(asc(tagGrupos.ordem), asc(tagGrupos.nome))
     const itens = await db
@@ -94,6 +103,7 @@ export class TagsService {
           nome: dados.nome.trim(),
           selecao: dados.selecao,
           obrigatorio: dados.obrigatorio ?? false,
+          aplicaA: dados.aplicaA ?? 'empresa',
           ordem,
           criadoPor: this.ctx.membro.id,
           atualizadoPor: this.ctx.membro.id,
@@ -105,7 +115,12 @@ export class TagsService {
       entidade: 'tag_grupo',
       entidadeId: grupo.id,
       acao: 'criar',
-      alteracoes: { nome: grupo.nome, selecao: grupo.selecao, obrigatorio: grupo.obrigatorio },
+      alteracoes: {
+        nome: grupo.nome,
+        selecao: grupo.selecao,
+        obrigatorio: grupo.obrigatorio,
+        aplicaA: grupo.aplicaA,
+      },
     })
     return paraGrupo(grupo, [])
   }
@@ -125,6 +140,13 @@ export class TagsService {
           409,
         )
       }
+    }
+    if (grupo.aplicaA === 'contato' && dados.obrigatorio === true) {
+      throw new ErroApi(
+        'grupo_de_contato',
+        `O grupo "${grupo.nome}" é de tags de contato: não pode ser obrigatório.`,
+        409,
+      )
     }
     const mudancas = diferencas(grupo, dados)
     if (Object.keys(mudancas).length === 0) return this.grupoCompleto(grupo)
@@ -165,7 +187,7 @@ export class TagsService {
     if (await this.grupoJaFoiUsado(id)) {
       throw new ErroApi(
         'grupo_em_uso',
-        `O grupo "${grupo.nome}" tem tags que já foram usadas por empresas (inclusive no histórico): não dá para excluir, só inativar.`,
+        `O grupo "${grupo.nome}" tem tags que já foram usadas por empresas ou contatos (inclusive no histórico): não dá para excluir, só inativar.`,
         409,
       )
     }
@@ -294,7 +316,7 @@ export class TagsService {
     if (await this.tagJaFoiUsada(id)) {
       throw new ErroApi(
         'tag_em_uso',
-        `A tag "${tag.nome}" já foi usada por empresas (inclusive no histórico de Status): não dá para excluir, só inativar.`,
+        `A tag "${tag.nome}" já foi usada por empresas ou contatos (inclusive no histórico de Status): não dá para excluir, só inativar.`,
         409,
       )
     }
@@ -336,19 +358,24 @@ export class TagsService {
 
   // ---- internos ----
 
-  /** A tag está (ou já esteve) em alguma empresa, mesmo excluída: o histórico de Status depende dela. */
+  /**
+   * A tag está (ou já esteve) em alguma empresa, mesmo excluída: o histórico de Status depende dela. Ou está
+   * em algum contato (mesmo excluído, que pode ser restaurado).
+   */
   private async tagJaFoiUsada(tagId: string): Promise<boolean> {
     const [r] = await this.ctx.db().execute<{ usada: boolean }>(sql`
       SELECT (EXISTS (SELECT 1 FROM empresa_tags WHERE tag_id = ${tagId})
-           OR EXISTS (SELECT 1 FROM empresa_tags_historico WHERE tag_id = ${tagId})) AS usada`)
+           OR EXISTS (SELECT 1 FROM empresa_tags_historico WHERE tag_id = ${tagId})
+           OR EXISTS (SELECT 1 FROM contato_tags WHERE tag_id = ${tagId})) AS usada`)
     return r?.usada === true
   }
 
-  /** Alguma tag do grupo (mesmo já excluída) já foi usada por empresa. */
+  /** Alguma tag do grupo (mesmo já excluída) já foi usada por empresa ou por contato. */
   private async grupoJaFoiUsado(grupoId: string): Promise<boolean> {
     const [r] = await this.ctx.db().execute<{ usada: boolean }>(sql`
       SELECT (EXISTS (SELECT 1 FROM empresa_tags et JOIN tags t ON t.id = et.tag_id WHERE t.tag_grupo_id = ${grupoId})
-           OR EXISTS (SELECT 1 FROM empresa_tags_historico h JOIN tags t ON t.id = h.tag_id WHERE t.tag_grupo_id = ${grupoId})) AS usada`)
+           OR EXISTS (SELECT 1 FROM empresa_tags_historico h JOIN tags t ON t.id = h.tag_id WHERE t.tag_grupo_id = ${grupoId})
+           OR EXISTS (SELECT 1 FROM contato_tags ct JOIN tags t ON t.id = ct.tag_id WHERE t.tag_grupo_id = ${grupoId})) AS usada`)
     return r?.usada === true
   }
 

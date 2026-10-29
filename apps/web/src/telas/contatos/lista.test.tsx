@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { falha, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 
-import { id, itemDeContato, itemDeEmpresa, meComPapel, papeis } from './fixtures'
+import { gruposDeContato, id, itemDeContato, itemDeEmpresa, meComPapel, papeis } from './fixtures'
 
 const grupos: TagGrupo[] = [
   {
@@ -15,6 +15,7 @@ const grupos: TagGrupo[] = [
     obrigatorio: true,
     sistema: true,
     automatico: false,
+    aplicaA: 'empresa' as const,
     ativo: true,
     ordem: 0,
     tags: [
@@ -75,7 +76,12 @@ function servicos(
     me: async () => meComPapel(papel),
     contatos: contatos,
     carteira: { ...base.carteira, listar: empresas },
-    tags: { ...base.tags, listar: vi.fn(async () => ok(grupos)) },
+    tags: {
+      ...base.tags,
+      listar: vi.fn(async (aplicaA?: string) =>
+        ok(aplicaA === 'contato' ? gruposDeContato : grupos),
+      ),
+    },
     cadastros: {
       ...base.cadastros,
       papeisDecisao: { ...base.cadastros.papeisDecisao, listar: vi.fn(async () => ok(papeis)) },
@@ -117,7 +123,7 @@ describe('Contatos: a lista', () => {
       within(tabela)
         .getAllByRole('columnheader')
         .map((c) => c.textContent),
-    ).toEqual(['Contato', 'Empresas', 'Cargo', 'Telefone', 'E-mail'])
+    ).toEqual(['Contato', 'Tags', 'Empresas', 'Cargo', 'Telefone', 'E-mail'])
     const linha = within(tabela).getAllByRole('row')[1] as HTMLElement
     expect(within(linha).getByText('Contato 1')).toBeInTheDocument()
     expect(within(linha).getByText('Decisor')).toBeInTheDocument()
@@ -255,6 +261,53 @@ describe('Contatos: a lista', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
     await waitFor(() => expect(historico.location.search).toBe(''))
     expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument()
+  })
+
+  it('tags do contato: coluna com as etiquetas e o filtro "Tag do contato" vai para a consulta', async () => {
+    const x = servicos(
+      lista([
+        itemDeContato(1, {
+          tags: [{ id: id(61), nome: 'Técnico', cor: 'blue', tagGrupoId: id(60) }],
+        }),
+        itemDeContato(2),
+      ]),
+    )
+    const { historico } = await abrir(x)
+    const tabela = await screen.findByRole('table')
+    const linhas = within(tabela).getAllByRole('row')
+    expect(within(linhas[1] as HTMLElement).getByText('Técnico')).toBeInTheDocument()
+    expect(within(linhas[2] as HTMLElement).queryByText('Técnico')).toBeNull()
+
+    await abrirFiltros()
+    const secao = screen.getByRole('region', { name: 'Filtros' })
+    // ordem: Empresa · Cargo · Papel na decisão · Tag do contato · Tag da empresa
+    expect(
+      within(secao)
+        .getAllByRole('combobox')
+        .map((c) => c.getAttribute('aria-label')),
+    ).toEqual(['Cargo', 'Papel na decisão', 'Tag do contato', 'Tag da empresa'])
+    const tagDoContato = within(secao).getByRole('combobox', { name: 'Tag do contato' })
+    expect(
+      within(tagDoContato)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Todas', 'Perfil: Técnico'])
+    await userEvent.selectOptions(tagDoContato, id(61))
+    await waitFor(() => expect(ultimaConsulta(x)).toMatchObject({ tagContatoId: id(61) }))
+    expect(historico.location.search).toContain(`tagContato=${id(61)}`)
+    expect(screen.getByRole('button', { name: 'Filtros · 1' })).toBeInTheDocument()
+  })
+
+  it('sem grupos de tags de contato, o filtro "Tag do contato" não aparece', async () => {
+    const x = servicos()
+    x.s.tags = {
+      ...x.s.tags,
+      listar: vi.fn(async (a?: string) => ok(a === 'contato' ? [] : grupos)),
+    }
+    await abrir(x)
+    await screen.findByRole('table')
+    await abrirFiltros()
+    expect(screen.queryByRole('combobox', { name: 'Tag do contato' })).toBeNull()
   })
 
   it('valores inválidos na URL são ignorados', async () => {

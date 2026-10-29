@@ -50,6 +50,7 @@ const dados = (): TagGrupo[] => [
     obrigatorio: true,
     sistema: true,
     automatico: false,
+    aplicaA: 'empresa' as const,
     ativo: true,
     ordem: 0,
     tags: [
@@ -65,6 +66,7 @@ const dados = (): TagGrupo[] => [
     obrigatorio: false,
     sistema: true,
     automatico: true,
+    aplicaA: 'empresa' as const,
     ativo: true,
     ordem: 1,
     tags: [tag(21, 2, 'Visitada', { cor: 'orange', chaveSistema: 'visitada' })],
@@ -76,6 +78,7 @@ const dados = (): TagGrupo[] => [
     obrigatorio: false,
     sistema: false,
     automatico: false,
+    aplicaA: 'empresa' as const,
     ativo: true,
     ordem: 2,
     tags: [tag(31, 3, 'Retrofit', { cor: 'blue' }), tag(32, 3, 'Monitoramento', { ativo: false })],
@@ -205,6 +208,7 @@ describe('Configurações → Tags: grupos', () => {
         nome: 'Porte',
         selecao: 'unica',
         obrigatorio: true,
+        aplicaA: 'empresa',
       }),
     )
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
@@ -467,5 +471,97 @@ describe('Configurações → Tags: tags', () => {
     await waitFor(() =>
       expect(servicos.tags.reordenarTags).toHaveBeenCalledWith(id(1), [id(11), id(13), id(12)]),
     )
+  })
+})
+
+describe('Configurações → Tags: aba Contatos', () => {
+  const comContato = (): TagGrupo[] => [
+    ...dados(),
+    {
+      id: id(4),
+      nome: 'Perfil',
+      selecao: 'multipla',
+      obrigatorio: false,
+      sistema: false,
+      automatico: false,
+      aplicaA: 'contato' as const,
+      ativo: true,
+      ordem: 3,
+      tags: [tag(41, 4, 'Técnico')],
+    },
+    {
+      id: id(5),
+      nome: 'Relacionamento',
+      selecao: 'unica',
+      obrigatorio: false,
+      sistema: false,
+      automatico: false,
+      aplicaA: 'contato' as const,
+      ativo: true,
+      ordem: 4,
+      tags: [tag(51, 5, 'Promotor')],
+    },
+  ]
+
+  it('pede todos os grupos; a aba Empresas não mostra os de contato e a Contatos só mostra os dela', async () => {
+    const servicos = servicosDeTags(comContato())
+    await abrir(servicos)
+    expect(servicos.tags.listar).toHaveBeenCalledWith('todos')
+    expect(screen.getByRole('tab', { name: /Empresas/ })).toHaveTextContent('3')
+    expect(screen.queryByRole('region', { name: 'Perfil' })).toBeNull()
+
+    await userEvent.click(screen.getByRole('tab', { name: /Contatos/ }))
+    expect(await screen.findByRole('region', { name: 'Perfil' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Relacionamento' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Status' })).toBeNull()
+    expect(screen.getByText(/Valem só para contatos, nunca para empresas/)).toBeInTheDocument()
+  })
+
+  it('cria grupo de contato sem a opção "Obrigatório"', async () => {
+    const servicos = servicosDeTags(comContato())
+    await abrir(servicos)
+    await userEvent.click(screen.getByRole('tab', { name: /Contatos/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Novo grupo' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Novo grupo de tags de contato' })
+    expect(within(dialogo).queryByRole('checkbox', { name: /Obrigatório/ })).toBeNull()
+    expect(
+      within(dialogo).getByRole('option', { name: 'Única: o contato tem só uma tag do grupo' }),
+    ).toBeInTheDocument()
+    await userEvent.type(within(dialogo).getByLabelText(/Nome/), 'Origem do contato')
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Criar grupo' }))
+    await waitFor(() =>
+      expect(servicos.tags.criarGrupo).toHaveBeenCalledWith({
+        nome: 'Origem do contato',
+        selecao: 'multipla',
+        obrigatorio: false,
+        aplicaA: 'contato',
+      }),
+    )
+  })
+
+  it('Subir e Descer trocam com o vizinho da mesma aba e mandam a ordem de todos os grupos', async () => {
+    const servicos = servicosDeTags(comContato())
+    await abrir(servicos)
+    await userEvent.click(screen.getByRole('tab', { name: /Contatos/ }))
+    const subir = await screen.findByRole('button', {
+      name: 'Mover o grupo Relacionamento para cima',
+    })
+    expect(screen.getByRole('button', { name: 'Mover o grupo Perfil para cima' })).toBeDisabled()
+    await userEvent.click(subir)
+    await waitFor(() =>
+      expect(servicos.tags.reordenarGrupos).toHaveBeenCalledWith([
+        id(1),
+        id(2),
+        id(3),
+        id(5),
+        id(4),
+      ]),
+    )
+  })
+
+  it('aba Contatos vazia convida a criar o primeiro grupo', async () => {
+    await abrir(servicosDeTags())
+    await userEvent.click(screen.getByRole('tab', { name: /Contatos/ }))
+    expect(await screen.findByText('Nenhum grupo de tags de contato')).toBeInTheDocument()
   })
 })

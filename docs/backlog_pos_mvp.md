@@ -43,6 +43,11 @@
 | Lixeira e restauração de contatos | Exclusão lógica sem volta pela tela; o caminho comum é inativar o vínculo | Módulo 3 |
 | Coluna "Última interação" na lista de Contatos | Prevista para depois das atividades; a ficha mostra a aba Atividades, mas a coluna da lista não foi feita | Módulo 3 / Módulo 5 |
 | Aba Oportunidades na ficha do contato | O Módulo 6 entregou a aba na empresa e a oportunidade guarda só o contato principal | Módulo 3 / Módulo 6 |
+| Tags de contato na importação de contatos (coluna "Tags" da planilha) | Fora da primeira entrega das tags de contato (decisão 11, aprovada em 29/10/2026) | `plano_contatos_filtros_e_tags.md` |
+| Tags de contato na API pública e nos webhooks (`contato.atualizado` quando só as tags mudam) | Idem; a API pública e os webhooks continuam só com as tags de empresa | `plano_contatos_filtros_e_tags.md` |
+| Aplicar e tirar tag de contato em massa (seleção na lista de Contatos) | Idem; hoje é contato a contato, na ficha ou no formulário | `plano_contatos_filtros_e_tags.md` |
+| Busca global por tag de contato | Idem | `plano_contatos_filtros_e_tags.md` |
+| Filtro por várias tags com combinação **E / OU** (tags do contato e da empresa, na lista de Contatos) | Idem; o filtro é de uma tag por vez, como o de Empresas | `plano_contatos_filtros_e_tags.md` |
 
 ## Importação
 | Item | Motivo de ter ficado fora | Origem |

@@ -484,7 +484,7 @@ export class PublicaService {
       SELECT t.id, t.nome, t.chave_sistema, t.ativo, g.automatico AS automatica,
         json_build_object('id', g.id, 'nome', g.nome, 'chave_sistema', g.chave_sistema) AS grupo
       FROM tags t JOIN tag_grupos g ON g.id = t.tag_grupo_id
-      WHERE t.excluido_em IS NULL AND g.excluido_em IS NULL
+      WHERE t.excluido_em IS NULL AND g.excluido_em IS NULL AND g.aplica_a = 'empresa'
       ORDER BY g.ordem, g.nome, t.ordem, t.nome`)
     return { dados: [...linhas] }
   }
@@ -557,7 +557,8 @@ export class PublicaService {
   private async tagId(referencia: string, campo: string): Promise<string> {
     const [tag] = await this.db.execute<{ id: string; grupo: string | null }>(sql`
       SELECT t.id, g.chave_sistema AS grupo FROM tags t JOIN tag_grupos g ON g.id = t.tag_grupo_id
-      WHERE ${condicaoDeTag(sql`t`, referencia)} AND t.excluido_em IS NULL AND t.ativo LIMIT 1`)
+      WHERE ${condicaoDeTag(sql`t`, referencia)} AND t.excluido_em IS NULL AND t.ativo
+        AND g.aplica_a = 'empresa' LIMIT 1`)
     if (!tag) throw invalido(campo, 'tag_invalida', `Tag não encontrada ou inativa: ${referencia}`)
     if (campo === 'status' && tag.grupo !== 'status') {
       throw invalido(campo, 'tag_invalida', `A tag ${referencia} não é do grupo Status.`)

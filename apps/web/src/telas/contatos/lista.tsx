@@ -26,6 +26,7 @@ import {
 import { FiltroDeEmpresa } from './filtro-de-empresa'
 import { CartoesDeContatos, TabelaDeContatos } from './lista-partes'
 import { rotaDoContato } from './rotas'
+import { useGruposDeTagsDeContato } from './tags'
 
 const rota = getRouteApi('/_autenticado/contatos/')
 
@@ -110,6 +111,7 @@ export function ListaDeContatos() {
       return r.dados
     },
   })
+  const tagsDeContato = useGruposDeTagsDeContato()
   // Linhas por página: 25, 50 ou 100, lembrado por tabela nas preferências da pessoa
   const tamanho = usePorPagina('contatos')
   const lista = useQuery({
@@ -140,6 +142,12 @@ export function ListaDeContatos() {
   const gruposDeTags: TagGrupo[] = tags.data ?? []
   const opcoesDeTag = gruposDeTags.flatMap((g) =>
     g.tags.filter((t) => t.ativo).map((t) => ({ value: t.id, label: `${g.nome}: ${t.nome}` })),
+  )
+  // Tags do contato: as ativas, e a da URL mesmo se foi inativada (para o filtro não sumir)
+  const opcoesDeTagDoContato = (tagsDeContato.data ?? []).flatMap((g) =>
+    g.tags
+      .filter((t) => (t.ativo && g.ativo) || t.id === busca.tagContato)
+      .map((t) => ({ value: t.id, label: `${g.nome}: ${t.nome}` })),
   )
 
   const total = lista.data?.total
@@ -185,6 +193,16 @@ export function ListaDeContatos() {
         value={busca.papel ?? ''}
         onChange={(e) => mudar({ papel: e.target.value || undefined })}
       />
+      {opcoesDeTagDoContato.length > 0 ? (
+        <Select
+          label="Tag do contato"
+          aria-label="Tag do contato"
+          placeholder="Todas"
+          options={opcoesDeTagDoContato}
+          value={busca.tagContato ?? ''}
+          onChange={(e) => mudar({ tagContato: e.target.value || undefined })}
+        />
+      ) : null}
       <Select
         label="Tag da empresa"
         aria-label="Tag da empresa"

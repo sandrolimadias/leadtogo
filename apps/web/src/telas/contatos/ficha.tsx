@@ -1,5 +1,5 @@
 import type { Contato } from '@leadtogo/api-client'
-import { linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
+import { type CorDeTag, linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import {
@@ -20,7 +20,7 @@ import { useServicos } from '@/auth/contexto'
 import { useDispositivo } from '@/casca/dispositivo'
 import { Button, IconButton } from '@leadtogo/ui/button'
 import { Switch } from '@leadtogo/ui/checkbox'
-import { Avatar, Badge } from '@leadtogo/ui/exibicao'
+import { Avatar, Badge, Tag } from '@leadtogo/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { Menu } from '@leadtogo/ui/menu'
 import { ConteudoDaAba, Tabs } from '@leadtogo/ui/tabs'
@@ -30,12 +30,14 @@ import { cn } from '@leadtogo/ui/cn'
 import { DialogoDeConfirmacao } from '@/telas/cadastros/base'
 import { dataEHora } from '@/telas/empresas/formatos'
 import { LinkDeIcone } from '@/telas/empresas/ficha'
+import { EditarTags } from '@/telas/empresas/ficha-tags'
 import { HistoricoAba } from '@/telas/empresas/ficha-historico'
 import { Cartao } from '@/telas/empresas/ficha-resumo'
 
 import { EmpresasVinculadas } from './ficha-vinculos'
 import { telefoneParaTela } from './formatos'
 import { rotaDeEdicaoDoContato } from './rotas'
+import { temTagsParaEscolher, useGruposDeTagsDeContato } from './tags'
 
 const rota = getRouteApi('/_autenticado/contatos/$contatoId')
 
@@ -211,6 +213,10 @@ export function FichaDoContato() {
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
   const [erroDaExclusao, setErroDaExclusao] = useState<string>()
+  const [editandoTags, setEditandoTags] = useState(false)
+  const [salvandoTags, setSalvandoTags] = useState(false)
+  const [erroDasTags, setErroDasTags] = useState<string>()
+  const gruposDeTags = useGruposDeTagsDeContato()
 
   const consulta = useQuery({
     queryKey: ['contatos', 'contato', contatoId],
@@ -297,6 +303,22 @@ export function FichaDoContato() {
     toast.success(naoQuer ? 'Marcado como "Não quer contato"' : 'Contato liberado de novo')
   }
 
+  const salvarTags = async (tagIds: string[]) => {
+    setSalvandoTags(true)
+    setErroDasTags(undefined)
+    const r = await servicos.contatos.definirTags(c.id, tagIds)
+    setSalvandoTags(false)
+    if (!r.ok) {
+      setErroDasTags(r.erro.mensagem)
+      return
+    }
+    setEditandoTags(false)
+    queryClient.setQueryData(['contatos', 'contato', c.id], r.dados)
+    await queryClient.invalidateQueries({ queryKey: ['contatos', 'lista'] })
+    toast.success('Tags salvas')
+  }
+  const podeEditarTags = c.permissoes.editar && temTagsParaEscolher(gruposDeTags.data)
+
   const excluir = async () => {
     setExcluindo(true)
     setErroDaExclusao(undefined)
@@ -369,6 +391,28 @@ export function FichaDoContato() {
               ) : null}
             </div>
             <span className="text-sm text-ink-muted">{linhaDaEmpresa}</span>
+            {c.tags.length > 0 || podeEditarTags ? (
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {c.tags.map((t) => (
+                  <Tag key={t.id} color={t.cor as CorDeTag}>
+                    {t.nome}
+                  </Tag>
+                ))}
+                {podeEditarTags ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={Pencil}
+                    onClick={() => {
+                      setErroDasTags(undefined)
+                      setEditandoTags(true)
+                    }}
+                  >
+                    Editar tags
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
             {celular ? null : (
@@ -495,6 +539,18 @@ export function FichaDoContato() {
         </main>
       </Tabs>
 
+      {editandoTags && gruposDeTags.data ? (
+        <EditarTags
+          aberto
+          aoFechar={() => setEditandoTags(false)}
+          nome={c.nome}
+          atuais={c.tags.map((t) => t.id)}
+          grupos={gruposDeTags.data}
+          salvando={salvandoTags}
+          erro={erroDasTags}
+          aoSalvar={(ids) => void salvarTags(ids)}
+        />
+      ) : null}
       <DialogoDeConfirmacao
         aberto={confirmandoExclusao}
         titulo="Excluir este contato?"

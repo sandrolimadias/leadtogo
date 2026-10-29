@@ -20,6 +20,7 @@ export interface TagDoCatalogo {
   automatico: boolean
 }
 
+/** As tags que valem para empresas (os grupos de tags de contato ficam de fora). */
 export async function catalogoDeTags(db: Transacao): Promise<Map<string, TagDoCatalogo>> {
   const linhas = await db
     .select({
@@ -34,7 +35,9 @@ export async function catalogoDeTags(db: Transacao): Promise<Map<string, TagDoCa
     })
     .from(tags)
     .innerJoin(tagGrupos, eq(tagGrupos.id, tags.tagGrupoId))
-    .where(and(isNull(tags.excluidoEm), isNull(tagGrupos.excluidoEm)))
+    .where(
+      and(isNull(tags.excluidoEm), isNull(tagGrupos.excluidoEm), eq(tagGrupos.aplicaA, 'empresa')),
+    )
   return new Map(linhas.map((l) => [l.id, l]))
 }
 
