@@ -470,6 +470,34 @@ export const servicosReais: ServicosDeAcesso = {
       ),
   },
 
+  busca: {
+    buscar: ({ tipos, ...consulta }) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/busca', {
+            params: {
+              query: { ...consulta, ...(tipos ? { tipos: tipos.join(',') } : {}) } as never,
+            },
+          }),
+        ),
+      ),
+    recentes: () =>
+      protegido(async () => {
+        const r = daApi(await api.GET('/v1/busca/recentes'))
+        return r.ok ? { ok: true, dados: r.dados.itens } : r
+      }),
+    registrar: (termo) =>
+      protegido(async () => {
+        const r = daApi(await api.POST('/v1/busca/recentes', { body: { termo } }))
+        return r.ok ? { ok: true, dados: r.dados.itens } : r
+      }),
+    apagar: (id) =>
+      protegido(async () =>
+        semCorpo(await api.DELETE('/v1/busca/recentes/{id}', { params: { path: { id } } })),
+      ),
+    limpar: () => protegido(async () => semCorpo(await api.DELETE('/v1/busca/recentes'))),
+  },
+
   configuracaoDaCarteira: () =>
     protegido(async () => daApi(await api.GET('/v1/configuracoes/carteira'))),
   alterarConfiguracaoDaCarteira: (patch) =>

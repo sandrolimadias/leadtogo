@@ -17,6 +17,8 @@ import type {
   ListaDeTarefasDoChamado,
   Atividade,
   Dashboard,
+  BuscaRecente,
+  ResultadoDaBuscaGlobal,
   KanbanDeOportunidades,
   ListaDeOportunidades,
   Oportunidade,
@@ -157,6 +159,7 @@ import type {
   TipoDeImportacao,
   AlterarAtividadeEntrada,
   ConsultaDoDashboardEntrada,
+  TipoDaBuscaGlobal,
   AlterarOportunidadeEntrada,
   ConsultaDeOportunidadesEntrada,
   ConsultaDoKanbanEntrada,
@@ -354,6 +357,22 @@ export interface ServicosDeAtividades {
 export interface ServicosDoDashboard {
   /** Os números do período, de uma vez só (sem `funilId`, o funil padrão) */
   carregar: (consulta: ConsultaDoDashboardEntrada) => Promise<Resultado<Dashboard>>
+}
+
+/** Busca global da barra do topo (docs/plano_busca_global.md) e as buscas recentes de quem está logado. */
+export interface ServicosDaBusca {
+  /** Empresas, contatos e oportunidades que a pessoa vê; até `limite` por tipo (padrão 5) */
+  buscar: (consulta: {
+    q: string
+    tipos?: TipoDaBuscaGlobal[]
+    limite?: number
+  }) => Promise<Resultado<ResultadoDaBuscaGlobal>>
+  /** As até 10 últimas buscas concluídas, a mais recente primeiro */
+  recentes: () => Promise<Resultado<BuscaRecente[]>>
+  /** Grava a busca concluída (repetida volta ao topo); devolve a lista atualizada */
+  registrar: (termo: string) => Promise<Resultado<BuscaRecente[]>>
+  apagar: (id: string) => Promise<Resultado>
+  limpar: () => Promise<Resultado>
 }
 
 /** Oportunidades (Módulo 6): o funil de vendas. Segue a regra de carteira da API. */
@@ -896,6 +915,9 @@ export interface ServicosDeAcesso {
 
   // Dashboard (Módulo 7)
   dashboard: ServicosDoDashboard
+
+  // Busca global (barra do topo)
+  busca: ServicosDaBusca
 }
 
 /** Matriz de permissões de um perfil: `chave → alcance` ou `true` */

@@ -1,7 +1,5 @@
 import type { EmpresaDoUsuario, Me } from '@leadtogo/api-client'
 
-import { toast } from '@leadtogo/ui/toast'
-
 import { ROTULO_DO_PAPEL } from './navegacao'
 
 /** Nome de exibição da empresa (o fantasia, ou a razão social). */
@@ -17,9 +15,4 @@ export function papelDe(me: Me): string {
   const ativa = me.empresas.find((e) => e.ativa)
   if (ativa) return perfilDaEmpresa(ativa)
   return me.administradorDeConta ? 'Administrador' : 'Membro'
-}
-
-/** Ação que ainda não existe (busca global, registrar atividade): avisa em vez de ficar muda. */
-export function avisarEmBreve(o_que: string) {
-  toast.info(o_que, { description: 'Esta função chega nas próximas etapas.' })
 }

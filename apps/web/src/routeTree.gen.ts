@@ -22,6 +22,7 @@ import { Route as AcessoVerificacaoRouteImport } from './routes/_acesso.verifica
 import { Route as AcessoVerificarEmailRouteImport } from './routes/_acesso.verificar-email'
 import { Route as AutenticadoIndexRouteImport } from './routes/_autenticado.index'
 import { Route as AutenticadoAtividadesRouteImport } from './routes/_autenticado.atividades'
+import { Route as AutenticadoBuscaRouteImport } from './routes/_autenticado.busca'
 import { Route as AutenticadoChamadosRouteImport } from './routes/_autenticado.chamados'
 import { Route as AutenticadoConfiguracoesRouteImport } from './routes/_autenticado.configuracoes'
 import { Route as AutenticadoConsolidadoRouteImport } from './routes/_autenticado.consolidado'
@@ -140,6 +141,11 @@ const AutenticadoIndexRoute = AutenticadoIndexRouteImport.update({
 const AutenticadoAtividadesRoute = AutenticadoAtividadesRouteImport.update({
   id: '/atividades',
   path: '/atividades',
+  getParentRoute: () => AutenticadoRoute,
+} as any)
+const AutenticadoBuscaRoute = AutenticadoBuscaRouteImport.update({
+  id: '/busca',
+  path: '/busca',
   getParentRoute: () => AutenticadoRoute,
 } as any)
 const AutenticadoChamadosRoute = AutenticadoChamadosRouteImport.update({
@@ -473,6 +479,7 @@ export interface FileRoutesByFullPath {
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
   '/atividades': typeof AutenticadoAtividadesRouteWithChildren
+  '/busca': typeof AutenticadoBuscaRoute
   '/chamados': typeof AutenticadoChamadosRouteWithChildren
   '/configuracoes': typeof AutenticadoConfiguracoesRouteWithChildren
   '/consolidado': typeof AutenticadoConsolidadoRoute
@@ -541,6 +548,7 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof AcessoRedefinirSenhaRoute
   '/verificacao': typeof AcessoVerificacaoRoute
   '/verificar-email': typeof AcessoVerificarEmailRoute
+  '/busca': typeof AutenticadoBuscaRoute
   '/consolidado': typeof AutenticadoConsolidadoRoute
   '/criar-empresa': typeof AutenticadoCriarEmpresaRoute
   '/geolocalizacao': typeof AutenticadoGeolocalizacaoRoute
@@ -603,6 +611,7 @@ export interface FileRoutesById {
   '/_acesso/verificacao': typeof AcessoVerificacaoRoute
   '/_acesso/verificar-email': typeof AcessoVerificarEmailRoute
   '/_autenticado/atividades': typeof AutenticadoAtividadesRouteWithChildren
+  '/_autenticado/busca': typeof AutenticadoBuscaRoute
   '/_autenticado/chamados': typeof AutenticadoChamadosRouteWithChildren
   '/_autenticado/configuracoes': typeof AutenticadoConfiguracoesRouteWithChildren
   '/_autenticado/consolidado': typeof AutenticadoConsolidadoRoute
@@ -675,6 +684,7 @@ export interface FileRouteTypes {
     | '/verificacao'
     | '/verificar-email'
     | '/atividades'
+    | '/busca'
     | '/chamados'
     | '/configuracoes'
     | '/consolidado'
@@ -743,6 +753,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/verificacao'
     | '/verificar-email'
+    | '/busca'
     | '/consolidado'
     | '/criar-empresa'
     | '/geolocalizacao'
@@ -804,6 +815,7 @@ export interface FileRouteTypes {
     | '/_acesso/verificacao'
     | '/_acesso/verificar-email'
     | '/_autenticado/atividades'
+    | '/_autenticado/busca'
     | '/_autenticado/chamados'
     | '/_autenticado/configuracoes'
     | '/_autenticado/consolidado'
@@ -960,6 +972,13 @@ declare module '@tanstack/react-router' {
       path: '/atividades'
       fullPath: '/atividades'
       preLoaderRoute: typeof AutenticadoAtividadesRouteImport
+      parentRoute: typeof AutenticadoRoute
+    }
+    '/_autenticado/busca': {
+      id: '/_autenticado/busca'
+      path: '/busca'
+      fullPath: '/busca'
+      preLoaderRoute: typeof AutenticadoBuscaRouteImport
       parentRoute: typeof AutenticadoRoute
     }
     '/_autenticado/chamados': {
@@ -1580,6 +1599,7 @@ const AutenticadoVisitasRouteWithChildren =
 
 interface AutenticadoRouteChildren {
   AutenticadoAtividadesRoute: typeof AutenticadoAtividadesRouteWithChildren
+  AutenticadoBuscaRoute: typeof AutenticadoBuscaRoute
   AutenticadoChamadosRoute: typeof AutenticadoChamadosRouteWithChildren
   AutenticadoConfiguracoesRoute: typeof AutenticadoConfiguracoesRouteWithChildren
   AutenticadoConsolidadoRoute: typeof AutenticadoConsolidadoRoute
@@ -1600,6 +1620,7 @@ interface AutenticadoRouteChildren {
 
 const AutenticadoRouteChildren: AutenticadoRouteChildren = {
   AutenticadoAtividadesRoute: AutenticadoAtividadesRouteWithChildren,
+  AutenticadoBuscaRoute: AutenticadoBuscaRoute,
   AutenticadoChamadosRoute: AutenticadoChamadosRouteWithChildren,
   AutenticadoConfiguracoesRoute: AutenticadoConfiguracoesRouteWithChildren,
   AutenticadoConsolidadoRoute: AutenticadoConsolidadoRoute,

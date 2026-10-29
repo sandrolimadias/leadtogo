@@ -96,7 +96,7 @@ describe('casca no desktop', () => {
     expect(within(nav).getByRole('button', { name: /Aurora Móveis/ })).toHaveTextContent(
       'Administrador',
     )
-    expect(screen.getByRole('searchbox', { name: /Buscar empresas/ })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: /Buscar empresas/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Registrar atividade' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Notificações' })).toBeInTheDocument()
   })

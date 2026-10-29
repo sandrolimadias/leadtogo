@@ -19,6 +19,8 @@ export interface BuscaDeOportunidades {
   de?: string
   ate?: string
   pagina?: number
+  /** Termo de busca (título ou empresa), quando vem de fora (ex.: "Ver todos em Oportunidades" da busca global) */
+  busca?: string
 }
 
 const texto = (v: unknown): string | undefined =>
@@ -41,6 +43,7 @@ export function lerBusca(entrada: Record<string, unknown>): BuscaDeOportunidades
   const motivo = texto(entrada['motivo'])
   const de = dia(entrada['de'])
   const ate = dia(entrada['ate'])
+  const termo = texto(entrada['busca'])
   return {
     ...(entrada['visao'] === 'lista' ? { visao: 'lista' as const } : {}),
     ...(funil ? { funil } : {}),
@@ -52,5 +55,6 @@ export function lerBusca(entrada: Record<string, unknown>): BuscaDeOportunidades
     ...(de ? { de } : {}),
     ...(ate ? { ate } : {}),
     ...(pagina && pagina > 1 ? { pagina } : {}),
+    ...(termo ? { busca: termo.slice(0, 100) } : {}),
   }
 }

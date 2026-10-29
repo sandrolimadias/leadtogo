@@ -54,8 +54,9 @@ export function PaginaDeOportunidades() {
   const lista = busca.visao === 'lista'
   const [suspensasAbertas, setSuspensasAbertas] = useState(false)
 
-  const [texto, setTexto] = useState('')
-  const [termo, setTermo] = useState('')
+  // O termo pode chegar pela URL ("Ver todos em Oportunidades" da busca global); daí em diante é do campo
+  const [texto, setTexto] = useState(busca.busca ?? '')
+  const [termo, setTermo] = useState(busca.busca ?? '')
   useEffect(() => {
     const espera = setTimeout(() => setTermo(texto.trim()), ESPERA_DA_BUSCA_MS)
     return () => clearTimeout(espera)
