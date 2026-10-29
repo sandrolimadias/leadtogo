@@ -7,6 +7,7 @@ import {
   index,
   pgEnum,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -15,7 +16,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 
-import { papeisDecisao } from './cadastros.js'
+import { papeisDecisao, tags } from './cadastros.js'
 import { empresas, origemTelefone, tipoTelefone } from './carteira.js'
 import { membros, tenants } from './plataforma.js'
 import { carimbos, chaveUuid, citext } from './tipos.js'
@@ -152,5 +153,30 @@ export const contatoEmails = pgTable(
   (t) => [
     uniqueIndex('contato_emails_uq').on(t.contatoId, t.email),
     index('contato_emails_email_idx').on(t.tenantId, t.email),
+  ],
+)
+
+/**
+ * Tags do contato: só de grupos com `aplica_a = 'contato'` (o gatilho `app_conferir_alvo_da_tag` garante).
+ * Como `empresa_tags`, a linha é o vínculo: tirar a tag apaga a linha, e a auditoria do contato guarda o que mudou.
+ */
+export const contatoTags = pgTable(
+  'contato_tags',
+  {
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    contatoId: uuid()
+      .notNull()
+      .references(() => contatos.id),
+    tagId: uuid()
+      .notNull()
+      .references(() => tags.id),
+    aplicadaEm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    aplicadaPor: uuid().references(() => membros.id),
+  },
+  (t) => [
+    primaryKey({ columns: [t.contatoId, t.tagId] }),
+    index('contato_tags_tag_idx').on(t.tenantId, t.tagId),
   ],
 )

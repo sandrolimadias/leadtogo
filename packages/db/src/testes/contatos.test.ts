@@ -193,3 +193,83 @@ describe('papéis na decisão', () => {
     await expect(novo('PATROCINADOR')).rejects.toThrow(/papeis_decisao_nome_uq/)
   })
 })
+
+describe('contato_tags', () => {
+  /** Um grupo de tags com uma tag, para empresa ou para contato */
+  const grupoComTag = (tenantId: string, aplicaA: 'empresa' | 'contato') =>
+    comTenant(app, tenantId, async (tx) => {
+      const g = novoId()
+      const t = novoId()
+      await tx`INSERT INTO tag_grupos (id, tenant_id, nome, aplica_a) VALUES (${g}, ${tenantId}, ${`G ${g}`}, ${aplicaA})`
+      await tx`INSERT INTO tags (id, tenant_id, nome, tag_grupo_id) VALUES (${t}, ${tenantId}, 'T', ${g})`
+      return t
+    })
+
+  it('o grupo nasce para empresa; a tag de contato entra uma vez por contato', async () => {
+    const { tenantId } = await novoTenant()
+    const [grupo] = await comTenant(
+      app,
+      tenantId,
+      (tx) =>
+        tx`INSERT INTO tag_grupos (id, tenant_id, nome) VALUES (${novoId()}, ${tenantId}, 'Sem destino') RETURNING aplica_a`,
+    )
+    expect(grupo?.['aplica_a']).toBe('empresa')
+
+    const contatoId = await criarContato(tenantId)
+    const tagId = await grupoComTag(tenantId, 'contato')
+    const aplicar = () =>
+      comTenant(
+        app,
+        tenantId,
+        (tx) =>
+          tx`INSERT INTO contato_tags (tenant_id, contato_id, tag_id) VALUES (${tenantId}, ${contatoId}, ${tagId})`,
+      )
+    await aplicar()
+    await expect(aplicar()).rejects.toThrow(/duplicate key/)
+  })
+
+  it('o gatilho recusa tag de empresa no contato e tag de contato na empresa', async () => {
+    const { tenantId, empresaId } = await novoTenant()
+    const contatoId = await criarContato(tenantId)
+    const deEmpresa = await grupoComTag(tenantId, 'empresa')
+    const deContato = await grupoComTag(tenantId, 'contato')
+    await expect(
+      comTenant(
+        app,
+        tenantId,
+        (tx) =>
+          tx`INSERT INTO contato_tags (tenant_id, contato_id, tag_id) VALUES (${tenantId}, ${contatoId}, ${deEmpresa})`,
+      ),
+    ).rejects.toThrow(/não é de um grupo de tags de contato/)
+    await expect(
+      comTenant(
+        app,
+        tenantId,
+        (tx) =>
+          tx`INSERT INTO empresa_tags (tenant_id, empresa_id, tag_id) VALUES (${tenantId}, ${empresaId}, ${deContato})`,
+      ),
+    ).rejects.toThrow(/não é de um grupo de tags de empresa/)
+    // e a tag do destino certo entra
+    await comTenant(
+      app,
+      tenantId,
+      (tx) =>
+        tx`INSERT INTO empresa_tags (tenant_id, empresa_id, tag_id) VALUES (${tenantId}, ${empresaId}, ${deEmpresa})`,
+    )
+  })
+
+  it('tag de contato de outra empresa (tenant) é recusada', async () => {
+    const a = await novoTenant()
+    const b = await novoTenant()
+    const contatoId = await criarContato(a.tenantId)
+    const tagDeB = await grupoComTag(b.tenantId, 'contato')
+    await expect(
+      comTenant(
+        app,
+        a.tenantId,
+        (tx) =>
+          tx`INSERT INTO contato_tags (tenant_id, contato_id, tag_id) VALUES (${a.tenantId}, ${contatoId}, ${tagDeB})`,
+      ),
+    ).rejects.toThrow(/não é de um grupo de tags de contato|foreign key/)
+  })
+})
