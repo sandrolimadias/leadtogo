@@ -224,6 +224,10 @@ describe('quem vê o quê', () => {
     expect((await lista('?prioridade=urgente')).itens.map((i) => i.id)).toEqual([b.id])
     // pendentes: prioridade urgente primeiro
     expect((await lista('?aba=pendentes')).itens.map((i) => i.id)).toEqual([b.id])
+    // abertos: some o que foi resolvido (a aba Chamados da ficha da empresa)
+    await chamar('post', c.atendente.cookie, `/chamados/${a.id}/status`, { status: 'resolvido' })
+    expect((await lista('?abertos=true')).itens.map((i) => i.id)).toEqual([b.id])
+    expect((await lista('?abertos=false')).total).toBe(2)
     const pag = await lista('?porPagina=1&pagina=2')
     expect(pag).toMatchObject({ total: 2 })
     expect(pag.itens).toHaveLength(1)

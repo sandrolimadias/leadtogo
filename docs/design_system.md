@@ -47,7 +47,7 @@
 
 ## Layout e rolagem (regra para toda tela, atual e futura; decidida pelo Ale em 15/10/2026)
 1. **A página (`html`/`body`) nunca rola.** O app ocupa exatamente a janela (`h-dvh`, por causa do celular). A casca é `relative` para que elementos `absolute` (como `sr-only`) não vazem do `overflow-hidden`.
-2. **Ficam fixos** o **menu lateral** (altura toda, com logo e seletor de empresa no topo, itens no meio e usuário e versão presos no rodapé; no celular continua a navegação fixa) e a **barra do topo** (busca, "Registrar atividade", notificações; no celular, cabeçalho e barra inferior).
+2. **Ficam fixos** o **menu lateral** (altura toda, com logo e seletor de empresa no topo, itens no meio e usuário e versão presos no rodapé; no celular continua a navegação fixa) e a **barra do topo** (busca, "+" para criar, "?" de ajuda, notificações; no celular, cabeçalho e barra inferior).
 3. **Só a área central (`#conteudo`) rola**, com **uma única barra de rolagem**, na borda direita dela. Título, botões, chips, filtros, tabela e paginação rolam juntos.
    - **Tabelas não têm rolagem vertical própria**: crescem com as linhas (25, 50 ou 100) e quem rola é a área central. O **cabeçalho das colunas** é `sticky top-0` e gruda no topo da área central enquanto a tabela estiver visível.
    - Para o `sticky` funcionar, nenhum ancestral do `<th>` pode ter `overflow: hidden/auto/scroll`: `AreaDaTabela` usa `overflow-clip`, e `CorpoDaTabela` só rola na **horizontal abaixo de `lg`** (colunas que não cabem; nessa faixa o cabeçalho deixa de grudar). **Nunca** rolagem horizontal na página.

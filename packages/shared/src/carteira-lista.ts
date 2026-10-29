@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { tipoDocumentoSchema } from './carteira-empresas.js'
 import { porPaginaSchema } from './paginacao.js'
+import { regimeTributarioSchema } from './receita.js'
 
 // Lista de empresas da carteira (GET /v1/carteira/empresas): consulta, itens, contagens dos chips e
 // opções dos filtros. Especificação: docs/prototipo/README.md (tela 2) e docs/escopo_mvp.md (Módulo 2).
@@ -65,6 +66,9 @@ export const consultaDaListaSchema = z
     semContato: z.coerce.number().int().min(1).max(3650).optional(),
     /** Código IBGE da cidade */
     municipio: z.coerce.number().int().positive().optional(),
+    /** Código do porte da Receita (0 Não informado, 1 Micro Empresa, 3 Pequeno Porte, 5 Demais) */
+    porte: z.coerce.number().int().min(0).max(9).optional(),
+    regimeTributario: regimeTributarioSchema.optional(),
     /** 30: visitada nos últimos 30 dias · 60 e 90: sem visita há 60/90 dias (inclui nunca) · nunca */
     ultimaVisita: z.enum(['30', '60', '90', 'nunca']).optional(),
     ordem: z.enum(ORDENS_DA_LISTA).default('nome'),

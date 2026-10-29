@@ -1,5 +1,5 @@
 import type { ConsultaDaReceitaDaEmpresa, EmpresaCarteira } from '@leadtogo/api-client'
-import { linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
+import { linkDoWhatsapp } from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import {
@@ -12,7 +12,6 @@ import {
   MessageCircle,
   Navigation,
   Pencil,
-  Phone,
   RefreshCw,
   Trash2,
   TriangleAlert,
@@ -20,13 +19,16 @@ import {
 import { type ReactNode, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePermissoes } from '@/auth/permissoes'
 import { useDispositivo } from '@/casca/dispositivo'
 import { Button, IconButton } from '@leadtogo/ui/button'
 import { type CorDeTag } from '@leadtogo/ui/cores'
 import { Avatar, Badge, Tag } from '@leadtogo/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { Menu } from '@leadtogo/ui/menu'
-import { ConteudoDaAba, Tabs } from '@leadtogo/ui/tabs'
+import { ConteudoDaAba, type ItemDeAba, Tabs } from '@leadtogo/ui/tabs'
+import { useChamadosAbertosDaEmpresa } from '@/telas/chamados/da-empresa'
+import { ChamadosDaEmpresa } from '@/telas/chamados/na-ficha'
 import { AtividadesDaFicha } from '@/telas/atividades/na-ficha'
 import { useFormularioDeOportunidade } from '@/telas/oportunidades/contexto-formulario'
 import { OportunidadesDaEmpresa } from '@/telas/oportunidades/na-ficha'
@@ -44,22 +46,37 @@ import { HistoricoDaEmpresaAba } from './ficha-historico'
 import { CartaoDaPosicao } from '@/telas/geolocalizacao/ficha-posicao'
 import { BotaoDeVisita } from '@/telas/visitas/campo/checkin'
 import { VisitasDaEmpresa } from '@/telas/visitas/campo/na-ficha'
-import { Cartao, CnaesDaEmpresa, DadosCadastrais, SociosDaEmpresa } from './ficha-resumo'
+import {
+  Cartao,
+  CnaesDaEmpresa,
+  DadosCadastrais,
+  DialogoDeConverterSocio,
+  SociosDaEmpresa,
+} from './ficha-resumo'
 
 const rota = getRouteApi('/_autenticado/empresas/$empresaId')
 
-const abasDaEmpresa = (contatosAtivos: number | undefined) => [
-  { value: 'resumo', label: 'Resumo' },
-  {
-    value: 'contatos',
-    label: contatosAtivos === undefined ? 'Contatos' : `Contatos (${contatosAtivos})`,
-  },
-  { value: 'atividades', label: 'Atividades' },
-  { value: 'oportunidades', label: 'Oportunidades' },
-  { value: 'historico', label: 'Histórico' },
-]
+/** As abas e o total de cada uma (ausente enquanto carrega). Chamados só para quem vê chamados. */
+const abasDaEmpresa = (totais: {
+  contatos: number | undefined
+  atividades: number | undefined
+  oportunidades: number | undefined
+  chamados: number | undefined
+  verChamados: boolean
+}): ItemDeAba[] => {
+  const comTotal = (value: string, label: string, count: number | undefined): ItemDeAba =>
+    count === undefined ? { value, label } : { value, label, count }
+  return [
+    { value: 'resumo', label: 'Resumo' },
+    comTotal('contatos', 'Contatos', totais.contatos),
+    comTotal('atividades', 'Atividades', totais.atividades),
+    comTotal('oportunidades', 'Oportunidades', totais.oportunidades),
+    ...(totais.verChamados ? [comTotal('chamados', 'Chamados', totais.chamados)] : []),
+    { value: 'historico', label: 'Histórico' },
+  ]
+}
 
-/** Botão-ícone que é um link (Ligar, WhatsApp): o `IconButton` é um <button>, e aqui o destino é um endereço. */
+/** Botão-ícone que é um link (WhatsApp): o `IconButton` é um <button>, e aqui o destino é um endereço. */
 export function LinkDeIcone({
   href,
   label,
@@ -68,7 +85,7 @@ export function LinkDeIcone({
 }: {
   href: string | null
   label: string
-  icone: typeof Phone
+  icone: typeof MessageCircle
   /** Dica quando o botão está desativado */
   semDestino?: string
 }) {
@@ -128,7 +145,11 @@ export function FichaDaEmpresa() {
   const { abrir: abrirOportunidade } = useFormularioDeOportunidade()
   const [editandoTags, setEditandoTags] = useState(false)
   const [salvandoTags, setSalvandoTags] = useState(false)
-  const [convertendoSocio, setConvertendoSocio] = useState<string | null>(null)
+  const [socioEmConversao, setSocioEmConversao] = useState<{ id: string; nome: string } | null>(
+    null,
+  )
+  const [convertendoSocio, setConvertendoSocio] = useState(false)
+  const [erroDaConversao, setErroDaConversao] = useState<string>()
   const [erroDasTags, setErroDasTags] = useState<string>()
   const [consultandoReceita, setConsultandoReceita] = useState(false)
   const [comparacao, setComparacao] = useState<ConsultaDaReceitaDaEmpresa | null>(null)
@@ -167,6 +188,27 @@ export function FichaDaEmpresa() {
   }).data
 
   const contatosDaEmpresa = useContatosDaEmpresa(empresaId).data
+  // O total de cada aba: só a contagem (uma linha), com as chaves que as abas invalidam ao mudar algo
+  const totalDeAtividades = useQuery({
+    queryKey: ['atividades', 'ficha', 'total', empresaId],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.atividades.listar({ empresaId, porPagina: 1 })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.total
+    },
+  }).data
+  const totalDeOportunidades = useQuery({
+    queryKey: ['oportunidades', 'da-ficha', 'total', empresaId],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.oportunidades.listar({ empresaId, porPagina: 1 })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.total
+    },
+  }).data
+  const verChamados = usePermissoes().pode('chamados.ver')
+  const chamadosAbertos = useChamadosAbertosDaEmpresa(empresaId, verChamados).data
   const atualizar = () => queryClient.invalidateQueries({ queryKey: ['carteira'] })
   const voltar = () => void navegar({ to: '/empresas' })
 
@@ -215,7 +257,6 @@ export function FichaDaEmpresa() {
 
   const e: EmpresaCarteira = consulta.data
   const telefone = e.telefones.find((t) => t.principal) ?? e.telefones[0]
-  const ligar = telefone ? linkDeLigacao(telefone.e164) : null
   const whatsapp = telefone ? linkDoWhatsapp(telefone.e164) : null
   const enderecoRota = [
     [e.endereco.tipoLogradouro, e.endereco.logradouro].filter(Boolean).join(' '),
@@ -244,14 +285,19 @@ export function FichaDaEmpresa() {
     await atualizar()
   }
 
-  const converterSocio = async (socioId: string) => {
-    setConvertendoSocio(socioId)
-    const r = await servicos.contatos.converterSocio(e.id, socioId)
-    setConvertendoSocio(null)
+  const converterSocio = async (socioId: string, dados: { telefone: string; email: string }) => {
+    setConvertendoSocio(true)
+    setErroDaConversao(undefined)
+    const r = await servicos.contatos.converterSocio(e.id, socioId, {
+      ...(dados.telefone ? { telefone: dados.telefone } : {}),
+      ...(dados.email ? { email: dados.email } : {}),
+    })
+    setConvertendoSocio(false)
     if (!r.ok) {
-      toast.error('Não foi possível converter o sócio', { description: r.erro.mensagem })
+      setErroDaConversao(r.erro.mensagem)
       return
     }
+    setSocioEmConversao(null)
     toast.success('Sócio convertido em contato', {
       description: `${r.dados.nome} agora está na aba Contatos.`,
     })
@@ -404,7 +450,7 @@ export function FichaDaEmpresa() {
           </div>
           <div className="flex items-center gap-2">
             {e.permissoes.editar && !celular ? (
-              <BotaoDeVisita empresa={{ id: e.id, nome: e.nome }} compacto />
+              <BotaoDeVisita empresa={{ id: e.id, nome: e.nome }} compacto tamanho="md" />
             ) : null}
             {e.permissoes.editar && !celular ? (
               <Button
@@ -423,11 +469,9 @@ export function FichaDaEmpresa() {
                 Nova atividade
               </Button>
             ) : null}
+            {/* Sem "Ligar": a ligação virá da integração com a telefonia */}
             {celular ? null : (
-              <>
-                <LinkDeIcone href={ligar} label="Ligar" icone={Phone} />
-                <LinkDeIcone href={whatsapp} label="WhatsApp" icone={MessageCircle} />
-              </>
+              <LinkDeIcone href={whatsapp} label="WhatsApp" icone={MessageCircle} />
             )}
             {itensDoMenu.length > 0 ? (
               <Menu
@@ -462,11 +506,10 @@ export function FichaDaEmpresa() {
 
         {celular ? (
           <div
-            className={cn('grid gap-2', e.permissoes.editar ? 'grid-cols-4' : 'grid-cols-3')}
+            className={cn('grid gap-2', e.permissoes.editar ? 'grid-cols-3' : 'grid-cols-2')}
             data-density="touch"
           >
             {[
-              { rotulo: 'Ligar', href: ligar, icone: Phone, cor: 'text-tag-blue-fg' },
               {
                 rotulo: 'WhatsApp',
                 href: whatsapp,
@@ -530,7 +573,13 @@ export function FichaDaEmpresa() {
 
       <Tabs
         label="Seções da empresa"
-        items={abasDaEmpresa(contatosDaEmpresa?.filter((c) => c.ativo).length)}
+        items={abasDaEmpresa({
+          contatos: contatosDaEmpresa?.filter((c) => c.ativo).length,
+          atividades: totalDeAtividades,
+          oportunidades: totalDeOportunidades,
+          chamados: chamadosAbertos?.total,
+          verChamados,
+        })}
         value={aba}
         onChange={setAba}
         className="flex flex-col [&>[role=tablist]]:bg-surface [&>[role=tablist]]:px-6 max-md:[&>[role=tablist]]:px-4"
@@ -584,8 +633,11 @@ export function FichaDaEmpresa() {
                   <SociosDaEmpresa
                     socios={e.socios}
                     podeConverter={e.permissoes.editar}
-                    convertendo={convertendoSocio}
-                    aoConverter={(id) => void converterSocio(id)}
+                    convertendo={convertendoSocio ? (socioEmConversao?.id ?? null) : null}
+                    aoConverter={(socio) => {
+                      setErroDaConversao(undefined)
+                      setSocioEmConversao(socio)
+                    }}
                   />
                 </Cartao>
               ) : null}
@@ -621,6 +673,11 @@ export function FichaDaEmpresa() {
               podeCriar={e.permissoes.editar}
             />
           </ConteudoDaAba>
+          {verChamados ? (
+            <ConteudoDaAba value="chamados">
+              <ChamadosDaEmpresa empresa={{ id: e.id, nome: e.nome }} />
+            </ConteudoDaAba>
+          ) : null}
           <ConteudoDaAba value="historico">
             <HistoricoDaEmpresaAba empresaId={e.id} />
           </ConteudoDaAba>
@@ -636,6 +693,15 @@ export function FichaDaEmpresa() {
           salvando={salvandoTags}
           erro={erroDasTags}
           aoSalvar={(ids) => void salvarTags(ids)}
+        />
+      ) : null}
+      {socioEmConversao ? (
+        <DialogoDeConverterSocio
+          socio={socioEmConversao}
+          convertendo={convertendoSocio}
+          erro={erroDaConversao}
+          aoConverter={(dados) => void converterSocio(socioEmConversao.id, dados)}
+          aoFechar={() => setSocioEmConversao(null)}
         />
       ) : null}
       <DialogoDeConfirmacao

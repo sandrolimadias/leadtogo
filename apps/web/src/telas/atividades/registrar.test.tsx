@@ -43,7 +43,7 @@ function servicos(papel: 'admin' | 'gestor' | 'vendedor' = 'admin') {
 async function abrirFormulario(x: ReturnType<typeof servicos>) {
   renderizar(x.s, '/atividades')
   await screen.findByRole('heading', { name: 'Atividades' })
-  // o botão da barra do topo (o da página tem o mesmo nome)
+  // o botão da página (o "+" do topo também abre, pelo item Atividade)
   await userEvent.click(
     screen.getAllByRole('button', { name: 'Registrar atividade' })[0] as HTMLElement,
   )

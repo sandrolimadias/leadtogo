@@ -10,6 +10,8 @@ import {
   type AplicarTagEmMassa,
   aplicarTagEmMassaSchema,
   type ConsultaDaLista,
+  type ConverterSocio,
+  converterSocioSchema,
   type ConsultaDaReceitaDaEmpresa,
   consultaDaReceitaDaEmpresaSchema,
   type ConsultaDoHistorico,
@@ -197,7 +199,8 @@ export class EmpresasDaCarteiraController {
 
   @Documenta({
     resumo: 'Converter sócio em contato',
-    descricao: `${CARTEIRA} Cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação do sócio; sem telefone nem e-mail) e marca o sócio como "Contato". O vínculo sobrevive ao "Atualizar pela Receita". Sócio já convertido: 409 \`socio_ja_convertido\`. Exige editar a empresa (o vendedor, só a própria carteira). Registra na auditoria. Devolve o contato.`,
+    corpo: converterSocioSchema,
+    descricao: `${CARTEIRA} Cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação do sócio) e, se vierem no corpo, o telefone e o e-mail (opcionais; em branco o contato nasce sem eles; telefone inválido dá 400 e nada é criado) e marca o sócio como "Contato". O vínculo sobrevive ao "Atualizar pela Receita". Sócio já convertido: 409 \`socio_ja_convertido\`. Exige editar a empresa (o vendedor, só a própria carteira). Registra na auditoria. Devolve o contato.`,
     resposta: contatoSchema,
     status: 201,
     erros: [400, 401, 403, 404, 409, 429],
@@ -208,8 +211,9 @@ export class EmpresasDaCarteiraController {
   converterSocioEmContato(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('socioId', new ParseUUIDPipe()) socioId: string,
+    @Body(new ZodPipe(converterSocioSchema.optional())) dados: ConverterSocio | undefined,
   ): Promise<Contato> {
-    return this.converterSocio.converter(id, socioId)
+    return this.converterSocio.converter(id, socioId, dados ?? {})
   }
 
   @Documenta({

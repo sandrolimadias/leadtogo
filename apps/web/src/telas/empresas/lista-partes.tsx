@@ -15,7 +15,6 @@ import { Checkbox } from '@leadtogo/ui/checkbox'
 import { Tag } from '@leadtogo/ui/exibicao'
 import type { CorDeTag } from '@leadtogo/ui/cores'
 import { cn } from '@leadtogo/ui/cn'
-import { reais } from '@/telas/oportunidades/formatos'
 
 import { dataCurta, diasDesde, documentoFormatado, linkDeRota, tempoRelativo } from './formatos'
 
@@ -111,16 +110,13 @@ export function TabelaDeEmpresas({
               Cidade
             </th>
             <th scope="col" className={cabecalho}>
-              Última visita
+              Estado
             </th>
             <th scope="col" className={cabecalho}>
               Último contato
             </th>
             <th scope="col" className={cabecalho}>
               Próxima atividade
-            </th>
-            <th scope="col" className={cn(cabecalho, 'text-right')}>
-              Em aberto
             </th>
           </tr>
         </thead>
@@ -163,20 +159,13 @@ export function TabelaDeEmpresas({
               <td className="border-b border-border px-3 py-2">
                 <TagsDaEmpresa tags={e.tags} />
               </td>
-              <td className="border-b border-border px-3 py-2">
-                {e.cidade ? `${e.cidade.nome}/${e.cidade.uf}` : '—'}
-              </td>
-              <td className="border-b border-border px-3 py-2">
-                <DataComTempo iso={e.ultimaVisitaEm} limite={DIAS_DE_ALERTA_DA_VISITA} />
-              </td>
+              <td className="border-b border-border px-3 py-2">{e.cidade?.nome ?? '—'}</td>
+              <td className="border-b border-border px-3 py-2">{e.cidade?.uf ?? '—'}</td>
               <td className="border-b border-border px-3 py-2">
                 <DataComTempo iso={e.ultimoContatoEm} limite={diasDeAlertaDoContato} />
               </td>
               <td className="border-b border-border px-3 py-2">
                 <ProximaAtividade iso={e.proximaAtividadeEm} />
-              </td>
-              <td className="border-b border-border px-3 py-2 text-right tabular-nums">
-                {e.emAberto > 0 ? reais(e.emAberto) : <span className="text-ink-muted">—</span>}
               </td>
             </tr>
           ))}

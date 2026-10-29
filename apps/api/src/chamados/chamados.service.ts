@@ -284,6 +284,7 @@ export class ChamadosService {
     if (c.prioridade) filtros.push(sql`c.prioridade = ${c.prioridade}::prioridade_chamado`)
     if (c.responsavelId) filtros.push(sql`c.responsavel_id = ${c.responsavelId}`)
     if (c.empresaClienteId) filtros.push(sql`c.empresa_cliente_id = ${c.empresaClienteId}`)
+    if (c.abertos === 'true') filtros.push(sql`c.status NOT IN ('resolvido', 'fechado')`)
     if (c.origem) filtros.push(sql`c.origem = ${c.origem}::origem_chamado`)
     // o dia é o da empresa (fuso do expediente), não o da sessão do banco
     const fuso = c.de || c.ate ? (await this.expediente.calendario()).fusoHorario : ''

@@ -34,7 +34,8 @@ const ROTULO_DAS_ABAS: Record<AbaDeChamados, string> = {
   todos: 'Todos',
 }
 
-function Linha({ c }: { c: ItemDeChamado }) {
+/** Uma linha da lista de chamados (a central e a aba Chamados da ficha da empresa). */
+export function LinhaDoChamado({ c }: { c: ItemDeChamado }) {
   const prazos = [
     selosDoPrazo(c.prazoResposta, 'Resposta'),
     selosDoPrazo(c.prazoResolucao, 'Resolução'),
@@ -219,7 +220,7 @@ export function TelaDeChamados() {
             className="m-0 flex list-none flex-col overflow-hidden rounded-lg border border-border bg-surface p-0"
           >
             {lista.data.itens.map((c) => (
-              <Linha key={c.id} c={c} />
+              <LinhaDoChamado key={c.id} c={c} />
             ))}
           </ul>
           <Paginacao

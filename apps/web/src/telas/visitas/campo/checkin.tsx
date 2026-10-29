@@ -61,9 +61,13 @@ const distanciaCurta = (m: number) =>
 export function BotaoDeVisita({
   empresa,
   compacto = false,
+  tamanho,
 }: {
   empresa: { id: string; nome: string }
+  /** Secundário (e pequeno, salvo `tamanho`), para ficar ao lado de outras ações */
   compacto?: boolean
+  /** Na ficha da empresa, o mesmo tamanho dos botões vizinhos */
+  tamanho?: 'sm' | 'md'
 }) {
   const servicos = useServicos()
   const navegar = useNavigate()
@@ -167,7 +171,7 @@ export function BotaoDeVisita({
       <Button
         icon={MapPinCheck}
         variant={compacto ? 'secondary' : 'primary'}
-        size={compacto ? 'sm' : 'md'}
+        size={tamanho ?? (compacto ? 'sm' : 'md')}
         onClick={() => void abrir()}
       >
         Check-in

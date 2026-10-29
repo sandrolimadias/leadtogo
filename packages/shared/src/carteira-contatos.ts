@@ -102,6 +102,31 @@ export const alterarContatoSchema = z
 export type AlterarContatoEntrada = z.input<typeof alterarContatoSchema>
 export type AlterarContato = z.output<typeof alterarContatoSchema>
 
+/**
+ * POST /v1/carteira/empresas/{id}/socios/{socioId}/converter: telefone e e-mail opcionais do novo contato
+ * (em branco, o contato nasce sem eles e se completa depois). Corpo vazio vale.
+ */
+export const converterSocioSchema = z
+  .object({
+    telefone: z
+      .string()
+      .trim()
+      .max(30)
+      .transform((v) => (v === '' ? undefined : v))
+      .optional(),
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .transform((v) => (v === '' ? undefined : v))
+      .pipe(z.email('e-mail inválido').max(254).optional())
+      .optional(),
+  })
+  .strict()
+  .meta({ id: 'ConverterSocioEntrada' })
+export type ConverterSocioEntrada = z.input<typeof converterSocioSchema>
+export type ConverterSocio = z.output<typeof converterSocioSchema>
+
 /** POST /v1/carteira/contatos/{id}/vinculos: liga o contato a outra empresa (reativa o vínculo inativo, se houver). */
 export const vincularContatoSchema = z
   .object({ empresaId: z.uuid(), cargo: texto(100), principal: z.boolean().optional() })

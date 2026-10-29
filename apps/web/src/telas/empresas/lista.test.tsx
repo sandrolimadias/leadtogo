@@ -239,7 +239,7 @@ function temRolagemPropria(el: Element): boolean {
 }
 
 describe('Empresas: a lista', () => {
-  it('mostra o título, a contagem e as colunas decididas (sem Vendedor, com "Em aberto")', async () => {
+  it('mostra o título, a contagem e as colunas decididas (sem Vendedor, Última visita nem Em aberto; Cidade e Estado separados)', async () => {
     const s = servicos()
     await abrir(s)
     expect(await screen.findByText('2 empresas na carteira')).toBeInTheDocument()
@@ -252,10 +252,9 @@ describe('Empresas: a lista', () => {
       'Empresa',
       'Tags',
       'Cidade',
-      'Última visita',
+      'Estado',
       'Último contato',
       'Próxima atividade',
-      'Em aberto',
     ])
     expect(screen.getByRole('button', { name: 'Nova empresa' })).toBeInTheDocument()
     // administrador e gestor importam planilha; o vendedor não vê o botão
@@ -274,7 +273,7 @@ describe('Empresas: a lista', () => {
     await waitFor(() => expect(historico.location.pathname).toBe('/importacao/nova'))
   })
 
-  it('cada linha traz nome, CNPJ com máscara, TODAS as tags (sem "+N") e a cidade', async () => {
+  it('cada linha traz nome, CNPJ com máscara, TODAS as tags (sem "+N"), a cidade e o estado', async () => {
     const s = servicos()
     await abrir(s)
     const linhas = await screen.findAllByRole('row')
@@ -285,11 +284,13 @@ describe('Empresas: a lista', () => {
       expect(within(primeira).getByText(t)).toBeInTheDocument()
     }
     expect(within(primeira).queryByText(/^\+\d/)).toBeNull()
-    expect(within(primeira).getByText('Vitória/ES')).toBeInTheDocument()
+    expect(within(primeira).getByRole('cell', { name: 'Vitória' })).toBeInTheDocument()
+    expect(within(primeira).getByRole('cell', { name: 'ES' })).toBeInTheDocument()
+    expect(within(primeira).queryByText('Vitória/ES')).toBeNull()
     expect(within(primeira).getByText('Sem próxima atividade')).toBeInTheDocument()
   })
 
-  it('alerta a visita a partir de 90 dias (ou nunca) e o contato a partir do limite da empresa', async () => {
+  it('alerta o contato a partir do limite da empresa (ou nunca)', async () => {
     const s = servicos(
       lista([
         item(1, { ultimaVisitaEm: diasAtras(120), ultimoContatoEm: diasAtras(61) }),
@@ -301,12 +302,12 @@ describe('Empresas: a lista', () => {
     const linhas = await screen.findAllByRole('row')
     const alerta = (linha: HTMLElement, texto: string) =>
       within(linha).getByText(texto).className.includes('text-warning')
-    expect(alerta(linhas[1] as HTMLElement, 'há 120 dias')).toBe(true)
     expect(alerta(linhas[1] as HTMLElement, 'há 61 dias')).toBe(true)
-    expect(alerta(linhas[2] as HTMLElement, 'há 10 dias')).toBe(false)
     expect(alerta(linhas[2] as HTMLElement, 'há 11 dias')).toBe(false)
+    // a última visita não está mais na tabela
+    expect(within(linhas[1] as HTMLElement).queryByText('há 120 dias')).toBeNull()
     const nunca = within(linhas[3] as HTMLElement).getAllByText('Nunca')
-    expect(nunca).toHaveLength(2)
+    expect(nunca).toHaveLength(1)
     expect(nunca.every((n) => n.className.includes('text-warning'))).toBe(true)
   })
 
@@ -318,13 +319,7 @@ describe('Empresas: a lista', () => {
       within(grupo)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual([
-      'Todas148',
-      'Minha carteira41',
-      'Sem visita há 90 dias23',
-      'Nunca visitadas9',
-      'Sem próxima atividade17',
-    ])
+    ).toEqual(['Todas148', 'Minha carteira41', 'Nunca visitadas9', 'Sem próxima atividade17'])
     expect(within(grupo).getByRole('button', { name: /Todas/ })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -378,7 +373,7 @@ describe('Empresas: busca e filtros na URL', () => {
     expect(s.carteira.listar.mock.calls.filter((c) => c[0]['busca'])).toHaveLength(1)
   })
 
-  it('Status e Visitação viram o filtro de tags; vendedor, cidade e última visita seguem juntos', async () => {
+  it('Status e Visitação viram o filtro de tags; vendedor, cidade, porte e regime seguem juntos', async () => {
     const s = servicos()
     const { historico } = await abrir(s)
     await screen.findByRole('table')
@@ -386,50 +381,75 @@ describe('Empresas: busca e filtros na URL', () => {
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Visitação' }), id(21))
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Vendedor' }), id(901))
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cidade' }), '3201308')
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Última visita' }), '60')
+    expect(screen.queryByRole('combobox', { name: 'Última visita' })).toBeNull()
+    expect(
+      within(screen.getByRole('combobox', { name: 'Porte' }))
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual([
+      'Porte: todos',
+      'Micro Empresa',
+      'Empresa de Pequeno Porte',
+      'Demais',
+      'Não informado',
+    ])
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Porte' }), '0')
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Regime tributário' }),
+      'simples_nacional',
+    )
     await waitFor(() =>
       expect(ultimaConsulta(s)).toMatchObject({
         tags: `${id(13)},${id(21)}`,
         vendedorId: id(901),
         municipio: 3201308,
-        ultimaVisita: '60',
+        porte: 0,
+        regimeTributario: 'simples_nacional',
         pagina: 1,
       }),
     )
-    expect(historico.location.search).toContain('ultimaVisita=60')
+    expect(historico.location.search).toContain('porte=0')
+    expect(historico.location.search).toContain('regime=simples_nacional')
   })
 
   it('abre com os filtros da URL já aplicados e "Limpar filtros" os tira', async () => {
     const s = servicos()
     const { historico } = renderizar(
       s.s,
-      `/empresas?busca=aurora&status=${id(13)}&ultimaVisita=90&chip=sem_visita_90`,
+      `/empresas?busca=aurora&status=${id(13)}&porte=3&regime=lucro_real&chip=nunca_visitadas`,
     )
     await screen.findByRole('heading', { name: 'Empresas' })
     await waitFor(() =>
       expect(ultimaConsulta(s)).toMatchObject({
         busca: 'aurora',
         tags: id(13),
-        ultimaVisita: '90',
-        chip: 'sem_visita_90',
+        porte: 3,
+        regimeTributario: 'lucro_real',
+        chip: 'nunca_visitadas',
       }),
     )
     expect(screen.getByRole('textbox', { name: 'Buscar empresas' })).toHaveValue('aurora')
     expect(await screen.findByText('2 empresas com estes filtros')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
-    await waitFor(() => expect(historico.location.search).toBe('?chip=sem_visita_90'))
+    await waitFor(() => expect(historico.location.search).toBe('?chip=nunca_visitadas'))
     expect(screen.getByRole('textbox', { name: 'Buscar empresas' })).toHaveValue('')
     expect(screen.queryByRole('button', { name: 'Limpar filtros' })).toBeNull()
   })
 
   it('valores estranhos na URL são ignorados', async () => {
     const s = servicos()
-    renderizar(s.s, '/empresas?chip=outro&ultimaVisita=7&cidade=abc&pagina=-3')
+    // o chip "Sem visita há 90 dias" e o filtro de última visita saíram da tela: links antigos caem no padrão
+    renderizar(
+      s.s,
+      '/empresas?chip=sem_visita_90&ultimaVisita=60&porte=2&regime=outro&cidade=abc&pagina=-3',
+    )
     await screen.findByRole('heading', { name: 'Empresas' })
     await waitFor(() =>
       expect(ultimaConsulta(s)).toMatchObject({ chip: 'todas', pagina: 1, porPagina: 25 }),
     )
     expect(ultimaConsulta(s)['ultimaVisita']).toBeUndefined()
+    expect(ultimaConsulta(s)['porte']).toBeUndefined()
+    expect(ultimaConsulta(s)['regimeTributario']).toBeUndefined()
     expect(ultimaConsulta(s)['municipio']).toBeUndefined()
   })
 })
@@ -531,14 +551,31 @@ describe('Empresas: no celular', () => {
     }
   })
 
-  it('os filtros ficam atrás do botão "Filtros · N"', async () => {
+  it('só a busca fica na linha; os filtros ficam atrás do botão "Filtros · N", que abre e fecha', async () => {
     largura(390)
     const s = servicos()
     renderizar(s.s, `/empresas?status=${id(13)}`)
     await screen.findByRole('article', { name: 'Empresa 1' })
+    expect(screen.getByRole('textbox', { name: 'Buscar empresas' })).toBeInTheDocument()
+    // a linha da busca não tem mais o "+" de Nova empresa (ele está no "+" do topo)
+    expect(screen.queryByRole('button', { name: 'Nova empresa' })).toBeNull()
     expect(screen.queryByRole('combobox', { name: 'Status' })).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Filtros · 1' }))
+    const botao = screen.getByRole('button', { name: 'Filtros · 1' })
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(botao)
     expect(screen.getByRole('combobox', { name: 'Status' })).toHaveValue(id(13))
+    for (const nome of ['Visitação', 'Cidade', 'Porte', 'Regime tributário']) {
+      expect(screen.getByRole('combobox', { name: nome })).toBeInTheDocument()
+    }
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Porte' }), '1')
+    await waitFor(() => expect(ultimaConsulta(s)).toMatchObject({ porte: 1 }))
+    // escolhidos os filtros, fecha a seção de novo
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar filtros' }))
+    expect(screen.queryByRole('combobox', { name: 'Status' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Filtros · 2' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
   })
 })
 
@@ -647,7 +684,7 @@ describe('Empresas: ações em massa', () => {
     await abrir(s)
     await marcar('Empresa 1')
     await screen.findByRole('region', { name: 'Ações em massa' })
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Última visita' }), '90')
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Porte' }), '5')
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Ações em massa' })).toBeNull())
   })
 

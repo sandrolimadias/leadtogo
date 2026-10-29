@@ -1,5 +1,5 @@
 import { and, eq, isNull, schema } from '@leadtogo/db'
-import type { Contato } from '@leadtogo/shared'
+import type { Contato, ConverterSocio } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
@@ -11,8 +11,8 @@ import { escopoDaCarteira, podeEditar, podeVer } from './regras-de-carteira.js'
 const { empresas, empresaSocios, qualificacoesSocio, contatos } = schema
 
 /**
- * "Converter em contato": cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação,
- * sem telefone nem e-mail). O sócio guarda o `contato_id`, e por isso não converte duas vezes e o vínculo
+ * "Converter em contato": cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação)
+ * e, se vierem, o telefone e o e-mail informados no diálogo. O sócio guarda o `contato_id`, e por isso não converte duas vezes e o vínculo
  * sobrevive ao "Atualizar pela Receita" (ver `gravarSocios`).
  */
 @Injectable()
@@ -23,7 +23,11 @@ export class ConverterSocioService {
     private readonly contatosServico: ContatosService,
   ) {}
 
-  async converter(empresaId: string, socioId: string): Promise<Contato> {
+  async converter(
+    empresaId: string,
+    socioId: string,
+    dados: ConverterSocio = {},
+  ): Promise<Contato> {
     const db = this.ctx.db()
     const escopo = await escopoDaCarteira(this.ctx)
 
@@ -83,6 +87,15 @@ export class ConverterSocioService {
       acao: 'criar',
       alteracoes: { nome: socio.nome, empresaId, cargo, origem: 'socio' },
     })
+    if (dados.telefone || dados.email) {
+      // A mesma validação do cadastro de contato; telefone inválido desfaz tudo (a requisição é uma transação).
+      // Sem aviso de duplicado: o sócio é a própria pessoa da empresa.
+      return this.contatosServico.alterar(criado.id, {
+        ...(dados.telefone ? { telefones: [{ numero: dados.telefone, principal: true }] } : {}),
+        ...(dados.email ? { emails: [{ email: dados.email, principal: true }] } : {}),
+        ignorarDuplicado: true,
+      })
+    }
     return this.contatosServico.detalhar(criado.id)
   }
 }

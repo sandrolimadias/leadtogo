@@ -44,7 +44,7 @@ CRM focado em **gestão de carteira**: a empresa é o centro de tudo. Contatos, 
 
 ### Navegação e layout (v1.5, do protótipo)
 - **Desktop:** menu lateral (Dashboard, Empresas, Contatos, Oportunidades, **Atividades**; grupo Carteira com Prospecção e Rotas) *(Módulo 5: o item "Tarefas" virou "Atividades", com as abas Agendadas, Atrasadas e Realizadas; o Kanban de Tarefas, seção 9A, fica para depois do MVP)* **recolhível** para ícones, com a preferência salva por usuário. Seletor de empresa (multiempresa) no topo do menu.
-- **Barra superior:** busca global, botão "Registrar atividade" e sino de notificações (de todas as empresas, identificadas pela empresa).
+- **Barra superior (29/10/2026):** busca global, botão **"+"** (em negrito) que abre o menu **Empresa · Contato · Oportunidade · Atividade · Chamado** (só os itens que o perfil de acesso permite; substitui o antigo "Registrar atividade"), botão de ajuda **"?"** (por enquanto anuncia que as orientações e os vídeos da tela atual vêm em breve; será o sistema de ajuda por tela) e sino de notificações (de todas as empresas, identificadas pela empresa). No celular, o "+" e o "?" ficam no cabeçalho.
 - **Celular:** cabeçalho com título, busca e notificações; **barra inferior** com Início, Empresas, Funil, **Atividades** e Mais; **botão "+"** (no cabeçalho) para registrar atividade; o seletor de empresa fica na folha de perfil.
 - Temas claro e escuro (padrão: o do sistema), com a escolha salva por usuário.
 ---
@@ -149,6 +149,13 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 - Ações em massa: **Aplicar tag** (única ação desta fase; Trocar vendedor e Exportar ficam para depois). Só no desktop e no tablet; marca só o que o usuário edita.
 - Celular: cartões com **Ligar, WhatsApp e Rota**; "Importar planilha" só aparece com o Módulo 4.
 
+**Decisões de 29/10/2026: lista (valem sobre as anteriores)**
+- **Chips:** Todas · Minha carteira · Nunca visitadas · Sem próxima atividade. O chip *Sem visita há 90 dias* **saiu da tela** (a API ainda o aceita; link antigo cai em *Todas*).
+- **Filtros:** Status, Visitação, Vendedor, Cidade, **Porte** (Micro Empresa, Empresa de Pequeno Porte, Demais, Não informado; "Não informado" inclui quem não tem porte) e **Regime tributário**. O filtro **Última visita saiu**. Porte e regime filtram mesmo sem aparecer como coluna. A grade de filtros se ajusta à largura e não passa do fundo (tablet).
+- **Colunas:** Empresa · Tags · **Cidade** · **Estado** (UF, em colunas separadas) · Último contato · Próxima atividade. **Saíram Última visita e Em aberto.**
+- **Tags na ordem dos grupos:** na lista e na ficha, as tags seguem a ordem dos grupos de *Configurações → Tags* (setas ↑ ↓ de cada bloco) e, dentro do grupo, a ordem das tags.
+- **Celular:** só a busca na linha; abaixo, o botão **Filtros** (com a quantidade ativa) abre os filtros um embaixo do outro e vira **Fechar filtros** para recolher a seção. O "+ Nova empresa" da linha saiu: fica no **+** do topo.
+
 ### Tela Empresa (detalhe)
 - Cabeçalho: nome, tags, responsável, última visita/contato e ações rápidas (nova atividade, nova oportunidade, ligar, WhatsApp).
 - Abas:
@@ -171,6 +178,15 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 - **Atualizar pela Receita** (card Dados cadastrais, ao lado de "Receita em dd/mm/aaaa"): reconsulta ignorando o cache, atualiza a situação e a data e abre um diálogo com **o que mudou (atual × Receita)**, com **Aplicar alterações** ou **Manter como está**; fica na auditoria. Telefones da Receita se somam aos da equipe. Empresa que deixou de ser ativa **continua na carteira**, com o aviso de situação.
 - **Editar** usa a mesma tela do cadastro, **sem o passo da Receita e sem o documento**. **Excluir** é só de administrador e gestor, é lógico e **não há lixeira** por enquanto (pendência pós-MVP).
 - A aba **Histórico** traz a auditoria **em português** (com nomes no lugar de ids) e as tags que o sistema aplicou ou tirou sozinho.
+
+**Decisões de 29/10/2026: ficha (valem sobre as anteriores)**
+- **Tags** na ordem dos grupos de *Configurações → Tags* (como na lista).
+- **Cabeçalho:** **Check-in** do mesmo tamanho de *Nova oportunidade* e *Nova atividade*. **Sem o botão Ligar** (no desktop e nos botões grandes do celular): a ligação virá da integração com a telefonia. Fica o WhatsApp. (Os cartões da aba Contatos e da lista no celular continuam com Ligar.)
+- **Abas** sem barra de rolagem; **Contatos, Atividades, Oportunidades e Chamados mostram o total** ao lado do nome.
+- Nova aba **Chamados** (quem tem `chamados.ver`): os chamados **abertos** da empresa (nem resolvidos nem fechados), com **Abrir chamado** já ligado a ela e o atalho para a central.
+- **Dados cadastrais:** cada rótulo em **negrito**. **CNAEs:** o **principal sempre primeiro**.
+- **Converter sócio em contato** abre um diálogo com **telefone e e-mail, os dois opcionais**; em branco, o contato nasce sem eles para completar depois. Telefone ou e-mail inválido não cria nada.
+- **Aba Contatos:** quem gere acessos ao portal (`portal.acessos`) vê, em cada cartão, a situação do acesso ao **portal do cliente** ou o botão **Acesso ao portal**, que abre o convite já com a empresa e o contato.
 
 **Cadastro: decisões de 13/10/2026 (v1.7)**
 - Três passos: **Documento** (CNPJ, CPF ou sem documento, com consulta à Receita), **Conferir dados da Receita** (editáveis) e **Carteira** (Vendedor, Vertical, Status padrão Lead, Website, Observações).
@@ -331,7 +347,7 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 4. É possível registrar direto como concluída (algo que já aconteceu).
 
 ### Formulário "Registrar atividade" (v1.5, do protótipo; **como ficou no Módulo 5**)
-- Abre pelo botão **"Registrar atividade"** da barra superior, pelo botão **"+"** do cabeçalho do celular (folha que sobe do rodapé), por **"Nova atividade"** nas fichas (com a empresa já preenchida; na ficha do contato, também o contato) e pela tela **Atividades**.
+- Abre pelo item **Atividade** do botão **"+"** da barra superior e do cabeçalho do celular (no celular, folha que sobe do rodapé), por **"Nova atividade"** nas fichas (com a empresa já preenchida; na ficha do contato, também o contato) e pela tela **Atividades**.
 - Campos: **Tipo** (botões com o ícone de cada tipo ativo; padrão Visita) · **Empresa** (**campo de pesquisa**: digite parte do nome, da razão social, o CNPJ/CPF com ou sem máscara ou a cidade; **os resultados só aparecem depois de digitar** e abrem como uma camada sobre os campos de baixo, sem mudar o tamanho da janela; escolhida a empresa, o campo mostra o nome e **Trocar empresa**; obrigatória, exceto no tipo Tarefa) · **Contato** (só os ativos da empresa; trocar de empresa limpa o contato) · **Título** (obrigatório) · **Data e hora** (em atividade **Realizada** o campo é **"Quando aconteceu"**; **Dia inteiro** troca por só a data) · **Situação** (**Realizada**, padrão, ou **Pendente**, para agendar; cancelada não se cria) · **Resultado** (obrigatório quando Realizada; a dica diz o efeito do tipo na carteira: visita aplica Visitada e atualiza última visita e último contato, contato aplica Contactada e atualiza o último contato, os demais não alteram a carteira) · **Importante** e **Urgente**.
 - **Responsável:** o padrão é o usuário logado. Administrador e gestor escolhem outro em **"Mais opções → Responsável"**; o vendedor registra sempre para si.
 - **Fora desta entrega (depois do MVP):** do bloco "Mais opções" do desenho, **Oportunidade** (entra com o Módulo 6), **Lembrete** ("Notificar em") e **Repetir** (recorrência). Ver `backlog_pos_mvp.md`.

@@ -1,5 +1,11 @@
 import type { ListaDeEmpresas, TagGrupo } from '@leadtogo/api-client'
-import { CHIPS_DA_LISTA, type ChipDaLista, type TamanhoDePagina } from '@leadtogo/shared'
+import {
+  type ChipDaLista,
+  ROTULO_DO_REGIME,
+  type RegimeTributario,
+  regimeTributarioSchema,
+  type TamanhoDePagina,
+} from '@leadtogo/shared'
 import {
   keepPreviousData,
   useQuery,
@@ -7,14 +13,14 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { Building2, Check, Filter, Plus, Search, Upload, X } from 'lucide-react'
+import { Building2, Check, ChevronUp, Filter, Plus, Search, Upload, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
 import { useDispositivo } from '@/casca/dispositivo'
 import { usePorPagina } from '@/casca/preferencias'
-import { Button, IconButton } from '@leadtogo/ui/button'
+import { Button } from '@leadtogo/ui/button'
 import { Select, TextField } from '@leadtogo/ui/campos'
 import { Checkbox } from '@leadtogo/ui/checkbox'
 import { Paginacao } from '@leadtogo/ui/paginacao'
@@ -23,8 +29,16 @@ import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { toast } from '@leadtogo/ui/toast'
 import { cn } from '@leadtogo/ui/cn'
 
-import { type BuscaDaLista, consultaDaLista, lerBusca, temFiltroAtivo } from './busca'
+import {
+  type BuscaDaLista,
+  CHIPS_DA_TELA,
+  consultaDaLista,
+  lerBusca,
+  PORTES_DO_FILTRO,
+  temFiltroAtivo,
+} from './busca'
 import { contagemDeEmpresas } from './formatos'
+import { PORTES } from './nova-empresa-dados'
 import { BarraDeAcoesEmMassa } from './acoes-em-massa'
 import { CartoesDeEmpresas, TabelaDeEmpresas } from './lista-partes'
 
@@ -40,12 +54,14 @@ const ROTULO_DO_CHIP: Record<ChipDaLista, string> = {
   sem_proxima_atividade: 'Sem próxima atividade',
 }
 
-const OPCOES_DA_ULTIMA_VISITA = [
-  { value: '30', label: 'Nos últimos 30 dias' },
-  { value: '60', label: 'Sem visita há 60 dias' },
-  { value: '90', label: 'Sem visita há 90 dias' },
-  { value: 'nunca', label: 'Nunca visitadas' },
-]
+const OPCOES_DE_PORTE = PORTES_DO_FILTRO.map((p) => ({
+  value: String(p),
+  label: PORTES[p] ?? String(p),
+}))
+const OPCOES_DE_REGIME = regimeTributarioSchema.options.map((r) => ({
+  value: r,
+  label: ROTULO_DO_REGIME[r],
+}))
 
 /** O Status é o grupo da tag `lead`; a Visitação, o grupo que o sistema aplica sozinho. */
 function gruposDosFiltros(grupos: TagGrupo[] | undefined) {
@@ -230,11 +246,12 @@ export function ListaDeEmpresas() {
     busca.visitacao,
     busca.vendedor,
     busca.cidade,
-    busca.ultimaVisita,
+    busca.porte,
+    busca.regime,
     busca.semContato,
-  ].filter(Boolean).length
+  ].filter((v) => v !== undefined).length
 
-  const chips = CHIPS_DA_LISTA.filter((c) => !(c === 'minha' && unicoMembro))
+  const chips = CHIPS_DA_TELA.filter((c) => !(c === 'minha' && unicoMembro))
   const numeroDoChip = (c: ChipDaLista): number | undefined => {
     const n = contagens.data
     if (!n) return undefined
@@ -247,15 +264,13 @@ export function ListaDeEmpresas() {
     }[c]
   }
 
+  // Uma grade que se ajusta à largura: cada filtro tem ao menos ~190 px e nada passa do fundo (tablet);
+  // no celular, um embaixo do outro
   const selects = (
     <div
-      // cada filtro precisa de ~200 px para o texto caber ("Última visita: qualquer"); sem espaço, a barra quebra
-      style={
-        celular ? undefined : { minWidth: (unicoMembro ? 4 : 5) * 200 + (unicoMembro ? 3 : 4) * 8 }
-      }
       className={cn(
-        'grid min-w-0 flex-[3] gap-2',
-        celular ? 'w-full grid-cols-2' : unicoMembro ? 'grid-cols-4' : 'grid-cols-5',
+        'grid w-full min-w-0 gap-2',
+        celular ? 'grid-cols-1' : 'grid-cols-[repeat(auto-fill,minmax(190px,1fr))]',
       )}
     >
       <Select
@@ -292,17 +307,20 @@ export function ListaDeEmpresas() {
         onChange={(e) => mudar({ cidade: e.target.value ? Number(e.target.value) : undefined })}
       />
       <Select
-        aria-label="Última visita"
-        placeholder="Última visita: qualquer"
-        options={OPCOES_DA_ULTIMA_VISITA}
-        value={busca.ultimaVisita === undefined ? '' : String(busca.ultimaVisita)}
-        onChange={(e) => {
-          const v = e.target.value
-          mudar({
-            ultimaVisita:
-              v === '' ? undefined : v === 'nunca' ? 'nunca' : (Number(v) as 30 | 60 | 90),
-          })
-        }}
+        aria-label="Porte"
+        placeholder="Porte: todos"
+        options={OPCOES_DE_PORTE}
+        value={busca.porte === undefined ? '' : String(busca.porte)}
+        onChange={(e) =>
+          mudar({ porte: e.target.value === '' ? undefined : Number(e.target.value) })
+        }
+      />
+      <Select
+        aria-label="Regime tributário"
+        placeholder="Regime tributário: todos"
+        options={OPCOES_DE_REGIME}
+        value={busca.regime ?? ''}
+        onChange={(e) => mudar({ regime: (e.target.value as RegimeTributario | '') || undefined })}
       />
     </div>
   )
@@ -375,47 +393,57 @@ export function ListaDeEmpresas() {
         />
       </div>
 
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border-border bg-surface p-3 md:border">
-        <TextField
-          icon={Search}
-          placeholder="Nome, CNPJ ou cidade"
-          aria-label="Buscar empresas"
-          className="min-w-0 flex-1 md:min-w-64 md:flex-[2]"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-        />
-        {celular ? (
-          <>
-            <Button
-              icon={Filter}
-              onClick={() => setFiltrosAbertos((a) => !a)}
-              aria-expanded={filtrosAbertos}
-            >
-              {quantosFiltros > 0 ? `Filtros · ${quantosFiltros}` : 'Filtros'}
+      <div className="flex min-w-0 flex-col gap-2 rounded-lg border-border bg-surface p-3 max-md:p-0 md:border">
+        <div className="flex flex-wrap items-end gap-2">
+          <TextField
+            icon={Search}
+            placeholder="Nome, CNPJ ou cidade"
+            aria-label="Buscar empresas"
+            className="min-w-0 flex-1 md:min-w-64"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+          />
+          {!celular && comFiltro ? (
+            <Button variant="ghost" icon={X} onClick={limpar}>
+              Limpar filtros
             </Button>
-            <IconButton
-              icon={Plus}
-              label="Nova empresa"
-              variant="secondary"
-              size="lg"
-              onClick={nova}
-            />
-          </>
-        ) : null}
-        {celular && !filtrosAbertos ? null : selects}
-        {busca.semContato ? (
+          ) : null}
+        </div>
+        {celular ? (
           <Button
-            icon={X}
-            onClick={() => mudar({ semContato: undefined })}
-            aria-label={`Tirar o filtro: sem contato há ${busca.semContato} dias`}
+            icon={filtrosAbertos ? ChevronUp : Filter}
+            onClick={() => setFiltrosAbertos((a) => !a)}
+            aria-expanded={filtrosAbertos}
+            aria-controls="filtros-da-lista"
+            className="w-full"
           >
-            Sem contato há {busca.semContato} dias
+            {filtrosAbertos
+              ? 'Fechar filtros'
+              : quantosFiltros > 0
+                ? `Filtros · ${quantosFiltros}`
+                : 'Filtros'}
           </Button>
         ) : null}
-        {comFiltro ? (
-          <Button variant="ghost" icon={X} onClick={limpar}>
-            Limpar filtros
-          </Button>
+        {celular && !filtrosAbertos ? null : (
+          <div id="filtros-da-lista" className="flex min-w-0 flex-col gap-2">
+            {selects}
+            {celular && comFiltro ? (
+              <Button variant="ghost" icon={X} onClick={limpar} className="w-full">
+                Limpar filtros
+              </Button>
+            ) : null}
+          </div>
+        )}
+        {busca.semContato ? (
+          <div>
+            <Button
+              icon={X}
+              onClick={() => mudar({ semContato: undefined })}
+              aria-label={`Tirar o filtro: sem contato há ${busca.semContato} dias`}
+            >
+              Sem contato há {busca.semContato} dias
+            </Button>
+          </div>
         ) : null}
       </div>
 

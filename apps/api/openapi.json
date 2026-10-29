@@ -2002,6 +2002,32 @@
             }
           },
           {
+            "name": "porte",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9
+            }
+          },
+          {
+            "name": "regimeTributario",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mei",
+                "simples_nacional",
+                "lucro_presumido",
+                "lucro_real",
+                "imune_isenta",
+                "nao_informado"
+              ]
+            }
+          },
+          {
             "name": "ultimaVisita",
             "required": false,
             "in": "query",
@@ -2834,7 +2860,7 @@
     },
     "/v1/carteira/empresas/{id}/socios/{socioId}/converter": {
       "post": {
-        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação do sócio; sem telefone nem e-mail) e marca o sócio como \"Contato\". O vínculo sobrevive ao \"Atualizar pela Receita\". Sócio já convertido: 409 `socio_ja_convertido`. Exige editar a empresa (o vendedor, só a própria carteira). Registra na auditoria. Devolve o contato.",
+        "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação do sócio) e, se vierem no corpo, o telefone e o e-mail (opcionais; em branco o contato nasce sem eles; telefone inválido dá 400 e nada é criado) e marca o sócio como \"Contato\". O vínculo sobrevive ao \"Atualizar pela Receita\". Sócio já convertido: 409 `socio_ja_convertido`. Exige editar a empresa (o vendedor, só a própria carteira). Registra na auditoria. Devolve o contato.",
         "operationId": "EmpresasDaCarteiraController_converterSocioEmContato",
         "parameters": [
           {
@@ -2854,6 +2880,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConverterSocioEntrada"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Sucesso",
@@ -4109,6 +4145,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "abertos",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
             }
           },
           {
@@ -6200,6 +6245,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "abertos",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
             }
           },
           {
@@ -31177,6 +31231,19 @@
           "email",
           "naoQuerContato"
         ],
+        "additionalProperties": false
+      },
+      "ConverterSocioEntrada": {
+        "type": "object",
+        "properties": {
+          "telefone": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "email": {
+            "type": "string"
+          }
+        },
         "additionalProperties": false
       },
       "ConviteAceito": {

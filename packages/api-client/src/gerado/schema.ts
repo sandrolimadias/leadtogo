@@ -519,7 +519,7 @@ export interface paths {
         put?: never;
         /**
          * Converter sócio em contato
-         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação do sócio; sem telefone nem e-mail) e marca o sócio como "Contato". O vínculo sobrevive ao "Atualizar pela Receita". Sócio já convertido: 409 `socio_ja_convertido`. Exige editar a empresa (o vendedor, só a própria carteira). Registra na auditoria. Devolve o contato.
+         * @description Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita só a própria. Empresa que o usuário não vê responde 404. Cria o contato com o nome do sócio e o vínculo com a empresa (cargo = qualificação do sócio) e, se vierem no corpo, o telefone e o e-mail (opcionais; em branco o contato nasce sem eles; telefone inválido dá 400 e nada é criado) e marca o sócio como "Contato". O vínculo sobrevive ao "Atualizar pela Receita". Sócio já convertido: 409 `socio_ja_convertido`. Exige editar a empresa (o vendedor, só a própria carteira). Registra na auditoria. Devolve o contato.
          */
         post: operations["EmpresasDaCarteiraController_converterSocioEmContato"];
         delete?: never;
@@ -6470,6 +6470,10 @@ export interface components {
             email: string | null;
             naoQuerContato: boolean;
         };
+        ConverterSocioEntrada: {
+            telefone?: string;
+            email?: string;
+        };
         ConviteAceito: {
             /** Format: uuid */
             tenantId: string;
@@ -11050,6 +11054,8 @@ export interface operations {
                 vendedorId?: string;
                 semContato?: number;
                 municipio?: number;
+                porte?: number;
+                regimeTributario?: "mei" | "simples_nacional" | "lucro_presumido" | "lucro_real" | "imune_isenta" | "nao_informado";
                 ultimaVisita?: "30" | "60" | "90" | "nunca";
                 ordem?: "nome" | "ultima_visita" | "ultimo_contato" | "proxima_atividade" | "criado_em";
                 sentido?: "asc" | "desc";
@@ -11711,7 +11717,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConverterSocioEntrada"];
+            };
+        };
         responses: {
             /** @description Sucesso */
             201: {
@@ -12608,6 +12618,7 @@ export interface operations {
                 prioridade?: components["schemas"]["PrioridadeDoChamado"];
                 responsavelId?: string;
                 empresaClienteId?: string;
+                abertos?: "true" | "false";
                 origem?: "interna" | "portal";
                 busca?: string;
                 de?: string;
@@ -14225,6 +14236,7 @@ export interface operations {
                 prioridade?: components["schemas"]["PrioridadeDoChamado"];
                 responsavelId?: string;
                 empresaClienteId?: string;
+                abertos?: "true" | "false";
                 origem?: "interna" | "portal";
                 busca?: string;
                 de?: string;

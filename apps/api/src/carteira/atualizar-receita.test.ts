@@ -325,9 +325,10 @@ describe('POST /v1/carteira/empresas/:id/receita/aplicar', () => {
       razaoSocial: 'METALURGICA EXEMPLO S/A',
       endereco: { numero: '900', municipio: { nome: 'CARIACICA' } },
     })
+    // o principal sempre primeiro, mesmo com código maior
     expect(e.cnaes).toMatchObject([
-      { codigo: 2539001, principal: false },
       { codigo: 2543800, principal: true },
+      { codigo: 2539001, principal: false },
     ])
     expect(e.socios.map((s) => s.nome)).toEqual(['BELTRANA DA SILVA'])
     // o telefone digitado fica e o da Receita se soma (principal continua o primeiro)
@@ -398,8 +399,12 @@ describe('POST /v1/carteira/empresas/:id/receita/aplicar', () => {
 })
 
 describe('POST /v1/carteira/empresas/:id/socios/:socioId/converter', () => {
-  const converter = (cookie: string | undefined, empresaId: string, socioId: string) =>
-    chamar('post', cookie, `${EMPRESAS}/${empresaId}/socios/${socioId}/converter`)
+  const converter = (
+    cookie: string | undefined,
+    empresaId: string,
+    socioId: string,
+    corpo?: unknown,
+  ) => chamar('post', cookie, `${EMPRESAS}/${empresaId}/socios/${socioId}/converter`, corpo)
   const ficha = async (cookie: string, id: string) =>
     empresaDe(await chamar('get', cookie, `${EMPRESAS}/${id}`))
 
@@ -427,6 +432,48 @@ describe('POST /v1/carteira/empresas/:id/socios/:socioId/converter', () => {
       (a) => a.entidade === 'contato' && a.entidade_id === c.id,
     )
     expect(reg?.alteracoes).toMatchObject({ nome: 'FULANO DE TAL', origem: 'socio' })
+  })
+
+  it('com telefone e e-mail do diálogo, o contato já nasce com eles; em branco vale como sem', async () => {
+    const { d, empresa } = await cadastrada()
+    const socioId = empresa.socios[0]?.id ?? ''
+    const r = await converter(d.cookie, empresa.id, socioId, {
+      telefone: '(27) 99876-5432',
+      email: ' Fulano@Exemplo.com.br ',
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    const c = r.body as Contato
+    expect(c.telefones.map((t) => t.e164)).toEqual(['+5527998765432'])
+    expect(c.emails.map((e) => e.email)).toEqual(['fulano@exemplo.com.br'])
+    expect(c.vinculos[0]).toMatchObject({
+      empresa: { id: empresa.id },
+      cargo: 'Sócio-Administrador',
+    })
+
+    const outra = await cadastrada()
+    const vazio = await converter(
+      outra.d.cookie,
+      outra.empresa.id,
+      outra.empresa.socios[0]?.id ?? '',
+      {
+        telefone: '',
+        email: '',
+      },
+    )
+    expect(vazio.status, JSON.stringify(vazio.body)).toBe(201)
+    expect(vazio.body as Contato).toMatchObject({ telefones: [], emails: [] })
+  })
+
+  it('e-mail ou telefone inválido: 400 e nada é criado', async () => {
+    const { d, empresa } = await cadastrada()
+    const socioId = empresa.socios[0]?.id ?? ''
+    const email = await converter(d.cookie, empresa.id, socioId, { email: 'nao-e-email' })
+    expect(email.status).toBe(400)
+    const telefone = await converter(d.cookie, empresa.id, socioId, { telefone: '12' })
+    expect(telefone.status).toBe(400)
+    expect((await ficha(d.cookie, empresa.id)).socios[0]?.contatoId).toBeNull()
+    const daEmpresa = await chamar('get', d.cookie, `${EMPRESAS}/${empresa.id}/contatos`)
+    expect(daEmpresa.body as unknown[]).toHaveLength(0)
   })
 
   it('não converte duas vezes (409) e não duplica o contato', async () => {

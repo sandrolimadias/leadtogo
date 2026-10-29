@@ -1,11 +1,22 @@
-import type { ContatoDaEmpresa } from '@leadtogo/api-client'
-import { linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
+import type { AcessoDoPortal, ContatoDaEmpresa } from '@leadtogo/api-client'
+import { linkDeLigacao, linkDoWhatsapp, ROTULO_DA_SITUACAO_DO_ACESSO } from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Link2, Mail, MessageCircle, Phone, Plus, Search, Star, UserRound } from 'lucide-react'
+import {
+  KeyRound,
+  Link2,
+  Mail,
+  MessageCircle,
+  Phone,
+  Plus,
+  Search,
+  Star,
+  UserRound,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePermissoes } from '@/auth/permissoes'
 import { Button } from '@leadtogo/ui/button'
 import { TextField } from '@leadtogo/ui/campos'
 import { Checkbox } from '@leadtogo/ui/checkbox'
@@ -15,6 +26,7 @@ import { toast } from '@leadtogo/ui/toast'
 import { cn } from '@leadtogo/ui/cn'
 import { Janela } from '@/telas/cadastros/base'
 import { telefoneParaTela } from '@/telas/contatos/formatos'
+import { DarAcesso } from '@/telas/portal/acessos'
 
 import { useContatosDaEmpresa } from './contatos-da-empresa'
 
@@ -53,7 +65,54 @@ function AcaoRapida({
   )
 }
 
-function CartaoDoContato({ c }: { c: ContatoDaEmpresa }) {
+const TOM_DO_ACESSO = {
+  convidado: 'info',
+  ativo: 'success',
+  suspenso: 'warning',
+  revogado: 'neutral',
+} as const
+
+/**
+ * Portal do cliente no cartão: quem gere acessos (`portal.acessos`) vê a situação do acesso deste contato
+ * nesta empresa ou o botão "Acesso ao portal" (quem teve o acesso revogado pode receber de novo).
+ */
+function PortalDoContato({
+  c,
+  acesso,
+  aoDar,
+}: {
+  c: ContatoDaEmpresa
+  acesso: AcessoDoPortal | undefined
+  aoDar: () => void
+}) {
+  if (acesso) {
+    return (
+      <Badge tone={TOM_DO_ACESSO[acesso.situacao]} icon={KeyRound}>
+        Portal: {ROTULO_DA_SITUACAO_DO_ACESSO[acesso.situacao].toLocaleLowerCase('pt-BR')}
+      </Badge>
+    )
+  }
+  return (
+    <Button
+      size="sm"
+      icon={KeyRound}
+      disabled={!c.ativo}
+      aria-label={`Dar acesso ao portal a ${c.nome}`}
+      onClick={aoDar}
+    >
+      Acesso ao portal
+    </Button>
+  )
+}
+
+function CartaoDoContato({
+  c,
+  portal,
+}: {
+  c: ContatoDaEmpresa
+  /** Ausente quando a pessoa não gere acessos ao portal */
+  portal?: { acesso: AcessoDoPortal | undefined; aoDar: () => void }
+}) {
   return (
     <li
       className={cn(
@@ -103,6 +162,11 @@ function CartaoDoContato({ c }: { c: ContatoDaEmpresa }) {
           icone={Mail}
           cor="text-tag-orange-fg"
         />
+        {portal ? (
+          <span className="ml-auto">
+            <PortalDoContato c={c} acesso={portal.acesso} aoDar={portal.aoDar} />
+          </span>
+        ) : null}
       </div>
     </li>
   )
@@ -278,8 +342,22 @@ export function ContatosDaEmpresaAba({
   podeEditar: boolean
 }) {
   const navegar = useNavigate()
+  const servicos = useServicos()
   const consulta = useContatosDaEmpresa(empresaId)
   const [vinculando, setVinculando] = useState(false)
+  const [dandoAcessoA, setDandoAcessoA] = useState<string | null>(null)
+  const geraPortal = usePermissoes().pode('portal.acessos')
+  // Os acessos ao portal desta empresa: a situação de cada contato no cartão
+  const acessos = useQuery({
+    queryKey: ['portal', 'acessos', 'da-empresa', empresaId],
+    enabled: geraPortal,
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.portal.acessos.listar({ empresaClienteId: empresaId })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.itens
+    },
+  })
   const novo = () => void navegar({ to: '/contatos/novo', search: { empresa: empresaId } })
   const acoes = podeEditar ? (
     <>
@@ -345,10 +423,31 @@ export function ContatosDaEmpresaAba({
       ) : (
         <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3 p-0">
           {lista.map((c) => (
-            <CartaoDoContato key={c.id} c={c} />
+            <CartaoDoContato
+              key={c.id}
+              c={c}
+              {...(geraPortal
+                ? {
+                    portal: {
+                      // só um acesso vale por contato e empresa; os revogados ficam de fora
+                      acesso: acessos.data?.find(
+                        (a) => a.contato.id === c.id && a.situacao !== 'revogado',
+                      ),
+                      aoDar: () => setDandoAcessoA(c.id),
+                    },
+                  }
+                : {})}
+            />
           ))}
         </ul>
       )}
+      {dandoAcessoA ? (
+        <DarAcesso
+          aberto
+          aoFechar={() => setDandoAcessoA(null)}
+          inicial={{ empresa: { id: empresaId, nome: nomeDaEmpresa }, contatoId: dandoAcessoA }}
+        />
+      ) : null}
       {vinculando ? (
         <DialogoDeVincularContato
           empresaId={empresaId}

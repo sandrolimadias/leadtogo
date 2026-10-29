@@ -1,7 +1,7 @@
 import type { TagGrupo } from '@leadtogo/api-client'
 import { CHAVES_DE_TAG_COM_REGRA, type CorDeTag, type SelecaoDeTag } from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Lock, Pencil, Plus, Tags, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Lock, Pencil, Plus, Tags, Trash2 } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -91,7 +91,7 @@ export function TelaDeTags() {
   const cabecalho = (
     <CabecalhoDeSecao
       titulo="Tags"
-      descricao="Os grupos e as tags que classificam as empresas da carteira."
+      descricao="Os grupos e as tags que classificam as empresas da carteira. A ordem dos blocos (Subir e Descer) é a sequência em que as tags aparecem na lista e na ficha das empresas."
       acao={
         <Button
           variant="primary"
@@ -258,13 +258,27 @@ function CartaoDoGrupo({
           ) : null}
         </div>
         <div className="flex items-center gap-0.5">
-          <BotoesDeOrdem
-            nome={`o grupo ${grupo.nome}`}
-            primeiro={primeiro}
-            ultimo={ultimo}
-            desativado={desativado}
-            aoMover={aoMoverGrupo}
-          />
+          {/* O bloco inteiro sobe ou desce: com texto, para não confundir com as setas de cada tag */}
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={ArrowUp}
+            aria-label={`Mover o grupo ${grupo.nome} para cima`}
+            disabled={primeiro || desativado}
+            onClick={() => aoMoverGrupo(-1)}
+          >
+            Subir
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={ArrowDown}
+            aria-label={`Mover o grupo ${grupo.nome} para baixo`}
+            disabled={ultimo || desativado}
+            onClick={() => aoMoverGrupo(1)}
+          >
+            Descer
+          </Button>
           <IconButton
             size="sm"
             icon={Pencil}
