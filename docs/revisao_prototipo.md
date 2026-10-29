@@ -64,3 +64,11 @@ Onde o protótipo (`Configuracoes.dc.html`) e `funcionalidades.md` divergem, **v
 | Sem "último acesso" | não definido | mostra a data aproximada da sessão mais recente |
 | Convite expirado, cancelado e já usado em telas diferentes (pedido) | a API responde o mesmo 404 de propósito | uma só tela "Convite inválido" |
 
+
+## 7. Divergências da tela Contatos (29/10/2026)
+
+Plano em `plano_contatos_filtros_e_tags.md`. Onde o protótipo e `funcionalidades.md` divergem, **vale o documento**:
+
+| Protótipo | Documento | Decisão |
+|---|---|---|
+| Filtros em linha ao lado da busca no desktop; botão "Filtros · N" só no celular | filtros recolhíveis em todos os dispositivos | botão **"Filtros"** em todos, abrindo os filtros um abaixo do outro, com **"Fechar filtros"** |

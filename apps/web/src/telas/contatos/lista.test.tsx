@@ -89,6 +89,8 @@ const abrir = async (x: ReturnType<typeof servicos>, rota = '/contatos') => {
   await screen.findByRole('heading', { name: 'Contatos' })
   return r
 }
+/** Os filtros ficam recolhidos: abre a seção pelo botão "Filtros" (ou "Filtros · N") */
+const abrirFiltros = () => userEvent.click(screen.getByRole('button', { name: /^Filtros/ }))
 const ultimaConsulta = (x: ReturnType<typeof servicos>) =>
   x.listar.mock.calls.at(-1)?.[0] as Record<string, unknown>
 
@@ -178,6 +180,7 @@ describe('Contatos: a lista', () => {
     const x = servicos()
     const { historico } = await abrir(x)
     await screen.findByRole('table')
+    await abrirFiltros()
     await userEvent.click(screen.getByRole('button', { name: 'Empresa' }))
     await userEvent.click(await screen.findByRole('button', { name: /Usidantec/ }))
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cargo' }), 'Compras')
@@ -187,7 +190,7 @@ describe('Contatos: a lista', () => {
       within(tag)
         .getAllByRole('option')
         .map((o) => o.textContent),
-    ).toEqual(['Tag da empresa: todas', 'Status: Cliente'])
+    ).toEqual(['Todas', 'Status: Cliente'])
     await userEvent.selectOptions(tag, id(51))
     await waitFor(() =>
       expect(ultimaConsulta(x)).toEqual({
@@ -206,6 +209,7 @@ describe('Contatos: a lista', () => {
     const x = servicos()
     const { historico } = await abrir(x, `/contatos?cargo=Diretor&papel=${id(1)}&busca=ana`)
     await screen.findByRole('table')
+    await abrirFiltros()
     expect(ultimaConsulta(x)).toMatchObject({
       cargo: 'Diretor',
       papelDecisaoId: id(1),
@@ -221,6 +225,38 @@ describe('Contatos: a lista', () => {
     expect(screen.getByRole('textbox', { name: 'Buscar contatos' })).toHaveValue('')
   })
 
+  it('os filtros ficam recolhidos atrás de "Filtros"; abrem um abaixo do outro e "Fechar filtros" recolhe sem perder o filtro', async () => {
+    const x = servicos()
+    const { historico } = await abrir(x)
+    await screen.findByRole('table')
+    const botao = screen.getByRole('button', { name: 'Filtros' })
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('region', { name: 'Filtros' })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Cargo' })).toBeNull()
+
+    await userEvent.click(botao)
+    expect(botao).toHaveAttribute('aria-expanded', 'true')
+    const secao = screen.getByRole('region', { name: 'Filtros' })
+    expect(secao).toHaveClass('flex-col')
+    expect(within(secao).getByText('Cargo')).toBeInTheDocument()
+    await userEvent.selectOptions(within(secao).getByRole('combobox', { name: 'Cargo' }), 'Diretor')
+    await waitFor(() => expect(ultimaConsulta(x)).toMatchObject({ cargo: 'Diretor' }))
+    // escolher um filtro não fecha a seção; o botão mostra quantos estão ativos
+    expect(screen.getByRole('region', { name: 'Filtros' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Filtros · 1' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar filtros' }))
+    expect(screen.queryByRole('region', { name: 'Filtros' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Filtros · 1' })).toHaveFocus()
+    expect(historico.location.search).toContain('cargo=Diretor')
+    expect(ultimaConsulta(x)).toMatchObject({ cargo: 'Diretor' })
+
+    // "Limpar filtros" funciona com a seção fechada (a lista sem filtro já está no cache: olha a URL)
+    await userEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    await waitFor(() => expect(historico.location.search).toBe(''))
+    expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument()
+  })
+
   it('valores inválidos na URL são ignorados', async () => {
     const x = servicos()
     await abrir(x, '/contatos?pagina=abc&empresa=&cargo=%20&inventado=1')
@@ -233,6 +269,7 @@ describe('Contatos: a lista', () => {
     const x = servicos()
     await abrir(x)
     await screen.findByRole('table')
+    await abrirFiltros()
     await userEvent.click(screen.getByRole('button', { name: 'Empresa' }))
     const lista = await screen.findByRole('list', { name: 'Empresas encontradas' })
     expect(within(lista).getAllByRole('button')).toHaveLength(2)
@@ -260,6 +297,7 @@ describe('Contatos: a lista', () => {
     )
     await abrir(x)
     await screen.findByRole('table')
+    await abrirFiltros()
     await userEvent.click(screen.getByRole('button', { name: 'Empresa' }))
     expect(await screen.findByText(/Mais 4999 empresas/)).toBeInTheDocument()
     await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar empresa' }), 'zzz')
@@ -270,6 +308,7 @@ describe('Contatos: a lista', () => {
     const x = servicos()
     const { historico } = await abrir(x)
     await screen.findByRole('table')
+    await abrirFiltros()
     await userEvent.click(screen.getByRole('button', { name: 'Empresa' }))
     await userEvent.click(await screen.findByRole('button', { name: /Beta/ }))
     await waitFor(() => expect(historico.location.search).toContain(`empresa=${id(202)}`))
@@ -277,7 +316,7 @@ describe('Contatos: a lista', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Limpar o filtro de empresa' }))
     await waitFor(() => expect(historico.location.search).not.toContain('empresa'))
-    expect(screen.getByRole('button', { name: 'Empresa' })).toHaveTextContent('Empresa: todas')
+    expect(screen.getByRole('button', { name: 'Empresa' })).toHaveTextContent('Todas')
   })
 
   it('a empresa da URL aparece com o nome no filtro, mesmo fora dos resultados da busca', async () => {
@@ -291,6 +330,7 @@ describe('Contatos: a lista', () => {
     }
     await abrir(x, `/contatos?empresa=${id(299)}`)
     await screen.findByRole('table')
+    await abrirFiltros()
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Empresa' })).toHaveTextContent('Remota'),
     )

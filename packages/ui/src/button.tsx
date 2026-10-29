@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import type { ButtonHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, Ref } from 'react'
 
 import { cn } from './cn'
 
@@ -27,6 +27,8 @@ export interface BotaoProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Mantém a largura e desativa o clique ("Consultando Receita…") */
   loading?: boolean
   block?: boolean
+  /** O `<button>` (ex.: para devolver o foco a ele) */
+  ref?: Ref<HTMLButtonElement>
 }
 
 /** Ação com rótulo de verbo. `primary` no máximo uma vez por área. A altura segue `data-density`. */

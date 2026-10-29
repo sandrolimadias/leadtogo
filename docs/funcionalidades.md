@@ -306,6 +306,7 @@ Um contato pode estar ligado a **várias empresas** (N:N).
 
 ### Tela Contatos
 - Lista com busca (nome, telefone, e-mail), filtro por empresa, cargo e tags da empresa.
+- **Filtros recolhíveis (29/10/2026):** em todos os dispositivos a busca fica sozinha na barra, com o botão **"Filtros"** ("Filtros · N" com filtros ativos) ao lado. O botão abre, abaixo da busca, os filtros **um abaixo do outro** (cada um com o rótulo acima; até 420px de largura no desktop e no tablet), e **"Fechar filtros"** (ou o próprio botão) recolhe a seção sem tirar os filtros, que continuam na URL. A seção começa sempre fechada, mesmo com filtros na URL; "Limpar filtros" fica sempre à vista. Plano em `plano_contatos_filtros_e_tags.md`.
 - Detalhe do contato: dados, **empresas vinculadas**, atividades e oportunidades em que participa (as duas últimas entram nos Módulos 5 e 6). Aba **Histórico** com a auditoria do contato em português; as linhas que citam empresa que o usuário não vê ficam de fora.
 - Ações rápidas: ligar, WhatsApp, e-mail.
 - Detecção de duplicados por e-mail ou telefone.

@@ -21,6 +21,7 @@ export function FiltroDeEmpresa({
   placeholder = 'Empresa: todas',
   semTodas = false,
   nomeInicial,
+  label,
 }: {
   valor: string | undefined
   aoMudar: (id: string | undefined, nome?: string) => void
@@ -30,6 +31,8 @@ export function FiltroDeEmpresa({
   semTodas?: boolean
   /** O nome da empresa de `valor`, quando já se sabe (evita buscar de novo) */
   nomeInicial?: string
+  /** Rótulo visível acima do campo */
+  label?: string
 }) {
   const servicos = useServicos()
   const [aberto, setAberto] = useState(false)
@@ -83,7 +86,7 @@ export function FiltroDeEmpresa({
   const itens = achadas.data?.itens ?? []
   const faltam = (achadas.data?.total ?? 0) - itens.length
 
-  return (
+  const campo = (
     <Popover.Root open={aberto} onOpenChange={setAberto}>
       <div className="relative flex items-center">
         <Popover.Trigger asChild>
@@ -195,5 +198,14 @@ export function FiltroDeEmpresa({
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
+  )
+  if (!label) return campo
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <span aria-hidden="true" className="text-[13px] leading-[18px] font-semibold text-ink">
+        {label}
+      </span>
+      {campo}
+    </div>
   )
 }
