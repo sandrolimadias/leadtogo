@@ -4,7 +4,7 @@ import { Check, Ellipsis, LogOut, Plus, Search, ShieldCheck } from 'lucide-react
 import type { ReactNode } from 'react'
 
 import { permissoesDaAtiva } from '@/auth/permissoes'
-import { Button, IconButton } from '@leadtogo/ui/button'
+import { IconButton } from '@leadtogo/ui/button'
 import { Logo } from '@/components/acesso/logo'
 import { classeDaCor, corDoNome, iniciais } from '@leadtogo/ui/cores'
 import { Avatar } from '@leadtogo/ui/exibicao'
@@ -15,10 +15,10 @@ import { Tooltip } from '@leadtogo/ui/tooltip'
 import { Sheet } from '@leadtogo/ui/dialog'
 import { cn } from '@leadtogo/ui/cn'
 
+import { BotaoDeAjuda, MenuCriar } from './criar-e-ajuda'
 import { VERSAO_DO_APP } from './empresas'
 import { Notificacoes } from './sino'
 import { TELAS, TELAS_DA_BARRA_INFERIOR, estaAtiva, telaVisivel, telasDoMais } from './navegacao'
-import { useRegistrarAtividade } from '@/telas/atividades/registro-contexto'
 import { BuscaGlobal } from '@/telas/busca/caixa'
 import { nomeDaEmpresa, perfilDaEmpresa } from './utilidades'
 
@@ -64,25 +64,23 @@ export function PularParaOConteudo() {
   )
 }
 
-/** Barra superior do desktop e do tablet: busca global, "Registrar atividade" e o sino. */
+/** Barra superior do desktop e do tablet: busca global, o "+" (criar), a ajuda da tela e o sino. */
 export function BarraSuperior() {
-  const { abrir } = useRegistrarAtividade()
   return (
     <header className="flex h-(--topbar-height) flex-none items-center gap-3 border-b border-border bg-surface px-6">
       <div className="w-[420px] max-w-full">
         <BuscaGlobal />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <Button icon={Plus} onClick={() => abrir()}>
-          Registrar atividade
-        </Button>
+        <MenuCriar />
+        <BotaoDeAjuda />
         <Notificacoes />
       </div>
     </header>
   )
 }
 
-/** Cabeçalho do celular: marca, título da tela, busca, sino e o avatar que abre o perfil. */
+/** Cabeçalho do celular: marca, título da tela, busca, o "+" (criar), a ajuda, o sino e o avatar do perfil. */
 export function CabecalhoDoCelular({
   titulo,
   me,
@@ -92,7 +90,6 @@ export function CabecalhoDoCelular({
   me: Me
   aoAbrirPerfil: () => void
 }) {
-  const { abrir } = useRegistrarAtividade()
   const navegar = useNavigate()
   return (
     <header className="flex h-14 flex-none items-center gap-1 border-b border-border bg-surface pr-2 pl-3">
@@ -106,7 +103,8 @@ export function CabecalhoDoCelular({
         size="lg"
         onClick={() => void navegar({ to: '/busca' })}
       />
-      <IconButton icon={Plus} label="Registrar atividade" size="lg" onClick={() => abrir()} />
+      <MenuCriar grande />
+      <BotaoDeAjuda grande />
       <Notificacoes tamanho="lg" />
       <button
         type="button"

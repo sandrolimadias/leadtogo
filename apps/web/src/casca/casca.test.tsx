@@ -97,8 +97,37 @@ describe('casca no desktop', () => {
       'Administrador',
     )
     expect(screen.getByRole('combobox', { name: /Buscar empresas/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Registrar atividade' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Criar' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ajuda desta tela' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Registrar atividade' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Notificações' })).toBeInTheDocument()
+  })
+
+  it('o "+" do topo abre o menu Empresa, Contato, Oportunidade, Atividade e Chamado', async () => {
+    const { historico } = renderizar(servicosDaCasca(meComDuasEmpresas()), '/')
+    await userEvent.click(await screen.findByRole('button', { name: 'Criar' }))
+    expect((await screen.findAllByRole('menuitem')).map((i) => i.textContent)).toEqual([
+      'Empresa',
+      'Contato',
+      'Oportunidade',
+      'Atividade',
+      'Chamado',
+    ])
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Empresa' }))
+    await waitFor(() => expect(historico.location.pathname).toBe('/empresas/nova'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Criar' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Chamado' }))
+    expect(await screen.findByRole('dialog', { name: 'Abrir chamado' })).toBeInTheDocument()
+  })
+
+  it('o "?" do topo abre a ajuda da tela atual (por enquanto, "em breve")', async () => {
+    renderizar(servicosDaCasca(meComDuasEmpresas()), '/empresas')
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajuda desta tela' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Ajuda: Empresas' })
+    expect(within(dialogo).getByText(/orientações e vídeos/)).toBeInTheDocument()
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Entendi' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
   it('navega sem recarregar e marca a nova tela', async () => {
@@ -209,9 +238,7 @@ describe('a página nunca rola: só a área central', () => {
     // a barra do topo fica fora da área que rola
     const conteudo = document.getElementById('conteudo') as HTMLElement
     rola(conteudo)
-    expect(conteudo.contains(screen.getByRole('button', { name: 'Registrar atividade' }))).toBe(
-      false,
-    )
+    expect(conteudo.contains(screen.getByRole('button', { name: 'Criar' }))).toBe(false)
     expect(conteudo.contains(nav)).toBe(false)
   })
 
@@ -475,9 +502,7 @@ describe('casca: teclado', () => {
       'Atividades',
     ])
     expect(ordem).toContain('Menu de Alessandro Dias')
-    expect(ordem.indexOf('Menu de Alessandro Dias')).toBeLessThan(
-      ordem.indexOf('Registrar atividade'),
-    )
+    expect(ordem.indexOf('Menu de Alessandro Dias')).toBeLessThan(ordem.indexOf('Criar'))
   })
 
   it('"Pular para o conteúdo" leva o foco ao conteúdo (Enter)', async () => {

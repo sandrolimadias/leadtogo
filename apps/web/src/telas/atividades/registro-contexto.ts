@@ -20,7 +20,7 @@ interface Controle {
 }
 export const Contexto = createContext<Controle | null>(null)
 
-/** Abre o formulário "Registrar atividade" de qualquer tela (barra do topo, "+" do celular, fichas, listas). */
+/** Abre o formulário "Registrar atividade" de qualquer tela (o "+" do topo, fichas, listas). */
 export function useRegistrarAtividade(): Controle {
   const c = useContext(Contexto)
   if (!c) throw new Error('useRegistrarAtividade fora do RegistrarAtividadeProvider')
