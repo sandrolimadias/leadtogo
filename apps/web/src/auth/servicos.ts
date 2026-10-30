@@ -310,6 +310,15 @@ export const servicosReais: ServicosDeAcesso = {
           }),
         ),
       ),
+    definirTags: (id, tagIds) =>
+      protegido(async () =>
+        daApi(
+          await api.PUT('/v1/carteira/contatos/{id}/tags', {
+            params: { path: { id } },
+            body: { tagIds },
+          }),
+        ),
+      ),
     excluir: (id) =>
       protegido(async () =>
         semCorpo(await api.DELETE('/v1/carteira/contatos/{id}', { params: { path: { id } } })),
@@ -1542,11 +1551,13 @@ export const servicosReais: ServicosDeAcesso = {
   },
 
   tags: {
-    listar: () =>
+    listar: (aplicaA) =>
       protegido(async () =>
         daApi(
           await api.GET('/v1/configuracoes/tag-grupos', {
-            params: { query: { incluirInativos: 'true' } },
+            params: {
+              query: { incluirInativos: 'true', ...(aplicaA ? { aplicaA } : {}) } as never,
+            },
           }),
         ),
       ),
@@ -1555,7 +1566,11 @@ export const servicosReais: ServicosDeAcesso = {
         daApi(
           await api.POST('/v1/configuracoes/tag-grupos', {
             // o cliente gerado trata o que tem padrão como obrigatório: o padrão é enviado explícito
-            body: { ...dados, obrigatorio: dados.obrigatorio ?? false },
+            body: {
+              ...dados,
+              obrigatorio: dados.obrigatorio ?? false,
+              aplicaA: dados.aplicaA ?? 'empresa',
+            },
           }),
         ),
       ),

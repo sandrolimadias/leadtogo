@@ -1,7 +1,22 @@
 import type { TagGrupo } from '@leadtogo/api-client'
-import { CHAVES_DE_TAG_COM_REGRA, type CorDeTag, type SelecaoDeTag } from '@leadtogo/shared'
+import {
+  type AlvoDeTag,
+  CHAVES_DE_TAG_COM_REGRA,
+  type CorDeTag,
+  type SelecaoDeTag,
+} from '@leadtogo/shared'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, Lock, Pencil, Plus, Tags, Trash2 } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Building2,
+  Lock,
+  Pencil,
+  Plus,
+  Tags,
+  Trash2,
+  Users,
+} from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -11,6 +26,7 @@ import { Select, TextField } from '@leadtogo/ui/campos'
 import { Checkbox, Switch } from '@leadtogo/ui/checkbox'
 import { Badge, Tag } from '@leadtogo/ui/exibicao'
 import { Alert, EmptyState } from '@leadtogo/ui/feedback'
+import { Tabs } from '@leadtogo/ui/tabs'
 import { toast } from '@leadtogo/ui/toast'
 import { focarCampo, useEnvio } from '@/telas/acesso/comum'
 
@@ -22,7 +38,7 @@ import {
   Janela,
   SeletorDeCor,
 } from './base'
-import { moverNaLista } from './ordem'
+import { moverGrupoNaAba, moverNaLista } from './ordem'
 
 const chaveDasTags = ['cadastros', 'tags'] as const
 
@@ -33,10 +49,23 @@ type Etiqueta = TagGrupo['tags'][number]
 const temRegra = (t: Etiqueta) =>
   t.chaveSistema !== null && (CHAVES_DE_TAG_COM_REGRA as readonly string[]).includes(t.chaveSistema)
 
-const OPCOES_DE_SELECAO = [
-  { value: 'unica', label: 'Única: a empresa tem só uma tag do grupo' },
-  { value: 'multipla', label: 'Múltipla: a empresa pode ter várias' },
-]
+const OPCOES_DE_SELECAO: Record<AlvoDeTag, { value: SelecaoDeTag; label: string }[]> = {
+  empresa: [
+    { value: 'unica', label: 'Única: a empresa tem só uma tag do grupo' },
+    { value: 'multipla', label: 'Múltipla: a empresa pode ter várias' },
+  ],
+  contato: [
+    { value: 'unica', label: 'Única: o contato tem só uma tag do grupo' },
+    { value: 'multipla', label: 'Múltipla: o contato pode ter várias' },
+  ],
+}
+
+const DESCRICAO: Record<AlvoDeTag, string> = {
+  empresa:
+    'Os grupos e as tags que classificam as empresas da carteira. A ordem dos blocos (Subir e Descer) é a sequência em que as tags aparecem na lista e na ficha das empresas.',
+  contato:
+    'Os grupos e as tags que classificam os contatos (por exemplo, Perfil: Técnico, Comprador). Valem só para contatos, nunca para empresas, e um contato pode ter várias. A ordem dos blocos é a sequência em que as tags aparecem na lista e na ficha dos contatos.',
+}
 
 type Janelas =
   | { tipo: 'grupo'; grupo: Grupo | null }
@@ -44,16 +73,21 @@ type Janelas =
   | { tipo: 'excluir-grupo'; grupo: Grupo }
   | { tipo: 'excluir-tag'; tag: Etiqueta }
 
-/** Configurações → Tags: grupos de tags (Status, Visitação...) e as tags de cada um. Só o administrador. */
+/**
+ * Configurações → Tags: grupos de tags e as tags de cada um, em duas abas: os de empresa (Status,
+ * Visitação...) e os de contato. Só o administrador.
+ */
 export function TelaDeTags() {
   const servicos = useServicos()
   const queryClient = useQueryClient()
   const { enviando, executar } = useEnvio()
+  const [aba, setAba] = useState<AlvoDeTag>('empresa')
   const consulta = useQuery({
-    queryKey: chaveDasTags,
+    // Chave própria: as outras telas guardam só os grupos de empresa (ou só os de contato)
+    queryKey: [...chaveDasTags, 'todos'],
     retry: false,
     queryFn: async () => {
-      const r = await servicos.tags.listar()
+      const r = await servicos.tags.listar('todos')
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -61,6 +95,7 @@ export function TelaDeTags() {
   const [janela, setJanela] = useState<Janelas | null>(null)
   const [erroDaExclusao, setErroDaExclusao] = useState<string | undefined>()
 
+  // Pelo prefixo: relê esta tela e as das empresas e dos contatos
   const recarregar = () => queryClient.invalidateQueries({ queryKey: chaveDasTags })
   const fechar = () => {
     setJanela(null)
@@ -88,10 +123,13 @@ export function TelaDeTags() {
       await recarregar()
     })
 
+  const todos = consulta.data ?? []
+  const daAba = todos.filter((g) => g.aplicaA === aba)
+
   const cabecalho = (
     <CabecalhoDeSecao
       titulo="Tags"
-      descricao="Os grupos e as tags que classificam as empresas da carteira. A ordem dos blocos (Subir e Descer) é a sequência em que as tags aparecem na lista e na ficha das empresas."
+      descricao={DESCRICAO[aba]}
       acao={
         <Button
           variant="primary"
@@ -108,20 +146,40 @@ export function TelaDeTags() {
     <div className="flex flex-col gap-4">
       <Carregamento consulta={consulta} rotulo="as tags" cabecalho={cabecalho}>
         {cabecalho}
-        {consulta.data?.length ? (
+        <Tabs
+          label="Tags de"
+          value={aba}
+          onChange={(v) => setAba(v as AlvoDeTag)}
+          items={[
+            {
+              value: 'empresa',
+              label: 'Empresas',
+              icon: Building2,
+              count: todos.filter((g) => g.aplicaA === 'empresa').length,
+            },
+            {
+              value: 'contato',
+              label: 'Contatos',
+              icon: Users,
+              count: todos.filter((g) => g.aplicaA === 'contato').length,
+            },
+          ]}
+        />
+        {daAba.length ? (
           <div className="flex flex-col gap-4">
-            {consulta.data.map((g, i, todos) => (
+            {daAba.map((g, i, doDestino) => (
               <CartaoDoGrupo
                 key={g.id}
                 grupo={g}
                 primeiro={i === 0}
-                ultimo={i === todos.length - 1}
+                ultimo={i === doDestino.length - 1}
                 desativado={enviando}
                 aoMoverGrupo={(d) =>
                   void mover(() =>
                     servicos.tags.reordenarGrupos(
-                      moverNaLista(
+                      moverGrupoNaAba(
                         todos.map((x) => x.id),
+                        doDestino.map((x) => x.id),
                         i,
                         d,
                       ),
@@ -152,8 +210,12 @@ export function TelaDeTags() {
           <div className="rounded-lg border border-border bg-surface">
             <EmptyState
               icon={Tags}
-              title="Nenhum grupo de tags"
-              description="Crie um grupo (por exemplo, Interesse) e depois as tags dele."
+              title={aba === 'contato' ? 'Nenhum grupo de tags de contato' : 'Nenhum grupo de tags'}
+              description={
+                aba === 'contato'
+                  ? 'Crie um grupo (por exemplo, Perfil) e depois as tags dele, como Técnico e Comprador. As tags de contato não aparecem para empresas.'
+                  : 'Crie um grupo (por exemplo, Interesse) e depois as tags dele.'
+              }
               actions={
                 <Button
                   variant="primary"
@@ -170,6 +232,7 @@ export function TelaDeTags() {
 
       <DialogoDeGrupo
         aberto={janela?.tipo === 'grupo'}
+        aplicaA={aba}
         grupo={janela?.tipo === 'grupo' ? janela.grupo : null}
         aoFechar={fechar}
         aoSalvar={recarregar}
@@ -368,11 +431,14 @@ function separarErro(erro: ErroDeAcesso): { campo?: string; aviso?: string } {
 
 function DialogoDeGrupo({
   aberto,
+  aplicaA: abaAtual,
   grupo,
   aoFechar,
   aoSalvar,
 }: {
   aberto: boolean
+  /** O destino do grupo novo (a aba aberta); o grupo que se edita mantém o dele */
+  aplicaA: AlvoDeTag
   grupo: Grupo | null
   aoFechar: () => void
   aoSalvar: () => Promise<unknown>
@@ -380,6 +446,8 @@ function DialogoDeGrupo({
   const servicos = useServicos()
   const { enviando, executar } = useEnvio()
   const editando = grupo !== null
+  const aplicaA = grupo?.aplicaA ?? abaAtual
+  const deContato = aplicaA === 'contato'
   const [nome, setNome] = useState('')
   const [selecao, setSelecao] = useState<SelecaoDeTag>('multipla')
   const [obrigatorio, setObrigatorio] = useState(false)
@@ -413,9 +481,14 @@ function DialogoDeGrupo({
       const r = grupo
         ? await servicos.tags.alterarGrupo(grupo.id, {
             nome: nome.trim(),
-            ...(grupo.sistema ? {} : { selecao, obrigatorio }),
+            ...(grupo.sistema ? {} : { selecao, ...(deContato ? {} : { obrigatorio }) }),
           })
-        : await servicos.tags.criarGrupo({ nome: nome.trim(), selecao, obrigatorio })
+        : await servicos.tags.criarGrupo({
+            nome: nome.trim(),
+            selecao,
+            aplicaA,
+            obrigatorio: deContato ? false : obrigatorio,
+          })
       if (!r.ok) {
         const { campo, aviso: a } = separarErro(r.erro)
         setErroDoNome(campo)
@@ -435,7 +508,13 @@ function DialogoDeGrupo({
       onOpenChange={(o) => {
         if (!o) aoFechar()
       }}
-      title={editando ? `Editar o grupo ${grupo.nome}` : 'Novo grupo de tags'}
+      title={
+        editando
+          ? `Editar o grupo ${grupo.nome}`
+          : deContato
+            ? 'Novo grupo de tags de contato'
+            : 'Novo grupo de tags'
+      }
       footer={
         <>
           <Button variant="ghost" onClick={aoFechar}>
@@ -455,7 +534,7 @@ function DialogoDeGrupo({
           autoFocus
           autoComplete="off"
           maxLength={80}
-          placeholder="Ex.: Interesse"
+          placeholder={deContato ? 'Ex.: Perfil' : 'Ex.: Interesse'}
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           error={nomeVazio ? 'Informe o nome do grupo.' : erroDoNome}
@@ -464,18 +543,20 @@ function DialogoDeGrupo({
           id="grupo-selecao"
           label="Seleção"
           value={selecao}
-          options={OPCOES_DE_SELECAO}
+          options={OPCOES_DE_SELECAO[aplicaA]}
           disabled={grupo?.sistema}
           hint={grupo?.sistema ? 'Grupo do sistema: só o nome pode mudar.' : undefined}
           onChange={(e) => setSelecao(e.target.value as SelecaoDeTag)}
         />
-        <Checkbox
-          label="Obrigatório"
-          description="Toda empresa precisa ter uma tag deste grupo."
-          checked={obrigatorio}
-          disabled={grupo?.sistema}
-          onChange={(e) => setObrigatorio(e.target.checked)}
-        />
+        {deContato ? null : (
+          <Checkbox
+            label="Obrigatório"
+            description="Toda empresa precisa ter uma tag deste grupo."
+            checked={obrigatorio}
+            disabled={grupo?.sistema}
+            onChange={(e) => setObrigatorio(e.target.checked)}
+          />
+        )}
         {aviso ? (
           <Alert tone="danger" title="Não foi possível salvar">
             {aviso}

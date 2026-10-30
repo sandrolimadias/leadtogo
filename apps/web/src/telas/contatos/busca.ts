@@ -10,6 +10,8 @@ export interface BuscaDeContatos {
   papel?: string
   /** Id da tag da empresa */
   tag?: string
+  /** Id da tag do contato */
+  tagContato?: string
   pagina?: number
 }
 
@@ -27,6 +29,7 @@ export function lerBusca(entrada: Record<string, unknown>): BuscaDeContatos {
   const cargo = texto(entrada['cargo'])
   const papel = texto(entrada['papel'])
   const tag = texto(entrada['tag'])
+  const tagContato = texto(entrada['tagContato'])
   const pagina = inteiro(entrada['pagina'])
   return {
     ...(busca ? { busca } : {}),
@@ -34,17 +37,18 @@ export function lerBusca(entrada: Record<string, unknown>): BuscaDeContatos {
     ...(cargo ? { cargo } : {}),
     ...(papel ? { papel } : {}),
     ...(tag ? { tag } : {}),
+    ...(tagContato ? { tagContato } : {}),
     ...(pagina && pagina > 1 ? { pagina } : {}),
   }
 }
 
 /** Há algum filtro ou busca ativo? */
 export const temFiltroAtivo = (b: BuscaDeContatos): boolean =>
-  Boolean(b.busca ?? b.empresa ?? b.cargo ?? b.papel ?? b.tag)
+  Boolean(b.busca ?? b.empresa ?? b.cargo ?? b.papel ?? b.tag ?? b.tagContato)
 
-/** Só os filtros da barra (sem a busca): o número do botão "Filtros" no celular. */
+/** Só os filtros (sem a busca): o número do botão "Filtros". */
 export const quantosFiltros = (b: BuscaDeContatos): number =>
-  [b.empresa, b.cargo, b.papel, b.tag].filter(Boolean).length
+  [b.empresa, b.cargo, b.papel, b.tag, b.tagContato].filter(Boolean).length
 
 /** O que o servidor recebe. */
 export function consultaDeContatos(b: BuscaDeContatos, porPagina = 25): ConsultaDeContatosEntrada {
@@ -54,6 +58,7 @@ export function consultaDeContatos(b: BuscaDeContatos, porPagina = 25): Consulta
     ...(b.cargo ? { cargo: b.cargo } : {}),
     ...(b.papel ? { papelDecisaoId: b.papel } : {}),
     ...(b.tag ? { tagId: b.tag } : {}),
+    ...(b.tagContato ? { tagContatoId: b.tagContato } : {}),
     pagina: b.pagina ?? 1,
     porPagina,
   }

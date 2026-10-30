@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { falha, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 
-import { contato, id, meComPapel } from './fixtures'
+import { contato, gruposDeContato, id, meComPapel } from './fixtures'
 
 function servicos(
   dados = contato(),
@@ -23,7 +23,14 @@ function servicos(
     ...extra,
   }
   return {
-    s: servicosFalsos({ me: async () => meComPapel(papel), contatos: contatos }),
+    s: servicosFalsos({
+      me: async () => meComPapel(papel),
+      contatos: contatos,
+      tags: {
+        ...base.tags,
+        listar: vi.fn(async (a?: string) => ok(a === 'contato' ? gruposDeContato : [])),
+      },
+    }),
     contatos: contatos as typeof contatos & {
       alterar: ReturnType<typeof vi.fn>
       excluir: ReturnType<typeof vi.fn>
@@ -42,6 +49,44 @@ function largura(px: number) {
   Object.defineProperty(window, 'innerWidth', { value: px, configurable: true, writable: true })
 }
 afterEach(() => largura(1280))
+
+describe('Ficha do contato: tags', () => {
+  it('mostra as tags e "Editar tags" troca pelo PUT e atualiza a ficha', async () => {
+    const tecnico = { id: id(61), nome: 'Técnico', cor: 'blue', tagGrupoId: id(60) }
+    const definirTags = vi.fn(async (_id: string, _ids: string[]) =>
+      ok(contato({ tags: [tecnico] })),
+    )
+    const x = servicos(contato(), 'admin', { definirTags })
+    await abrir(x)
+    expect(screen.queryByText('Técnico')).toBeNull()
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar tags' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Editar tags' })
+    expect(within(dialogo).getByText('Rogério Bindaco')).toBeInTheDocument()
+    await userEvent.click(within(dialogo).getByRole('checkbox', { name: 'Técnico' }))
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Salvar tags' }))
+    await waitFor(() => expect(definirTags).toHaveBeenCalledWith(id(100), [id(61)]))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(await screen.findByText('Técnico')).toBeInTheDocument()
+  })
+
+  it('erro ao salvar fica na janela', async () => {
+    const definirTags = vi.fn(async () => falha('tag_invalida', 'Tag inexistente.', 400))
+    const x = servicos(contato(), 'admin', { definirTags })
+    await abrir(x)
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar tags' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Editar tags' })
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Salvar tags' }))
+    expect(await within(dialogo).findByText('Tag inexistente.')).toBeInTheDocument()
+  })
+
+  it('sem permissão de editar o contato: as tags aparecem, sem o botão', async () => {
+    const tecnico = { id: id(61), nome: 'Técnico', cor: 'blue', tagGrupoId: id(60) }
+    const x = servicos(contato({ tags: [tecnico], permissoes: { editar: false, excluir: false } }))
+    await abrir(x)
+    expect(await screen.findByText('Técnico')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Editar tags' })).toBeNull()
+  })
+})
 
 describe('Ficha do contato', () => {
   it('cabeçalho: nome, papel, cargo e empresa principal, ações e caminho de volta', async () => {

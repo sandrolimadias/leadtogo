@@ -2,6 +2,7 @@ import { and, asc, eq, isNull, schema, sql } from '@leadtogo/db'
 import type { Contato } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
+import { tagsDosContatos } from './contato-tags.js'
 import { condicaoDeEdicaoDoContato, condicaoDeVisibilidadeDoContato } from './regras-de-contato.js'
 import {
   alcanca,
@@ -39,7 +40,7 @@ export async function lerContato(
   if (!c) return null
   const r = c.c
 
-  const [telefones, emails, vinculos, editavel] = await Promise.all([
+  const [telefones, emails, vinculos, editavel, tags] = await Promise.all([
     tx
       .select()
       .from(contatoTelefones)
@@ -72,6 +73,7 @@ export async function lerContato(
       .select({ id: contatos.id })
       .from(contatos)
       .where(and(eq(contatos.id, id), condicaoDeEdicaoDoContato(escopo) ?? sql`true`)),
+    tagsDosContatos(tx, [id]),
   ])
 
   return {
@@ -110,6 +112,7 @@ export async function lerContato(
       ate: v.ate,
       editavel: podeEditar(escopo, vendedorId),
     })),
+    tags: tags.get(id) ?? [],
     criadoEm: r.criadoEm.toISOString(),
     atualizadoEm: r.atualizadoEm.toISOString(),
     permissoes: {

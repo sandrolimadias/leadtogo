@@ -233,7 +233,7 @@ export interface paths {
         };
         /**
          * Lista de contatos
-         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Busca por nome (sem acento), e-mail ou telefone (pedaço, com ou sem máscara). Os filtros `empresaId`, `cargo` e `tagId` (tag da empresa) valem juntos para o mesmo vínculo ativo; `papelDecisaoId` filtra a pessoa. Cada item traz só as empresas que o usuário vê, o telefone principal (E.164), o e-mail principal e se pediu para não ser contatado. Ordem por nome (padrão) ou data de cadastro, paginada.
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Busca por nome (sem acento), e-mail ou telefone (pedaço, com ou sem máscara). Os filtros `empresaId`, `cargo` e `tagId` (tag da empresa) valem juntos para o mesmo vínculo ativo; `papelDecisaoId` e `tagContatoId` (tag do próprio contato) filtram a pessoa. Cada item traz só as empresas que o usuário vê, o telefone principal (E.164), o e-mail principal, as tags do contato e se pediu para não ser contatado. Ordem por nome (padrão) ou data de cadastro, paginada.
          */
         get: operations["ContatosController_listar"];
         put?: never;
@@ -271,7 +271,7 @@ export interface paths {
         head?: never;
         /**
          * Editar contato
-         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Só o que vier muda; `telefones` e `emails`, se vierem, substituem a lista toda. Mudar `aceitaWhatsapp` ou `aceitaEmail` atualiza a data e a origem do consentimento. Telefone ou e-mail novo que já é de outro contato: 409 `contato_duplicado` (reenvie com `ignorarDuplicado`). Os vínculos com empresas têm rotas próprias. Registra na auditoria o antes e o depois.
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Só o que vier muda; `telefones` e `emails`, se vierem, substituem a lista toda. Mudar `aceitaWhatsapp` ou `aceitaEmail` atualiza a data e a origem do consentimento. Telefone ou e-mail novo que já é de outro contato: 409 `contato_duplicado` (reenvie com `ignorarDuplicado`). `tagIds`, se vier, substitui as tags do contato (como `PUT /tags`). Os vínculos com empresas têm rotas próprias. Registra na auditoria o antes e o depois.
          */
         patch: operations["ContatosController_alterar"];
         trace?: never;
@@ -289,6 +289,26 @@ export interface paths {
          */
         get: operations["ContatosController_historicoDoContato"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/contatos/{id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Definir as tags do contato
+         * @description Regra de carteira: admin e gestor veem e editam todos os contatos; o vendedor vê o contato ligado a empresa que ele vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e edita o ligado a empresa dele. Contato que o usuário não vê responde 404. Substitui as tags do contato. Só tags de grupos de tags de contato (tag de empresa, inexistente ou de outra conta: 400 `tag_invalida`); tag inativa só continua se já estava (400 `tag_inativa`); grupo de seleção única aceita uma (400 `grupo_selecao_unica`). Quem edita o contato edita as tags. Registra na auditoria (`alterar_tags`). Devolve o contato.
+         */
+        put: operations["ContatosController_definirTags"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1817,13 +1837,13 @@ export interface paths {
         };
         /**
          * Grupos de tags com suas tags
-         * @description Qualquer membro da empresa ativa. Em ordem de exibição; sem `incluirInativos=true`, esconde grupos e tags inativados. Itens excluídos nunca aparecem.
+         * @description Qualquer membro da empresa ativa. Em ordem de exibição; sem `incluirInativos=true`, esconde grupos e tags inativados. Itens excluídos nunca aparecem. `aplicaA` escolhe os grupos de empresa (padrão), os de contato ou `todos`.
          */
         get: operations["TagsController_listar"];
         put?: never;
         /**
          * Criar grupo de tags
-         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os grupos (409 `nome_duplicado`).
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os grupos, de empresa e de contato (409 `nome_duplicado`). `aplicaA` (padrão `empresa`) não muda depois; grupo de contato não é obrigatório.
          */
         post: operations["TagsController_criarGrupo"];
         delete?: never;
@@ -1851,7 +1871,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar grupo de tags
-         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no "obrigatório" ou inativar dá 409 `grupo_de_sistema`.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no "obrigatório" ou inativar dá 409 `grupo_de_sistema`. Grupo de contato não vira obrigatório (409 `grupo_de_contato`). O destino (`aplicaA`) não muda.
          */
         patch: operations["TagsController_alterarGrupo"];
         trace?: never;
@@ -5661,6 +5681,7 @@ export interface components {
             aceitaWhatsapp?: boolean;
             aceitaEmail?: boolean;
             ignorarDuplicado?: boolean;
+            tagIds?: string[];
         };
         AlterarEmpresaDaCarteiraEntrada: {
             razaoSocial?: string;
@@ -6446,6 +6467,7 @@ export interface components {
                 ate: string | null;
                 editavel: boolean;
             }[];
+            tags: components["schemas"]["TagDoContato"][];
             criadoEm: string;
             atualizadoEm: string;
             permissoes: {
@@ -6613,6 +6635,7 @@ export interface components {
             aceitaWhatsapp?: boolean;
             aceitaEmail?: boolean;
             ignorarDuplicado?: boolean;
+            tagIds?: string[];
             vinculo?: components["schemas"]["VinculoInicialDoContato"];
         };
         CriarConviteEntrada: {
@@ -6798,6 +6821,11 @@ export interface components {
             selecao: "unica" | "multipla";
             /** @default false */
             obrigatorio: boolean;
+            /**
+             * @default empresa
+             * @enum {string}
+             */
+            aplicaA: "empresa" | "contato";
         };
         CriarTarefaDoChamadoEntrada: {
             titulo: string;
@@ -7011,6 +7039,9 @@ export interface components {
             perfilIds: string[];
         };
         DefinirTagsDaEmpresaEntrada: {
+            tagIds: string[];
+        };
+        DefinirTagsDoContatoEntrada: {
             tagIds: string[];
         };
         DenunciarNoPortalEntrada: {
@@ -7602,6 +7633,7 @@ export interface components {
             temWhatsapp: boolean;
             email: string | null;
             naoQuerContato: boolean;
+            tags: components["schemas"]["TagDoContato"][];
             editavel: boolean;
         };
         ItemDaListaDeEmpresas: {
@@ -9438,6 +9470,14 @@ export interface components {
             apareceNoMapa: boolean;
             visivelAoAbrir: boolean;
         };
+        TagDoContato: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            cor: string;
+            /** Format: uuid */
+            tagGrupoId: string;
+        };
         TagGrupo: {
             /** Format: uuid */
             id: string;
@@ -9447,6 +9487,8 @@ export interface components {
             obrigatorio: boolean;
             sistema: boolean;
             automatico: boolean;
+            /** @enum {string} */
+            aplicaA: "empresa" | "contato";
             ativo: boolean;
             ordem: number;
             tags: components["schemas"]["Tag"][];
@@ -10395,6 +10437,7 @@ export interface operations {
                 cargo?: string;
                 papelDecisaoId?: string;
                 tagId?: string;
+                tagContatoId?: string;
                 ordem?: "nome" | "criado_em";
                 sentido?: "asc" | "desc";
                 pagina?: number;
@@ -10786,6 +10829,68 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    ContatosController_definirTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefinirTagsDoContatoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contato"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17050,6 +17155,7 @@ export interface operations {
         parameters: {
             query?: {
                 incluirInativos?: "true" | "false";
+                aplicaA?: "empresa" | "contato" | "todos";
             };
             header?: never;
             path?: never;

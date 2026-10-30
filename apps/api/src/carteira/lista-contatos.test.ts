@@ -127,6 +127,7 @@ describe('GET /v1/carteira/contatos', () => {
       temWhatsapp: true,
       email: 'rogerio@exemplo.com.br',
       naoQuerContato: false,
+      tags: [],
       editavel: true,
     })
     const vazio = l.itens.find((i) => i.nome === 'Sem nada')

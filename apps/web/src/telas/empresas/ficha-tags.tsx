@@ -1,4 +1,4 @@
-import type { EmpresaCarteira, TagGrupo } from '@leadtogo/api-client'
+import type { TagGrupo } from '@leadtogo/api-client'
 import { useState } from 'react'
 
 import { Button } from '@leadtogo/ui/button'
@@ -10,13 +10,15 @@ import { Janela } from '@/telas/cadastros/base'
 const gruposEditaveis = (grupos: TagGrupo[]) => grupos.filter((g) => !g.automatico && g.ativo)
 
 /**
- * Editar tags da empresa: uma escolha por grupo de seleção única (o Status, obrigatório, sempre tem uma)
- * e quantas quiser nos de seleção múltipla. As tags automáticas ficam como estão.
+ * Editar tags da empresa ou do contato: uma escolha por grupo de seleção única (o Status, obrigatório,
+ * sempre tem uma) e quantas quiser nos de seleção múltipla. As tags automáticas ficam como estão.
+ * `grupos` traz só os grupos do destino (os de empresa ou os de contato).
  */
 export function EditarTags({
   aberto,
   aoFechar,
-  empresa,
+  nome,
+  atuais,
   grupos,
   salvando,
   erro,
@@ -24,15 +26,16 @@ export function EditarTags({
 }: {
   aberto: boolean
   aoFechar: () => void
-  empresa: EmpresaCarteira
+  /** De quem são as tags (a empresa ou o contato): o subtítulo da janela */
+  nome: string
+  /** Os ids das tags que a empresa ou o contato tem agora */
+  atuais: readonly string[]
   grupos: TagGrupo[]
   salvando: boolean
   erro?: string | undefined
   aoSalvar: (tagIds: string[]) => void
 }) {
-  const [escolhidas, setEscolhidas] = useState<Set<string>>(
-    () => new Set(empresa.tags.map((t) => t.id)),
-  )
+  const [escolhidas, setEscolhidas] = useState<Set<string>>(() => new Set(atuais))
   const editaveis = gruposEditaveis(grupos)
 
   const escolher = (grupo: TagGrupo, tagId: string, ligada: boolean) =>
@@ -56,7 +59,7 @@ export function EditarTags({
       open={aberto}
       onOpenChange={(a) => (a ? undefined : aoFechar())}
       title="Editar tags"
-      description={empresa.nome}
+      description={nome}
       width={480}
       footer={
         <>
@@ -75,7 +78,7 @@ export function EditarTags({
       }
     >
       {editaveis.map((g) => {
-        // inativa só aparece se a empresa já a tem (tirar é possível; pôr de novo, não)
+        // inativa só aparece se já está aplicada (tirar é possível; pôr de novo, não)
         const tags = g.tags.filter((t) => t.ativo || escolhidas.has(t.id))
         return (
           <fieldset key={g.id} className="m-0 flex flex-col gap-2 border-0 p-0">

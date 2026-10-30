@@ -343,6 +343,26 @@ fabricas['contato_emails'] = definirFabrica<string>({
   },
 })
 
+fabricas['contato_tags'] = definirFabrica<{ contatoId: string; tagId: string }>({
+  chave: 'contato_id',
+  colunaAlteravel: 'aplicada_em',
+  // Os pais: um contato e uma tag de um grupo de contato (o gatilho recusa tag de grupo de empresa)
+  preparar: async (owner, tenantId) => ({
+    contatoId: await contatoPai(owner, tenantId),
+    tagId: await comTenant(owner, tenantId, async (tx) => {
+      const grupoId = novoId()
+      const id = novoId()
+      await tx`INSERT INTO tag_grupos (id, tenant_id, nome, aplica_a) VALUES (${grupoId}, ${tenantId}, 'Perfil', 'contato')`
+      await tx`INSERT INTO tags (id, tenant_id, nome, tag_grupo_id) VALUES (${id}, ${tenantId}, 'Técnico', ${grupoId})`
+      return id
+    }),
+  }),
+  criar: async (tx, tenantId, pais) => {
+    await tx`INSERT INTO contato_tags (tenant_id, contato_id, tag_id) VALUES (${tenantId}, ${pais.contatoId}, ${pais.tagId})`
+    return pais.contatoId
+  },
+})
+
 // Importação de planilha (Módulo 4)
 fabricas['importacao_perfis'] = definirFabrica({
   colunaAlteravel: 'nome',

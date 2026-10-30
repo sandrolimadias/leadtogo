@@ -372,6 +372,7 @@ export class ModelosDeVisitaService {
           eq(tags.ativo, true),
           isNull(tagGrupos.excluidoEm),
           eq(tagGrupos.automatico, false),
+          eq(tagGrupos.aplicaA, 'empresa'),
         ),
       )
     if (new Set(validas.map((t) => t.id)).size !== new Set(ids).size) {

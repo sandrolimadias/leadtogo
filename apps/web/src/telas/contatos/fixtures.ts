@@ -3,6 +3,7 @@ import type {
   ItemDaLista,
   ItemDaListaDeContatos,
   PapelDecisao,
+  TagGrupo,
 } from '@leadtogo/api-client'
 
 import { meDeAdmin } from '@/testes/servicos-falsos'
@@ -75,6 +76,7 @@ export const contato = (extra: Partial<Contato> = {}): Contato => ({
       editavel: true,
     },
   ],
+  tags: [],
   criadoEm: '2026-08-01T12:00:00.000Z',
   atualizadoEm: '2026-09-12T12:00:00.000Z',
   permissoes: { editar: true, excluir: true },
@@ -114,6 +116,35 @@ export const itemDeContato = (
   temWhatsapp: true,
   email: `contato${n}@exemplo.com.br`,
   naoQuerContato: false,
+  tags: [],
   editavel: true,
   ...extra,
 })
+
+/** Um grupo de tags de contato (Perfil: Técnico). */
+export const gruposDeContato: TagGrupo[] = [
+  {
+    id: id(60),
+    nome: 'Perfil',
+    selecao: 'multipla',
+    obrigatorio: false,
+    sistema: false,
+    automatico: false,
+    aplicaA: 'contato',
+    ativo: true,
+    ordem: 0,
+    tags: [
+      {
+        id: id(61),
+        tagGrupoId: id(60),
+        nome: 'Técnico',
+        cor: 'blue',
+        ativo: true,
+        ordem: 0,
+        chaveSistema: null,
+        apareceNoMapa: true,
+        visivelAoAbrir: true,
+      },
+    ],
+  },
+]

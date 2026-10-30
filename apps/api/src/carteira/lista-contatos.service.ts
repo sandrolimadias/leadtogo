@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull, schema, sql } from '@leadtogo/db'
 import type {
   ConsultaDeContatos,
+  TagDoContato,
   ItemDaListaDeContatos,
   ListaDeContatos,
   OpcoesDaListaDeContatos,
@@ -9,6 +10,7 @@ import { Injectable } from '@nestjs/common'
 
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { buscaDoContato, semAcento } from './busca-texto.js'
+import { tagsDosContatos } from './contato-tags.js'
 import {
   condicaoDeVisibilidade,
   type EscopoDaCarteira,
@@ -19,6 +21,7 @@ import { condicaoDeEdicaoDoContato, condicaoDeVisibilidadeDoContato } from './re
 const {
   contatos,
   contatoEmails,
+  contatoTags,
   contatoTelefones,
   empresaContatos,
   empresas,
@@ -64,9 +67,9 @@ export class ListaDeContatosService {
       .offset((consulta.pagina - 1) * consulta.porPagina)
 
     const ids = linhas.map((l) => l.id)
-    const [vinculos, telefones, emails] =
+    const [vinculos, telefones, emails, tags] =
       ids.length === 0
-        ? [[], [], []]
+        ? [[], [], [], new Map<string, TagDoContato[]>()]
         : await Promise.all([
             // só as empresas que o usuário vê (o vendedor não descobre a carteira dos outros)
             db
@@ -120,6 +123,8 @@ export class ListaDeContatosService {
                 asc(contatoEmails.criadoEm),
                 asc(contatoEmails.id),
               ),
+            // uma consulta para a página toda, já na ordem dos grupos e das tags
+            tagsDosContatos(db, ids),
           ])
 
     const itens: ItemDaListaDeContatos[] = linhas.map((l) => {
@@ -142,6 +147,7 @@ export class ListaDeContatosService {
         temWhatsapp: dele.some((t) => t.tipo === 'whatsapp'),
         email: emails.find((e) => e.contatoId === l.id)?.email ?? null,
         naoQuerContato: l.consentimentoEm !== null && !l.aceitaWhatsapp && !l.aceitaEmail,
+        tags: tags.get(l.id) ?? [],
         editavel: l.editavel,
       }
     })
@@ -181,6 +187,10 @@ export class ListaDeContatosService {
     const condicoes = []
     if (c.papelDecisaoId) condicoes.push(eq(contatos.papelDecisaoId, c.papelDecisaoId))
     if (c.busca) condicoes.push(buscaDoContato(c.busca))
+    if (c.tagContatoId) {
+      condicoes.push(sql`EXISTS (
+        SELECT 1 FROM ${contatoTags} ct WHERE ct.contato_id = ${contatos.id} AND ct.tag_id = ${c.tagContatoId})`)
+    }
 
     // Empresa, cargo e tag valem juntos para o MESMO vínculo ativo ("Diretor na Usidantec")
     if (c.empresaId || c.cargo || c.tagId) {

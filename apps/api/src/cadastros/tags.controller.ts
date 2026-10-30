@@ -36,7 +36,11 @@ import { ZodPipe } from '../http/zod.pipe.js'
 import { TagsService } from './tags.service.js'
 
 const consultaSchema = z
-  .object({ incluirInativos: z.enum(['true', 'false']).default('false') })
+  .object({
+    incluirInativos: z.enum(['true', 'false']).default('false'),
+    /** Sem o parâmetro, só os grupos de empresa (as telas de empresa nunca veem tags de contato) */
+    aplicaA: z.enum(['empresa', 'contato', 'todos']).default('empresa'),
+  })
   .strict()
 
 const ESCRITA =
@@ -51,7 +55,7 @@ export class TagsController {
   @Documenta({
     resumo: 'Grupos de tags com suas tags',
     descricao:
-      'Qualquer membro da empresa ativa. Em ordem de exibição; sem `incluirInativos=true`, esconde grupos e tags inativados. Itens excluídos nunca aparecem.',
+      'Qualquer membro da empresa ativa. Em ordem de exibição; sem `incluirInativos=true`, esconde grupos e tags inativados. Itens excluídos nunca aparecem. `aplicaA` escolhe os grupos de empresa (padrão), os de contato ou `todos`.',
     consulta: consultaSchema,
     resposta: z.array(tagGrupoSchema),
     erros: [400, 401, 403, 409],
@@ -61,12 +65,15 @@ export class TagsController {
   listar(
     @Query(new ZodPipe(consultaSchema)) consulta: z.infer<typeof consultaSchema>,
   ): Promise<TagGrupo[]> {
-    return this.servico.listar(consulta.incluirInativos === 'true')
+    return this.servico.listar(
+      consulta.incluirInativos === 'true',
+      consulta.aplicaA === 'todos' ? undefined : consulta.aplicaA,
+    )
   }
 
   @Documenta({
     resumo: 'Criar grupo de tags',
-    descricao: `${ESCRITA} Nome único entre os grupos (409 \`nome_duplicado\`).`,
+    descricao: `${ESCRITA} Nome único entre os grupos, de empresa e de contato (409 \`nome_duplicado\`). \`aplicaA\` (padrão \`empresa\`) não muda depois; grupo de contato não é obrigatório.`,
     corpo: criarTagGrupoSchema,
     resposta: tagGrupoSchema,
     status: 201,
@@ -97,7 +104,7 @@ export class TagsController {
 
   @Documenta({
     resumo: 'Alterar grupo de tags',
-    descricao: `${ESCRITA} Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no "obrigatório" ou inativar dá 409 \`grupo_de_sistema\`.`,
+    descricao: `${ESCRITA} Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no "obrigatório" ou inativar dá 409 \`grupo_de_sistema\`. Grupo de contato não vira obrigatório (409 \`grupo_de_contato\`). O destino (\`aplicaA\`) não muda.`,
     corpo: alterarTagGrupoSchema,
     resposta: tagGrupoSchema,
     erros: [400, 401, 403, 404, 409],

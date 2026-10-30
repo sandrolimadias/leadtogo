@@ -61,6 +61,10 @@ const nomeDe = (e: { nomeFantasia: string | null; razaoSocial: string }): string
  * nomes no lugar de ids). O mais recente primeiro. Quem vê o contato vê o histórico dele, **menos** as
  * linhas que citam uma empresa que o usuário não vê (o vendedor não descobre a carteira dos outros).
  */
+/** Os nomes das tags gravados na auditoria, separados por vírgula; nulo se não há nenhum. */
+const listaDeNomes = (v: unknown): string | null =>
+  Array.isArray(v) && v.length > 0 ? v.map(String).join(', ') : null
+
 @Injectable()
 export class HistoricoDoContatoService {
   constructor(private readonly ctx: ContextoTenantService) {}
@@ -227,6 +231,8 @@ export class HistoricoDoContatoService {
           mudancas.push({ campo: 'empresa', rotulo: 'Empresa', de: null, para: empresaCitada })
         }
         if (cargo) mudancas.push({ campo: 'cargo', rotulo: 'Cargo', de: null, para: cargo })
+        const tags = listaDeNomes(alteracoes['tags'])
+        if (tags) mudancas.push({ campo: 'tags', rotulo: 'Tags', de: null, para: tags })
         return {
           ...base,
           titulo:
@@ -284,6 +290,23 @@ export class HistoricoDoContatoService {
             : `Vínculo com ${nome} reativado`
           : `Vínculo com ${nome} alterado`
         return { ...base, titulo, mudancas: soSituacao ? [] : mudancas }
+      }
+      case 'alterar_tags': {
+        const mudancas: Mudanca[] = []
+        const adicionadas = listaDeNomes(alteracoes['adicionadas'])
+        const removidas = listaDeNomes(alteracoes['removidas'])
+        if (adicionadas) {
+          mudancas.push({
+            campo: 'adicionadas',
+            rotulo: 'Tags adicionadas',
+            de: null,
+            para: adicionadas,
+          })
+        }
+        if (removidas) {
+          mudancas.push({ campo: 'removidas', rotulo: 'Tags removidas', de: removidas, para: null })
+        }
+        return { ...base, titulo: 'Tags alteradas', mudancas }
       }
       case 'excluir':
         return { ...base, titulo: 'Contato excluído', mudancas: [] }

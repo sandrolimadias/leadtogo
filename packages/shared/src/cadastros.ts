@@ -35,6 +35,10 @@ export type NovaOrdemEntrada = z.infer<typeof novaOrdemSchema>
 export const selecaoDeTagSchema = z.enum(['unica', 'multipla'])
 export type SelecaoDeTag = z.infer<typeof selecaoDeTagSchema>
 
+/** A quem as tags de um grupo se aplicam. Escolhido na criação do grupo e nunca muda. */
+export const alvoDeTagSchema = z.enum(['empresa', 'contato'])
+export type AlvoDeTag = z.infer<typeof alvoDeTagSchema>
+
 /**
  * Tags que as regras do sistema usam pela `chave_sistema` (importação, "empresa vira Cliente",
  * Visitada e Contactada): podem ser renomeadas e recoloridas, mas nunca inativadas nem excluídas.
@@ -70,6 +74,8 @@ export const tagGrupoSchema = z
     sistema: z.boolean(),
     /** Tags aplicadas por regra (ex.: Visitação), não pelo usuário */
     automatico: z.boolean(),
+    /** Empresas (Status, Visitação...) ou contatos: as tags do grupo só valem para esse destino */
+    aplicaA: alvoDeTagSchema,
     ativo: z.boolean(),
     ordem: z.number().int(),
     tags: z.array(tagSchema),
@@ -82,8 +88,13 @@ export const criarTagGrupoSchema = z
     nome: nomeDeCadastroSchema,
     selecao: selecaoDeTagSchema,
     obrigatorio: z.boolean().default(false),
+    aplicaA: alvoDeTagSchema.default('empresa'),
   })
   .strict()
+  .refine((d) => !(d.aplicaA === 'contato' && d.obrigatorio), {
+    message: 'grupo de tags de contato não pode ser obrigatório',
+    path: ['obrigatorio'],
+  })
   .meta({ id: 'CriarTagGrupoEntrada' })
 export type CriarTagGrupoEntrada = z.input<typeof criarTagGrupoSchema>
 

@@ -2,7 +2,7 @@ import type { ListaDeContatos as ListaDeContatosDados, TagGrupo } from '@leadtog
 import type { TamanhoDePagina } from '@leadtogo/shared'
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
-import { Filter, Plus, Search, Upload, Users, X } from 'lucide-react'
+import { ChevronUp, Filter, Plus, Search, Upload, Users, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -26,6 +26,7 @@ import {
 import { FiltroDeEmpresa } from './filtro-de-empresa'
 import { CartoesDeContatos, TabelaDeContatos } from './lista-partes'
 import { rotaDoContato } from './rotas'
+import { useGruposDeTagsDeContato } from './tags'
 
 const rota = getRouteApi('/_autenticado/contatos/')
 
@@ -46,7 +47,9 @@ export function ListaDeContatos() {
   // O que a pessoa digita aparece na hora; a URL (e a consulta) acompanha depois de uma pausa
   const [texto, setTexto] = useState(busca.busca ?? '')
   const enviado = useRef(busca.busca ?? '')
+  // Os filtros ficam recolhidos atrás do botão "Filtros" (em todos os dispositivos) e abrem um abaixo do outro
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
+  const botaoDeFiltros = useRef<HTMLButtonElement>(null)
 
   const mudar = (patch: Partial<BuscaDeContatos>, voltarParaAPrimeira = true) =>
     void navegarNaLista({
@@ -108,6 +111,7 @@ export function ListaDeContatos() {
       return r.dados
     },
   })
+  const tagsDeContato = useGruposDeTagsDeContato()
   // Linhas por página: 25, 50 ou 100, lembrado por tabela nas preferências da pessoa
   const tamanho = usePorPagina('contatos')
   const lista = useQuery({
@@ -139,6 +143,12 @@ export function ListaDeContatos() {
   const opcoesDeTag = gruposDeTags.flatMap((g) =>
     g.tags.filter((t) => t.ativo).map((t) => ({ value: t.id, label: `${g.nome}: ${t.nome}` })),
   )
+  // Tags do contato: as ativas, e a da URL mesmo se foi inativada (para o filtro não sumir)
+  const opcoesDeTagDoContato = (tagsDeContato.data ?? []).flatMap((g) =>
+    g.tags
+      .filter((t) => (t.ativo && g.ativo) || t.id === busca.tagContato)
+      .map((t) => ({ value: t.id, label: `${g.nome}: ${t.nome}` })),
+  )
 
   const total = lista.data?.total
   const subtitulo =
@@ -147,35 +157,65 @@ export function ListaDeContatos() {
       : `${contagemDeContatos(total)} ${comFiltro ? 'com estes filtros' : 'na carteira'}`
   const filtrosAtivos = quantosFiltros(busca)
 
-  const selects = (
+  const fecharFiltros = () => {
+    setFiltrosAbertos(false)
+    botaoDeFiltros.current?.focus()
+  }
+
+  const filtros = (
     <div
-      className={cn('grid min-w-0 flex-[3] gap-2', celular ? 'w-full grid-cols-2' : 'grid-cols-4')}
-      style={celular ? undefined : { minWidth: 4 * 200 + 3 * 8 }}
+      id="filtros-de-contatos"
+      role="region"
+      aria-label="Filtros"
+      className="flex w-full flex-col gap-3 md:max-w-[420px]"
     >
-      <FiltroDeEmpresa valor={busca.empresa} aoMudar={(empresa) => mudar({ empresa })} />
+      <FiltroDeEmpresa
+        label="Empresa"
+        placeholder="Todas"
+        valor={busca.empresa}
+        aoMudar={(empresa) => mudar({ empresa })}
+      />
       <Select
+        label="Cargo"
         aria-label="Cargo"
-        placeholder="Cargo: todos"
+        placeholder="Todos"
         options={cargos.map((c) => ({ value: c, label: c }))}
         value={busca.cargo ?? ''}
         onChange={(e) => mudar({ cargo: e.target.value || undefined })}
       />
       <Select
+        label="Papel na decisão"
         aria-label="Papel na decisão"
-        placeholder="Papel: todos"
+        placeholder="Todos"
         options={(papeis.data ?? [])
           .filter((p) => p.ativo || p.id === busca.papel)
           .map((p) => ({ value: p.id, label: p.nome }))}
         value={busca.papel ?? ''}
         onChange={(e) => mudar({ papel: e.target.value || undefined })}
       />
+      {opcoesDeTagDoContato.length > 0 ? (
+        <Select
+          label="Tag do contato"
+          aria-label="Tag do contato"
+          placeholder="Todas"
+          options={opcoesDeTagDoContato}
+          value={busca.tagContato ?? ''}
+          onChange={(e) => mudar({ tagContato: e.target.value || undefined })}
+        />
+      ) : null}
       <Select
+        label="Tag da empresa"
         aria-label="Tag da empresa"
-        placeholder="Tag da empresa: todas"
+        placeholder="Todas"
         options={opcoesDeTag}
         value={busca.tag ?? ''}
         onChange={(e) => mudar({ tag: e.target.value || undefined })}
       />
+      <div>
+        <Button variant="ghost" icon={ChevronUp} onClick={fecharFiltros}>
+          Fechar filtros
+        </Button>
+      </div>
     </div>
   )
 
@@ -214,24 +254,31 @@ export function ListaDeContatos() {
         )}
       </div>
 
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border-border bg-surface p-3 md:border">
-        <TextField
-          icon={Search}
-          placeholder="Nome, telefone ou e-mail"
-          aria-label="Buscar contatos"
-          className="min-w-0 flex-1 md:min-w-64 md:flex-[2]"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-        />
-        {celular ? (
-          <>
-            <Button
-              icon={Filter}
-              onClick={() => setFiltrosAbertos((a) => !a)}
-              aria-expanded={filtrosAbertos}
-            >
-              {filtrosAtivos > 0 ? `Filtros · ${filtrosAtivos}` : 'Filtros'}
+      <div className="flex flex-col gap-3 rounded-lg border-border bg-surface p-3 md:border">
+        <div className="flex flex-wrap items-end gap-2">
+          <TextField
+            icon={Search}
+            placeholder="Nome, telefone ou e-mail"
+            aria-label="Buscar contatos"
+            className="min-w-0 flex-1 md:min-w-64"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+          />
+          <Button
+            ref={botaoDeFiltros}
+            icon={Filter}
+            onClick={() => setFiltrosAbertos((a) => !a)}
+            aria-expanded={filtrosAbertos}
+            aria-controls="filtros-de-contatos"
+          >
+            {filtrosAtivos > 0 ? `Filtros · ${filtrosAtivos}` : 'Filtros'}
+          </Button>
+          {comFiltro ? (
+            <Button variant="ghost" icon={X} onClick={limpar}>
+              Limpar filtros
             </Button>
+          ) : null}
+          {celular ? (
             <IconButton
               icon={Plus}
               label="Novo contato"
@@ -239,14 +286,9 @@ export function ListaDeContatos() {
               size="lg"
               onClick={novo}
             />
-          </>
-        ) : null}
-        {celular && !filtrosAbertos ? null : selects}
-        {comFiltro ? (
-          <Button variant="ghost" icon={X} onClick={limpar}>
-            Limpar filtros
-          </Button>
-        ) : null}
+          ) : null}
+        </div>
+        {filtrosAbertos ? filtros : null}
       </div>
 
       <Conteudo

@@ -22,6 +22,8 @@ import { carimbos, chaveUuid } from './tipos.js'
 // RLS, FORCE e GRANTs ficam na migração (aplicar_rls_tenant).
 
 export const selecaoTag = pgEnum('selecao_tag', ['unica', 'multipla'])
+/** A quem o grupo de tags se aplica: empresas (Status, Visitação...) ou contatos (plano_contatos_filtros_e_tags.md) */
+export const alvoDeTag = pgEnum('alvo_de_tag', ['empresa', 'contato'])
 export const contaComo = pgEnum('conta_como', ['visita', 'contato', 'nenhum'])
 export const statusOportunidade = pgEnum('status_oportunidade', [
   'ativo',
@@ -123,6 +125,8 @@ export const tagGrupos = pgTable(
     /** Tags aplicadas por regra (ex.: Visitação), não pelo usuário */
     automatico: boolean().notNull().default(false),
     chaveSistema: text(),
+    /** Escolhido na criação e nunca muda: as tags de um grupo só valem para empresas ou só para contatos */
+    aplicaA: alvoDeTag().notNull().default('empresa'),
   },
   (t) => [
     nomeUnico('tag_grupos', t),

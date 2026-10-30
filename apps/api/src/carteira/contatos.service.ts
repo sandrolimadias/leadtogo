@@ -16,6 +16,12 @@ import { lerContato as lerContatoPublico } from '../integracoes/publica/leitura.
 import { emitirEvento, paraSnake } from '../integracoes/webhooks/eventos.js'
 import { lerContato } from './contato-leitura.js'
 import {
+  conferirTagsDoContato,
+  gravarDiferencaDeTagsDoContato,
+  nomesDasTags,
+  tagsAtuaisDoContato,
+} from './contato-tags.js'
+import {
   type EscopoDaCarteira,
   escopoDaCarteira,
   podeEditar,
@@ -92,6 +98,7 @@ export class ContatosService {
     }
     if (dados.vinculo) await this.exigirEmpresaEditavel(db, escopo, dados.vinculo.empresaId)
     if (dados.papelDecisaoId) await this.exigirPapel(db, dados.papelDecisaoId)
+    const tagsIniciais = await conferirTagsDoContato(db, new Set(), dados.tagIds ?? [])
     const telefones = normalizarTelefonesDaEmpresa(dados.telefones ?? [])
     const emails = normalizarEmails(dados.emails ?? [])
     if (!dados.ignorarDuplicado) {
@@ -132,6 +139,16 @@ export class ContatosService {
         principal: dados.vinculo.principal === true,
       })
     }
+    if (tagsIniciais.size > 0) {
+      await gravarDiferencaDeTagsDoContato(
+        db,
+        tenantId,
+        id,
+        new Set(),
+        tagsIniciais,
+        escopo.membroId,
+      )
+    }
     await this.auditoria.registrar({
       entidade: 'contato',
       entidadeId: id,
@@ -141,6 +158,7 @@ export class ContatosService {
         ...(dados.vinculo
           ? { empresaId: dados.vinculo.empresaId, cargo: dados.vinculo.cargo ?? null }
           : {}),
+        ...(tagsIniciais.size > 0 ? { tags: await nomesDasTags(db, [...tagsIniciais]) } : {}),
       },
     })
     await emitirEvento(this.ctx.db(), {
@@ -167,8 +185,11 @@ export class ContatosService {
       emails: emailsNovos,
       aniversario,
       ignorarDuplicado,
+      tagIds,
       ...escalares
     } = dados
+    // As tags primeiro: tag inválida recusa o pedido inteiro (a transação desfaz o que veio depois)
+    const mudouTags = tagIds ? await this.gravarTags(db, id, tagIds) : false
     const novo: Record<string, unknown> = {
       ...escalares,
       ...(aniversario !== undefined && {
@@ -207,6 +228,7 @@ export class ContatosService {
         JSON.stringify(emails.map(assinaturaE).sort())
 
     if (Object.keys(mudancas).length === 0 && !mudouTelefones && !mudouEmails) {
+      if (mudouTags) await this.tocar(db, id, escopo.membroId)
       return this.detalhar(id)
     }
 
@@ -276,6 +298,18 @@ export class ContatosService {
     return this.detalhar(id)
   }
 
+  /**
+   * PUT /contatos/{id}/tags: as tags que o contato passa a ter. Quem edita o contato edita as tags
+   * (perfil e regra de carteira), como o resto do cadastro.
+   */
+  async definirTags(id: string, tagIds: string[]): Promise<Contato> {
+    const db = this.ctx.db()
+    const escopo = await escopoDaCarteira(this.ctx)
+    await this.carregarEditavel(db, escopo, id)
+    if (await this.gravarTags(db, id, tagIds)) await this.tocar(db, id, escopo.membroId)
+    return this.detalhar(id)
+  }
+
   /** Exclusão lógica, só admin e gestor, sem lixeira. */
   async excluir(id: string): Promise<void> {
     const db = this.ctx.db()
@@ -314,6 +348,39 @@ export class ContatosService {
   }
 
   // ---- apoio (usado também pelos vínculos e pela conversão de sócio) ----
+
+  /** Confere e grava as tags do contato; mudou algo: auditoria `alterar_tags` com os nomes. */
+  private async gravarTags(db: Transacao, id: string, tagIds: readonly string[]): Promise<boolean> {
+    const atuais = await tagsAtuaisDoContato(db, id)
+    const finais = await conferirTagsDoContato(db, atuais, tagIds)
+    const { adicionadas, removidas } = await gravarDiferencaDeTagsDoContato(
+      db,
+      this.ctx.tenantId,
+      id,
+      atuais,
+      finais,
+      this.ctx.membro.id,
+    )
+    if (adicionadas.length === 0 && removidas.length === 0) return false
+    await this.auditoria.registrar({
+      entidade: 'contato',
+      entidadeId: id,
+      acao: 'alterar_tags',
+      alteracoes: {
+        adicionadas: await nomesDasTags(db, adicionadas),
+        removidas: await nomesDasTags(db, removidas),
+      },
+    })
+    return true
+  }
+
+  /** Só as tags mudaram: o contato conta como atualizado agora, por quem mudou. */
+  private async tocar(db: Transacao, id: string, membroId: string): Promise<void> {
+    await db
+      .update(contatos)
+      .set({ atualizadoEm: new Date(), atualizadoPor: membroId })
+      .where(eq(contatos.id, id))
+  }
 
   /** O contato que o usuário vê E edita; 404 se não vê, 403 se só vê. */
   async carregarEditavel(db: Transacao, escopo: EscopoDaCarteira, id: string) {

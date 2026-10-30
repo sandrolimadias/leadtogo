@@ -688,7 +688,8 @@ export function FichaDaEmpresa() {
         <EditarTags
           aberto
           aoFechar={() => setEditandoTags(false)}
-          empresa={e}
+          nome={e.nome}
+          atuais={e.tags.map((t) => t.id)}
           grupos={grupos}
           salvando={salvandoTags}
           erro={erroDasTags}

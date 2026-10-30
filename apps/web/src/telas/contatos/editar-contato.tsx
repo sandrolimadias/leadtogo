@@ -19,8 +19,16 @@ import {
   formularioDoContato,
   validarContato,
 } from './formulario-dados'
-import { Consentimento, DadosDaPessoa, ListaDeEmails, ListaDeTelefones, Secao } from './formulario'
+import {
+  Consentimento,
+  DadosDaPessoa,
+  ListaDeEmails,
+  ListaDeTelefones,
+  Secao,
+  TagsDoContato,
+} from './formulario'
 import { rotaDoContato } from './rotas'
+import { temTagsParaEscolher, useGruposDeTagsDeContato } from './tags'
 
 const rota = getRouteApi('/_autenticado/contatos/$contatoId_/editar')
 
@@ -39,6 +47,7 @@ function Formulario({ contato }: { contato: Contato }) {
     setF((atual) => ({ ...atual, ...patch }))
     setDuplicados(null)
   }
+  const gruposDeTags = useGruposDeTagsDeContato()
   const papeis = useQuery({
     queryKey: ['cadastros', 'papeis-decisao'],
     retry: false,
@@ -96,6 +105,11 @@ function Formulario({ contato }: { contato: Contato }) {
         <Secao titulo="Dados da pessoa">
           <DadosDaPessoa f={f} mudar={mudar} papeis={papeis ?? []} erros={erros} />
         </Secao>
+        {gruposDeTags.data && (temTagsParaEscolher(gruposDeTags.data) || f.tagIds.length > 0) ? (
+          <Secao titulo="Tags">
+            <TagsDoContato f={f} mudar={mudar} grupos={gruposDeTags.data} />
+          </Secao>
+        ) : null}
         <Secao titulo="Telefones">
           <ListaDeTelefones f={f} mudar={mudar} />
         </Secao>

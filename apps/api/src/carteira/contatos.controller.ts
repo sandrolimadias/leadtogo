@@ -19,6 +19,8 @@ import {
   contatoSchema,
   type CriarContato,
   criarContatoSchema,
+  type DefinirTagsDoContato,
+  definirTagsDoContatoSchema,
 } from '@leadtogo/shared'
 import {
   Body,
@@ -30,6 +32,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
@@ -59,7 +62,7 @@ export class ContatosController {
 
   @Documenta({
     resumo: 'Lista de contatos',
-    descricao: `${CARTEIRA} Busca por nome (sem acento), e-mail ou telefone (pedaço, com ou sem máscara). Os filtros \`empresaId\`, \`cargo\` e \`tagId\` (tag da empresa) valem juntos para o mesmo vínculo ativo; \`papelDecisaoId\` filtra a pessoa. Cada item traz só as empresas que o usuário vê, o telefone principal (E.164), o e-mail principal e se pediu para não ser contatado. Ordem por nome (padrão) ou data de cadastro, paginada.`,
+    descricao: `${CARTEIRA} Busca por nome (sem acento), e-mail ou telefone (pedaço, com ou sem máscara). Os filtros \`empresaId\`, \`cargo\` e \`tagId\` (tag da empresa) valem juntos para o mesmo vínculo ativo; \`papelDecisaoId\` e \`tagContatoId\` (tag do próprio contato) filtram a pessoa. Cada item traz só as empresas que o usuário vê, o telefone principal (E.164), o e-mail principal, as tags do contato e se pediu para não ser contatado. Ordem por nome (padrão) ou data de cadastro, paginada.`,
     consulta: consultaDeContatosSchema,
     resposta: listaDeContatosSchema,
     erros: [400, 401, 403],
@@ -113,7 +116,7 @@ export class ContatosController {
 
   @Documenta({
     resumo: 'Editar contato',
-    descricao: `${CARTEIRA} Só o que vier muda; \`telefones\` e \`emails\`, se vierem, substituem a lista toda. Mudar \`aceitaWhatsapp\` ou \`aceitaEmail\` atualiza a data e a origem do consentimento. Telefone ou e-mail novo que já é de outro contato: 409 \`contato_duplicado\` (reenvie com \`ignorarDuplicado\`). Os vínculos com empresas têm rotas próprias. Registra na auditoria o antes e o depois.`,
+    descricao: `${CARTEIRA} Só o que vier muda; \`telefones\` e \`emails\`, se vierem, substituem a lista toda. Mudar \`aceitaWhatsapp\` ou \`aceitaEmail\` atualiza a data e a origem do consentimento. Telefone ou e-mail novo que já é de outro contato: 409 \`contato_duplicado\` (reenvie com \`ignorarDuplicado\`). \`tagIds\`, se vier, substitui as tags do contato (como \`PUT /tags\`). Os vínculos com empresas têm rotas próprias. Registra na auditoria o antes e o depois.`,
     corpo: alterarContatoSchema,
     resposta: contatoSchema,
     erros: [400, 401, 403, 404, 409],
@@ -125,6 +128,22 @@ export class ContatosController {
     @Body(new ZodPipe(alterarContatoSchema)) dados: AlterarContato,
   ): Promise<Contato> {
     return this.servico.alterar(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Definir as tags do contato',
+    descricao: `${CARTEIRA} Substitui as tags do contato. Só tags de grupos de tags de contato (tag de empresa, inexistente ou de outra conta: 400 \`tag_invalida\`); tag inativa só continua se já estava (400 \`tag_inativa\`); grupo de seleção única aceita uma (400 \`grupo_selecao_unica\`). Quem edita o contato edita as tags. Registra na auditoria (\`alterar_tags\`). Devolve o contato.`,
+    corpo: definirTagsDoContatoSchema,
+    resposta: contatoSchema,
+    erros: [400, 401, 403, 404],
+  })
+  @Permissao('contatos.editar')
+  @Put(':id/tags')
+  definirTags(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(definirTagsDoContatoSchema)) dados: DefinirTagsDoContato,
+  ): Promise<Contato> {
+    return this.servico.definirTags(id, dados.tagIds)
   }
 
   @Documenta({

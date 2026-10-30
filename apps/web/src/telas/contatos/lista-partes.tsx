@@ -1,8 +1,8 @@
 import type { ItemDaListaDeContatos } from '@leadtogo/api-client'
-import { linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
+import { type CorDeTag, linkDeLigacao, linkDoWhatsapp } from '@leadtogo/shared'
 import { ChevronRight, Mail, MessageCircle, Phone, Star } from 'lucide-react'
 
-import { Avatar, Badge } from '@leadtogo/ui/exibicao'
+import { Avatar, Badge, Tag } from '@leadtogo/ui/exibicao'
 import { cn } from '@leadtogo/ui/cn'
 
 import { AcaoDoCartao } from '../empresas/lista-partes'
@@ -30,6 +30,19 @@ function EmpresaDoVinculo({ v }: { v: Vinculo }) {
   )
 }
 
+/** As tags do contato (todas, quebrando linha, na ordem dos grupos), como na lista de empresas. */
+function TagsDoContato({ tags }: { tags: ItemDaListaDeContatos['tags'] }) {
+  return (
+    <span className="flex flex-wrap gap-1">
+      {tags.map((t) => (
+        <Tag key={t.id} color={t.cor as CorDeTag}>
+          {t.nome}
+        </Tag>
+      ))}
+    </span>
+  )
+}
+
 const NaoQuerContato = () => (
   <Badge tone="warning" className="w-fit">
     Não quer contato
@@ -50,6 +63,7 @@ export function TabelaDeContatos({
         <thead className="bg-surface-sunken">
           <tr>
             <th className={cabecalho}>Contato</th>
+            <th className={cabecalho}>Tags</th>
             <th className={cabecalho}>Empresas</th>
             <th className={cabecalho}>Cargo</th>
             <th className={cabecalho}>Telefone</th>
@@ -76,6 +90,13 @@ export function TabelaDeContatos({
                     {c.naoQuerContato ? <NaoQuerContato /> : null}
                   </span>
                 </button>
+              </td>
+              <td className={celula}>
+                {c.tags.length > 0 ? (
+                  <TagsDoContato tags={c.tags} />
+                ) : (
+                  <span className="text-ink-muted">—</span>
+                )}
               </td>
               <td className={celula}>
                 <div className="flex flex-col gap-0.5">
@@ -157,6 +178,11 @@ export function CartoesDeContatos({
                   {outras > 0 ? (
                     <span className="text-[13px] text-ink-muted">
                       {outras === 1 ? '+ 1 outra empresa' : `+ ${outras} outras empresas`}
+                    </span>
+                  ) : null}
+                  {c.tags.length > 0 ? (
+                    <span className="mt-1">
+                      <TagsDoContato tags={c.tags} />
                     </span>
                   ) : null}
                   {c.naoQuerContato ? <NaoQuerContato /> : null}

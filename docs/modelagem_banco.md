@@ -297,7 +297,7 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 | `verticais` | cor | Empresa → 1 vertical |
 | `faixas_funcionarios` | minimo int, maximo int | Ex.: 1–9, 10–49, 50–99, 100–499, 500+ |
 | `faixas_faturamento` | minimo numeric, maximo numeric | Ex.: até 360 mil, até 4,8 mi, até 30 mi, acima |
-| `tag_grupos` | selecao enum(unica/multipla), obrigatorio bool, sistema bool, automatico bool | Status, Visitação… |
+| `tag_grupos` | selecao enum(unica/multipla), obrigatorio bool, sistema bool, automatico bool, **aplica_a enum(empresa/contato)** (0043) | Status, Visitação… (empresa); Perfil, Relacionamento… (contato) |
 | `tags` | tag_grupo_id FK, cor char(7), chave_sistema text null | `chave_sistema` identifica tags usadas pelas regras automáticas (ex.: `visitada`, `cliente`), mesmo que o cliente as renomeie |
 | `tipos_atividade` | icone, cor, conta_como enum(visita/contato/nenhum), exige_empresa bool, sincroniza_agenda bool, chave_sistema | Ligação, WhatsApp, E-mail, Visita, Reunião, **Tarefa** |
 | `funis` | padrao bool | |
@@ -786,13 +786,13 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 | Referência 🌐 | cnaes, municipios, estados, paises, portes, qualificacoes_socio, receita_consultas | 7 |
 | Cadastros auxiliares | verticais, faixas_funcionarios, faixas_faturamento, tag_grupos, tags, tipos_atividade, funis, funil_fases, origens, motivos, solucoes, papeis_decisao, etiquetas, campos_personalizados, produtos | 15 |
 | Empresas | empresas, empresa_telefones, empresa_cnaes, empresa_socios, empresa_tags, empresa_tags_historico | 6 |
-| Contatos | contatos, empresa_contatos, contato_telefones, contato_emails | 4 |
+| Contatos | contatos, empresa_contatos, contato_telefones, contato_emails, contato_tags (0043) | 5 |
 | Atividades | atividades, atividade_lembretes, atividade_recorrencias, atividade_contatos, atividade_checklist, atividade_etiquetas, quadros, quadro_colunas, quadro_cards | 9 |
 | Oportunidades | oportunidades, oportunidade_itens, oportunidade_contatos, oportunidade_historico | 4 |
 | Prospecção | prospeccoes, prospeccao_resultados | 2 |
 | Sistema | arquivos, comentarios, notificacoes, preferencias_notificacao, filtros_salvos, importacoes, auditoria, eventos_outbox | 8 |
 | Integrações (API aberta) | api_chaves (0038), idempotencia_chaves (0039), webhooks e webhook_entregas (0040) | 4 |
-| **Fase 1** | | **61** |
+| **Fase 1** | | **62** |
 | Futuras 🔮 | contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp, financeiro_titulos, financeiro_situacoes | 10 |
 
 ---
@@ -1004,3 +1004,16 @@ Uma tabela nova, com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_te
 | `buscas_recentes` | membro_id (FK `membros`, `ON DELETE CASCADE`), termo (2 a 100, como a pessoa digitou), termo_comparavel (sem acento, minúsculo, só letras e números: a chave de "mesmo termo"), buscado_em | **Único** em `(tenant_id, membro_id, termo_comparavel)`; índice `(tenant_id, membro_id, buscado_em DESC)`. Sem `excluido_em`: apagar um termo é apagar de fato (LGPD) |
 
 **Só do próprio membro:** a política do banco isola o tenant, e a API filtra toda leitura e escrita pelo membro da sessão (nem o admin lê o histórico de outra pessoa). A própria API mantém **no máximo 10** por membro (apaga as mais antigas na mesma transação da gravação). O membro não é excluído, é **desativado**: ao desativar, a API apaga o histórico dele (`PATCH` do membro); o `CASCADE` cobre uma exclusão física.
+
+## Tags de contato (migração 0043, só expansão; plano em `plano_contatos_filtros_e_tags.md`)
+
+**Coluna nova:** `tag_grupos.aplica_a` (enum `alvo_de_tag`: `empresa` · `contato`, padrão `empresa`; os grupos que já existiam ficam como `empresa`). É escolhida na criação do grupo e **não muda depois** (a API recusa). Os grupos de contato não são obrigatórios nem automáticos e não têm `chave_sistema`. O nome do grupo continua único por empresa, entre os dois destinos.
+
+Uma tabela nova, com `tenant_id`, **RLS habilitado e forçado** (`aplicar_rls_tenant`) e teste de isolamento (fábrica em `packages/db/src/testes/fabricas.ts` e os testes de `contatos.test.ts`):
+
+| Tabela | Colunas principais | Observação |
+|---|---|---|
+| `contato_tags` | contato_id (FK `contatos`), tag_id (FK `tags`), aplicada_em, aplicada_por (FK `membros`) | PK `(contato_id, tag_id)`; índice `(tenant_id, tag_id)` (filtro da lista e "tag em uso"). Como `empresa_tags`, sem `excluido_em`: tirar a tag apaga a linha, e a auditoria do contato (`alterar_tags`) guarda o que mudou. Sem tabela de histórico |
+
+**Gatilho `app_conferir_alvo_da_tag()`** (`AFTER INSERT OR UPDATE OF tag_id`, em `empresa_tags` e em `contato_tags`): recusa (`check_violation`, `tag_do_alvo_certo`) a tag cujo grupo não é do destino da tabela. Roda com a credencial de quem grava, então a tag de outra empresa (escondida pelo RLS) também é recusada. É a garantia final de que uma tela esquecida não grava tag de contato em empresa nem a de empresa em contato.
+

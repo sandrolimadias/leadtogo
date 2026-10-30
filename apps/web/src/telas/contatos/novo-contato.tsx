@@ -26,8 +26,10 @@ import {
   ListaDeEmails,
   ListaDeTelefones,
   Secao,
+  TagsDoContato,
 } from './formulario'
 import { rotaDoContato } from './rotas'
+import { temTagsParaEscolher, useGruposDeTagsDeContato } from './tags'
 
 const rota = getRouteApi('/_autenticado/contatos/novo')
 
@@ -71,6 +73,7 @@ export function NovoContato() {
 
   // sem `contatos.criar_sem_empresa`, a empresa é obrigatória (senão a pessoa não veria o contato)
   const empresaObrigatoria = !usePermissoes().pode('contatos.criar_sem_empresa')
+  const gruposDeTags = useGruposDeTagsDeContato()
   const papeis = useQuery({
     queryKey: ['cadastros', 'papeis-decisao'],
     retry: false,
@@ -133,6 +136,11 @@ export function NovoContato() {
         <Secao titulo="Dados da pessoa">
           <DadosDaPessoa f={f} mudar={mudar} papeis={papeis ?? []} erros={erros} />
         </Secao>
+        {gruposDeTags.data && (temTagsParaEscolher(gruposDeTags.data) || f.tagIds.length > 0) ? (
+          <Secao titulo="Tags">
+            <TagsDoContato f={f} mudar={mudar} grupos={gruposDeTags.data} />
+          </Secao>
+        ) : null}
         <Secao titulo="Telefones">
           <ListaDeTelefones f={f} mudar={mudar} />
         </Secao>
