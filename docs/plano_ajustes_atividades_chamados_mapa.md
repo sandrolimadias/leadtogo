@@ -58,12 +58,12 @@ Em `apps/web/src/telas/chamados/detalhe.tsx`, a primeira mensagem (a descrição
 ### 3.2 Correção
 
 - Nas três `<p>` (descrição, `Bolha`, nota interna): acrescentar `[overflow-wrap:anywhere]` (o mesmo usado em `atividades/lista.tsx`) e `min-w-0` no `<li>` do balão.
-- Conferir a tela de chamado do **Portal do cliente** (mesma conversa vista pelo cliente) e aplicar o mesmo se tiver o problema.
+- Conferir a tela de chamado do **Portal do cliente** (mesma conversa vista pelo cliente) e aplicar o mesmo se tiver o problema. *Feito em 31/10/2026: o Portal tinha o mesmo problema nos balões e na descrição e recebeu a mesma quebra.*
 
 ### 3.3 Testes
 
 - **Vitest** (`chamados/detalhe.test.tsx`): o parágrafo da descrição e o da mensagem têm a classe de quebra.
-- **E2E** (`chamados.spec.ts`): chamado com descrição de uma "palavra" de 300 caracteres; `scrollWidth <= clientWidth` do balão no desktop e no celular.
+- Portal (`apps/portal/src/testes/chamados.test.tsx`): o balão da mensagem tem a classe de quebra. O E2E de largura previsto na proposta ficou de fora: a quebra é uma regra de CSS simples, já usada em Atividades, e os testes de unidade garantem que ela está nos cinco textos.
 
 ## 4. M1: tirar "Clientes sem visita 60+ dias"
 

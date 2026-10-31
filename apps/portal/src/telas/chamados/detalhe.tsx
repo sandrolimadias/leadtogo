@@ -92,7 +92,7 @@ function Mensagem({ chamadoId, m }: { chamadoId: string; m: MensagemDoPortal }) 
       </span>
       <div
         className={cn(
-          'max-w-[85%] rounded-md px-3 py-2 text-sm leading-5 whitespace-pre-wrap',
+          'max-w-[85%] rounded-md px-3 py-2 text-sm leading-5 whitespace-pre-wrap [overflow-wrap:anywhere]',
           m.autor.voce
             ? 'bg-brand-soft'
             : m.autor.daEquipe
@@ -387,7 +387,7 @@ export function TelaDetalheDoChamado({ chamadoId }: { chamadoId: string }) {
               <EstadoDoChamado estado={chamado.estado} />
             </div>
             {chamado.descricao ? (
-              <p className="m-0 text-sm leading-5 whitespace-pre-wrap text-ink-muted">
+              <p className="m-0 text-sm leading-5 whitespace-pre-wrap text-ink-muted [overflow-wrap:anywhere]">
                 {chamado.descricao}
               </p>
             ) : null}

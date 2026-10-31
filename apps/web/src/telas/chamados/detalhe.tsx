@@ -146,12 +146,12 @@ function Anexo({
 
 function Bolha({ chamadoId, m }: { chamadoId: string; m: MensagemDoChamado }) {
   return (
-    <li className="flex flex-col gap-1 rounded-md border border-border bg-surface px-3 py-2">
+    <li className="flex min-w-0 flex-col gap-1 rounded-md border border-border bg-surface px-3 py-2">
       <div className="flex flex-wrap items-baseline gap-2 text-xs text-ink-muted">
         <strong className="text-[13px] text-ink">{m.autor.nome}</strong>
         <span className="tabular-nums">{dataHora(m.criadoEm)}</span>
       </div>
-      <p className="m-0 whitespace-pre-wrap text-sm">{m.corpo}</p>
+      <p className="m-0 text-sm whitespace-pre-wrap [overflow-wrap:anywhere]">{m.corpo}</p>
       {m.anexos.length > 0 ? (
         <ul aria-label="Anexos" className="m-0 mt-1 flex list-none flex-col gap-1 p-0">
           {m.anexos.map((a) => (
@@ -428,7 +428,7 @@ function NotasInternas({ c, aoAtualizar }: { c: Chamado; aoAtualizar: (n: Chamad
                 <strong className="text-[13px] text-ink">{n.autor.nome}</strong>
                 <span className="tabular-nums">{dataHora(n.criadoEm)}</span>
               </div>
-              <p className="m-0 whitespace-pre-wrap text-sm">{n.corpo}</p>
+              <p className="m-0 text-sm whitespace-pre-wrap [overflow-wrap:anywhere]">{n.corpo}</p>
             </li>
           ))}
         </ul>
@@ -685,13 +685,15 @@ export function TelaDoChamado({ chamadoId }: { chamadoId: string }) {
           <section aria-label="Conversa" className="flex flex-col gap-2">
             <h2 className="m-0 text-base font-semibold">Conversa</h2>
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              <li className="flex flex-col gap-1 rounded-md border border-border bg-surface-sunken px-3 py-2">
+              <li className="flex min-w-0 flex-col gap-1 rounded-md border border-border bg-surface-sunken px-3 py-2">
                 <div className="flex flex-wrap items-baseline gap-2 text-xs text-ink-muted">
                   <strong className="text-[13px] text-ink">{c.solicitante.nome}</strong>
                   <span className="tabular-nums">{dataHora(c.criadoEm)}</span>
                   <span>abriu o chamado</span>
                 </div>
-                <p className="m-0 text-sm whitespace-pre-wrap">{c.descricao ?? 'Sem descrição.'}</p>
+                <p className="m-0 text-sm whitespace-pre-wrap [overflow-wrap:anywhere]">
+                  {c.descricao ?? 'Sem descrição.'}
+                </p>
               </li>
               {c.mensagens.map((m) => (
                 <Bolha key={m.id} chamadoId={c.id} m={m} />
