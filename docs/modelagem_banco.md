@@ -1002,6 +1002,14 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 - **Cargo pelo próprio cliente:** `empresa_contatos` deixa de ser só leitura para o portal **na linha do próprio contato com a empresa da sessão** (política `portal_escopo_upd`). O gatilho `empresa_contatos_portal_so_cargo` (`app_portal_so_cargo()`) devolve a linha ao que era e mantém só `cargo` e `atualizado_em` quando a sessão é do portal (principal, ativo, empresa e contato continuam com a equipe).
 - **Minha empresa:** `empresa_telefones` e `empresa_cnaes` trocam o `portal_negado` por leitura da **própria empresa-cliente** (`portal_escopo_sel`), sem gravar (`portal_so_leitura_*`).
 
+## Portal, Fase 4B (migração 0046, só expansão)
+
+| Tabela | Colunas principais | Regras |
+|---|---|---|
+| `portal_codigos` | email (citext), codigo_hash, expira_em, tentativas (0 a 5), usado_em, ip | Código de 6 dígitos da entrada: só o hash (SHA-256 de `email:código`), 10 minutos, uso único; um vivo por e-mail e tenant (pedir de novo marca o anterior como usado) |
+
+**Isolamento:** RLS do tenant e `portal_negado` (a sessão do portal nunca enxerga). O código chega sem o tenant, então a função `app_portal_conferir_codigo(email, hash)` (SECURITY DEFINER do dono, como `app_portal_acessos_por_email`) acha o código vivo que bate e devolve `(tenant_id, codigo_id)`, ou conta uma tentativa em todos os códigos vivos do e-mail; a API **gasta** o código na transação do tenant (`UPDATE … WHERE usado_em IS NULL`), depois de conferir o aviso de privacidade. Políticas só do dono, travadas em `app.portal_codigo` e `app.portal_email`.
+
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 
 **Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (busca das oportunidades pelo título, sem acento). Empresas e contatos já tinham os seus (0017 e 0018). Os índices trigram são criados por SQL na migração e não aparecem no schema do Drizzle nem nos snapshots, por isso o `db:generate` não os enxerga nem tenta apagá-los.

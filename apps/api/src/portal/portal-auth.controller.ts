@@ -5,7 +5,10 @@ import {
   type ConsumirLinkEntrada,
   consumirLinkSchema,
   consultaDoLinkSchema,
+  type EntrarComCodigoEntrada,
+  entrarComCodigoSchema,
   iniciarSegundoFatorRespostaSchema,
+  listaDeEmpresasDoAcessoSchema,
   listaDeSessoesSchema,
   MENSAGEM_DE_ENTRADA_ENVIADA,
   type PedirEntradaEntrada,
@@ -19,6 +22,8 @@ import {
   sessaoDoPortalSchema,
   type TrocarEmailEntrada,
   trocarEmailSchema,
+  type TrocarEmpresaEntrada,
+  trocarEmpresaSchema,
   VALIDADE_DA_SESSAO_DIAS,
 } from '@leadtogo/shared'
 import {
@@ -77,9 +82,9 @@ export class PortalAuthController {
   // ------------------------------------------------------------------------------------ sem sessão
 
   @Documenta({
-    resumo: 'Pedir o link de entrada',
+    resumo: 'Pedir o código de entrada',
     descricao:
-      'Público. Envia ao e-mail um link de entrada de uso único, válido por 15 minutos. A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail.',
+      'Público. Envia ao e-mail um código de 6 dígitos, de uso único, válido por 10 minutos (um por CRM, mesmo que o e-mail acesse várias empresas-clientes). A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail. Pedir de novo invalida o código anterior.',
     corpo: pedirEntradaSchema,
     resposta: respostaDePedirEntradaSchema,
     status: 202,
@@ -95,6 +100,35 @@ export class PortalAuthController {
   ): { mensagem: string } {
     this.entrada.pedirEntrada(dados.email, req.ip)
     return { mensagem: MENSAGEM_DE_ENTRADA_ENVIADA }
+  }
+
+  @Documenta({
+    resumo: 'Entrar com o código',
+    descricao:
+      'Público. Confere o código de 6 dígitos (uso único, 10 minutos; 5 erros queimam o código) e abre a sessão no cookie `HttpOnly`, no acesso usado por último. Quem acessa mais de uma empresa-cliente escolhe depois em `/portal/empresas`. Código errado ou vencido: 401 `codigo_invalido`. No primeiro acesso exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`, sem gastar o código).',
+    corpo: entrarComCodigoSchema,
+    resposta: sessaoDoPortalSchema,
+    erros: [400, 401, 403, 422, 429, 503],
+  })
+  @PortalPublica()
+  @Post('entrada/codigo')
+  @HttpCode(200)
+  @Limite({ nome: 'portal-entrada-codigo', max: 30, janelaS: 3600, falhaFechada: true })
+  async entrarComCodigo(
+    @Body(new ZodPipe(entrarComCodigoSchema)) dados: EntrarComCodigoEntrada,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SessaoDoPortal> {
+    this.entrada.conferirPortal()
+    const r = await this.entrada.entrarComCodigo(
+      dados.email,
+      dados.codigo,
+      dados.aceitaPrivacidade,
+      req.ip,
+      req.headers['user-agent'],
+    )
+    this.gravarCookie(res, r.cookie)
+    return sessaoDoPortalDe(r.portal)
   }
 
   @Documenta({
@@ -136,11 +170,15 @@ export class PortalAuthController {
       req.ip,
       req.headers['user-agent'],
     )
-    res.cookie(nomeDoCookieDoPortal(this.config), r.cookie, {
+    this.gravarCookie(res, r.cookie)
+    return sessaoDoPortalDe(r.portal)
+  }
+
+  private gravarCookie(res: Response, token: string): void {
+    res.cookie(nomeDoCookieDoPortal(this.config), token, {
       ...this.opcoesDoCookie(),
       maxAge: VALIDADE_DA_SESSAO_DIAS * 86_400_000,
     })
-    return sessaoDoPortalDe(r.portal)
   }
 
   // ------------------------------------------------------------------------------------- com sessão
@@ -156,6 +194,44 @@ export class PortalAuthController {
   @Get('sessao')
   sessao(): SessaoDoPortal {
     return sessaoDoPortalDe(this.ctx.portal)
+  }
+
+  @Documenta({
+    resumo: 'Minhas empresas',
+    descricao:
+      'As empresas-clientes que o mesmo e-mail acessa neste portal (acessos ativos), com a atual marcada. Com mais de uma, a tela oferece a troca.',
+    resposta: listaDeEmpresasDoAcessoSchema,
+    erros: [401, 403, 503],
+  })
+  @Get('empresas')
+  async empresas() {
+    return { itens: await this.entrada.empresasDoEmail(this.ctx.portal) }
+  }
+
+  @Documenta({
+    resumo: 'Trocar de empresa',
+    descricao:
+      'Passa para outra empresa-cliente do mesmo e-mail sem pedir outro código: abre uma sessão no acesso escolhido (novo cookie) e encerra a atual. Acesso de outro e-mail, revogado ou suspenso: 404 `empresa_indisponivel`; a mesma empresa: 409.',
+    corpo: trocarEmpresaSchema,
+    resposta: sessaoDoPortalSchema,
+    erros: [400, 401, 403, 404, 409, 429, 503],
+  })
+  @Post('empresas/trocar')
+  @HttpCode(200)
+  @Limite({ nome: 'portal-trocar-empresa', max: 60, janelaS: 3600 })
+  async trocarEmpresa(
+    @Body(new ZodPipe(trocarEmpresaSchema)) dados: TrocarEmpresaEntrada,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SessaoDoPortal> {
+    const r = await this.entrada.trocarEmpresa(
+      this.ctx.portal,
+      dados.acessoId,
+      req.ip,
+      req.headers['user-agent'],
+    )
+    this.gravarCookie(res, r.cookie)
+    return sessaoDoPortalDe(r.portal)
   }
 
   @Documenta({

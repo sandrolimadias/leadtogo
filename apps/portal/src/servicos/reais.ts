@@ -42,6 +42,15 @@ export const servicosReais: ServicosDoPortal = {
       protegido(async () =>
         daApi(await api.POST('/v1/portal/link/consumir', { body: { token, aceitaPrivacidade } })),
       ),
+    entrarComCodigo: (dados) =>
+      protegido(async () => daApi(await api.POST('/v1/portal/entrada/codigo', { body: dados }))),
+  },
+  empresas: {
+    listar: () => protegido(async () => daApi(await api.GET('/v1/portal/empresas'))),
+    trocar: (acessoId) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/empresas/trocar', { body: { acessoId } })),
+      ),
   },
   sessao: {
     atual: () => protegido(async () => daApi(await api.GET('/v1/portal/sessao'))),

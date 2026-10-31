@@ -921,6 +921,16 @@ fabricas['portal_links'] = definirFabrica<{ acessoId: string }>({
   },
 })
 
+fabricas['portal_codigos'] = definirFabrica({
+  colunaAlteravel: 'ip',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO portal_codigos (id, tenant_id, email, codigo_hash, expira_em)
+      VALUES (${id}, ${tenantId}, ${`cliente-${id}@exemplo.com.br`}, ${`hash-${id}`}, now() + interval '10 minutes')`
+    return id
+  },
+})
+
 fabricas['portal_sessoes'] = definirFabrica<{ acessoId: string }>({
   colunaAlteravel: 'agente',
   preparar: async (owner, tenantId) => {

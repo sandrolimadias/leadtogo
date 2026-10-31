@@ -119,6 +119,30 @@ export const portalLinks = pgTable(
   ],
 )
 
+/**
+ * Código de 6 dígitos para entrar no portal (Fase 4B, B-23): substitui o link mágico na entrada (o convite
+ * continua por link). Um por e-mail e empresa da equipe; só o hash fica no banco; vale 10 minutos, uso único,
+ * no máximo 5 tentativas. Conferido pela função `app_portal_conferir_codigo` (o e-mail chega sem o tenant).
+ */
+export const portalCodigos = pgTable(
+  'portal_codigos',
+  {
+    id: chaveUuid(),
+    tenantId: doTenant(),
+    email: citext().notNull(),
+    codigoHash: text().notNull(),
+    expiraEm: timestamp({ withTimezone: true }).notNull(),
+    tentativas: smallint().notNull().default(0),
+    usadoEm: timestamp({ withTimezone: true }),
+    ip: text(),
+    ...carimbos(),
+  },
+  (t) => [
+    index('portal_codigos_email_idx').on(t.email, t.expiraEm),
+    check('portal_codigos_tentativas_chk', sql`${t.tentativas} BETWEEN 0 AND 5`),
+  ],
+)
+
 /** Sessão do cliente no portal (cookie `__Host-portal`). Só o hash do token fica no banco. */
 export const portalSessoes = pgTable(
   'portal_sessoes',

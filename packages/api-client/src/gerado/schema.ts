@@ -4640,6 +4640,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal/empresas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Minhas empresas
+         * @description As empresas-clientes que o mesmo e-mail acessa neste portal (acessos ativos), com a atual marcada. Com mais de uma, a tela oferece a troca.
+         */
+        get: operations["PortalAuthController_empresas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/empresas/trocar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trocar de empresa
+         * @description Passa para outra empresa-cliente do mesmo e-mail sem pedir outro código: abre uma sessão no acesso escolhido (novo cookie) e encerra a atual. Acesso de outro e-mail, revogado ou suspenso: 404 `empresa_indisponivel`; a mesma empresa: 409.
+         */
+        post: operations["PortalAuthController_trocarEmpresa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/entrada": {
         parameters: {
             query?: never;
@@ -4650,10 +4690,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Pedir o link de entrada
-         * @description Público. Envia ao e-mail um link de entrada de uso único, válido por 15 minutos. A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail.
+         * Pedir o código de entrada
+         * @description Público. Envia ao e-mail um código de 6 dígitos, de uso único, válido por 10 minutos (um por CRM, mesmo que o e-mail acesse várias empresas-clientes). A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail. Pedir de novo invalida o código anterior.
          */
         post: operations["PortalAuthController_pedirEntrada"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/entrada/codigo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Entrar com o código
+         * @description Público. Confere o código de 6 dígitos (uso único, 10 minutos; 5 erros queimam o código) e abre a sessão no cookie `HttpOnly`, no acesso usado por último. Quem acessa mais de uma empresa-cliente escolhe depois em `/portal/empresas`. Código errado ou vencido: 401 `codigo_invalido`. No primeiro acesso exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`, sem gastar o código).
+         */
+        post: operations["PortalAuthController_entrarComCodigo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7337,6 +7397,13 @@ export interface components {
                 transferir: boolean;
             };
         };
+        EmpresaDoAcesso: {
+            /** Format: uuid */
+            acessoId: string;
+            nome: string;
+            papel: components["schemas"]["PapelDoPortal"];
+            atual: boolean;
+        };
         EmpresaDoUsuario: {
             /** Format: uuid */
             id: string;
@@ -7433,6 +7500,11 @@ export interface components {
             acao: "criada" | "fase" | "status" | "reaberta";
             titulo: string;
             detalhe: string | null;
+        };
+        EntrarComCodigoEntrada: {
+            email: string;
+            codigo: string;
+            aceitaPrivacidade?: boolean;
         };
         EntregaDeWebhook: {
             /** Format: uuid */
@@ -8075,6 +8147,9 @@ export interface components {
             total: number;
             pagina: number;
             porPagina: number;
+        };
+        ListaDeEmpresasDoAcesso: {
+            itens: components["schemas"]["EmpresaDoAcesso"][];
         };
         ListaDeEntregasDeWebhook: {
             itens: components["schemas"]["EntregaDeWebhook"][];
@@ -9714,6 +9789,10 @@ export interface components {
         };
         TrocarEmailEntrada: {
             email: string;
+        };
+        TrocarEmpresaEntrada: {
+            /** Format: uuid */
+            acessoId: string;
         };
         /** @enum {string} */
         UrgenciaDoAviso: "normal" | "urgente";
@@ -28361,6 +28440,140 @@ export interface operations {
             };
         };
     };
+    PortalAuthController_empresas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeEmpresasDoAcesso"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAuthController_trocarEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrocarEmpresaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessaoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalAuthController_pedirEntrada: {
         parameters: {
             query?: never;
@@ -28394,6 +28607,84 @@ export interface operations {
             };
             /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAuthController_entrarComCodigo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntrarComCodigoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessaoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

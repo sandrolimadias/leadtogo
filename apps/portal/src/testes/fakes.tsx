@@ -170,6 +170,17 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
         }),
       ),
       consumir: vi.fn(async () => ok(sessao())),
+      entrarComCodigo: vi.fn(async () => ok(sessao())),
+    },
+    empresas: {
+      listar: vi.fn(async () =>
+        ok({
+          itens: [
+            { acessoId: id(1), nome: 'Usidantec', papel: 'responsavel' as const, atual: true },
+          ],
+        }),
+      ),
+      trocar: vi.fn(async () => ok(sessao())),
     },
     sessao: {
       atual: vi.fn(async () => ok(sessao())),

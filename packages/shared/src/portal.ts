@@ -206,7 +206,44 @@ export const respostaDePedirEntradaSchema = z
   .object({ mensagem: z.string() })
   .meta({ id: 'RespostaDePedirEntrada' })
 export const MENSAGEM_DE_ENTRADA_ENVIADA =
-  'Se este e-mail tem acesso ao portal, enviamos um link de entrada. Ele vale 15 minutos.'
+  'Se este e-mail tem acesso ao portal, enviamos um código de 6 dígitos. Ele vale 10 minutos.'
+
+/** Entrar com o código de 6 dígitos enviado por e-mail (Fase 4B, B-23). */
+export const entrarComCodigoSchema = z
+  .object({
+    email: emailSchema,
+    /** Seis dígitos; espaços e traços são ignorados (o e-mail mostra "123 456") */
+    codigo: z
+      .string()
+      .transform((v) => v.replace(/[\s-]/g, ''))
+      .pipe(z.string().regex(/^\d{6}$/, 'o código tem 6 dígitos')),
+    /** Obrigatório no primeiro acesso (422 `privacidade_obrigatoria` sem ele; o código não é gasto) */
+    aceitaPrivacidade: z.boolean().optional(),
+  })
+  .strict()
+  .meta({ id: 'EntrarComCodigoEntrada' })
+export type EntrarComCodigoEntrada = z.infer<typeof entrarComCodigoSchema>
+
+/** As empresas-clientes que o mesmo e-mail acessa neste portal (Fase 4B, B-1). */
+export const empresaDoAcessoSchema = z
+  .object({
+    acessoId: z.uuid(),
+    nome: z.string(),
+    papel: papelDoPortalSchema,
+    /** A empresa da sessão atual */
+    atual: z.boolean(),
+  })
+  .meta({ id: 'EmpresaDoAcesso' })
+export type EmpresaDoAcesso = z.infer<typeof empresaDoAcessoSchema>
+export const listaDeEmpresasDoAcessoSchema = z
+  .object({ itens: z.array(empresaDoAcessoSchema) })
+  .meta({ id: 'ListaDeEmpresasDoAcesso' })
+
+export const trocarEmpresaSchema = z
+  .object({ acessoId: z.uuid() })
+  .strict()
+  .meta({ id: 'TrocarEmpresaEntrada' })
+export type TrocarEmpresaEntrada = z.infer<typeof trocarEmpresaSchema>
 
 /** O que a página de confirmação mostra antes do clique (a leitura não consome o link). */
 export const consultaDoLinkSchema = z

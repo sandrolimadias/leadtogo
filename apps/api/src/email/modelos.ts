@@ -146,6 +146,35 @@ export function emailPortalEntrada(p: {
   )
 }
 
+/** O código de 6 dígitos para entrar no portal (Fase 4B): sem botão, para digitar no app instalado. */
+export function emailPortalCodigo(p: {
+  nome: string
+  portal: string
+  codigo: string
+}): ModeloDeEmail {
+  const formatado = `${p.codigo.slice(0, 3)} ${p.codigo.slice(3)}`
+  const assunto = `${formatado} é o seu código de acesso ao ${p.portal}`
+  const texto = [
+    `Olá, ${p.nome}.`,
+    '',
+    `Seu código de acesso: ${formatado}`,
+    '',
+    'Digite o código na tela de entrada. Ele vale por 10 minutos e só pode ser usado uma vez.',
+    '',
+    'Se não foi você quem pediu, ignore este e-mail: ninguém entra sem este código.',
+    '',
+    `— ${p.portal}`,
+  ].join('\n')
+  const html = `<!doctype html><html lang="pt-BR"><body style="font-family:sans-serif;line-height:1.5;color:#1f2937">
+<p>${escapar(`Olá, ${p.nome}.`)}</p>
+<p>Seu código de acesso:</p>
+<p style="font-size:28px;font-weight:700;letter-spacing:6px;font-family:monospace">${escapar(formatado)}</p>
+<p>Digite o código na tela de entrada. Ele vale por 10 minutos e só pode ser usado uma vez.</p>
+<p style="font-size:13px;color:#6b7280">Se não foi você quem pediu, ignore este e-mail: ninguém entra sem este código.</p>
+<p style="font-size:13px;color:#6b7280">— ${escapar(p.portal)}</p></body></html>`
+  return { assunto, texto, html }
+}
+
 export function emailPortalTrocaDeEmail(p: {
   nome: string
   portal: string

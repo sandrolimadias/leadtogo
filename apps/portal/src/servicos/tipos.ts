@@ -5,6 +5,7 @@ import type {
   EventoDoPortal,
   ListaDeEventosDoPortal,
   ProximosEventosDoPortal,
+  EmpresaDoAcesso,
   MeuPerfilDoPortal,
   MinhaEmpresaDoPortal,
   PreferenciasDoPortal,
@@ -47,6 +48,17 @@ export interface ServicosDoPortal {
     pedir: (email: string) => Promise<Resultado<{ mensagem: string }>>
     previa: (token: string) => Promise<Resultado<PreviaDoLink>>
     consumir: (token: string, aceitaPrivacidade: boolean) => Promise<Resultado<SessaoDoPortal>>
+    /** Entrar com o código de 6 dígitos (Fase 4B) */
+    entrarComCodigo: (dados: {
+      email: string
+      codigo: string
+      aceitaPrivacidade?: boolean
+    }) => Promise<Resultado<SessaoDoPortal>>
+  }
+  /** As empresas-clientes do mesmo e-mail e a troca entre elas (Fase 4B) */
+  empresas: {
+    listar: () => Promise<Resultado<{ itens: EmpresaDoAcesso[] }>>
+    trocar: (acessoId: string) => Promise<Resultado<SessaoDoPortal>>
   }
   sessao: {
     atual: () => Promise<Resultado<SessaoDoPortal>>

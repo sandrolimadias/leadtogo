@@ -23709,9 +23709,171 @@
         ]
       }
     },
+    "/v1/portal/empresas": {
+      "get": {
+        "description": "As empresas-clientes que o mesmo e-mail acessa neste portal (acessos ativos), com a atual marcada. Com mais de uma, a tela oferece a troca.",
+        "operationId": "PortalAuthController_empresas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeEmpresasDoAcesso"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Minhas empresas",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/empresas/trocar": {
+      "post": {
+        "description": "Passa para outra empresa-cliente do mesmo e-mail sem pedir outro código: abre uma sessão no acesso escolhido (novo cookie) e encerra a atual. Acesso de outro e-mail, revogado ou suspenso: 404 `empresa_indisponivel`; a mesma empresa: 409.",
+        "operationId": "PortalAuthController_trocarEmpresa",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrocarEmpresaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Trocar de empresa",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/entrada": {
       "post": {
-        "description": "Público. Envia ao e-mail um link de entrada de uso único, válido por 15 minutos. A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail.",
+        "description": "Público. Envia ao e-mail um código de 6 dígitos, de uso único, válido por 10 minutos (um por CRM, mesmo que o e-mail acesse várias empresas-clientes). A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail. Pedir de novo invalida o código anterior.",
         "operationId": "PortalAuthController_pedirEntrada",
         "parameters": [],
         "requestBody": {
@@ -23776,7 +23938,99 @@
             }
           }
         },
-        "summary": "Pedir o link de entrada",
+        "summary": "Pedir o código de entrada",
+        "tags": ["Portal do cliente: acesso"],
+        "security": []
+      }
+    },
+    "/v1/portal/entrada/codigo": {
+      "post": {
+        "description": "Público. Confere o código de 6 dígitos (uso único, 10 minutos; 5 erros queimam o código) e abre a sessão no cookie `HttpOnly`, no acesso usado por último. Quem acessa mais de uma empresa-cliente escolhe depois em `/portal/empresas`. Código errado ou vencido: 401 `codigo_invalido`. No primeiro acesso exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`, sem gastar o código).",
+        "operationId": "PortalAuthController_entrarComCodigo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntrarComCodigoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Entrar com o código",
         "tags": ["Portal do cliente: acesso"],
         "security": []
       }
@@ -34399,6 +34653,26 @@
         ],
         "additionalProperties": false
       },
+      "EmpresaDoAcesso": {
+        "type": "object",
+        "properties": {
+          "acessoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "papel": {
+            "$ref": "#/components/schemas/PapelDoPortal"
+          },
+          "atual": {
+            "type": "boolean"
+          }
+        },
+        "required": ["acessoId", "nome", "papel", "atual"],
+        "additionalProperties": false
+      },
       "EmpresaDoUsuario": {
         "type": "object",
         "properties": {
@@ -34773,6 +35047,23 @@
           }
         },
         "required": ["id", "em", "por", "acao", "titulo", "detalhe"],
+        "additionalProperties": false
+      },
+      "EntrarComCodigoEntrada": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "aceitaPrivacidade": {
+            "type": "boolean"
+          }
+        },
+        "required": ["email", "codigo"],
         "additionalProperties": false
       },
       "EntregaDeWebhook": {
@@ -37298,6 +37589,19 @@
           }
         },
         "required": ["itens", "total", "pagina", "porPagina"],
+        "additionalProperties": false
+      },
+      "ListaDeEmpresasDoAcesso": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmpresaDoAcesso"
+            }
+          }
+        },
+        "required": ["itens"],
         "additionalProperties": false
       },
       "ListaDeEntregasDeWebhook": {
@@ -43275,6 +43579,17 @@
           }
         },
         "required": ["email"],
+        "additionalProperties": false
+      },
+      "TrocarEmpresaEntrada": {
+        "type": "object",
+        "properties": {
+          "acessoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["acessoId"],
         "additionalProperties": false
       },
       "UrgenciaDoAviso": {
