@@ -1,6 +1,6 @@
 # Plano do Portal do Cliente, Fase 4: construtor de formulários, eventos e ajustes
 
-> **Status:** proposta para aprovação do Ale (31/10/2026). Nada implementado ainda.
+> **Status:** aprovado pelo Ale em 31/10/2026, com as respostas da seção 12 (que prevalecem sobre as recomendações R-n onde divergem). Execução por fases, a partir da 4A.
 > **Base:** pedido do Ale (construtor de formulários, 23 itens de backend e 8 de frontend) e o portal já entregue nas fases 3A a 3E (`plano_portal_cliente.md`).
 > **Regras que valem para todas as fases:** português, uuid v7, `tenant_id`, RLS habilitado e forçado, políticas restritivas do portal (`app.portal_empresa_id`, `app.portal_acesso_id`), teste de isolamento entre tenants **e** entre empresas-clientes do mesmo tenant, migração só de expansão (próxima livre: **0045**), DTOs do portal em lista de permissão, auditoria com ator `contato`, gate `pnpm lint && pnpm typecheck && pnpm test` antes de cada commit.
 
@@ -50,15 +50,15 @@ O que o diagnóstico do código já mostrou:
 | R-1 | **Alcance (B-7)** = pessoas **distintas** que leram ÷ pessoas que **podem** ler. As duas contas usam o **mesmo conjunto**: acessos ativos de empresas **associadas** dentro do alcance da publicação (todos, empresas ou tags). Leitura de quem está fora do conjunto não conta. Resultado nunca passa de 100%. Mostrar também o número bruto ("38 de 120 pessoas") |
 | R-2 | **Reações (B-6):** só **Curtir** e **Parabéns**, mais comentários. "Apoiar" some da tela e a API passa a recusar; os totais antigos ficam no banco e o valor do enum sai numa contração futura |
 | R-3 | **Entrada por código (B-23):** 6 dígitos numéricos, **10 minutos**, uso único, só o hash no banco, **5 tentativas** por código e limite por IP/e-mail (o que já existe). A resposta ao pedir o código continua **sempre a mesma**. O convite continua por link (é o primeiro contato e carrega a empresa); a troca de e-mail deixa de existir para o cliente (F-5) |
-| R-4 | **Várias empresas (B-1):** um código vale para o **e-mail**, não para um acesso. Depois do código, se houver mais de um acesso ativo, a tela "Escolha a empresa" lista as opções. Dentro do portal, o seletor no cabeçalho troca de empresa **sem pedir código de novo** (a sessão guarda o e-mail verificado e troca o `acesso_id`), sempre conferindo no banco que aquele e-mail tem acesso ativo à empresa escolhida |
+| R-4 | **Várias empresas (B-1):** um código vale para o **e-mail**, não para um acesso. Depois do código, se houver mais de um acesso ativo, a tela "Escolha a empresa" lista as opções. Só empresas-clientes do mesmo tenant (Q-1). Dentro do portal, o seletor no cabeçalho troca de empresa **sem pedir código de novo** (a sessão guarda o e-mail verificado e troca o `acesso_id`), sempre conferindo no banco que aquele e-mail tem acesso ativo à empresa escolhida |
 | R-5 | **Audiência única (4C):** publicações, eventos, documentos e avisos passam a ter o mesmo alcance: **todos**, **empresas** ou **tags de contato** (com várias tags, basta ter **uma** delas). A tag é do contato ligado ao acesso, conferida no momento da leitura (tirar a tag tira a visibilidade) |
 | R-6 | **Vídeo (B-3):** só por link de **YouTube** e **Vimeo** (embed `youtube-nocookie.com` e `player.vimeo.com`), nada de `<iframe>` livre nem envio de arquivo de vídeo. Imagem: até 4 por publicação, JPG/PNG/WebP, 10 MB, mesmo pipeline e ClamAV dos anexos, com miniatura gerada no worker |
 | R-7 | **Formulário = definição em JSON versionada.** Toda resposta guarda a **versão** com que foi preenchida, então editar um formulário nunca quebra respostas antigas nem relatórios |
 | R-8 | **Ações dos botões (FB-2)** rodam **no servidor**, depois de gravar a resposta, pelo outbox (webhook com HMAC e e-mail pela fila). O navegador nunca chama o webhook. Falha na ação não perde a resposta: fica no log com nova tentativa |
 | R-9 | **Evento vira publicação (B-8):** ao publicar um evento, nasce uma publicação ligada a ele (mesmo alcance, cartão com data, local e botão "Inscrever-se"). Editar o evento atualiza a publicação; cancelar o evento marca a publicação como "Evento cancelado". O quadro "Próximos eventos" do portal continua |
 | R-10 | **Participante sem acesso ao portal (B-15, B-17, F-3):** a inscrição deixa de exigir `acesso_id`. A participação passa a guardar nome, e-mail, telefone, CNPJ e os vínculos opcionais (acesso, contato, empresa) |
-| R-11 | **QR de check-in (B-18):** um QR **por evento**, que só a equipe vê e projeta na recepção. O participante lê com o celular e cai na página de check-in: logado no portal, um toque; sem login, informa o e-mail da inscrição e recebe o código de 6 dígitos. O QR só funciona da abertura do check-in (padrão: 2 h antes) até o fim do evento, e pode ser **regerado** (o antigo para de funcionar) |
-| R-12 | **CNPJ no formulário (B-17):** só quando o formulário do evento tiver um campo do tipo **CNPJ**. Empresa existente: liga a participação. CNPJ novo: cadastra a empresa pela consulta normal à Receita (status inicial **Lead**), cria/acha o contato pelo e-mail e cria uma **Tarefa para o dia útil seguinte**. O trabalho roda no worker (a Receita pode demorar ou falhar; refaz com espera) |
+| R-11 | **QR de check-in (B-18):** um QR **por evento**, que só a equipe vê e projeta na recepção. O participante lê com o celular e cai na página de check-in: logado no portal, um toque; sem login, informa o e-mail da inscrição (o código de 6 dígitos por e-mail só se o evento ligar "Exigir código", Q-9). O QR só funciona da abertura do check-in (padrão: 2 h antes) até o fim do evento, e pode ser **regerado** (o antigo para de funcionar) |
+| R-12 | **CNPJ no formulário (B-17):** só quando o formulário do evento tiver um campo do tipo **CNPJ**. Empresa existente: liga a participação. CNPJ novo: cadastra a empresa pela consulta normal à Receita (status inicial **Lead**), cria/acha o contato pelo e-mail e cria uma **Tarefa para o dia útil seguinte ao evento**, com o responsável escolhido em Configurações → Portal (Q-2, Q-3); tudo atrás de uma chave liga/desliga. O trabalho roda no worker (a Receita pode demorar ou falhar; refaz com espera) |
 | R-13 | **E-mail de avaliação para quem não é cadastrado (B-15):** chave por tenant em Configurações → Portal ("Enviar a avaliação por e-mail a participantes sem acesso ao portal"), **desligada por padrão**. O link é pessoal (token por participante, uso único para responder) |
 
 ## 3. Fase 4A: ajustes rápidos
@@ -205,16 +205,16 @@ Lista paginada (B-14) → evento com abas: **Dados** (editor, chave Público, fo
   - **4G (7):** db 0051/0052; api participação e inscrição; job CNPJ → CRM; check-in e presença; encerrar e avaliações; exportações; web/portal + ficha da empresa + e2e + docs.
   - **4H (3):** api pública; portal página pública e associação; e2e + docs.
 
-## 12. Perguntas para o Ale
+## 12. Respostas do Ale (31/10/2026)
 
-| # | Pergunta | Recomendação |
+| # | Pergunta | Resposta (vale sobre as recomendações) |
 |---|---|---|
-| Q-1 | B-1: "duas empresas" são duas **empresas-clientes** do mesmo CRM, dois **CRMs** (tenants) diferentes, ou ambos? | Ambos (R-4 cobre os dois) |
-| Q-2 | B-17: a tarefa é para o dia seguinte à **inscrição** ou ao **evento**? | Dia útil seguinte ao **evento** (para quem se inscreve sem ir, a tarefa sai no dia seguinte ao evento também) |
-| Q-3 | B-17: quem fica responsável pela tarefa e pela empresa nova? | O dono da carteira da empresa, se houver; senão, quem criou o evento |
-| Q-4 | Captcha (Turnstile) nos formulários públicos? | Sim, opcional por formulário, ligado na página pública |
-| Q-5 | Inscrição pública confirma o e-mail com código? | Sim (evita inscrever terceiros e garante o envio da avaliação) |
-| Q-6 | F-5: além de e-mail e telefone travados, o cliente pode alterar nome, cargo e foto? | Pode alterar foto e cargo; nome só pela equipe |
-| Q-7 | B-7: o denominador do alcance é "pessoas com acesso ativo ao portal" ou "todos os contatos das empresas associadas" (mesmo sem acesso)? | Pessoas com acesso ativo (só elas podem ver) |
-| Q-8 | B-15: avaliação só para quem teve **presença**, ou para todos os inscritos? | Só presentes |
-| Q-9 | B-18: o QR é um por evento (projetado na recepção) ou um por participante (a equipe lê o do participante)? | Um por evento, como descrito; o por participante pode vir depois |
+| Q-1 | "Duas empresas" no login | **Duas empresas-clientes do mesmo CRM.** A troca de empresa (B-1) é sempre dentro do mesmo tenant; acessos de outros tenants não aparecem |
+| Q-2 | Data da tarefa do CNPJ novo | **Dia útil seguinte ao evento** |
+| Q-3 | Responsável pela tarefa e pela empresa nova | **Um administrador ou gestor**, escolhido em Configurações → Portal, que redistribui para o vendedor. A função inteira (empresa, contato e tarefa pelo CNPJ) tem **chave liga/desliga** no mesmo lugar; desligada, a inscrição guarda o CNPJ e não mexe no CRM |
+| Q-4 | Captcha nos formulários públicos | **Sim** (Cloudflare Turnstile, desligável por formulário; variável `TURNSTILE_SECRET`) |
+| Q-5 | Código na inscrição pública | **Não.** Inscrição pública com a menor fricção possível: captcha, limite por IP e bloqueio de inscrição repetida (mesmo e-mail no mesmo evento) |
+| Q-6 | O cliente altera nome, cargo e foto | **Sim** (e-mail e telefone continuam travados, só a equipe muda) |
+| Q-7 | Denominador do alcance | **Pessoas com acesso ativo ao portal** dentro do alcance |
+| Q-8 | Quem recebe o pedido de avaliação | **Só quem teve presença** |
+| Q-9 | QR de check-in | **Um por evento**, só para o participante fazer o check-in (lê o QR e se identifica pelo e-mail da inscrição; logado no portal, um toque). Chave por evento **"Exigir código por e-mail no check-in"**, **desligada por padrão**; desligada, a equipe corrige abusos pela presença manual |
