@@ -36,7 +36,7 @@ export const selecaoDeTagSchema = z.enum(['unica', 'multipla'])
 export type SelecaoDeTag = z.infer<typeof selecaoDeTagSchema>
 
 /** A quem as tags de um grupo se aplicam. Escolhido na criação do grupo e nunca muda. */
-export const alvoDeTagSchema = z.enum(['empresa', 'contato'])
+export const alvoDeTagSchema = z.enum(['empresa', 'contato', 'oportunidade'])
 export type AlvoDeTag = z.infer<typeof alvoDeTagSchema>
 
 /**
@@ -91,8 +91,8 @@ export const criarTagGrupoSchema = z
     aplicaA: alvoDeTagSchema.default('empresa'),
   })
   .strict()
-  .refine((d) => !(d.aplicaA === 'contato' && d.obrigatorio), {
-    message: 'grupo de tags de contato não pode ser obrigatório',
+  .refine((d) => d.aplicaA === 'empresa' || !d.obrigatorio, {
+    message: 'só grupo de tags de empresa pode ser obrigatório',
     path: ['obrigatorio'],
   })
   .meta({ id: 'CriarTagGrupoEntrada' })

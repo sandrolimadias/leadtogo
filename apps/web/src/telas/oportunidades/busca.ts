@@ -7,6 +7,8 @@ export interface BuscaDeOportunidades {
   funil?: string
   /** Id do responsável */
   responsavel?: string
+  /** Id de uma tag de oportunidade (Kanban e lista) */
+  tag?: string
   /** Só na lista: filtra por status */
   status?: StatusDaOportunidade
   /** Id da fase (na lista) */
@@ -37,6 +39,7 @@ const dia = (v: unknown): string | undefined =>
 export function lerBusca(entrada: Record<string, unknown>): BuscaDeOportunidades {
   const funil = texto(entrada['funil'])
   const responsavel = texto(entrada['responsavel'])
+  const tag = texto(entrada['tag'])
   const status = statusDaOportunidadeSchema.safeParse(entrada['status'])
   const pagina = inteiro(entrada['pagina'])
   const fase = texto(entrada['fase'])
@@ -48,6 +51,7 @@ export function lerBusca(entrada: Record<string, unknown>): BuscaDeOportunidades
     ...(entrada['visao'] === 'lista' ? { visao: 'lista' as const } : {}),
     ...(funil ? { funil } : {}),
     ...(responsavel ? { responsavel } : {}),
+    ...(tag ? { tag } : {}),
     ...(status.success ? { status: status.data } : {}),
     ...(fase ? { fase } : {}),
     ...(motivo ? { motivo } : {}),

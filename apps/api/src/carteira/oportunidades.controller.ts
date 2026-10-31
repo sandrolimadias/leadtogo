@@ -7,6 +7,8 @@ import {
   consultaDoKanbanSchema,
   type CriarOportunidade,
   criarOportunidadeSchema,
+  type DefinirTagsDaOportunidade,
+  definirTagsDaOportunidadeSchema,
   type FecharOportunidade,
   fecharOportunidadeSchema,
   type KanbanDeOportunidades,
@@ -32,6 +34,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
@@ -119,7 +122,7 @@ export class OportunidadesController {
 
   @Documenta({
     resumo: 'Editar oportunidade',
-    descricao: `${CARTEIRA} Só o que vier muda. Fase e status mudam por \`mover\` e \`fechar\`. Informar a \`probabilidade\` igual à da fase volta a acompanhar a fase; diferente, marca como editada à mão. ${VALORES} Registra na auditoria o antes e o depois.`,
+    descricao: `${CARTEIRA} Só o que vier muda. Fase e status mudam por \`mover\` e \`fechar\`. Informar a \`probabilidade\` igual à da fase volta a acompanhar a fase; diferente, marca como editada à mão. ${VALORES} \`criadaEm\` (dia AAAA-MM-DD no fuso da empresa) muda a data de criação: exige \`oportunidades.data_criacao\` (403 \`acesso_negado\`), nunca no futuro (400 \`criacao_no_futuro\`) nem depois do dia do fechamento (400 \`criacao_depois_do_fechamento\`). Registra na auditoria o antes e o depois.`,
     corpo: alterarOportunidadeSchema,
     resposta: oportunidadeSchema,
     erros: [400, 401, 403, 404],
@@ -131,6 +134,22 @@ export class OportunidadesController {
     @Body(new ZodPipe(alterarOportunidadeSchema)) dados: AlterarOportunidade,
   ): Promise<Oportunidade> {
     return this.servico.alterar(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Definir as tags da oportunidade',
+    descricao: `${CARTEIRA} Substitui as tags da oportunidade pelas de \`tagIds\` (vale também para a fechada). Só tags ativas de grupos de tags de oportunidade (400 \`tag_invalida\` / \`tag_inativa\`); grupo de seleção única aceita uma só (400 \`grupo_selecao_unica\`). Registra \`alterar_tags\` na auditoria.`,
+    corpo: definirTagsDaOportunidadeSchema,
+    resposta: oportunidadeSchema,
+    erros: [400, 401, 403, 404],
+  })
+  @Permissao('oportunidades.editar')
+  @Put(':id/tags')
+  definirTags(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(definirTagsDaOportunidadeSchema)) dados: DefinirTagsDaOportunidade,
+  ): Promise<Oportunidade> {
+    return this.servico.definirTags(id, dados.tagIds)
   }
 
   @Documenta({
@@ -152,7 +171,7 @@ export class OportunidadesController {
 
   @Documenta({
     resumo: 'Fechar oportunidade',
-    descricao: `${CARTEIRA} Conquistado, Perdido, Cancelado ou Suspenso (só de uma Ativa; 409 \`oportunidade_nao_ativa\`). Perdido, Cancelado e Suspenso exigem o \`motivoId\` (da lista do status; 400 \`motivo_invalido\`); Suspenso exige \`retomarEm\` e cria a atividade de retomada (Tarefa de dia inteiro nessa data, com a mesma empresa e o mesmo responsável). Guarda a fase em que parou e a data de fechamento. Conquistado muda a empresa para Cliente (a tag \`chave_sistema = cliente\`, seja qual for o nome dela) se \`empresaViraCliente\` for verdadeiro (sem o campo, vale a configuração da empresa).`,
+    descricao: `${CARTEIRA} Conquistado, Perdido, Cancelado ou Suspenso (só de uma Ativa; 409 \`oportunidade_nao_ativa\`). Perdido, Cancelado e Suspenso exigem o \`motivoId\` (da lista do status; 400 \`motivo_invalido\`); Suspenso exige \`retomarEm\` e cria a atividade de retomada (Tarefa de dia inteiro nessa data, com a mesma empresa e o mesmo responsável). Guarda a fase em que parou e a data de fechamento. Conquistado muda a empresa para Cliente (a tag \`chave_sistema = cliente\`, seja qual for o nome dela) se \`empresaViraCliente\` for verdadeiro (sem o campo, vale a configuração da empresa). \`dataFechamento\` (dia AAAA-MM-DD no fuso da empresa; sem ele, vale o momento) exige \`oportunidades.data_fechamento\` (403 \`acesso_negado\`), nunca no futuro (400 \`fechamento_no_futuro\`) nem antes do dia da criação (400 \`fechamento_antes_da_criacao\`); dia passado grava o meio-dia desse dia.`,
     corpo: fecharOportunidadeSchema,
     resposta: oportunidadeSchema,
     erros: [400, 401, 403, 404, 409],

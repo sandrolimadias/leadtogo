@@ -141,10 +141,10 @@ export class TagsService {
         )
       }
     }
-    if (grupo.aplicaA === 'contato' && dados.obrigatorio === true) {
+    if (grupo.aplicaA !== 'empresa' && dados.obrigatorio === true) {
       throw new ErroApi(
         'grupo_de_contato',
-        `O grupo "${grupo.nome}" é de tags de contato: não pode ser obrigatório.`,
+        `O grupo "${grupo.nome}" é de tags de ${grupo.aplicaA}: não pode ser obrigatório.`,
         409,
       )
     }
@@ -187,7 +187,7 @@ export class TagsService {
     if (await this.grupoJaFoiUsado(id)) {
       throw new ErroApi(
         'grupo_em_uso',
-        `O grupo "${grupo.nome}" tem tags que já foram usadas por empresas ou contatos (inclusive no histórico): não dá para excluir, só inativar.`,
+        `O grupo "${grupo.nome}" tem tags que já foram usadas por empresas, contatos ou oportunidades (inclusive no histórico): não dá para excluir, só inativar.`,
         409,
       )
     }
@@ -316,7 +316,7 @@ export class TagsService {
     if (await this.tagJaFoiUsada(id)) {
       throw new ErroApi(
         'tag_em_uso',
-        `A tag "${tag.nome}" já foi usada por empresas ou contatos (inclusive no histórico de Status): não dá para excluir, só inativar.`,
+        `A tag "${tag.nome}" já foi usada por empresas, contatos ou oportunidades (inclusive no histórico de Status): não dá para excluir, só inativar.`,
         409,
       )
     }
@@ -360,22 +360,24 @@ export class TagsService {
 
   /**
    * A tag está (ou já esteve) em alguma empresa, mesmo excluída: o histórico de Status depende dela. Ou está
-   * em algum contato (mesmo excluído, que pode ser restaurado).
+   * em algum contato ou oportunidade (mesmo excluídos, que podem ser restaurados).
    */
   private async tagJaFoiUsada(tagId: string): Promise<boolean> {
     const [r] = await this.ctx.db().execute<{ usada: boolean }>(sql`
       SELECT (EXISTS (SELECT 1 FROM empresa_tags WHERE tag_id = ${tagId})
            OR EXISTS (SELECT 1 FROM empresa_tags_historico WHERE tag_id = ${tagId})
-           OR EXISTS (SELECT 1 FROM contato_tags WHERE tag_id = ${tagId})) AS usada`)
+           OR EXISTS (SELECT 1 FROM contato_tags WHERE tag_id = ${tagId})
+           OR EXISTS (SELECT 1 FROM oportunidade_tags WHERE tag_id = ${tagId})) AS usada`)
     return r?.usada === true
   }
 
-  /** Alguma tag do grupo (mesmo já excluída) já foi usada por empresa ou por contato. */
+  /** Alguma tag do grupo (mesmo já excluída) já foi usada por empresa, contato ou oportunidade. */
   private async grupoJaFoiUsado(grupoId: string): Promise<boolean> {
     const [r] = await this.ctx.db().execute<{ usada: boolean }>(sql`
       SELECT (EXISTS (SELECT 1 FROM empresa_tags et JOIN tags t ON t.id = et.tag_id WHERE t.tag_grupo_id = ${grupoId})
            OR EXISTS (SELECT 1 FROM empresa_tags_historico h JOIN tags t ON t.id = h.tag_id WHERE t.tag_grupo_id = ${grupoId})
-           OR EXISTS (SELECT 1 FROM contato_tags ct JOIN tags t ON t.id = ct.tag_id WHERE t.tag_grupo_id = ${grupoId})) AS usada`)
+           OR EXISTS (SELECT 1 FROM contato_tags ct JOIN tags t ON t.id = ct.tag_id WHERE t.tag_grupo_id = ${grupoId})
+           OR EXISTS (SELECT 1 FROM oportunidade_tags ot JOIN tags t ON t.id = ot.tag_id WHERE t.tag_grupo_id = ${grupoId})) AS usada`)
     return r?.usada === true
   }
 

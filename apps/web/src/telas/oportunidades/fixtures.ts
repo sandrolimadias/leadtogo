@@ -1,4 +1,4 @@
-import type { KanbanDeOportunidades, Oportunidade } from '@leadtogo/api-client'
+import type { KanbanDeOportunidades, Oportunidade, TagGrupo } from '@leadtogo/api-client'
 
 import { id } from '@/telas/contatos/fixtures'
 
@@ -57,6 +57,7 @@ export const oportunidade = (n: number, extra: Partial<Oportunidade> = {}): Opor
   ultimaAtividadeEm: null,
   proximaAtividade: null,
   observacoes: null,
+  tags: [],
   criadaEm: '2026-10-10T12:00:00.000Z',
   editavel: true,
   excluivel: true,
@@ -82,4 +83,51 @@ export const kanban = (
   resumo: { ativas: porFase.flat().length, total: 24000, mensal: 1500, ponderado: 2400 },
   suspensas: 0,
   ...extra,
+})
+
+/** Um grupo de tags de oportunidade (Tipo de negócio: Novo, Renovação), de seleção múltipla. */
+export const gruposDeOportunidade: TagGrupo[] = [
+  {
+    id: id(70),
+    nome: 'Tipo de negócio',
+    selecao: 'multipla',
+    obrigatorio: false,
+    sistema: false,
+    automatico: false,
+    aplicaA: 'oportunidade',
+    ativo: true,
+    ordem: 0,
+    tags: [
+      {
+        id: id(71),
+        tagGrupoId: id(70),
+        nome: 'Novo',
+        cor: 'green',
+        ativo: true,
+        ordem: 0,
+        chaveSistema: null,
+        apareceNoMapa: true,
+        visivelAoAbrir: true,
+      },
+      {
+        id: id(72),
+        tagGrupoId: id(70),
+        nome: 'Renovação',
+        cor: 'blue',
+        ativo: true,
+        ordem: 1,
+        chaveSistema: null,
+        apareceNoMapa: true,
+        visivelAoAbrir: true,
+      },
+    ],
+  },
+]
+
+/** Tags do grupo acima como chegam na oportunidade. */
+export const tagNaOportunidade = (n: 71 | 72) => ({
+  id: id(n),
+  nome: n === 71 ? 'Novo' : 'Renovação',
+  cor: n === 71 ? 'green' : 'blue',
+  tagGrupoId: id(70),
 })

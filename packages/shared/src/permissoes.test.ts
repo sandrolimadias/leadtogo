@@ -75,10 +75,10 @@ describe('catálogo de permissões', () => {
 })
 
 describe('versão do catálogo', () => {
-  it('a versão 10 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
-    expect(VERSAO_DO_CATALOGO).toBe(10)
+  it('a versão 11 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
+    expect(VERSAO_DO_CATALOGO).toBe(11)
     // `atividades.excluir` saiu (6d): excluir a atividade é parte de editá-la, como antes dos perfis
-    expect(CHAVES_DE_PERMISSAO).toHaveLength(50)
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(52)
     expect(NOVAS_POR_VERSAO).toEqual({
       2: ['visitas.ver_localizacao'],
       3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
@@ -98,7 +98,17 @@ describe('versão do catálogo', () => {
       8: ['portal.agenda'],
       9: ['portal.avisos'],
       10: ['integracoes.gerir'],
+      11: ['oportunidades.data_fechamento', 'oportunidades.data_criacao'],
     })
+  })
+
+  it('v11: Administrador e Gestor escolhem a data de fechamento; só o Administrador altera a de criação', () => {
+    expect(PERMISSOES_PADRAO.admin['oportunidades.data_fechamento']).toBe(true)
+    expect(PERMISSOES_PADRAO.gestor['oportunidades.data_fechamento']).toBe(true)
+    expect(PERMISSOES_PADRAO.vendedor['oportunidades.data_fechamento']).toBeUndefined()
+    expect(PERMISSOES_PADRAO.admin['oportunidades.data_criacao']).toBe(true)
+    expect(PERMISSOES_PADRAO.gestor['oportunidades.data_criacao']).toBeUndefined()
+    expect(PERMISSOES_PADRAO.vendedor['oportunidades.data_criacao']).toBeUndefined()
   })
 
   it('v10: só o Administrador recebe integracoes.gerir; Gestor e Vendedor não ganham nada', () => {

@@ -241,6 +241,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       mover: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       fechar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       reabrir: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      definirTags: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
       excluir: vi.fn(async () => ok(undefined)),
     },
     dashboard: {

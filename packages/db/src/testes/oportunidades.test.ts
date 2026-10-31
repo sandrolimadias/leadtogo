@@ -150,3 +150,72 @@ describe('oportunidades (restrições e colunas calculadas do banco)', () => {
     ).rejects.toThrow(/oportunidade_id/)
   })
 })
+
+describe('oportunidade_tags', () => {
+  /** Um grupo de tags com uma tag, para o destino pedido */
+  const grupoComTag = (tenantId: string, aplicaA: 'empresa' | 'contato' | 'oportunidade') =>
+    comTenant(app, tenantId, async (tx) => {
+      const g = novoId()
+      const t = novoId()
+      await tx`INSERT INTO tag_grupos (id, tenant_id, nome, aplica_a) VALUES (${g}, ${tenantId}, ${`G ${g}`}, ${aplicaA})`
+      await tx`INSERT INTO tags (id, tenant_id, nome, tag_grupo_id) VALUES (${t}, ${tenantId}, 'T', ${g})`
+      return t
+    })
+  const novaOportunidade = async (c: Cenario) => {
+    const id = novoId()
+    await comTenant(
+      app,
+      c.tenantId,
+      (
+        tx,
+      ) => tx`INSERT INTO oportunidades (id, tenant_id, titulo, empresa_id, funil_id, fase_id, responsavel_id)
+        VALUES (${id}, ${c.tenantId}, 'Contrato', ${c.empresaId}, ${c.funilId}, ${c.faseId}, ${c.membroId})`,
+    )
+    return id
+  }
+  const aplicar = (tenantId: string, oportunidadeId: string, tagId: string) =>
+    comTenant(
+      app,
+      tenantId,
+      (tx) =>
+        tx`INSERT INTO oportunidade_tags (tenant_id, oportunidade_id, tag_id) VALUES (${tenantId}, ${oportunidadeId}, ${tagId})`,
+    )
+
+  it('a tag de oportunidade entra uma vez por oportunidade', async () => {
+    const c = await cenario()
+    const o = await novaOportunidade(c)
+    const tagId = await grupoComTag(c.tenantId, 'oportunidade')
+    await aplicar(c.tenantId, o, tagId)
+    await expect(aplicar(c.tenantId, o, tagId)).rejects.toThrow(/duplicate key/)
+  })
+
+  it('o gatilho recusa tag de empresa ou de contato na oportunidade, e a de oportunidade nos outros', async () => {
+    const c = await cenario()
+    const o = await novaOportunidade(c)
+    await expect(aplicar(c.tenantId, o, await grupoComTag(c.tenantId, 'empresa'))).rejects.toThrow(
+      /não é de um grupo de tags de oportunidade/,
+    )
+    await expect(aplicar(c.tenantId, o, await grupoComTag(c.tenantId, 'contato'))).rejects.toThrow(
+      /não é de um grupo de tags de oportunidade/,
+    )
+    const deOportunidade = await grupoComTag(c.tenantId, 'oportunidade')
+    await expect(
+      comTenant(
+        app,
+        c.tenantId,
+        (tx) =>
+          tx`INSERT INTO empresa_tags (tenant_id, empresa_id, tag_id) VALUES (${c.tenantId}, ${c.empresaId}, ${deOportunidade})`,
+      ),
+    ).rejects.toThrow(/não é de um grupo de tags de empresa/)
+  })
+
+  it('tag de oportunidade de outra empresa (tenant) é recusada', async () => {
+    const a = await cenario()
+    const b = await cenario()
+    const o = await novaOportunidade(a)
+    const tagDeB = await grupoComTag(b.tenantId, 'oportunidade')
+    await expect(aplicar(a.tenantId, o, tagDeB)).rejects.toThrow(
+      /não é de um grupo de tags de oportunidade|foreign key/,
+    )
+  })
+})

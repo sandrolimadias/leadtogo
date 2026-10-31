@@ -467,6 +467,15 @@ export const servicosReais: ServicosDeAcesso = {
           await api.POST('/v1/carteira/oportunidades/{id}/reabrir', { params: { path: { id } } }),
         ),
       ),
+    definirTags: (id, tagIds) =>
+      protegido(async () =>
+        daApi(
+          await api.PUT('/v1/carteira/oportunidades/{id}/tags', {
+            params: { path: { id } },
+            body: { tagIds },
+          }),
+        ),
+      ),
     excluir: (id) =>
       protegido(async () =>
         semCorpo(await api.DELETE('/v1/carteira/oportunidades/{id}', { params: { path: { id } } })),

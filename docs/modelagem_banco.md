@@ -297,7 +297,7 @@ Todas têm: `id`, `tenant_id`, `nome`, `ativo`, `ordem`, `criado_em`, `atualizad
 | `verticais` | cor | Empresa → 1 vertical |
 | `faixas_funcionarios` | minimo int, maximo int | Ex.: 1–9, 10–49, 50–99, 100–499, 500+ |
 | `faixas_faturamento` | minimo numeric, maximo numeric | Ex.: até 360 mil, até 4,8 mi, até 30 mi, acima |
-| `tag_grupos` | selecao enum(unica/multipla), obrigatorio bool, sistema bool, automatico bool, **aplica_a enum(empresa/contato)** (0043) | Status, Visitação… (empresa); Perfil, Relacionamento… (contato) |
+| `tag_grupos` | selecao enum(unica/multipla), obrigatorio bool, sistema bool, automatico bool, **aplica_a enum(empresa/contato/oportunidade)** (0043; `oportunidade` na 0044) | Status, Visitação… (empresa); Perfil, Relacionamento… (contato); Tipo de negócio, Concorrente… (oportunidade) |
 | `tags` | tag_grupo_id FK, cor char(7), chave_sistema text null | `chave_sistema` identifica tags usadas pelas regras automáticas (ex.: `visitada`, `cliente`), mesmo que o cliente as renomeie |
 | `tipos_atividade` | icone, cor, conta_como enum(visita/contato/nenhum), exige_empresa bool, sincroniza_agenda bool, chave_sistema | Ligação, WhatsApp, E-mail, Visita, Reunião, **Tarefa** |
 | `funis` | padrao bool | |
@@ -626,6 +626,9 @@ Estratégia: o sistema gera as ocorrências **de 60 dias à frente** (rotina di�
 |---|---|---|
 | `oportunidade_contatos` | oportunidade_id, contato_id, papel | Outros contatos envolvidos |
 | `oportunidade_historico` | id, oportunidade_id, fase_de, fase_para, status_de, status_para, motivo_id, em, por | Conversão, tempo médio por fase e auditoria do funil |
+| `oportunidade_tags` (0044) | tenant_id, oportunidade_id, tag_id, aplicada_em, aplicada_por | Tags de oportunidade (grupos com `aplica_a = 'oportunidade'`), várias por oportunidade |
+
+> **Implementação (migração 0044, só expansão; plano em `plano_oportunidades_kanban_e_tags.md`):** o enum `alvo_de_tag` ganha `oportunidade` (os grupos existentes não mudam). `oportunidade_tags` segue `contato_tags`: **PK `(oportunidade_id, tag_id)`**, índice `(tenant_id, tag_id)` (filtro e "tag em uso"), sem `excluido_em` nem `atualizado_*` (a linha é o vínculo; tirar a tag apaga a linha e a auditoria da oportunidade guarda `alterar_tags`). **RLS habilitado e forçado** e fábrica no teste de isolamento. A função `app_conferir_alvo_da_tag()` passou a conhecer o terceiro destino e o gatilho `oportunidade_tags_alvo` (`AFTER INSERT OR UPDATE OF tag_id`) recusa tag de empresa ou de contato na oportunidade (e os gatilhos de 0043 recusam a de oportunidade em `empresa_tags` e `contato_tags`). O `ALTER TYPE ... ADD VALUE` fica na mesma migração porque nenhum comando dela usa o valor novo (o corpo da função só o lê ao rodar). Tag ou grupo usado por alguma oportunidade (mesmo excluída) só se inativa. A data de fechamento escolhida e a troca da data de criação (31/10/2026) não mudaram o modelo: gravam em `data_fechamento` e `criado_em`.
 
 ---
 
@@ -788,11 +791,11 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 | Empresas | empresas, empresa_telefones, empresa_cnaes, empresa_socios, empresa_tags, empresa_tags_historico | 6 |
 | Contatos | contatos, empresa_contatos, contato_telefones, contato_emails, contato_tags (0043) | 5 |
 | Atividades | atividades, atividade_lembretes, atividade_recorrencias, atividade_contatos, atividade_checklist, atividade_etiquetas, quadros, quadro_colunas, quadro_cards | 9 |
-| Oportunidades | oportunidades, oportunidade_itens, oportunidade_contatos, oportunidade_historico | 4 |
+| Oportunidades | oportunidades, oportunidade_itens, oportunidade_contatos, oportunidade_historico, oportunidade_tags (0044) | 5 |
 | Prospecção | prospeccoes, prospeccao_resultados | 2 |
 | Sistema | arquivos, comentarios, notificacoes, preferencias_notificacao, filtros_salvos, importacoes, auditoria, eventos_outbox | 8 |
 | Integrações (API aberta) | api_chaves (0038), idempotencia_chaves (0039), webhooks e webhook_entregas (0040) | 4 |
-| **Fase 1** | | **62** |
+| **Fase 1** | | **63** |
 | Futuras 🔮 | contas_conectadas, mensagens, email_rastreios, modelos_mensagem, conversas_nao_identificadas, territorios, metas, tenant_smtp, financeiro_titulos, financeiro_situacoes | 10 |
 
 ---

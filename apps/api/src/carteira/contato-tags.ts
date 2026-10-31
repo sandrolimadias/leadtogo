@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull, schema } from '@leadtogo/db'
-import type { TagDoContato } from '@leadtogo/shared'
+import type { AlvoDeTag, TagDoContato } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
 import { ErroApi } from '../http/erro-api.js'
@@ -52,13 +52,26 @@ export async function tagsAtuaisDoContato(db: Transacao, contatoId: string): Pro
   return new Set(linhas.map((l) => l.tagId))
 }
 
+const NOME_DO_DESTINO: Record<Exclude<AlvoDeTag, 'empresa'>, string> = {
+  contato: 'contato',
+  oportunidade: 'oportunidade',
+}
+
 /**
  * As tags finais do contato a partir do que o usuário pediu, já conferidas: toda tag existe e é de um
  * grupo de tags de contato; tag ou grupo inativo só continua se já estava; grupo de seleção única tem no
  * máximo uma.
  */
-export async function conferirTagsDoContato(
+export const conferirTagsDoContato = (
   db: Transacao,
+  atuais: ReadonlySet<string>,
+  pedidas: readonly string[],
+): Promise<Set<string>> => conferirTagsDoDestino(db, 'contato', atuais, pedidas)
+
+/** A mesma conferência para as tags de qualquer destino que não seja empresa (contato e oportunidade). */
+export async function conferirTagsDoDestino(
+  db: Transacao,
+  destino: Exclude<AlvoDeTag, 'empresa'>,
   atuais: ReadonlySet<string>,
   pedidas: readonly string[],
 ): Promise<Set<string>> {
@@ -81,14 +94,16 @@ export async function conferirTagsDoContato(
         inArray(tags.id, [...finais]),
         isNull(tags.excluidoEm),
         isNull(tagGrupos.excluidoEm),
-        eq(tagGrupos.aplicaA, 'contato'),
+        eq(tagGrupos.aplicaA, destino),
       ),
     )
   const porId = new Map(catalogo.map((t) => [t.id, t]))
   const porGrupo = new Map<string, typeof catalogo>()
   for (const id of finais) {
     const tag = porId.get(id)
-    if (!tag) throw invalido('tag_invalida', 'Tag inexistente ou que não é de contato.')
+    if (!tag) {
+      throw invalido('tag_invalida', `Tag inexistente ou que não é de ${NOME_DO_DESTINO[destino]}.`)
+    }
     if (!atuais.has(id) && !(tag.ativa && tag.grupoAtivo)) {
       throw invalido('tag_inativa', `A tag "${tag.nome}" está inativa.`)
     }

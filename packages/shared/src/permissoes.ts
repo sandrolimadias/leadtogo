@@ -73,6 +73,8 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
   p('oportunidades', 'editar', 'Editar oportunidades', true),
   p('oportunidades', 'excluir', 'Excluir oportunidades', true),
   p('oportunidades', 'atribuir_responsavel', 'Escolher outro responsável na oportunidade'),
+  p('oportunidades', 'data_fechamento', 'Escolher a data de fechamento da oportunidade'),
+  p('oportunidades', 'data_criacao', 'Alterar a data de criação da oportunidade'),
   p('atividades', 'ver', 'Ver atividades', true),
   p('atividades', 'criar', 'Registrar atividades'),
   p('atividades', 'editar', 'Editar, concluir, cancelar e excluir atividades', true),
@@ -128,7 +130,7 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
  * os perfis de SISTEMA das empresas com versão menor recebem as chaves novas que o seu padrão tem (as
  * outras permissões não mudam). Perfis criados pela empresa nunca recebem permissão automaticamente.
  */
-export const VERSAO_DO_CATALOGO = 10
+export const VERSAO_DO_CATALOGO = 11
 
 /** As chaves que cada versão acrescentou (a versão 1 é o catálogo inicial). */
 export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
@@ -150,6 +152,7 @@ export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
   8: ['portal.agenda'],
   9: ['portal.avisos'],
   10: ['integracoes.gerir'],
+  11: ['oportunidades.data_fechamento', 'oportunidades.data_criacao'],
 }
 
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
@@ -227,6 +230,7 @@ export const PERMISSOES_PADRAO: Record<ChaveDeSistema, PermissoesDoPerfil> = {
           'seguranca.gerir',
           'carteira.configurar',
           'integracoes.gerir',
+          'oportunidades.data_criacao',
         ].includes(c) &&
         !c.startsWith('chamados.') &&
         !c.startsWith('portal.'),

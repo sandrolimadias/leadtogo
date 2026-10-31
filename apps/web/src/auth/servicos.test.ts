@@ -269,6 +269,20 @@ describe('contatos: tags', () => {
   })
 })
 
+describe('oportunidades: tags', () => {
+  it('definirTags usa PUT /v1/carteira/oportunidades/{id}/tags com os ids', async () => {
+    await servicosReais.oportunidades.definirTags(ID, [ID])
+    expect(chamadas).toEqual([
+      {
+        metodo: 'PUT',
+        caminho: `/v1/carteira/oportunidades/${ID}/tags`,
+        consulta: '',
+        corpo: { tagIds: [ID] },
+      },
+    ])
+  })
+})
+
 describe('funis: método, caminho e corpo', () => {
   it('cada operação usa a rota certa', async () => {
     const f = servicosReais.funis

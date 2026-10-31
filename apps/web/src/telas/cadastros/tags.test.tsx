@@ -565,3 +565,68 @@ describe('Configurações → Tags: aba Contatos', () => {
     expect(await screen.findByText('Nenhum grupo de tags de contato')).toBeInTheDocument()
   })
 })
+
+describe('Configurações → Tags: aba Oportunidades', () => {
+  const comOportunidade = (): TagGrupo[] => [
+    ...dados(),
+    {
+      id: id(6),
+      nome: 'Tipo de negócio',
+      selecao: 'multipla',
+      obrigatorio: false,
+      sistema: false,
+      automatico: false,
+      aplicaA: 'oportunidade' as const,
+      ativo: true,
+      ordem: 3,
+      tags: [tag(61, 6, 'Renovação')],
+    },
+  ]
+
+  it('a aba Oportunidades só mostra os grupos dela; as outras abas não os mostram', async () => {
+    await abrir(servicosDeTags(comOportunidade()))
+    expect(screen.getByRole('tab', { name: /Oportunidades/ })).toHaveTextContent('1')
+    expect(screen.queryByRole('region', { name: 'Tipo de negócio' })).toBeNull()
+    await userEvent.click(screen.getByRole('tab', { name: /Contatos/ }))
+    expect(screen.queryByRole('region', { name: 'Tipo de negócio' })).toBeNull()
+
+    await userEvent.click(screen.getByRole('tab', { name: /Oportunidades/ }))
+    expect(await screen.findByRole('region', { name: 'Tipo de negócio' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Status' })).toBeNull()
+    expect(
+      screen.getByText(/Valem só para oportunidades, nunca para empresas nem contatos/),
+    ).toBeInTheDocument()
+  })
+
+  it('cria grupo de oportunidade sem a opção "Obrigatório"', async () => {
+    const servicos = servicosDeTags(comOportunidade())
+    await abrir(servicos)
+    await userEvent.click(screen.getByRole('tab', { name: /Oportunidades/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Novo grupo' }))
+    const dialogo = await screen.findByRole('dialog', {
+      name: 'Novo grupo de tags de oportunidade',
+    })
+    expect(within(dialogo).queryByRole('checkbox', { name: /Obrigatório/ })).toBeNull()
+    expect(
+      within(dialogo).getByRole('option', {
+        name: 'Única: a oportunidade tem só uma tag do grupo',
+      }),
+    ).toBeInTheDocument()
+    await userEvent.type(within(dialogo).getByLabelText(/Nome/), 'Concorrente')
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Criar grupo' }))
+    await waitFor(() =>
+      expect(servicos.tags.criarGrupo).toHaveBeenCalledWith({
+        nome: 'Concorrente',
+        selecao: 'multipla',
+        obrigatorio: false,
+        aplicaA: 'oportunidade',
+      }),
+    )
+  })
+
+  it('vazio: explica que as tags de oportunidade não aparecem para empresas nem contatos', async () => {
+    await abrir(servicosDeTags())
+    await userEvent.click(screen.getByRole('tab', { name: /Oportunidades/ }))
+    expect(await screen.findByText('Nenhum grupo de tags de oportunidade')).toBeInTheDocument()
+  })
+})
