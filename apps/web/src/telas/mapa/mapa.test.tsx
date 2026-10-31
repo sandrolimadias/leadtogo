@@ -426,16 +426,13 @@ describe('Mapa: chips, pins e legenda', () => {
     expect(screen.queryByText(/CNEFE 2022/)).toBeNull()
   })
 
-  it('"Clientes sem visita 60+ dias" liga o atalho e manda semVisitaDias=60', async () => {
+  it('não tem o atalho "Clientes sem visita 60+ dias" e não filtra por dias sem visita', async () => {
     const x = servicos()
     await abrir(x)
-    await userEvent.click(
-      await screen.findByRole('button', { name: /Clientes sem visita 60\+ dias/ }),
-    )
-    await waitFor(() => {
-      const ultima = x.m.pontos.mock.calls.at(-1)?.[0] as { semVisitaDias?: number }
-      expect(ultima.semVisitaDias).toBe(60)
-    })
+    await screen.findByRole('button', { name: 'pin Alfa Ltda, Vitória' })
+    expect(screen.queryByRole('button', { name: /sem visita 60\+ dias/ })).toBeNull()
+    const ultima = x.m.pontos.mock.calls.at(-1)?.[0] as { semVisitaDias?: number }
+    expect(ultima.semVisitaDias).toBeUndefined()
   })
 
   it('a busca filtra pelo texto (com um respiro para não consultar a cada tecla)', async () => {

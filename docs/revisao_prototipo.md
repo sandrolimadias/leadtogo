@@ -73,3 +73,13 @@ Plano em `plano_contatos_filtros_e_tags.md`. Onde o protótipo e `funcionalidade
 |---|---|---|
 | Filtros em linha ao lado da busca no desktop; botão "Filtros · N" só no celular | filtros recolhíveis em todos os dispositivos | botão **"Filtros"** em todos, abrindo os filtros um abaixo do outro, com **"Fechar filtros"** |
 | Sem tags no contato | tags de contato em grupos próprios (seção 2) | coluna **Tags** e filtro **"Tag do contato"** na lista, tags e **"Editar tags"** na ficha, seção **Tags** no formulário e abas **Empresas / Contatos** em *Configurações → Tags* |
+
+## 8. Divergências do Mapa (31/10/2026)
+
+Plano em `plano_ajustes_atividades_chamados_mapa.md`. Onde o protótipo e os documentos divergem, **vale o documento**:
+
+| Protótipo | Documento | Decisão |
+|---|---|---|
+| Chip "Clientes sem visita 60+ dias" depois dos chips de Status | atalho retirado a pedido do Ale | o chip sai; o estado **Sem visita há 60+ dias** continua no pin e na legenda, e a API segue aceitando `semVisitaDias` |
+| Legenda sempre aberta no rodapé | legenda abre e fecha | botão **Mostrar/Esconder a legenda** na barra de ferramentas (abaixo do de Rotas) e **"X"** na própria legenda; começa aberta e o aparelho lembra a escolha; no celular continua sem legenda |
+| Fonte dos dados num selo à parte | fonte na atribuição do mapa | "Fonte: IBGE – CNEFE 2022" entra na linha do "© OpenStreetMap contributors", abaixo do zoom |
