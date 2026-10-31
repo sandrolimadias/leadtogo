@@ -35,7 +35,7 @@
 
 **Zonas (item 2)**
 
-4. A faixa das zonas (altura 48px + respiro, como hoje) **entra no fluxo** do quadro enquanto se arrasta; as colunas encolhem na altura e descem. Sem animação quando o sistema pede movimento reduzido; nos demais casos, transição curta de altura (≤150ms, token de duração do design system).
+4. A faixa das zonas (altura 48px + respiro, como hoje) **entra no fluxo** do quadro enquanto se arrasta; as colunas encolhem na altura e descem. Sem animação (o design system não tem token de transição para isso; o deslocamento é imediato, como o aparecer das zonas hoje).
 5. O `DndContext` passa a **medir os alvos durante o arraste** (`measuring.droppable.strategy = Always`), porque as colunas mudam de lugar depois que o arraste começa. A detecção de colisão continua dando prioridade às zonas.
 6. Vale para desktop, tablet e celular (no celular a faixa já é a mesma, com 4 zonas em grade).
 
@@ -80,7 +80,6 @@
 - A `div` das zonas deixa de ser `absolute inset-x-0 top-0 z-20` e vira um bloco **no fluxo**, antes do quadro, dentro do `flex-col`: `grid grid-cols-4 gap-2 flex-none`. O quadro (`flex-1 min-h-0`) encolhe sozinho; cada coluna continua rolando os próprios cards.
 - `DndContext` com `measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}`.
 - Atualizar o comentário de `colisao` (as zonas não cobrem mais as colunas; a prioridade continua) e conferir `coordenadasDoTeclado` (seta para cima/baixo entre faixa e fases continua funcionando).
-- Movimento reduzido: sem transição (`useReduzirMovimento`, já usado no arquivo).
 - **Testes (Vitest):** ao começar a arrastar, a faixa existe e o cabeçalho das fases continua visível (não está dentro de um bloco sobreposto); ao soltar, a faixa some. **E2E (Playwright, desktop e celular):** durante o arraste, o retângulo do cabeçalho da primeira fase fica **abaixo** do retângulo da faixa (sem sobreposição) e soltar numa zona abre "Fechar oportunidade".
 - **Docs:** `funcionalidades.md` seção 7 (zona de soltura "no topo, **empurrando as colunas para baixo**") e `design_system.md`, seção "Kanban".
 
@@ -181,7 +180,7 @@ As migrações 0044 e 0045 só **acrescentam** (valor de enum e tabela nova): ne
 | Risco | Como se trata |
 |---|---|
 | Colunas mudarem de lugar no meio do arraste e o card cair na fase errada | Medição contínua dos alvos (`MeasuringStrategy.Always`) + teste E2E do retângulo e do soltar |
-| "Pulo" visual ao aparecer a faixa | Transição curta de altura, desligada com movimento reduzido |
+| "Pulo" visual ao aparecer a faixa | A faixa tem altura fixa (48px + respiro) e só aparece depois de 6px de arraste; o card arrastado segue o ponteiro (`DragOverlay`) |
 | Fechamento com data retroativa distorcer relatórios | Só com permissão, nunca no futuro, nunca antes da criação, e registrado na auditoria |
 | Tag de oportunidade vazar para empresa ou contato | `GET` sem parâmetro continua só empresa, conferência na API e gatilho no banco, com teste |
 | Kanban mais lento com as tags | Uma consulta agregada por carga do quadro e o índice `(tenant_id, tag_id)` |

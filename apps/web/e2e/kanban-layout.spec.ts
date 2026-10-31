@@ -6,7 +6,8 @@ import { administradorComSessao, limparLimites } from './ambiente'
 
 // Kanban de Oportunidades (ajustes de 16/10/2026): o quadro ocupa a largura e a altura toda da área central,
 // as colunas cabem sem rolagem horizontal e rolam os cards por dentro, qualquer coluna pode ser recolhida
-// (e o estado fica na conta), o celular mostra uma coluna por vez, as zonas de fechamento ficam no topo e
+// (e o estado fica na conta), o celular mostra uma coluna por vez, as zonas de fechamento ficam no topo
+// (31/10/2026: numa faixa própria, empurrando as colunas para baixo) e
 // o funil aceita no máximo 6 fases ativas.
 
 const CAPTURAS = process.env['CAPTURAS_DIR']
@@ -159,7 +160,9 @@ test('kanban: recolher uma coluna, o espaço vai para as abertas e o estado fica
   await expect(coluna(page, 'Diagnóstico')).toBeVisible()
 })
 
-test('kanban: ao arrastar, as zonas de fechamento aparecem no topo do quadro', async ({ page }) => {
+test('kanban: ao arrastar, as zonas de fechamento aparecem no topo e empurram as colunas para baixo', async ({
+  page,
+}) => {
   test.setTimeout(120_000)
   await preparar(page, 'kbl3')
   await page.setViewportSize({ width: 1366, height: 768 })
@@ -173,9 +176,14 @@ test('kanban: ao arrastar, as zonas de fechamento aparecem no topo do quadro', a
   await page.mouse.move(de.x + de.width / 2 + 12, de.y + de.height / 2 + 30, { steps: 5 })
   const perdida = page.getByRole('group', { name: 'Soltar aqui para marcar como perdida' })
   await expect(perdida).toBeVisible()
-  const quadro = (await page.getByRole('region', { name: /Quadro do funil/ }).boundingBox())!
   const zona = (await perdida.boundingBox())!
-  expect(zona.y - quadro.y).toBeLessThan(40)
+  // a faixa fica ACIMA do quadro: o cabeçalho das fases (nome, quantidade e soma) continua visível
+  const quadro = (await page.getByRole('region', { name: /Quadro do funil/ }).boundingBox())!
+  expect(quadro.y).toBeGreaterThanOrEqual(zona.y + zona.height)
+  const cabecalho = (await coluna(page, 'Qualificação')
+    .getByRole('heading', { name: 'Qualificação' })
+    .boundingBox())!
+  expect(cabecalho.y).toBeGreaterThanOrEqual(zona.y + zona.height)
   await capturar(page, 'kanban-zonas-no-topo')
   await page.mouse.move(zona.x + zona.width / 2, zona.y + zona.height / 2, { steps: 8 })
   await page.mouse.up()
@@ -242,8 +250,8 @@ test('kanban no celular: uma coluna por vez, deslizando para o lado, e zonas no 
   await page.mouse.move(de.x + de.width / 2 + 12, de.y + de.height / 2 + 30, { steps: 5 })
   const conquistada = page.getByRole('group', { name: 'Soltar aqui para marcar como conquistada' })
   await expect(conquistada).toBeVisible()
-  const topo = (await quadro.boundingBox())!
-  expect((await conquistada.boundingBox())!.y - topo.y).toBeLessThan(40)
+  const faixa = (await conquistada.boundingBox())!
+  expect((await quadro.boundingBox())!.y).toBeGreaterThanOrEqual(faixa.y + faixa.height)
   await capturar(page, 'kanban-390x844-zonas-no-topo')
   await page.mouse.up()
 })

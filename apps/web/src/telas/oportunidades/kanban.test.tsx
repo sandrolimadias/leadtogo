@@ -201,12 +201,15 @@ describe('Kanban: zonas de fechamento no topo', () => {
       name: /Soltar aqui para marcar como conquistada/,
     })
     const zonas = grupo.parentElement as HTMLElement
-    // sobre o quadro (posição absoluta, colada no topo), antes das colunas na ordem do documento
-    expect(zonas.className).toContain('absolute')
-    expect(zonas.className).toContain('top-0')
-    expect(zonas.className).not.toContain('bottom-0')
+    // numa faixa própria, no fluxo, ANTES do quadro: empurra as colunas para baixo em vez de cobrir o
+    // cabeçalho das fases
+    expect(zonas.className).not.toContain('absolute')
+    expect(zonas.className).toContain('flex-none')
     const quadro = screen.getByRole('region', { name: /Quadro do funil Vendas/ })
     expect(zonas.compareDocumentPosition(quadro) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(zonas.contains(quadro)).toBe(false)
+    expect(zonas.parentElement).toBe(quadro.parentElement)
+    expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0)
     for (const z of ['conquistada', 'perdida', 'cancelada', 'suspensa']) {
       expect(
         within(zonas).getByRole('group', { name: `Soltar aqui para marcar como ${z}` }),

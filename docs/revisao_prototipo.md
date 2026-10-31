@@ -81,3 +81,4 @@ Plano em `plano_oportunidades_kanban_e_tags.md`. Onde o protótipo e `funcionali
 | Protótipo | Documento | Decisão |
 |---|---|---|
 | Card com o nome da oportunidade na 1ª linha e a empresa abaixo, em cinza | empresa primeiro | **EMPRESA** (maiúsculas, negrito) na 1ª linha e o nome da oportunidade abaixo |
+| Zonas de fechamento sobrepostas ao topo do quadro ao arrastar | as zonas não escondem o cabeçalho das fases | faixa própria acima das colunas, que **descem** enquanto se arrasta |
