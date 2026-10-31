@@ -4610,10 +4610,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Pedir a troca do e-mail de entrada
-         * @description Envia um link ao e-mail NOVO (válido por 1 hora, uso único). O e-mail só muda quando o link é confirmado. E-mail já usado por outro acesso da empresa dá 409.
+         * Pedir a troca do e-mail de entrada (desligado)
+         * @description Fase 4A: o e-mail e o telefone do cliente ficam travados; só a equipe altera, pela ficha do contato. Responde sempre 403 `email_travado` (a rota sai na contração).
          */
         post: operations["PortalAuthController_trocarEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/empresa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Minha empresa
+         * @description O cadastro completo da empresa-cliente da sessão, só para leitura: documento, endereço, telefones, CNAEs, porte e o primeiro nome do responsável na equipe.
+         */
+        get: operations["PortalPreferenciasController_minhaEmpresa"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4906,10 +4926,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
         /**
-         * Corrigir o próprio nome
-         * @description O cliente só altera o próprio nome; cargo e vínculo com a empresa são da equipe.
+         * Meu perfil
+         * @description O cadastro do contato como a equipe guardou: nome, cargo na empresa da sessão, e-mails, telefones e aniversário. Só nome e cargo o cliente altera (`PUT /portal/perfil`).
+         */
+        get: operations["PortalPreferenciasController_meuPerfil"];
+        /**
+         * Corrigir o próprio nome e cargo
+         * @description O cliente altera o próprio nome e o cargo na empresa da sessão (`cargo` ausente não muda; nulo apaga). E-mail, telefone e o vínculo com a empresa são da equipe.
          */
         put: operations["PortalAuthController_perfil"];
         post?: never;
@@ -4933,6 +4957,26 @@ export interface paths {
         get: operations["PortalPreferenciasController_obter"];
         /** Salvar minhas preferências */
         put: operations["PortalPreferenciasController_salvar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/preferencias/tema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Salvar o tema
+         * @description Claro, escuro ou sistema (padrão). Vale em todos os aparelhos da pessoa.
+         */
+        put: operations["PortalPreferenciasController_salvarTema"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6200,6 +6244,7 @@ export interface components {
             resolvidoEm: string | null;
             prazoResposta: components["schemas"]["PrazoDoChamado"] | null;
             prazoResolucao: components["schemas"]["PrazoDoChamado"] | null;
+            notaDoCliente: number | null;
             descricao: string | null;
             /** Format: date-time */
             fechadoEm: string | null;
@@ -6208,6 +6253,12 @@ export interface components {
             notasInternas: components["schemas"]["NotaInterna"][];
             eventos: components["schemas"]["EventoDoChamado"][];
             acoes: components["schemas"]["AcoesDoChamado"];
+            avaliacao: {
+                nota: number;
+                comentario: string | null;
+                /** Format: date-time */
+                avaliadoEm: string;
+            } | null;
         };
         ChamadoDoPortal: {
             /** Format: uuid */
@@ -7763,6 +7814,7 @@ export interface components {
             resolvidoEm: string | null;
             prazoResposta: components["schemas"]["PrazoDoChamado"] | null;
             prazoResolucao: components["schemas"]["PrazoDoChamado"] | null;
+            notaDoCliente: number | null;
         };
         ItemDeChamadoDoPortal: {
             /** Format: uuid */
@@ -8372,6 +8424,60 @@ export interface components {
             }[];
             truncado: boolean;
         };
+        MeuPerfilDoPortal: {
+            nome: string;
+            cargo: string | null;
+            emailDeAcesso: string;
+            emails: {
+                email: string;
+                /** @enum {string} */
+                tipo: "pessoal" | "trabalho";
+            }[];
+            telefones: {
+                numero: string;
+                /** @enum {string} */
+                tipo: "fixo" | "celular" | "whatsapp" | "outro";
+            }[];
+            aniversario: {
+                dia: number;
+                mes: number;
+            } | null;
+        };
+        MinhaEmpresaDoPortal: {
+            razaoSocial: string;
+            nomeFantasia: string | null;
+            /** @enum {string} */
+            tipoDocumento: "cnpj" | "cpf" | "nenhum";
+            documento: string | null;
+            /** @enum {string|null} */
+            matrizFilial: "matriz" | "filial" | null;
+            porte: string | null;
+            dataInicioAtividades: string | null;
+            website: string | null;
+            endereco: {
+                cep: string | null;
+                logradouro: string | null;
+                numero: string | null;
+                complemento: string | null;
+                bairro: string | null;
+                municipio: string | null;
+                uf: string | null;
+            };
+            telefones: {
+                numero: string;
+                /** @enum {string} */
+                tipo: "fixo" | "celular" | "whatsapp" | "outro";
+            }[];
+            cnaePrincipal: {
+                codigo: string;
+                descricao: string;
+            } | null;
+            cnaesSecundarios: {
+                codigo: string;
+                descricao: string;
+            }[];
+            responsavel: string | null;
+        };
         /** @enum {string} */
         MinhaSituacaoNoEvento: "nenhuma" | "confirmado" | "lista_espera";
         ModeloDeVisita: {
@@ -8861,6 +8967,7 @@ export interface components {
         };
         PerfilDoPortalEntrada: {
             nome: string;
+            cargo?: string | null;
         };
         PermissoesDoPerfil: {
             [key: string]: ("propria" | "equipe" | "todas") | true;
@@ -8967,6 +9074,8 @@ export interface components {
             emailChamados: boolean;
             emailEventos: boolean;
             emailAvisos: boolean;
+            /** @enum {string} */
+            tema: "claro" | "escuro" | "sistema";
         };
         PreferenciasPatch: {
             /** @enum {string|null} */
@@ -9309,6 +9418,8 @@ export interface components {
             emailChamados: boolean;
             emailEventos: boolean;
             emailAvisos: boolean;
+            /** @enum {string} */
+            tema?: "claro" | "escuro" | "sistema";
         };
         SalvarPublicacaoEntrada: {
             titulo: string;
@@ -9342,6 +9453,10 @@ export interface components {
             empresaIds: string[];
             posicaoAtual?: components["schemas"]["Coordenada"];
             otimizada?: boolean;
+        };
+        SalvarTemaDoPortalEntrada: {
+            /** @enum {string} */
+            tema: "claro" | "escuro" | "sistema";
         };
         SalvarVisitaEntrada: {
             /** Format: uuid */
@@ -28188,8 +28303,28 @@ export interface operations {
                     "application/json": components["schemas"]["Erro"];
                 };
             };
-            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
-            409: {
+        };
+    };
+    PortalPreferenciasController_minhaEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinhaEmpresaDoPortal"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28197,8 +28332,17 @@ export interface operations {
                     "application/json": components["schemas"]["Erro"];
                 };
             };
-            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
-            429: {
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29231,6 +29375,62 @@ export interface operations {
             };
         };
     };
+    PortalPreferenciasController_meuPerfil: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeuPerfilDoPortal"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalAuthController_perfil: {
         parameters: {
             query?: never;
@@ -29348,6 +29548,75 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SalvarPreferenciasDoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferenciasDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPreferenciasController_salvarTema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarTemaDoPortalEntrada"];
             };
         };
         responses: {

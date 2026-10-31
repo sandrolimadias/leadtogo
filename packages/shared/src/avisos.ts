@@ -139,6 +139,8 @@ export const preferenciasDoPortalSchema = z
     emailChamados: z.boolean(),
     emailEventos: z.boolean(),
     emailAvisos: z.boolean(),
+    /** Tema do portal (Fase 4A); salvo à parte, em `PUT /portal/preferencias/tema` */
+    tema: z.enum(['claro', 'escuro', 'sistema']),
   })
   .meta({ id: 'PreferenciasDoPortal' })
 export type PreferenciasDoPortal = z.infer<typeof preferenciasDoPortalSchema>
@@ -149,9 +151,21 @@ export const PREFERENCIAS_PADRAO_DO_PORTAL: PreferenciasDoPortal = {
   emailChamados: true,
   emailEventos: true,
   emailAvisos: true,
+  tema: 'sistema',
 }
 
+export const TEMAS_DO_PORTAL = ['claro', 'escuro', 'sistema'] as const
+export type TemaDoPortal = (typeof TEMAS_DO_PORTAL)[number]
+export const salvarTemaDoPortalSchema = z
+  .object({ tema: z.enum(TEMAS_DO_PORTAL) })
+  .strict()
+  .meta({ id: 'SalvarTemaDoPortalEntrada' })
+export type SalvarTemaDoPortalEntrada = z.infer<typeof salvarTemaDoPortalSchema>
+
 export const salvarPreferenciasDoPortalSchema = preferenciasDoPortalSchema
+  .omit({ tema: true })
+  // O tema é opcional aqui (ausente não muda); a tela de tema usa `PUT /portal/preferencias/tema`
+  .extend({ tema: z.enum(TEMAS_DO_PORTAL).optional() })
   .strict()
   .superRefine((d, ctx) => {
     if ((d.silencioInicio === null) !== (d.silencioFim === null)) {

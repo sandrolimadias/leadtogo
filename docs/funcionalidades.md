@@ -624,8 +624,11 @@ Espaço do **contato da empresa-cliente** (`portal.aledias.com.br`, app `apps/po
 - **Entrada:** o cliente informa o e-mail e recebe um **link mágico** de 15 minutos, uso único. A resposta é **sempre a mesma**, exista o e-mail ou não.
 - **Sessão:** cookie `__Host-portal` (`HttpOnly`, `Secure`, `SameSite=Lax`, sem `Domain`); 30 dias deslizantes, no máximo 90; mudanças no portal só valem com `Origin` igual a `PORTAL_URL`. Suspender ou revogar o acesso derruba as sessões. Sem `PORTAL_URL` as rotas respondem `503 portal_indisponivel`.
 - **Limites contra abuso:** pedido de link por IP (20/h) e por e-mail (5/h); consumo de link 30/h; 2FA com 8 tentativas por 15 minutos.
-- **Segurança da conta:** lista e encerramento de sessões, **2FA por aplicativo (TOTP)** com códigos de recuperação (código usado não repete), troca de e-mail por link enviado ao **endereço novo**. A empresa pode **exigir 2FA do Responsável**.
-- **Perfil:** o cliente edita só o **nome**; o cargo vem do vínculo contato–empresa e é somente leitura.
+- **Segurança da conta:** lista e encerramento de sessões, **2FA por aplicativo (TOTP)** com códigos de recuperação (código usado não repete), ~~troca de e-mail por link~~ (*Fase 4A: o e-mail e o telefone ficam **travados**; só a equipe altera, pela ficha do contato; a rota responde 403 `email_travado`*). A empresa pode **exigir 2FA do Responsável**.
+- **Perfil (Fase 4A):** a aba **Meu perfil** mostra o cadastro do contato (nome, cargo, e-mails, telefones, aniversário). O cliente edita **nome e cargo** (o cargo é o do vínculo com a empresa da sessão; um gatilho garante que, pela sessão do portal, só o cargo muda na linha). **E-mail e telefone ficam travados**, com o aviso "só a equipe altera". A foto entra com o envio de imagens (4D).
+- **Minha empresa (Fase 4A):** o cadastro completo da empresa-cliente, **só para leitura**: razão social, nome fantasia, CNPJ/CPF (matriz ou filial), porte, início das atividades, site, endereço, telefones, CNAE principal e secundários e o primeiro nome de quem atende a empresa. Nada da carteira interna (vendedor, notas, oportunidades, tags).
+- **Aparência (Fase 4A):** tema **Claro, Escuro ou Sistema** (padrão Sistema) em Meu perfil; vale na hora, fica no aparelho (sem piscar ao abrir) e na conta (`portal_preferencias.tema`), seguindo a pessoa entre aparelhos.
+- **Abas sem barra de rolagem (Fase 4A):** no portal (e no hub do CRM), as abas que não cabem descem de linha em vez de rolar.
 - **Pedido de acesso para colegas:** o Responsável pede, a equipe aprova ou recusa (com motivo) no hub.
 
 ### Chamados pelo portal
@@ -637,7 +640,7 @@ Espaço do **contato da empresa-cliente** (`portal.aledias.com.br`, app `apps/po
 - **Auditoria:** todo ato do cliente é auditado com `membro_id` nulo e `alteracoes.ator = { tipo: 'contato', acessoId, contatoId }`.
 
 ### Hub "Portal do Cliente" no CRM
-Indicadores (chamados abertos pelo portal, tempo de resposta, avaliação média, acessos ativos, com período), lista de **chamados do portal**, **acessos** (dar, reenviar, suspender, reativar, revogar), **pedidos de acesso** e a **configuração** (portal ativo, nome, 2FA do Responsável). No detalhe do chamado, **Criar tarefa** vincula uma tarefa ao chamado (com prazo opcional) e a avaliação do cliente aparece junto.
+Indicadores (chamados abertos pelo portal, tempo de resposta, avaliação média, acessos ativos, com período), lista de **chamados do portal**, **acessos** (dar, reenviar, suspender, reativar, revogar), **pedidos de acesso** e a **configuração** (portal ativo, nome, 2FA do Responsável). No detalhe do chamado, **Criar tarefa** vincula uma tarefa ao chamado (com prazo opcional) e a avaliação do cliente aparece junto (*Fase 4A: em **estrelas** com o comentário no detalhe do chamado, e a nota em estrelas na lista de chamados do hub; a API devolve `avaliacao` no detalhe e `notaDoCliente` na lista*).
 
 ### Isolamento (resumo)
 Duas camadas no banco: o **tenant** (RLS como em todo o sistema) e a **empresa-cliente** (variáveis `app.portal_*` preenchidas só pela sessão do portal, com políticas restritivas). As tabelas internas **negam tudo** à sessão do portal. Detalhe em `modelagem_banco.md`.

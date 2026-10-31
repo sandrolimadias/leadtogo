@@ -42,15 +42,12 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { Documenta } from '../documentacao/documenta.js'
-import { emailPortalTrocaDeEmail } from '../email/modelos.js'
-import { EmailService } from '../email/email.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { auditarAtoDoPortal } from './portal-auditoria.js'
 import { sessaoDoPortalDe } from './portal-dto.js'
 import { PortalEntradaService } from './portal-entrada.service.js'
-import { PortalLinksService } from './portal-links.service.js'
 import { PortalSegundoFatorService } from './portal-segundo-fator.service.js'
 import { PortalSessaoService } from './portal-sessao.service.js'
 import { nomeDoCookieDoPortal } from './portal-token.js'
@@ -66,8 +63,6 @@ export class PortalAuthController {
     private readonly entrada: PortalEntradaService,
     private readonly sessoes: PortalSessaoService,
     private readonly segundoFator: PortalSegundoFatorService,
-    private readonly links: PortalLinksService,
-    private readonly email: EmailService,
   ) {}
 
   private opcoesDoCookie() {
@@ -293,62 +288,27 @@ export class PortalAuthController {
   // ----------------------------------------------------------------------------- e-mail e perfil
 
   @Documenta({
-    resumo: 'Pedir a troca do e-mail de entrada',
+    resumo: 'Pedir a troca do e-mail de entrada (desligado)',
     descricao:
-      'Envia um link ao e-mail NOVO (válido por 1 hora, uso único). O e-mail só muda quando o link é confirmado. E-mail já usado por outro acesso da empresa dá 409.',
+      'Fase 4A: o e-mail e o telefone do cliente ficam travados; só a equipe altera, pela ficha do contato. Responde sempre 403 `email_travado` (a rota sai na contração).',
     corpo: trocarEmailSchema,
     status: 202,
-    erros: [400, 401, 403, 409, 429, 503],
+    erros: [400, 401, 403],
   })
   @Post('email/troca')
   @HttpCode(202)
-  @Limite({ nome: 'portal-troca-email', max: 10, janelaS: 3600 })
-  async trocarEmail(
-    @Body(new ZodPipe(trocarEmailSchema)) dados: TrocarEmailEntrada,
-    @Req() req: Request,
-  ): Promise<void> {
-    const p = this.ctx.portal
-    const db = this.ctx.db()
-    const [ocupado] = await db.execute(sql`
-      SELECT 1 FROM portal_acessos
-      WHERE empresa_id = ${p.empresaId} AND email = ${dados.email} AND situacao <> 'revogado' AND excluido_em IS NULL
-        AND id <> ${p.acessoId}`)
-    if (ocupado) {
-      throw new ErroApi(
-        'email_em_uso',
-        'Este e-mail já é usado por outro acesso desta empresa.',
-        409,
-      )
-    }
-    const token = await this.links.criar(db, {
-      tenantId: p.tenantId,
-      acessoId: p.acessoId,
-      finalidade: 'troca_email',
-      emailDestino: dados.email,
-      ip: req.ip,
-    })
-    await auditarAtoDoPortal(db, {
-      tenantId: p.tenantId,
-      acessoId: p.acessoId,
-      contatoId: p.contatoId,
-      entidade: 'portal_acesso',
-      entidadeId: p.acessoId,
-      acao: 'troca_de_email_pedida',
-      ip: req.ip,
-    })
-    await this.email.enfileirar(
-      dados.email,
-      emailPortalTrocaDeEmail({
-        nome: p.nome,
-        portal: p.nomeDoPortal,
-        link: this.links.enderecoDoLink(token),
-      }),
+  trocarEmail(@Body(new ZodPipe(trocarEmailSchema)) _dados: TrocarEmailEntrada): void {
+    throw new ErroApi(
+      'email_travado',
+      'O e-mail de acesso só pode ser alterado pela equipe. Fale com ela por um chamado.',
+      403,
     )
   }
 
   @Documenta({
-    resumo: 'Corrigir o próprio nome',
-    descricao: 'O cliente só altera o próprio nome; cargo e vínculo com a empresa são da equipe.',
+    resumo: 'Corrigir o próprio nome e cargo',
+    descricao:
+      'O cliente altera o próprio nome e o cargo na empresa da sessão (`cargo` ausente não muda; nulo apaga). E-mail, telefone e o vínculo com a empresa são da equipe.',
     corpo: perfilDoPortalSchema,
     resposta: sessaoDoPortalSchema,
     erros: [400, 401, 403, 503],
@@ -361,6 +321,12 @@ export class PortalAuthController {
     const p = this.ctx.portal
     await this.ctx.db().execute(sql`
       UPDATE contatos SET nome = ${dados.nome}, atualizado_em = now() WHERE id = ${p.contatoId}`)
+    if (dados.cargo !== undefined) {
+      // O gatilho do banco garante que, pela sessão do portal, só o cargo muda nesta linha
+      await this.ctx.db().execute(sql`
+        UPDATE empresa_contatos SET cargo = ${dados.cargo || null}, atualizado_em = now()
+        WHERE contato_id = ${p.contatoId} AND empresa_id = ${p.empresaId}`)
+    }
     await auditarAtoDoPortal(this.ctx.db(), {
       tenantId: p.tenantId,
       acessoId: p.acessoId,
@@ -368,7 +334,7 @@ export class PortalAuthController {
       entidade: 'contato',
       entidadeId: p.contatoId,
       acao: 'nome_corrigido_pelo_cliente',
-      alteracoes: { antes: p.nome, depois: dados.nome },
+      alteracoes: { antes: p.nome, depois: dados.nome, cargo: dados.cargo },
       ip: req.ip,
     })
     return sessaoDoPortalDe({ ...p, nome: dados.nome })

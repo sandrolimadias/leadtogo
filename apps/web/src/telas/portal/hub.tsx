@@ -63,6 +63,7 @@ export function TelaDoPortal() {
         </p>
       </header>
       <Tabs
+        quebrar
         label="Portal do Cliente"
         value={aba}
         onChange={(v) => setAba(v as Aba)}

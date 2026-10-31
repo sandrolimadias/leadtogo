@@ -51,12 +51,12 @@ export const servicosReais: ServicosDoPortal = {
       protegido(async () => semCorpo(await api.DELETE('/v1/portal/sessoes/{id}', chave(id)))),
     encerrarOutras: () =>
       protegido(async () => semCorpo(await api.POST('/v1/portal/sessoes/encerrar-outras'))),
-    trocarEmail: (email) =>
-      protegido(async () =>
-        semCorpo(await api.POST('/v1/portal/email/troca', { body: { email } })),
-      ),
-    corrigirNome: (nome) =>
-      protegido(async () => daApi(await api.PUT('/v1/portal/perfil', { body: { nome } }))),
+    salvarPerfil: (dados) =>
+      protegido(async () => daApi(await api.PUT('/v1/portal/perfil', { body: dados }))),
+  },
+  cadastro: {
+    perfil: () => protegido(async () => daApi(await api.GET('/v1/portal/perfil'))),
+    empresa: () => protegido(async () => daApi(await api.GET('/v1/portal/empresa'))),
   },
   segundoFator: {
     iniciar: () => protegido(async () => daApi(await api.POST('/v1/portal/2fa/iniciar'))),
@@ -179,6 +179,10 @@ export const servicosReais: ServicosDoPortal = {
     obter: () => protegido(async () => daApi(await api.GET('/v1/portal/preferencias'))),
     salvar: (dados) =>
       protegido(async () => daApi(await api.PUT('/v1/portal/preferencias', { body: dados }))),
+    salvarTema: (tema) =>
+      protegido(async () =>
+        daApi(await api.PUT('/v1/portal/preferencias/tema', { body: { tema } })),
+      ),
   },
   push: {
     configuracao: () => protegido(async () => daApi(await api.GET('/v1/portal/push/configuracao'))),

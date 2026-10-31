@@ -40,9 +40,10 @@ export class PortalPreferenciasService {
       email_chamados: boolean
       email_eventos: boolean
       email_avisos: boolean
+      tema: PreferenciasDoPortal['tema']
     }>(sql`
       SELECT to_char(silencio_inicio, 'HH24:MI') AS silencio_inicio, to_char(silencio_fim, 'HH24:MI') AS silencio_fim,
-             email_chamados, email_eventos, email_avisos
+             email_chamados, email_eventos, email_avisos, tema
       FROM portal_preferencias WHERE acesso_id = ${this.ctx.portal.acessoId}`)
     if (!p) return { ...PREFERENCIAS_PADRAO_DO_PORTAL }
     return {
@@ -51,20 +52,32 @@ export class PortalPreferenciasService {
       emailChamados: p.email_chamados,
       emailEventos: p.email_eventos,
       emailAvisos: p.email_avisos,
+      tema: p.tema,
     }
+  }
+
+  /** O tema do portal (claro, escuro ou sistema), guardado para seguir a pessoa entre aparelhos. */
+  async salvarTema(tema: PreferenciasDoPortal['tema']): Promise<PreferenciasDoPortal> {
+    const { acessoId, tenantId } = this.ctx.portal
+    await this.ctx.db().execute(sql`
+      INSERT INTO portal_preferencias (id, tenant_id, acesso_id, tema)
+      VALUES (${novoId()}, ${tenantId}, ${acessoId}, ${tema})
+      ON CONFLICT (acesso_id) DO UPDATE SET tema = EXCLUDED.tema, atualizado_em = now()`)
+    return this.obter()
   }
 
   async salvar(d: SalvarPreferenciasDoPortalEntrada): Promise<PreferenciasDoPortal> {
     const { acessoId, tenantId } = this.ctx.portal
     await this.ctx.db().execute(sql`
       INSERT INTO portal_preferencias (id, tenant_id, acesso_id, silencio_inicio, silencio_fim, email_chamados,
-                                       email_eventos, email_avisos)
+                                       email_eventos, email_avisos, tema)
       VALUES (${novoId()}, ${tenantId}, ${acessoId}, ${d.silencioInicio}::time, ${d.silencioFim}::time,
-              ${d.emailChamados}, ${d.emailEventos}, ${d.emailAvisos})
+              ${d.emailChamados}, ${d.emailEventos}, ${d.emailAvisos}, ${d.tema ?? 'sistema'})
       ON CONFLICT (acesso_id) DO UPDATE SET
         silencio_inicio = EXCLUDED.silencio_inicio, silencio_fim = EXCLUDED.silencio_fim,
         email_chamados = EXCLUDED.email_chamados, email_eventos = EXCLUDED.email_eventos,
-        email_avisos = EXCLUDED.email_avisos, atualizado_em = now()`)
+        email_avisos = EXCLUDED.email_avisos,
+        tema = ${d.tema === undefined ? sql`portal_preferencias.tema` : d.tema}, atualizado_em = now()`)
     return this.obter()
   }
 

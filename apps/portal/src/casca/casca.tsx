@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { Bell, CalendarDays, FileText, Home, LifeBuoy, Plus, Search, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { type FormEvent, type ReactNode, useCallback, useState } from 'react'
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react'
 
 import { Avatar } from '@leadtogo/ui/exibicao'
 import { Button } from '@leadtogo/ui/button'
@@ -17,6 +17,7 @@ import { useServicos } from '@/servicos/contexto'
 import { useDispositivo } from './dispositivo'
 import { useFluxoDoSino } from './fluxo-do-sino'
 import { primeiroNome } from './rotulos'
+import { guardarTema, temaGuardado } from './tema'
 
 interface ItemDoMenu {
   para: '/' | '/chamados' | '/documentos' | '/agenda' | '/notificacoes' | '/perfil'
@@ -59,6 +60,23 @@ function useContagens() {
   return { aguardando: inicio.data?.aguardandoVoce ?? 0, naoLidas: notificacoes.data ?? 0 }
 }
 
+/** O tema salvo na conta vale em qualquer aparelho: ao entrar, ele substitui o guardado neste aparelho. */
+function useTemaDaConta() {
+  const servicos = useServicos()
+  const preferencias = useQuery({
+    queryKey: ['preferencias'],
+    queryFn: async () => {
+      const r = await servicos.preferencias.obter()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+  const tema = preferencias.data?.tema
+  useEffect(() => {
+    if (tema && tema !== temaGuardado()) guardarTema(tema)
+  }, [tema])
+}
+
 /** O campo de busca do cabeçalho: Enter leva à tela de resultados. */
 function CampoDeBusca() {
   const navegar = useNavigate()
@@ -92,6 +110,7 @@ export function Casca({
   children: ReactNode
 }) {
   const sessao = useSessaoAtual(inicial)
+  useTemaDaConta()
   const dispositivo = useDispositivo()
   const router = useRouter()
   const { aguardando, naoLidas } = useContagens()

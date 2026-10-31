@@ -316,6 +316,13 @@
       "when": 1793462544221,
       "tag": "0044_tags_de_oportunidade",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1793485942825,
+      "tag": "0045_portal_4a_tema_e_cargo",
+      "breakpoints": true
     }
   ]
 }

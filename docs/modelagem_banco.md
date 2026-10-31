@@ -989,12 +989,18 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 | `avisos` | mensagem (1 a 140), link (caminho do portal ou http/https), urgencia (`normal` · `urgente`), alcance (`todos` · `empresas`), situacao (`agendado` · `enviado` · `cancelado`), enviar_em, enviado_em, cancelado_em, destinatarios | CHECKs: mensagem não vazia e até 140; link `/caminho` ou `http(s)://` (nunca `//` nem `javascript:`); `enviado` exige `enviado_em`; `cancelado` exige `cancelado_em` |
 | `aviso_empresas` | aviso_id, empresa_id | Alcance "empresas" |
 | `aviso_entregas` | aviso_id, acesso_id, empresa_id, notificacao_id, push_enviar_em, push_enviado_em, push_aceitos, email_enfileirado_em, lido_em | **Uma entrega por aviso e pessoa** (único). `push_enviar_em` já considera o horário de silêncio; `push_enviado_em` é o "claim" que garante envio no máximo uma vez |
-| `portal_preferencias` | acesso_id (único), silencio_inicio, silencio_fim, email_chamados, email_eventos, email_avisos | Silêncio exige os dois horários e que sejam diferentes |
+| `portal_preferencias` | acesso_id (único), silencio_inicio, silencio_fim, email_chamados, email_eventos, email_avisos, **tema** (0045: `claro`, `escuro` ou `sistema`, padrão `sistema`) | Silêncio exige os dois horários e que sejam diferentes |
 | `portal_push_inscricoes` | acesso_id, endpoint (único), chave_p256dh, chave_auth, falhas, revogada_em | Uma por navegador/aparelho; 404/410 do serviço de push revoga |
 
 **O que a sessão do portal enxerga:** `avisos` e `aviso_empresas` ficam **fechados** (política `portal_negado`: só a equipe e o worker). `aviso_entregas`: lê e marca como lida **só a própria**, sem criar nem apagar. `portal_preferencias`: lê, cria e atualiza só a própria (sem apagar). `portal_push_inscricoes`: gerencia só as próprias.
 
 **Varredura do worker (cross-tenant):** `app_avisos_a_enviar()` (avisos agendados que venceram) e `app_pushes_pendentes()` (entregas com `push_enviar_em` vencido e sem envio), ambas devolvem `(id, tenant_id)` com LIMIT 200 e usam políticas só para o dono travadas em `app.varrendo_avisos`, como nas fases anteriores.
+
+## Portal, Fase 4A (migração 0045, só expansão; plano em `plano_portal_formularios_e_eventos.md`)
+
+- `portal_preferencias.tema` (acima).
+- **Cargo pelo próprio cliente:** `empresa_contatos` deixa de ser só leitura para o portal **na linha do próprio contato com a empresa da sessão** (política `portal_escopo_upd`). O gatilho `empresa_contatos_portal_so_cargo` (`app_portal_so_cargo()`) devolve a linha ao que era e mantém só `cargo` e `atualizado_em` quando a sessão é do portal (principal, ativo, empresa e contato continuam com a equipe).
+- **Minha empresa:** `empresa_telefones` e `empresa_cnaes` trocam o `portal_negado` por leitura da **própria empresa-cliente** (`portal_escopo_sel`), sem gravar (`portal_so_leitura_*`).
 
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 

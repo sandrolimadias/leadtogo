@@ -83,6 +83,8 @@ function servicos(
               assunto: 'Inversor da ponte rolante desarmando',
               solicitante: { tipo: 'contato', nome: 'Sérgio Nunes' },
               empresaCliente: { id: id(302), nome: 'Caldeiraria Anchieta' },
+              status: 'resolvido',
+              notaDoCliente: 5,
             }),
           ],
           total: 1,
@@ -114,6 +116,7 @@ describe('hub do portal: chamados', () => {
     const lista = await screen.findByRole('list', { name: 'Chamados dos clientes' })
     expect(within(lista).getByText('Inversor da ponte rolante desarmando')).toBeInTheDocument()
     expect(within(lista).getByText(/Sérgio Nunes pelo portal/)).toBeInTheDocument()
+    expect(within(lista).getByRole('img', { name: 'Nota 5 de 5' })).toBeInTheDocument()
     await waitFor(() =>
       expect(s.chamados.listar).toHaveBeenCalledWith(
         expect.objectContaining({ aba: 'todos', origem: 'portal' }),

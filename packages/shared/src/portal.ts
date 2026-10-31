@@ -297,11 +297,63 @@ export const trocarEmailSchema = z
 export type TrocarEmailEntrada = z.infer<typeof trocarEmailSchema>
 
 /** O cliente corrige só o próprio nome; cargo e vínculo são da equipe (a empresa é cadastro do CRM). */
+/** O que o cliente corrige no próprio perfil (Fase 4A): nome e cargo. E-mail e telefone são da equipe. */
 export const perfilDoPortalSchema = z
-  .object({ nome: z.string().trim().min(2, 'informe o nome').max(120) })
+  .object({
+    nome: z.string().trim().min(2, 'informe o nome').max(120),
+    /** Cargo na empresa da sessão; vazio apaga; ausente não muda */
+    cargo: z.string().trim().max(80).nullable().optional(),
+  })
   .strict()
   .meta({ id: 'PerfilDoPortalEntrada' })
 export type PerfilDoPortalEntrada = z.infer<typeof perfilDoPortalSchema>
+
+/** "Meu perfil": o cadastro do contato como a equipe guardou (só nome e cargo o cliente altera). */
+export const meuPerfilDoPortalSchema = z
+  .object({
+    nome: z.string(),
+    cargo: z.string().nullable(),
+    /** O e-mail de entrada no portal */
+    emailDeAcesso: z.string(),
+    emails: z.array(z.object({ email: z.string(), tipo: z.enum(['pessoal', 'trabalho']) })),
+    telefones: z.array(
+      z.object({ numero: z.string(), tipo: z.enum(['fixo', 'celular', 'whatsapp', 'outro']) }),
+    ),
+    aniversario: z.object({ dia: z.number().int(), mes: z.number().int() }).nullable(),
+  })
+  .meta({ id: 'MeuPerfilDoPortal' })
+export type MeuPerfilDoPortal = z.infer<typeof meuPerfilDoPortalSchema>
+
+/** "Minha empresa": o cadastro completo da empresa-cliente, só para leitura (nada da carteira interna). */
+export const minhaEmpresaDoPortalSchema = z
+  .object({
+    razaoSocial: z.string(),
+    nomeFantasia: z.string().nullable(),
+    tipoDocumento: z.enum(['cnpj', 'cpf', 'nenhum']),
+    documento: z.string().nullable(),
+    matrizFilial: z.enum(['matriz', 'filial']).nullable(),
+    porte: z.string().nullable(),
+    dataInicioAtividades: z.string().nullable(),
+    website: z.string().nullable(),
+    endereco: z.object({
+      cep: z.string().nullable(),
+      logradouro: z.string().nullable(),
+      numero: z.string().nullable(),
+      complemento: z.string().nullable(),
+      bairro: z.string().nullable(),
+      municipio: z.string().nullable(),
+      uf: z.string().nullable(),
+    }),
+    telefones: z.array(
+      z.object({ numero: z.string(), tipo: z.enum(['fixo', 'celular', 'whatsapp', 'outro']) }),
+    ),
+    cnaePrincipal: z.object({ codigo: z.string(), descricao: z.string() }).nullable(),
+    cnaesSecundarios: z.array(z.object({ codigo: z.string(), descricao: z.string() })),
+    /** Primeiro nome de quem cuida da empresa na equipe */
+    responsavel: z.string().nullable(),
+  })
+  .meta({ id: 'MinhaEmpresaDoPortal' })
+export type MinhaEmpresaDoPortal = z.infer<typeof minhaEmpresaDoPortalSchema>
 
 export const pedirAcessoParaColegaSchema = z
   .object({

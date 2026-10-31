@@ -11,6 +11,7 @@ import { useDeferredValue, useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { Select, TextField } from '@leadtogo/ui/campos'
+import { Estrelas } from '@leadtogo/ui/estrelas'
 import { Badge } from '@leadtogo/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { Paginacao } from '@leadtogo/ui/paginacao'
@@ -46,6 +47,7 @@ function Linha({ c }: { c: ItemDeChamado }) {
       </span>
       <span className="flex flex-wrap items-center gap-1.5">
         <Badge tone={TOM_DO_STATUS[c.status]}>{ROTULO_DO_STATUS_DO_CHAMADO[c.status]}</Badge>
+        {c.notaDoCliente !== null ? <Estrelas nota={c.notaDoCliente} /> : null}
         {prazos.map((p) => (
           <Badge key={p.texto} tone={p.tom}>
             {p.texto}

@@ -23586,7 +23586,7 @@
     },
     "/v1/portal/email/troca": {
       "post": {
-        "description": "Envia um link ao e-mail NOVO (válido por 1 hora, uso único). O e-mail só muda quando o link é confirmado. E-mail já usado por outro acesso da empresa dá 409.",
+        "description": "Fase 4A: o e-mail e o telefone do cliente ficam travados; só a equipe altera, pela ficha do contato. Responde sempre 403 `email_travado` (a rota sai na contração).",
         "operationId": "PortalAuthController_trocarEmail",
         "parameters": [],
         "requestBody": {
@@ -23632,9 +23632,35 @@
                 }
               }
             }
+          }
+        },
+        "summary": "Pedir a troca do e-mail de entrada (desligado)",
+        "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/empresa": {
+      "get": {
+        "description": "O cadastro completo da empresa-cliente da sessão, só para leitura: documento, endereço, telefones, CNAEs, porte e o primeiro nome do responsável na equipe.",
+        "operationId": "PortalPreferenciasController_minhaEmpresa",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinhaEmpresaDoPortal"
+                }
+              }
+            }
           },
-          "409": {
-            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
             "content": {
               "application/json": {
                 "schema": {
@@ -23643,8 +23669,18 @@
               }
             }
           },
-          "429": {
-            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
             "content": {
               "application/json": {
                 "schema": {
@@ -23664,8 +23700,8 @@
             }
           }
         },
-        "summary": "Pedir a troca do e-mail de entrada",
-        "tags": ["Portal do cliente: acesso"],
+        "summary": "Minha empresa",
+        "tags": ["Portal do cliente: preferências e busca"],
         "security": [
           {
             "sessaoPortal": []
@@ -24942,7 +24978,7 @@
     },
     "/v1/portal/perfil": {
       "put": {
-        "description": "O cliente só altera o próprio nome; cargo e vínculo com a empresa são da equipe.",
+        "description": "O cliente altera o próprio nome e o cargo na empresa da sessão (`cargo` ausente não muda; nulo apaga). E-mail, telefone e o vínculo com a empresa são da equipe.",
         "operationId": "PortalAuthController_perfil",
         "parameters": [],
         "requestBody": {
@@ -25007,8 +25043,72 @@
             }
           }
         },
-        "summary": "Corrigir o próprio nome",
+        "summary": "Corrigir o próprio nome e cargo",
         "tags": ["Portal do cliente: acesso"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      },
+      "get": {
+        "description": "O cadastro do contato como a equipe guardou: nome, cargo na empresa da sessão, e-mails, telefones e aniversário. Só nome e cargo o cliente altera (`PUT /portal/perfil`).",
+        "operationId": "PortalPreferenciasController_meuPerfil",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeuPerfilDoPortal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Meu perfil",
+        "tags": ["Portal do cliente: preferências e busca"],
         "security": [
           {
             "sessaoPortal": []
@@ -25147,6 +25247,92 @@
           }
         },
         "summary": "Salvar minhas preferências",
+        "tags": ["Portal do cliente: preferências e busca"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/preferencias/tema": {
+      "put": {
+        "description": "Claro, escuro ou sistema (padrão). Vale em todos os aparelhos da pessoa.",
+        "operationId": "PortalPreferenciasController_salvarTema",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarTemaDoPortalEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenciasDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Salvar o tema",
         "tags": ["Portal do cliente: preferências e busca"],
         "security": [
           {
@@ -30233,6 +30419,12 @@
               }
             ]
           },
+          "notaDoCliente": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
           "descricao": {
             "nullable": true,
             "type": "string"
@@ -30267,6 +30459,27 @@
           },
           "acoes": {
             "$ref": "#/components/schemas/AcoesDoChamado"
+          },
+          "avaliacao": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "nota": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "comentario": {
+                "nullable": true,
+                "type": "string"
+              },
+              "avaliadoEm": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": ["nota", "comentario", "avaliadoEm"],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -30288,13 +30501,15 @@
           "resolvidoEm",
           "prazoResposta",
           "prazoResolucao",
+          "notaDoCliente",
           "descricao",
           "fechadoEm",
           "reaberturas",
           "mensagens",
           "notasInternas",
           "eventos",
-          "acoes"
+          "acoes",
+          "avaliacao"
         ],
         "additionalProperties": false
       },
@@ -35994,6 +36209,12 @@
                 "$ref": "#/components/schemas/PrazoDoChamado"
               }
             ]
+          },
+          "notaDoCliente": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
           }
         },
         "required": [
@@ -36014,7 +36235,8 @@
           "primeiraRespostaEm",
           "resolvidoEm",
           "prazoResposta",
-          "prazoResolucao"
+          "prazoResolucao",
+          "notaDoCliente"
         ],
         "additionalProperties": false
       },
@@ -38416,6 +38638,214 @@
         ],
         "additionalProperties": false
       },
+      "MeuPerfilDoPortal": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "emailDeAcesso": {
+            "type": "string"
+          },
+          "emails": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["pessoal", "trabalho"]
+                }
+              },
+              "required": ["email", "tipo"],
+              "additionalProperties": false
+            }
+          },
+          "telefones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                }
+              },
+              "required": ["numero", "tipo"],
+              "additionalProperties": false
+            }
+          },
+          "aniversario": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "dia": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "mes": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["dia", "mes"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["nome", "cargo", "emailDeAcesso", "emails", "telefones", "aniversario"],
+        "additionalProperties": false
+      },
+      "MinhaEmpresaDoPortal": {
+        "type": "object",
+        "properties": {
+          "razaoSocial": {
+            "type": "string"
+          },
+          "nomeFantasia": {
+            "nullable": true,
+            "type": "string"
+          },
+          "tipoDocumento": {
+            "type": "string",
+            "enum": ["cnpj", "cpf", "nenhum"]
+          },
+          "documento": {
+            "nullable": true,
+            "type": "string"
+          },
+          "matrizFilial": {
+            "nullable": true,
+            "type": "string",
+            "enum": ["matriz", "filial"]
+          },
+          "porte": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dataInicioAtividades": {
+            "nullable": true,
+            "type": "string"
+          },
+          "website": {
+            "nullable": true,
+            "type": "string"
+          },
+          "endereco": {
+            "type": "object",
+            "properties": {
+              "cep": {
+                "nullable": true,
+                "type": "string"
+              },
+              "logradouro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "numero": {
+                "nullable": true,
+                "type": "string"
+              },
+              "complemento": {
+                "nullable": true,
+                "type": "string"
+              },
+              "bairro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "municipio": {
+                "nullable": true,
+                "type": "string"
+              },
+              "uf": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["cep", "logradouro", "numero", "complemento", "bairro", "municipio", "uf"],
+            "additionalProperties": false
+          },
+          "telefones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numero": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["fixo", "celular", "whatsapp", "outro"]
+                }
+              },
+              "required": ["numero", "tipo"],
+              "additionalProperties": false
+            }
+          },
+          "cnaePrincipal": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "codigo": {
+                "type": "string"
+              },
+              "descricao": {
+                "type": "string"
+              }
+            },
+            "required": ["codigo", "descricao"],
+            "additionalProperties": false
+          },
+          "cnaesSecundarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigo": {
+                  "type": "string"
+                },
+                "descricao": {
+                  "type": "string"
+                }
+              },
+              "required": ["codigo", "descricao"],
+              "additionalProperties": false
+            }
+          },
+          "responsavel": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "razaoSocial",
+          "nomeFantasia",
+          "tipoDocumento",
+          "documento",
+          "matrizFilial",
+          "porte",
+          "dataInicioAtividades",
+          "website",
+          "endereco",
+          "telefones",
+          "cnaePrincipal",
+          "cnaesSecundarios",
+          "responsavel"
+        ],
+        "additionalProperties": false
+      },
       "MinhaSituacaoNoEvento": {
         "type": "string",
         "enum": ["nenhuma", "confirmado", "lista_espera"]
@@ -40146,6 +40576,11 @@
             "type": "string",
             "minLength": 2,
             "maxLength": 120
+          },
+          "cargo": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 80
           }
         },
         "required": ["nome"],
@@ -40563,6 +40998,10 @@
           },
           "emailAvisos": {
             "type": "boolean"
+          },
+          "tema": {
+            "type": "string",
+            "enum": ["claro", "escuro", "sistema"]
           }
         },
         "required": [
@@ -40570,7 +41009,8 @@
           "silencioFim",
           "emailChamados",
           "emailEventos",
-          "emailAvisos"
+          "emailAvisos",
+          "tema"
         ],
         "additionalProperties": false
       },
@@ -41850,6 +42290,10 @@
           },
           "emailAvisos": {
             "type": "boolean"
+          },
+          "tema": {
+            "type": "string",
+            "enum": ["claro", "escuro", "sistema"]
           }
         },
         "required": [
@@ -41974,6 +42418,17 @@
           }
         },
         "required": ["nome", "data", "partida", "voltarAoInicio", "empresaIds"],
+        "additionalProperties": false
+      },
+      "SalvarTemaDoPortalEntrada": {
+        "type": "object",
+        "properties": {
+          "tema": {
+            "type": "string",
+            "enum": ["claro", "escuro", "sistema"]
+          }
+        },
+        "required": ["tema"],
         "additionalProperties": false
       },
       "SalvarVisitaEntrada": {

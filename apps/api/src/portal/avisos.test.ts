@@ -351,6 +351,7 @@ describe('preferências', () => {
       emailChamados: true,
       emailEventos: true,
       emailAvisos: true,
+      tema: 'sistema',
     })
     const salva = await portal('put', '/portal/preferencias', {
       cookie: ana.cookie,

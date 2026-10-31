@@ -41,6 +41,7 @@ import { PortalEventosService } from './portal-eventos.service.js'
 import { AvisosController } from './avisos.controller.js'
 import { AvisosService } from './avisos.service.js'
 import { PortalBuscaService } from './portal-busca.service.js'
+import { PortalPerfilService } from './portal-perfil.service.js'
 import { PortalPreferenciasController } from './portal-preferencias.controller.js'
 import { PortalPreferenciasService } from './portal-preferencias.service.js'
 import { PortalGuard } from './portal.guard.js'
@@ -68,6 +69,7 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalPreferenciasController,
   ],
   providers: [
+    PortalPerfilService,
     LimitePorChave,
     PortalLinksService,
     PortalSessaoService,

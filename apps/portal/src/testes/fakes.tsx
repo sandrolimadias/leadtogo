@@ -2,6 +2,8 @@ import type {
   ChamadoDoPortal,
   EventoDoPortal,
   InicioDoPortal,
+  MeuPerfilDoPortal,
+  MinhaEmpresaDoPortal,
   PreferenciasDoPortal,
   PublicacaoDoPortal,
   ItemDeChamadoDoPortal,
@@ -40,7 +42,43 @@ export const preferenciasPadrao: PreferenciasDoPortal = {
   emailChamados: true,
   emailEventos: true,
   emailAvisos: true,
+  tema: 'sistema',
 }
+
+export const meuPerfil = (extra: Partial<MeuPerfilDoPortal> = {}): MeuPerfilDoPortal => ({
+  nome: 'Daniel Prates',
+  cargo: 'Gerente de manutenção',
+  emailDeAcesso: 'daniel@usidantec.com.br',
+  emails: [{ email: 'daniel@usidantec.com.br', tipo: 'trabalho' }],
+  telefones: [{ numero: '(27) 99999-1234', tipo: 'celular' }],
+  aniversario: null,
+  ...extra,
+})
+
+export const minhaEmpresa = (extra: Partial<MinhaEmpresaDoPortal> = {}): MinhaEmpresaDoPortal => ({
+  razaoSocial: 'USIDANTEC USINAGEM LTDA',
+  nomeFantasia: 'Usidantec',
+  tipoDocumento: 'cnpj',
+  documento: '12345678000190',
+  matrizFilial: 'matriz',
+  porte: 'Pequeno porte',
+  dataInicioAtividades: '2010-05-03',
+  website: null,
+  endereco: {
+    cep: '29160000',
+    logradouro: 'Rua das Indústrias',
+    numero: '100',
+    complemento: null,
+    bairro: 'Civit II',
+    municipio: 'Serra',
+    uf: 'ES',
+  },
+  telefones: [{ numero: '(27) 3333-4444', tipo: 'fixo' }],
+  cnaePrincipal: { codigo: '2539-0/01', descricao: 'Serviços de usinagem, tornearia e solda' },
+  cnaesSecundarios: [],
+  responsavel: 'Ana',
+  ...extra,
+})
 
 export const item = (extra: Partial<ItemDeChamadoDoPortal> = {}): ItemDeChamadoDoPortal => ({
   id: id(10),
@@ -152,10 +190,13 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       ),
       encerrar: vi.fn(async () => ok(undefined)),
       encerrarOutras: vi.fn(async () => ok(undefined)),
-      trocarEmail: vi.fn(async () => ok(undefined)),
-      corrigirNome: vi.fn(async (nome: string) =>
-        ok(sessao({ contato: { id: id(2), nome, email: 'daniel@usidantec.com.br' } })),
+      salvarPerfil: vi.fn(async (dados: { nome: string; cargo?: string | null }) =>
+        ok(sessao({ contato: { id: id(2), nome: dados.nome, email: 'daniel@usidantec.com.br' } })),
       ),
+    },
+    cadastro: {
+      perfil: vi.fn(async () => ok(meuPerfil())),
+      empresa: vi.fn(async () => ok(minhaEmpresa())),
     },
     segundoFator: {
       iniciar: vi.fn(async () =>
@@ -199,7 +240,12 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
     },
     preferencias: {
       obter: vi.fn(async () => ok(preferenciasPadrao)),
-      salvar: vi.fn(async (dados: PreferenciasDoPortal) => ok(dados)),
+      salvar: vi.fn(async (dados: Omit<PreferenciasDoPortal, 'tema'>) =>
+        ok({ ...preferenciasPadrao, ...dados }),
+      ),
+      salvarTema: vi.fn(async (tema: PreferenciasDoPortal['tema']) =>
+        ok({ ...preferenciasPadrao, tema }),
+      ),
     },
     push: {
       configuracao: vi.fn(async () =>

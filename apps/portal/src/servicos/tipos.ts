@@ -5,6 +5,8 @@ import type {
   EventoDoPortal,
   ListaDeEventosDoPortal,
   ProximosEventosDoPortal,
+  MeuPerfilDoPortal,
+  MinhaEmpresaDoPortal,
   PreferenciasDoPortal,
   ConfiguracaoDePush,
   ResultadoDaBuscaDoPortal,
@@ -52,8 +54,16 @@ export interface ServicosDoPortal {
     sessoes: () => Promise<Resultado<{ itens: SessaoAtivaDoPortal[] }>>
     encerrar: (id: string) => Promise<Resultado>
     encerrarOutras: () => Promise<Resultado>
-    trocarEmail: (email: string) => Promise<Resultado>
-    corrigirNome: (nome: string) => Promise<Resultado<SessaoDoPortal>>
+    /** Nome e cargo (e-mail e telefone só a equipe muda) */
+    salvarPerfil: (dados: {
+      nome: string
+      cargo?: string | null
+    }) => Promise<Resultado<SessaoDoPortal>>
+  }
+  /** "Meu perfil" e "Minha empresa": o cadastro como a equipe guardou (Fase 4A) */
+  cadastro: {
+    perfil: () => Promise<Resultado<MeuPerfilDoPortal>>
+    empresa: () => Promise<Resultado<MinhaEmpresaDoPortal>>
   }
   segundoFator: {
     iniciar: () => Promise<Resultado<IniciarSegundoFatorResposta>>
@@ -116,7 +126,10 @@ export interface ServicosDoPortal {
   /** Preferências da própria pessoa (Fase 3E): horário de silêncio e e-mail por tipo */
   preferencias: {
     obter: () => Promise<Resultado<PreferenciasDoPortal>>
-    salvar: (dados: PreferenciasDoPortal) => Promise<Resultado<PreferenciasDoPortal>>
+    salvar: (
+      dados: Omit<PreferenciasDoPortal, 'tema'> & { tema?: PreferenciasDoPortal['tema'] },
+    ) => Promise<Resultado<PreferenciasDoPortal>>
+    salvarTema: (tema: PreferenciasDoPortal['tema']) => Promise<Resultado<PreferenciasDoPortal>>
   }
   /** Push (Web Push/VAPID): só depois do consentimento da pessoa, por aparelho */
   push: {

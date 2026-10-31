@@ -22,6 +22,7 @@ export function Tabs({
   onChange,
   label,
   className,
+  quebrar = false,
   children,
 }: {
   items: ItemDeAba[]
@@ -30,6 +31,11 @@ export function Tabs({
   onChange?: (valor: string) => void
   label: string
   className?: string
+  /**
+   * Na tela estreita, as abas que não cabem descem para a linha de baixo em vez de rolar na horizontal:
+   * nunca aparece barra de rolagem, em nenhum navegador (o portal do cliente usa assim).
+   */
+  quebrar?: boolean
   children?: ReactNode
 }) {
   return (
@@ -45,7 +51,12 @@ export function Tabs({
         // A linha de baixo é uma sombra interna (não borda) e o sublinhado da aba ativa fica dentro da lista:
         // nada passa da altura, então não aparece barra de rolagem. Com muitas abas na tela estreita, rola
         // na horizontal com o dedo, sem a barra.
-        className="flex gap-1 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--border)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={cn(
+          'flex gap-1 shadow-[inset_0_-1px_0_var(--border)]',
+          quebrar
+            ? 'flex-wrap overflow-hidden'
+            : 'overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        )}
       >
         {items.map((item) => (
           <AbasDoRadix.Trigger

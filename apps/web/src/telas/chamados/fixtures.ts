@@ -44,6 +44,7 @@ export const itemDeChamado = (extra: Partial<ItemDeChamado> = {}): ItemDeChamado
   resolvidoEm: null,
   prazoResposta: null,
   prazoResolucao: null,
+  notaDoCliente: null,
   ...extra,
 })
 
@@ -54,6 +55,7 @@ export const chamadoCompleto = (extra: Partial<Chamado> = {}): Chamado => ({
   reaberturas: 0,
   mensagens: [],
   notasInternas: [],
+  avaliacao: null,
   eventos: [
     {
       id: id(500),

@@ -149,6 +149,25 @@ describe('Chamado: conversa, notas internas e anexos', () => {
     ).toBeInTheDocument()
   })
 
+  it('mostra a avaliação do cliente em estrelas, com o comentário', async () => {
+    const ch = chamadoCompleto({
+      status: 'resolvido',
+      origem: 'portal',
+      avaliacao: { nota: 4, comentario: 'Rápido e claro', avaliadoEm: '2026-10-22T14:00:00.000Z' },
+    })
+    renderizar(servicos(ch), `/chamados/${ch.id}`)
+    const secao = await screen.findByRole('region', { name: 'Avaliação do cliente' })
+    expect(within(secao).getByRole('img', { name: 'Nota 4 de 5' })).toBeInTheDocument()
+    expect(within(secao).getByText('“Rápido e claro”')).toBeInTheDocument()
+  })
+
+  it('sem avaliação, não mostra a seção', async () => {
+    const ch = comMensagem()
+    renderizar(servicos(ch), `/chamados/${ch.id}`)
+    await screen.findByRole('heading', { name: 'Revisar contrato do cliente' })
+    expect(screen.queryByRole('region', { name: 'Avaliação do cliente' })).not.toBeInTheDocument()
+  })
+
   it('quem não atende não tem a seção de notas internas', async () => {
     const ch = comMensagem()
     renderizar(servicos(ch), `/chamados/${ch.id}`)

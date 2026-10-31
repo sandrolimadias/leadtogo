@@ -377,6 +377,18 @@ describe('o ciclo do chamado', () => {
     })
     expect(outra.status).toBe(409)
     expect(erroDe(outra)).toBe('ja_avaliado')
+
+    // A equipe vê a nota no detalhe e na lista do CRM (B-10)
+    expect((await dadosNoCrm(c, ch.id)).avaliacao).toMatchObject({
+      nota: 4,
+      comentario: 'Bom atendimento',
+    })
+    const lista = await crm('get', c.e.d.cookie, '/chamados?origem=portal&aba=todos')
+    expect(
+      (lista.body as { itens: { id: string; notaDoCliente: number | null }[] }).itens.find(
+        (i) => i.id === ch.id,
+      )?.notaDoCliente,
+    ).toBe(4)
   })
 
   it('não reabre depois de 7 dias; não avalia chamado em andamento', async () => {

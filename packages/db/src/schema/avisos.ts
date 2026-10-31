@@ -145,10 +145,13 @@ export const portalPreferencias = pgTable(
     emailChamados: boolean().notNull().default(true),
     emailEventos: boolean().notNull().default(true),
     emailAvisos: boolean().notNull().default(true),
+    /** Tema do portal (Fase 4A): claro, escuro ou sistema; segue a pessoa entre aparelhos */
+    tema: varchar({ length: 10 }).notNull().default('sistema'),
     ...carimbos(),
   },
   (t) => [
     uniqueIndex('portal_preferencias_acesso_uq').on(t.acessoId),
+    check('portal_preferencias_tema_chk', sql`${t.tema} IN ('claro', 'escuro', 'sistema')`),
     check(
       'portal_preferencias_silencio_chk',
       sql`(${t.silencioInicio} IS NULL) = (${t.silencioFim} IS NULL) AND (${t.silencioInicio} IS NULL OR ${t.silencioInicio} <> ${t.silencioFim})`,

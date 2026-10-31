@@ -502,39 +502,82 @@ describe('verificação em duas etapas', () => {
 })
 
 describe('e-mail e perfil', () => {
-  it('troca de e-mail: o link vai ao endereço novo e só ele muda o acesso; endereço ocupado dá 409', async () => {
+  it('o e-mail fica travado: pedir a troca dá 403 e o acesso não muda (Fase 4A)', async () => {
     const c = await novoClienteDoPortal(app)
-    const colega = await novoAcesso(c.dono, { empresaId: c.empresaId })
     const cookie = await entrarNoPortal(chamar, c)
-    const novo = `novo-${c.acessoId}@exemplo.com.br`
-
-    expect(
-      (await chamar('post', '/portal/email/troca', { cookie, corpo: { email: colega.email } }))
-        .status,
-    ).toBe(409)
-    expect(
-      (await chamar('post', '/portal/email/troca', { cookie, corpo: { email: novo } })).status,
-    ).toBe(202)
-    const antes = await noTenant(
-      c.tenantId,
-      (tx) =>
-        tx<{ email: string }[]>`SELECT email::text FROM portal_acessos WHERE id = ${c.acessoId}`,
-    )
-    expect(antes[0]?.email).toBe(c.email)
-
-    const token = await tokenDoEmail(novo)
-    const previa = await chamar('post', '/portal/link/consulta', { corpo: { token } })
-    expect(previa.body).toMatchObject({
-      finalidade: 'troca_email',
-      exigeAceiteDePrivacidade: false,
+    const r = await chamar('post', '/portal/email/troca', {
+      cookie,
+      corpo: { email: `novo-${c.acessoId}@exemplo.com.br` },
     })
-    expect((await chamar('post', '/portal/link/consumir', { corpo: { token } })).status).toBe(200)
+    expect(r.status).toBe(403)
+    expect((r.body as { erro: string }).erro).toBe('email_travado')
     const depois = await noTenant(
       c.tenantId,
       (tx) =>
         tx<{ email: string }[]>`SELECT email::text FROM portal_acessos WHERE id = ${c.acessoId}`,
     )
-    expect(depois[0]?.email).toBe(novo)
+    expect(depois[0]?.email).toBe(c.email)
+  })
+
+  it('meu perfil: mostra o cadastro; o cliente muda nome e cargo, e só o cargo muda no vínculo', async () => {
+    const c = await novoClienteDoPortal(app)
+    await noTenant(
+      c.tenantId,
+      (tx) => tx`
+        INSERT INTO contato_telefones (id, tenant_id, contato_id, numero, numero_e164, tipo, principal)
+        VALUES (gen_random_uuid(), ${c.tenantId}, ${c.contatoId}, '(27) 99999-0000', '+5527999990000', 'celular', true)`,
+    )
+    const cookie = await entrarNoPortal(chamar, c)
+    const antes = await chamar('get', '/portal/perfil', { cookie })
+    expect(antes.status).toBe(200)
+    expect(antes.body).toMatchObject({
+      emailDeAcesso: c.email,
+      telefones: [{ numero: '(27) 99999-0000', tipo: 'celular' }],
+    })
+    const r = await chamar('put', '/portal/perfil', {
+      cookie,
+      corpo: { nome: 'Maria Nova', cargo: 'Diretora financeira' },
+    })
+    expect(r.status).toBe(200)
+    const depois = await chamar('get', '/portal/perfil', { cookie })
+    expect(depois.body).toMatchObject({ nome: 'Maria Nova', cargo: 'Diretora financeira' })
+    const vinculo = await noTenant(
+      c.tenantId,
+      (tx) => tx<{ cargo: string; principal: boolean; ativo: boolean }[]>`
+        SELECT cargo, principal, ativo FROM empresa_contatos
+        WHERE contato_id = ${c.contatoId} AND empresa_id = ${c.empresaId}`,
+    )
+    expect(vinculo[0]).toMatchObject({ cargo: 'Diretora financeira', ativo: true })
+  })
+
+  it('minha empresa: o cadastro completo, só da empresa da sessão', async () => {
+    const c = await novoClienteDoPortal(app)
+    const cookie = await entrarNoPortal(chamar, c)
+    const r = await chamar('get', '/portal/empresa', { cookie })
+    expect(r.status).toBe(200)
+    expect(r.body).toHaveProperty('razaoSocial')
+    expect(r.body).toHaveProperty('endereco')
+    expect(r.body).not.toHaveProperty('vendedorId')
+    expect(r.body).not.toHaveProperty('observacoes')
+    // Sem sessão não há empresa
+    expect((await chamar('get', '/portal/empresa', {})).status).toBe(401)
+  })
+
+  it('o tema fica nas preferências e segue a pessoa', async () => {
+    const c = await novoClienteDoPortal(app)
+    const cookie = await entrarNoPortal(chamar, c)
+    const padrao = await chamar('get', '/portal/preferencias', { cookie })
+    expect((padrao.body as { tema: string }).tema).toBe('sistema')
+    const r = await chamar('put', '/portal/preferencias/tema', {
+      cookie,
+      corpo: { tema: 'escuro' },
+    })
+    expect(r.status).toBe(200)
+    expect((r.body as { tema: string }).tema).toBe('escuro')
+    expect(
+      (await chamar('put', '/portal/preferencias/tema', { cookie, corpo: { tema: 'roxo' } }))
+        .status,
+    ).toBe(400)
   })
 
   it('corrigir o nome grava a auditoria com o ator "contato" e nunca registra segredos', async () => {

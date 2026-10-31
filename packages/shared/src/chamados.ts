@@ -171,6 +171,8 @@ export const itemDeChamadoSchema = z
     resolvidoEm: z.iso.datetime().nullable(),
     prazoResposta: prazoDoChamadoSchema.nullable(),
     prazoResolucao: prazoDoChamadoSchema.nullable(),
+    /** Nota (1 a 5) que o cliente deu pelo portal; nulo se não avaliou (Fase 4A, B-10) */
+    notaDoCliente: z.number().int().min(1).max(5).nullable(),
   })
   .meta({ id: 'ItemDeChamado' })
 export type ItemDeChamado = z.infer<typeof itemDeChamadoSchema>
@@ -298,6 +300,14 @@ export const chamadoSchema = itemDeChamadoSchema
     notasInternas: z.array(notaInternaSchema),
     eventos: z.array(eventoDoChamadoSchema),
     acoes: acoesDoChamadoSchema,
+    /** A avaliação do cliente pelo portal (nota de 1 a 5 e comentário), uma por chamado */
+    avaliacao: z
+      .object({
+        nota: z.number().int().min(1).max(5),
+        comentario: z.string().nullable(),
+        avaliadoEm: z.iso.datetime(),
+      })
+      .nullable(),
   })
   .meta({ id: 'Chamado' })
 export type Chamado = z.infer<typeof chamadoSchema>
