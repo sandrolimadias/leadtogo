@@ -159,3 +159,19 @@ test('atividades no celular: o "+" do cabeçalho abre a folha de registro e a p�
   })
   expect(semRolagem).toBe(true)
 })
+
+test('atividades no celular (360 px): as três abas cabem inteiras, sem rolar', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await entrarComSessao(page, 'ativabas')
+  await page.goto('/atividades')
+  const abas = page.getByRole('tablist', { name: 'Situação das atividades' })
+  await expect(abas.getByRole('tab', { name: /Realizadas/ })).toBeVisible()
+  const m = await abas.evaluate((e) => ({
+    w: e.clientWidth,
+    sw: e.scrollWidth,
+    h: e.clientHeight,
+    sh: e.scrollHeight,
+  }))
+  expect(m.sw).toBeLessThanOrEqual(m.w)
+  expect(m.sh).toBeLessThanOrEqual(m.h)
+})

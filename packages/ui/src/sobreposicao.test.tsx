@@ -111,6 +111,25 @@ describe('Tabs e Tooltip', () => {
     await userEvent.keyboard('{Enter}')
     expect(onChange).toHaveBeenCalledWith('atrasadas')
   })
+  it('a barra de abas não encolhe (numa coluna de altura fixa sumia) e não mostra barra de rolagem', () => {
+    render(<Tabs label="Seções" items={[{ value: 'a', label: 'A' }]} />)
+    const lista = screen.getByRole('tablist', { name: 'Seções' })
+    expect(lista).toHaveClass('flex-none', 'overflow-y-hidden', '[scrollbar-width:none]')
+  })
+  it('preencher: no celular as abas dividem a largura (cabem sem rolar)', () => {
+    render(
+      <Tabs
+        label="Situação"
+        preencher
+        items={[
+          { value: 'a', label: 'A' },
+          { value: 'b', label: 'B' },
+        ]}
+      />,
+    )
+    expect(screen.getByRole('tablist', { name: 'Situação' })).toHaveClass('max-md:gap-0')
+    for (const aba of screen.getAllByRole('tab')) expect(aba).toHaveClass('max-md:flex-1')
+  })
   it('a dica aparece no foco do teclado (e não só no mouse)', async () => {
     render(
       <TooltipProvider>

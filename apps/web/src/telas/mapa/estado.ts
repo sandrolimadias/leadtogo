@@ -14,8 +14,6 @@ export interface FiltrosDaTela {
   visitaDe: string
   visitaAte: string
   vendedorId: string
-  /** "Clientes sem visita 60+ dias": o atalho que liga `semVisitaDias` */
-  semVisita60: boolean
   municipioCodigo: string
   regiaoId: string
   precisao: '' | 'exata' | 'aproximada'
@@ -31,7 +29,6 @@ export function filtrosIniciais(o: OpcoesDoMapa): FiltrosDaTela {
     visitaDe: '',
     visitaAte: '',
     vendedorId: '',
-    semVisita60: false,
     municipioCodigo: '',
     regiaoId: '',
     precisao: '',
@@ -48,7 +45,6 @@ export function filtrosDaApi(f: FiltrosDaTela): Omit<FiltrosDoMapa, 'busca'> & {
     ...(f.visitada === 'periodo' && f.visitaDe ? { visitaDe: f.visitaDe } : {}),
     ...(f.visitada === 'periodo' && f.visitaAte ? { visitaAte: f.visitaAte } : {}),
     ...(f.vendedorId ? { vendedorId: f.vendedorId } : {}),
-    ...(f.semVisita60 ? { semVisitaDias: 60 } : {}),
     ...(f.municipioCodigo ? { municipioCodigo: Number(f.municipioCodigo) } : {}),
     ...(f.regiaoId ? { regiaoId: f.regiaoId } : {}),
     ...(f.precisao ? { precisao: f.precisao } : {}),
