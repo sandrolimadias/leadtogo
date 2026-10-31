@@ -60,7 +60,7 @@ export class PortalPublicacoesService {
       corpo: l.corpo,
       publicadaEm: new Date(l.publicada_em).toISOString(),
       fixada: l.fixada,
-      reacoes: { curtir: l.total_curtir, apoiar: l.total_apoiar, parabens: l.total_parabens },
+      reacoes: { curtir: l.total_curtir, parabens: l.total_parabens },
       minhasReacoes: l.minhas,
       comentarios: l.comentarios,
       comentariosAbertos: l.comentarios_ligados && !l.comentarios_bloqueados,
@@ -73,7 +73,7 @@ export class PortalPublicacoesService {
       p.total_apoiar, p.total_parabens,
       (SELECT count(*)::int FROM publicacao_comentarios c WHERE c.publicacao_id = p.id AND c.situacao = 'visivel') AS comentarios,
       ARRAY(SELECT r.tipo::text FROM publicacao_reacoes r
-            WHERE r.publicacao_id = p.id AND r.acesso_id = ${this.ctx.portal.acessoId} ORDER BY r.tipo) AS minhas,
+            WHERE r.publicacao_id = p.id AND r.acesso_id = ${this.ctx.portal.acessoId} AND r.tipo <> 'apoiar' ORDER BY r.tipo) AS minhas,
       coalesce((SELECT tc.portal_comentarios_ativos FROM tenant_configuracoes tc), true) AS comentarios_ligados`
   }
 

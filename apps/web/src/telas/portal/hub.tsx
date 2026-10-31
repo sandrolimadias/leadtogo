@@ -25,7 +25,8 @@ export function TelaDoPortal() {
   const { pode } = usePermissoes()
   const verHub = pode('portal.ver')
   const [escolha, setAba] = useState<Aba | null>(null)
-  const aba: Aba = escolha ?? (verHub ? 'chamados' : 'publicacoes')
+  // A aba de entrada é Publicações para todos (Fase 4A, B-2)
+  const aba: Aba = escolha ?? 'publicacoes'
   const pedidos = useQuery({
     queryKey: ['portal', 'pedidos'],
     retry: false,

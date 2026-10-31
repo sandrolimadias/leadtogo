@@ -977,6 +977,12 @@ export const servicosReais: ServicosDeAcesso = {
         protegido(async () =>
           semCorpo(await api.DELETE('/v1/portal-publicacoes/{id}', { params: { path: { id } } })),
         ),
+      duplicar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-publicacoes/{id}/duplicar', { params: { path: { id } } }),
+          ),
+        ),
       fixar: (id, fixada) =>
         protegido(async () =>
           daApi(

@@ -2,14 +2,16 @@ import type { ComentarioParaModeracao, ItemDePublicacao, Publicacao } from '@lea
 import {
   ROTULO_DA_SITUACAO_DA_PUBLICACAO,
   ROTULO_DO_MOTIVO_DE_DENUNCIA,
+  TAMANHOS_DE_PAGINA_DE_CARTOES,
   type SituacaoDaPublicacao,
 } from '@leadtogo/shared'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Flag, Megaphone, Pencil, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
+import { Copy, Flag, Megaphone, Pencil, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { usePermissoes } from '@/auth/permissoes'
 import { useServicos } from '@/auth/contexto'
+import { usePaginaDeCartoes } from '@/lib/por-pagina-local'
 import { Button } from '@leadtogo/ui/button'
 import { TextField } from '@leadtogo/ui/campos'
 import { cn } from '@leadtogo/ui/cn'
@@ -17,6 +19,7 @@ import { Dialog } from '@leadtogo/ui/dialog'
 import { Badge, type TomDoBadge } from '@leadtogo/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { Markdown } from '@leadtogo/ui/markdown'
+import { Paginacao } from '@leadtogo/ui/paginacao'
 import { toast } from '@leadtogo/ui/toast'
 
 import { dataCurta, dataHora } from '../chamados/rotulos'
@@ -37,9 +40,8 @@ const ABAS: { valor: Aba; rotulo: string }[] = [
 ]
 
 const alcancePct = (leitores: number, alvo: number) =>
-  alvo > 0 ? Math.round((leitores / alvo) * 100) : 0
-const totalDeReacoes = (r: { curtir: number; apoiar: number; parabens: number }) =>
-  r.curtir + r.apoiar + r.parabens
+  alvo > 0 ? Math.min(100, Math.round((leitores / alvo) * 100)) : 0
+const totalDeReacoes = (r: { curtir: number; parabens: number }) => r.curtir + r.parabens
 
 function quando(p: ItemDePublicacao): string {
   if (p.situacao === 'agendada' && p.agendadaPara)
@@ -173,10 +175,13 @@ function Detalhe({
   id,
   aoMudar,
   aoEditar,
+  aoDuplicar,
 }: {
   id: string
   aoMudar: () => void
   aoEditar: (p: Publicacao) => void
+  /** A cópia criada: a lista abre nela */
+  aoDuplicar: (copia: Publicacao) => void
 }) {
   const servicos = useServicos()
   const { pode } = usePermissoes()
@@ -267,6 +272,23 @@ function Detalhe({
               <Button size="sm" icon={Pencil} onClick={() => aoEditar(p)}>
                 Editar
               </Button>
+              <Button
+                size="sm"
+                icon={Copy}
+                onClick={() =>
+                  void (async () => {
+                    const r = await servicos.portal.publicacoes.duplicar(p.id)
+                    if (!r.ok) {
+                      toast.error(r.erro.mensagem)
+                      return
+                    }
+                    toast.success('Cópia criada como rascunho')
+                    aoDuplicar(r.dados)
+                  })()
+                }
+              >
+                Duplicar
+              </Button>
               <Button size="sm" variant="ghost" icon={Trash2} onClick={() => setExcluindo(true)}>
                 Excluir
               </Button>
@@ -295,7 +317,7 @@ function Detalhe({
             <Metrica
               rotulo="Reações"
               valor={String(totalDeReacoes(m.reacoes))}
-              nota="curtir, apoiar, parabéns"
+              nota="curtir e parabéns"
             />
             <Metrica
               rotulo="Comentários"
@@ -468,12 +490,17 @@ export function PublicacoesDoPortal() {
   const [aba, setAba] = useState<Aba>('todas')
   const [escolhida, setEscolhida] = useState<string | null>(null)
   const [editando, setEditando] = useState<Publicacao | 'nova' | null>(null)
+  const paginacao = usePaginaDeCartoes('portal_publicacoes')
   const lista = useQuery({
-    queryKey: ['portal', 'publicacoes', aba],
+    queryKey: ['portal', 'publicacoes', aba, paginacao.pagina, paginacao.porPagina],
     placeholderData: keepPreviousData,
     retry: false,
     queryFn: async () => {
-      const r = await servicos.portal.publicacoes.listar({ aba, porPagina: 50 })
+      const r = await servicos.portal.publicacoes.listar({
+        aba,
+        pagina: paginacao.pagina,
+        porPagina: paginacao.porPagina,
+      })
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -499,7 +526,10 @@ export function PublicacoesDoPortal() {
               key={a.valor}
               type="button"
               aria-pressed={aba === a.valor}
-              onClick={() => setAba(a.valor)}
+              onClick={() => {
+                setAba(a.valor)
+                paginacao.voltarAoInicio()
+              }}
               className={cn(
                 'cursor-pointer rounded-sm border-0 px-3 py-1 text-[13px] font-semibold',
                 aba === a.valor ? 'bg-surface text-ink shadow-sm' : 'bg-transparent text-ink-muted',
@@ -542,16 +572,27 @@ export function PublicacoesDoPortal() {
               description="Escreva um comunicado e ele aparece no Início do portal dos clientes."
             />
           ) : (
-            <ul aria-label="Publicações" className="m-0 list-none p-0">
-              {itens.map((p) => (
-                <LinhaDaLista
-                  key={p.id}
-                  p={p}
-                  ativa={p.id === idAtivo}
-                  aoEscolher={() => setEscolhida(p.id)}
-                />
-              ))}
-            </ul>
+            <>
+              <ul aria-label="Publicações" className="m-0 list-none p-0">
+                {itens.map((p) => (
+                  <LinhaDaLista
+                    key={p.id}
+                    p={p}
+                    ativa={p.id === idAtivo}
+                    aoEscolher={() => setEscolhida(p.id)}
+                  />
+                ))}
+              </ul>
+              <Paginacao
+                pagina={paginacao.pagina}
+                porPagina={paginacao.porPagina}
+                total={lista.data.total}
+                tamanhos={TAMANHOS_DE_PAGINA_DE_CARTOES}
+                rotuloDoTamanho="Por página"
+                aoMudarPagina={paginacao.irPara}
+                aoMudarPorPagina={paginacao.mudarTamanho}
+              />
+            </>
           )}
         </div>
         {idAtivo ? (
@@ -561,6 +602,12 @@ export function PublicacoesDoPortal() {
               id={idAtivo}
               aoMudar={recarregar}
               aoEditar={(p) => setEditando(p)}
+              aoDuplicar={(copia) => {
+                setAba('rascunhos')
+                paginacao.voltarAoInicio()
+                setEscolhida(copia.id)
+                recarregar()
+              }}
             />
           </div>
         ) : null}

@@ -94,9 +94,18 @@ function servicos(
 }
 
 describe('hub do portal: chamados', () => {
+  it('o hub abre na aba Publicações', async () => {
+    renderizar(servicos(), '/portal')
+    expect(
+      await screen.findByRole('tab', { name: 'Publicações', selected: true }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Indicadores' })).not.toBeInTheDocument()
+  })
+
   it('mostra os quatro indicadores e os chamados dos clientes (filtrados por origem portal)', async () => {
     const s = servicos()
     renderizar(s, '/portal')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Chamados' }))
     const painel = await screen.findByRole('region', { name: 'Indicadores' })
     expect(within(painel).getByText('Em aberto')).toBeInTheDocument()
     expect(within(painel).getByText('92%')).toBeInTheDocument()
@@ -144,6 +153,7 @@ describe('hub do portal: chamados', () => {
       ok({ itens: [], total: 0, abas: { triagem: 0, pendentes: 0, meus: 0, todos: 0 } }),
     )
     renderizar(s, '/portal')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Chamados' }))
     expect(await screen.findByText('Nenhum chamado de cliente')).toBeInTheDocument()
   })
 })

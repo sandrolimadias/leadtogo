@@ -50,7 +50,7 @@ describe('feed de publicações no início', () => {
 
   it('reagir liga a reação e usa o total que a API devolve', async () => {
     const reagir = vi.fn(async () =>
-      ok({ reacoes: { curtir: 5, apoiar: 0, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
+      ok({ reacoes: { curtir: 5, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
     )
     const servicos = comFeed([publicacao()], { reagir })
     renderizar(servicos, '/')

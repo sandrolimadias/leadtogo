@@ -31,12 +31,12 @@ export const alcanceDaPublicacaoSchema = z
   .meta({ id: 'AlcanceDaPublicacao' })
 export type AlcanceDaPublicacao = z.infer<typeof alcanceDaPublicacaoSchema>
 
-export const TIPOS_DE_REACAO = ['curtir', 'apoiar', 'parabens'] as const
+// "Apoiar" saiu na Fase 4A (só Curtir e Parabéns); o valor continua no enum do banco até a contração
+export const TIPOS_DE_REACAO = ['curtir', 'parabens'] as const
 export const tipoDeReacaoSchema = z.enum(TIPOS_DE_REACAO).meta({ id: 'TipoDeReacao' })
 export type TipoDeReacao = z.infer<typeof tipoDeReacaoSchema>
 export const ROTULO_DA_REACAO: Record<TipoDeReacao, string> = {
   curtir: 'Curtir',
-  apoiar: 'Apoiar',
   parabens: 'Parabéns',
 }
 
@@ -51,7 +51,6 @@ export const ROTULO_DO_MOTIVO_DE_DENUNCIA: Record<MotivoDeDenuncia, string> = {
 
 const reacoesSchema = z.object({
   curtir: z.number().int().nonnegative(),
-  apoiar: z.number().int().nonnegative(),
   parabens: z.number().int().nonnegative(),
 })
 

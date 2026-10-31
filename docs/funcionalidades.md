@@ -657,13 +657,14 @@ A equipe publica **comunicados** no feed do portal; o cliente lê, reage, coment
 - **Anexos:** não há anexo nas publicações; arquivos para os clientes entram em **Documentos** (Fase 3C).
 
 ### O cliente
-- **Reações:** Curtir, Apoiar e Parabéns, uma de cada por pessoa; clicar de novo desfaz. Ele vê o **total de todas as empresas** e quais ele marcou, **nunca quem reagiu**.
+- **Reações:** Curtir e Parabéns (*Fase 4A: "Apoiar" saiu; os totais antigos ficam no banco*), uma de cada por pessoa; clicar de novo desfaz. Ele vê o **total de todas as empresas** e quais ele marcou, **nunca quem reagiu**.
 - **Comentários:** texto puro de 1 a 1000 caracteres. **Os comentários visíveis aparecem para todos os clientes que veem a publicação, mostrando "Nome S." (primeiro nome e inicial do sobrenome), sem a empresa.** O cliente não edita nem apaga o próprio comentário (pode pedir à equipe ocultar). Fecham com o bloqueio da publicação ou com a chave geral (409 `comentarios_fechados`).
 - **Denúncia:** de comentário alheio, com motivo (spam, ofensivo, outro); uma por pessoa e comentário; a pessoa não vê as denúncias dos outros.
 - **Leitura:** a publicação é marcada como lida quando aparece na tela dele (uma vez por pessoa). É dado pessoal (ver `lgpd.md`).
 
 ### A equipe
-- **Métricas por publicação:** alcance (leitores ÷ pessoas com acesso ativo dentro do alcance), reações, comentários (e ocultos) e empresas com ao menos uma leitura.
+- **Métricas por publicação:** alcance = pessoas distintas que leram ÷ pessoas com acesso ativo dentro do alcance, **contadas sobre o mesmo conjunto** (*Fase 4A: leitura de acesso revogado, suspenso ou de empresa que saiu do alcance não conta, então nunca passa de 100%*), reações, comentários (e ocultos) e empresas com ao menos uma leitura.
+- **Lista do hub (Fase 4A):** abre na aba **Publicações** (é a primeira aba do hub para todos), da mais recente para a mais antiga (a fixada leva o selo, sem pular a ordem), com **5, 10 ou 20 por página** (padrão 10, a escolha fica no aparelho). **Duplicar** cria uma cópia ("Cópia de …") em rascunho com o mesmo texto e alcance, sem fixar, agenda nem métricas.
 - **Moderação:** **Manter** (dispensa as denúncias), **Ocultar** (com motivo; some para os outros clientes, **não apaga**; o autor continua vendo o comentário e o motivo) e **Reexibir**. **Bloquear comentários** por publicação. Lista com o aviso das denúncias abertas.
 - **Auditoria:** atos da equipe e do cliente (comentar, denunciar) são auditados; reagir e ler não.
 - **Sem notificação:** publicar não gera sino nem e-mail para o cliente nesta fase; o aviso com push chega na Fase 3E (Avisos).
@@ -706,7 +707,7 @@ A equipe publica **eventos** com vagas; o cliente **confirma a presença**, entr
 - **.ics:** o cliente baixa o arquivo de calendário de qualquer evento que enxerga ("Adicionar à agenda").
 
 ### Equipe
-Lista por **Próximos, Passados e Rascunhos** com vagas e fila; detalhe com a descrição, o alcance, os **Confirmados** e a **Lista de espera** (posição, pessoa, e-mail e empresa); **Tirar** um participante. Atos da equipe e do cliente (confirmar, entrar na lista, cancelar presença) são auditados.
+Lista por **Próximos, Passados e Rascunhos** com vagas e fila (*Fase 4A: 5, 10 ou 20 por página*); detalhe com a descrição, o alcance, os **Confirmados** e a **Lista de espera** (posição, pessoa, e-mail e empresa); **Tirar** um participante. Atos da equipe e do cliente (confirmar, entrar na lista, cancelar presença) são auditados.
 
 ## 9G. Portal do Cliente, Fase 3E (avisos, preferências, push, PWA e busca)
 

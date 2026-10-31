@@ -99,7 +99,7 @@ export const publicacao = (extra: Partial<PublicacaoDoPortal> = {}): PublicacaoD
   corpo: 'Lembrete: o expediente desta sexta encerra às **14h** por manutenção elétrica.',
   publicadaEm: '2026-10-21T12:00:00.000Z',
   fixada: false,
-  reacoes: { curtir: 0, apoiar: 0, parabens: 0 },
+  reacoes: { curtir: 0, parabens: 0 },
   minhasReacoes: [],
   comentarios: 0,
   comentariosAbertos: true,
@@ -233,7 +233,7 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
         }),
       ),
       reagir: vi.fn(async () =>
-        ok({ reacoes: { curtir: 1, apoiar: 0, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
+        ok({ reacoes: { curtir: 1, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
       ),
       denunciar: vi.fn(async () => ok(undefined)),
       marcarLidas: vi.fn(async () => ok({ marcadas: 0 })),

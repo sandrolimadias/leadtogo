@@ -109,6 +109,21 @@ export class PublicacoesController {
   }
 
   @Documenta({
+    resumo: 'Duplicar uma publicação',
+    descricao:
+      'Exige `portal.publicar`. A cópia ("Cópia de …") leva o corpo e o alcance e nasce rascunho, sem fixar, sem agenda e sem reações, comentários nem leituras.',
+    resposta: publicacaoSchema,
+    status: 201,
+    erros: [400, 401, 403, 404],
+  })
+  @Permissao('portal.publicar')
+  @Post(':id/duplicar')
+  @Limite({ nome: 'portal-publicar', max: 120, janelaS: 3600 })
+  duplicar(@Param('id', uuid()) id: string): Promise<Publicacao> {
+    return this.servico.duplicar(id)
+  }
+
+  @Documenta({
     resumo: 'Excluir uma publicação',
     descricao:
       'Exige `portal.publicar`. Exclusão lógica: some do portal e da lista, os dados ficam guardados.',

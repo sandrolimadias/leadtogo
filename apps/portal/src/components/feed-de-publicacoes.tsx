@@ -9,7 +9,7 @@ import {
   type TipoDeReacao,
 } from '@leadtogo/shared'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Flag, Handshake, MessageCircle, Pin, ThumbsUp, PartyPopper } from 'lucide-react'
+import { Flag, MessageCircle, Pin, ThumbsUp, PartyPopper } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@leadtogo/ui/button'
@@ -24,7 +24,7 @@ import { toast } from '@leadtogo/ui/toast'
 import { dataEHora } from '@/casca/rotulos'
 import { useServicos } from '@/servicos/contexto'
 
-const ICONE_DA_REACAO = { curtir: ThumbsUp, apoiar: Handshake, parabens: PartyPopper } as const
+const ICONE_DA_REACAO = { curtir: ThumbsUp, parabens: PartyPopper } as const
 
 type Pagina = { itens: PublicacaoDoPortal[]; total: number }
 

@@ -701,6 +701,8 @@ export interface ServicosDoPortalNoCrm {
     editar: (id: string, dados: SalvarPublicacaoEntrada) => Promise<Resultado<Publicacao>>
     excluir: (id: string) => Promise<Resultado>
     fixar: (id: string, fixada: boolean) => Promise<Resultado<Publicacao>>
+    /** Cópia em rascunho ("Cópia de …"), com o mesmo corpo e alcance */
+    duplicar: (id: string) => Promise<Resultado<Publicacao>>
     bloquearComentarios: (id: string, bloqueados: boolean) => Promise<Resultado<Publicacao>>
     comentarios: (id: string) => Promise<Resultado<ListaDeComentariosParaModeracao>>
     moderar: (

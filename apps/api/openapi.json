@@ -21794,6 +21794,76 @@
         "tags": ["Portal do cliente: publicações"]
       }
     },
+    "/v1/portal-publicacoes/{id}/duplicar": {
+      "post": {
+        "description": "Exige `portal.publicar`. A cópia (\"Cópia de …\") leva o corpo e o alcance e nasce rascunho, sem fixar, sem agenda e sem reações, comentários nem leituras.",
+        "operationId": "PublicacoesController_duplicar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Publicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Duplicar uma publicação",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
     "/v1/portal-publicacoes/{id}/fixada": {
       "put": {
         "description": "Exige `portal.publicar`. Só uma publicação fica fixada por vez (fixar outra desafixa a anterior); só a já publicada pode ser fixada (409 `so_publicada_fixa`).",
@@ -25458,7 +25528,7 @@
     },
     "/v1/portal/publicacoes/{id}/reacoes": {
       "post": {
-        "description": "Clicar liga a reação (curtir, apoiar ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.",
+        "description": "Clicar liga a reação (curtir ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.",
         "operationId": "PortalPublicacoesController_reagir",
         "parameters": [
           {
@@ -38119,18 +38189,13 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
-              "apoiar": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 9007199254740991
-              },
               "parabens": {
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
               }
             },
-            "required": ["curtir", "apoiar", "parabens"],
+            "required": ["curtir", "parabens"],
             "additionalProperties": false
           },
           "comentarios": {
@@ -40929,18 +40994,13 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
-              "apoiar": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 9007199254740991
-              },
               "parabens": {
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
               }
             },
-            "required": ["curtir", "apoiar", "parabens"],
+            "required": ["curtir", "parabens"],
             "additionalProperties": false
           },
           "minhasReacoes": {
@@ -40994,18 +41054,13 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
-              "apoiar": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 9007199254740991
-              },
               "parabens": {
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
               }
             },
-            "required": ["curtir", "apoiar", "parabens"],
+            "required": ["curtir", "parabens"],
             "additionalProperties": false
           },
           "minhasReacoes": {
@@ -42716,7 +42771,7 @@
       },
       "TipoDeReacao": {
         "type": "string",
-        "enum": ["curtir", "apoiar", "parabens"]
+        "enum": ["curtir", "parabens"]
       },
       "TratarPedidoDeAcessoEntrada": {
         "type": "object",

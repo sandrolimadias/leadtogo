@@ -4236,6 +4236,26 @@ export interface paths {
         patch: operations["PublicacoesController_moderar"];
         trace?: never;
     };
+    "/v1/portal-publicacoes/{id}/duplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Duplicar uma publicação
+         * @description Exige `portal.publicar`. A cópia ("Cópia de …") leva o corpo e o alcance e nasce rascunho, sem fixar, sem agenda e sem reações, comentários nem leituras.
+         */
+        post: operations["PublicacoesController_duplicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal-publicacoes/{id}/fixada": {
         parameters: {
             query?: never;
@@ -4992,7 +5012,7 @@ export interface paths {
         put?: never;
         /**
          * Reagir (ou desfazer a reação)
-         * @description Clicar liga a reação (curtir, apoiar ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.
+         * @description Clicar liga a reação (curtir ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.
          */
         post: operations["PortalPublicacoesController_reagir"];
         delete?: never;
@@ -8302,7 +8322,6 @@ export interface components {
             empresasAlcancadas: number;
             reacoes: {
                 curtir: number;
-                apoiar: number;
                 parabens: number;
             };
             comentarios: number;
@@ -9063,7 +9082,6 @@ export interface components {
             fixada: boolean;
             reacoes: {
                 curtir: number;
-                apoiar: number;
                 parabens: number;
             };
             minhasReacoes: components["schemas"]["TipoDeReacao"][];
@@ -9076,7 +9094,6 @@ export interface components {
         ReacoesDaPublicacao: {
             reacoes: {
                 curtir: number;
-                apoiar: number;
                 parabens: number;
             };
             minhasReacoes: components["schemas"]["TipoDeReacao"][];
@@ -9567,7 +9584,7 @@ export interface components {
             chaveSistema: string | null;
         };
         /** @enum {string} */
-        TipoDeReacao: "curtir" | "apoiar" | "parabens";
+        TipoDeReacao: "curtir" | "parabens";
         TratarPedidoDeAcessoEntrada: {
             /** @enum {string} */
             decisao: "aprovar" | "recusar";
@@ -26703,6 +26720,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListaDeComentariosParaModeracao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_duplicar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Publicacao"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */

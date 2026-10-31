@@ -248,6 +248,49 @@ describe('publicar, agendar, editar, fixar e excluir', () => {
     expect(depois.map((i) => i.titulo)).toEqual(['Pub A'])
   })
 
+  it('duplicar: a cópia nasce rascunho com o mesmo corpo e alcance, sem fixar e sem métricas', async () => {
+    const c = await cenario()
+    const original = await c.publicar({
+      titulo: 'Original',
+      corpo: 'Corpo **forte**',
+      alcance: 'empresas',
+      empresaIds: [c.empresaA],
+    })
+    expect(
+      (await crm('put', c.d.cookie, `/portal-publicacoes/${original.id}/fixada`, { fixada: true }))
+        .status,
+    ).toBe(200)
+    await portal('post', `/portal/publicacoes/${original.id}/reacoes`, {
+      cookie: c.cookieA,
+      corpo: { tipo: 'curtir' },
+    })
+    expect(
+      (await crm('post', c.leitor.cookie, `/portal-publicacoes/${original.id}/duplicar`)).status,
+    ).toBe(403)
+    const r = await crm('post', c.editor.cookie, `/portal-publicacoes/${original.id}/duplicar`)
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body).toMatchObject({
+      titulo: 'Cópia de Original',
+      corpo: 'Corpo **forte**',
+      situacao: 'rascunho',
+      alcance: 'empresas',
+      fixada: false,
+      publicadaEm: null,
+      metricas: { leitores: 0, reacoes: { curtir: 0, parabens: 0 }, comentarios: 0 },
+    })
+    expect(r.body.empresas.map((e: { id: string }) => e.id)).toEqual([c.empresaA])
+    expect(r.body.id).not.toBe(original.id)
+    // A cópia é rascunho: o cliente não vê
+    const feed = (await portal('get', '/portal/publicacoes', { cookie: c.cookieA })).body.itens as {
+      titulo: string
+    }[]
+    expect(feed.map((i) => i.titulo)).toEqual(['Original'])
+    const inexistente = '01900000-0000-7000-8000-000000000000'
+    expect(
+      (await crm('post', c.d.cookie, `/portal-publicacoes/${inexistente}/duplicar`)).status,
+    ).toBe(404)
+  })
+
   it('a lista traz as abas com contagens', async () => {
     const c = await cenario()
     await c.publicar({ titulo: 'Pub 1' })
@@ -267,7 +310,7 @@ describe('o cliente: reações, comentários e denúncia', () => {
     const reagir = (cookie: string, tipo: string) =>
       portal('post', `/portal/publicacoes/${p.id}/reacoes`, { cookie, corpo: { tipo } })
     expect((await reagir(c.cookieA, 'curtir')).body).toEqual({
-      reacoes: { curtir: 1, apoiar: 0, parabens: 0 },
+      reacoes: { curtir: 1, parabens: 0 },
       minhasReacoes: ['curtir'],
     })
     expect((await reagir(c.cookieB, 'curtir')).body.reacoes.curtir).toBe(2)
@@ -276,7 +319,7 @@ describe('o cliente: reações, comentários e denúncia', () => {
     )
     const desfeita = await reagir(c.cookieA, 'curtir')
     expect(desfeita.body).toEqual({
-      reacoes: { curtir: 1, apoiar: 0, parabens: 1 },
+      reacoes: { curtir: 1, parabens: 1 },
       minhasReacoes: [],
     })
     expect((await reagir(c.cookieA, 'amei')).status).toBe(400)
@@ -297,7 +340,7 @@ describe('o cliente: reações, comentários e denúncia', () => {
     )
     // a equipe vê o total nas métricas
     const detalhe = await crm('get', c.d.cookie, `/portal-publicacoes/${p.id}`)
-    expect(detalhe.body.metricas.reacoes).toEqual({ curtir: 1, apoiar: 0, parabens: 1 })
+    expect(detalhe.body.metricas.reacoes).toEqual({ curtir: 1, parabens: 1 })
   })
 
   it('não reage nem comenta em publicação que não enxerga', async () => {
@@ -550,6 +593,43 @@ describe('leituras e alcance', () => {
       (await crm('get', c.d.cookie, `/portal-publicacoes/${id}`)).body.metricas as unknown
     expect(await m(todas.id)).toMatchObject({ leitores: 2, alvo: 2, empresasAlcancadas: 2 })
     expect(await m(soB.id)).toMatchObject({ leitores: 1, alvo: 1, empresasAlcancadas: 1 })
+  })
+
+  it('o alcance nunca passa de 100%: leitura de acesso revogado ou fora do alcance não conta', async () => {
+    const c = await cenario()
+    const outro = await novoAcesso(c.d, { empresaId: c.empresaA, nome: 'Ana Prado' })
+    const cookieOutro = await entrarNoPortal(portal, outro)
+    const todas = await c.publicar({ titulo: 'Para todos' })
+    const soB = await c.publicar({ titulo: 'Só B', alcance: 'empresas', empresaIds: [c.empresaB] })
+    const ler = (cookie: string, ids: string[]) =>
+      portal('post', '/portal/publicacoes/leituras', { cookie, corpo: { ids } })
+    await ler(c.cookieA, [todas.id])
+    await ler(cookieOutro, [todas.id])
+    await ler(c.cookieB, [todas.id, soB.id])
+    const m = async (id: string) =>
+      (await crm('get', c.d.cookie, `/portal-publicacoes/${id}`)).body.metricas as {
+        leitores: number
+        alvo: number
+      }
+    expect(await m(todas.id)).toMatchObject({ leitores: 3, alvo: 3 })
+    // Revogar quem leu tira a pessoa do numerador E do denominador
+    expect((await crm('delete', c.d.cookie, `/portal-acessos/${outro.acessoId}`)).status).toBe(204)
+    expect(await m(todas.id)).toMatchObject({ leitores: 2, alvo: 2 })
+    // A empresa B sai do alcance: a leitura antiga dela não conta mais
+    expect(
+      (
+        await crm('patch', c.d.cookie, `/portal-publicacoes/${soB.id}`, {
+          titulo: 'Só B',
+          corpo: 'Texto',
+          alcance: 'empresas',
+          situacao: 'publicada',
+          empresaIds: [c.empresaA],
+        })
+      ).status,
+    ).toBe(200)
+    const depois = await m(soB.id)
+    expect(depois).toMatchObject({ leitores: 0, alvo: 1 })
+    expect(depois.leitores).toBeLessThanOrEqual(depois.alvo)
   })
 })
 

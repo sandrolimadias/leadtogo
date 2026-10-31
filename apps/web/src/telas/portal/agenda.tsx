@@ -1,10 +1,15 @@
 import type { Evento, ItemDeEvento, ParticipanteDoEvento } from '@leadtogo/api-client'
-import { ROTULO_DA_SITUACAO_DO_EVENTO, type SituacaoDoEvento } from '@leadtogo/shared'
+import {
+  ROTULO_DA_SITUACAO_DO_EVENTO,
+  TAMANHOS_DE_PAGINA_DE_CARTOES,
+  type SituacaoDoEvento,
+} from '@leadtogo/shared'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, Megaphone, Pencil, Plus, Trash2, UserMinus, XCircle } from 'lucide-react'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePaginaDeCartoes } from '@/lib/por-pagina-local'
 import { usePermissoes } from '@/auth/permissoes'
 import { Button } from '@leadtogo/ui/button'
 import { TextField } from '@leadtogo/ui/campos'
@@ -13,6 +18,7 @@ import { Dialog } from '@leadtogo/ui/dialog'
 import { Badge, type TomDoBadge } from '@leadtogo/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { Markdown } from '@leadtogo/ui/markdown'
+import { Paginacao } from '@leadtogo/ui/paginacao'
 import { toast } from '@leadtogo/ui/toast'
 
 import { dataHora } from '../chamados/rotulos'
@@ -433,12 +439,17 @@ export function AgendaDoPortal() {
   const [aba, setAba] = useState<Aba>('proximos')
   const [escolhido, setEscolhido] = useState<string | null>(null)
   const [editando, setEditando] = useState<Evento | 'novo' | null>(null)
+  const paginacao = usePaginaDeCartoes('portal_agenda')
   const lista = useQuery({
-    queryKey: ['portal', 'eventos', aba],
+    queryKey: ['portal', 'eventos', aba, paginacao.pagina, paginacao.porPagina],
     placeholderData: keepPreviousData,
     retry: false,
     queryFn: async () => {
-      const r = await servicos.portal.eventos.listar({ aba, porPagina: 50 })
+      const r = await servicos.portal.eventos.listar({
+        aba,
+        pagina: paginacao.pagina,
+        porPagina: paginacao.porPagina,
+      })
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -461,7 +472,10 @@ export function AgendaDoPortal() {
               key={a.valor}
               type="button"
               aria-pressed={aba === a.valor}
-              onClick={() => setAba(a.valor)}
+              onClick={() => {
+                setAba(a.valor)
+                paginacao.voltarAoInicio()
+              }}
               className={cn(
                 'cursor-pointer rounded-sm border-0 px-3 py-1 text-[13px] font-semibold',
                 aba === a.valor ? 'bg-surface text-ink shadow-sm' : 'bg-transparent text-ink-muted',
@@ -494,16 +508,27 @@ export function AgendaDoPortal() {
               description="Crie um evento, publique, e os clientes confirmam a presença pelo portal."
             />
           ) : (
-            <ul aria-label="Eventos" className="m-0 list-none p-0">
-              {itens.map((e) => (
-                <LinhaDaLista
-                  key={e.id}
-                  e={e}
-                  ativa={e.id === idAtivo}
-                  aoEscolher={() => setEscolhido(e.id)}
-                />
-              ))}
-            </ul>
+            <>
+              <ul aria-label="Eventos" className="m-0 list-none p-0">
+                {itens.map((e) => (
+                  <LinhaDaLista
+                    key={e.id}
+                    e={e}
+                    ativa={e.id === idAtivo}
+                    aoEscolher={() => setEscolhido(e.id)}
+                  />
+                ))}
+              </ul>
+              <Paginacao
+                pagina={paginacao.pagina}
+                porPagina={paginacao.porPagina}
+                total={lista.data.total}
+                tamanhos={TAMANHOS_DE_PAGINA_DE_CARTOES}
+                rotuloDoTamanho="Por página"
+                aoMudarPagina={paginacao.irPara}
+                aoMudarPorPagina={paginacao.mudarTamanho}
+              />
+            </>
           )}
         </div>
         {idAtivo ? (
