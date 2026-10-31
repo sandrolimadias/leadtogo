@@ -68,7 +68,7 @@
 
 - 1ª linha: `<span>` com `o.empresa.nome`, `uppercase font-semibold text-[13px] tracking-wide text-ink line-clamp-2 [overflow-wrap:anywhere]`, `title` com o nome completo.
 - 2ª linha: o `Link` do título, `text-sm text-ink font-normal`, sublinhado no hover (como hoje).
-- `aria-label` do `article` passa a ser "Título · Empresa", para o leitor de tela e a busca por papel.
+- O `aria-label` do `article` continua sendo o título (os testes e o leitor de tela acham o card por ele).
 - Tokens do design system apenas (`ink`, `ink-muted`, tamanhos da escala); nada de cor ou peso fora deles.
 - **Testes:** a empresa vem antes do título e com a classe `uppercase`; o link da ficha continua no título; o clone do arraste mostra o mesmo.
 - **Docs:** `funcionalidades.md` seção 7 ("Card: **empresa (maiúsculas, negrito)**, nome, valor…") e `revisao_prototipo.md` (o protótipo mostra o nome primeiro; vale o documento).

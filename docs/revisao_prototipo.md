@@ -73,3 +73,11 @@ Plano em `plano_contatos_filtros_e_tags.md`. Onde o protótipo e `funcionalidade
 |---|---|---|
 | Filtros em linha ao lado da busca no desktop; botão "Filtros · N" só no celular | filtros recolhíveis em todos os dispositivos | botão **"Filtros"** em todos, abrindo os filtros um abaixo do outro, com **"Fechar filtros"** |
 | Sem tags no contato | tags de contato em grupos próprios (seção 2) | coluna **Tags** e filtro **"Tag do contato"** na lista, tags e **"Editar tags"** na ficha, seção **Tags** no formulário e abas **Empresas / Contatos** em *Configurações → Tags* |
+
+## 8. Divergências do Kanban de Oportunidades (31/10/2026)
+
+Plano em `plano_oportunidades_kanban_e_tags.md`. Onde o protótipo e `funcionalidades.md` divergem, **vale o documento**:
+
+| Protótipo | Documento | Decisão |
+|---|---|---|
+| Card com o nome da oportunidade na 1ª linha e a empresa abaixo, em cinza | empresa primeiro | **EMPRESA** (maiúsculas, negrito) na 1ª linha e o nome da oportunidade abaixo |

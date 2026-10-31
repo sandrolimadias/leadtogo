@@ -11,7 +11,7 @@ import { BolhaDoTipo } from '@/telas/cadastros/tipos-de-atividade'
 import { previsaoEmPalavras, reais } from './formatos'
 
 /**
- * O card do Kanban: nome, empresa, valor (total e mensal), responsável, previsão (vencida em vermelho, hoje
+ * O card do Kanban: a empresa (em maiúsculas, negrito), o título, o valor (total e mensal), responsável, previsão (vencida em vermelho, hoje
  * em âmbar, sem data = "Sem previsão"), próxima atividade (ou "Sem próxima atividade" em destaque) e o alerta
  * de parada, sempre com a frase e não só com a cor.
  */
@@ -45,14 +45,21 @@ export function CartaoDeOportunidade({
       <div className="flex items-start gap-1.5">
         {alca}
         <div className="flex min-w-0 flex-1 flex-col">
+          {/* A maiúscula é só visual: o nome segue gravado (e lido pelo leitor de tela) como foi digitado */}
+          <span
+            data-parte="empresa"
+            title={o.empresa.nome}
+            className="line-clamp-2 text-[13px] font-semibold tracking-wide text-ink uppercase [overflow-wrap:anywhere]"
+          >
+            {o.empresa.nome}
+          </span>
           <Link
             to="/oportunidades/$oportunidadeId"
             params={{ oportunidadeId: o.id }}
-            className="font-semibold text-ink no-underline [overflow-wrap:anywhere] hover:underline"
+            className="text-ink no-underline [overflow-wrap:anywhere] hover:underline"
           >
             {o.titulo}
           </Link>
-          <span className="truncate text-[13px] text-ink-muted">{o.empresa.nome}</span>
         </div>
         {menu}
       </div>

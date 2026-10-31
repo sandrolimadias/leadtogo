@@ -445,7 +445,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 ### Tela Oportunidades
 - **Kanban** por funil (seletor de funil no topo):
   - Colunas = fases, com **soma de valores e quantidade** no cabeçalho. Só oportunidades com status **Ativo**.
-  - Card: nome, empresa, valor, responsável, data prevista e próxima atividade.
+  - Card: **empresa em maiúsculas e negrito** na 1ª linha (até 2 linhas; a maiúscula é só visual), **nome da oportunidade** abaixo (link para a ficha), valor, responsável, data prevista e próxima atividade (31/10/2026).
   - **Arrastar e soltar** entre etapas (Módulo 6: **pela alça** do card, com mouse, toque ou teclado; ao mover, a probabilidade assume a da nova fase, a menos que tenha sido editada à mão).
   - **Alerta de oportunidade parada:** card destacado quando passa X dias sem atividade.
   - Zona de soltura no **topo** do quadro (também no celular), só enquanto se arrasta: **Conquistado · Perdido · Cancelado · Suspenso** (arrastar o card para fechar). Filtro para ver as suspensas.
