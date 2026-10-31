@@ -1,12 +1,20 @@
 import type { KanbanDeOportunidades } from '@leadtogo/api-client'
-import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { falha, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 import { id, meComPapel } from '@/telas/contatos/fixtures'
 
-import { FASES, FUNIL, kanban, oportunidade } from './fixtures'
+import {
+  FASES,
+  FUNIL,
+  gruposDeOportunidade,
+  kanban,
+  oportunidade,
+  tagNaOportunidade,
+} from './fixtures'
+import { diaEmTexto, hojeEmTexto } from './formatos'
 
 const MOTIVO_PERDIDO = {
   id: id(970),
@@ -76,6 +84,12 @@ function servicos(
     cadastros: {
       ...base.cadastros,
       motivos: { ...base.cadastros.motivos, listar: vi.fn(async () => ok([MOTIVO_PERDIDO])) },
+    },
+    tags: {
+      ...base.tags,
+      listar: vi.fn(async (aplicaA?: string) =>
+        ok(aplicaA === 'oportunidade' ? gruposDeOportunidade : []),
+      ),
     },
   })
   return { s, kanbanFn, mover, fechar, reabrir, excluir, listar }
@@ -207,6 +221,48 @@ describe('Oportunidades: Kanban', () => {
   })
 })
 
+describe('Tags da oportunidade no Kanban e na lista', () => {
+  it('o card mostra as tags e o filtro "Tag da oportunidade" vai para a consulta do Kanban', async () => {
+    const x = servicos(
+      kanban([[oportunidade(1, { tags: [tagNaOportunidade(71), tagNaOportunidade(72)] })], [], []]),
+    )
+    await abrir(x)
+    const card = await screen.findByRole('article', { name: 'Oportunidade 1' })
+    const tags = within(card).getByRole('list', { name: 'Tags' })
+    expect(
+      within(tags)
+        .getAllByRole('listitem')
+        .map((t) => t.textContent),
+    ).toEqual(['Novo', 'Renovação'])
+    await userEvent.selectOptions(
+      await screen.findByRole('combobox', { name: 'Tag da oportunidade' }),
+      'Tipo de negócio: Renovação',
+    )
+    await waitFor(() =>
+      expect(x.kanbanFn).toHaveBeenLastCalledWith(
+        expect.objectContaining({ tagOportunidadeId: id(72) }),
+      ),
+    )
+  })
+
+  it('a lista tem a coluna Tags', async () => {
+    const x = servicos()
+    x.listar.mockResolvedValue(
+      ok({
+        itens: [oportunidade(1, { tags: [tagNaOportunidade(72)] })],
+        total: 1,
+        pagina: 1,
+        porPagina: 25,
+        somas: { total: 8000, mensal: 500, ponderado: 800 },
+      }),
+    )
+    await abrir(x, '/oportunidades?visao=lista')
+    const tabela = await screen.findByRole('table')
+    expect(within(tabela).getByRole('columnheader', { name: 'Tags' })).toBeInTheDocument()
+    expect(within(tabela).getByText('Renovação')).toBeInTheDocument()
+  })
+})
+
 describe('Fechar oportunidade', () => {
   const abrirFechamento = async (x: ReturnType<typeof servicos>, item: string) => {
     await abrir(x)
@@ -243,6 +299,50 @@ describe('Fechar oportunidade', () => {
       status: 'conquistado',
       empresaViraCliente: false,
     })
+  })
+
+  it('admin e gestor escolhem a data de fechamento (hoje por padrão; só vai ao servidor se mudou)', async () => {
+    for (const papel of ['admin', 'gestor'] as const) {
+      const x = servicos(kanban(), papel)
+      const j = await abrirFechamento(x, 'Conquistada')
+      const campo = within(j).getByLabelText<HTMLInputElement>(/Data de fechamento/)
+      expect(campo.value).toBe(hojeEmTexto())
+      expect(campo.max).toBe(hojeEmTexto())
+      // a fixture foi criada em 10/10/2026: antes disso não vale
+      expect(campo.min).toBe(diaEmTexto('2026-10-10T12:00:00.000Z'))
+      fireEvent.change(campo, { target: { value: '2026-10-15' } })
+      await userEvent.click(within(j).getByRole('button', { name: 'Marcar como conquistada' }))
+      await waitFor(() => expect(x.fechar).toHaveBeenCalled())
+      expect(x.fechar.mock.calls[0]?.[1]).toMatchObject({
+        status: 'conquistado',
+        dataFechamento: '2026-10-15',
+      })
+      cleanup()
+    }
+  })
+
+  it('a data de fechamento não pode ser no futuro nem antes da criação', async () => {
+    const x = servicos()
+    const j = await abrirFechamento(x, 'Conquistada')
+    const campo = within(j).getByLabelText(/Data de fechamento/)
+    fireEvent.change(campo, { target: { value: '2999-01-01' } })
+    await userEvent.click(within(j).getByRole('button', { name: 'Marcar como conquistada' }))
+    expect(await within(j).findByText('A data não pode ser no futuro.')).toBeInTheDocument()
+    fireEvent.change(campo, { target: { value: '2026-10-01' } })
+    await userEvent.click(within(j).getByRole('button', { name: 'Marcar como conquistada' }))
+    expect(
+      await within(j).findByText('A data não pode ser antes da criação da oportunidade.'),
+    ).toBeInTheDocument()
+    expect(x.fechar).not.toHaveBeenCalled()
+  })
+
+  it('o vendedor não vê a data de fechamento (vale o momento do fechamento)', async () => {
+    const x = servicos(kanban(), 'vendedor')
+    const j = await abrirFechamento(x, 'Conquistada')
+    expect(within(j).queryByLabelText(/Data de fechamento/)).toBeNull()
+    await userEvent.click(within(j).getByRole('button', { name: 'Marcar como conquistada' }))
+    await waitFor(() => expect(x.fechar).toHaveBeenCalled())
+    expect(x.fechar.mock.calls[0]?.[1]).not.toHaveProperty('dataFechamento')
   })
 
   it('Suspensa pede o motivo e "Retomar em" (não no passado)', async () => {

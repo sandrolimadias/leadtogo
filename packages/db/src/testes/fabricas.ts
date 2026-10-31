@@ -472,6 +472,29 @@ fabricas['oportunidade_historico'] = definirFabrica<
   },
 })
 
+fabricas['oportunidade_tags'] = definirFabrica<{ oportunidadeId: string; tagId: string }>({
+  chave: 'oportunidade_id',
+  colunaAlteravel: 'aplicada_em',
+  // Os pais: uma oportunidade e uma tag de um grupo de oportunidade (o gatilho recusa as de outro destino)
+  preparar: async (owner, tenantId) => {
+    const p = await paisDaOportunidade(owner, tenantId)
+    const oportunidadeId = novoId()
+    const tagId = novoId()
+    await comTenant(owner, tenantId, async (tx) => {
+      await tx`INSERT INTO oportunidades (id, tenant_id, titulo, empresa_id, funil_id, fase_id, responsavel_id)
+        VALUES (${oportunidadeId}, ${tenantId}, 'Oportunidade de teste', ${p.empresaId}, ${p.funilId}, ${p.faseId}, ${p.membroId})`
+      const grupoId = novoId()
+      await tx`INSERT INTO tag_grupos (id, tenant_id, nome, aplica_a) VALUES (${grupoId}, ${tenantId}, 'Tipo de negócio', 'oportunidade')`
+      await tx`INSERT INTO tags (id, tenant_id, nome, tag_grupo_id) VALUES (${tagId}, ${tenantId}, 'Renovação', ${grupoId})`
+    })
+    return { oportunidadeId, tagId }
+  },
+  criar: async (tx, tenantId, pais) => {
+    await tx`INSERT INTO oportunidade_tags (tenant_id, oportunidade_id, tag_id) VALUES (${tenantId}, ${pais.oportunidadeId}, ${pais.tagId})`
+    return pais.oportunidadeId
+  },
+})
+
 // Geolocalização (migração 0026)
 fabricas['geo_regioes'] = definirFabrica<string>({
   colunaAlteravel: 'nome',

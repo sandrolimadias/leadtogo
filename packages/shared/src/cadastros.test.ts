@@ -44,9 +44,13 @@ describe('grupos de tags', () => {
     expect(
       criarTagGrupoSchema.parse({ nome: 'Perfil', selecao: 'multipla', aplicaA: 'contato' }),
     ).toMatchObject({ aplicaA: 'contato', obrigatorio: false })
+    expect(
+      criarTagGrupoSchema.parse({ nome: 'Tipo', selecao: 'multipla', aplicaA: 'oportunidade' }),
+    ).toMatchObject({ aplicaA: 'oportunidade', obrigatorio: false })
     for (const ruim of [
-      { nome: 'Ok', selecao: 'unica', aplicaA: 'oportunidade' },
+      { nome: 'Ok', selecao: 'unica', aplicaA: 'outro' },
       { nome: 'Ok', selecao: 'unica', aplicaA: 'contato', obrigatorio: true },
+      { nome: 'Ok', selecao: 'unica', aplicaA: 'oportunidade', obrigatorio: true },
       { nome: '   ', selecao: 'unica' },
       { nome: 'x'.repeat(81), selecao: 'unica' },
       { nome: 'Ok' },

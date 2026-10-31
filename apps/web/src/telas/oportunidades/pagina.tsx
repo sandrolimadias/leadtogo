@@ -28,6 +28,7 @@ import { useFormularioDeOportunidade } from './contexto-formulario'
 import { diaDoBanco, reais } from './formatos'
 import { QuadroKanban } from './kanban'
 import { TabelaDeOportunidades } from './lista'
+import { useGruposDeTagsDeOportunidade } from './tags'
 import { JanelaDeSuspensas } from './suspensas'
 
 const rota = getRouteApi('/_autenticado/oportunidades/')
@@ -108,7 +109,7 @@ export function PaginaDeOportunidades() {
     funisAtivos.find((f) => f.id === busca.funil) ?? funisAtivos.find((f) => f.padrao)
 
   const kanban = useQuery({
-    queryKey: ['oportunidades', 'kanban', busca.funil, busca.responsavel, termo],
+    queryKey: ['oportunidades', 'kanban', busca.funil, busca.responsavel, busca.tag, termo],
     enabled: !lista,
     retry: false,
     placeholderData: keepPreviousData,
@@ -116,6 +117,7 @@ export function PaginaDeOportunidades() {
       const r = await servicos.oportunidades.kanban({
         ...(busca.funil ? { funilId: busca.funil } : {}),
         ...(busca.responsavel ? { responsavelId: busca.responsavel } : {}),
+        ...(busca.tag ? { tagOportunidadeId: busca.tag } : {}),
         ...(termo ? { busca: termo } : {}),
       })
       if (!r.ok) throw new Error(r.erro.mensagem)
@@ -133,6 +135,7 @@ export function PaginaDeOportunidades() {
       const r = await servicos.oportunidades.listar({
         ...(busca.funil ? { funilId: busca.funil } : {}),
         ...(busca.responsavel ? { responsavelId: busca.responsavel } : {}),
+        ...(busca.tag ? { tagOportunidadeId: busca.tag } : {}),
         ...(busca.status ? { status: busca.status } : {}),
         ...(busca.fase ? { faseId: busca.fase } : {}),
         ...(busca.motivo ? { motivoId: busca.motivo } : {}),
@@ -149,6 +152,15 @@ export function PaginaDeOportunidades() {
   })
 
   const acoes = useAcoesDaOportunidade()
+  // O filtro "Tag da oportunidade": as tags ativas dos grupos ativos (e a que já está na URL)
+  const gruposDeTags = useGruposDeTagsDeOportunidade()
+  const opcoesDeTag = (gruposDeTags.data ?? [])
+    .filter((g) => g.ativo)
+    .flatMap((g) =>
+      g.tags
+        .filter((t) => t.ativo || t.id === busca.tag)
+        .map((t) => ({ value: t.id, label: `${g.nome}: ${t.nome}` })),
+    )
   // Os filtros que vieram de um clique do Dashboard (fase, motivo, perdas, período), em palavras
   const nomeDaFase = (funis.data ?? [])
     .flatMap((f) => f.fases)
@@ -164,6 +176,7 @@ export function PaginaDeOportunidades() {
   ].filter((x): x is string => x !== null)
   const comFiltro = Boolean(
     busca.responsavel ??
+    busca.tag ??
     busca.status ??
     busca.fase ??
     busca.motivo ??
@@ -287,6 +300,16 @@ export function PaginaDeOportunidades() {
               options={opcoes.data.vendedores.map((v) => ({ value: v.id, label: v.nome }))}
               value={busca.responsavel ?? ''}
               onChange={(e) => mudar({ responsavel: e.target.value || undefined })}
+            />
+          ) : null}
+          {opcoesDeTag.length > 0 ? (
+            <Select
+              aria-label="Tag da oportunidade"
+              placeholder="Tag: todas"
+              className="w-full md:w-52"
+              options={opcoesDeTag}
+              value={busca.tag ?? ''}
+              onChange={(e) => mudar({ tag: e.target.value || undefined })}
             />
           ) : null}
           {lista ? (

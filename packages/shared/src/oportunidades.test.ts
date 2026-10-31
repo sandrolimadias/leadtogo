@@ -66,6 +66,12 @@ describe('criar oportunidade', () => {
     expect(alterarOportunidadeSchema.safeParse({ status: 'perdido' }).success).toBe(false)
     expect(alterarOportunidadeSchema.safeParse({ valorMensal: 300, meses: 12 }).success).toBe(true)
   })
+
+  it('editar aceita a data de criação como um dia', () => {
+    expect(alterarOportunidadeSchema.safeParse({ criadaEm: '2026-01-15' }).success).toBe(true)
+    expect(alterarOportunidadeSchema.safeParse({ criadaEm: '15/01/2026' }).success).toBe(false)
+    expect(alterarOportunidadeSchema.safeParse({ criadaEm: null }).success).toBe(false)
+  })
 })
 
 describe('fechar oportunidade', () => {
@@ -89,5 +95,14 @@ describe('fechar oportunidade', () => {
       }).success,
     ).toBe(true)
     expect(fecharOportunidadeSchema.safeParse({ status: 'ativo' }).success).toBe(false)
+  })
+
+  it('a data de fechamento é opcional e é um dia (AAAA-MM-DD)', () => {
+    const conquistada = (dataFechamento: unknown) =>
+      fecharOportunidadeSchema.safeParse({ status: 'conquistado', dataFechamento }).success
+    expect(conquistada('2026-10-12')).toBe(true)
+    expect(conquistada('12/10/2026')).toBe(false)
+    expect(conquistada('2026-10-12T10:00:00Z')).toBe(false)
+    expect(conquistada(null)).toBe(false)
   })
 })

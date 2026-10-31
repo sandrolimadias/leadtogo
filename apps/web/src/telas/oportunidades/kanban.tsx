@@ -7,6 +7,7 @@ import {
   type DragStartEvent,
   type KeyboardCoordinateGetter,
   KeyboardSensor,
+  MeasuringStrategy,
   PointerSensor,
   pointerWithin,
   rectIntersection,
@@ -42,8 +43,8 @@ const ZONAS: { status: StatusDeFechamento; rotulo: string; classe: string }[] = 
 ]
 
 /**
- * Onde o card cai: o que está sob o ponteiro (as zonas de fechamento, que cobrem o topo das colunas, ganham),
- * e, sem ponteiro (teclado), o que o card sobrepõe.
+ * Onde o card cai: o que está sob o ponteiro (as zonas de fechamento ganham, se houver sobreposição), e, sem
+ * ponteiro (teclado), o que o card sobrepõe.
  */
 const colisao: CollisionDetection = (args) => {
   const sobOPonteiro = pointerWithin(args)
@@ -277,7 +278,8 @@ function ZonaDeFechamento({ status, rotulo, classe }: (typeof ZONAS)[number]) {
  * cards por dentro e a página nunca rola. No computador e no tablet as colunas abertas dividem a largura por
  * igual, sem rolagem horizontal, e qualquer uma pode ser recolhida (o estado fica na conta, por funil). No
  * celular é uma coluna por vez, com rolagem lateral que encaixa e um indicador de posição. Arrastar pela alça
- * (mouse, toque ou teclado) muda de fase; as quatro zonas de fechamento aparecem no TOPO enquanto se arrasta.
+ * (mouse, toque ou teclado) muda de fase; as quatro zonas de fechamento aparecem no TOPO enquanto se arrasta,
+ * numa faixa própria que empurra as colunas para baixo (o cabeçalho das fases continua visível).
  */
 export function QuadroKanban({
   kanban,
@@ -358,6 +360,9 @@ export function QuadroKanban({
     <DndContext
       sensors={sensores}
       collisionDetection={colisao}
+      // A faixa das zonas entra no fluxo depois que o arraste começa e as colunas descem: os alvos são
+      // medidos de novo durante o arraste, senão o card cairia onde a coluna estava antes
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       accessibility={{
         announcements: anuncios,
         screenReaderInstructions: {
@@ -369,9 +374,9 @@ export function QuadroKanban({
       onDragEnd={aoSoltar}
       onDragCancel={() => setArrastada(null)}
     >
-      <div className="relative flex min-h-[420px] min-w-0 flex-1 flex-col gap-2">
+      <div className="flex min-h-[420px] min-w-0 flex-1 flex-col gap-2">
         {arrastada ? (
-          <div className="absolute inset-x-0 top-0 z-20 grid grid-cols-4 gap-2 rounded-lg bg-bg/90 p-2 backdrop-blur-sm">
+          <div data-zonas-de-fechamento="" className="grid flex-none grid-cols-4 gap-2">
             {ZONAS.map((z) => (
               <ZonaDeFechamento key={z.status} {...z} />
             ))}

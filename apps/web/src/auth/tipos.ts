@@ -263,9 +263,12 @@ export interface ServicosDeFunis {
 export interface ServicosDeTags {
   /**
    * Grupos com as tags, inclusive as inativas (a tela as mostra com a palavra "Inativa"). Sem `aplicaA`,
-   * só os grupos de empresa (as telas de empresa nunca veem tags de contato); `todos` é a configuração.
+   * só os grupos de empresa (as telas de empresa nunca veem tags de contato nem de oportunidade); `todos`
+   * é a configuração.
    */
-  listar: (aplicaA?: 'empresa' | 'contato' | 'todos') => Promise<Resultado<TagGrupo[]>>
+  listar: (
+    aplicaA?: 'empresa' | 'contato' | 'oportunidade' | 'todos',
+  ) => Promise<Resultado<TagGrupo[]>>
   criarGrupo: (dados: CriarTagGrupoEntrada) => Promise<Resultado<TagGrupo>>
   alterarGrupo: (id: string, dados: AlterarTagGrupoEntrada) => Promise<Resultado<TagGrupo>>
   excluirGrupo: (id: string) => Promise<Resultado>
@@ -401,6 +404,8 @@ export interface ServicosDeOportunidades {
   /** Conquistado, Perdido, Cancelado ou Suspenso (motivo e "retomar em" conforme o status) */
   fechar: (id: string, dados: FecharOportunidadeEntrada) => Promise<Resultado<Oportunidade>>
   reabrir: (id: string) => Promise<Resultado<Oportunidade>>
+  /** As tags que a oportunidade passa a ter (só de grupos de oportunidade; vale também para a fechada) */
+  definirTags: (id: string, tagIds: string[]) => Promise<Resultado<Oportunidade>>
   /** Exclusão lógica, só de gestor e administrador */
   excluir: (id: string) => Promise<Resultado>
 }

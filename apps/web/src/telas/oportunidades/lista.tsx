@@ -1,8 +1,9 @@
 import type { Oportunidade } from '@leadtogo/api-client'
+import type { CorDeTag } from '@leadtogo/shared'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
-import { Badge } from '@leadtogo/ui/exibicao'
+import { Badge, Tag } from '@leadtogo/ui/exibicao'
 import { cn } from '@leadtogo/ui/cn'
 import { classeDaCor } from '@leadtogo/ui/cores'
 
@@ -28,7 +29,7 @@ export function EstadoDaOportunidade({ o }: { o: Oportunidade }) {
   )
 }
 
-/** A lista simples (qualquer status) das Oportunidades: valores à direita, dígitos tabulares. */
+/** A lista simples (qualquer status) das Oportunidades: tags, valores à direita, dígitos tabulares. */
 export function TabelaDeOportunidades({
   itens,
   menu,
@@ -42,6 +43,9 @@ export function TabelaDeOportunidades({
         <tr>
           <th scope="col" className={cabecalho}>
             Oportunidade
+          </th>
+          <th scope="col" className={cabecalho}>
+            Tags
           </th>
           <th scope="col" className={cabecalho}>
             Situação
@@ -80,6 +84,16 @@ export function TabelaDeOportunidades({
                   {o.titulo}
                 </Link>
                 <div className="text-[13px] text-ink-muted">{o.empresa.nome}</div>
+              </td>
+              <td className={celula}>
+                {/* Todas, quebrando linha, na ordem dos grupos e das tags (como em Empresas e Contatos) */}
+                <span className="flex flex-wrap gap-1">
+                  {o.tags.map((t) => (
+                    <Tag key={t.id} color={t.cor as CorDeTag}>
+                      {t.nome}
+                    </Tag>
+                  ))}
+                </span>
               </td>
               <td className={celula}>
                 <EstadoDaOportunidade o={o} />

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePermissoes } from '@/auth/permissoes'
 import { Button } from '@leadtogo/ui/button'
 import { Select, TextArea, TextField } from '@leadtogo/ui/campos'
 import { Switch } from '@leadtogo/ui/checkbox'
@@ -11,7 +12,7 @@ import { Alert } from '@leadtogo/ui/feedback'
 import { SegmentedControl } from '@leadtogo/ui/segmented-control'
 import { Janela } from '@/telas/cadastros/base'
 
-import { hojeEmTexto, reais } from './formatos'
+import { diaEmTexto, hojeEmTexto, reais } from './formatos'
 
 const OPCOES: { value: StatusDeFechamento; label: string }[] = [
   { value: 'conquistado', label: ROTULO_DO_STATUS.conquistado },
@@ -32,12 +33,16 @@ export interface DadosDoFechamento {
   detalhe?: string
   retomarEm?: string
   empresaViraCliente?: boolean
+  /** O dia do fechamento (só com `oportunidades.data_fechamento`; sem ele, vale o momento) */
+  dataFechamento?: string
 }
 
 /**
  * "Fechar oportunidade": Conquistada, Perdida, Cancelada ou Suspensa. Perdida, Cancelada e Suspensa pedem o
  * motivo (da lista do status); Suspensa pede "retomar em" (cria a atividade de retomada); Conquistada mostra
  * o valor e o interruptor "Mudar o Status da empresa para Cliente", que já vem como a empresa configurou.
+ * Quem tem `oportunidades.data_fechamento` (admin e gestor) escolhe o dia do fechamento: hoje ou antes, nunca
+ * antes do dia da criação.
  */
 export function JanelaDeFechamento({
   oportunidade: o,
@@ -52,6 +57,11 @@ export function JanelaDeFechamento({
   aoConfirmar: (dados: DadosDoFechamento) => Promise<string | undefined>
 }) {
   const servicos = useServicos()
+  const { pode } = usePermissoes()
+  const escolheData = pode('oportunidades.data_fechamento')
+  const hoje = hojeEmTexto()
+  const diaDaCriacao = diaEmTexto(o.criadaEm)
+  const [dataFechamento, setDataFechamento] = useState(hoje)
   const [status, setStatus] = useState<StatusDeFechamento>(statusInicial)
   const [motivoId, setMotivoId] = useState('')
   const [detalhe, setDetalhe] = useState('')
@@ -81,6 +91,13 @@ export function JanelaDeFechamento({
       if (retomarEm === '') e['retomarEm'] = 'Informe quando retomar.'
       else if (retomarEm < hojeEmTexto()) e['retomarEm'] = 'A data não pode ser no passado.'
     }
+    if (escolheData) {
+      if (dataFechamento === '') e['dataFechamento'] = 'Informe a data de fechamento.'
+      else if (dataFechamento > hoje) e['dataFechamento'] = 'A data não pode ser no futuro.'
+      else if (dataFechamento < diaDaCriacao) {
+        e['dataFechamento'] = 'A data não pode ser antes da criação da oportunidade.'
+      }
+    }
     setErros(e)
     setErroGeral(undefined)
     if (Object.keys(e).length > 0) return
@@ -91,6 +108,7 @@ export function JanelaDeFechamento({
       ...(detalhe.trim() !== '' ? { detalhe: detalhe.trim() } : {}),
       ...(status === 'suspenso' ? { retomarEm } : {}),
       ...(status === 'conquistado' ? { empresaViraCliente: viraCliente } : {}),
+      ...(escolheData && dataFechamento !== hoje ? { dataFechamento } : {}),
     })
     setEnviando(false)
     if (mensagem) setErroGeral(mensagem)
@@ -172,6 +190,19 @@ export function JanelaDeFechamento({
             value={retomarEm}
             onChange={(e) => setRetomarEm(e.target.value)}
             {...(erros['retomarEm'] ? { error: erros['retomarEm'] } : {})}
+          />
+        ) : null}
+        {escolheData ? (
+          <TextField
+            label="Data de fechamento"
+            required
+            type="date"
+            min={diaDaCriacao}
+            max={hoje}
+            hint="Use quando a oportunidade fechou antes de ser registrada aqui."
+            value={dataFechamento}
+            onChange={(e) => setDataFechamento(e.target.value)}
+            {...(erros['dataFechamento'] ? { error: erros['dataFechamento'] } : {})}
           />
         ) : null}
         <TextArea

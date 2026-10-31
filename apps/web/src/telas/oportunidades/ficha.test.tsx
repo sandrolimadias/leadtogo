@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { falha, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 import { id, meComPapel } from '@/telas/contatos/fixtures'
 
-import { FASES, oportunidade } from './fixtures'
+import { FASES, gruposDeOportunidade, oportunidade, tagNaOportunidade } from './fixtures'
 
 const detalhada = (extra: Partial<OportunidadeDetalhada> = {}): OportunidadeDetalhada => ({
   ...oportunidade(1, { probabilidade: 80, probabilidadeManual: true, valorPonderado: 6400 }),
@@ -34,9 +34,16 @@ const detalhada = (extra: Partial<OportunidadeDetalhada> = {}): OportunidadeDeta
 function servicos(o: OportunidadeDetalhada = detalhada()) {
   const base = servicosFalsos()
   const detalhar = vi.fn(async (_id: string) => ok(o))
+  const definirTags = vi.fn(async (_id: string, _t: string[]) => ok(o))
   const s = servicosFalsos({
     me: async () => meComPapel('admin'),
-    oportunidades: { ...base.oportunidades, detalhar },
+    oportunidades: { ...base.oportunidades, detalhar, definirTags },
+    tags: {
+      ...base.tags,
+      listar: vi.fn(async (aplicaA?: string) =>
+        ok(aplicaA === 'oportunidade' ? gruposDeOportunidade : []),
+      ),
+    },
     funis: {
       ...base.funis,
       listar: vi.fn(async () =>
@@ -53,7 +60,7 @@ function servicos(o: OportunidadeDetalhada = detalhada()) {
       ),
     },
   })
-  return { s, detalhar }
+  return { s, detalhar, definirTags }
 }
 
 describe('Ficha da oportunidade', () => {
@@ -128,5 +135,28 @@ describe('Ficha da oportunidade', () => {
     renderizar(x.s, `/oportunidades/${oportunidade(1).id}`)
     expect(await screen.findByText('Oportunidade não encontrada.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Voltar para Oportunidades' })).toBeInTheDocument()
+  })
+
+  it('mostra as tags no cabeçalho e "Editar tags" troca as tags da oportunidade', async () => {
+    const x = servicos(detalhada({ tags: [tagNaOportunidade(71)] }))
+    renderizar(x.s, `/oportunidades/${oportunidade(1).id}`)
+    const cabecalho = (
+      await screen.findByRole('heading', { name: 'Oportunidade 1', level: 1 })
+    ).closest('header') as HTMLElement
+    expect(within(cabecalho).getByText('Novo')).toBeInTheDocument()
+    await userEvent.click(await within(cabecalho).findByRole('button', { name: 'Editar tags' }))
+    const j = await screen.findByRole('dialog', { name: /Editar tags/ })
+    await userEvent.click(within(j).getByRole('checkbox', { name: 'Renovação' }))
+    await userEvent.click(within(j).getByRole('button', { name: /Salvar/ }))
+    await waitFor(() => expect(x.definirTags).toHaveBeenCalled())
+    expect(x.definirTags.mock.calls[0]?.[1]).toEqual([id(71), id(72)])
+  })
+
+  it('sem permissão de editar, as tags aparecem mas "Editar tags" não', async () => {
+    const x = servicos(detalhada({ tags: [tagNaOportunidade(72)], editavel: false }))
+    renderizar(x.s, `/oportunidades/${oportunidade(1).id}`)
+    await screen.findByRole('heading', { name: 'Oportunidade 1', level: 1 })
+    expect(screen.getByText('Renovação')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Editar tags' })).toBeNull()
   })
 })

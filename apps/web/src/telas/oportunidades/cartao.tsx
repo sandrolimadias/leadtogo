@@ -1,9 +1,10 @@
 import type { Oportunidade } from '@leadtogo/api-client'
+import type { CorDeTag } from '@leadtogo/shared'
 import { Link } from '@tanstack/react-router'
 import { CalendarClock, GripVertical, Hourglass, TriangleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Avatar } from '@leadtogo/ui/exibicao'
+import { Avatar, Tag } from '@leadtogo/ui/exibicao'
 import { cn } from '@leadtogo/ui/cn'
 import { quandoDaAtividade } from '@/telas/atividades/formatos'
 import { BolhaDoTipo } from '@/telas/cadastros/tipos-de-atividade'
@@ -11,7 +12,7 @@ import { BolhaDoTipo } from '@/telas/cadastros/tipos-de-atividade'
 import { previsaoEmPalavras, reais } from './formatos'
 
 /**
- * O card do Kanban: nome, empresa, valor (total e mensal), responsável, previsão (vencida em vermelho, hoje
+ * O card do Kanban: a empresa (em maiúsculas, negrito), o título, o valor (total e mensal), responsável, previsão (vencida em vermelho, hoje
  * em âmbar, sem data = "Sem previsão"), próxima atividade (ou "Sem próxima atividade" em destaque) e o alerta
  * de parada, sempre com a frase e não só com a cor.
  */
@@ -45,14 +46,30 @@ export function CartaoDeOportunidade({
       <div className="flex items-start gap-1.5">
         {alca}
         <div className="flex min-w-0 flex-1 flex-col">
+          {/* A maiúscula é só visual: o nome segue gravado (e lido pelo leitor de tela) como foi digitado */}
+          <span
+            data-parte="empresa"
+            title={o.empresa.nome}
+            className="line-clamp-2 text-[13px] font-semibold tracking-wide text-ink uppercase [overflow-wrap:anywhere]"
+          >
+            {o.empresa.nome}
+          </span>
           <Link
             to="/oportunidades/$oportunidadeId"
             params={{ oportunidadeId: o.id }}
-            className="font-semibold text-ink no-underline [overflow-wrap:anywhere] hover:underline"
+            className="text-ink no-underline [overflow-wrap:anywhere] hover:underline"
           >
             {o.titulo}
           </Link>
-          <span className="truncate text-[13px] text-ink-muted">{o.empresa.nome}</span>
+          {o.tags.length > 0 ? (
+            <ul aria-label="Tags" className="m-0 mt-1 flex list-none flex-wrap gap-1 p-0">
+              {o.tags.map((t) => (
+                <li key={t.id}>
+                  <Tag color={t.cor as CorDeTag}>{t.nome}</Tag>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
         {menu}
       </div>
