@@ -5745,7 +5745,7 @@ export interface components {
             longitude: number;
         };
         /** @enum {string} */
-        AlcanceDaPublicacao: "todos" | "empresas";
+        AlcanceDaPublicacao: "todos" | "empresas" | "tags";
         Alertas: {
             /** @enum {string} */
             status: "ok" | "alerta" | "erro";
@@ -6195,6 +6195,12 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 nome: string;
+            }[];
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                grupo: string;
             }[];
         };
         BaixaDeDocumento: {
@@ -6765,6 +6771,8 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+            /** @default [] */
+            tagIds: string[];
             /** Format: date-time */
             enviarEm?: string | null;
         };
@@ -6805,6 +6813,8 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+            /** @default [] */
+            tagIds: string[];
             arquivo: components["schemas"]["PedirEnvioDeAnexoEntrada"];
         };
         CriarEmpresaDaCarteiraEntrada: {
@@ -7232,6 +7242,12 @@ export interface components {
                 id: string;
                 nome: string;
             }[];
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                grupo: string;
+            }[];
         };
         DocumentoDoPortal: {
             /** Format: uuid */
@@ -7257,6 +7273,7 @@ export interface components {
             descricao?: string | null;
             alcance?: components["schemas"]["AlcanceDaPublicacao"];
             empresaIds?: string[];
+            tagIds?: string[];
             visivelNoPortal?: boolean;
         };
         EditarPerfil: {
@@ -7600,6 +7617,12 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 nome: string;
+            }[];
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                grupo: string;
             }[];
         };
         /** @enum {string} */
@@ -9255,6 +9278,12 @@ export interface components {
                 id: string;
                 nome: string;
             }[];
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                grupo: string;
+            }[];
         };
         PublicacaoDoPortal: {
             /** Format: uuid */
@@ -9486,6 +9515,8 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+            /** @default [] */
+            tagIds: string[];
         };
         SalvarPreferenciasDoPortalEntrada: {
             silencioInicio: string | null;
@@ -9502,6 +9533,8 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+            /** @default [] */
+            tagIds: string[];
             situacao: components["schemas"]["SituacaoDaPublicacao"];
             /**
              * Format: date-time

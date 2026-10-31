@@ -38,7 +38,7 @@ const doTenant = () =>
 
 export const urgenciaDoAviso = pgEnum('urgencia_aviso', ['normal', 'urgente'])
 export const situacaoDoAviso = pgEnum('situacao_aviso', ['agendado', 'enviado', 'cancelado'])
-export const alcanceDoAviso = pgEnum('alcance_aviso', ['todos', 'empresas'])
+export const alcanceDoAviso = pgEnum('alcance_aviso', ['todos', 'empresas', 'tags'])
 
 /** Comunicado curto que chega no celular (push), no sino e por e-mail. Só a equipe lê e escreve. */
 export const avisos = pgTable(

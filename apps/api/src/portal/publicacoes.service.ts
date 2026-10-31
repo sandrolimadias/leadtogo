@@ -18,6 +18,7 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { acessoNoAlcance, tagsDoAlcance, trocarTagsDoAlcance } from './audiencia.js'
 
 type LinhaDaPublicacao = {
   id: string
@@ -78,8 +79,7 @@ export class PublicacoesService {
         SELECT p.id AS publicacao_id, a.id AS acesso_id
         FROM publicacoes p
         JOIN portal_acessos a ON a.situacao = 'ativo' AND a.excluido_em IS NULL
-          AND (p.alcance = 'todos' OR EXISTS (
-            SELECT 1 FROM publicacao_empresas pe WHERE pe.publicacao_id = p.id AND pe.empresa_id = a.empresa_id))
+          AND ${acessoNoAlcance('publicacao', sql`p`, sql`a`, 'publicacao_empresas')}
         WHERE p.id = ANY (${ids}::uuid[])
       )
       SELECT p.id,
@@ -199,6 +199,7 @@ export class PublicacoesService {
       autorNome: l.autor_nome,
       criadoEm: new Date(l.criado_em).toISOString(),
       empresas: [...empresas],
+      tags: await tagsDoAlcance(db, 'publicacao', id),
     }
   }
 
@@ -213,6 +214,13 @@ export class PublicacoesService {
   private async trocarEmpresas(id: string, d: SalvarPublicacaoEntrada): Promise<void> {
     const db = this.ctx.db()
     await db.execute(sql`DELETE FROM publicacao_empresas WHERE publicacao_id = ${id}`)
+    await trocarTagsDoAlcance(db, 'publicacao', {
+      itemId: id,
+      tenantId: this.ctx.tenantId,
+      alcance: d.alcance,
+      tagIds: d.tagIds,
+      membroId: this.ctx.membro.id,
+    })
     if (d.alcance !== 'empresas') return
     const unicas = [...new Set(d.empresaIds)]
     const validas = await db.execute<{ id: string }>(sql`
@@ -303,6 +311,9 @@ export class PublicacoesService {
         INSERT INTO publicacao_empresas (id, tenant_id, publicacao_id, empresa_id)
         VALUES (${novoId()}, ${this.ctx.tenantId}, ${novo}, ${empresaId})`)
     }
+    await db.execute(sql`
+      INSERT INTO publicacao_tags (tenant_id, publicacao_id, tag_id, aplicada_por)
+      SELECT tenant_id, ${novo}, tag_id, ${this.ctx.membro.id} FROM publicacao_tags WHERE publicacao_id = ${id}`)
     await this.auditoria.registrar({
       entidade: 'publicacao',
       entidadeId: novo,

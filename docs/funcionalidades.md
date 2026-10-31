@@ -657,6 +657,7 @@ A equipe publica **comunicados** no feed do portal; o cliente lê, reage, coment
 - **Situações:** rascunho → agendada → publicada. **Agendada** é publicada sozinha pelo worker (confere a cada minuto) e exige horário no futuro. **Publicada** não volta a rascunho nem agenda (edita-se o texto ou exclui-se). Excluir é lógico: some do portal e da lista.
 - **Texto:** Markdown restrito (negrito, itálico, links `http`, `https` e `mailto`, listas, subtítulos e parágrafos). **HTML nunca é interpretado**: aparece como texto. Título até 160 e texto até 10 mil caracteres.
 - **Alcance:** todos os clientes, ou empresas-clientes escolhidas (até 500). O cliente só vê o que é do alcance da empresa dele.
+- **Alcance por tags (Fase 4C, vale também para eventos, documentos e avisos):** terceira opção, **"Contatos com tags"**: o item chega só a quem tem **alguma** das tags de **contato** escolhidas (até 50; tags de grupos de empresa ou de oportunidade são recusadas, 422 `tag_invalida`). Vale na hora: tirar a tag do contato tira a visibilidade. O banco decide (a sessão do portal lê só as tags do próprio contato; a API nunca as devolve ao cliente). Nos avisos, as entregas vão a quem tem a tag e o limite semanal conta para as empresas desses contatos; nas métricas da publicação, o "alvo" do alcance conta só essas pessoas.
 - **Fixar:** uma publicação fixada por empresa (fixar outra desafixa a anterior); só a publicada fixa. A fixada vem primeiro no feed.
 - **Anexos:** não há anexo nas publicações; arquivos para os clientes entram em **Documentos** (Fase 3C).
 

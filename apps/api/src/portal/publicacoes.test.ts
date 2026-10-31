@@ -7,11 +7,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { configuracaoDeTeste, criarAppComRotas } from '../testes/app-teste.js'
 import { chamarEm, empresaDeChamados, noTenant } from '../testes/chamados.js'
 import {
+  aplicarTagNoContato,
   chamarPortalEm,
   configuracaoDoPortalDeTeste,
   configurarPortal,
   entrarNoPortal,
   novaEmpresaCliente,
+  novaTagDeContato,
   novoAcesso,
 } from '../testes/portal.js'
 import { dono } from '../testes/mundo.js'
@@ -630,6 +632,77 @@ describe('leituras e alcance', () => {
     const depois = await m(soB.id)
     expect(depois).toMatchObject({ leitores: 0, alvo: 1 })
     expect(depois.leitores).toBeLessThanOrEqual(depois.alvo)
+  })
+})
+
+describe('alcance por tags de contato (Fase 4C)', () => {
+  it('só quem tem alguma das tags vê; o alvo do alcance conta só essas pessoas; tag de empresa é 422', async () => {
+    const c = await cenario()
+    const diretoria = await novaTagDeContato(c.d.tenantId, 'Diretoria')
+    const conselho = await novaTagDeContato(c.d.tenantId, 'Conselho')
+    await aplicarTagNoContato(c.d.tenantId, c.acessoB.contatoId, conselho)
+    const r = await crm('post', c.d.cookie, '/portal-publicacoes', {
+      titulo: 'Só diretoria e conselho',
+      corpo: 'Texto',
+      alcance: 'tags',
+      tagIds: [diretoria, conselho],
+      situacao: 'publicada',
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body.tags.map((t: { nome: string }) => t.nome)).toEqual(['Conselho', 'Diretoria'])
+    expect(r.body.metricas.alvo).toBe(1)
+    const feed = async (cookie: string) =>
+      (
+        (await portal('get', '/portal/publicacoes', { cookie })).body.itens as { titulo: string }[]
+      ).map((i) => i.titulo)
+    expect(await feed(c.cookieB)).toContain('Só diretoria e conselho')
+    expect(await feed(c.cookieA)).not.toContain('Só diretoria e conselho')
+    // Direto pela URL também não
+    expect(
+      (await portal('get', `/portal/publicacoes/${r.body.id}/comentarios`, { cookie: c.cookieA }))
+        .status,
+    ).toBe(404)
+    // Tirar a tag tira a visibilidade na hora
+    await noTenant(
+      c.d.tenantId,
+      (tx) => tx`DELETE FROM contato_tags WHERE contato_id = ${c.acessoB.contatoId}`,
+    )
+    expect(await feed(c.cookieB)).not.toContain('Só diretoria e conselho')
+    // Validações: sem tags é 400; tags fora do alcance "tags" é 400
+    expect(
+      (
+        await crm('post', c.d.cookie, '/portal-publicacoes', {
+          titulo: 'Teste de alcance',
+          corpo: 'Texto',
+          alcance: 'tags',
+          situacao: 'rascunho',
+        })
+      ).status,
+    ).toBe(400)
+    expect(
+      (
+        await crm('post', c.d.cookie, '/portal-publicacoes', {
+          titulo: 'Teste de alcance',
+          corpo: 'Texto',
+          alcance: 'todos',
+          tagIds: [diretoria],
+          situacao: 'rascunho',
+        })
+      ).status,
+    ).toBe(400)
+    // Tag de outro alvo (empresa) ou inexistente é 422
+    const inexistente = '01900000-0000-7000-8000-000000000000'
+    expect(
+      (
+        await crm('post', c.d.cookie, '/portal-publicacoes', {
+          titulo: 'Teste de alcance',
+          corpo: 'Texto',
+          alcance: 'tags',
+          tagIds: [inexistente],
+          situacao: 'rascunho',
+        })
+      ).status,
+    ).toBe(422)
   })
 })
 

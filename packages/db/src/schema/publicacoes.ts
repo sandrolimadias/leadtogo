@@ -40,7 +40,7 @@ export const situacaoPublicacao = pgEnum('situacao_publicacao', [
   'agendada',
   'publicada',
 ])
-export const alcancePublicacao = pgEnum('alcance_publicacao', ['todos', 'empresas'])
+export const alcancePublicacao = pgEnum('alcance_publicacao', ['todos', 'empresas', 'tags'])
 export const tipoReacaoPublicacao = pgEnum('tipo_reacao_publicacao', [
   'curtir',
   'apoiar',

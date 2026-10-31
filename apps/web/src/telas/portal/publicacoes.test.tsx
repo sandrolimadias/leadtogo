@@ -49,6 +49,7 @@ const publicacao = (extra: Partial<Publicacao> = {}): Publicacao => ({
   autorNome: 'Lívia Coutinho',
   criadoEm: '2026-10-21T10:00:00.000Z',
   empresas: [],
+  tags: [],
   ...extra,
 })
 
@@ -188,10 +189,60 @@ describe('hub do portal: publicações', () => {
         corpo: 'Fechado na segunda.',
         alcance: 'todos',
         empresaIds: [],
+        tagIds: [],
         situacao: 'publicada',
         agendadaPara: null,
       }),
     )
+  })
+
+  it('para contatos com tags: marca as tags de contato e manda os ids (Fase 4C)', async () => {
+    const criar = vi.fn(async () => ok(publicacao()))
+    const s = servicos({ criar })
+    s.tags.listar = vi.fn(async () =>
+      ok([
+        {
+          id: id(60),
+          nome: 'Cargo',
+          selecao: 'multipla' as const,
+          obrigatorio: false,
+          sistema: false,
+          automatico: false,
+          aplicaA: 'contato' as const,
+          ativo: true,
+          ordem: 0,
+          tags: [
+            {
+              id: id(61),
+              tagGrupoId: id(60),
+              nome: 'Diretoria',
+              cor: 'blue' as const,
+              ativo: true,
+              ordem: 0,
+              chaveSistema: null,
+              apareceNoMapa: true,
+              visivelAoAbrir: true,
+            },
+          ],
+        },
+      ]),
+    )
+    renderizar(s, '/portal')
+    const usuario = userEvent.setup()
+    await usuario.click(await screen.findByRole('button', { name: 'Nova publicação' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Nova publicação' })
+    await usuario.type(within(dialogo).getByLabelText(/Título/), 'Só diretoria')
+    await usuario.type(within(dialogo).getByLabelText(/Texto/), 'Reunião fechada.')
+    await usuario.selectOptions(within(dialogo).getByLabelText('Para quem'), 'tags')
+    expect(within(dialogo).getByRole('button', { name: 'Salvar rascunho' })).toBeDisabled()
+    await usuario.click(await within(dialogo).findByLabelText('Diretoria'))
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar rascunho' }))
+    await waitFor(() =>
+      expect(criar).toHaveBeenCalledWith(
+        expect.objectContaining({ alcance: 'tags', empresaIds: [], tagIds: [id(61)] }),
+      ),
+    )
+    expect(s.tags.listar).toHaveBeenCalledWith('contato')
   })
 
   it('agendar exige a data; erro da API aparece no diálogo', async () => {

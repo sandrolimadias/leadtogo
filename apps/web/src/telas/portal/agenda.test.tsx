@@ -34,6 +34,7 @@ const evento = (extra: Partial<Evento> = {}): Evento => ({
   canceladoMotivo: null,
   criadoEm: '2026-10-20T09:00:00.000Z',
   empresas: [],
+  tags: [],
   ...extra,
 })
 
@@ -158,6 +159,7 @@ describe('hub do portal: agenda', () => {
         prazoConfirmacao: null,
         alcance: 'todos',
         empresaIds: [],
+        tagIds: [],
       }),
     )
   })

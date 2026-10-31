@@ -187,7 +187,9 @@ function Detalhe({
               {e.local ? ` · ${e.local}` : ''} ·{' '}
               {e.alcance === 'todos'
                 ? 'Todos os clientes'
-                : `${e.empresas.length} ${e.empresas.length === 1 ? 'empresa' : 'empresas'}`}
+                : e.alcance === 'tags'
+                  ? `Tags: ${e.tags.map((t) => t.nome).join(', ')}`
+                  : `${e.empresas.length} ${e.empresas.length === 1 ? 'empresa' : 'empresas'}`}
             </p>
           </div>
           {podeGerir ? (

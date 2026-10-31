@@ -25,7 +25,47 @@ export const ROTULO_DA_SITUACAO_DA_PUBLICACAO: Record<SituacaoDaPublicacao, stri
   publicada: 'Publicada',
 }
 
-export const ALCANCES_DA_PUBLICACAO = ['todos', 'empresas'] as const
+// Fase 4C: "tags" = só quem tem alguma das tags de contato escolhidas (vale para publicações, eventos,
+// documentos e avisos, que usam este mesmo alcance)
+export const ALCANCES_DA_PUBLICACAO = ['todos', 'empresas', 'tags'] as const
+export const MAXIMO_DE_TAGS_NO_ALCANCE = 50
+export const tagIdsDoAlcanceSchema = z.array(z.uuid()).max(MAXIMO_DE_TAGS_NO_ALCANCE)
+
+/** Confere a lista que acompanha o alcance: empresas só em "empresas", tags só em "tags" (e obrigatórias neles). */
+export function validarAudiencia(
+  d: {
+    alcance?: string | undefined
+    empresaIds?: string[] | undefined
+    tagIds?: string[] | undefined
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const empresas = d.empresaIds?.length ?? 0
+  const tags = d.tagIds?.length ?? 0
+  if (d.alcance === 'empresas' && empresas === 0) {
+    ctx.addIssue({ code: 'custom', path: ['empresaIds'], message: 'escolha ao menos uma empresa' })
+  }
+  if (d.alcance === 'tags' && tags === 0) {
+    ctx.addIssue({ code: 'custom', path: ['tagIds'], message: 'escolha ao menos uma tag' })
+  }
+  if (d.alcance !== 'empresas' && empresas > 0) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['empresaIds'],
+      message: 'a lista de empresas só vale no alcance "empresas"',
+    })
+  }
+  if (d.alcance !== 'tags' && tags > 0) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['tagIds'],
+      message: 'a lista de tags só vale no alcance "tags"',
+    })
+  }
+}
+
+/** As tags do alcance, como a equipe vê no detalhe. */
+export const tagDoAlcanceSchema = z.object({ id: z.uuid(), nome: z.string(), grupo: z.string() })
 export const alcanceDaPublicacaoSchema = z
   .enum(ALCANCES_DA_PUBLICACAO)
   .meta({ id: 'AlcanceDaPublicacao' })
@@ -92,6 +132,7 @@ export const publicacaoSchema = itemDePublicacaoSchema
     autorNome: z.string().nullable(),
     criadoEm: z.iso.datetime({ offset: true }),
     empresas: z.array(z.object({ id: z.uuid(), nome: z.string() })),
+    tags: z.array(tagDoAlcanceSchema),
   })
   .meta({ id: 'Publicacao' })
 export type Publicacao = z.infer<typeof publicacaoSchema>
@@ -139,25 +180,24 @@ const camposDaPublicacao = {
   alcance: alcanceDaPublicacaoSchema,
   /** Só no alcance "empresas" (e obrigatório nele) */
   empresaIds: z.array(z.uuid()).max(MAXIMO_DE_EMPRESAS_NO_ALCANCE).default([]),
+  /** Só no alcance "tags" (e obrigatório nele): tags de contato; basta ter uma */
+  tagIds: tagIdsDoAlcanceSchema.default([]),
   /** O que fazer ao salvar: guardar rascunho, publicar agora ou agendar (exige `agendadaPara`) */
   situacao: situacaoDaPublicacaoSchema,
   agendadaPara: z.iso.datetime({ offset: true }).nullable().default(null),
 }
 
 const validarAlcanceEAgenda = (
-  d: { alcance?: string; empresaIds?: string[]; situacao?: string; agendadaPara?: string | null },
+  d: {
+    alcance?: string
+    empresaIds?: string[]
+    tagIds?: string[]
+    situacao?: string
+    agendadaPara?: string | null
+  },
   ctx: z.RefinementCtx,
 ) => {
-  if (d.alcance === 'empresas' && (d.empresaIds?.length ?? 0) === 0) {
-    ctx.addIssue({ code: 'custom', path: ['empresaIds'], message: 'escolha ao menos uma empresa' })
-  }
-  if (d.alcance === 'todos' && (d.empresaIds?.length ?? 0) > 0) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['empresaIds'],
-      message: 'o alcance "todos" não tem lista de empresas',
-    })
-  }
+  validarAudiencia(d, ctx)
   if (d.situacao === 'agendada' && !d.agendadaPara) {
     ctx.addIssue({ code: 'custom', path: ['agendadaPara'], message: 'informe quando publicar' })
   }

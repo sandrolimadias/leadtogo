@@ -15,6 +15,7 @@ import { Alert } from '@leadtogo/ui/feedback'
 import { toast } from '@leadtogo/ui/toast'
 
 import { SelecaoDeEmpresas } from './selecao-de-empresas'
+import { SelecaoDeTags } from './selecao-de-tags'
 
 /** `datetime-local` (hora do navegador) → ISO com fuso; vazio ou inválido → null. */
 const paraIso = (local: string): string | null => {
@@ -52,8 +53,11 @@ export function EditorDeEvento({
   const [vagasTotais, setVagasTotais] = useState(String(inicial?.vagasTotais ?? ''))
   const [vagasPorEmpresa, setVagasPorEmpresa] = useState(String(inicial?.vagasPorEmpresa ?? ''))
   const [prazo, setPrazo] = useState(paraLocal(inicial?.prazoConfirmacao ?? null))
-  const [alcance, setAlcance] = useState<'todos' | 'empresas'>(inicial?.alcance ?? 'todos')
+  const [alcance, setAlcance] = useState<'todos' | 'empresas' | 'tags'>(inicial?.alcance ?? 'todos')
   const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>(inicial?.empresas ?? [])
+  const [tags, setTags] = useState<{ id: string; nome: string }[]>(inicial?.tags ?? [])
+  const semAudiencia =
+    (alcance === 'empresas' && empresas.length === 0) || (alcance === 'tags' && tags.length === 0)
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -74,6 +78,7 @@ export function EditorDeEvento({
       prazoConfirmacao: paraIso(prazo),
       alcance,
       empresaIds: alcance === 'empresas' ? empresas.map((e) => e.id) : [],
+      tagIds: alcance === 'tags' ? tags.map((t) => t.id) : [],
     }
     setOcupado(true)
     const r = inicial
@@ -106,7 +111,7 @@ export function EditorDeEvento({
           <Button
             variant="primary"
             loading={ocupado}
-            disabled={titulo.trim().length < 3 || !inicio || !fim}
+            disabled={titulo.trim().length < 3 || !inicio || !fim || semAudiencia}
             onClick={() => void salvar()}
           >
             {inicial ? 'Salvar alterações' : 'Criar evento'}
@@ -192,12 +197,14 @@ export function EditorDeEvento({
           options={[
             { value: 'todos', label: 'Todos os clientes' },
             { value: 'empresas', label: 'Empresas escolhidas' },
+            { value: 'tags', label: 'Contatos com tags' },
           ]}
-          onChange={(e) => setAlcance(e.target.value as 'todos' | 'empresas')}
+          onChange={(e) => setAlcance(e.target.value as 'todos' | 'empresas' | 'tags')}
         />
         {alcance === 'empresas' ? (
           <SelecaoDeEmpresas empresas={empresas} aoMudar={setEmpresas} />
         ) : null}
+        {alcance === 'tags' ? <SelecaoDeTags tags={tags} aoMudar={setTags} /> : null}
       </div>
     </Dialog>
   )

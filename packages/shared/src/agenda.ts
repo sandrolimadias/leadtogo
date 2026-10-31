@@ -1,7 +1,13 @@
 import { z } from 'zod'
 
 import { TAMANHO_MAXIMO_DE_PAGINA } from './paginacao.js'
-import { alcanceDaPublicacaoSchema, MAXIMO_DE_EMPRESAS_NO_ALCANCE } from './publicacoes.js'
+import {
+  alcanceDaPublicacaoSchema,
+  MAXIMO_DE_EMPRESAS_NO_ALCANCE,
+  tagDoAlcanceSchema,
+  tagIdsDoAlcanceSchema,
+  validarAudiencia,
+} from './publicacoes.js'
 
 // Portal do cliente, Fase 3D: agenda (docs/plano_portal_cliente.md, seção 7). A equipe publica eventos com vagas
 // (totais e por empresa), prazo de confirmação e alcance; o cliente confirma e cancela a presença; a lista de espera
@@ -71,6 +77,7 @@ export const eventoSchema = itemDeEventoSchema
     canceladoMotivo: z.string().nullable(),
     criadoEm: instante,
     empresas: z.array(z.object({ id: z.uuid(), nome: z.string() })),
+    tags: z.array(tagDoAlcanceSchema),
   })
   .meta({ id: 'Evento' })
 export type Evento = z.infer<typeof eventoSchema>
@@ -147,9 +154,11 @@ export const salvarEventoSchema = z
       .transform((v) => v ?? null),
     alcance: alcanceDaPublicacaoSchema,
     empresaIds: z.array(z.uuid()).max(MAXIMO_DE_EMPRESAS_NO_ALCANCE).default([]),
+    tagIds: tagIdsDoAlcanceSchema.default([]),
   })
   .strict()
   .superRefine((d, ctx) => {
+    validarAudiencia(d, ctx)
     const inicio = new Date(d.inicioEm).getTime()
     if (new Date(d.fimEm).getTime() <= inicio) {
       ctx.addIssue({
@@ -163,20 +172,6 @@ export const salvarEventoSchema = z
         code: 'custom',
         path: ['prazoConfirmacao'],
         message: 'o prazo de confirmação não pode passar do início do evento',
-      })
-    }
-    if (d.alcance === 'empresas' && d.empresaIds.length === 0) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['empresaIds'],
-        message: 'escolha ao menos uma empresa',
-      })
-    }
-    if (d.alcance === 'todos' && d.empresaIds.length > 0) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['empresaIds'],
-        message: 'o alcance "todos" não tem lista de empresas',
       })
     }
   })

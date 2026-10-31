@@ -36,7 +36,7 @@ const doTenant = () =>
     .references(() => tenants.id)
 
 export const situacaoDoEvento = pgEnum('situacao_evento', ['rascunho', 'publicado', 'cancelado'])
-export const alcanceDoEvento = pgEnum('alcance_evento', ['todos', 'empresas'])
+export const alcanceDoEvento = pgEnum('alcance_evento', ['todos', 'empresas', 'tags'])
 export const situacaoDaConfirmacao = pgEnum('situacao_confirmacao', [
   'confirmado',
   'lista_espera',

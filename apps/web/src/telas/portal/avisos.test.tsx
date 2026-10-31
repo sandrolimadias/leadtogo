@@ -26,6 +26,7 @@ const aviso = (extra: Partial<Aviso> = {}): Aviso => ({
   emailsEnfileirados: 9,
   criadoEm: '2026-10-20T11:59:00.000Z',
   empresas: [],
+  tags: [],
   ...extra,
 })
 
@@ -95,6 +96,7 @@ describe('hub do portal: avisos', () => {
         urgencia: 'normal',
         alcance: 'todos',
         empresaIds: [],
+        tagIds: [],
         enviarEm: null,
       }),
     )

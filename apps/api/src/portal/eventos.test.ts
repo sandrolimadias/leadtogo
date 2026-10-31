@@ -15,6 +15,8 @@ import {
   entrarNoPortal,
   novaEmpresaCliente,
   novoAcesso,
+  aplicarTagNoContato,
+  novaTagDeContato,
 } from '../testes/portal.js'
 import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import { processadorDeManutencao } from '../worker/manutencao.js'
@@ -648,5 +650,29 @@ describe('isolamento entre empresas da equipe', () => {
     expect((await crm('get', x.gestor.cookie, `/portal-eventos/${doY}/participantes`)).status).toBe(
       404,
     )
+  })
+})
+
+describe('alcance por tags de contato (Fase 4C)', () => {
+  it('o evento com tags aparece só para quem tem a tag, e só ele confirma', async () => {
+    const c = await cenario()
+    const tag = await novaTagDeContato(c.d.tenantId, 'Associado premium')
+    const [ana, alex] = c.clientes as [Cliente, Cliente]
+    await aplicarTagNoContato(c.d.tenantId, ana.contatoId, tag)
+    const id = await publicar(c, { alcance: 'tags', tagIds: [tag] })
+    const detalhe = await crm('get', c.gestor.cookie, `/portal-eventos/${id}`)
+    expect(detalhe.body.tags).toEqual([
+      expect.objectContaining({ id: tag, nome: 'Associado premium' }),
+    ])
+    const lista = async (cliente: Cliente) =>
+      (
+        (await portal('get', '/portal/eventos', { cookie: cliente.cookie })).body.itens as {
+          id: string
+        }[]
+      ).map((e) => e.id)
+    expect(await lista(ana)).toContain(id)
+    expect(await lista(alex)).not.toContain(id)
+    expect((await confirmar(alex, id)).status).toBe(404)
+    expect((await confirmar(ana, id)).status).toBe(200)
   })
 })

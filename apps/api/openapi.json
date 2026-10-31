@@ -28673,7 +28673,7 @@
       },
       "AlcanceDaPublicacao": {
         "type": "string",
-        "enum": ["todos", "empresas"]
+        "enum": ["todos", "empresas", "tags"]
       },
       "Alertas": {
         "type": "object",
@@ -30300,6 +30300,26 @@
               "required": ["id", "nome"],
               "additionalProperties": false
             }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "grupo": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome", "grupo"],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -30318,7 +30338,8 @@
           "pushEnviados",
           "emailsEnfileirados",
           "criadoEm",
-          "empresas"
+          "empresas",
+          "tags"
         ],
         "additionalProperties": false
       },
@@ -32347,6 +32368,15 @@
               "format": "uuid"
             }
           },
+          "tagIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "enviarEm": {
             "nullable": true,
             "type": "string",
@@ -32503,6 +32533,15 @@
           "empresaIds": {
             "default": [],
             "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tagIds": {
+            "default": [],
+            "maxItems": 50,
             "type": "array",
             "items": {
               "type": "string",
@@ -34041,6 +34080,26 @@
               "required": ["id", "nome"],
               "additionalProperties": false
             }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "grupo": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome", "grupo"],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -34053,7 +34112,8 @@
           "totalDownloads",
           "criadoEm",
           "atualizadoEm",
-          "empresas"
+          "empresas",
+          "tags"
         ],
         "additionalProperties": false
       },
@@ -34136,6 +34196,14 @@
           },
           "empresaIds": {
             "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tagIds": {
+            "maxItems": 50,
             "type": "array",
             "items": {
               "type": "string",
@@ -35364,6 +35432,26 @@
               "required": ["id", "nome"],
               "additionalProperties": false
             }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "grupo": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome", "grupo"],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -35385,7 +35473,8 @@
           "canceladoEm",
           "canceladoMotivo",
           "criadoEm",
-          "empresas"
+          "empresas",
+          "tags"
         ],
         "additionalProperties": false
       },
@@ -41690,6 +41779,26 @@
               "required": ["id", "nome"],
               "additionalProperties": false
             }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "grupo": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "nome", "grupo"],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -41706,7 +41815,8 @@
           "corpo",
           "autorNome",
           "criadoEm",
-          "empresas"
+          "empresas",
+          "tags"
         ],
         "additionalProperties": false
       },
@@ -42568,6 +42678,15 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "tagIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
         "required": ["titulo", "inicioEm", "fimEm", "alcance"],
@@ -42628,6 +42747,15 @@
           "empresaIds": {
             "default": [],
             "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tagIds": {
+            "default": [],
+            "maxItems": 50,
             "type": "array",
             "items": {
               "type": "string",

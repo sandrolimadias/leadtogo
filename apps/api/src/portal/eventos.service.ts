@@ -16,6 +16,7 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { tagsDoAlcance, trocarTagsDoAlcance } from './audiencia.js'
 import { agendarNotificacaoDeEvento } from './notificar-evento.js'
 
 type LinhaDoEvento = {
@@ -29,7 +30,7 @@ type LinhaDoEvento = {
   vagas_totais: number | null
   vagas_por_empresa: number | null
   prazo_confirmacao: string | Date | null
-  alcance: 'todos' | 'empresas'
+  alcance: 'todos' | 'empresas' | 'tags'
   situacao: SituacaoDoEvento
   publicado_em: string | Date | null
   cancelado_em: string | Date | null
@@ -124,6 +125,7 @@ export class EventosService {
       canceladoMotivo: l.cancelado_motivo,
       criadoEm: new Date(l.criado_em).toISOString(),
       empresas: [...empresas],
+      tags: await tagsDoAlcance(this.ctx.db(), 'evento', id),
     }
   }
 
@@ -144,6 +146,17 @@ export class EventosService {
     }
   }
 
+  private async trocarAudiencia(id: string, d: SalvarEventoEntrada): Promise<void> {
+    await this.trocarEmpresas(id, d)
+    await trocarTagsDoAlcance(this.ctx.db(), 'evento', {
+      itemId: id,
+      tenantId: this.ctx.tenantId,
+      alcance: d.alcance,
+      tagIds: d.tagIds,
+      membroId: this.ctx.membro.id,
+    })
+  }
+
   async criar(d: SalvarEventoEntrada): Promise<Evento> {
     const id = novoId()
     const eu = this.ctx.membro.id
@@ -153,7 +166,7 @@ export class EventosService {
       VALUES (${id}, ${this.ctx.tenantId}, ${d.titulo}, ${d.descricao}, ${d.local}, ${d.linkOnline}, ${d.inicioEm},
         ${d.fimEm}, ${d.vagasTotais}, ${d.vagasPorEmpresa}, ${d.prazoConfirmacao}, ${d.alcance}::alcance_evento,
         ${eu}, ${eu})`)
-    await this.trocarEmpresas(id, d)
+    await this.trocarAudiencia(id, d)
     await this.auditoria.registrar({
       entidade: 'evento',
       entidadeId: id,
@@ -179,7 +192,7 @@ export class EventosService {
         prazo_confirmacao = ${d.prazoConfirmacao}, alcance = ${d.alcance}::alcance_evento,
         atualizado_em = now(), atualizado_por = ${this.ctx.membro.id}
       WHERE id = ${id}`)
-    await this.trocarEmpresas(id, d)
+    await this.trocarAudiencia(id, d)
     // Vagas a mais (ou limite da empresa maior): quem estava esperando e passou a caber é promovido
     if (antes.situacao === 'publicado') await this.promover(id)
     await this.auditoria.registrar({

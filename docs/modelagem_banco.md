@@ -1010,6 +1010,12 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 
 **Isolamento:** RLS do tenant e `portal_negado` (a sessão do portal nunca enxerga). O código chega sem o tenant, então a função `app_portal_conferir_codigo(email, hash)` (SECURITY DEFINER do dono, como `app_portal_acessos_por_email`) acha o código vivo que bate e devolve `(tenant_id, codigo_id)`, ou conta uma tentativa em todos os códigos vivos do e-mail; a API **gasta** o código na transação do tenant (`UPDATE … WHERE usado_em IS NULL`), depois de conferir o aviso de privacidade. Políticas só do dono, travadas em `app.portal_codigo` e `app.portal_email`.
 
+## Portal, Fase 4C (migração 0047, só expansão)
+
+- Valor **`tags`** em `alcance_publicacao`, `alcance_evento`, `alcance_documento` e `alcance_aviso`.
+- `publicacao_tags`, `evento_tags`, `documento_tags`, `aviso_tags` (tenant_id, `<item>_id`, tag_id, aplicada_em, aplicada_por; PK `(item, tag)`): a linha é o vínculo; o gatilho `app_conferir_alvo_da_tag` só aceita tag de grupo de **contato**.
+- **Portal:** `contato_tags` passa a ser lida pela sessão do portal **só nas linhas do próprio contato** (nunca grava). `app_portal_tem_tag(uuid[])` (STABLE) diz se o contato da sessão tem alguma das tags; os vínculos de tag dos itens só aparecem ao portal nas tags que ele tem. As políticas `portal_escopo_sel` de `publicacoes`, `documentos` e `eventos` ganham o ramo `alcance::text = 'tags' AND EXISTS (vínculo visível)`. Avisos: a entrega (worker) e o limite semanal consideram os contatos com a tag.
+
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 
 **Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (busca das oportunidades pelo título, sem acento). Empresas e contatos já tinham os seus (0017 e 0018). Os índices trigram são criados por SQL na migração e não aparecem no schema do Drizzle nem nos snapshots, por isso o `db:generate` não os enxerga nem tenta apagá-los.

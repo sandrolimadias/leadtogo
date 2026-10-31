@@ -250,7 +250,9 @@ function Detalhe({
               {p.autorNome ?? 'Equipe'} · {quando(p)} ·{' '}
               {p.alcance === 'todos'
                 ? 'Todos os clientes'
-                : `${p.empresas.length} ${p.empresas.length === 1 ? 'empresa' : 'empresas'}`}
+                : p.alcance === 'tags'
+                  ? `Tags: ${p.tags.map((t) => t.nome).join(', ')}`
+                  : `${p.empresas.length} ${p.empresas.length === 1 ? 'empresa' : 'empresas'}`}
             </p>
           </div>
           {podePublicar ? (

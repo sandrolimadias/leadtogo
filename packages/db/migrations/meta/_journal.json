@@ -330,6 +330,13 @@
       "when": 1793487620233,
       "tag": "0046_portal_4b_codigo_de_entrada",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793488715230,
+      "tag": "0047_portal_4c_alcance_por_tags",
+      "breakpoints": true
     }
   ]
 }

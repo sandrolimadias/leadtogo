@@ -17,6 +17,8 @@ import {
   entrarNoPortal,
   novaEmpresaCliente,
   novoAcesso,
+  aplicarTagNoContato,
+  novaTagDeContato,
 } from '../testes/portal.js'
 import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import { processadorDeManutencao } from '../worker/manutencao.js'
@@ -225,6 +227,22 @@ describe('enviar agora', () => {
 
     const ruim = await enviar(c, { alcance: 'empresas', empresaIds: [novoId()] })
     expect(ruim.status).toBe(422)
+  })
+
+  it('o aviso por tags chega só a quem tem a tag (Fase 4C)', async () => {
+    const c = await cenario()
+    const [ana, alex, bruno] = c.clientes as [Cliente, Cliente, Cliente]
+    const tag = await novaTagDeContato(c.d.tenantId, 'Financeiro')
+    await aplicarTagNoContato(c.d.tenantId, alex.contatoId, tag)
+    await aplicarTagNoContato(c.d.tenantId, bruno.contatoId, tag)
+    const r = await enviar(c, { alcance: 'tags', tagIds: [tag] })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body.tags).toEqual([expect.objectContaining({ id: tag, nome: 'Financeiro' })])
+    await esperarAte(async () => (await sinoDe(c, alex)).length === 1)
+    await esperarAte(async () => (await sinoDe(c, bruno)).length === 1)
+    expect(await sinoDe(c, ana)).toHaveLength(0)
+    const lista = await crm('get', c.leitor.cookie, '/portal-avisos')
+    expect(lista.body.itens[0]).toMatchObject({ destinatarios: 2 })
   })
 
   it('valida a mensagem (140), o link e o alcance', async () => {

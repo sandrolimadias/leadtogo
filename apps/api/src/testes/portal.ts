@@ -177,3 +177,28 @@ export async function novaEmpresaCliente(d: Dono): Promise<string> {
   })
   return empresaId
 }
+
+/** Um grupo de tags de CONTATO com uma tag (Fase 4C); devolve o id da tag. */
+export async function novaTagDeContato(tenantId: string, nome = 'Diretoria'): Promise<string> {
+  const grupoId = novoId()
+  const tagId = novoId()
+  await noTenant(tenantId, async (tx) => {
+    await tx`INSERT INTO tag_grupos (id, tenant_id, nome, aplica_a)
+      VALUES (${grupoId}, ${tenantId}, ${`Grupo ${grupoId.slice(-6)}`}, 'contato')`
+    await tx`INSERT INTO tags (id, tenant_id, tag_grupo_id, nome) VALUES (${tagId}, ${tenantId}, ${grupoId}, ${nome})`
+  })
+  return tagId
+}
+
+/** Aplica a tag de contato a um contato. */
+export async function aplicarTagNoContato(
+  tenantId: string,
+  contatoId: string,
+  tagId: string,
+): Promise<void> {
+  await noTenant(
+    tenantId,
+    (tx) =>
+      tx`INSERT INTO contato_tags (tenant_id, contato_id, tag_id) VALUES (${tenantId}, ${contatoId}, ${tagId})`,
+  )
+}
