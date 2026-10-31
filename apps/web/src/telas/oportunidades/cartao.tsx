@@ -1,9 +1,10 @@
 import type { Oportunidade } from '@leadtogo/api-client'
+import type { CorDeTag } from '@leadtogo/shared'
 import { Link } from '@tanstack/react-router'
 import { CalendarClock, GripVertical, Hourglass, TriangleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Avatar } from '@leadtogo/ui/exibicao'
+import { Avatar, Tag } from '@leadtogo/ui/exibicao'
 import { cn } from '@leadtogo/ui/cn'
 import { quandoDaAtividade } from '@/telas/atividades/formatos'
 import { BolhaDoTipo } from '@/telas/cadastros/tipos-de-atividade'
@@ -60,6 +61,15 @@ export function CartaoDeOportunidade({
           >
             {o.titulo}
           </Link>
+          {o.tags.length > 0 ? (
+            <ul aria-label="Tags" className="m-0 mt-1 flex list-none flex-wrap gap-1 p-0">
+              {o.tags.map((t) => (
+                <li key={t.id}>
+                  <Tag color={t.cor as CorDeTag}>{t.nome}</Tag>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
         {menu}
       </div>

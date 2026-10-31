@@ -66,6 +66,10 @@ const texto = (max: number) =>
 
 const dia = z.iso.date()
 
+/** Quantas tags uma oportunidade pode ter (soma de todos os grupos de tags de oportunidade). */
+export const MAX_TAGS_DA_OPORTUNIDADE = 50
+const tagIdsSchema = z.array(z.uuid()).max(MAX_TAGS_DA_OPORTUNIDADE)
+
 /**
  * Nova oportunidade. Sem funil, vale o funil padrão; sem fase, a primeira fase ativa dele; sem responsável,
  * o vendedor da empresa. Sem `meses` e com valor mensal, valem 12. Sem `probabilidade`, vale a da fase.
@@ -90,6 +94,8 @@ export const criarOportunidadeSchema = z
     observacoes: texto(5000),
     /** Id da oportunidade de que esta é cópia ("Duplicar"): só vai para a auditoria, nada é copiado por ele */
     duplicadaDeId: z.uuid().optional(),
+    /** Tags de grupos de tags de oportunidade (ativas; grupo de seleção única aceita uma só) */
+    tagIds: tagIdsSchema.optional(),
   })
   .strict()
   .meta({ id: 'CriarOportunidadeEntrada' })
@@ -112,6 +118,8 @@ export const alterarOportunidadeSchema = z
     observacoes: texto(5000),
     /** O dia da criação (AAAA-MM-DD, no fuso da empresa), só com `oportunidades.data_criacao` */
     criadaEm: dia,
+    /** As tags que a oportunidade passa a ter (substitui as atuais) */
+    tagIds: tagIdsSchema,
   })
   .partial()
   .strict()
@@ -119,6 +127,16 @@ export const alterarOportunidadeSchema = z
   .meta({ id: 'AlterarOportunidadeEntrada' })
 export type AlterarOportunidade = z.output<typeof alterarOportunidadeSchema>
 export type AlterarOportunidadeEntrada = z.input<typeof alterarOportunidadeSchema>
+
+/**
+ * PUT /v1/carteira/oportunidades/{id}/tags: as tags que a oportunidade passa a ter. Só tags ativas de grupos
+ * de tags de oportunidade; grupo de seleção única aceita uma só. Vale também para a oportunidade fechada.
+ */
+export const definirTagsDaOportunidadeSchema = z
+  .object({ tagIds: tagIdsSchema })
+  .strict()
+  .meta({ id: 'DefinirTagsDaOportunidadeEntrada' })
+export type DefinirTagsDaOportunidade = z.output<typeof definirTagsDaOportunidadeSchema>
 
 export const moverOportunidadeSchema = z
   .object({ faseId: z.uuid() })
@@ -172,6 +190,8 @@ export const consultaDoKanbanSchema = z
     funilId: z.uuid().optional(),
     responsavelId: z.uuid().optional(),
     busca: textoDeBusca,
+    /** Só as que têm esta tag de oportunidade */
+    tagOportunidadeId: z.uuid().optional(),
   })
   .strict()
 export type ConsultaDoKanban = z.output<typeof consultaDoKanbanSchema>
@@ -194,6 +214,8 @@ export const consultaDeOportunidadesSchema = z
     /** Fechadas dentro do período (datas AAAA-MM-DD no fuso da empresa; o fim vale o dia todo) */
     fechadaDe: z.iso.date().optional(),
     fechadaAte: z.iso.date().optional(),
+    /** Só as que têm esta tag de oportunidade */
+    tagOportunidadeId: z.uuid().optional(),
     ordem: z.enum(ORDENS_DE_OPORTUNIDADES).default('criada'),
     sentido: z.enum(['asc', 'desc']).default('desc'),
     pagina: z.coerce.number().int().min(1).default(1),
@@ -206,6 +228,17 @@ export type ConsultaDeOportunidadesEntrada = z.input<typeof consultaDeOportunida
 // ---------- Saída ----------
 
 const referencia = z.object({ id: z.uuid(), nome: z.string() })
+
+/** Uma tag da oportunidade (de um grupo de tags de oportunidade), na ordem dos grupos e das tags. */
+export const tagDaOportunidadeSchema = z
+  .object({
+    id: z.uuid(),
+    nome: z.string(),
+    cor: z.string(),
+    tagGrupoId: z.uuid(),
+  })
+  .meta({ id: 'TagDaOportunidade' })
+export type TagDaOportunidade = z.infer<typeof tagDaOportunidadeSchema>
 
 export const oportunidadeSchema = z
   .object({
@@ -253,6 +286,8 @@ export const oportunidadeSchema = z
       })
       .nullable(),
     observacoes: z.string().nullable(),
+    /** As tags de oportunidade, na ordem dos grupos e, dentro do grupo, das tags */
+    tags: z.array(tagDaOportunidadeSchema),
     criadaEm: z.string(),
     /** O usuário pode editar, mover, fechar e reabrir (a empresa é da carteira dele) */
     editavel: z.boolean(),

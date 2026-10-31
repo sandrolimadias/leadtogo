@@ -23,7 +23,7 @@ import { carimbos, chaveUuid } from './tipos.js'
 
 export const selecaoTag = pgEnum('selecao_tag', ['unica', 'multipla'])
 /** A quem o grupo de tags se aplica: empresas (Status, Visitação...) ou contatos (plano_contatos_filtros_e_tags.md) */
-export const alvoDeTag = pgEnum('alvo_de_tag', ['empresa', 'contato'])
+export const alvoDeTag = pgEnum('alvo_de_tag', ['empresa', 'contato', 'oportunidade'])
 export const contaComo = pgEnum('conta_como', ['visita', 'contato', 'nenhum'])
 export const statusOportunidade = pgEnum('status_oportunidade', [
   'ativo',

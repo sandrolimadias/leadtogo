@@ -16,12 +16,15 @@ import { Alert } from '@leadtogo/ui/feedback'
 import { toast } from '@leadtogo/ui/toast'
 import { BuscaDeEmpresa } from '@/telas/atividades/busca-de-empresa'
 import { Janela } from '@/telas/cadastros/base'
+import { temTagsParaEscolher } from '@/telas/contatos/tags'
+import { EscolhaDeTags } from '@/telas/empresas/ficha-tags'
 
 import {
   ContextoDoFormularioDeOportunidade,
   type InicioDoFormularioDeOportunidade,
 } from './contexto-formulario'
 import { diaEmTexto, hojeEmTexto, reais, sugestaoDeNome } from './formatos'
+import { useGruposDeTagsDeOportunidade } from './tags'
 
 /** Guarda o formulário aberto e o desenha uma vez só para o app inteiro. */
 export function FormularioDeOportunidadeProvider({ children }: { children: ReactNode }) {
@@ -70,6 +73,9 @@ interface Formulario {
   observacoes: string
   /** Edição: o dia da criação (só quem tem `oportunidades.data_criacao` muda) */
   criadaEm: string
+  tagIds: string[]
+  /** A pessoa mexeu nas tags: só então elas vão no corpo da edição */
+  tagsMexidas: boolean
 }
 
 const numero = (v: string): number => (v.trim() === '' ? 0 : Number(v.replace(',', '.')))
@@ -105,6 +111,9 @@ function formularioInicial(inicio: InicioDoFormularioDeOportunidade): Formulario
       dataPrevista: original.dataPrevistaFechamento ?? '',
       observacoes: '',
       criadaEm: '',
+      // As tags descrevem o negócio, como a solução e a origem: a cópia vem com elas
+      tagIds: original.tags.map((t) => t.id),
+      tagsMexidas: true,
     }
   }
   const o = inicio.oportunidade
@@ -127,6 +136,8 @@ function formularioInicial(inicio: InicioDoFormularioDeOportunidade): Formulario
       dataPrevista: o.dataPrevistaFechamento ?? '',
       observacoes: o.observacoes ?? '',
       criadaEm: diaEmTexto(o.criadaEm),
+      tagIds: o.tags.map((t) => t.id),
+      tagsMexidas: false,
     }
   }
   return {
@@ -147,6 +158,8 @@ function formularioInicial(inicio: InicioDoFormularioDeOportunidade): Formulario
     dataPrevista: '',
     observacoes: '',
     criadaEm: '',
+    tagIds: [],
+    tagsMexidas: false,
   }
 }
 
@@ -183,6 +196,8 @@ function FormularioDeOportunidade({
   const mudar = (patch: Partial<Formulario>) => setF((a) => ({ ...a, ...patch }))
 
   const { pode } = usePermissoes()
+  const gruposDeTags = useGruposDeTagsDeOportunidade()
+  const mostraTags = temTagsParaEscolher(gruposDeTags.data) || f.tagIds.length > 0
   const mudaCriacao = edicao !== undefined && pode('oportunidades.data_criacao')
   const diaDoFechamento = edicao?.dataFechamento ? diaEmTexto(edicao.dataFechamento) : undefined
   const funis = useQuery({
@@ -322,6 +337,7 @@ function FormularioDeOportunidade({
           ...(mudaCriacao && f.criadaEm !== diaEmTexto(edicao.criadaEm)
             ? { criadaEm: f.criadaEm }
             : {}),
+          ...(f.tagsMexidas ? { tagIds: f.tagIds } : {}),
         })
       : await servicos.oportunidades.criar({
           titulo: tituloMostrado.trim(),
@@ -335,6 +351,7 @@ function FormularioDeOportunidade({
           ...valores,
           ...(f.probabilidade.trim() !== '' ? { probabilidade } : {}),
           ...(duplicando ? { duplicadaDeId: duplicando.id } : {}),
+          ...(f.tagIds.length > 0 ? { tagIds: f.tagIds } : {}),
         })
     setSalvando(false)
     if (!r.ok) {
@@ -556,6 +573,16 @@ function FormularioDeOportunidade({
           ) : null}
         </div>
 
+        {mostraTags && gruposDeTags.data ? (
+          <section aria-label="Tags" className="flex flex-col gap-2">
+            <h3 className="m-0 text-sm font-semibold">Tags</h3>
+            <EscolhaDeTags
+              tagIds={f.tagIds}
+              aoMudar={(tagIds) => mudar({ tagIds, tagsMexidas: true })}
+              grupos={gruposDeTags.data}
+            />
+          </section>
+        ) : null}
         {mudaCriacao ? (
           <TextField
             label="Criada em"

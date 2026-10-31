@@ -5,7 +5,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 import { id, itemDeEmpresa, meComPapel } from '@/telas/contatos/fixtures'
 
-import { FASES, FUNIL, kanban, oportunidade } from './fixtures'
+import {
+  FASES,
+  FUNIL,
+  gruposDeOportunidade,
+  kanban,
+  oportunidade,
+  tagNaOportunidade,
+} from './fixtures'
 import { diaEmTexto } from './formatos'
 
 function servicos(papel: 'admin' | 'gestor' | 'vendedor' = 'admin') {
@@ -19,6 +26,12 @@ function servicos(papel: 'admin' | 'gestor' | 'vendedor' = 'admin') {
       kanban: vi.fn(async () => ok(kanban())),
       criar,
       alterar,
+    },
+    tags: {
+      ...base.tags,
+      listar: vi.fn(async (aplicaA?: string) =>
+        ok(aplicaA === 'oportunidade' ? gruposDeOportunidade : []),
+      ),
     },
     carteira: {
       ...base.carteira,
@@ -192,5 +205,62 @@ describe('Editar oportunidade: data de criação', () => {
   it('o gestor não vê "Criada em" (só o administrador muda)', async () => {
     const j = await abrirEdicao(servicos('gestor'))
     expect(within(j).queryByLabelText(/Criada em/)).toBeNull()
+  })
+})
+
+describe('Tags da oportunidade no formulário', () => {
+  it('na nova, escolhe as tags do grupo de oportunidade e elas vão no cadastro', async () => {
+    const x = servicos()
+    const j = await abrirFormulario(x)
+    await escolherEmpresa(j)
+    await userEvent.type(within(j).getByLabelText(/Nome da oportunidade/), 'Contrato')
+    const tags = within(j).getByRole('region', { name: 'Tags' })
+    await userEvent.click(within(tags).getByRole('checkbox', { name: 'Renovação' }))
+    await userEvent.click(within(j).getByRole('button', { name: 'Criar oportunidade' }))
+    await waitFor(() => expect(x.criar).toHaveBeenCalled())
+    expect(x.criar.mock.calls[0]?.[0]).toMatchObject({ tagIds: [id(72)] })
+  })
+
+  it('na edição, as tags só vão ao servidor quando a pessoa mexe nelas', async () => {
+    const x = servicos()
+    ;(x.s.oportunidades.kanban as ReturnType<typeof vi.fn>).mockResolvedValue(
+      ok(kanban([[oportunidade(1, { tags: [tagNaOportunidade(71)] })], [], []])),
+    )
+    renderizar(x.s, '/oportunidades')
+    await userEvent.click(await screen.findByRole('button', { name: 'Ações de Oportunidade 1' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Editar' }))
+    const j = await screen.findByRole('dialog', { name: /Editar oportunidade/ })
+    const tags = within(j).getByRole('region', { name: 'Tags' })
+    expect(within(tags).getByRole('checkbox', { name: 'Novo' })).toBeChecked()
+    await userEvent.click(within(j).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(x.alterar).toHaveBeenCalledTimes(1))
+    expect(x.alterar.mock.calls[0]?.[1]).not.toHaveProperty('tagIds')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ações de Oportunidade 1' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Editar' }))
+    const j2 = await screen.findByRole('dialog', { name: /Editar oportunidade/ })
+    await userEvent.click(within(j2).getByRole('checkbox', { name: 'Novo' }))
+    await userEvent.click(within(j2).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(x.alterar).toHaveBeenCalledTimes(2))
+    expect(x.alterar.mock.calls[1]?.[1]).toMatchObject({ tagIds: [] })
+  })
+
+  it('duplicar vem com as tags da original', async () => {
+    const x = servicos()
+    ;(x.s.oportunidades.kanban as ReturnType<typeof vi.fn>).mockResolvedValue(
+      ok(kanban([[oportunidade(1, { tags: [tagNaOportunidade(72)] })], [], []])),
+    )
+    renderizar(x.s, '/oportunidades')
+    await userEvent.click(await screen.findByRole('button', { name: 'Ações de Oportunidade 1' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Duplicar' }))
+    const j = await screen.findByRole('dialog', { name: /Nova oportunidade|Duplicar/ })
+    expect(
+      within(within(j).getByRole('region', { name: 'Tags' })).getByRole('checkbox', {
+        name: 'Renovação',
+      }),
+    ).toBeChecked()
+    await userEvent.click(within(j).getByRole('button', { name: /Criar oportunidade|Duplicar/ }))
+    await waitFor(() => expect(x.criar).toHaveBeenCalled())
+    expect(x.criar.mock.calls[0]?.[0]).toMatchObject({ tagIds: [id(72)] })
   })
 })

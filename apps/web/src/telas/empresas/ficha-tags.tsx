@@ -139,3 +139,80 @@ export function EditarTags({
     </Janela>
   )
 }
+
+/**
+ * As tags num formulário (contato e oportunidade): um bloco por grupo do destino. Seleção única: uma (ou
+ * nenhuma); múltipla: quantas quiser. Tag ou grupo inativo só aparece se já estava escolhido (tirar é
+ * possível; pôr de novo, não).
+ */
+export function EscolhaDeTags({
+  tagIds,
+  aoMudar,
+  grupos,
+}: {
+  tagIds: readonly string[]
+  aoMudar: (tagIds: string[]) => void
+  grupos: TagGrupo[]
+}) {
+  const escolhidas = new Set(tagIds)
+  const trocar = (grupo: TagGrupo, tagId: string, ligada: boolean) => {
+    const novo = new Set(escolhidas)
+    if (grupo.selecao === 'unica') for (const t of grupo.tags) novo.delete(t.id)
+    if (ligada) novo.add(tagId)
+    else novo.delete(tagId)
+    aoMudar([...novo])
+  }
+  const visiveis = grupos
+    .map((g) => ({
+      ...g,
+      tags: g.tags.filter((t) => (g.ativo && t.ativo) || escolhidas.has(t.id)),
+    }))
+    .filter((g) => g.tags.length > 0)
+  return (
+    <div className="flex flex-col gap-4">
+      {visiveis.map((g) => (
+        <fieldset key={g.id} className="m-0 flex flex-col gap-2 border-0 p-0">
+          <legend className="mb-1 p-0 text-[13px] font-semibold">
+            {g.nome}
+            <span className="ml-2 font-normal text-ink-muted">
+              {g.selecao === 'unica' ? 'escolha uma' : 'escolha quantas quiser'}
+            </span>
+          </legend>
+          {g.selecao === 'unica' ? (
+            <>
+              {g.tags.map((t) => (
+                <label key={t.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name={`tags-${g.id}`}
+                    checked={escolhidas.has(t.id)}
+                    onChange={() => trocar(g, t.id, true)}
+                  />
+                  {t.ativo ? t.nome : `${t.nome} (inativa)`}
+                </label>
+              ))}
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted">
+                <input
+                  type="radio"
+                  name={`tags-${g.id}`}
+                  checked={!g.tags.some((t) => escolhidas.has(t.id))}
+                  onChange={() => aoMudar(tagIds.filter((id) => !g.tags.some((t) => t.id === id)))}
+                />
+                Nenhuma
+              </label>
+            </>
+          ) : (
+            g.tags.map((t) => (
+              <Checkbox
+                key={t.id}
+                label={t.ativo ? t.nome : `${t.nome} (inativa)`}
+                checked={escolhidas.has(t.id)}
+                onChange={(e) => trocar(g, t.id, e.target.checked)}
+              />
+            ))
+          )}
+        </fieldset>
+      ))}
+    </div>
+  )
+}

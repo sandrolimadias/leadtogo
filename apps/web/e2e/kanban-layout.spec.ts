@@ -318,3 +318,35 @@ test('oportunidades: duplicar pelo menu do card abre a Nova oportunidade preench
     coluna(page, 'Diagnóstico').getByRole('article', { name: 'Da fase 2', exact: true }),
   ).toBeVisible()
 })
+
+test('tags de oportunidade: aplicar na ficha, ver no card e filtrar o Kanban', async ({ page }) => {
+  test.setTimeout(120_000)
+  const { api } = await preparar(page, 'kbl7')
+  const grupo = (await (
+    await api.post('/v1/configuracoes/tag-grupos', {
+      data: { nome: 'Tipo de negócio', selecao: 'multipla', aplicaA: 'oportunidade' },
+    })
+  ).json()) as { id: string }
+  for (const nome of ['Novo', 'Renovação']) {
+    const r = await api.post('/v1/configuracoes/tags', { data: { tagGrupoId: grupo.id, nome } })
+    expect(r.status()).toBe(201)
+  }
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await page.goto('/oportunidades')
+  await page.getByRole('link', { name: 'Da fase 2' }).click()
+  await page.getByRole('button', { name: 'Editar tags' }).click()
+  const janela = page.getByRole('dialog', { name: 'Editar tags' })
+  await janela.getByRole('checkbox', { name: 'Renovação' }).check()
+  await janela.getByRole('button', { name: 'Salvar tags' }).click()
+  await expect(page.getByText('Tags salvas')).toBeVisible()
+
+  await page.goto('/oportunidades')
+  const card = coluna(page, 'Diagnóstico').getByRole('article', { name: 'Da fase 2' })
+  await expect(card.getByRole('list', { name: 'Tags' })).toContainText('Renovação')
+  await capturar(page, 'kanban-card-com-tags')
+  await page
+    .getByRole('combobox', { name: 'Tag da oportunidade' })
+    .selectOption({ label: 'Tipo de negócio: Renovação' })
+  await expect(page.getByRole('article')).toHaveCount(1)
+  await expect(page.getByRole('article', { name: 'Da fase 2' })).toBeVisible()
+})

@@ -7,6 +7,8 @@ import {
   consultaDoKanbanSchema,
   type CriarOportunidade,
   criarOportunidadeSchema,
+  type DefinirTagsDaOportunidade,
+  definirTagsDaOportunidadeSchema,
   type FecharOportunidade,
   fecharOportunidadeSchema,
   type KanbanDeOportunidades,
@@ -32,6 +34,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
@@ -131,6 +134,22 @@ export class OportunidadesController {
     @Body(new ZodPipe(alterarOportunidadeSchema)) dados: AlterarOportunidade,
   ): Promise<Oportunidade> {
     return this.servico.alterar(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Definir as tags da oportunidade',
+    descricao: `${CARTEIRA} Substitui as tags da oportunidade pelas de \`tagIds\` (vale também para a fechada). Só tags ativas de grupos de tags de oportunidade (400 \`tag_invalida\` / \`tag_inativa\`); grupo de seleção única aceita uma só (400 \`grupo_selecao_unica\`). Registra \`alterar_tags\` na auditoria.`,
+    corpo: definirTagsDaOportunidadeSchema,
+    resposta: oportunidadeSchema,
+    erros: [400, 401, 403, 404],
+  })
+  @Permissao('oportunidades.editar')
+  @Put(':id/tags')
+  definirTags(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(definirTagsDaOportunidadeSchema)) dados: DefinirTagsDaOportunidade,
+  ): Promise<Oportunidade> {
+    return this.servico.definirTags(id, dados.tagIds)
   }
 
   @Documenta({

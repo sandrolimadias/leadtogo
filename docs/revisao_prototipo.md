@@ -82,3 +82,5 @@ Plano em `plano_oportunidades_kanban_e_tags.md`. Onde o protótipo e `funcionali
 |---|---|---|
 | Card com o nome da oportunidade na 1ª linha e a empresa abaixo, em cinza | empresa primeiro | **EMPRESA** (maiúsculas, negrito) na 1ª linha e o nome da oportunidade abaixo |
 | Zonas de fechamento sobrepostas ao topo do quadro ao arrastar | as zonas não escondem o cabeçalho das fases | faixa própria acima das colunas, que **descem** enquanto se arrasta |
+| Sem data de fechamento na janela "Fechar oportunidade" | admin e gestor escolhem o dia (seção 7) | campo **"Data de fechamento"** (hoje por padrão, nunca no futuro nem antes da criação), só para quem tem a permissão |
+| Sem tags na oportunidade | tags de oportunidade em grupos próprios (seção 2) | chips no card do Kanban, coluna **Tags** na lista, tags e **"Editar tags"** na ficha, seção **Tags** no formulário, filtro **"Tag da oportunidade"** e aba **Oportunidades** em *Configurações → Tags* |

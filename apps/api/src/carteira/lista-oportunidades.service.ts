@@ -15,7 +15,7 @@ import { ErroApi } from '../http/erro-api.js'
 import { fusoDaEmpresa } from './atividades-leitura.js'
 import {
   condicaoDeVisibilidadeDaOportunidade,
-  paraOportunidade,
+  paraOportunidades,
   selecionarOportunidades,
 } from './oportunidades-leitura.js'
 import { escopoDaCarteira } from './regras-de-carteira.js'
@@ -38,6 +38,13 @@ export class ListaDeOportunidadesService {
 
   private buscaSql(busca: string | undefined): SQL | undefined {
     return busca ? buscaDaOportunidade(busca) : undefined
+  }
+
+  /** Só as que têm a tag de oportunidade escolhida. */
+  private tagSql(tagId: string | undefined): SQL | undefined {
+    return tagId
+      ? sql`EXISTS (SELECT 1 FROM oportunidade_tags ot WHERE ot.oportunidade_id = ${oportunidades.id} AND ot.tag_id = ${tagId})`
+      : undefined
   }
 
   async kanban(consulta: ConsultaDoKanban): Promise<KanbanDeOportunidades> {
@@ -72,6 +79,7 @@ export class ListaDeOportunidadesService {
       condicaoDeVisibilidadeDaOportunidade(escopo),
       consulta.responsavelId ? eq(oportunidades.responsavelId, consulta.responsavelId) : undefined,
       this.buscaSql(consulta.busca),
+      this.tagSql(consulta.tagOportunidadeId),
     )
     const ativas = and(base, eq(oportunidades.status, 'ativo'))
 
@@ -114,7 +122,7 @@ export class ListaDeOportunidadesService {
           diasAlertaParada: f.diasAlertaParada,
           quantidade,
           total: numero(s?.total),
-          itens: linhas.map((l) => paraOportunidade(l, escopo, agora)),
+          itens: await paraOportunidades(db, linhas, escopo, agora),
           semMostrar: Math.max(0, quantidade - linhas.length),
         }
       }),
@@ -156,6 +164,7 @@ export class ListaDeOportunidadesService {
         ? sql`${oportunidades.dataFechamento} < ${inicioDoDiaNoFuso(diaSeguinte(consulta.fechadaAte), fuso).toISOString()}::timestamptz`
         : undefined,
       this.buscaSql(consulta.busca),
+      this.tagSql(consulta.tagOportunidadeId),
     )
     const [somas] = await db
       .select({
@@ -184,7 +193,7 @@ export class ListaDeOportunidadesService {
       .offset((consulta.pagina - 1) * consulta.porPagina)
     const agora = new Date()
     return {
-      itens: linhas.map((l) => paraOportunidade(l, escopo, agora)),
+      itens: await paraOportunidades(db, linhas, escopo, agora),
       total: somas?.total ?? 0,
       pagina: consulta.pagina,
       porPagina: consulta.porPagina,

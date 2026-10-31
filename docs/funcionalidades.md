@@ -61,7 +61,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 | Obrigatório | Se toda empresa precisa ter uma tag desse grupo |
 | Ordem | Ordem de exibição |
 | Sistema | Grupos criados pelo sistema não podem ser excluídos, apenas editados (nomes e cores das tags) |
-| **Aplica a** | **Empresas** ou **Contatos** (29/10/2026). Escolhido na criação e não muda depois. As tags de um grupo de contato só valem para contatos e nunca aparecem nas telas de empresa (lista, ficha, mapa, importação, visitas, API pública); as de empresa nunca aparecem para contatos |
+| **Aplica a** | **Empresas**, **Contatos** (29/10/2026) ou **Oportunidades** (31/10/2026). Escolhido na criação e não muda depois. As tags de um grupo de contato só valem para contatos e nunca aparecem nas telas de empresa (lista, ficha, mapa, importação, visitas, API pública); as de empresa nunca aparecem para contatos; as de oportunidade só valem para oportunidades |
 
 ### Tag
 | Campo | Descrição |
@@ -86,6 +86,7 @@ Todas as tags são **cadastráveis** e têm **cor customizável**.
 - Filtros por tag em todas as listas (combinação **E / OU**).
 - **Automação opcional (configurável):** ao ganhar uma oportunidade, mudar o Status da empresa para *Cliente*.
 - **Tags de contato (29/10/2026; plano em `plano_contatos_filtros_e_tags.md`):** *Configurações → Tags* tem as abas **Empresas** e **Contatos**. Grupo de contato tem seleção única ou múltipla, **não é obrigatório nem automático** e nenhum nasce pronto (o admin cria). O nome do grupo é único entre os dois destinos. Um contato pode ter várias tags. Tag ou grupo usado por algum contato (mesmo excluído) só se inativa, como nas empresas. Não há histórico de conversão: a mudança fica na auditoria do contato (aba Histórico, "Tags alteradas").
+- **Tags de oportunidade (31/10/2026; plano em `plano_oportunidades_kanban_e_tags.md`):** *Configurações → Tags* ganha a aba **Oportunidades**. Mesmas regras das tags de contato: seleção única ou múltipla (padrão múltipla), **não obrigatório nem automático**, nenhum grupo nasce pronto, nome do grupo único entre os três destinos, várias tags por oportunidade e tag ou grupo usado (mesmo por oportunidade excluída) só se inativa. A mudança fica na auditoria da oportunidade (`alterar_tags`). Onde aparecem e onde se aplicam: seção 7.
 
 ---
 
@@ -435,6 +436,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 | Data de fechamento | Automática ao sair de Ativo. **Admin e gestor** (permissão `oportunidades.data_fechamento`) escolhem o **dia** na janela "Fechar oportunidade": hoje por padrão, **nunca no futuro nem antes do dia da criação** (400 `fechamento_no_futuro` / `fechamento_antes_da_criacao`; quem não tem a permissão e manda o dia recebe 403). Hoje grava o momento; um dia passado grava o meio-dia no fuso da empresa (31/10/2026). Mudar depois de fechada: reabrir e fechar de novo |
 | **Data de criação** | Automática. **Só o administrador** (permissão `oportunidades.data_criacao`) muda o **dia** em "Editar oportunidade" (campo "Criada em"): nunca no futuro nem depois do dia do fechamento (400 `criacao_no_futuro` / `criacao_depois_do_fechamento`). Muda "Criada em", a ordenação da lista e as "novas no período"; o histórico de fases fica como foi registrado e a troca vai para a auditoria (31/10/2026) |
 | Observações | Texto livre |
+| **Tags** | Várias, dos grupos de tags de oportunidade (seção 2; 31/10/2026). Escolhidas no cadastro, na edição ou em **"Editar tags"** na ficha (também depois de fechada); quem edita a oportunidade edita as tags. **Duplicar** copia as tags |
 | Campos personalizados | Ver seção 8 *(fora do MVP)* |
 
 ### Produtos/itens *(fora do MVP: o Módulo 6 usa valores digitados; ver `backlog_pos_mvp.md`)*
@@ -446,7 +448,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 ### Tela Oportunidades
 - **Kanban** por funil (seletor de funil no topo):
   - Colunas = fases, com **soma de valores e quantidade** no cabeçalho. Só oportunidades com status **Ativo**.
-  - Card: **empresa em maiúsculas e negrito** na 1ª linha (até 2 linhas; a maiúscula é só visual), **nome da oportunidade** abaixo (link para a ficha), valor, responsável, data prevista e próxima atividade (31/10/2026).
+  - Card: **empresa em maiúsculas e negrito** na 1ª linha (até 2 linhas; a maiúscula é só visual), **nome da oportunidade** abaixo (link para a ficha), as **tags** da oportunidade, valor, responsável, data prevista e próxima atividade (31/10/2026).
   - **Arrastar e soltar** entre etapas (Módulo 6: **pela alça** do card, com mouse, toque ou teclado; ao mover, a probabilidade assume a da nova fase, a menos que tenha sido editada à mão).
   - **Alerta de oportunidade parada:** card destacado quando passa X dias sem atividade.
   - Zona de soltura no **topo** do quadro (também no celular), só enquanto se arrasta: **Conquistado · Perdido · Cancelado · Suspenso** (arrastar o card para fechar). Desde 31/10/2026 a faixa ocupa **espaço próprio e empurra as colunas para baixo**, sem cobrir o nome, a quantidade e a soma das fases. Filtro para ver as suspensas.
@@ -454,7 +456,7 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
   - **Duplicar** (menu ⋯ do card, da lista e da ficha): abre "Nova oportunidade" preenchida com empresa, contato, solução, origem, funil, fase, valores, meses, probabilidade (com a marca de editada à mão, se houver) e data prevista, com " (cópia)" no nome; tudo editável, inclusive a empresa (o contato só fica se tiver vínculo com a nova empresa). **Não** copia histórico, atividades, status, fechamento, responsável nem observações: a cópia nasce **Ativa**. O vendedor só duplica para empresas da própria carteira; a auditoria da cópia registra de qual foi duplicada (`duplicadaDeId`).
   - No celular: rolagem horizontal por coluna e mover pelo menu do card (sem depender de arrastar).
 - **Visão em lista** (alternância Kanban ↔ Lista): tabela com ordenação, filtros e paginação 25/50/100 *(exportação: depois do MVP)*.
-- **Filtros:** responsável, fase, status, solução, período de previsão, origem, valor, tags da empresa e campos personalizados.
+- **Filtros:** responsável, fase, status, solução, período de previsão, origem, valor, tags da empresa e campos personalizados. **Feito:** responsável, status (lista) e **"Tag da oportunidade"** (Kanban e lista, uma tag; 31/10/2026). A lista tem a coluna **Tags** (todas, quebrando linha) e a ficha mostra as tags no cabeçalho.
 - **Filtros salvos** por usuário (ex.: "Minhas oportunidades acima de R$ 10 mil").
 
 ### Diálogo "Fechar oportunidade" (v1.5, do protótipo)

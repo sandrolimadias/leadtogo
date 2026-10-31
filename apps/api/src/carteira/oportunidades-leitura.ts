@@ -1,7 +1,8 @@
 import { alias, and, eq, isNull, schema, sql, type SQL } from '@leadtogo/db'
-import type { Oportunidade } from '@leadtogo/shared'
+import type { Oportunidade, TagDaOportunidade } from '@leadtogo/shared'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
+import { tagsDasOportunidades } from './oportunidade-tags.js'
 import { condicaoDeResponsaveis, type EscopoDaCarteira } from './regras-de-carteira.js'
 
 const {
@@ -122,6 +123,7 @@ export function paraOportunidade(
   l: LinhaDeOportunidade,
   escopo: EscopoDaCarteira,
   agora: Date,
+  tags: TagDaOportunidade[] = [],
 ): Oportunidade {
   const referencia = Math.max(
     new Date(l.faseDesde).getTime(),
@@ -171,6 +173,7 @@ export function paraOportunidade(
           }
         : null,
     observacoes: l.observacoes,
+    tags,
     criadaEm: new Date(l.criadaEm).toISOString(),
     editavel: l.editavel,
     excluivel: l.excluivel,
@@ -192,5 +195,21 @@ export async function lerOportunidade(
       condicaoDeVisibilidadeDaOportunidade(escopo),
     ),
   )
-  return linha ? paraOportunidade(linha, escopo, agora) : undefined
+  if (!linha) return undefined
+  const tags = await tagsDasOportunidades(db, [linha.id])
+  return paraOportunidade(linha, escopo, agora, tags.get(linha.id))
+}
+
+/** Várias linhas de uma vez, com as tags lidas numa consulta só (Kanban e lista). */
+export async function paraOportunidades(
+  db: Transacao,
+  linhas: readonly LinhaDeOportunidade[],
+  escopo: EscopoDaCarteira,
+  agora: Date,
+): Promise<Oportunidade[]> {
+  const tags = await tagsDasOportunidades(
+    db,
+    linhas.map((l) => l.id),
+  )
+  return linhas.map((l) => paraOportunidade(l, escopo, agora, tags.get(l.id)))
 }

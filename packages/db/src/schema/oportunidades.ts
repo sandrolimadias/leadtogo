@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -15,7 +16,15 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-import { funilFases, funis, motivos, origens, solucoes, statusOportunidade } from './cadastros.js'
+import {
+  funilFases,
+  funis,
+  motivos,
+  origens,
+  solucoes,
+  statusOportunidade,
+  tags,
+} from './cadastros.js'
 import { empresas } from './carteira.js'
 import { contatos } from './contatos.js'
 import { membros, tenants } from './plataforma.js'
@@ -136,4 +145,30 @@ export const oportunidadeHistorico = pgTable(
     em: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('oportunidade_historico_idx').on(t.tenantId, t.oportunidadeId, t.em)],
+)
+
+/**
+ * As tags da oportunidade, só de grupos com `aplica_a = 'oportunidade'` (o gatilho `app_conferir_alvo_da_tag`
+ * da migração recusa as outras). Como `contato_tags`: a linha é o vínculo; tirar a tag apaga a linha e a
+ * auditoria da oportunidade (`alterar_tags`) guarda o que houve.
+ */
+export const oportunidadeTags = pgTable(
+  'oportunidade_tags',
+  {
+    tenantId: uuid()
+      .notNull()
+      .references(() => tenants.id),
+    oportunidadeId: uuid()
+      .notNull()
+      .references(() => oportunidades.id),
+    tagId: uuid()
+      .notNull()
+      .references(() => tags.id),
+    aplicadaEm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    aplicadaPor: uuid().references(() => membros.id),
+  },
+  (t) => [
+    primaryKey({ columns: [t.oportunidadeId, t.tagId] }),
+    index('oportunidade_tags_tag_idx').on(t.tenantId, t.tagId),
+  ],
 )

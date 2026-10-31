@@ -185,3 +185,16 @@ As migrações 0044 e 0045 só **acrescentam** (valor de enum e tabela nova): ne
 | Tag de oportunidade vazar para empresa ou contato | `GET` sem parâmetro continua só empresa, conferência na API e gatilho no banco, com teste |
 | Kanban mais lento com as tags | Uma consulta agregada por carga do quadro e o índice `(tenant_id, tag_id)` |
 | `ADD VALUE` de enum na mesma transação que o usa | Migração 0044 separada da 0045 |
+
+## 11. Como ficou (implementação de 31/10/2026)
+
+Diferenças em relação às seções 4 a 8, já refletidas em `funcionalidades.md`, `modelagem_banco.md` e `design_system.md`:
+
+- **Uma migração só (`0044_tags_de_oportunidade.sql`)**, e não duas: o migrador do Drizzle roda as migrações pendentes numa transação, mas nenhum comando da 0044 usa o valor novo do enum (o corpo da função do gatilho só o lê ao rodar), então o `ADD VALUE` e a tabela cabem juntos.
+- **Zonas de fechamento:** sem animação (não há token de transição para isso); a faixa entra no fluxo e o deslocamento é imediato.
+- **Card:** o `aria-label` continua sendo o título (os testes e o leitor de tela acham o card por ele). As tags ficam numa lista ("Tags") logo abaixo do título.
+- **Data de criação (decisão 8a):** o campo "Criada em" fica no formulário de **editar**; o mesmo dia de antes não muda nada. No próprio dia do fechamento, a criação nunca passa do instante do fechamento (e o fechamento nunca fica antes do instante da criação).
+- **Conferência das tags:** `conferirTagsDoDestino` (em `carteira/contato-tags.ts`) serve a contato e oportunidade; `carteira/oportunidade-tags.ts` lê e grava as tags da oportunidade. O seletor de tags do formulário virou `EscolhaDeTags` (em `telas/empresas/ficha-tags.tsx`, ao lado da janela "Editar tags"), usado pelos formulários de contato e de oportunidade.
+- **Filtro "Tag da oportunidade":** só aparece quando existe grupo de tags de oportunidade com tag ativa; as opções mostram "Grupo: Tag"; fica na URL (`tag`).
+- **Testes:** `packages/db/src/testes/oportunidades.test.ts` (gatilho, unicidade, outro tenant) e a fábrica de isolamento; `apps/api/src/carteira/oportunidade-tags.test.ts` e os de data em `oportunidades.test.ts`; nas telas, `kanban.test.tsx`, `pagina.test.tsx`, `formulario.test.tsx`, `ficha.test.tsx` e `cadastros/tags.test.tsx`; E2E em `apps/web/e2e/kanban-layout.spec.ts`. Roteiro manual em `roteiro_teste_oportunidades_kanban_e_tags.md`.
+

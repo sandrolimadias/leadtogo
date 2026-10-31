@@ -6,7 +6,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { falha, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 import { id, meComPapel } from '@/telas/contatos/fixtures'
 
-import { FASES, FUNIL, kanban, oportunidade } from './fixtures'
+import {
+  FASES,
+  FUNIL,
+  gruposDeOportunidade,
+  kanban,
+  oportunidade,
+  tagNaOportunidade,
+} from './fixtures'
 import { diaEmTexto, hojeEmTexto } from './formatos'
 
 const MOTIVO_PERDIDO = {
@@ -77,6 +84,12 @@ function servicos(
     cadastros: {
       ...base.cadastros,
       motivos: { ...base.cadastros.motivos, listar: vi.fn(async () => ok([MOTIVO_PERDIDO])) },
+    },
+    tags: {
+      ...base.tags,
+      listar: vi.fn(async (aplicaA?: string) =>
+        ok(aplicaA === 'oportunidade' ? gruposDeOportunidade : []),
+      ),
     },
   })
   return { s, kanbanFn, mover, fechar, reabrir, excluir, listar }
@@ -205,6 +218,48 @@ describe('Oportunidades: Kanban', () => {
     x.kanbanFn.mockResolvedValueOnce(falha('erro_interno', 'Falhou.', 500))
     await abrir(x)
     expect(await screen.findByText('Falhou.')).toBeInTheDocument()
+  })
+})
+
+describe('Tags da oportunidade no Kanban e na lista', () => {
+  it('o card mostra as tags e o filtro "Tag da oportunidade" vai para a consulta do Kanban', async () => {
+    const x = servicos(
+      kanban([[oportunidade(1, { tags: [tagNaOportunidade(71), tagNaOportunidade(72)] })], [], []]),
+    )
+    await abrir(x)
+    const card = await screen.findByRole('article', { name: 'Oportunidade 1' })
+    const tags = within(card).getByRole('list', { name: 'Tags' })
+    expect(
+      within(tags)
+        .getAllByRole('listitem')
+        .map((t) => t.textContent),
+    ).toEqual(['Novo', 'Renovação'])
+    await userEvent.selectOptions(
+      await screen.findByRole('combobox', { name: 'Tag da oportunidade' }),
+      'Tipo de negócio: Renovação',
+    )
+    await waitFor(() =>
+      expect(x.kanbanFn).toHaveBeenLastCalledWith(
+        expect.objectContaining({ tagOportunidadeId: id(72) }),
+      ),
+    )
+  })
+
+  it('a lista tem a coluna Tags', async () => {
+    const x = servicos()
+    x.listar.mockResolvedValue(
+      ok({
+        itens: [oportunidade(1, { tags: [tagNaOportunidade(72)] })],
+        total: 1,
+        pagina: 1,
+        porPagina: 25,
+        somas: { total: 8000, mensal: 500, ponderado: 800 },
+      }),
+    )
+    await abrir(x, '/oportunidades?visao=lista')
+    const tabela = await screen.findByRole('table')
+    expect(within(tabela).getByRole('columnheader', { name: 'Tags' })).toBeInTheDocument()
+    expect(within(tabela).getByText('Renovação')).toBeInTheDocument()
   })
 })
 

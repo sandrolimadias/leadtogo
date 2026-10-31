@@ -740,6 +740,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/carteira/oportunidades/{id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Definir as tags da oportunidade
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Substitui as tags da oportunidade pelas de `tagIds` (vale também para a fechada). Só tags ativas de grupos de tags de oportunidade (400 `tag_invalida` / `tag_inativa`); grupo de seleção única aceita uma só (400 `grupo_selecao_unica`). Registra `alterar_tags` na auditoria.
+         */
+        put: operations["OportunidadesController_definirTags"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/carteira/oportunidades/kanban": {
         parameters: {
             query?: never;
@@ -1837,13 +1857,13 @@ export interface paths {
         };
         /**
          * Grupos de tags com suas tags
-         * @description Qualquer membro da empresa ativa. Em ordem de exibição; sem `incluirInativos=true`, esconde grupos e tags inativados. Itens excluídos nunca aparecem. `aplicaA` escolhe os grupos de empresa (padrão), os de contato ou `todos`.
+         * @description Qualquer membro da empresa ativa. Em ordem de exibição; sem `incluirInativos=true`, esconde grupos e tags inativados. Itens excluídos nunca aparecem. `aplicaA` escolhe os grupos de empresa (padrão), os de contato, os de oportunidade ou `todos`.
          */
         get: operations["TagsController_listar"];
         put?: never;
         /**
          * Criar grupo de tags
-         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os grupos, de empresa e de contato (409 `nome_duplicado`). `aplicaA` (padrão `empresa`) não muda depois; grupo de contato não é obrigatório.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Nome único entre os grupos, de empresa, de contato e de oportunidade (409 `nome_duplicado`). `aplicaA` (padrão `empresa`) não muda depois; grupo de contato ou de oportunidade não é obrigatório.
          */
         post: operations["TagsController_criarGrupo"];
         delete?: never;
@@ -1871,7 +1891,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar grupo de tags
-         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no "obrigatório" ou inativar dá 409 `grupo_de_sistema`. Grupo de contato não vira obrigatório (409 `grupo_de_contato`). O destino (`aplicaA`) não muda.
+         * @description Exige a permissão `cadastros.gerir` do perfil de acesso (403 `acesso_negado` para os demais). Registra na auditoria. Grupo do sistema (Status, Visitação) só pode ser renomeado: mexer na seleção, no "obrigatório" ou inativar dá 409 `grupo_de_sistema`. Grupo de contato ou de oportunidade não vira obrigatório (409 `grupo_de_contato`). O destino (`aplicaA`) não muda.
          */
         patch: operations["TagsController_alterarGrupo"];
         trace?: never;
@@ -5794,6 +5814,7 @@ export interface components {
             observacoes?: string | null;
             /** Format: date */
             criadaEm?: string;
+            tagIds?: string[];
         };
         AlterarOrigemEntrada: {
             nome?: string;
@@ -6753,6 +6774,7 @@ export interface components {
             observacoes?: string | null;
             /** Format: uuid */
             duplicadaDeId?: string;
+            tagIds?: string[];
         };
         CriarOrigemEntrada: {
             nome: string;
@@ -6827,7 +6849,7 @@ export interface components {
              * @default empresa
              * @enum {string}
              */
-            aplicaA: "empresa" | "contato";
+            aplicaA: "empresa" | "contato" | "oportunidade";
         };
         CriarTarefaDoChamadoEntrada: {
             titulo: string;
@@ -7041,6 +7063,9 @@ export interface components {
             perfilIds: string[];
         };
         DefinirTagsDaEmpresaEntrada: {
+            tagIds: string[];
+        };
+        DefinirTagsDaOportunidadeEntrada: {
             tagIds: string[];
         };
         DefinirTagsDoContatoEntrada: {
@@ -8553,6 +8578,7 @@ export interface components {
                 tipoCor: components["schemas"]["CorDeTag"];
             } | null;
             observacoes: string | null;
+            tags: components["schemas"]["TagDaOportunidade"][];
             criadaEm: string;
             editavel: boolean;
             excluivel: boolean;
@@ -8636,6 +8662,7 @@ export interface components {
                 tipoCor: components["schemas"]["CorDeTag"];
             } | null;
             observacoes: string | null;
+            tags: components["schemas"]["TagDaOportunidade"][];
             criadaEm: string;
             editavel: boolean;
             excluivel: boolean;
@@ -9474,6 +9501,14 @@ export interface components {
             apareceNoMapa: boolean;
             visivelAoAbrir: boolean;
         };
+        TagDaOportunidade: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            cor: string;
+            /** Format: uuid */
+            tagGrupoId: string;
+        };
         TagDoContato: {
             /** Format: uuid */
             id: string;
@@ -9492,7 +9527,7 @@ export interface components {
             sistema: boolean;
             automatico: boolean;
             /** @enum {string} */
-            aplicaA: "empresa" | "contato";
+            aplicaA: "empresa" | "contato" | "oportunidade";
             ativo: boolean;
             ordem: number;
             tags: components["schemas"]["Tag"][];
@@ -12155,6 +12190,7 @@ export interface operations {
                 grupo?: "perdas";
                 fechadaDe?: string;
                 fechadaAte?: string;
+                tagOportunidadeId?: string;
                 ordem?: "criada" | "titulo" | "total" | "previsao";
                 sentido?: "asc" | "desc";
                 pagina?: number;
@@ -12658,12 +12694,75 @@ export interface operations {
             };
         };
     };
+    OportunidadesController_definirTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefinirTagsDaOportunidadeEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Oportunidade"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     OportunidadesController_kanban: {
         parameters: {
             query?: {
                 funilId?: string;
                 responsavelId?: string;
                 busca?: string;
+                tagOportunidadeId?: string;
             };
             header?: never;
             path?: never;
@@ -17159,7 +17258,7 @@ export interface operations {
         parameters: {
             query?: {
                 incluirInativos?: "true" | "false";
-                aplicaA?: "empresa" | "contato" | "todos";
+                aplicaA?: "empresa" | "contato" | "oportunidade" | "todos";
             };
             header?: never;
             path?: never;

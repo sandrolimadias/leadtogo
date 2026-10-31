@@ -10,6 +10,7 @@ import {
   ArrowDown,
   ArrowUp,
   Building2,
+  Handshake,
   Lock,
   Pencil,
   Plus,
@@ -58,6 +59,10 @@ const OPCOES_DE_SELECAO: Record<AlvoDeTag, { value: SelecaoDeTag; label: string 
     { value: 'unica', label: 'Única: o contato tem só uma tag do grupo' },
     { value: 'multipla', label: 'Múltipla: o contato pode ter várias' },
   ],
+  oportunidade: [
+    { value: 'unica', label: 'Única: a oportunidade tem só uma tag do grupo' },
+    { value: 'multipla', label: 'Múltipla: a oportunidade pode ter várias' },
+  ],
 }
 
 const DESCRICAO: Record<AlvoDeTag, string> = {
@@ -65,6 +70,37 @@ const DESCRICAO: Record<AlvoDeTag, string> = {
     'Os grupos e as tags que classificam as empresas da carteira. A ordem dos blocos (Subir e Descer) é a sequência em que as tags aparecem na lista e na ficha das empresas.',
   contato:
     'Os grupos e as tags que classificam os contatos (por exemplo, Perfil: Técnico, Comprador). Valem só para contatos, nunca para empresas, e um contato pode ter várias. A ordem dos blocos é a sequência em que as tags aparecem na lista e na ficha dos contatos.',
+  oportunidade:
+    'Os grupos e as tags que classificam as oportunidades (por exemplo, Tipo de negócio: Novo, Renovação, Upsell). Valem só para oportunidades, nunca para empresas nem contatos, e uma oportunidade pode ter várias. A ordem dos blocos é a sequência em que as tags aparecem no Kanban, na lista e na ficha.',
+}
+
+const VAZIO: Record<AlvoDeTag, { titulo: string; descricao: string }> = {
+  empresa: {
+    titulo: 'Nenhum grupo de tags',
+    descricao: 'Crie um grupo (por exemplo, Interesse) e depois as tags dele.',
+  },
+  contato: {
+    titulo: 'Nenhum grupo de tags de contato',
+    descricao:
+      'Crie um grupo (por exemplo, Perfil) e depois as tags dele, como Técnico e Comprador. As tags de contato não aparecem para empresas.',
+  },
+  oportunidade: {
+    titulo: 'Nenhum grupo de tags de oportunidade',
+    descricao:
+      'Crie um grupo (por exemplo, Tipo de negócio) e depois as tags dele, como Novo e Renovação. As tags de oportunidade não aparecem para empresas nem contatos.',
+  },
+}
+
+const TITULO_DO_GRUPO_NOVO: Record<AlvoDeTag, string> = {
+  empresa: 'Novo grupo de tags',
+  contato: 'Novo grupo de tags de contato',
+  oportunidade: 'Novo grupo de tags de oportunidade',
+}
+
+const EXEMPLO_DE_GRUPO: Record<AlvoDeTag, string> = {
+  empresa: 'Ex.: Interesse',
+  contato: 'Ex.: Perfil',
+  oportunidade: 'Ex.: Tipo de negócio',
 }
 
 type Janelas =
@@ -74,8 +110,8 @@ type Janelas =
   | { tipo: 'excluir-tag'; tag: Etiqueta }
 
 /**
- * Configurações → Tags: grupos de tags e as tags de cada um, em duas abas: os de empresa (Status,
- * Visitação...) e os de contato. Só o administrador.
+ * Configurações → Tags: grupos de tags e as tags de cada um, em três abas: os de empresa (Status,
+ * Visitação...), os de contato e os de oportunidade. Só o administrador.
  */
 export function TelaDeTags() {
   const servicos = useServicos()
@@ -163,6 +199,12 @@ export function TelaDeTags() {
               icon: Users,
               count: todos.filter((g) => g.aplicaA === 'contato').length,
             },
+            {
+              value: 'oportunidade',
+              label: 'Oportunidades',
+              icon: Handshake,
+              count: todos.filter((g) => g.aplicaA === 'oportunidade').length,
+            },
           ]}
         />
         {daAba.length ? (
@@ -210,12 +252,8 @@ export function TelaDeTags() {
           <div className="rounded-lg border border-border bg-surface">
             <EmptyState
               icon={Tags}
-              title={aba === 'contato' ? 'Nenhum grupo de tags de contato' : 'Nenhum grupo de tags'}
-              description={
-                aba === 'contato'
-                  ? 'Crie um grupo (por exemplo, Perfil) e depois as tags dele, como Técnico e Comprador. As tags de contato não aparecem para empresas.'
-                  : 'Crie um grupo (por exemplo, Interesse) e depois as tags dele.'
-              }
+              title={VAZIO[aba].titulo}
+              description={VAZIO[aba].descricao}
               actions={
                 <Button
                   variant="primary"
@@ -447,7 +485,8 @@ function DialogoDeGrupo({
   const { enviando, executar } = useEnvio()
   const editando = grupo !== null
   const aplicaA = grupo?.aplicaA ?? abaAtual
-  const deContato = aplicaA === 'contato'
+  // Só os grupos de empresa podem ser obrigatórios (contato e oportunidade, não)
+  const semObrigatorio = aplicaA !== 'empresa'
   const [nome, setNome] = useState('')
   const [selecao, setSelecao] = useState<SelecaoDeTag>('multipla')
   const [obrigatorio, setObrigatorio] = useState(false)
@@ -481,13 +520,13 @@ function DialogoDeGrupo({
       const r = grupo
         ? await servicos.tags.alterarGrupo(grupo.id, {
             nome: nome.trim(),
-            ...(grupo.sistema ? {} : { selecao, ...(deContato ? {} : { obrigatorio }) }),
+            ...(grupo.sistema ? {} : { selecao, ...(semObrigatorio ? {} : { obrigatorio }) }),
           })
         : await servicos.tags.criarGrupo({
             nome: nome.trim(),
             selecao,
             aplicaA,
-            obrigatorio: deContato ? false : obrigatorio,
+            obrigatorio: semObrigatorio ? false : obrigatorio,
           })
       if (!r.ok) {
         const { campo, aviso: a } = separarErro(r.erro)
@@ -508,13 +547,7 @@ function DialogoDeGrupo({
       onOpenChange={(o) => {
         if (!o) aoFechar()
       }}
-      title={
-        editando
-          ? `Editar o grupo ${grupo.nome}`
-          : deContato
-            ? 'Novo grupo de tags de contato'
-            : 'Novo grupo de tags'
-      }
+      title={editando ? `Editar o grupo ${grupo.nome}` : TITULO_DO_GRUPO_NOVO[aplicaA]}
       footer={
         <>
           <Button variant="ghost" onClick={aoFechar}>
@@ -534,7 +567,7 @@ function DialogoDeGrupo({
           autoFocus
           autoComplete="off"
           maxLength={80}
-          placeholder={deContato ? 'Ex.: Perfil' : 'Ex.: Interesse'}
+          placeholder={EXEMPLO_DE_GRUPO[aplicaA]}
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           error={nomeVazio ? 'Informe o nome do grupo.' : erroDoNome}
@@ -548,7 +581,7 @@ function DialogoDeGrupo({
           hint={grupo?.sistema ? 'Grupo do sistema: só o nome pode mudar.' : undefined}
           onChange={(e) => setSelecao(e.target.value as SelecaoDeTag)}
         />
-        {deContato ? null : (
+        {semObrigatorio ? null : (
           <Checkbox
             label="Obrigatório"
             description="Toda empresa precisa ter uma tag deste grupo."

@@ -16,6 +16,7 @@ import { dataEHora } from '@/telas/empresas/formatos'
 import { Cartao } from '@/telas/empresas/ficha-resumo'
 
 import { useAcoesDaOportunidade } from './acoes'
+import { TagsDaOportunidade } from './ficha-tags'
 import { diaDoBanco, previsaoEmPalavras, reais, rotuloDoStatus, TOM_DO_STATUS } from './formatos'
 
 const rota = getRouteApi('/_autenticado/oportunidades/$oportunidadeId')
@@ -128,6 +129,7 @@ export function FichaDaOportunidade() {
                 ? o.fase.nome
                 : `parou em ${o.faseParouEm?.nome ?? o.fase.nome}`}
             </span>
+            <TagsDaOportunidade oportunidade={o} />
           </div>
           <div className="flex items-center gap-2">
             {o.editavel && o.status === 'ativo' ? (

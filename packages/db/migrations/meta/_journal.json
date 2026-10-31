@@ -309,6 +309,13 @@
       "when": 1793302503025,
       "tag": "0043_tags_de_contato",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1793462544221,
+      "tag": "0044_tags_de_oportunidade",
+      "breakpoints": true
     }
   ]
 }
