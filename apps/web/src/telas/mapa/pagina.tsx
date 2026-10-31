@@ -33,10 +33,13 @@ import {
   tokenDoEstado,
 } from './estado'
 import { LegendaDoMapa } from './legenda'
+import { useLegendaAberta } from './legenda-aberta'
 import { PainelDaEmpresa } from './painel'
 import { BarraDeRaio, ResultadoDaSelecao } from './selecao'
 
 const rotaDoMapa = getRouteApi('/_autenticado/mapa')
+const ID_DA_LEGENDA = 'legenda-do-mapa'
+const ID_DO_BOTAO_DA_LEGENDA = 'botao-da-legenda'
 
 type Ferramenta = null | 'retangulo' | 'raio'
 type Area = Pick<AreaVisivel, 'oeste' | 'sul' | 'leste' | 'norte' | 'zoom'>
@@ -100,6 +103,7 @@ export function TelaDoMapa() {
   // Abrir uma empresa NUNCA aproxima nem centraliza: o mapa só desliza o mínimo se o painel esconder o pin
   const [revelar, setRevelar] = useState<{ chave: number; latitude: number; longitude: number }>()
   const [gavetaAberta, setGavetaAberta] = useState(false)
+  const [legendaAberta, setLegendaAberta] = useLegendaAberta()
 
   const [ferramenta, setFerramenta] = useState<Ferramenta>(null)
   const [canto, setCanto] = useState<{ latitude: number; longitude: number } | null>(null)
@@ -706,6 +710,18 @@ export function TelaDoMapa() {
             className={cn('bg-surface shadow-md', rotaNoMapa.aberto && 'ring-2 ring-brand')}
           />
         ) : null}
+        {/* A legenda só existe fora do celular (lá o espaço é do mapa e do painel que sobe de baixo) */}
+        {!celular ? (
+          <IconButton
+            id={ID_DO_BOTAO_DA_LEGENDA}
+            icon={List}
+            label={legendaAberta ? 'Esconder a legenda' : 'Mostrar a legenda'}
+            aria-pressed={legendaAberta}
+            aria-controls={legendaAberta ? ID_DA_LEGENDA : undefined}
+            onClick={() => setLegendaAberta(!legendaAberta)}
+            className={cn('bg-surface shadow-md', legendaAberta && 'ring-2 ring-brand')}
+          />
+        ) : null}
       </div>
       {ferramenta === 'retangulo' && !retangulo ? (
         <p
@@ -740,8 +756,17 @@ export function TelaDoMapa() {
                 : ''}
             </p>
           ) : null}
-          {!celular ? (
-            <LegendaDoMapa entradas={legenda} className="pointer-events-auto w-[360px]" />
+          {!celular && legendaAberta ? (
+            <LegendaDoMapa
+              id={ID_DA_LEGENDA}
+              entradas={legenda}
+              aoFechar={() => {
+                setLegendaAberta(false)
+                // o "X" some junto com a legenda: o foco vai para o botão que a abre de novo
+                document.getElementById(ID_DO_BOTAO_DA_LEGENDA)?.focus()
+              }}
+              className="pointer-events-auto w-[360px]"
+            />
           ) : null}
         </div>
       ) : null}

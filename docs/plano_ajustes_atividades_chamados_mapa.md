@@ -106,7 +106,7 @@ Resultado no rodapé: `Fonte: IBGE – CNEFE 2022 | © OpenStreetMap contributor
 
 ### 6.1 Comportamento
 
-- Novo `IconButton` na barra **Ferramentas do mapa**, **logo abaixo do botão de Rotas** (último da coluna; sem permissão de rota, fica logo abaixo de Camadas). Ícone `List` (lucide), estilo igual aos vizinhos (`bg-surface shadow-md`, `ring-2 ring-brand` quando a legenda está aberta).
+- Novo `IconButton` na barra **Ferramentas do mapa**, **logo abaixo do botão de Rotas** (último da coluna; sem permissão de rota, fica logo abaixo de Camadas). Ícone `List` (lucide), com `id` fixo para receber o foco, estilo igual aos vizinhos (`bg-surface shadow-md`, `ring-2 ring-brand` quando a legenda está aberta).
 - `aria-pressed` e rótulo: "Esconder a legenda" / "Mostrar a legenda"; `aria-controls` apontando para a seção da legenda.
 - Fechada, a legenda some do rodapé (o total "N empresas nesta área" continua). Aberta, igual a hoje.
 - **Começa aberta** e a escolha fica salva no aparelho (`localStorage`, chave `leadtogo:mapa:legenda`), como uma preferência de tela: quem fechou não precisa fechar de novo a cada visita.

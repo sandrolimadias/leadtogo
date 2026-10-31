@@ -146,6 +146,15 @@ for (const tela of [
 
     if (!tela.celular) {
       await expect(page.getByRole('region', { name: 'Legenda do mapa' })).toBeVisible()
+      // a legenda fecha e abre pelo botão das ferramentas, o último da coluna (abaixo do de Rotas)
+      const ferramentas = page.getByRole('toolbar', { name: 'Ferramentas do mapa' })
+      await expect(ferramentas.getByRole('button').last()).toHaveAccessibleName(
+        'Esconder a legenda',
+      )
+      await ferramentas.getByRole('button', { name: 'Esconder a legenda' }).click()
+      await expect(page.getByRole('region', { name: 'Legenda do mapa' })).toHaveCount(0)
+      await ferramentas.getByRole('button', { name: 'Mostrar a legenda' }).click()
+      await expect(page.getByRole('region', { name: 'Legenda do mapa' })).toBeVisible()
     }
     // os créditos (onde entra a fonte do IBGE) ficam embaixo do zoom, sem cobrir o + e o −
     const canto = await page.evaluate(() => {

@@ -1,7 +1,8 @@
 import type { EntradaDaLegenda } from '@leadtogo/shared'
 import { tokenDaCorDoMapa } from '@leadtogo/shared'
-import { Check } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 
+import { IconButton } from '@leadtogo/ui/button'
 import { cn } from '@leadtogo/ui/cn'
 
 /** Uma amostra de pin: gota na cor do estado, com o visto quando a empresa já foi visitada. */
@@ -35,23 +36,40 @@ export function AmostraDePin({ token, visitada }: { token: string; visitada?: bo
  * "visitada alguma vez": o estado nunca depende só da cor.
  */
 export function LegendaDoMapa({
+  id,
   entradas,
+  aoFechar,
   className,
 }: {
+  id?: string
   entradas: EntradaDaLegenda[]
+  /** Mostra o "X" no cabeçalho da legenda */
+  aoFechar?: () => void
   className?: string
 }) {
   return (
     <section
+      id={id}
       aria-label="Legenda do mapa"
       className={cn(
         'rounded-lg border border-border bg-surface/95 p-3 text-[13px] shadow-md backdrop-blur-sm',
         className,
       )}
     >
-      <h2 className="m-0 mb-2 text-[11px] leading-4 font-semibold tracking-wider text-ink-subtle uppercase">
-        Legenda
-      </h2>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="m-0 text-[11px] leading-4 font-semibold tracking-wider text-ink-subtle uppercase">
+          Legenda
+        </h2>
+        {aoFechar ? (
+          <IconButton
+            icon={X}
+            size="sm"
+            label="Fechar legenda"
+            onClick={aoFechar}
+            className="-my-1.5 -mr-1.5"
+          />
+        ) : null}
+      </div>
       <ul className="m-0 grid list-none grid-cols-2 gap-x-4 gap-y-1.5 p-0 max-sm:grid-cols-1">
         {entradas.map((e) => (
           <li key={e.chave} className="flex items-center gap-2" title={e.regra}>
