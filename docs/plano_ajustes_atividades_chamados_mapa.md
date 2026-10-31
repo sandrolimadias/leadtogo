@@ -1,6 +1,6 @@
 # Plano: ajustes de Atividades, Chamados e Mapa
 
-*Proposta de 31/10/2026, **aguardando aprovação do Ale**. Sete ajustes pedidos, todos **só no front** (`apps/web` e `packages/ui`): nenhuma migração, nenhuma rota de API nova, nenhuma variável de ambiente nova. Cada item vira um commit pequeno, com o teste da mudança, na ordem da seção 9.*
+*Proposta de 31/10/2026, **aprovada pelo Ale em 31/10/2026** (as três decisões da seção 10 como recomendado, com o "X" dentro da legenda). Sete ajustes pedidos, todos **só no front** (`apps/web` e `packages/ui`): nenhuma migração, nenhuma rota de API nova, nenhuma variável de ambiente nova. Cada item vira um commit pequeno, com o teste da mudança, na ordem da seção 9.*
 
 ## 1. Resumo
 
@@ -33,20 +33,21 @@ flex gap-1 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--border
 
 ### 2.2 Correção (no componente compartilhado)
 
-- Lista de abas: acrescentar **`flex-none`** (não encolhe nunca) e **`min-w-0`** (não força largura do pai).
-- Trocar as duas classes soltas por uma utilidade única no `globals.css`, **`sem-barra-de-rolagem`**, com `scrollbar-width: none`, `-ms-overflow-style: none` e `::-webkit-scrollbar { display: none; width: 0; height: 0 }`. Fica disponível para os outros carrosséis que já fazem o mesmo à mão (chips de Empresas, chips do mapa no celular, menu de Configurações no celular).
-- Gatilho da aba: altura fixa `h-10` (40 px, dentro do grid de 4 px) no lugar de `pt-2 pb-[10px]` + altura da linha, para que zoom fracionário não gere sobra de 1 px na vertical. O sublinhado da aba ativa continua dentro da lista (`after:bottom-0`).
-- A rolagem horizontal com o dedo continua (muitas abas em tela estreita), só sem a barra. Nada muda em cores, fontes ou tokens.
+*Feita em 31/10/2026. A reprodução no navegador (Chromium, CSS do build) confirmou duas causas:* no painel do mapa, com o cabeçalho alto, a lista de abas encolhia até **0 px**; em Atividades no celular, as três abas com contador somavam **371 px numa faixa de 358 px** (390 px de tela), a última ficava cortada e a faixa rolava na horizontal.
+
+- Lista de abas: **`flex-none`** (não encolhe nunca) e **`min-w-0`**. As regras que escondem a barra (`scrollbar-width: none` e `::-webkit-scrollbar`) ficam como estavam: a medição não mostrou barra nem sobra de altura com zoom de 125% e 150%, então a utilidade nova e a altura fixa `h-10` previstas na proposta não foram necessárias.
+- Opção nova **`preencher`** no `Tabs`: abaixo de `md`, as abas dividem a largura (`flex-1`, centralizadas) e ficam mais justas (`px-1.5`, `gap-1`, 13 px). Usada em Atividades: as três abas cabem inteiras de 360 px para cima; abaixo disso (ou com contadores muito grandes) a faixa ainda rola com o dedo, sem barra.
+- Nada muda em cores ou tokens; as outras telas com abas só ganham o `flex-none`.
 
 ### 2.3 Testes
 
-- **Vitest** (`packages/ui`): a `tablist` tem `flex-none` e a classe `sem-barra-de-rolagem`.
+- **Vitest** (`packages/ui`): a `tablist` tem `flex-none` e as regras sem barra; com `preencher`, as abas dividem a largura no celular.
 - **E2E novo** `apps/web/e2e/abas-layout.spec.ts`: em Atividades (desktop, tablet, celular) e no painel da empresa do mapa (desktop 1280×720 e celular), a `tablist` tem `scrollHeight === clientHeight`, altura de 40 px, e todas as abas estão visíveis (dentro da caixa, ou alcançáveis rolando na horizontal no celular). Captura de tela com `CAPTURAS_DIR`, como em `mapa-layout.spec.ts`.
 - Rodar os E2E de layout existentes (`empresas-layout`, `contatos-layout`, `layout`, `mapa-layout`) para garantir que as outras telas com abas não mudaram.
 
 ### 2.4 Docs
 
-- `docs/design_system.md`, seção de Tabs: "a barra de abas não encolhe e não mostra barra de rolagem; com muitas abas, rola na horizontal sem barra" e a utilidade `sem-barra-de-rolagem`.
+- `docs/design_system.md`, item "Barra de abas": não encolhe, não mostra barra e a opção `preencher`.
 
 ## 3. C1: mensagem que vaza do balão em Chamados
 
@@ -109,7 +110,7 @@ Resultado no rodapé: `Fonte: IBGE – CNEFE 2022 | © OpenStreetMap contributor
 - Fechada, a legenda some do rodapé (o total "N empresas nesta área" continua). Aberta, igual a hoje.
 - **Começa aberta** e a escolha fica salva no aparelho (`localStorage`, chave `leadtogo:mapa:legenda`), como uma preferência de tela: quem fechou não precisa fechar de novo a cada visita.
 - **Celular:** hoje a legenda não aparece no celular. Recomendo **manter assim** nesta entrega e não mostrar o botão no celular; mostrar a legenda no celular (por exemplo numa folha que sobe de baixo) fica no backlog, se o Ale quiser.
-- Opcional, para o toque ficar natural: um `IconButton` "Fechar legenda" (`X`) no cabeçalho da própria legenda, que faz o mesmo que o botão da barra e devolve o foco para ele.
+- Um `IconButton` "Fechar legenda" (`X`) no cabeçalho da própria legenda, que faz o mesmo que o botão da barra e devolve o foco para ele.
 
 ### 6.2 Testes e docs
 
@@ -150,8 +151,8 @@ Cada passo é um commit com o próprio teste, depois de `pnpm lint && pnpm typec
 
 **Rollback:** como são só mudanças de front, basta reverter o commit do item com problema (`git revert`) e o deploy volta a versão anterior; não há dado nem migração para desfazer.
 
-## 10. Decisões para o Ale
+## 10. Decisões (aprovadas pelo Ale em 31/10/2026)
 
-1. **Legenda no celular:** manter sem legenda e sem botão no celular (recomendado) ou já levar a legenda para o celular?
-2. **Estado inicial da legenda:** começar aberta e lembrar a escolha no aparelho (recomendado) ou começar sempre aberta?
-3. **Botão "X" dentro da legenda**, além do botão da barra: incluir (recomendado) ou só o da barra?
+1. **Legenda no celular:** manter sem legenda e sem botão no celular (recomendado) ou já levar a legenda para o celular? **Aprovado: manter sem legenda no celular.**
+2. **Estado inicial da legenda:** começar aberta e lembrar a escolha no aparelho (recomendado) ou começar sempre aberta? **Aprovado: aberta e lembrando a escolha.**
+3. **Botão "X" dentro da legenda**, além do botão da barra: incluir (recomendado) ou só o da barra? **Aprovado: incluir.**

@@ -178,6 +178,12 @@ for (const tela of [
       expect(caixa.x - esquerdaDaArea).toBeLessThan(40)
     }
     expect((await medidas(page)).rolaPagina).toBe(false)
+    // as abas do painel ficam inteiras (numa coluna de altura fixa a barra de abas encolhia até sumir)
+    const abas = painel.getByRole('tablist', { name: 'Detalhes da empresa' })
+    await expect(abas.getByRole('tab', { name: 'Contatos' })).toBeVisible()
+    const barraDeAbas = await abas.evaluate((e) => ({ h: e.clientHeight, sh: e.scrollHeight }))
+    expect(barraDeAbas.h).toBeGreaterThanOrEqual(36)
+    expect(barraDeAbas.sh).toBeLessThanOrEqual(barraDeAbas.h)
     await capturar(page, `mapa-${tela.nome}-painel`)
 
     // filtros na gaveta

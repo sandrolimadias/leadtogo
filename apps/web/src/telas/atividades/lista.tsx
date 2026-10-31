@@ -196,6 +196,7 @@ export function ListaDeAtividades() {
 
       <Tabs
         label="Situação das atividades"
+        preencher
         items={[
           {
             value: 'agendadas',

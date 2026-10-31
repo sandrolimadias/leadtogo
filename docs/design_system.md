@@ -39,6 +39,7 @@
 - **Atividades:** ActivityIcon, PriorityMarks (Importante/Urgente), ActivityTimeline, TaskCard
 - **Funil:** DealCard (valor total + MRR, alerta de parada, "sem próxima atividade"), KanbanColumn
 - **Dados:** DataTable, Tabs, Paginacao (obrigatória em toda tabela de dados; ver "Tabelas e paginação")
+- **Barra de abas (Tabs, 31/10/2026):** nunca encolhe na vertical (numa coluna de altura fixa, como o painel da empresa no mapa, ela sumia) e nunca mostra barra de rolagem; com muitas abas na tela estreita, rola na horizontal com o dedo, sem a barra. Com poucas abas (Atividades), a opção `preencher` faz as abas dividirem a largura no celular, um pouco mais justas (13 px, 6 px de respiro), para caberem inteiras a partir de 360 px.
 - **Navegação:** AppNav, TenantSwitcher (multiempresa), Menu
 - **Feedback:** Alert, Toast, EmptyState, Skeleton, Dialog
 - **Exemplo:** TelaFunil (Kanban de oportunidades completo)
