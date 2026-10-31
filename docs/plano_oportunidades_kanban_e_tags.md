@@ -1,6 +1,6 @@
 # Plano: card e zonas do Kanban, data de fechamento e tags de oportunidade
 
-*Proposta de 30/10/2026, **aguardando aprovação do Ale** (as decisões da seção 3 trazem a recomendação; o que ficar para depois vai para `backlog_pos_mvp.md`, seção Oportunidades). Quatro pedidos na tela **Oportunidades**: (1) o card do Kanban passa a mostrar a **empresa em maiúsculas e negrito** na primeira linha e o **título** abaixo; (2) as **zonas de fechamento** (Conquistada, Perdida, Cancelada, Suspensa) deixam de cobrir o cabeçalho das colunas: quando aparecem, as colunas **descem**; (3) ao fechar, **admin e gestor escolhem a data de fechamento** (nunca no futuro); (4) **funcionalidade nova:** **tags de oportunidade**, em grupos próprios que não valem para empresas nem contatos, com várias tags por oportunidade. Regras em `funcionalidades.md` (seções 2, 7 e "Perfis de acesso") e modelo em `modelagem_banco.md`, que serão atualizados nos mesmos commits.*
+*Proposta de 30/10/2026, **aprovada pelo Ale em 31/10/2026** (as decisões da seção 3 como recomendado, mais a decisão 8a: o administrador pode alterar a data de criação da oportunidade; o que ficou para depois foi para `backlog_pos_mvp.md`, seção Oportunidades). Quatro pedidos na tela **Oportunidades**: (1) o card do Kanban passa a mostrar a **empresa em maiúsculas e negrito** na primeira linha e o **título** abaixo; (2) as **zonas de fechamento** (Conquistada, Perdida, Cancelada, Suspensa) deixam de cobrir o cabeçalho das colunas: quando aparecem, as colunas **descem**; (3) ao fechar, **admin e gestor escolhem a data de fechamento** (nunca no futuro); (4) **funcionalidade nova:** **tags de oportunidade**, em grupos próprios que não valem para empresas nem contatos, com várias tags por oportunidade. Regras em `funcionalidades.md` (seções 2, 7 e "Perfis de acesso") e modelo em `modelagem_banco.md`, que serão atualizados nos mesmos commits.*
 
 ## 1. Objetivo
 
@@ -25,7 +25,7 @@
 | Tags do contato (conferência, diferença, rota, auditoria, abas da configuração, janela "Editar tags") | `apps/api/src/carteira/contato-tags.ts`, `apps/web/src/telas/cadastros/tags.tsx`, `apps/web/src/telas/empresas/ficha-tags.tsx` | Mesmo desenho para `oportunidade-tags.ts`; terceira aba **Oportunidades** |
 | Filtros da tela (URL) | `apps/web/src/telas/oportunidades/busca.ts`, `lista-oportunidades.service.ts` | Filtro novo `tagOportunidadeId` (Kanban e lista) |
 
-## 3. Decisões (recomendações para o Ale aprovar)
+## 3. Decisões (aprovadas pelo Ale em 31/10/2026)
 
 **Card (item 1)**
 
@@ -43,6 +43,7 @@
 
 7. **Permissão nova `oportunidades.data_fechamento`** ("Escolher a data de fechamento da oportunidade"), versão 11 do catálogo, ligada no padrão dos perfis de sistema **Admin** e **Gestor** e desligada no **Vendedor**. Os perfis de sistema existentes recebem a chave na partida da API (mecanismo de `NOVAS_POR_VERSAO`); **perfis criados pela empresa não recebem** (o admin liga se quiser). *Recomendado* em vez de olhar o papel fixo, porque o sistema já decide tudo por perfil.
 8. O campo é um **dia** (`AAAA-MM-DD`, no fuso da empresa), padrão **hoje**, com `max` = hoje. Regras na API: **não pode ser no futuro** (400 `fechamento_no_futuro`, "A data de fechamento não pode ser no futuro.", a mesma mensagem da importação) e **não pode ser antes da criação da oportunidade** (400 `fechamento_antes_da_criacao`). *Recomendado* o limite inferior para o relatório não ficar com oportunidade fechada antes de existir; se o Ale preferir sem limite inferior, sai essa regra.
+8a. **O administrador pode alterar a data de criação** (pedido do Ale em 31/10/2026, para acompanhar o limite da decisão 8). Permissão nova **`oportunidades.data_criacao`** ("Alterar a data de criação da oportunidade"), na mesma versão 11, ligada só no padrão do perfil de sistema **Admin**. No formulário de **editar**, quem tem a permissão vê o campo **"Criada em"** (dia; `max` = hoje). Regras na API: não pode ser no futuro (400 `criacao_no_futuro`) nem depois da data de fechamento, se a oportunidade estiver fechada (400 `criacao_depois_do_fechamento`); sem a permissão, mandar o campo dá 403 `acesso_negado`. Dia passado grava o meio-dia no fuso da empresa (como a decisão 9). Muda `oportunidades.criado_em` (base de "Criada em" na ficha, da ordenação da lista e das "novas no período" do Dashboard); a linha `criada` do histórico de fases continua como foi registrada (o histórico é só de acréscimo) e a troca fica na **auditoria** (`criadaEm` de/para).
 9. **Hoje** grava o momento exato (como hoje). **Dia passado** grava o **meio-dia** desse dia no fuso da empresa (fica no dia certo em qualquer filtro por período e no Dashboard, que agrupa por dia no fuso).
 10. Quem **não tem** a permissão não vê o campo; se mandar `dataFechamento` pela API, recebe **403** `acesso_negado` (não é ignorado em silêncio). Chave de API (integração) segue a mesma permissão do perfil de integração.
 11. **Suspensa:** também aceita a data (o fechamento de suspensa marca quando saiu de Ativo). "Retomar em" continua não podendo ser no passado.
@@ -89,7 +90,8 @@ As Partes 1 e 2 são independentes e podem ir para produção antes das outras.
 
 ### 6.1 Compartilhado (`packages/shared`)
 
-- `permissoes.ts`: `p('oportunidades', 'data_fechamento', 'Escolher a data de fechamento da oportunidade')`; `VERSAO_DO_CATALOGO = 11`; `NOVAS_POR_VERSAO[11] = ['oportunidades.data_fechamento']`; padrão ligado em `admin` e `gestor` (onde os padrões dos perfis ficam definidos).
+- `permissoes.ts`: `p('oportunidades', 'data_fechamento', 'Escolher a data de fechamento da oportunidade')` e `p('oportunidades', 'data_criacao', 'Alterar a data de criação da oportunidade')`; `VERSAO_DO_CATALOGO = 11`; `NOVAS_POR_VERSAO[11] = ['oportunidades.data_fechamento', 'oportunidades.data_criacao']`; `data_fechamento` ligada no padrão de `admin` e `gestor`, `data_criacao` só no de `admin`.
+- `oportunidades.ts`: `criadaEm: dia.optional()` na entrada de **alteração** (não na criação).
 - `oportunidades.ts`: `dataFechamento: dia.optional()` em `fecharOportunidadeSchema`.
 - Testes: schema aceita dia válido e recusa formato inválido; o catálogo tem a chave e a versão 11.
 

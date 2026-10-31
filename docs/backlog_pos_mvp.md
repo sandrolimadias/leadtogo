@@ -106,6 +106,11 @@
 | Probabilidade 100% ao conquistar | Não pedido; a conquistada guarda a probabilidade que tinha | Módulo 6 |
 | Reabrir uma oportunidade cuja fase foi inativada volta à fase original | Hoje volta para a primeira fase ativa do funil | Módulo 6 |
 | Recorrência de produtos e de contrato | Depende dos itens e do catálogo | Módulo 6 / modelagem |
+| Alterar a data de fechamento depois de fechada | Decidido em 31/10/2026: a data se escolhe no fechamento; para corrigir, reabre e fecha de novo | Kanban e tags de oportunidade (`plano_oportunidades_kanban_e_tags.md`) |
+| Tags de oportunidade na importação, na API pública e nos webhooks | Fora da primeira entrega das tags de oportunidade (31/10/2026) | Kanban e tags de oportunidade |
+| Aplicar e tirar tag de oportunidade em massa | Fora da primeira entrega; a tag se aplica no formulário e na ficha | Kanban e tags de oportunidade |
+| Filtro de tags de oportunidade com combinação E / OU | O filtro "Tag da oportunidade" é de escolha única, como nos contatos | Kanban e tags de oportunidade |
+| Dashboard e busca global por tag de oportunidade | Fora da primeira entrega | Kanban e tags de oportunidade |
 
 ## Dashboard
 | Item | Motivo de ter ficado fora | Origem |
