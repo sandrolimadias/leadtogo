@@ -17,6 +17,7 @@ import { Route as PortalIndexRouteImport } from './routes/_portal.index'
 import { Route as PortalAgendaRouteImport } from './routes/_portal.agenda'
 import { Route as PortalBuscaRouteImport } from './routes/_portal.busca'
 import { Route as PortalDocumentosRouteImport } from './routes/_portal.documentos'
+import { Route as PortalEmpresasRouteImport } from './routes/_portal.empresas'
 import { Route as PortalNotificacoesRouteImport } from './routes/_portal.notificacoes'
 import { Route as PortalPerfilRouteImport } from './routes/_portal.perfil'
 import { Route as PortalChamadosIndexRouteImport } from './routes/_portal.chamados.index'
@@ -62,6 +63,11 @@ const PortalDocumentosRoute = PortalDocumentosRouteImport.update({
   path: '/documentos',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalEmpresasRoute = PortalEmpresasRouteImport.update({
+  id: '/empresas',
+  path: '/empresas',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalNotificacoesRoute = PortalNotificacoesRouteImport.update({
   id: '/notificacoes',
   path: '/notificacoes',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof PortalAgendaRoute
   '/busca': typeof PortalBuscaRoute
   '/documentos': typeof PortalDocumentosRoute
+  '/empresas': typeof PortalEmpresasRoute
   '/notificacoes': typeof PortalNotificacoesRoute
   '/perfil': typeof PortalPerfilRoute
   '/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof PortalAgendaRoute
   '/busca': typeof PortalBuscaRoute
   '/documentos': typeof PortalDocumentosRoute
+  '/empresas': typeof PortalEmpresasRoute
   '/notificacoes': typeof PortalNotificacoesRoute
   '/perfil': typeof PortalPerfilRoute
   '/': typeof PortalIndexRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/_portal/agenda': typeof PortalAgendaRoute
   '/_portal/busca': typeof PortalBuscaRoute
   '/_portal/documentos': typeof PortalDocumentosRoute
+  '/_portal/empresas': typeof PortalEmpresasRoute
   '/_portal/notificacoes': typeof PortalNotificacoesRoute
   '/_portal/perfil': typeof PortalPerfilRoute
   '/_portal/': typeof PortalIndexRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/busca'
     | '/documentos'
+    | '/empresas'
     | '/notificacoes'
     | '/perfil'
     | '/chamados/$chamadoId'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/busca'
     | '/documentos'
+    | '/empresas'
     | '/notificacoes'
     | '/perfil'
     | '/'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/_portal/agenda'
     | '/_portal/busca'
     | '/_portal/documentos'
+    | '/_portal/empresas'
     | '/_portal/notificacoes'
     | '/_portal/perfil'
     | '/_portal/'
@@ -243,6 +255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalDocumentosRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/_portal/empresas': {
+      id: '/_portal/empresas'
+      path: '/empresas'
+      fullPath: '/empresas'
+      preLoaderRoute: typeof PortalEmpresasRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/_portal/notificacoes': {
       id: '/_portal/notificacoes'
       path: '/notificacoes'
@@ -285,6 +304,7 @@ interface PortalRouteChildren {
   PortalAgendaRoute: typeof PortalAgendaRoute
   PortalBuscaRoute: typeof PortalBuscaRoute
   PortalDocumentosRoute: typeof PortalDocumentosRoute
+  PortalEmpresasRoute: typeof PortalEmpresasRoute
   PortalNotificacoesRoute: typeof PortalNotificacoesRoute
   PortalPerfilRoute: typeof PortalPerfilRoute
   PortalIndexRoute: typeof PortalIndexRoute
@@ -297,6 +317,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalAgendaRoute: PortalAgendaRoute,
   PortalBuscaRoute: PortalBuscaRoute,
   PortalDocumentosRoute: PortalDocumentosRoute,
+  PortalEmpresasRoute: PortalEmpresasRoute,
   PortalNotificacoesRoute: PortalNotificacoesRoute,
   PortalPerfilRoute: PortalPerfilRoute,
   PortalIndexRoute: PortalIndexRoute,
