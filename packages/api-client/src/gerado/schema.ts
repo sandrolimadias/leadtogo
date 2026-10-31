@@ -675,7 +675,7 @@ export interface paths {
         head?: never;
         /**
          * Editar oportunidade
-         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Só o que vier muda. Fase e status mudam por `mover` e `fechar`. Informar a `probabilidade` igual à da fase volta a acompanhar a fase; diferente, marca como editada à mão. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados. Registra na auditoria o antes e o depois.
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Só o que vier muda. Fase e status mudam por `mover` e `fechar`. Informar a `probabilidade` igual à da fase volta a acompanhar a fase; diferente, marca como editada à mão. Valores: o usuário digita `valorUnico`, `valorMensal` e `meses`; `valorTotal` (único + mensal × meses) e `valorPonderado` (total × probabilidade) são calculados pelo banco e nunca digitados. `criadaEm` (dia AAAA-MM-DD no fuso da empresa) muda a data de criação: exige `oportunidades.data_criacao` (403 `acesso_negado`), nunca no futuro (400 `criacao_no_futuro`) nem depois do dia do fechamento (400 `criacao_depois_do_fechamento`). Registra na auditoria o antes e o depois.
          */
         patch: operations["OportunidadesController_alterar"];
         trace?: never;
@@ -691,7 +691,7 @@ export interface paths {
         put?: never;
         /**
          * Fechar oportunidade
-         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Conquistado, Perdido, Cancelado ou Suspenso (só de uma Ativa; 409 `oportunidade_nao_ativa`). Perdido, Cancelado e Suspenso exigem o `motivoId` (da lista do status; 400 `motivo_invalido`); Suspenso exige `retomarEm` e cria a atividade de retomada (Tarefa de dia inteiro nessa data, com a mesma empresa e o mesmo responsável). Guarda a fase em que parou e a data de fechamento. Conquistado muda a empresa para Cliente (a tag `chave_sistema = cliente`, seja qual for o nome dela) se `empresaViraCliente` for verdadeiro (sem o campo, vale a configuração da empresa).
+         * @description Regra de carteira: admin e gestor veem e alteram todas as oportunidades; o vendedor vê as das empresas que vê (a própria carteira, ou todas, se a empresa ligou "Vendedores podem ver todas as empresas") e cria, edita, move, fecha e reabre só as das empresas dele. Oportunidade que o usuário não vê responde 404. Conquistado, Perdido, Cancelado ou Suspenso (só de uma Ativa; 409 `oportunidade_nao_ativa`). Perdido, Cancelado e Suspenso exigem o `motivoId` (da lista do status; 400 `motivo_invalido`); Suspenso exige `retomarEm` e cria a atividade de retomada (Tarefa de dia inteiro nessa data, com a mesma empresa e o mesmo responsável). Guarda a fase em que parou e a data de fechamento. Conquistado muda a empresa para Cliente (a tag `chave_sistema = cliente`, seja qual for o nome dela) se `empresaViraCliente` for verdadeiro (sem o campo, vale a configuração da empresa). `dataFechamento` (dia AAAA-MM-DD no fuso da empresa; sem ele, vale o momento) exige `oportunidades.data_fechamento` (403 `acesso_negado`), nunca no futuro (400 `fechamento_no_futuro`) nem antes do dia da criação (400 `fechamento_antes_da_criacao`); dia passado grava o meio-dia desse dia.
          */
         post: operations["OportunidadesController_fechar"];
         delete?: never;
@@ -5792,6 +5792,8 @@ export interface components {
             /** Format: date */
             dataPrevistaFechamento?: string | null;
             observacoes?: string | null;
+            /** Format: date */
+            criadaEm?: string;
         };
         AlterarOrigemEntrada: {
             nome?: string;
@@ -7499,6 +7501,8 @@ export interface components {
             /** Format: date */
             retomarEm?: string | null;
             empresaViraCliente?: boolean;
+            /** Format: date */
+            dataFechamento?: string;
         };
         FeedDoPortal: {
             itens: components["schemas"]["PublicacaoDoPortal"][];

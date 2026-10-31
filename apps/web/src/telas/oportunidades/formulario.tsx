@@ -21,7 +21,7 @@ import {
   ContextoDoFormularioDeOportunidade,
   type InicioDoFormularioDeOportunidade,
 } from './contexto-formulario'
-import { reais, sugestaoDeNome } from './formatos'
+import { diaEmTexto, hojeEmTexto, reais, sugestaoDeNome } from './formatos'
 
 /** Guarda o formulário aberto e o desenha uma vez só para o app inteiro. */
 export function FormularioDeOportunidadeProvider({ children }: { children: ReactNode }) {
@@ -68,6 +68,8 @@ interface Formulario {
   probabilidade: string
   dataPrevista: string
   observacoes: string
+  /** Edição: o dia da criação (só quem tem `oportunidades.data_criacao` muda) */
+  criadaEm: string
 }
 
 const numero = (v: string): number => (v.trim() === '' ? 0 : Number(v.replace(',', '.')))
@@ -102,6 +104,7 @@ function formularioInicial(inicio: InicioDoFormularioDeOportunidade): Formulario
       probabilidade: original.probabilidadeManual ? String(original.probabilidade) : '',
       dataPrevista: original.dataPrevistaFechamento ?? '',
       observacoes: '',
+      criadaEm: '',
     }
   }
   const o = inicio.oportunidade
@@ -123,6 +126,7 @@ function formularioInicial(inicio: InicioDoFormularioDeOportunidade): Formulario
       probabilidade: String(o.probabilidade),
       dataPrevista: o.dataPrevistaFechamento ?? '',
       observacoes: o.observacoes ?? '',
+      criadaEm: diaEmTexto(o.criadaEm),
     }
   }
   return {
@@ -142,6 +146,7 @@ function formularioInicial(inicio: InicioDoFormularioDeOportunidade): Formulario
     probabilidade: '',
     dataPrevista: '',
     observacoes: '',
+    criadaEm: '',
   }
 }
 
@@ -151,6 +156,8 @@ const CAMPO_DO_ERRO: Record<string, string> = {
   funil_invalido: 'funil',
   fase_invalida: 'fase',
   responsavel_invalido: 'responsavel',
+  criacao_no_futuro: 'criadaEm',
+  criacao_depois_do_fechamento: 'criadaEm',
 }
 
 /**
@@ -176,6 +183,8 @@ function FormularioDeOportunidade({
   const mudar = (patch: Partial<Formulario>) => setF((a) => ({ ...a, ...patch }))
 
   const { pode } = usePermissoes()
+  const mudaCriacao = edicao !== undefined && pode('oportunidades.data_criacao')
+  const diaDoFechamento = edicao?.dataFechamento ? diaEmTexto(edicao.dataFechamento) : undefined
   const funis = useQuery({
     queryKey: ['cadastros', 'funis'],
     retry: false,
@@ -274,6 +283,13 @@ function FormularioDeOportunidade({
     ) {
       e['probabilidade'] = 'Informe de 0 a 100.'
     }
+    if (mudaCriacao) {
+      if (f.criadaEm === '') e['criadaEm'] = 'Informe a data de criação.'
+      else if (f.criadaEm > hojeEmTexto()) e['criadaEm'] = 'A data não pode ser no futuro.'
+      else if (diaDoFechamento && f.criadaEm > diaDoFechamento) {
+        e['criadaEm'] = 'A data não pode ser depois da data de fechamento.'
+      }
+    }
     return e
   }
 
@@ -302,6 +318,9 @@ function FormularioDeOportunidade({
           ...valores,
           ...(f.probabilidade.trim() !== '' && probabilidade !== edicao.probabilidade
             ? { probabilidade }
+            : {}),
+          ...(mudaCriacao && f.criadaEm !== diaEmTexto(edicao.criadaEm)
+            ? { criadaEm: f.criadaEm }
             : {}),
         })
       : await servicos.oportunidades.criar({
@@ -537,6 +556,18 @@ function FormularioDeOportunidade({
           ) : null}
         </div>
 
+        {mudaCriacao ? (
+          <TextField
+            label="Criada em"
+            required
+            type="date"
+            max={diaDoFechamento ?? hojeEmTexto()}
+            hint="Use para acertar oportunidades registradas depois de criadas."
+            value={f.criadaEm}
+            onChange={(e) => mudar({ criadaEm: e.target.value })}
+            {...(erros['criadaEm'] ? { error: erros['criadaEm'] } : {})}
+          />
+        ) : null}
         <TextArea
           label="Observações"
           rows={3}

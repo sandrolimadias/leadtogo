@@ -30,6 +30,10 @@ export interface EscopoDaCarteira {
   /** Escolher outro responsável na oportunidade / na atividade */
   atribuirOportunidade: boolean
   atribuirAtividade: boolean
+  /** Escolher o dia do fechamento da oportunidade (sem a permissão, vale o momento do fechamento) */
+  dataDeFechamento: boolean
+  /** Alterar o dia da criação da oportunidade */
+  dataDeCriacao: boolean
   /**
    * A requisição é de uma chave de API (o membro de integração nunca é o responsável): pode cadastrar empresa,
    * oportunidade e atividade em nome de qualquer membro ativo. Mudar o responsável de uma empresa que já existe
@@ -89,6 +93,8 @@ export async function escopoDaCarteira(ctx: ContextoTenantService): Promise<Esco
     contatoSemEmpresa: permissao.pode('contatos.criar_sem_empresa'),
     atribuirOportunidade: integracao || permissao.pode('oportunidades.atribuir_responsavel'),
     atribuirAtividade: integracao || permissao.pode('atividades.atribuir_responsavel'),
+    dataDeFechamento: permissao.pode('oportunidades.data_fechamento'),
+    dataDeCriacao: permissao.pode('oportunidades.data_criacao'),
     integracao,
     bloquearNaoAtiva: config?.bloquear ?? true,
     clienteAoConquistar: config?.clienteAoConquistar ?? true,

@@ -432,7 +432,8 @@ Tipos padrão: **Ligação** (contato) · **WhatsApp** (contato) · **E-mail** (
 | Responsável | Usuário (por padrão, o responsável da empresa) |
 | **Motivo** | Lista cadastrável, obrigatório para Perdido, Cancelado e Suspenso |
 | Retomar em | Data de retomada (Suspenso) |
-| Data de fechamento | Automática ao sair de Ativo |
+| Data de fechamento | Automática ao sair de Ativo. **Admin e gestor** (permissão `oportunidades.data_fechamento`) escolhem o **dia** na janela "Fechar oportunidade": hoje por padrão, **nunca no futuro nem antes do dia da criação** (400 `fechamento_no_futuro` / `fechamento_antes_da_criacao`; quem não tem a permissão e manda o dia recebe 403). Hoje grava o momento; um dia passado grava o meio-dia no fuso da empresa (31/10/2026). Mudar depois de fechada: reabrir e fechar de novo |
+| **Data de criação** | Automática. **Só o administrador** (permissão `oportunidades.data_criacao`) muda o **dia** em "Editar oportunidade" (campo "Criada em"): nunca no futuro nem depois do dia do fechamento (400 `criacao_no_futuro` / `criacao_depois_do_fechamento`). Muda "Criada em", a ordenação da lista e as "novas no período"; o histórico de fases fica como foi registrado e a troca vai para a auditoria (31/10/2026) |
 | Observações | Texto livre |
 | Campos personalizados | Ver seção 8 *(fora do MVP)* |
 
@@ -755,8 +756,10 @@ O papel fixo (Admin, Gestor, Vendedor) dá lugar a **perfis de acesso** configur
 | Perfil | Acesso |
 |---|---|
 | **Administrador** | Todas as permissões, alcance `todas` |
-| **Gestor** | Ver, criar, editar, excluir e transferir em toda a carteira; importação; geocodificação em lote; atribuir responsável; ver e-mail da equipe. **Sem** cadastros, regiões, legenda, equipe, perfis, segurança e regras da carteira |
+| **Gestor** | Ver, criar, editar, excluir e transferir em toda a carteira; importação; geocodificação em lote; atribuir responsável; escolher a data de fechamento da oportunidade; ver e-mail da equipe. **Sem** cadastros, regiões, legenda, equipe, perfis, segurança, regras da carteira e alterar a data de criação da oportunidade |
 | **Vendedor** | Ver, criar e editar **só a própria carteira**; sem excluir, transferir, importar, atribuir responsável nem cadastrar contato sem empresa |
+
+- **Catálogo v11 (31/10/2026; plano em `plano_oportunidades_kanban_e_tags.md`):** `oportunidades.data_fechamento` (escolher o dia do fechamento; Administrador e Gestor) e `oportunidades.data_criacao` (alterar o dia da criação; só o Administrador). Os perfis de sistema existentes recebem as chaves na partida da API; perfis criados pela empresa, não.
 
 - **Migração do interruptor** "Vendedores podem ver todas as empresas": ligado → perfil Vendedor da empresa com `ver = todas` e `editar = propria`; desligado → `propria` nas duas. O interruptor sai da tela Configurações → Carteira.
 - **2FA** passa a ser o flag `exige_2fa` de cada perfil (Configurações → Segurança edita por perfil). A política antiga é convertida: `admin` → só o Administrador; `admin_gestor` → também o Gestor; `todos` → os três. Administrador de conta continua sempre exigido.

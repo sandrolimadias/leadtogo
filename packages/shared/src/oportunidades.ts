@@ -110,6 +110,8 @@ export const alterarOportunidadeSchema = z
     probabilidade: z.number().int().min(0).max(100),
     dataPrevistaFechamento: dia.nullable(),
     observacoes: texto(5000),
+    /** O dia da criação (AAAA-MM-DD, no fuso da empresa), só com `oportunidades.data_criacao` */
+    criadaEm: dia,
   })
   .partial()
   .strict()
@@ -136,6 +138,11 @@ export const fecharOportunidadeSchema = z
     detalhe: texto(2000),
     retomarEm: dia.nullable().optional(),
     empresaViraCliente: z.boolean().optional(),
+    /**
+     * O dia do fechamento (AAAA-MM-DD, no fuso da empresa), só com `oportunidades.data_fechamento`. Sem ele,
+     * vale o momento do fechamento. Nunca no futuro nem antes da criação (conferido na API).
+     */
+    dataFechamento: dia.optional(),
   })
   .strict()
   .superRefine((v, ctx) => {

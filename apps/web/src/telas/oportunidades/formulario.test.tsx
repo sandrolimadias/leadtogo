@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -6,6 +6,7 @@ import { ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 import { id, itemDeEmpresa, meComPapel } from '@/telas/contatos/fixtures'
 
 import { FASES, FUNIL, kanban, oportunidade } from './fixtures'
+import { diaEmTexto } from './formatos'
 
 function servicos(papel: 'admin' | 'gestor' | 'vendedor' = 'admin') {
   const base = servicosFalsos()
@@ -153,5 +154,43 @@ describe('Nova oportunidade', () => {
     await userEvent.click(within(j).getByRole('button', { name: 'Criar oportunidade' }))
     await waitFor(() => expect(x.criar).toHaveBeenCalled())
     expect(x.criar.mock.calls[0]?.[0]).toMatchObject({ probabilidade: 80 })
+  })
+})
+
+describe('Editar oportunidade: data de criação', () => {
+  async function abrirEdicao(x: ReturnType<typeof servicos>) {
+    renderizar(x.s, '/oportunidades')
+    await screen.findByRole('heading', { name: 'Oportunidades', level: 1 })
+    await userEvent.click(await screen.findByRole('button', { name: 'Ações de Oportunidade 1' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Editar' }))
+    return screen.findByRole('dialog', { name: /Editar oportunidade/ })
+  }
+
+  it('o admin muda "Criada em" (nunca no futuro); o dia novo vai ao servidor', async () => {
+    const x = servicos()
+    const j = await abrirEdicao(x)
+    const campo = within(j).getByLabelText<HTMLInputElement>(/Criada em/)
+    expect(campo.value).toBe(diaEmTexto('2026-10-10T12:00:00.000Z'))
+    fireEvent.change(campo, { target: { value: '2999-01-01' } })
+    await userEvent.click(within(j).getByRole('button', { name: 'Salvar' }))
+    expect(await within(j).findByText('A data não pode ser no futuro.')).toBeInTheDocument()
+    expect(x.alterar).not.toHaveBeenCalled()
+    fireEvent.change(campo, { target: { value: '2026-09-01' } })
+    await userEvent.click(within(j).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(x.alterar).toHaveBeenCalled())
+    expect(x.alterar.mock.calls[0]?.[1]).toMatchObject({ criadaEm: '2026-09-01' })
+  })
+
+  it('sem mexer, "Criada em" não vai ao servidor', async () => {
+    const x = servicos()
+    const j = await abrirEdicao(x)
+    await userEvent.click(within(j).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(x.alterar).toHaveBeenCalled())
+    expect(x.alterar.mock.calls[0]?.[1]).not.toHaveProperty('criadaEm')
+  })
+
+  it('o gestor não vê "Criada em" (só o administrador muda)', async () => {
+    const j = await abrirEdicao(servicos('gestor'))
+    expect(within(j).queryByLabelText(/Criada em/)).toBeNull()
   })
 })

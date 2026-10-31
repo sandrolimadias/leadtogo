@@ -47,7 +47,7 @@
 9. **Hoje** grava o momento exato (como hoje). **Dia passado** grava o **meio-dia** desse dia no fuso da empresa (fica no dia certo em qualquer filtro por período e no Dashboard, que agrupa por dia no fuso).
 10. Quem **não tem** a permissão não vê o campo; se mandar `dataFechamento` pela API, recebe **403** `acesso_negado` (não é ignorado em silêncio). Chave de API (integração) segue a mesma permissão do perfil de integração.
 11. **Suspensa:** também aceita a data (o fechamento de suspensa marca quando saiu de Ativo). "Retomar em" continua não podendo ser no passado.
-12. **Histórico:** a linha de `oportunidade_historico` continua com `em` = momento real do registro (não reescreve a ordem dos eventos); a data escolhida vai na **auditoria** (`dataFechamento` em `alteracoes`) e aparece na aba Histórico como "Fechada com data de 12/10/2026". Reabrir apaga a data, como hoje.
+12. **Histórico:** a linha de `oportunidade_historico` continua com `em` = momento real do registro (não reescreve a ordem dos eventos); a data escolhida vai na **auditoria** (`dataFechamento` em `alteracoes`) e aparece no campo "Fechada em" da ficha e nos filtros por período. Reabrir apaga a data, como hoje.
 13. **Fora desta entrega:** alterar a data de fechamento **depois** de fechada (só reabrindo e fechando de novo).
 
 **Tags de oportunidade (item 4)**
@@ -97,7 +97,7 @@ As Partes 1 e 2 são independentes e podem ir para produção antes das outras.
 ### 6.2 API (`apps/api`)
 
 - `regras-de-carteira.ts`: `dataDeFechamento: permissao.pode('oportunidades.data_fechamento')` no escopo.
-- `oportunidades.service.ts` (`fechar`): se veio `dataFechamento` e o escopo não tem a permissão → 403 `acesso_negado`; se é maior que hoje no fuso → 400 `fechamento_no_futuro`; se é menor que o dia de `criado_em` no fuso → 400 `fechamento_antes_da_criacao`. Converte: hoje → `new Date()`; dia passado → meio-dia no fuso (função ao lado de `inicioDoDiaNoFuso`). Passa para `registrarFechamento` (que já aceita o campo).
+- `oportunidades.service.ts` (`fechar`): se veio `dataFechamento` e o escopo não tem a permissão → 403 `acesso_negado`; se é maior que hoje no fuso → 400 `fechamento_no_futuro`; se é menor que o dia de `criado_em` no fuso → 400 `fechamento_antes_da_criacao`. Converte: hoje → `new Date()`; dia passado → meio-dia no fuso (função ao lado de `inicioDoDiaNoFuso`). Passa para `registrarFechamento` (que já aceita o campo). No próprio dia da criação, o instante nunca fica antes da criação (e, ao mudar a criação, nunca depois do fechamento).
 - Auditoria `fechar` com `dataFechamento` quando escolhida; `historico` da ficha lê em português.
 - Leitura da oportunidade e de `/me` (ou de onde a tela tira as permissões): nada novo além da chave no perfil.
 - OpenAPI atualizado e `packages/api-client` regenerado.

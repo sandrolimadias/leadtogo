@@ -4,6 +4,7 @@ import {
   type CriarOportunidade,
   diaNoFuso,
   type FecharOportunidade,
+  instanteNoFuso,
   MESES_PADRAO,
   type Oportunidade,
   type OportunidadeDetalhada,
@@ -60,6 +61,14 @@ const naoEncontrada = () =>
 const negado = (mensagem: string) => new ErroApi('acesso_negado', mensagem, 403)
 const invalido = (campo: string, codigo: string, mensagem: string) =>
   new ErroApi(codigo, mensagem, 400, [{ campo, mensagem }])
+
+/**
+ * O instante gravado para um dia escolhido (fechamento ou criação): hoje é o momento atual; um dia passado
+ * é o meio-dia desse dia no fuso da empresa (cai no dia certo em qualquer filtro por período).
+ */
+const instanteDoDia = (dia: string, fuso: string): Date =>
+  dia === diaNoFuso(new Date(), fuso) ? new Date() : instanteNoFuso(dia, '12:00', fuso)
+
 const naoAtiva = () =>
   new ErroApi(
     'oportunidade_nao_ativa',
@@ -159,6 +168,7 @@ export class OportunidadesService {
     if (dados.responsavelId && dados.responsavelId !== atual.responsavelId) {
       await this.exigirResponsavel(db, escopo, dados.responsavelId)
     }
+    const criadoEm = await this.novaDataDeCriacao(db, escopo, atual, dados.criadaEm)
 
     const valorMensal = dados.valorMensal ?? Number(atual.valorMensal)
     // valor mensal que aparece sem duração: assume 12 meses
@@ -184,7 +194,12 @@ export class OportunidadesService {
       dataPrevistaFechamento: dados.dataPrevistaFechamento,
       observacoes: dados.observacoes,
     }
-    const mudancas = diferencas(atual, novo)
+    const mudancas = {
+      ...diferencas(atual, novo),
+      ...(criadoEm && {
+        criadaEm: { de: atual.criadoEm.toISOString(), para: criadoEm.toISOString() },
+      }),
+    }
     if (Object.keys(mudancas).length === 0 && manual === atual.probabilidadeManual) {
       return this.ler(id)
     }
@@ -204,6 +219,7 @@ export class OportunidadesService {
           dataPrevistaFechamento: novo.dataPrevistaFechamento,
         }),
         ...(novo.observacoes !== undefined && { observacoes: novo.observacoes }),
+        ...(criadoEm && { criadoEm }),
         atualizadoPor: escopo.membroId,
       })
       .where(eq(oportunidades.id, id))
@@ -279,6 +295,7 @@ export class OportunidadesService {
     const fuso = await fusoDaEmpresa(db, tenantId)
     const atual = await this.carregarEditavel(db, escopo, id)
     if (atual.status !== 'ativo') throw naoAtiva()
+    const dataFechamento = this.dataDeFechamentoEscolhida(escopo, atual, dados.dataFechamento, fuso)
 
     let motivoNome: string | null = null
     if (dados.motivoId) {
@@ -316,6 +333,7 @@ export class OportunidadesService {
         detalhe: dados.detalhe ?? null,
         retomarEm: dados.retomarEm ?? null,
         viraCliente: dados.empresaViraCliente ?? escopo.clienteAoConquistar,
+        dataFechamento,
       },
       fuso,
     )
@@ -327,6 +345,7 @@ export class OportunidadesService {
         status: { de: 'ativo', para: dados.status },
         ...(motivoNome ? { motivo: motivoNome } : {}),
         ...(virouCliente ? { empresaViraCliente: virouCliente } : {}),
+        ...(dataFechamento ? { dataFechamento: dados.dataFechamento } : {}),
       },
     })
     await emitirEvento(this.ctx.db(), {
@@ -563,6 +582,68 @@ export class OportunidadesService {
       .from(membros)
       .where(and(eq(membros.id, membroId), eq(membros.ativo, true), isNull(membros.excluidoEm)))
     if (!m) throw invalido('responsavelId', 'responsavel_invalido', 'Responsável não encontrado.')
+  }
+
+  /**
+   * O dia do fechamento escolhido (só com `oportunidades.data_fechamento`): nunca no futuro nem antes do dia da
+   * criação. No próprio dia da criação, nunca antes do instante da criação. Sem o dia, `null` (vale agora).
+   */
+  private dataDeFechamentoEscolhida(
+    escopo: EscopoDaCarteira,
+    atual: LinhaDeOportunidade,
+    dia: string | undefined,
+    fuso: string,
+  ): Date | null {
+    if (dia === undefined) return null
+    if (!escopo.dataDeFechamento) {
+      throw negado('Só o administrador ou o gestor escolhem a data de fechamento.')
+    }
+    if (dia > diaNoFuso(new Date(), fuso)) {
+      throw invalido(
+        'dataFechamento',
+        'fechamento_no_futuro',
+        'A data de fechamento não pode ser no futuro.',
+      )
+    }
+    if (dia < diaNoFuso(atual.criadoEm, fuso)) {
+      throw invalido(
+        'dataFechamento',
+        'fechamento_antes_da_criacao',
+        'A data de fechamento não pode ser antes da criação da oportunidade.',
+      )
+    }
+    const instante = instanteDoDia(dia, fuso)
+    return instante < atual.criadoEm ? atual.criadoEm : instante
+  }
+
+  /**
+   * O novo instante da criação (só com `oportunidades.data_criacao`): nunca no futuro nem depois do dia do
+   * fechamento; no próprio dia do fechamento, nunca depois dele. O mesmo dia de hoje em dia não muda nada.
+   */
+  private async novaDataDeCriacao(
+    db: Transacao,
+    escopo: EscopoDaCarteira,
+    atual: LinhaDeOportunidade,
+    dia: string | undefined,
+  ): Promise<Date | null> {
+    if (dia === undefined) return null
+    if (!escopo.dataDeCriacao) {
+      throw negado('Só o administrador altera a data de criação da oportunidade.')
+    }
+    const fuso = await fusoDaEmpresa(db, this.ctx.tenantId)
+    if (dia === diaNoFuso(atual.criadoEm, fuso)) return null
+    if (dia > diaNoFuso(new Date(), fuso)) {
+      throw invalido('criadaEm', 'criacao_no_futuro', 'A data de criação não pode ser no futuro.')
+    }
+    if (atual.dataFechamento && dia > diaNoFuso(atual.dataFechamento, fuso)) {
+      throw invalido(
+        'criadaEm',
+        'criacao_depois_do_fechamento',
+        'A data de criação não pode ser depois da data de fechamento.',
+      )
+    }
+    const instante = instanteDoDia(dia, fuso)
+    return atual.dataFechamento && instante > atual.dataFechamento ? atual.dataFechamento : instante
   }
 
   /** O histórico em palavras (nomes no lugar de ids), do mais recente ao mais antigo. */

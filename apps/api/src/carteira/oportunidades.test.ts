@@ -13,6 +13,7 @@ import type {
   ResultadoDoMovimento,
   TagGrupo,
 } from '@leadtogo/shared'
+import { diaNoFuso, instanteNoFuso } from '@leadtogo/shared'
 import type { INestApplication } from '@nestjs/common'
 import { Redis } from 'ioredis'
 import request from 'supertest'
@@ -417,6 +418,119 @@ describe('fechar e reabrir', () => {
     const o3 = await nova(c.d.cookie, { titulo: 'C', empresaId: e2.id })
     await fechar(c.d.cookie, o3.id, { status: 'conquistado', empresaViraCliente: true })
     expect((await ficha(c.d.cookie, e2.id)).tags.map((t) => t.nome)).toContain('Cliente')
+  })
+})
+
+describe('data de fechamento e data de criação escolhidas', () => {
+  const FUSO = 'America/Sao_Paulo'
+  const diaHa = (dias: number) => diaNoFuso(new Date(Date.now() - dias * 86_400_000), FUSO)
+  const alterar = (cookie: string, id: string, corpo: Record<string, unknown>) =>
+    chamar('patch', cookie, `${OPS}/${id}`, corpo)
+
+  it('o admin muda a criação para um dia passado e o gestor fecha num dia entre ela e hoje (meio-dia no fuso)', async () => {
+    const c = await cenario()
+    const e = await empresa(c.d.cookie, 'Padaria')
+    const o = await nova(c.d.cookie, { titulo: 'Contrato', empresaId: e.id })
+
+    const criada = await alterar(c.d.cookie, o.id, { criadaEm: diaHa(20) })
+    expect(criada.status, JSON.stringify(criada.body)).toBe(200)
+    const criadaEm = (criada.body as Oportunidade).criadaEm
+    expect(diaNoFuso(criadaEm, FUSO)).toBe(diaHa(20))
+    expect(new Date(criadaEm).toISOString()).toBe(
+      instanteNoFuso(diaHa(20), '12:00', FUSO).toISOString(),
+    )
+
+    const r = await fechar(c.gestor.cookie, o.id, {
+      status: 'conquistado',
+      dataFechamento: diaHa(5),
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    const fechada = r.body as Oportunidade
+    expect(fechada.dataFechamento).toBe(instanteNoFuso(diaHa(5), '12:00', FUSO).toISOString())
+
+    // a lista filtra pela data escolhida (fechada de/até)
+    const lista = (
+      await chamar(
+        'get',
+        c.d.cookie,
+        `${OPS}?status=conquistado&fechadaDe=${diaHa(5)}&fechadaAte=${diaHa(5)}`,
+      )
+    ).body as ListaDeOportunidades
+    expect(lista.itens.map((i) => i.id)).toEqual([o.id])
+
+    // a auditoria guarda o dia escolhido e a troca da criação
+    const auditoria = (await auditoriaDe(c.d.tenantId)).filter((l) => l.entidade_id === o.id)
+    expect(auditoria.find((l) => l.acao === 'fechar')?.alteracoes).toMatchObject({
+      dataFechamento: diaHa(5),
+    })
+    expect(auditoria.find((l) => l.acao === 'alterar')?.alteracoes).toHaveProperty('criadaEm')
+  })
+
+  it('o fechamento nunca é no futuro nem antes da criação; hoje grava o momento atual', async () => {
+    const c = await cenario()
+    const e = await empresa(c.d.cookie, 'Açougue')
+    const o = await nova(c.d.cookie, { titulo: 'Contrato', empresaId: e.id })
+    const futuro = await fechar(c.d.cookie, o.id, {
+      status: 'conquistado',
+      dataFechamento: diaHa(-1),
+    })
+    expect(futuro.status).toBe(400)
+    expect(erroDe(futuro)).toBe('fechamento_no_futuro')
+    const antes = await fechar(c.d.cookie, o.id, {
+      status: 'conquistado',
+      dataFechamento: diaHa(1),
+    })
+    expect(erroDe(antes)).toBe('fechamento_antes_da_criacao')
+
+    const antesDeFechar = Date.now()
+    const hoje = await fechar(c.d.cookie, o.id, {
+      status: 'perdido',
+      motivoId: c.motivoDe('perdido'),
+      dataFechamento: diaHa(0),
+    })
+    expect(hoje.status, JSON.stringify(hoje.body)).toBe(200)
+    const quando = new Date((hoje.body as Oportunidade).dataFechamento as string).getTime()
+    expect(quando).toBeGreaterThanOrEqual(antesDeFechar - 1000)
+  })
+
+  it('sem a permissão: o vendedor não escolhe a data de fechamento (403) e fecha com agora', async () => {
+    const c = await cenario()
+    const e = await empresa(c.ana.cookie, 'Floricultura')
+    const o = await nova(c.ana.cookie, { titulo: 'Contrato', empresaId: e.id })
+    const negado = await fechar(c.ana.cookie, o.id, {
+      status: 'conquistado',
+      dataFechamento: diaHa(0),
+    })
+    expect(negado.status).toBe(403)
+    expect(erroDe(negado)).toBe('acesso_negado')
+    const r = await fechar(c.ana.cookie, o.id, { status: 'conquistado' })
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    expect((r.body as Oportunidade).dataFechamento).not.toBeNull()
+  })
+
+  it('só o admin muda a criação: o gestor recebe 403; nunca no futuro nem depois do fechamento', async () => {
+    const c = await cenario()
+    const e = await empresa(c.d.cookie, 'Livraria')
+    const o = await nova(c.d.cookie, { titulo: 'Contrato', empresaId: e.id })
+    const doGestor = await alterar(c.gestor.cookie, o.id, { criadaEm: diaHa(3) })
+    expect(doGestor.status).toBe(403)
+    expect(erroDe(doGestor)).toBe('acesso_negado')
+    expect(erroDe(await alterar(c.d.cookie, o.id, { criadaEm: diaHa(-1) }))).toBe(
+      'criacao_no_futuro',
+    )
+
+    expect((await alterar(c.d.cookie, o.id, { criadaEm: diaHa(10) })).status).toBe(200)
+    await fechar(c.d.cookie, o.id, { status: 'conquistado', dataFechamento: diaHa(6) })
+    const depois = await alterar(c.d.cookie, o.id, { criadaEm: diaHa(4) })
+    expect(depois.status).toBe(400)
+    expect(erroDe(depois)).toBe('criacao_depois_do_fechamento')
+    // no mesmo dia do fechamento, a criação não passa do instante do fechamento
+    const mesmoDia = await alterar(c.d.cookie, o.id, { criadaEm: diaHa(6) })
+    expect(mesmoDia.status, JSON.stringify(mesmoDia.body)).toBe(200)
+    const lida = mesmoDia.body as Oportunidade
+    expect(new Date(lida.criadaEm).getTime()).toBeLessThanOrEqual(
+      new Date(lida.dataFechamento as string).getTime(),
+    )
   })
 })
 

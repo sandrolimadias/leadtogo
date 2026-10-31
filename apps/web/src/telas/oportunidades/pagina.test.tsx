@@ -1,5 +1,5 @@
 import type { KanbanDeOportunidades } from '@leadtogo/api-client'
-import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -7,6 +7,7 @@ import { falha, ok, renderizar, servicosFalsos } from '@/testes/servicos-falsos'
 import { id, meComPapel } from '@/telas/contatos/fixtures'
 
 import { FASES, FUNIL, kanban, oportunidade } from './fixtures'
+import { diaEmTexto, hojeEmTexto } from './formatos'
 
 const MOTIVO_PERDIDO = {
   id: id(970),
@@ -243,6 +244,50 @@ describe('Fechar oportunidade', () => {
       status: 'conquistado',
       empresaViraCliente: false,
     })
+  })
+
+  it('admin e gestor escolhem a data de fechamento (hoje por padrão; só vai ao servidor se mudou)', async () => {
+    for (const papel of ['admin', 'gestor'] as const) {
+      const x = servicos(kanban(), papel)
+      const j = await abrirFechamento(x, 'Conquistada')
+      const campo = within(j).getByLabelText<HTMLInputElement>(/Data de fechamento/)
+      expect(campo.value).toBe(hojeEmTexto())
+      expect(campo.max).toBe(hojeEmTexto())
+      // a fixture foi criada em 10/10/2026: antes disso não vale
+      expect(campo.min).toBe(diaEmTexto('2026-10-10T12:00:00.000Z'))
+      fireEvent.change(campo, { target: { value: '2026-10-15' } })
+      await userEvent.click(within(j).getByRole('button', { name: 'Marcar como conquistada' }))
+      await waitFor(() => expect(x.fechar).toHaveBeenCalled())
+      expect(x.fechar.mock.calls[0]?.[1]).toMatchObject({
+        status: 'conquistado',
+        dataFechamento: '2026-10-15',
+      })
+      cleanup()
+    }
+  })
+
+  it('a data de fechamento não pode ser no futuro nem antes da criação', async () => {
+    const x = servicos()
+    const j = await abrirFechamento(x, 'Conquistada')
+    const campo = within(j).getByLabelText(/Data de fechamento/)
+    fireEvent.change(campo, { target: { value: '2999-01-01' } })
+    await userEvent.click(within(j).getByRole('button', { name: 'Marcar como conquistada' }))
+    expect(await within(j).findByText('A data não pode ser no futuro.')).toBeInTheDocument()
+    fireEvent.change(campo, { target: { value: '2026-10-01' } })
+    await userEvent.click(within(j).getByRole('button', { name: 'Marcar como conquistada' }))
+    expect(
+      await within(j).findByText('A data não pode ser antes da criação da oportunidade.'),
+    ).toBeInTheDocument()
+    expect(x.fechar).not.toHaveBeenCalled()
+  })
+
+  it('o vendedor não vê a data de fechamento (vale o momento do fechamento)', async () => {
+    const x = servicos(kanban(), 'vendedor')
+    const j = await abrirFechamento(x, 'Conquistada')
+    expect(within(j).queryByLabelText(/Data de fechamento/)).toBeNull()
+    await userEvent.click(within(j).getByRole('button', { name: 'Marcar como conquistada' }))
+    await waitFor(() => expect(x.fechar).toHaveBeenCalled())
+    expect(x.fechar.mock.calls[0]?.[1]).not.toHaveProperty('dataFechamento')
   })
 
   it('Suspensa pede o motivo e "Retomar em" (não no passado)', async () => {

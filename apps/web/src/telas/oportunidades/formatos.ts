@@ -27,6 +27,9 @@ export function hojeEmTexto(agora: Date = new Date()): string {
   return `${agora.getFullYear()}-${p(agora.getMonth() + 1)}-${p(agora.getDate())}`
 }
 
+/** O dia (AAAA-MM-DD, no fuso do aparelho) de um instante ISO, como os campos de data esperam. */
+export const diaEmTexto = (iso: string): string => hojeEmTexto(new Date(iso))
+
 /** A previsão em palavras, com o tom: vencida (vermelho), hoje (âmbar) ou normal; sem data = "Sem previsão". */
 export function previsaoEmPalavras(
   o: Pick<Oportunidade, 'dataPrevistaFechamento' | 'status'>,
