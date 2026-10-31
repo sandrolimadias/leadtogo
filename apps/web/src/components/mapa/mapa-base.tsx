@@ -1,9 +1,10 @@
-import type { GeoJSONSource, Map as MapaDoMapLibre, Marker } from 'maplibre-gl'
+import type { GeoJSONSource, IControl, Map as MapaDoMapLibre, Marker } from 'maplibre-gl'
 import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@leadtogo/ui/cn'
 
 import { areaVisivel } from './area'
+import { atribuicaoDoMapa } from './atribuicao'
 import { geojsonDasBolhas, geojsonDosPins } from './dados'
 import { deslocamentoMinimo, type Retangulo } from './revelar'
 import { circulo, criarPin } from './pin'
@@ -114,6 +115,32 @@ export interface PropsDoMapa {
   rotulo: string
 }
 
+interface ControlesDoCanto {
+  fonte: string | undefined
+  controles: IControl[]
+}
+
+/**
+ * O canto inferior direito: os créditos (com a fonte dos dados ao lado do "© OpenStreetMap contributors") e, em
+ * cima deles, o zoom. O MapLibre não troca os créditos de um controle já criado e põe o controle novo de baixo EM
+ * CIMA dos que já estão no canto: para os créditos ficarem embaixo do zoom, os dois saem e entram de novo, nesta
+ * ordem.
+ */
+function montarCanto(
+  maplibre: typeof import('maplibre-gl'),
+  mapa: MapaDoMapLibre,
+  atual: ControlesDoCanto | null,
+  { fonte, comZoom }: { fonte: string | undefined; comZoom: boolean },
+): ControlesDoCanto {
+  for (const c of atual?.controles ?? []) mapa.removeControl(c)
+  const controles: IControl[] = [
+    new maplibre.AttributionControl({ compact: false, customAttribution: atribuicaoDoMapa(fonte) }),
+  ]
+  if (comZoom) controles.push(new maplibre.NavigationControl({ showCompass: false }))
+  for (const c of controles) mapa.addControl(c, 'bottom-right')
+  return { fonte, controles }
+}
+
 const CAMADAS_CLICAVEIS = ['rota-paradas', 'pins', 'bolhas-circulos']
 const FONTE_DOS_ROTULOS = ['Noto Sans Medium']
 const VAZIO = { type: 'FeatureCollection' as const, features: [] }
@@ -187,6 +214,8 @@ export function MapaBase(props: PropsDoMapa) {
   const [versaoDoEstilo, setVersaoDoEstilo] = useState(0)
   // De onde vem o PMTiles (URL pública do bucket do mapa ou, transitório, a API): a API informa ao abrir
   const urlDaBaseRef = useRef<string | null>(null)
+  // Os controles do canto inferior direito (créditos e zoom) e a fonte dos dados que está nos créditos
+  const canto = useRef<ControlesDoCanto | null>(null)
   // As funções mudam a cada render; o mapa lê sempre a última
   const ultimas = useRef(props)
   useEffect(() => {
@@ -250,7 +279,8 @@ export function MapaBase(props: PropsDoMapa) {
             },
         center: ultimas.current.centro,
         zoom: ultimas.current.zoom ?? 12,
-        attributionControl: { compact: false },
+        // Créditos e zoom entram por `montarCanto` (a fonte dos dados muda depois de o mapa existir)
+        attributionControl: false,
         dragRotate: false,
         pitchWithRotate: false,
         touchPitch: false,
@@ -264,9 +294,10 @@ export function MapaBase(props: PropsDoMapa) {
         observador.observe(contenedor.current)
       }
       mapa.touchZoomRotate.disableRotation()
-      if (!ultimas.current.semControles) {
-        mapa.addControl(new maplibre.NavigationControl({ showCompass: false }), 'bottom-right')
-      }
+      canto.current = montarCanto(maplibre, mapa, null, {
+        fonte: ultimas.current.fonteDosDados,
+        comZoom: !ultimas.current.semControles,
+      })
       mapa.on('moveend', () => {
         if (mapa) ultimas.current.aoMover?.(areaVisivel(mapa))
       })
@@ -339,6 +370,7 @@ export function MapaBase(props: PropsDoMapa) {
       pinArrastavel.current?.remove()
       pinArrastavel.current = null
       mapaRef.current = null
+      canto.current = null
       mapa?.remove()
     }
   }, [])
@@ -598,6 +630,18 @@ export function MapaBase(props: PropsDoMapa) {
     })
   }, [rota, versaoDoEstilo, tema])
 
+  // A fonte dos dados muda (pins do CNEFE entram ou saem da área): refaz os créditos com ela
+  const fonteDosDados = props.fonteDosDados
+  useEffect(() => {
+    const mapa = mapaRef.current
+    const maplibre = libRef.current
+    if (!mapa || !maplibre || !canto.current || canto.current.fonte === fonteDosDados) return
+    canto.current = montarCanto(maplibre, mapa, canto.current, {
+      fonte: fonteDosDados,
+      comZoom: !ultimas.current.semControles,
+    })
+  }, [fonteDosDados, versaoDoEstilo])
+
   // Cursor de desenho
   useEffect(() => {
     const el = contenedor.current
@@ -617,11 +661,6 @@ export function MapaBase(props: PropsDoMapa) {
           className="absolute top-2 left-2 z-10 m-0 max-w-[80%] rounded-sm border border-border bg-surface px-2.5 py-1.5 text-xs text-ink-muted shadow-sm"
         >
           O mapa base ainda não foi instalado. Os pontos continuam valendo.
-        </p>
-      ) : null}
-      {props.fonteDosDados ? (
-        <p className="pointer-events-none absolute right-0 bottom-5 z-10 m-0 rounded-l-sm bg-surface/80 px-1.5 py-0.5 text-[10px] text-ink-muted">
-          {props.fonteDosDados}
         </p>
       ) : null}
       {estado === 'falhou' ? (

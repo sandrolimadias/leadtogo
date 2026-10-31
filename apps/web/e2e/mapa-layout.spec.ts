@@ -147,6 +147,13 @@ for (const tela of [
     if (!tela.celular) {
       await expect(page.getByRole('region', { name: 'Legenda do mapa' })).toBeVisible()
     }
+    // os créditos (onde entra a fonte do IBGE) ficam embaixo do zoom, sem cobrir o + e o −
+    const canto = await page.evaluate(() => {
+      const creditos = document.querySelector('.maplibregl-ctrl-attrib')!.getBoundingClientRect()
+      const zoom = document.querySelector('.maplibregl-ctrl-group')!.getBoundingClientRect()
+      return { zoomEmbaixo: zoom.bottom, creditosEmCima: creditos.top }
+    })
+    expect(canto.zoomEmbaixo).toBeLessThanOrEqual(canto.creditosEmCima)
     await capturar(page, `mapa-${tela.nome}-pins`)
 
     // toca no corpo da gota do pin (a ponta é a coordenada, ~12 px abaixo)

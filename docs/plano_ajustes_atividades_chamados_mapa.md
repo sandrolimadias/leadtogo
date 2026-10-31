@@ -91,13 +91,14 @@ Em `components/mapa/mapa-base.tsx`:
 - Criar o mapa com `attributionControl: false` e adicionar o controle à mão: `new maplibre.AttributionControl({ compact: false, customAttribution })`, no canto `bottom-right`, como hoje.
 - Quando `fonteDosDados` mudar (aparece só quando algum pin veio do CNEFE), remover o controle e adicionar de novo com `customAttribution: props.fonteDosDados` (o MapLibre não troca a atribuição personalizada depois de criado). Sem fonte, o controle volta só com a do mapa base.
 - Remover o `<p>` absoluto de `right-0 bottom-5`.
+- *Feito em 31/10/2026.* Dois detalhes do MapLibre apareceram no navegador: (1) o controle novo de baixo entra **em cima** dos que já estão no canto, então créditos e zoom saem e entram juntos, nesta ordem; (2) os créditos são ordenados pelo **tamanho do texto**, então "MapLibre" e a fonte formam uma entrada só, mais curta que a do OpenStreetMap (um teste confere os tamanhos). Resultado medido: `MapLibre | Fonte: IBGE – CNEFE 2022 | © OpenStreetMap contributors`, embaixo do zoom.
 
 Resultado no rodapé: `Fonte: IBGE – CNEFE 2022 | © OpenStreetMap contributors` numa linha só, abaixo do + e −, sem sobrepor nada. A atribuição continua visível (obrigação da licença do OSM e da citação do IBGE).
 
 ### 5.2 Testes e docs
 
 - Os testes da página (`mapa.test.tsx`) usam um `MapaBase` falso e seguem valendo (continuam conferindo que a página manda `fonteDosDados` só com pin do CNEFE).
-- `components/mapa/mapa.test.ts`: o controle de atribuição recebe `customAttribution` com a fonte e é recriado quando ela muda.
+- `components/mapa/atribuicao.test.ts`: o crédito com a fonte, o escape de HTML e o tamanho menor que o do mapa base.
 - **E2E** (`mapa-layout.spec.ts`): com pin do CNEFE, `.maplibregl-ctrl-attrib` contém "IBGE" e a caixa dela **não intersecta** a caixa do `.maplibregl-ctrl-group` (zoom), no desktop e no celular.
 - `docs/design_system.md`, seção do mapa: "a fonte dos dados (IBGE – CNEFE 2022) entra na atribuição do mapa, ao lado do OpenStreetMap".
 
