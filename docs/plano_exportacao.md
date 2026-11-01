@@ -1,6 +1,6 @@
 # Plano da exportação de dados
 
-*Proposta de 01/11/2026, **aguardando a aprovação do Ale** (as decisões da seção 3 estão com a recomendação marcada). Entrega dois itens: o "Exportar" das ações em massa da lista de Empresas (`funcionalidades.md`, seção "Tela Empresas (lista)"; `backlog_pos_mvp.md`, "Exportar a lista de Empresas") e a **exportação da base inteira por empresa** (`lgpd.md`, seção 9: "Exportação de dados por tenant"; `backlog_pos_mvp.md`, "Exportação de dados por empresa (LGPD)").*
+*Proposta de 01/11/2026, **aprovada pelo Ale em 01/11/2026** (as dez decisões da seção 3 como recomendado). A implantação começa só com a ordem do Ale. Entrega dois itens: o "Exportar" das ações em massa da lista de Empresas (`funcionalidades.md`, seção "Tela Empresas (lista)"; `backlog_pos_mvp.md`, "Exportar a lista de Empresas") e a **exportação da base inteira por empresa** (`lgpd.md`, seção 9: "Exportação de dados por tenant"; `backlog_pos_mvp.md`, "Exportação de dados por empresa (LGPD)").*
 
 ## 1. Objetivo
 
@@ -27,21 +27,21 @@
 | Catálogo de permissões versionado | `packages/shared/src/permissoes.ts` (`VERSAO_DO_CATALOGO = 11`, `NOVAS_POR_VERSAO`) | Versão 12 com as chaves novas |
 | Manutenção agendada | `apps/api/src/worker/manutencao.ts` | Apaga os arquivos vencidos |
 
-## 3. Decisões para o Ale aprovar
+## 3. Decisões (aprovadas pelo Ale em 01/11/2026, todas como recomendado)
 
-1. **Formato "XLS".** Gerar **.xlsx** (Excel 2007 em diante; abre no Excel, no LibreOffice e no Google Planilhas). O .xls antigo tem limite de 65.536 linhas e não tem biblioteca boa para Node. *Recomendado: .xlsx.*
+1. **Formato "XLS".** Gerar **.xlsx** (Excel 2007 em diante; abre no Excel, no LibreOffice e no Google Planilhas). O .xls antigo tem limite de 65.536 linhas e não tem biblioteca boa para Node. **Aprovado: .xlsx.**
 2. **Quem pode exportar.** Duas chaves novas:
    - `empresas.exportar` ("Exportar a lista de empresas"): **Administrador e Gestor** por padrão; o Vendedor não (é a porta mais fácil para um vendedor levar a carteira ao sair). O admin liga para quem quiser em *Perfis*.
    - `dados.exportar_tudo` ("Exportar todos os dados da empresa"): **só o Administrador**.
-   *Recomendado: assim.*
-3. **O que a exportação da lista leva.** Sempre o que a pessoa **vê** pela regra de carteira (alcance própria, equipe ou todas), mesmo as empresas que ela não edita. *Recomendado: sim.* (Hoje a caixinha só aparece nas que ela edita, porque a única ação era Aplicar tag; ver 4.1.)
-4. **Ações com "todas do filtro" marcadas.** Nesse modo só o **Exportar** funciona; *Aplicar tag*, *Levar para offline* e *Adicionar à rota* ficam desabilitados com a dica "Disponível para até 200 empresas: selecione na página". Levar o Aplicar tag para o filtro inteiro é outro trabalho (job, desfazer, auditoria em lote) e fica para depois. *Recomendado: assim.*
-5. **Colunas da lista exportada.** Um **conjunto fixo e completo** (seção 4.4), não só as colunas visíveis na tela. Escolher as colunas fica para depois. *Recomendado: fixo.*
-6. **Limites.** Lista: até **100.000 linhas** por exportação. Base inteira: sem limite de linhas (cada aba do .xlsx vai até 1.048.576 linhas; acima disso a tabela continua numa segunda aba). *Recomendado: assim.*
-7. **Síncrono ou em segundo plano.** As duas exportações rodam **no worker** e o arquivo fica no Garage. Na lista, até 5.000 linhas a tela espera com um progresso e baixa sozinha; acima disso, ou se a pessoa fechar o aviso, chega a notificação "Sua exportação está pronta". Uma única infraestrutura, sem pedido HTTP longo travando a API. *Recomendado: assim.*
-8. **Base inteira: o que entra** (seção 5.2). *Recomendado:* todas as tabelas de negócio do tenant; **fora** os segredos (senhas, sessões, chaves de API, segredos de webhook, códigos 2FA), as **filas internas** (outbox, jobs) e os **arquivos anexos** (vão só como lista: nome, tamanho, data; baixar os arquivos em lote fica para depois). **Excluídos** (soft delete) e **auditoria** entram só se a pessoa marcar as opções.
-9. **Segurança da base inteira.** Pedir **a senha de novo** (e o 2FA, se a pessoa usa) antes de gerar; **avisar todos os administradores** por notificação e e-mail que uma exportação completa foi feita; **uma por vez** por empresa e no máximo **3 por dia**. *Recomendado: assim.*
-10. **Validade do arquivo.** Fica **7 dias** no Garage e depois é apagado; cada download gera uma URL assinada de 15 minutos e fica na auditoria. *Recomendado: 7 dias.*
+   **Aprovado.**
+3. **O que a exportação da lista leva.** Sempre o que a pessoa **vê** pela regra de carteira (alcance própria, equipe ou todas), mesmo as empresas que ela não edita. **Aprovado.** (Hoje a caixinha só aparece nas que ela edita, porque a única ação era Aplicar tag; ver 4.1.)
+4. **Ações com "todas do filtro" marcadas.** Nesse modo só o **Exportar** funciona; *Aplicar tag*, *Levar para offline* e *Adicionar à rota* ficam desabilitados com a dica "Disponível para até 200 empresas: selecione na página". Levar o Aplicar tag para o filtro inteiro é outro trabalho (job, desfazer, auditoria em lote) e fica para depois. **Aprovado.**
+5. **Colunas da lista exportada.** Um **conjunto fixo e completo** (seção 4.4), não só as colunas visíveis na tela. Escolher as colunas fica para depois. **Aprovado: fixo.**
+6. **Limites.** Lista: até **100.000 linhas** por exportação. Base inteira: sem limite de linhas (cada aba do .xlsx vai até 1.048.576 linhas; acima disso a tabela continua numa segunda aba). **Aprovado.**
+7. **Síncrono ou em segundo plano.** As duas exportações rodam **no worker** e o arquivo fica no Garage. Na lista, até 5.000 linhas a tela espera com um progresso e baixa sozinha; acima disso, ou se a pessoa fechar o aviso, chega a notificação "Sua exportação está pronta". Uma única infraestrutura, sem pedido HTTP longo travando a API. **Aprovado.**
+8. **Base inteira: o que entra** (seção 5.2). **Aprovado:** todas as tabelas de negócio do tenant; **fora** os segredos (senhas, sessões, chaves de API, segredos de webhook, códigos 2FA), as **filas internas** (outbox, jobs) e os **arquivos anexos** (vão só como lista: nome, tamanho, data; baixar os arquivos em lote fica para depois). **Excluídos** (soft delete) e **auditoria** entram só se a pessoa marcar as opções.
+9. **Segurança da base inteira.** Pedir **a senha de novo** (e o 2FA, se a pessoa usa) antes de gerar; **avisar todos os administradores** por notificação e e-mail que uma exportação completa foi feita; **uma por vez** por empresa e no máximo **3 por dia**. **Aprovado.**
+10. **Validade do arquivo.** Fica **7 dias** no Garage e depois é apagado; cada download gera uma URL assinada de 15 minutos e fica na auditoria. **Aprovado: 7 dias.**
 
 ## 4. Parte A: exportar a lista de Empresas
 
@@ -54,7 +54,7 @@
     | { modo: 'todasDoFiltro'; chave: string } // chave = JSON da busca SEM a página
   ```
   A seleção por página continua zerando ao mudar de página, busca ou filtro. A "todas do filtro" **sobrevive à troca de página** (a chave não inclui a página) e zera ao mudar busca ou filtro.
-- As caixinhas passam a aparecer em **todas as linhas visíveis** (não só nas `editavel`). Aplicar tag continua mandando os ids e a API continua ignorando as que a pessoa não edita (o aviso "N não foram alteradas" já existe). Com a decisão 3 recusada, a caixinha continua só nas editáveis e a exportação do modo página leva só as marcadas.
+- As caixinhas passam a aparecer em **todas as linhas visíveis** (não só nas `editavel`). Aplicar tag continua mandando os ids e a API continua ignorando as que a pessoa não edita (o aviso "N não foram alteradas" já existe). (Decisão 3.)
 - Comportamento (como no Gmail):
   1. Marcou a caixinha do cabeçalho → todas da página marcadas; a barra mostra **"25 selecionadas"** e, ao lado, quando `total > linhas da página`, o link **"Selecionar todas as 1.234 empresas com estes filtros"** (sem filtro e no chip *Todas*: "…todas as 1.234 empresas da carteira").
   2. Clicou no link → a barra mostra **"Todas as 1.234 empresas selecionadas"** e **"Selecionar só esta página"**; todas as caixinhas da tela aparecem marcadas, também nas outras páginas.
