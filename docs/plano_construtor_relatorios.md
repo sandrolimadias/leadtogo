@@ -1,6 +1,6 @@
 # Plano do construtor de relatórios
 
-*Proposta de 01/11/2026, **aguardando aprovação do Ale**. Entrega o item "relatórios avançados" da linha **Futuro** de `funcionalidades.md` (seção de fases) e absorve as exportações que ficaram no `backlog_pos_mvp.md` (lista de Empresas, lista de Oportunidades, relatório da importação em Excel, Dashboard). Nada aqui está implementado; as decisões da seção 3 precisam do "de acordo" antes do primeiro commit. Quando aprovado, `funcionalidades.md`, `modelagem_banco.md` e `escopo_mvp.md` são atualizados nos commits de cada fase.*
+*Proposta de 01/11/2026, **aprovada pelo Ale em 01/11/2026** (as decisões da seção 3 como recomendado e as telas do Claude Design em `docs/prototipo-relatorios/`). **A implementação só começa por ordem do Ale.** Entrega o item "relatórios avançados" da linha **Futuro** de `funcionalidades.md` (seção de fases) e absorve as exportações que ficaram no `backlog_pos_mvp.md` (lista de Empresas, lista de Oportunidades, relatório da importação em Excel, Dashboard). Nada aqui está implementado. Na implementação, `funcionalidades.md`, `modelagem_banco.md` e `escopo_mvp.md` são atualizados nos commits de cada fase.*
 
 ## 1. Objetivo
 
@@ -27,7 +27,7 @@
 | Auditoria | `apps/api/src/auditoria` | Registro de cada exportação (LGPD) |
 | Teste "toda rota declara decisão" | `rotas-com-decisao.test.ts` | As rotas novas declaram `@Permissao` |
 
-## 3. Decisões para o Ale aprovar (com a recomendação)
+## 3. Decisões (aprovadas pelo Ale em 01/11/2026)
 
 1. **Catálogo de dados no código, não tabelas cruas.** Fontes e ligações declaradas em `packages/shared/src/relatorios/catalogo.ts` (Zod), revisadas a cada fase. *Recomendado.* (A alternativa, ler o `information_schema`, exporia colunas técnicas e furaria a regra de carteira.)
 2. **Fontes da primeira entrega (R1):** Empresas, Contatos, Oportunidades e Atividades, com os cadastros que dão nome a elas (tags, vendedor, funil e fase, origem, motivo de perda, tipo de atividade, município/UF, CNAE principal, vertical). **Depois:** Visitas (com as respostas por campo dos modelos), Rotas e paradas, Chamados, histórico de tags (conversão Lead → Cliente) e histórico de fases.
@@ -36,7 +36,7 @@
    - **Detalhar**: uma linha por empresa **e** oportunidade (a empresa se repete). Só **uma** ligação detalhada por relatório, para não multiplicar linhas sem querer.
 4. **Agrupar e totalizar**: até **3 níveis** de agrupamento (ex.: Vendedor → Status → Mês da criação), com contagem, soma, média, mínimo e máximo por campo numérico ou moeda, e "contar distintos". Datas agrupam por dia, semana, mês, trimestre ou ano, **no fuso da empresa**.
 5. **Filtros** por qualquer campo do catálogo, com operadores pelo tipo (texto: contém, começa com, é, está vazio; número e moeda: =, ≠, >, <, entre; data: períodos relativos como "mês atual", "últimos N dias", "trimestre anterior", e intervalo fixo; listas e tags: é um de, não é nenhum de; sim/não). Filtros combinados por **E**, com um nível de grupo **OU**. Filtros podem ser marcados como **perguntados ao abrir** (ex.: "Período", "Vendedor"), para o mesmo relatório servir a meses diferentes.
-6. **Prévia na tela:** até **500 linhas** (ou 200 grupos), com o total de linhas que a exportação teria. **Exportação `.xlsx`:** até **100.000 linhas**; até 5.000 sai na hora (download direto), acima disso vai para o worker e avisa quando estiver pronta. O arquivo fica no Garage por **24 horas**.
+6. **Prévia na tela:** até **500 linhas** (ou 200 grupos), com o total de linhas que a exportação teria. **Exportação `.xlsx`:** até **100.000 linhas**; até 5.000 sai na hora (download direto), acima disso vai para o worker e avisa quando estiver pronta. O arquivo fica no Garage por **24 horas** (o protótipo diz 7 dias; vale este plano).
 7. **Formato do arquivo:** `.xlsx` (o "XLS" moderno; o `.xls` binário de 1997 está obsoleto e limita a 65 mil linhas). Planilha 1 com os dados (cabeçalho congelado, filtro automático, larguras ajustadas, moeda `R$ #.##0,00`, datas como data de verdade no fuso da empresa, linha de totais quando houver); planilha 2 **"Sobre"** com nome do relatório, quem gerou, quando, filtros aplicados e a observação "dados conforme a carteira de quem gerou". Com agrupamento, uma planilha resumida por grupo e, opcionalmente, a planilha de detalhe. **CSV** (`;`, UTF-8 com BOM) como alternativa no mesmo botão.
 8. **Relatórios salvos e compartilhamento:** cada relatório tem dono e é **Privado** (padrão), **Equipe** (todos os membros da empresa veem e executam) ou **por perfil de acesso**. Quem abre um relatório compartilhado **vê só os dados da própria carteira**: compartilha-se a **definição**, nunca os dados. Só o dono (ou quem tem `relatorios.gerir`) edita; os outros podem "Duplicar".
 9. **Permissões novas (catálogo v12):** `relatorios.ver` (abrir e executar relatórios compartilhados), `relatorios.criar` (montar e salvar os seus), `relatorios.exportar` (baixar `.xlsx`/CSV) e `relatorios.gerir` (editar e excluir os de todos, compartilhar com a equipe). Padrões: **Admin** todas; **Gestor** todas; **Vendedor** `ver`, `criar` e `exportar`. Os dados continuam limitados pelo alcance de `empresas.ver`, `contatos.ver`, `oportunidades.ver`, `atividades.ver` etc.; quem não vê uma fonte não a encontra no construtor. Campos sensíveis exigem a permissão própria (posição do check-in: `visitas.ver_localizacao`). **Não** entra nas permissões de chave de API nesta fase.
@@ -155,6 +155,7 @@ A **mesma** validação roda na tela (feedback imediato) e na API (autoridade). 
 | `POST /v1/relatorios/:id/duplicar` | `relatorios.criar` | Cópia privada |
 | `POST /v1/relatorios/exportar` | `relatorios.exportar` | Até 5.000 linhas: devolve o arquivo; acima: cria a exportação e responde 202 com o id |
 | `GET /v1/relatorios/exportacoes` e `/:id` | `relatorios.exportar` | Minhas exportações, situação e progresso |
+| `POST /v1/relatorios/exportacoes/:id/tentar-de-novo` | `relatorios.exportar`, só o dono | Exportação com erro: cria uma nova com a mesma definição |
 | `GET /v1/relatorios/exportacoes/:id/arquivo` | `relatorios.exportar`, só o dono | Redireciona para a URL assinada do Garage (5 min) |
 
 Contratos no OpenAPI (`apps/api/openapi.json`) e no `packages/api-client` gerado.
@@ -214,19 +215,55 @@ Padrões: `criarRelatoriosDeFabricaDoTenant` em `packages/db/src/padroes.ts`, co
 
 ## 8. Telas (`apps/web/src/telas/relatorios/`)
 
-Antes de cada tela, conferir `docs/prototipo/README.md` e `docs/design-system/` (não há tela de relatórios no protótipo: o layout abaixo segue os padrões de lista, filtros e janelas já especificados; **pedir ao Ale um mockup no Claude Design antes da R2**, ou aprovar este desenho).
+**Referência visual:** as telas do Claude Design enviadas pelo Ale em 01/11/2026, em `docs/prototipo-relatorios/` (com a tabela de divergências no `README.md` de lá). Recriar em React + Tailwind com o `@leadtogo/ui` e os tokens de `docs/design-system/`; o protótipo não é código de produção. Onde a imagem e este plano divergirem, vale o plano.
 
-- **Menu "Relatórios"** na navegação principal (ícone Lucide `bar-chart-3`), visível com `relatorios.ver`. O atual "Relatórios de visita" passa a se chamar **"Visitas pendentes"** para não confundir (ajuste em `casca/navegacao.ts` e no `funcionalidades.md`; **decisão do Ale**).
-- **`/relatorios`**: abas **Meus · Compartilhados · Prontos**, busca por nome, cartão por relatório (nome, fonte, dono, última execução) e **"Novo relatório"**. Bloco **"Minhas exportações"** com a situação e o botão de baixar.
-- **`/relatorios/novo` e `/relatorios/:id/editar`: construtor** em três colunas no desktop:
-  1. **Dados** (esquerda): a fonte principal e a árvore de ligações; cada fonte abre a lista de campos, com busca. Clicar ou arrastar um campo põe na tabela. Ligação "muitos" pergunta **Totalizar** ou **Detalhar** com o exemplo da decisão 3.
-  2. **Prévia** (centro): a tabela com as colunas escolhidas, atualizada 400 ms depois de cada mudança; cabeçalho com menu (renomear, agregação, agrupar por, ordenar, remover); arrastar para reordenar (`@dnd-kit`); rodapé "Mostrando 500 de 12.430 linhas".
-  3. **Ajustes** (direita, recolhível): **Filtros** (um abaixo do outro, como nos Contatos, com "perguntar ao abrir"), **Agrupar**, **Ordenar** e, na R4, **Gráfico**.
-  Barra do topo: nome editável, **Salvar**, **Compartilhar**, **Exportar ▾** (Excel · CSV).
-- **Tablet:** Dados e Ajustes viram gavetas. **Celular:** sem construtor; abre relatórios salvos (pergunta os filtros, mostra a prévia em cartões e exporta). *Recomendado.*
-- **`/relatorios/:id`**: execução de um salvo: os filtros "perguntar ao abrir" no topo, a prévia, Exportar e, para quem pode, Editar e Duplicar.
-- Estados: carregando, vazio ("Nenhuma linha com esses filtros"), erro com "Tentar de novo", tempo esgotado ("Relatório pesado demais: filtre um período menor ou exporte"), sem acesso a uma fonte (Alert).
-- Acessibilidade: a árvore é `role="tree"`, a tabela tem cabeçalhos reais, tudo operável pelo teclado (arrastar tem alternativa "Mover para a esquerda/direita").
+### 8.1 Menu
+
+- **"Relatórios"** na navegação principal (ícone Lucide `bar-chart-3`), visível com `relatorios.ver`.
+- O atual "Relatórios de visita" passa a se chamar **"Visitas pendentes"** (aprovado em 01/11/2026; ajuste em `apps/web/src/casca/navegacao.ts` e no `funcionalidades.md`, seção 3C, no commit da R2).
+
+### 8.2 `/relatorios` (lista; `01-lista-relatorios.png`)
+
+- **Cabeçalho:** título "Relatórios", subtítulo "Monte tabelas com os dados do CRM, salve e exporte para Excel ou CSV" e o botão primário **"+ Novo relatório"** (só com `relatorios.criar`).
+- **Abas com contagem:** **Meus** (os que a pessoa é dona) · **Compartilhados** (de outras pessoas, visíveis a ela pela equipe ou pelo perfil) · **Prontos** (os de fábrica). Busca **"Buscar pelo nome"** abaixo das abas, valendo para a aba aberta.
+- **Cartões** em grade (3 por linha no desktop, 2 no tablet, 1 no celular): ícone da fonte principal (`building-2` Empresas, `handshake` Oportunidades, `calendar` Atividades, `users` Contatos), nome, "Fonte · dono" ("Seu" quando é da pessoa; o nome do dono nos compartilhados), última execução com `clock` (data relativa como no resto do sistema, ou "Nunca executado") e o selo de visibilidade: **"Só você"** (neutro), **"Equipe toda pode ver"** (sucesso) ou **"Perfis: Gestor, …"** (neutro). Rodapé: **Abrir** (secundário com `arrow-right`), **Editar** (só dono ou `relatorios.gerir`; nos Prontos não aparece) e **Duplicar** (com `relatorios.criar`).
+- **"Minhas exportações"** (com `relatorios.exportar`), em bloco abaixo dos cartões, com o texto à direita **"Ficam disponíveis por 24 horas"**. Cada linha: ícone de planilha (verde; vermelho no erro), nome do arquivo, "quando · N linhas · disponível por mais N horas" e a situação:
+  - **Na fila** / **Gerando** (selo informativo com `hourglass`; com o progresso "3.000 de 8.701 linhas" quando houver);
+  - **Pronto** (selo de sucesso) com o botão **Baixar** (`download`);
+  - **Erro** (selo de erro) com **Tentar de novo** (`repeat`), que cria uma exportação nova com a mesma definição;
+  - **Expirada** (neutro, sem botão), que some da lista depois de 7 dias.
+  Mostra as 10 mais recentes; a situação se atualiza sozinha enquanto houver alguma em fila ou gerando (consulta a cada 3 s, parando quando todas terminam).
+- **Estados:** sem relatórios em "Meus" → EmptyState "Você ainda não montou nenhum relatório" com "Novo relatório" e "Ver os prontos"; busca sem resultado → "Nenhum relatório com 'x'"; sem exportações → o bloco não aparece.
+
+### 8.3 Construtor (`/relatorios/novo` e `/relatorios/:id/editar`; `02-construtor-vazio.png`)
+
+- **Barra do topo:** voltar (`chevron-left`; pergunta antes de sair com alterações não salvas), **nome editável** ("Relatório sem nome" até a pessoa dar um), **Compartilhar** (`users`; janela com Privado · Equipe toda · Perfis), **Exportar ▾** (`download`; Excel `.xlsx` · CSV) e **Salvar** (primário, `check`; desligado enquanto não houver coluna ou nada mudou). Exportar funciona sem salvar.
+- **Painel Dados** (esquerda, largura fixa):
+  - **Fonte principal** (seleção) com a ajuda "Cada linha da tabela é um registro desta fonte". Trocar a fonte com colunas escolhidas pede confirmação (as colunas saem).
+  - **"Buscar campo"**, que filtra a árvore inteira.
+  - **Árvore:** a fonte principal aberta com o selo **principal** e os seus campos; abaixo, as ligações recolhidas com o selo **um** (neutro) ou **muitos** (alerta). Cada campo tem o ícone do tipo (`type` texto, `tag` lista/tags, `calendar` data, `circle-dollar-sign` moeda, `hash` número, `toggle-left` sim/não). Campo já na tabela fica marcado.
+  - Rodapé de ajuda: "Clique ou arraste um campo para a tabela. "muitos" pergunta se você quer totalizar ou detalhar."
+  - Ao pôr um campo de ligação **muitos**, uma janela pergunta **Totalizar** (com a agregação: quantidade, soma, média, mínimo, máximo, mais recente, mais antiga) ou **Detalhar**, com o exemplo da decisão 3. Detalhar fica desligado se outra ligação já estiver detalhada ("Só uma ligação pode ser detalhada por relatório").
+- **Centro (prévia):**
+  - **Vazio:** área tracejada com "Escolha os campos" e "Clique ou arraste campos de Dados para montar a tabela" (é também onde se solta o campo arrastado).
+  - **Com colunas:** a tabela (padrão das listas do protótipo: cabeçalho `--surface-sunken`, números tabulares e alinhados à direita, moeda `R$`), atualizada 400 ms depois de cada mudança; menu no cabeçalho de cada coluna (renomear, agregação, agrupar por, ordenar, mover para a esquerda/direita, remover); arrastar o cabeçalho reordena (`@dnd-kit`). Com agrupamento, linhas de grupo com subtotal, recolhíveis.
+  - **Rodapé:** "Nenhuma coluna ainda" · "Mostrando 500 de 12.430 linhas" · "12 linhas".
+- **Painel Ajustes** (direita, recolhível pela seta do título):
+  - **Filtros** + **Adicionar**: um abaixo do outro, cada um com campo, operador e valor, e a opção "Perguntar ao abrir". Sem filtros: "Sem filtros: entram todos os registros que você pode ver".
+  - **Agrupar:** seleção "Sem agrupamento" ou até 3 níveis (R3; na R2 a seleção aparece com "Em breve").
+  - **Ordenar** + **Adicionar** (desligado sem colunas): até 3 critérios. Sem critério: "Na ordem em que os registros foram criados".
+  - **Gráfico:** marcado **R4**, com "Barras, linhas e pizza a partir do agrupamento chegam numa próxima versão" até a R4.
+- **Estados da prévia** (a barra "Simular" do protótipo mostra cada um; ela **não** vai para a produção): carregando (esqueleto da tabela), vazio ("Nenhuma linha com esses filtros"), erro com "Tentar de novo", tempo esgotado ("Relatório pesado demais: filtre um período menor ou exporte") e sem acesso a uma fonte (Alert "Você não tem acesso a Oportunidades; essas colunas ficam em branco").
+
+### 8.4 Execução de um salvo (`/relatorios/:id`)
+
+Sem imagem no protótipo; segue o construtor sem os painéis Dados e Ajustes: barra do topo com o nome, **Exportar ▾** e, para quem pode, **Editar** e **Duplicar**; os filtros "perguntar ao abrir" em linha acima da tabela; a prévia e o aviso fixo "Os dados seguem a sua carteira". Os Prontos abrem aqui (somente leitura).
+
+### 8.5 Tablet, celular e acessibilidade
+
+- **Tablet:** Dados e Ajustes viram gavetas (botões "Dados" e "Ajustes" na barra do topo).
+- **Celular:** sem construtor (Novo relatório e Editar não aparecem); a lista e a execução de salvos funcionam, com a prévia em cartões e Exportar.
+- **Acessibilidade:** a árvore é `role="tree"` com `aria-expanded`; a tabela tem cabeçalhos reais; tudo operável pelo teclado (o arrastar tem a alternativa "Mover para a esquerda/direita" e "Adicionar à tabela" pelo Enter no campo).
 
 ## 9. Segurança e LGPD
 
@@ -273,10 +310,11 @@ Cada fase termina com roteiro de teste (`roteiro_teste_relatorios_rN.md`) e o ac
 | Campos personalizados (seção 8 de `funcionalidades.md`) ainda não existem | Quando existirem, entram no catálogo pelo `campos_extras` com a chave do campo; o desenho do catálogo já prevê campos dinâmicos por tenant |
 | Vulnerabilidade conhecida do `exceljs` (`uuid`, ver `seguranca_dependencias.md`) | Já avaliada sem risco alcançável; reavaliar ao subir a versão |
 
-## 13. Documentos que mudam (quando aprovado)
+## 13. Documentos que mudam (na implementação)
 
 - `funcionalidades.md`: seção nova **"9H. Relatórios"** com as regras acima e a linha "Futuro" das fases atualizada; permissões do catálogo v12.
 - `modelagem_banco.md`: seção da migração 0045.
 - `lgpd.md`: exportações de relatório como tratamento, retenção de 24 h do arquivo.
 - `backlog_pos_mvp.md`: retirar as exportações absorvidas e incluir o que ficou fora (seção 3, decisão 11).
-- `docs/README.md`: este plano e os roteiros.
+- `docs/README.md`: este plano, as telas e os roteiros.
+- `docs/prototipo-relatorios/README.md`: atualizar se o Claude Design enviar telas novas (execução de salvo, janela Totalizar/Detalhar, compartilhar).

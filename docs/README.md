@@ -25,7 +25,7 @@
 | [roteiro_teste_importacao_oportunidades.md](roteiro_teste_importacao_oportunidades.md) | Roteiro de teste da importação de oportunidades por planilha |
 | [plano_busca_global.md](plano_busca_global.md) | Plano da busca global da barra do topo (empresas, contatos e oportunidades) e das buscas recentes; aprovado em 29/10/2026 |
 | [roteiro_teste_busca_global.md](roteiro_teste_busca_global.md) | Roteiro de teste da busca global |
-| [plano_construtor_relatorios.md](plano_construtor_relatorios.md) | Plano do construtor visual de relatórios (cruzamento de empresas, contatos, oportunidades e atividades) com exportação para Excel; **aguardando aprovação** |
+| [plano_construtor_relatorios.md](plano_construtor_relatorios.md) | Plano do construtor visual de relatórios (cruzamento de empresas, contatos, oportunidades e atividades) com exportação para Excel; aprovado em 01/11/2026, implementação aguardando a ordem do Ale. Telas em [prototipo-relatorios/](prototipo-relatorios/README.md) |
 | [plano_prospeccao.md](plano_prospeccao.md) | Plano da Prospecção (busca por CNAE e município na base da Receita), guardado para a próxima fase |
 | [plano_implantacao.md](plano_implantacao.md) | Plano da Fase 0: estrutura, infraestrutura e primeiro deploy |
 | [prototipo/](prototipo/README.md) | Protótipo das telas (Claude Design) e especificação de interface |
