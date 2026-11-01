@@ -16,6 +16,10 @@ export function urlDoMapaBase(): Promise<string | null> {
   return urlEmCache
 }
 
+/** Os créditos do mapa base, que o MapLibre mostra no canto (ver `atribuicao.ts`). */
+export const ATRIBUICAO_DO_MAPA_BASE =
+  '© <a href="https://openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>'
+
 /**
  * Estilo do mapa: a base da Protomaps (ruas, bairros, água, rótulos em português) sobre o PMTiles do
  * estado. Os glifos dos rótulos ficam no nosso próprio servidor (`public/mapa/fontes`): o mapa não
@@ -30,8 +34,7 @@ export function estiloDoMapa(tema: 'claro' | 'escuro', urlDaBase: string): Style
       base: {
         type: 'vector',
         url: `pmtiles://${urlDaBase}`,
-        attribution:
-          '© <a href="https://openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
+        attribution: ATRIBUICAO_DO_MAPA_BASE,
       },
     },
     layers: layers('base', flavor, { lang: 'pt' }).filter(

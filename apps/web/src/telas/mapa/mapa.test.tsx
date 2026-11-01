@@ -413,6 +413,42 @@ describe('Mapa: chips, pins e legenda', () => {
     })
   })
 
+  it('a legenda fecha e abre pelo botão das ferramentas (o último) e pelo "X"; a escolha fica no aparelho', async () => {
+    localStorage.removeItem('leadtogo:mapa:legenda')
+    await abrir(servicos())
+    expect(await screen.findByRole('region', { name: 'Legenda do mapa' })).toBeInTheDocument()
+    const ferramentas = screen.getByRole('toolbar', { name: 'Ferramentas do mapa' })
+    const botao = within(ferramentas).getByRole('button', { name: 'Esconder a legenda' })
+    // abaixo do botão de Rotas (ou de Camadas, sem permissão de rota): é o último da coluna
+    expect(within(ferramentas).getAllByRole('button').at(-1)).toBe(botao)
+    expect(botao).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(botao)
+    expect(screen.queryByRole('region', { name: 'Legenda do mapa' })).toBeNull()
+    expect(botao).toHaveAccessibleName('Mostrar a legenda')
+    expect(botao).toHaveAttribute('aria-pressed', 'false')
+    expect(localStorage.getItem('leadtogo:mapa:legenda')).toBe('fechada')
+
+    await userEvent.click(botao)
+    const legenda = screen.getByRole('region', { name: 'Legenda do mapa' })
+    await userEvent.click(within(legenda).getByRole('button', { name: 'Fechar legenda' }))
+    expect(screen.queryByRole('region', { name: 'Legenda do mapa' })).toBeNull()
+    // o foco volta para o botão que abre a legenda de novo
+    expect(within(ferramentas).getByRole('button', { name: 'Mostrar a legenda' })).toHaveFocus()
+    localStorage.removeItem('leadtogo:mapa:legenda')
+  })
+
+  it('quem fechou a legenda abre o mapa com ela fechada', async () => {
+    localStorage.setItem('leadtogo:mapa:legenda', 'fechada')
+    await abrir(servicos())
+    expect(await screen.findByRole('button', { name: 'Mostrar a legenda' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.queryByRole('region', { name: 'Legenda do mapa' })).toBeNull()
+    localStorage.removeItem('leadtogo:mapa:legenda')
+  })
+
   it('mostra "Fonte: IBGE – CNEFE 2022" só quando algum pin veio do CNEFE', async () => {
     await abrir(servicos())
     expect(await screen.findByText('Fonte: IBGE – CNEFE 2022')).toBeInTheDocument()
@@ -426,16 +462,13 @@ describe('Mapa: chips, pins e legenda', () => {
     expect(screen.queryByText(/CNEFE 2022/)).toBeNull()
   })
 
-  it('"Clientes sem visita 60+ dias" liga o atalho e manda semVisitaDias=60', async () => {
+  it('não tem o atalho "Clientes sem visita 60+ dias" e não filtra por dias sem visita', async () => {
     const x = servicos()
     await abrir(x)
-    await userEvent.click(
-      await screen.findByRole('button', { name: /Clientes sem visita 60\+ dias/ }),
-    )
-    await waitFor(() => {
-      const ultima = x.m.pontos.mock.calls.at(-1)?.[0] as { semVisitaDias?: number }
-      expect(ultima.semVisitaDias).toBe(60)
-    })
+    await screen.findByRole('button', { name: 'pin Alfa Ltda, Vitória' })
+    expect(screen.queryByRole('button', { name: /sem visita 60\+ dias/ })).toBeNull()
+    const ultima = x.m.pontos.mock.calls.at(-1)?.[0] as { semVisitaDias?: number }
+    expect(ultima.semVisitaDias).toBeUndefined()
   })
 
   it('a busca filtra pelo texto (com um respiro para não consultar a cada tecla)', async () => {

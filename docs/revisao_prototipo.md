@@ -84,3 +84,13 @@ Plano em `plano_oportunidades_kanban_e_tags.md`. Onde o protótipo e `funcionali
 | Zonas de fechamento sobrepostas ao topo do quadro ao arrastar | as zonas não escondem o cabeçalho das fases | faixa própria acima das colunas, que **descem** enquanto se arrasta |
 | Sem data de fechamento na janela "Fechar oportunidade" | admin e gestor escolhem o dia (seção 7) | campo **"Data de fechamento"** (hoje por padrão, nunca no futuro nem antes da criação), só para quem tem a permissão |
 | Sem tags na oportunidade | tags de oportunidade em grupos próprios (seção 2) | chips no card do Kanban, coluna **Tags** na lista, tags e **"Editar tags"** na ficha, seção **Tags** no formulário, filtro **"Tag da oportunidade"** e aba **Oportunidades** em *Configurações → Tags* |
+
+## 9. Divergências do Mapa (31/10/2026)
+
+Plano em `plano_ajustes_atividades_chamados_mapa.md`. Onde o protótipo e os documentos divergem, **vale o documento**:
+
+| Protótipo | Documento | Decisão |
+|---|---|---|
+| Chip "Clientes sem visita 60+ dias" depois dos chips de Status | atalho retirado a pedido do Ale | o chip sai; o estado **Sem visita há 60+ dias** continua no pin e na legenda, e a API segue aceitando `semVisitaDias` |
+| Legenda sempre aberta no rodapé | legenda abre e fecha | botão **Mostrar/Esconder a legenda** na barra de ferramentas (abaixo do de Rotas) e **"X"** na própria legenda; começa aberta e o aparelho lembra a escolha; no celular continua sem legenda |
+| Fonte dos dados num selo à parte | fonte na atribuição do mapa | "Fonte: IBGE – CNEFE 2022" entra na linha do "© OpenStreetMap contributors", abaixo do zoom |

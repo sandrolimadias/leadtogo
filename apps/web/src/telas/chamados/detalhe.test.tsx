@@ -139,6 +139,12 @@ describe('Chamado: conversa, notas internas e anexos', () => {
       within(conversa).getByText('Preciso que o contrato seja revisado até sexta.'),
     ).toBeInTheDocument()
     expect(within(conversa).getByText('Vou analisar o contrato hoje.')).toBeInTheDocument()
+    // link colado ou palavra longa quebra dentro do balão em vez de vazar (a descrição é a primeira mensagem)
+    for (const texto of [
+      'Preciso que o contrato seja revisado até sexta.',
+      'Vou analisar o contrato hoje.',
+    ])
+      expect(within(conversa).getByText(texto)).toHaveClass('[overflow-wrap:anywhere]')
     // a nota interna NÃO está na conversa: tem a seção própria, com o aviso de que só a equipe vê
     expect(within(conversa).queryByText('Cliente inadimplente.')).not.toBeInTheDocument()
     const notas = screen.getByRole('region', { name: 'Notas internas' })

@@ -129,7 +129,8 @@ describe('detalhe do chamado', () => {
       await screen.findByRole('heading', { name: 'Segunda via do boleto de outubro' }),
     ).toBeInTheDocument()
     expect(screen.getByText('A equipe aguarda a sua resposta.')).toBeInTheDocument()
-    expect(screen.getByText('Qual o CNPJ da filial?')).toBeInTheDocument()
+    // o balão quebra link ou palavra longa em vez de vazar
+    expect(screen.getByText('Qual o CNPJ da filial?')).toHaveClass('[overflow-wrap:anywhere]')
     // nada interno aparece
     expect(screen.queryByText(/nota interna|prioridade|responsável pelo/i)).not.toBeInTheDocument()
   })

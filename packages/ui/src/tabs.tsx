@@ -21,6 +21,7 @@ export function Tabs({
   defaultValue,
   onChange,
   label,
+  preencher = false,
   className,
   quebrar = false,
   children,
@@ -30,6 +31,11 @@ export function Tabs({
   defaultValue?: string
   onChange?: (valor: string) => void
   label: string
+  /**
+   * No celular (abaixo de `md`), as abas dividem a largura toda e ficam mais justas, para caberem sem rolar
+   * (Atividades: três abas com contador passavam da tela e a última ficava cortada). Use com poucas abas.
+   */
+  preencher?: boolean
   className?: string
   /**
    * Na tela estreita, as abas que não cabem descem para a linha de baixo em vez de rolar na horizontal:
@@ -50,12 +56,14 @@ export function Tabs({
         aria-label={label}
         // A linha de baixo é uma sombra interna (não borda) e o sublinhado da aba ativa fica dentro da lista:
         // nada passa da altura, então não aparece barra de rolagem. Com muitas abas na tela estreita, rola
-        // na horizontal com o dedo, sem a barra.
+        // na horizontal com o dedo, sem a barra. `flex-none`: numa coluna de altura fixa (painel da empresa no
+        // mapa, Atividades), uma caixa com overflow tem altura mínima 0 e encolhia até sumir com as abas.
         className={cn(
-          'flex gap-1 shadow-[inset_0_-1px_0_var(--border)]',
+          'flex min-w-0 flex-none gap-1 shadow-[inset_0_-1px_0_var(--border)]',
           quebrar
             ? 'flex-wrap overflow-hidden'
             : 'overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          preencher && 'max-md:gap-0',
         )}
       >
         {items.map((item) => (
@@ -65,6 +73,8 @@ export function Tabs({
             className={cn(
               'relative inline-flex cursor-pointer items-center gap-1.5 rounded-t-sm border-0 bg-transparent px-3 pt-2 pb-[10px] text-sm font-semibold whitespace-nowrap text-ink-muted hover:bg-surface-hover hover:text-ink data-[state=active]:text-ink',
               "data-[state=active]:after:absolute data-[state=active]:after:inset-x-2 data-[state=active]:after:bottom-0 data-[state=active]:after:h-0.5 data-[state=active]:after:rounded-t-[2px] data-[state=active]:after:bg-brand data-[state=active]:after:content-['']",
+              preencher &&
+                'max-md:flex-1 max-md:justify-center max-md:gap-1 max-md:px-1.5 max-md:text-[13px] max-md:leading-5',
             )}
           >
             {item.icon ? <item.icon size={15} strokeWidth={1.75} aria-hidden="true" /> : null}

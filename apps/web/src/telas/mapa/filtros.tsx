@@ -1,6 +1,6 @@
 import type { OpcoesDoMapa } from '@leadtogo/shared'
 import { tokenDaCorDoMapa } from '@leadtogo/shared'
-import { Search, SlidersHorizontal, TriangleAlert } from 'lucide-react'
+import { Search, SlidersHorizontal } from 'lucide-react'
 
 import { Select, TextField } from '@leadtogo/ui/campos'
 import { Checkbox } from '@leadtogo/ui/checkbox'
@@ -61,20 +61,6 @@ export function ChipsDoMapa({
           </button>
         )
       })}
-      <button
-        type="button"
-        aria-pressed={filtros.semVisita60}
-        onClick={() => aoMudar({ ...filtros, semVisita60: !filtros.semVisita60 })}
-        className={cn(
-          'inline-flex h-9 cursor-pointer items-center gap-2 rounded-full border px-3 text-[13px] font-semibold whitespace-nowrap shadow-sm',
-          filtros.semVisita60
-            ? 'border-danger bg-danger-soft text-danger'
-            : 'border-border bg-surface/80 text-ink-muted',
-        )}
-      >
-        <TriangleAlert size={14} aria-hidden="true" />
-        Clientes sem visita 60+ dias
-      </button>
     </div>
   )
 }
