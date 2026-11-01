@@ -453,6 +453,7 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
             exigeDoisFatoresDoResponsavel: false,
             comentariosAtivos: true,
             avisosLimiteSemanal: 3,
+            formularioSatisfacaoId: null,
           }),
         ),
         atualizar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),

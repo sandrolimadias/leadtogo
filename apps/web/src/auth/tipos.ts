@@ -693,6 +693,7 @@ export interface ServicosDoPortalNoCrm {
       exigeDoisFatoresDoResponsavel?: boolean
       comentariosAtivos?: boolean
       avisosLimiteSemanal?: number
+      formularioSatisfacaoId?: string | null
     }) => Promise<Resultado<ConfiguracaoDoPortal>>
   }
   /** Publicações do portal (Fase 3B): `portal.ver`/`publicar`/`moderar` para ver, `publicar` para escrever, `moderar` nos comentários */

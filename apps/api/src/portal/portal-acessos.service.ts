@@ -308,9 +308,11 @@ export class PortalAcessosService {
       exige: boolean
       comentarios: boolean
       limite: number
+      satisfacao: string | null
     }>(sql`
       SELECT portal_ativo AS ativo, portal_nome AS nome, portal_exige_dois_fatores_responsavel AS exige,
-             portal_comentarios_ativos AS comentarios, portal_avisos_limite_semanal AS limite
+             portal_comentarios_ativos AS comentarios, portal_avisos_limite_semanal AS limite,
+             portal_formulario_satisfacao_id AS satisfacao
       FROM tenant_configuracoes`)
     return {
       ativo: c?.ativo ?? false,
@@ -319,6 +321,7 @@ export class PortalAcessosService {
       exigeDoisFatoresDoResponsavel: c?.exige ?? false,
       comentariosAtivos: c?.comentarios ?? true,
       avisosLimiteSemanal: c?.limite ?? LIMITE_SEMANAL_PADRAO_DE_AVISOS,
+      formularioSatisfacaoId: c?.satisfacao ?? null,
     }
   }
 
@@ -326,6 +329,18 @@ export class PortalAcessosService {
     d: AtualizarConfiguracaoDoPortalEntrada,
   ): Promise<ConfiguracaoDoPortal> {
     const antes = await this.configuracao()
+    if (d.formularioSatisfacaoId) {
+      const [f] = await this.ctx.db().execute(sql`
+        SELECT 1 FROM formularios WHERE id = ${d.formularioSatisfacaoId} AND excluido_em IS NULL
+          AND finalidade = 'satisfacao_chamado' AND situacao = 'publicado'`)
+      if (!f) {
+        throw new ErroApi(
+          'formulario_invalido',
+          'Escolha um formulário publicado com a finalidade "Satisfação do chamado".',
+          422,
+        )
+      }
+    }
     await this.ctx.db().execute(sql`
       UPDATE tenant_configuracoes
       SET portal_ativo = ${d.ativo ?? antes.ativo},
@@ -333,6 +348,7 @@ export class PortalAcessosService {
           portal_exige_dois_fatores_responsavel = ${d.exigeDoisFatoresDoResponsavel ?? antes.exigeDoisFatoresDoResponsavel},
           portal_comentarios_ativos = ${d.comentariosAtivos ?? antes.comentariosAtivos},
           portal_avisos_limite_semanal = ${d.avisosLimiteSemanal ?? antes.avisosLimiteSemanal},
+          portal_formulario_satisfacao_id = ${d.formularioSatisfacaoId === undefined ? antes.formularioSatisfacaoId : d.formularioSatisfacaoId},
           atualizado_em = now()`)
     const depois = await this.configuracao()
     await this.auditoria.registrar({

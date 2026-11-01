@@ -4792,6 +4792,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal/chamados/{id}/pesquisa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Responder a pesquisa de satisfação
+         * @description Chamado resolvido ou fechado, com o formulário de satisfação configurado pela equipe. Grava a resposta (contexto = chamado) e, se o formulário tem nota de 1 a 5, alimenta a avaliação do chamado. Uma por chamado (409 `ja_avaliado`); sem pesquisa configurada: 404 `sem_pesquisa`.
+         */
+        post: operations["PortalChamadosController_responderPesquisa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/chamados/{id}/reabrir": {
         parameters: {
             query?: never;
@@ -6500,6 +6520,8 @@ export interface components {
             exigeDoisFatoresDoResponsavel?: boolean;
             comentariosAtivos?: boolean;
             avisosLimiteSemanal?: number;
+            /** Format: uuid */
+            formularioSatisfacaoId?: string | null;
         };
         AvaliacaoDoChamado: {
             nota: number;
@@ -6685,6 +6707,10 @@ export interface components {
             mensagens: components["schemas"]["MensagemDoPortal"][];
             marcos: components["schemas"]["MarcoDoChamadoNoPortal"][];
             avaliacao: components["schemas"]["AvaliacaoDoChamado"] | null;
+            pesquisa: {
+                /** Format: uuid */
+                formularioId: string;
+            } | null;
             acoes: {
                 responder: boolean;
                 reabrir: boolean;
@@ -6868,6 +6894,8 @@ export interface components {
             exigeDoisFatoresDoResponsavel: boolean;
             comentariosAtivos: boolean;
             avisosLimiteSemanal: number;
+            /** Format: uuid */
+            formularioSatisfacaoId: string | null;
         };
         ConfirmarEndereco: {
             /** @enum {string} */
@@ -29670,6 +29698,104 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalChamadosController_responderPesquisa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChamadoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

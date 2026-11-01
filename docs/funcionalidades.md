@@ -663,6 +663,12 @@ Plano em `plano_portal_formularios_e_eventos.md` (seção 7). Hub: Portal do Cli
 - **Respostas:** tabela com a pessoa e a empresa (logados) e uma coluna por campo; **exportar CSV** (UTF-8 com BOM e `;`, abre no Excel; conteúdo que começa com `=`, `+`, `-` ou `@` é neutralizado). Excel e PDF entram com os relatórios de inscritos (4G).
 - **Finalidades:** livre, inscrição em evento, avaliação de evento, satisfação do chamado e "Seja um associado" (usadas pelas fases 4F a 4H).
 
+## 9I. Portal do Cliente, Fase 4F (pesquisa de satisfação do chamado)
+
+- **Configuração:** Configurações → Portal → **Pesquisa de satisfação dos chamados**: um formulário **publicado** com a finalidade "Satisfação do chamado" (422 `formulario_invalido` para os outros). Sem pesquisa, vale a avaliação por estrelas de antes.
+- **No portal:** chamado **resolvido ou fechado** e ainda sem avaliação mostra a pesquisa no lugar das estrelas (o Início já conta "Para avaliar"). Resposta pelo construtor (mesma validação, preenchimento automático e ações dos botões), com o contexto do chamado. **Uma por chamado** (409 `ja_avaliado`).
+- **Estrelas:** a **primeira nota de 1 a 5** do formulário vira a avaliação do chamado (e o primeiro texto longo, o comentário), então os indicadores e as estrelas do CRM (Fase 4A) continuam iguais. A resposta completa fica em Formulários → Respostas, ligada ao chamado.
+
 ## 9D. Portal do Cliente, Fase 3B (publicações)
 
 A equipe publica **comunicados** no feed do portal; o cliente lê, reage, comenta e denuncia. Hub: Portal do Cliente → aba **Publicações**; cliente: **Início** do portal. Roteiro em `roteiro_teste_portal_3b.md`.

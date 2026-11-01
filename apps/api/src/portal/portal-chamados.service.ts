@@ -15,6 +15,8 @@ import {
   estadoNoPortal,
   PRAZO_DE_REABERTURA_DIAS,
   podeReabrir,
+  type DefinicaoDeFormulario,
+  type EnviarRespostaEntrada,
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
@@ -22,6 +24,7 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { agendarNotificacao } from '../chamados/notificar-chamado.js'
 import { TriagemService } from '../chamados/triagem.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { ResponderFormularioService } from './responder-formulario.service.js'
 import { auditarAtoDoPortal } from './portal-auditoria.js'
 
 type LinhaDoChamado = {
@@ -64,6 +67,7 @@ export class PortalChamadosService {
   constructor(
     private readonly ctx: ContextoTenantService,
     private readonly triagem: TriagemService,
+    private readonly formularios: ResponderFormularioService,
   ) {}
 
   private get proprios() {
@@ -178,6 +182,8 @@ export class PortalChamadosService {
       criado_em: string | Date
     }>(sql`
       SELECT nota, comentario, criado_em FROM chamado_avaliacoes WHERE chamado_id = ${id}`)
+    const pesquisa = await this.pesquisa(id)
+    const respondida = pesquisa?.respondida ?? false
 
     const marcos: ChamadoDoPortal['marcos'] = [
       { tipo: 'aberto', em: new Date(l.criado_em).toISOString() },
@@ -220,7 +226,14 @@ export class PortalChamadosService {
             criadaEm: new Date(av.criado_em).toISOString(),
           }
         : null,
-      acoes: acoesDoCliente(l.status, l.resolvido_em, av !== undefined),
+      pesquisa:
+        pesquisa &&
+        !respondida &&
+        av === undefined &&
+        (l.status === 'resolvido' || l.status === 'fechado')
+          ? { formularioId: pesquisa.formularioId }
+          : null,
+      acoes: acoesDoCliente(l.status, l.resolvido_em, av !== undefined || respondida),
     }
   }
 
@@ -387,6 +400,74 @@ export class PortalChamadosService {
   }
 
   // ----------------------------------------------------------------------------------------- avaliar
+
+  /** O formulário de satisfação configurado (publicado) e se este chamado já tem resposta dele. */
+  private async pesquisa(
+    chamadoId: string,
+  ): Promise<{ formularioId: string; respondida: boolean } | null> {
+    const [c] = await this.ctx.db().execute<{
+      formulario_id: string | null
+      respondida: boolean
+    }>(sql`
+      SELECT f.id AS formulario_id,
+             EXISTS (SELECT 1 FROM formulario_respostas r
+                     WHERE r.contexto_tipo = 'chamado' AND r.contexto_id = ${chamadoId} AND r.excluido_em IS NULL)
+               AS respondida
+      FROM tenant_configuracoes tc
+      JOIN formularios f ON f.id = tc.portal_formulario_satisfacao_id AND f.situacao = 'publicado'
+        AND f.excluido_em IS NULL`)
+    return c?.formulario_id ? { formularioId: c.formulario_id, respondida: c.respondida } : null
+  }
+
+  /**
+   * Responde a pesquisa de satisfação do chamado (Fase 4F): grava a resposta do formulário (contexto = chamado)
+   * e, quando o formulário tem uma nota de 1 a 5, alimenta a avaliação do chamado (a primeira nota vira a nota;
+   * o primeiro texto longo, o comentário). Uma por chamado.
+   */
+  async responderPesquisa(id: string, dados: EnviarRespostaEntrada): Promise<ChamadoDoPortal> {
+    const l = await this.linha(id)
+    if (l.status !== 'resolvido' && l.status !== 'fechado') {
+      throw new ErroApi('nao_resolvido', 'A pesquisa vale para chamado resolvido ou fechado.', 409)
+    }
+    const db = this.ctx.db()
+    const [ja] = await db.execute(sql`SELECT 1 FROM chamado_avaliacoes WHERE chamado_id = ${id}`)
+    const p = await this.pesquisa(id)
+    if (!p) throw new ErroApi('sem_pesquisa', 'Não há pesquisa de satisfação configurada.', 404)
+    if (ja || p.respondida) throw new ErroApi('ja_avaliado', 'Este chamado já foi avaliado.', 409)
+    // Trava a linha do chamado: dois envios ao mesmo tempo não geram duas respostas
+    await db.execute(sql`SELECT 1 FROM chamados WHERE id = ${id} FOR UPDATE`)
+    const r = await this.formularios.responderComoCliente(p.formularioId, dados, {
+      tipo: 'chamado',
+      id,
+    })
+    const [def] = await db.execute<{ definicao: DefinicaoDeFormulario }>(sql`
+      SELECT v.definicao FROM formulario_respostas fr
+      JOIN formulario_versoes v ON v.formulario_id = fr.formulario_id AND v.versao = fr.versao
+      WHERE fr.id = ${r.id}`)
+    const campos = def?.definicao.campos ?? []
+    const nota = campos.find((c) => c.tipo === 'avaliacao' && typeof r.valores[c.id] === 'number')
+    const comentario = campos.find(
+      (c) => c.tipo === 'texto_longo' && typeof r.valores[c.id] === 'string',
+    )
+    const pp = this.ctx.portal
+    if (nota) {
+      await db.execute(sql`
+        INSERT INTO chamado_avaliacoes (id, tenant_id, chamado_id, acesso_id, nota, comentario)
+        VALUES (${novoId()}, ${pp.tenantId}, ${id}, ${pp.acessoId}, ${r.valores[nota.id] as number},
+                ${comentario ? (r.valores[comentario.id] as string) : null})`)
+    }
+    await auditarAtoDoPortal(db, {
+      tenantId: pp.tenantId,
+      acessoId: pp.acessoId,
+      contatoId: pp.contatoId,
+      entidade: 'chamado',
+      entidadeId: id,
+      acao: 'responder_pesquisa',
+      alteracoes: { respostaId: r.id },
+      ip: this.ctx.ip,
+    })
+    return this.obter(id)
+  }
 
   async avaliar(id: string, dados: AvaliarChamadoEntrada): Promise<ChamadoDoPortal> {
     const l = await this.linha(id)

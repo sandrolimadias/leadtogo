@@ -67,6 +67,7 @@ function servicos(
             exigeDoisFatoresDoResponsavel: false,
             comentariosAtivos: true,
             avisosLimiteSemanal: 3,
+            formularioSatisfacaoId: null,
           }),
         ),
       },
@@ -142,6 +143,7 @@ describe('hub do portal: chamados', () => {
             exigeDoisFatoresDoResponsavel: false,
             comentariosAtivos: true,
             avisosLimiteSemanal: 3,
+            formularioSatisfacaoId: null,
           }),
         ),
       },
@@ -383,6 +385,62 @@ describe('hub do portal: acessos', () => {
 })
 
 describe('configurações do portal', () => {
+  it('escolhe o formulário da pesquisa de satisfação dos chamados (Fase 4F)', async () => {
+    const atualizar = vi.fn(async (dados: Record<string, unknown>) =>
+      ok({
+        ativo: true,
+        nome: null,
+        logoUrl: null,
+        exigeDoisFatoresDoResponsavel: false,
+        comentariosAtivos: true,
+        avisosLimiteSemanal: 3,
+        formularioSatisfacaoId: null,
+        ...dados,
+      }),
+    )
+    const base = servicosFalsos()
+    const s = servicos({
+      configuracao: { ...base.portal.configuracao, atualizar },
+      formularios: {
+        ...base.portal.formularios,
+        listar: vi.fn(async () =>
+          ok({
+            itens: [
+              {
+                id: id(810),
+                nome: 'Satisfação do atendimento',
+                finalidade: 'satisfacao_chamado' as const,
+                acesso: 'logado' as const,
+                situacao: 'publicado' as const,
+                slug: 'satisfacao-abc123',
+                versaoPublicada: 1,
+                temMudancas: false,
+                respostas: 0,
+                ultimaRespostaEm: null,
+                atualizadoEm: '2026-10-30T12:00:00.000Z',
+              },
+            ],
+            total: 1,
+          }),
+        ),
+      },
+    })
+    renderizar(s, '/configuracoes/portal')
+    const usuario = userEvent.setup()
+    const secao = await screen.findByRole('region', { name: 'Pesquisa de satisfação' })
+    await waitFor(() =>
+      expect(
+        within(secao).getByRole('option', { name: 'Satisfação do atendimento' }),
+      ).toBeInTheDocument(),
+    )
+    await usuario.selectOptions(
+      within(secao).getByLabelText(/Pesquisa de satisfação dos chamados/),
+      id(810),
+    )
+    await usuario.click(within(secao).getByRole('button', { name: 'Salvar pesquisa' }))
+    await waitFor(() => expect(atualizar).toHaveBeenCalledWith({ formularioSatisfacaoId: id(810) }))
+  })
+
   it('liga o portal, muda o nome e exige o 2FA do Responsável', async () => {
     const atualizar = vi.fn(async (dados: Record<string, unknown>) =>
       ok({
@@ -404,6 +462,7 @@ describe('configurações do portal', () => {
             exigeDoisFatoresDoResponsavel: false,
             comentariosAtivos: true,
             avisosLimiteSemanal: 3,
+            formularioSatisfacaoId: null,
           }),
         ),
         atualizar,

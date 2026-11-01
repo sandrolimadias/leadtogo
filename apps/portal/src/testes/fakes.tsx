@@ -126,6 +126,7 @@ export const chamado = (extra: Partial<ChamadoDoPortal> = {}): ChamadoDoPortal =
   ...item(),
   descricao: 'Preciso do boleto atualizado.',
   resolvidoEm: null,
+  pesquisa: null,
   mensagens: [
     {
       id: id(20),
@@ -269,6 +270,7 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       abrir: vi.fn(async () => ok(chamado())),
       responder: vi.fn(async () => ok(chamado())),
       reabrir: vi.fn(async () => ok(chamado())),
+      responderPesquisa: vi.fn(async () => ok(chamado({ estado: 'resolvido', pesquisa: null }))),
       avaliar: vi.fn(async () => ok(chamado())),
       anexar: vi.fn(async (_id: string, arquivo: File) =>
         ok({ anexoId: id(50), nome: arquivo.name }),

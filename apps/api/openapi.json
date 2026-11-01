@@ -24510,6 +24510,131 @@
         ]
       }
     },
+    "/v1/portal/chamados/{id}/pesquisa": {
+      "post": {
+        "description": "Chamado resolvido ou fechado, com o formulário de satisfação configurado pela equipe. Grava a resposta (contexto = chamado) e, se o formulário tem nota de 1 a 5, alimenta a avaliação do chamado. Uma por chamado (409 `ja_avaliado`); sem pesquisa configurada: 404 `sem_pesquisa`.",
+        "operationId": "PortalChamadosController_responderPesquisa",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarRespostaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChamadoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Responder a pesquisa de satisfação",
+        "tags": ["Portal do cliente: chamados"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/chamados/{id}/reabrir": {
       "post": {
         "description": "Até 7 dias depois de Resolvido (409 `prazo_de_reabertura_vencido`); depois, abra um novo chamado.",
@@ -31833,6 +31958,11 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 20
+          },
+          "formularioSatisfacaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false
@@ -32504,6 +32634,18 @@
               }
             ]
           },
+          "pesquisa": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "formularioId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["formularioId"],
+            "additionalProperties": false
+          },
           "acoes": {
             "type": "object",
             "properties": {
@@ -32535,6 +32677,7 @@
           "mensagens",
           "marcos",
           "avaliacao",
+          "pesquisa",
           "acoes"
         ],
         "additionalProperties": false
@@ -33193,6 +33336,11 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 20
+          },
+          "formularioSatisfacaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -33201,7 +33349,8 @@
           "logoUrl",
           "exigeDoisFatoresDoResponsavel",
           "comentariosAtivos",
-          "avisosLimiteSemanal"
+          "avisosLimiteSemanal",
+          "formularioSatisfacaoId"
         ],
         "additionalProperties": false
       },

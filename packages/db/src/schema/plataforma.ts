@@ -166,6 +166,8 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   portalComentariosAtivos: boolean().notNull().default(true),
   /** Avisos NORMAIS por semana (a semana é de segunda a domingo, no fuso de São Paulo); urgentes não contam (Fase 3E) */
   portalAvisosLimiteSemanal: smallint().notNull().default(3),
+  /** Formulário da pesquisa de satisfação dos chamados (Fase 4F; FK só no SQL da migração, evita ciclo) */
+  portalFormularioSatisfacaoId: uuid(),
   ...carimbos(),
 })
 

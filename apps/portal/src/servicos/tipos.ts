@@ -114,6 +114,11 @@ export interface ServicosDoPortal {
       dados: { corpo: string; anexoIds: string[] },
     ) => Promise<Resultado<ChamadoDoPortal>>
     reabrir: (id: string) => Promise<Resultado<ChamadoDoPortal>>
+    /** Pesquisa de satisfação (Fase 4F), com o formulário configurado pela equipe */
+    responderPesquisa: (
+      id: string,
+      dados: EnviarRespostaEntrada,
+    ) => Promise<Resultado<ChamadoDoPortal>>
     avaliar: (
       id: string,
       dados: { nota: number; comentario?: string | null },

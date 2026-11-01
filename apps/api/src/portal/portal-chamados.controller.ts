@@ -24,6 +24,8 @@ import {
   pedirEnvioDeAnexoSchema,
   type ResponderChamadoNoPortalEntrada,
   responderChamadoNoPortalSchema,
+  type EnviarRespostaEntrada,
+  enviarRespostaSchema,
 } from '@leadtogo/shared'
 import {
   Body,
@@ -160,6 +162,24 @@ export class PortalChamadosController {
   @Post('chamados/:id/reabrir')
   reabrir(@Param('id', uuid()) id: string): Promise<ChamadoDoPortal> {
     return this.chamados.reabrir(id)
+  }
+
+  @Documenta({
+    resumo: 'Responder a pesquisa de satisfação',
+    descricao:
+      'Chamado resolvido ou fechado, com o formulário de satisfação configurado pela equipe. Grava a resposta (contexto = chamado) e, se o formulário tem nota de 1 a 5, alimenta a avaliação do chamado. Uma por chamado (409 `ja_avaliado`); sem pesquisa configurada: 404 `sem_pesquisa`.',
+    corpo: enviarRespostaSchema,
+    resposta: chamadoDoPortalSchema,
+    status: 201,
+    erros: [400, 401, 403, 404, 409, 422, 429, 503],
+  })
+  @Post('chamados/:id/pesquisa')
+  @Limite({ nome: 'portal-chamado-pesquisa', max: 30, janelaS: 3600 })
+  responderPesquisa(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(enviarRespostaSchema)) dados: EnviarRespostaEntrada,
+  ): Promise<ChamadoDoPortal> {
+    return this.chamados.responderPesquisa(id, dados)
   }
 
   @Documenta({

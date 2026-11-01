@@ -1035,6 +1035,10 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 
 **Portal:** lê formulário **publicado** e as versões dele; grava e lê só as **próprias** respostas (`acesso_id` da sessão, origem `portal`); as execuções ficam fechadas. **Público:** `app_formulario_publico(slug)` (SECURITY DEFINER do dono) devolve o tenant de um formulário publicado e público; a resposta pública é gravada no contexto do tenant pela API.
 
+## Portal, Fase 4F (migração 0050, só expansão)
+
+- `tenant_configuracoes.portal_formulario_satisfacao_id` (FK para `formularios`, só no SQL para evitar ciclo no schema): o formulário da pesquisa de satisfação dos chamados. A resposta vai para `formulario_respostas` com `contexto_tipo = 'chamado'`; a primeira nota de 1 a 5 também vira `chamado_avaliacoes`.
+
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 
 **Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (busca das oportunidades pelo título, sem acento). Empresas e contatos já tinham os seus (0017 e 0018). Os índices trigram são criados por SQL na migração e não aparecem no schema do Drizzle nem nos snapshots, por isso o `db:generate` não os enxerga nem tenta apagá-los.

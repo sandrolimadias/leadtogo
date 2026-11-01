@@ -1,3 +1,4 @@
+import { definicaoDeFormularioSchema } from '@leadtogo/shared'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -201,6 +202,57 @@ describe('detalhe do chamado', () => {
     expect(await screen.findByText('Verificando')).toBeInTheDocument()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Baixar limpo.pdf' }))
     await waitFor(() => expect(baixar).toHaveBeenCalledWith(ABERTO, id(60)))
+  })
+
+  it('com a pesquisa de satisfação configurada, responde o formulário no lugar das estrelas (Fase 4F)', async () => {
+    const resolvido = chamado({
+      estado: 'resolvido',
+      pesquisa: { formularioId: id(941) },
+      acoes: { responder: false, reabrir: true, avaliar: true },
+    })
+    const base = servicosFalsos()
+    const responderPesquisa = vi.fn(async () =>
+      ok({
+        ...resolvido,
+        pesquisa: null,
+        avaliacao: { nota: 5, comentario: null, criadaEm: '2026-10-22T10:00:00.000Z' },
+        acoes: { ...resolvido.acoes, avaliar: false },
+      }),
+    )
+    const s = servicosFalsos({
+      chamados: { ...base.chamados, obter: vi.fn(async () => ok(resolvido)), responderPesquisa },
+      formularios: {
+        ...base.formularios,
+        abrir: vi.fn(async () =>
+          ok({
+            id: id(941),
+            nome: 'Satisfação',
+            versao: 1,
+            definicao: definicaoDeFormularioSchema.parse({
+              campos: [{ id: 'nota', tipo: 'avaliacao', rotulo: 'Nota', obrigatorio: true }],
+              botoes: [{ id: 'enviar', rotulo: 'Enviar pesquisa' }],
+            }),
+            preenchidos: {},
+            travados: [],
+            captchaChave: null,
+          }),
+        ),
+      },
+    })
+    renderizar(s, `/chamados/${ABERTO}`)
+    const usuario = userEvent.setup()
+    const pesquisa = await screen.findByRole('region', { name: 'Pesquisa de satisfação' })
+    expect(screen.queryByRole('button', { name: 'Enviar avaliação' })).not.toBeInTheDocument()
+    await usuario.click(within(pesquisa).getByRole('radio', { name: '5 de 5' }))
+    await usuario.click(within(pesquisa).getByRole('button', { name: 'Enviar pesquisa' }))
+    await waitFor(() =>
+      expect(responderPesquisa).toHaveBeenCalledWith(ABERTO, {
+        versao: 1,
+        botao: 'enviar',
+        respostas: { nota: 5 },
+      }),
+    )
+    expect(await screen.findByText('Sua avaliação')).toBeInTheDocument()
   })
 
   it('resolvido: oferece reabrir (até 7 dias) e avaliar com nota', async () => {

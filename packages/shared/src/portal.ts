@@ -175,6 +175,8 @@ export const configuracaoDoPortalSchema = z
     comentariosAtivos: z.boolean(),
     /** Quantos avisos normais cada cliente pode receber por semana (os urgentes não contam) */
     avisosLimiteSemanal: z.number().int().min(1).max(20),
+    /** Formulário da pesquisa de satisfação dos chamados (Fase 4F); nulo = só as estrelas */
+    formularioSatisfacaoId: z.uuid().nullable(),
   })
   .meta({ id: 'ConfiguracaoDoPortal' })
 export type ConfiguracaoDoPortal = z.infer<typeof configuracaoDoPortalSchema>
@@ -186,6 +188,7 @@ export const atualizarConfiguracaoDoPortalSchema = z
     exigeDoisFatoresDoResponsavel: z.boolean().optional(),
     comentariosAtivos: z.boolean().optional(),
     avisosLimiteSemanal: z.number().int().min(1).max(20).optional(),
+    formularioSatisfacaoId: z.uuid().nullable().optional(),
   })
   .strict()
   .meta({ id: 'AtualizarConfiguracaoDoPortalEntrada' })
@@ -553,6 +556,11 @@ export const chamadoDoPortalSchema = itemDeChamadoDoPortalSchema
     mensagens: z.array(mensagemDoPortalSchema),
     marcos: z.array(marcoDoChamadoSchema),
     avaliacao: avaliacaoDoChamadoSchema.nullable(),
+    /**
+     * Pesquisa de satisfação (Fase 4F): o formulário configurado pela equipe, enquanto o chamado está resolvido
+     * e ainda sem resposta. Nulo = sem pesquisa (vale a avaliação por estrelas).
+     */
+    pesquisa: z.object({ formularioId: z.uuid() }).nullable(),
     acoes: z.object({
       responder: z.boolean(),
       reabrir: z.boolean(),

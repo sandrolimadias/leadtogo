@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { Button } from '@leadtogo/ui/button'
-import { TextField } from '@leadtogo/ui/campos'
+import { Select, TextField } from '@leadtogo/ui/campos'
 import { Switch } from '@leadtogo/ui/checkbox'
 import { Alert, Skeleton } from '@leadtogo/ui/feedback'
 import { toast } from '@leadtogo/ui/toast'
@@ -152,6 +152,69 @@ export function TelaDeConfiguracoesDoPortal() {
           </Button>
         </div>
       </section>
+      <PesquisaDeSatisfacao
+        atual={c.formularioSatisfacaoId}
+        salvando={salvando}
+        aoSalvar={(formularioSatisfacaoId) =>
+          void salvar(
+            { formularioSatisfacaoId },
+            formularioSatisfacaoId
+              ? 'Pesquisa de satisfação ligada'
+              : 'Pesquisa de satisfação desligada',
+          )
+        }
+      />
     </div>
+  )
+}
+
+/**
+ * A pesquisa de satisfação dos chamados (Fase 4F): um formulário publicado com a finalidade "Satisfação do
+ * chamado". Ao resolver o chamado, o cliente vê a pesquisa no portal; a primeira nota de 1 a 5 vira a avaliação.
+ */
+function PesquisaDeSatisfacao({
+  atual,
+  salvando,
+  aoSalvar,
+}: {
+  atual: string | null
+  salvando: boolean
+  aoSalvar: (id: string | null) => void
+}) {
+  const servicos = useServicos()
+  const [escolha, setEscolha] = useState<string | null>(null)
+  const formularios = useQuery({
+    queryKey: ['portal', 'formularios', 'satisfacao'],
+    queryFn: async () => {
+      const r = await servicos.portal.formularios.listar({ situacao: 'publicado', porPagina: 100 })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.itens.filter((f) => f.finalidade === 'satisfacao_chamado')
+    },
+  })
+  const valor = escolha ?? atual ?? ''
+  return (
+    <section
+      aria-label="Pesquisa de satisfação"
+      className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4"
+    >
+      <Select
+        label="Pesquisa de satisfação dos chamados"
+        hint="Formulários publicados com a finalidade “Satisfação do chamado”. Sem pesquisa, o cliente avalia só com as estrelas."
+        value={valor}
+        placeholder="Sem pesquisa (só as estrelas)"
+        options={(formularios.data ?? []).map((f) => ({ value: f.id, label: f.nome }))}
+        onChange={(e) => setEscolha(e.target.value)}
+      />
+      <div>
+        <Button
+          variant="primary"
+          loading={salvando}
+          disabled={escolha === null || escolha === (atual ?? '')}
+          onClick={() => aoSalvar(escolha || null)}
+        >
+          Salvar pesquisa
+        </Button>
+      </div>
+    </section>
   )
 }

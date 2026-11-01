@@ -109,7 +109,7 @@ describe('hub do portal: formulários (Fase 4E)', () => {
     await waitFor(() => expect(s.portal.formularios.salvar).toHaveBeenCalled())
     const salvo = vi.mocked(s.portal.formularios.salvar).mock.calls[0]
     expect(salvo?.[0]).toBe(id(800))
-    expect(salvo?.[1].definicao.campos).toMatchObject([
+    expect(salvo?.[1]?.definicao.campos).toMatchObject([
       { id: 'nome' },
       {
         id: 'e_mail',
@@ -140,7 +140,7 @@ describe('hub do portal: formulários (Fase 4E)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
     await waitFor(() => expect(s.portal.formularios.salvar).toHaveBeenCalled())
     const salvo = vi.mocked(s.portal.formularios.salvar).mock.calls[0]
-    expect(salvo?.[1].definicao.botoes[0]?.acoes).toEqual([
+    expect(salvo?.[1]?.definicao.botoes[0]?.acoes).toEqual([
       expect.objectContaining({
         tipo: 'email',
         para: 'campo',

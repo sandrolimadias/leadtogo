@@ -144,6 +144,10 @@ export const servicosReais: ServicosDoPortal = {
       protegido(async () =>
         daApi(await api.POST('/v1/portal/chamados/{id}/avaliacao', { ...chave(id), body: dados })),
       ),
+    responderPesquisa: (id, dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/chamados/{id}/pesquisa', { ...chave(id), body: dados })),
+      ),
     anexar: (id, arquivo) =>
       protegido(async () => {
         const pedido = daApi(
