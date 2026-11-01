@@ -61,7 +61,7 @@ export function manipuladorDeEnvioDeAviso(
       mensagem: string
       link: string | null
       urgencia: 'normal' | 'urgente'
-      alcance: 'todos' | 'empresas'
+      alcance: 'todos' | 'empresas' | 'tags'
     }>(sql`
       UPDATE avisos SET situacao = 'enviado', enviado_em = now(), atualizado_em = now()
       WHERE id = ${avisoId} AND situacao = 'agendado' AND excluido_em IS NULL
@@ -87,7 +87,9 @@ export function manipuladorDeEnvioDeAviso(
       WHERE pa.situacao = 'ativo' AND pa.excluido_em IS NULL
         AND (${aviso.alcance} = 'todos'
              OR EXISTS (SELECT 1 FROM aviso_empresas ae
-                        WHERE ae.aviso_id = ${avisoId} AND ae.empresa_id = pa.empresa_id))`)
+                        WHERE ae.aviso_id = ${avisoId} AND ae.empresa_id = pa.empresa_id)
+             OR EXISTS (SELECT 1 FROM aviso_tags at JOIN contato_tags ctt ON ctt.tag_id = at.tag_id
+                        WHERE at.aviso_id = ${avisoId} AND ctt.contato_id = pa.contato_id))`)
 
     const urgente = aviso.urgencia === 'urgente'
     const titulo = urgente ? 'Aviso urgente' : 'Aviso'

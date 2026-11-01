@@ -16,6 +16,7 @@ import { toast } from '@leadtogo/ui/toast'
 import { tamanhoLegivel } from '../chamados/rotulos'
 
 import { SelecaoDeEmpresas } from './selecao-de-empresas'
+import { SelecaoDeTags } from './selecao-de-tags'
 
 /**
  * Novo documento (escolhe o arquivo, que sobe direto ao armazenamento e passa pelo antivírus) ou edição dos dados
@@ -33,8 +34,9 @@ export function EditorDeDocumento({
   const servicos = useServicos()
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
   const [descricao, setDescricao] = useState(inicial?.descricao ?? '')
-  const [alcance, setAlcance] = useState<'todos' | 'empresas'>(inicial?.alcance ?? 'todos')
+  const [alcance, setAlcance] = useState<'todos' | 'empresas' | 'tags'>(inicial?.alcance ?? 'todos')
   const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>(inicial?.empresas ?? [])
+  const [tags, setTags] = useState<{ id: string; nome: string }[]>(inicial?.tags ?? [])
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -42,7 +44,7 @@ export function EditorDeDocumento({
   const pronto =
     titulo.trim().length >= 3 &&
     (inicial !== null || arquivo !== null) &&
-    (alcance === 'todos' || empresas.length > 0)
+    (alcance === 'todos' || (alcance === 'empresas' ? empresas.length > 0 : tags.length > 0))
 
   async function salvar() {
     setErro(null)
@@ -51,6 +53,7 @@ export function EditorDeDocumento({
       descricao: descricao.trim() || null,
       alcance,
       empresaIds: alcance === 'empresas' ? empresas.map((e) => e.id) : [],
+      tagIds: alcance === 'tags' ? tags.map((t) => t.id) : [],
     }
     setOcupado(true)
     try {
@@ -171,12 +174,14 @@ export function EditorDeDocumento({
           options={[
             { value: 'todos', label: 'Todos os clientes' },
             { value: 'empresas', label: 'Empresas escolhidas' },
+            { value: 'tags', label: 'Contatos com tags' },
           ]}
-          onChange={(e) => setAlcance(e.target.value as 'todos' | 'empresas')}
+          onChange={(e) => setAlcance(e.target.value as 'todos' | 'empresas' | 'tags')}
         />
         {alcance === 'empresas' ? (
           <SelecaoDeEmpresas empresas={empresas} aoMudar={setEmpresas} />
         ) : null}
+        {alcance === 'tags' ? <SelecaoDeTags tags={tags} aoMudar={setTags} /> : null}
       </div>
     </Dialog>
   )

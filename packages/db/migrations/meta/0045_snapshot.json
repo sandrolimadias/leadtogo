@@ -1,5 +1,5 @@
 {
-  "id": "06fd17d8-dc44-44b3-a215-e1894e2b39e6",
+  "id": "3863a21d-cdf9-4275-8c08-763ac0f427ea",
   "prevId": "6956fb70-f251-4cad-a5ed-71747f4bec8d",
   "version": "7",
   "dialect": "postgresql",
@@ -112,93 +112,6 @@
         "microrregioes_uf_estados_uf_fk": {
           "name": "microrregioes_uf_estados_uf_fk",
           "tableFrom": "microrregioes",
-          "tableTo": "estados",
-          "columnsFrom": [
-            "uf"
-          ],
-          "columnsTo": [
-            "uf"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.municipio_contornos": {
-      "name": "municipio_contornos",
-      "schema": "",
-      "columns": {
-        "municipio_codigo": {
-          "name": "municipio_codigo",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "uf": {
-          "name": "uf",
-          "type": "char(2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "contorno": {
-          "name": "contorno",
-          "type": "geometry(MultiPolygon, 4326)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fonte": {
-          "name": "fonte",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "atualizado_em": {
-          "name": "atualizado_em",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "municipio_contornos_uf_idx": {
-          "name": "municipio_contornos_uf_idx",
-          "columns": [
-            {
-              "expression": "uf",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "municipio_contornos_municipio_codigo_municipios_codigo_ibge_fk": {
-          "name": "municipio_contornos_municipio_codigo_municipios_codigo_ibge_fk",
-          "tableFrom": "municipio_contornos",
-          "tableTo": "municipios",
-          "columnsFrom": [
-            "municipio_codigo"
-          ],
-          "columnsTo": [
-            "codigo_ibge"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "municipio_contornos_uf_estados_uf_fk": {
-          "name": "municipio_contornos_uf_estados_uf_fk",
-          "tableFrom": "municipio_contornos",
           "tableTo": "estados",
           "columnsFrom": [
             "uf"
@@ -4866,39 +4779,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "empresa_tags_historico_tag_empresa_idx": {
-          "name": "empresa_tags_historico_tag_empresa_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "tag_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "empresa_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "em",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -7766,28 +7646,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "atividades_realizadas_idx": {
-          "name": "atividades_realizadas_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "realizada_em",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"atividades\".\"situacao\" = 'realizada'",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -17866,6 +17724,13 @@
           "notNull": true,
           "default": true
         },
+        "tema": {
+          "name": "tema",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'sistema'"
+        },
         "criado_em": {
           "name": "criado_em",
           "type": "timestamp with time zone",
@@ -17930,6 +17795,10 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
+        "portal_preferencias_tema_chk": {
+          "name": "portal_preferencias_tema_chk",
+          "value": "\"portal_preferencias\".\"tema\" IN ('claro', 'escuro', 'sistema')"
+        },
         "portal_preferencias_silencio_chk": {
           "name": "portal_preferencias_silencio_chk",
           "value": "(\"portal_preferencias\".\"silencio_inicio\" IS NULL) = (\"portal_preferencias\".\"silencio_fim\" IS NULL) AND (\"portal_preferencias\".\"silencio_inicio\" IS NULL OR \"portal_preferencias\".\"silencio_inicio\" <> \"portal_preferencias\".\"silencio_fim\")"

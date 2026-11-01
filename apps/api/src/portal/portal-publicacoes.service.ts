@@ -12,6 +12,7 @@ import {
 } from '@leadtogo/shared'
 import { Injectable } from '@nestjs/common'
 
+import { MidiasService } from './midias.service.js'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { auditarAtoDoPortal } from './portal-auditoria.js'
@@ -51,19 +52,26 @@ export function nomeReduzido(nome: string): string {
  */
 @Injectable()
 export class PortalPublicacoesService {
-  constructor(private readonly ctx: ContextoTenantService) {}
+  constructor(
+    private readonly ctx: ContextoTenantService,
+    private readonly midias: MidiasService,
+  ) {}
 
-  private paraPublicacao(l: LinhaDoFeed): PublicacaoDoPortal {
+  private paraPublicacao(
+    l: LinhaDoFeed,
+    midias: PublicacaoDoPortal['midias'] = [],
+  ): PublicacaoDoPortal {
     return {
       id: l.id,
       titulo: l.titulo,
       corpo: l.corpo,
       publicadaEm: new Date(l.publicada_em).toISOString(),
       fixada: l.fixada,
-      reacoes: { curtir: l.total_curtir, apoiar: l.total_apoiar, parabens: l.total_parabens },
+      reacoes: { curtir: l.total_curtir, parabens: l.total_parabens },
       minhasReacoes: l.minhas,
       comentarios: l.comentarios,
       comentariosAbertos: l.comentarios_ligados && !l.comentarios_bloqueados,
+      midias,
     }
   }
 
@@ -73,7 +81,7 @@ export class PortalPublicacoesService {
       p.total_apoiar, p.total_parabens,
       (SELECT count(*)::int FROM publicacao_comentarios c WHERE c.publicacao_id = p.id AND c.situacao = 'visivel') AS comentarios,
       ARRAY(SELECT r.tipo::text FROM publicacao_reacoes r
-            WHERE r.publicacao_id = p.id AND r.acesso_id = ${this.ctx.portal.acessoId} ORDER BY r.tipo) AS minhas,
+            WHERE r.publicacao_id = p.id AND r.acesso_id = ${this.ctx.portal.acessoId} AND r.tipo <> 'apoiar' ORDER BY r.tipo) AS minhas,
       coalesce((SELECT tc.portal_comentarios_ativos FROM tenant_configuracoes tc), true) AS comentarios_ligados`
   }
 
@@ -90,7 +98,14 @@ export class PortalPublicacoesService {
       SELECT ${this.colunas} FROM publicacoes p WHERE ${this.visivel()}
       ORDER BY p.fixada DESC, p.publicada_em DESC, p.id DESC
       LIMIT ${c.porPagina} OFFSET ${(c.pagina - 1) * c.porPagina}`)
-    return { itens: [...linhas].map((l) => this.paraPublicacao(l)), total: total?.n ?? 0 }
+    const midias = await this.midias.doPortal(
+      db,
+      linhas.map((l) => l.id),
+    )
+    return {
+      itens: [...linhas].map((l) => this.paraPublicacao(l, midias.get(l.id) ?? [])),
+      total: total?.n ?? 0,
+    }
   }
 
   private async carregar(id: string): Promise<LinhaDoFeed> {
@@ -104,7 +119,8 @@ export class PortalPublicacoesService {
   }
 
   async obter(id: string): Promise<PublicacaoDoPortal> {
-    return this.paraPublicacao(await this.carregar(id))
+    const midias = await this.midias.doPortal(this.ctx.db(), [id])
+    return this.paraPublicacao(await this.carregar(id), midias.get(id) ?? [])
   }
 
   /** Marca como lidas (uma vez por pessoa) as publicações que o cliente de fato enxerga. */

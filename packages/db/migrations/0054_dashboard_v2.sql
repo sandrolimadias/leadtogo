@@ -27,7 +27,7 @@ DO $$
 DECLARE
   t record;
 BEGIN
-  CREATE POLICY carga_0045_le_tenants ON tenants FOR SELECT TO leadtogo_owner USING (true);
+  CREATE POLICY carga_0054_le_tenants ON tenants FOR SELECT TO leadtogo_owner USING (true);
   FOR t IN SELECT id FROM tenants LOOP
     PERFORM set_config('app.tenant_id', t.id::text, true);
     INSERT INTO empresa_tags_historico (id, tenant_id, empresa_id, tag_id, acao, em, por, automatica)
@@ -46,5 +46,5 @@ BEGIN
       );
   END LOOP;
   PERFORM set_config('app.tenant_id', '', true);
-  DROP POLICY carga_0045_le_tenants ON tenants;
+  DROP POLICY carga_0054_le_tenants ON tenants;
 END $$;

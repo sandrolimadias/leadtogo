@@ -1,10 +1,24 @@
 import type { Evento, ItemDeEvento, ParticipanteDoEvento } from '@leadtogo/api-client'
-import { ROTULO_DA_SITUACAO_DO_EVENTO, type SituacaoDoEvento } from '@leadtogo/shared'
+import {
+  ROTULO_DA_SITUACAO_DO_EVENTO,
+  TAMANHOS_DE_PAGINA_DE_CARTOES,
+  type SituacaoDoEvento,
+} from '@leadtogo/shared'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, Megaphone, Pencil, Plus, Trash2, UserMinus, XCircle } from 'lucide-react'
+import {
+  CalendarDays,
+  CircleCheck,
+  Megaphone,
+  Pencil,
+  Plus,
+  Trash2,
+  UserMinus,
+  XCircle,
+} from 'lucide-react'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
+import { usePaginaDeCartoes } from '@/lib/por-pagina-local'
 import { usePermissoes } from '@/auth/permissoes'
 import { Button } from '@leadtogo/ui/button'
 import { TextField } from '@leadtogo/ui/campos'
@@ -13,11 +27,14 @@ import { Dialog } from '@leadtogo/ui/dialog'
 import { Badge, type TomDoBadge } from '@leadtogo/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { Markdown } from '@leadtogo/ui/markdown'
+import { Paginacao } from '@leadtogo/ui/paginacao'
 import { toast } from '@leadtogo/ui/toast'
 
 import { dataHora } from '../chamados/rotulos'
 
 import { EditorDeEvento } from './editor-de-evento'
+import { jaComecou } from './evento-no-tempo'
+import { AcoesDoEvento } from './participacao-do-evento'
 
 const TOM: Record<SituacaoDoEvento, TomDoBadge> = {
   rascunho: 'neutral',
@@ -69,15 +86,28 @@ function LinhaDaLista({
   )
 }
 
+const ROTULO_DA_PRESENCA = {
+  nao_registrada: null,
+  checkin_qr: 'Check-in pelo QR',
+  manual: 'Presença manual',
+} as const
+
 function Pessoa({
   p,
   podeGerir,
+  podeMarcar,
   aoRemover,
+  aoMarcar,
 }: {
   p: ParticipanteDoEvento
   podeGerir: boolean
+  /** Registrar ou desfazer a presença (evento começado e não encerrado) */
+  podeMarcar: boolean
   aoRemover: () => void
+  aoMarcar: (presente: boolean) => void
 }) {
+  const presente = p.presenca !== 'nao_registrada'
+  const rotulo = ROTULO_DA_PRESENCA[p.presenca]
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-2 last:border-b-0">
       {p.posicaoNaFila !== null ? (
@@ -88,14 +118,32 @@ function Pessoa({
       <span className="flex min-w-0 flex-1 basis-48 flex-col">
         <span className="truncate font-semibold">{p.pessoa}</span>
         <span className="truncate text-xs text-ink-muted">
-          {p.empresa} · {p.email}
+          {p.empresa ?? 'Sem empresa'} · {p.email}
+          {p.origem === 'equipe' ? ' · incluído pela equipe' : ''}
+          {p.origem === 'publico' ? ' · inscrição pública' : ''}
         </span>
       </span>
+      {rotulo ? <Badge tone="success">{rotulo}</Badge> : null}
+      {p.avaliou ? <Badge tone="info">Avaliou</Badge> : null}
       <span className="text-xs text-ink-muted tabular-nums">
         {p.promovidoEm
           ? `Promovido em ${dataHora(p.promovidoEm)}`
           : dataHora(p.confirmadoEm ?? p.entrouNaFilaEm)}
       </span>
+      {podeMarcar && p.situacao === 'confirmado' ? (
+        <Button
+          size="sm"
+          variant={presente ? 'ghost' : 'secondary'}
+          icon={CircleCheck}
+          aria-pressed={presente}
+          aria-label={
+            presente ? `Desfazer presença de ${p.pessoa}` : `Marcar presença de ${p.pessoa}`
+          }
+          onClick={() => aoMarcar(!presente)}
+        >
+          {presente ? 'Desfazer' : 'Presente'}
+        </Button>
+      ) : null}
       {podeGerir ? (
         <Button
           size="sm"
@@ -127,6 +175,7 @@ function Detalhe({
   const { pode } = usePermissoes()
   const queryClient = useQueryClient()
   const podeGerir = pode('portal.agenda')
+  const podePresenca = podeGerir || pode('portal.eventos_presenca')
   const [cancelando, setCancelando] = useState(false)
   const [motivo, setMotivo] = useState('')
   const [excluindo, setExcluindo] = useState(false)
@@ -167,6 +216,18 @@ function Detalhe({
     )
   }
   const passado = new Date(e.fimEm).getTime() <= agora
+  const podeMarcar =
+    podePresenca && e.situacao === 'publicado' && e.encerradoEm === null && jaComecou(e, agora)
+  const marcar = (p: ParticipanteDoEvento, presente: boolean) => {
+    void servicos.portal.eventos.registrarPresenca(e.id, p.id, presente).then((r) => {
+      if (!r.ok) {
+        toast.error(r.erro.mensagem)
+        return
+      }
+      void participantes.refetch()
+      recarregar()
+    })
+  }
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-3 border-b border-border p-4">
@@ -181,7 +242,9 @@ function Detalhe({
               {e.local ? ` · ${e.local}` : ''} ·{' '}
               {e.alcance === 'todos'
                 ? 'Todos os clientes'
-                : `${e.empresas.length} ${e.empresas.length === 1 ? 'empresa' : 'empresas'}`}
+                : e.alcance === 'tags'
+                  ? `Tags: ${e.tags.map((t) => t.nome).join(', ')}`
+                  : `${e.empresas.length} ${e.empresas.length === 1 ? 'empresa' : 'empresas'}`}
             </p>
           </div>
           {podeGerir ? (
@@ -251,6 +314,14 @@ function Detalhe({
             Empresas: {e.empresas.map((x) => x.nome).join(', ')}
           </p>
         ) : null}
+        <AcoesDoEvento
+          e={e}
+          agora={agora}
+          aoMudar={() => {
+            void participantes.refetch()
+            recarregar()
+          }}
+        />
       </div>
 
       {e.situacao !== 'rascunho' ? (
@@ -273,7 +344,9 @@ function Detalhe({
                       key={p.id}
                       p={p}
                       podeGerir={podeGerir && e.situacao === 'publicado' && !passado}
+                      podeMarcar={podeMarcar}
                       aoRemover={() => setRemovendo(p)}
+                      aoMarcar={(v) => marcar(p, v)}
                     />
                   ))}
                 </ul>
@@ -293,11 +366,32 @@ function Detalhe({
                       key={p.id}
                       p={p}
                       podeGerir={podeGerir && e.situacao === 'publicado' && !passado}
+                      podeMarcar={false}
                       aoRemover={() => setRemovendo(p)}
+                      aoMarcar={() => undefined}
                     />
                   ))}
                 </ul>
               )}
+              {participantes.data.cancelados.length > 0 ? (
+                <>
+                  <h3 className="m-0 border-t border-border px-4 pt-3 pb-2 text-[15px] leading-5 font-semibold">
+                    Cancelaram ({participantes.data.cancelados.length})
+                  </h3>
+                  <ul aria-label="Cancelaram" className="m-0 list-none border-t border-border p-0">
+                    {participantes.data.cancelados.map((p) => (
+                      <Pessoa
+                        key={p.id}
+                        p={p}
+                        podeGerir={false}
+                        podeMarcar={false}
+                        aoRemover={() => undefined}
+                        aoMarcar={() => undefined}
+                      />
+                    ))}
+                  </ul>
+                </>
+              ) : null}
             </>
           )}
         </section>
@@ -417,7 +511,7 @@ function Detalhe({
           }
         >
           <p className="m-0 text-sm">
-            Tirar {removendo.pessoa} ({removendo.empresa}) de “{e.titulo}”?
+            Tirar {removendo.pessoa} ({removendo.empresa ?? 'sem empresa'}) de “{e.titulo}”?
           </p>
         </Dialog>
       ) : null}
@@ -433,12 +527,17 @@ export function AgendaDoPortal() {
   const [aba, setAba] = useState<Aba>('proximos')
   const [escolhido, setEscolhido] = useState<string | null>(null)
   const [editando, setEditando] = useState<Evento | 'novo' | null>(null)
+  const paginacao = usePaginaDeCartoes('portal_agenda')
   const lista = useQuery({
-    queryKey: ['portal', 'eventos', aba],
+    queryKey: ['portal', 'eventos', aba, paginacao.pagina, paginacao.porPagina],
     placeholderData: keepPreviousData,
     retry: false,
     queryFn: async () => {
-      const r = await servicos.portal.eventos.listar({ aba, porPagina: 50 })
+      const r = await servicos.portal.eventos.listar({
+        aba,
+        pagina: paginacao.pagina,
+        porPagina: paginacao.porPagina,
+      })
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -461,7 +560,10 @@ export function AgendaDoPortal() {
               key={a.valor}
               type="button"
               aria-pressed={aba === a.valor}
-              onClick={() => setAba(a.valor)}
+              onClick={() => {
+                setAba(a.valor)
+                paginacao.voltarAoInicio()
+              }}
               className={cn(
                 'cursor-pointer rounded-sm border-0 px-3 py-1 text-[13px] font-semibold',
                 aba === a.valor ? 'bg-surface text-ink shadow-sm' : 'bg-transparent text-ink-muted',
@@ -494,16 +596,27 @@ export function AgendaDoPortal() {
               description="Crie um evento, publique, e os clientes confirmam a presença pelo portal."
             />
           ) : (
-            <ul aria-label="Eventos" className="m-0 list-none p-0">
-              {itens.map((e) => (
-                <LinhaDaLista
-                  key={e.id}
-                  e={e}
-                  ativa={e.id === idAtivo}
-                  aoEscolher={() => setEscolhido(e.id)}
-                />
-              ))}
-            </ul>
+            <>
+              <ul aria-label="Eventos" className="m-0 list-none p-0">
+                {itens.map((e) => (
+                  <LinhaDaLista
+                    key={e.id}
+                    e={e}
+                    ativa={e.id === idAtivo}
+                    aoEscolher={() => setEscolhido(e.id)}
+                  />
+                ))}
+              </ul>
+              <Paginacao
+                pagina={paginacao.pagina}
+                porPagina={paginacao.porPagina}
+                total={lista.data.total}
+                tamanhos={TAMANHOS_DE_PAGINA_DE_CARTOES}
+                rotuloDoTamanho="Por página"
+                aoMudarPagina={paginacao.irPara}
+                aoMudarPorPagina={paginacao.mudarTamanho}
+              />
+            </>
           )}
         </div>
         {idAtivo ? (

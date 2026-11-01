@@ -1,12 +1,12 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomInt } from 'node:crypto'
 
-import { type Conexao, type SQL, sql } from '@leadtogo/db'
+import { type Conexao, novoId, type SQL, sql } from '@leadtogo/db'
 import type { PreviaDoLink } from '@leadtogo/shared'
 import { Inject, Injectable, Logger, type OnModuleDestroy } from '@nestjs/common'
 
 import type { Transacao } from '../acesso/contexto-tenant.service.js'
 import { EmailService } from '../email/email.service.js'
-import { emailPortalEntrada } from '../email/modelos.js'
+import { emailPortalCodigo } from '../email/modelos.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ehViolacaoDeUnicidade } from '../http/sqlstate.js'
 import { BANCO } from '../infra/infra.module.js'
@@ -18,6 +18,25 @@ import { PortalSessaoService } from './portal-sessao.service.js'
 import { hashDoTokenDoPortal, tenantDoToken } from './portal-token.js'
 
 const linkInvalido = () => new ErroApi('link_invalido', 'Link inválido ou expirado.', 404)
+const codigoInvalido = () =>
+  new ErroApi('codigo_invalido', 'Código inválido ou expirado. Peça um novo código.', 401)
+
+/** O código de entrada vale 10 minutos (Fase 4B, B-23). */
+export const VALIDADE_DO_CODIGO_MIN = 10
+
+/** Seis dígitos aleatórios (000000 a 999999), do gerador criptográfico. */
+export const novoCodigoDeEntrada = (): string => String(randomInt(0, 1_000_000)).padStart(6, '0')
+
+/** Só o hash fica no banco: SHA-256 do e-mail (minúsculo) e do código. */
+export const hashDoCodigoDeEntrada = (email: string, codigo: string): string =>
+  createHash('sha256').update(`${email.toLowerCase()}:${codigo}`).digest('hex')
+
+export interface EmpresaDoAcesso {
+  acessoId: string
+  nome: string
+  papel: 'responsavel' | 'colega'
+  atual: boolean
+}
 
 type DadosDoLink = {
   link_id: string
@@ -71,6 +90,11 @@ export class PortalEntradaService implements OnModuleDestroy {
    * Responde sempre igual, tenha o e-mail acesso ou não (não revela quem é cliente). O trabalho roda em
    * segundo plano para o tempo de resposta também não revelar. Limite por e-mail além do limite por IP da rota.
    */
+  /** Sem PORTAL_URL o portal está desligado: 503 (a configuração faltando não é segredo). */
+  conferirPortal(): void {
+    this.links.origemDoPortal()
+  }
+
   pedirEntrada(email: string, ip: string | undefined): void {
     this.links.origemDoPortal() // sem PORTAL_URL: 503 (a configuração faltando não é segredo)
     const trabalho = this.processarPedido(email, ip)
@@ -90,38 +114,194 @@ export class PortalEntradaService implements OnModuleDestroy {
     const acessos = await this.banco.db.execute<{ tenant_id: string; acesso_id: string }>(
       sql`SELECT tenant_id, acesso_id FROM app_portal_acessos_por_email(${email}::citext)`,
     )
-    for (const { tenant_id: tenantId, acesso_id: acessoId } of acessos) {
+    // Um código por empresa da equipe (tenant): o mesmo e-mail em duas empresas-clientes do mesmo CRM
+    // recebe UM código e escolhe a empresa depois de entrar (Fase 4B, B-1)
+    const porTenant = new Map<string, string[]>()
+    for (const a of acessos)
+      porTenant.set(a.tenant_id, [...(porTenant.get(a.tenant_id) ?? []), a.acesso_id])
+    for (const [tenantId, ids] of porTenant) {
       const enviar = await this.noTenant(tenantId, async (tx) => {
-        const [d] = await tx.execute<{
+        const validos = await tx.execute<{
           contato_nome: string
           portal_nome: string | null
           empresa_nome: string
-          portal_ativo: boolean | null
-          tenant_situacao: string
         }>(sql`
-          SELECT c.nome AS contato_nome, tc.portal_nome, coalesce(e.nome_fantasia, e.razao_social) AS empresa_nome,
-                 tc.portal_ativo, t.situacao::text AS tenant_situacao
+          SELECT c.nome AS contato_nome, tc.portal_nome, coalesce(e.nome_fantasia, e.razao_social) AS empresa_nome
           FROM portal_acessos a
           JOIN contatos c ON c.id = a.contato_id AND c.excluido_em IS NULL
           JOIN empresas e ON e.id = a.empresa_id AND e.excluido_em IS NULL
-          JOIN tenants t ON t.id = a.tenant_id
-          LEFT JOIN tenant_configuracoes tc ON tc.tenant_id = a.tenant_id
-          WHERE a.id = ${acessoId} AND a.situacao = 'ativo' AND a.excluido_em IS NULL`)
-        if (!d || d.portal_ativo !== true || !['teste', 'ativo'].includes(d.tenant_situacao))
-          return null
-        const token = await this.links.criar(tx, { tenantId, acessoId, finalidade: 'entrada', ip })
-        return { token, nome: d.contato_nome, portal: d.portal_nome ?? d.empresa_nome }
+          JOIN tenants t ON t.id = a.tenant_id AND t.situacao IN ('teste', 'ativo')
+          JOIN tenant_configuracoes tc ON tc.tenant_id = a.tenant_id AND tc.portal_ativo
+          WHERE a.id = ANY (${`{${ids.join(',')}}`}::uuid[]) AND a.situacao = 'ativo' AND a.excluido_em IS NULL
+          ORDER BY a.ultimo_acesso_em DESC NULLS LAST, a.criado_em`)
+        const [d] = validos
+        if (!d) return null
+        const codigo = novoCodigoDeEntrada()
+        // Um código vivo por e-mail e tenant: pedir de novo invalida o anterior
+        await tx.execute(sql`
+          UPDATE portal_codigos SET usado_em = now(), atualizado_em = now()
+          WHERE email = ${email} AND usado_em IS NULL`)
+        await tx.execute(sql`
+          INSERT INTO portal_codigos (id, tenant_id, email, codigo_hash, expira_em, ip)
+          VALUES (${novoId()}, ${tenantId}, ${email}, ${hashDoCodigoDeEntrada(email, codigo)},
+                  now() + ${`${VALIDADE_DO_CODIGO_MIN} minutes`}::interval, ${ip ?? null})`)
+        return {
+          codigo,
+          nome: d.contato_nome,
+          portal: d.portal_nome ?? (validos.length > 1 ? 'Portal do Cliente' : d.empresa_nome),
+        }
       })
       if (!enviar) continue
       await this.email.enfileirar(
         email,
-        emailPortalEntrada({
-          nome: enviar.nome,
-          portal: enviar.portal,
-          link: this.links.enderecoDoLink(enviar.token),
-        }),
+        emailPortalCodigo({ nome: enviar.nome, portal: enviar.portal, codigo: enviar.codigo }),
       )
     }
+  }
+
+  // --------------------------------------------------------------------------- entrar com o código
+
+  /**
+   * Confere o código (uso único, 10 minutos, 5 tentativas) e abre a sessão no acesso usado por último. Se o
+   * e-mail tem acesso a mais de uma empresa-cliente, a tela oferece a troca logo depois (`/portal/empresas`).
+   */
+  async entrarComCodigo(
+    email: string,
+    codigo: string,
+    aceitaPrivacidade: boolean | undefined,
+    ip: string | undefined,
+    agente: string | undefined,
+  ): Promise<{ cookie: string; portal: ContextoDoPortal }> {
+    const [r] = await this.banco.db.execute<{ tenant_id: string; codigo_id: string }>(
+      sql`SELECT tenant_id, codigo_id FROM app_portal_conferir_codigo(${email}::citext, ${hashDoCodigoDeEntrada(email, codigo)})`,
+    )
+    if (!r) throw codigoInvalido()
+    return this.noTenant(r.tenant_id, async (tx) => {
+      const [a] = await tx.execute<{
+        acesso_id: string
+        contato_id: string
+        privacidade_aceita_em: string | Date | null
+      }>(sql`
+        SELECT a.id AS acesso_id, a.contato_id, a.privacidade_aceita_em FROM portal_acessos a
+        JOIN contatos c ON c.id = a.contato_id AND c.excluido_em IS NULL
+        JOIN empresas e ON e.id = a.empresa_id AND e.excluido_em IS NULL
+        JOIN tenants t ON t.id = a.tenant_id AND t.situacao IN ('teste', 'ativo')
+        JOIN tenant_configuracoes tc ON tc.tenant_id = a.tenant_id AND tc.portal_ativo
+        WHERE a.email = ${email} AND a.situacao = 'ativo' AND a.excluido_em IS NULL
+        ORDER BY a.ultimo_acesso_em DESC NULLS LAST, a.criado_em LIMIT 1`)
+      if (!a) throw codigoInvalido()
+      // O aceite é conferido ANTES de gastar o código: sem ele, a pessoa marca e manda o mesmo código de novo
+      if (a.privacidade_aceita_em === null && aceitaPrivacidade !== true) {
+        throw new ErroApi(
+          'privacidade_obrigatoria',
+          'Para continuar, aceite o aviso de privacidade do portal.',
+          422,
+        )
+      }
+      // Uso único e atômico: dois envios ao mesmo tempo, só um passa
+      const [gasto] = await tx.execute(sql`
+        UPDATE portal_codigos SET usado_em = now(), atualizado_em = now()
+        WHERE id = ${r.codigo_id} AND usado_em IS NULL AND expira_em > now() RETURNING id`)
+      if (!gasto) throw codigoInvalido()
+      if (a.privacidade_aceita_em === null) {
+        await tx.execute(sql`
+          UPDATE portal_acessos SET privacidade_aceita_em = now(), atualizado_em = now() WHERE id = ${a.acesso_id}`)
+      }
+      return this.abrirSessao(
+        tx,
+        r.tenant_id,
+        a.acesso_id,
+        a.contato_id,
+        'entrada_por_codigo',
+        ip,
+        agente,
+      )
+    })
+  }
+
+  private async abrirSessao(
+    tx: Transacao,
+    tenantId: string,
+    acessoId: string,
+    contatoId: string,
+    acao: string,
+    ip: string | undefined,
+    agente: string | undefined,
+  ): Promise<{ cookie: string; portal: ContextoDoPortal }> {
+    const sessao = await this.sessoes.criar(tx, { tenantId, acessoId, ip, agente })
+    await tx.execute(sql`UPDATE portal_acessos SET ultimo_acesso_em = now() WHERE id = ${acessoId}`)
+    await auditarAtoDoPortal(tx, {
+      tenantId,
+      acessoId,
+      contatoId,
+      entidade: 'portal_acesso',
+      entidadeId: acessoId,
+      acao,
+      ip,
+    })
+    const portal = await this.sessoes.resolver(tx, tenantId, sessao.token)
+    return { cookie: sessao.token, portal }
+  }
+
+  // ------------------------------------------------------------------------ várias empresas (B-1)
+
+  /** As empresas-clientes que o MESMO e-mail acessa neste CRM (só acessos ativos). */
+  async empresasDoEmail(p: ContextoDoPortal): Promise<EmpresaDoAcesso[]> {
+    return this.noTenant(p.tenantId, async (tx) => {
+      const linhas = await tx.execute<{
+        acesso_id: string
+        empresa_nome: string
+        papel: EmpresaDoAcesso['papel']
+      }>(sql`
+        SELECT a.id AS acesso_id, coalesce(e.nome_fantasia, e.razao_social) AS empresa_nome, a.papel::text AS papel
+        FROM portal_acessos a
+        JOIN empresas e ON e.id = a.empresa_id AND e.excluido_em IS NULL
+        JOIN contatos c ON c.id = a.contato_id AND c.excluido_em IS NULL
+        WHERE a.email = ${p.email} AND a.situacao = 'ativo' AND a.excluido_em IS NULL
+        ORDER BY lower(coalesce(e.nome_fantasia, e.razao_social))`)
+      return linhas.map((l) => ({
+        acessoId: l.acesso_id,
+        nome: l.empresa_nome,
+        papel: l.papel,
+        atual: l.acesso_id === p.acessoId,
+      }))
+    })
+  }
+
+  /**
+   * Troca a empresa-cliente sem pedir outro código: só para outro acesso ATIVO do mesmo e-mail no mesmo CRM.
+   * Abre uma sessão nova no acesso escolhido e encerra a atual (cada sessão é de um acesso só).
+   */
+  async trocarEmpresa(
+    p: ContextoDoPortal,
+    acessoId: string,
+    ip: string | undefined,
+    agente: string | undefined,
+  ): Promise<{ cookie: string; portal: ContextoDoPortal }> {
+    if (acessoId === p.acessoId)
+      throw new ErroApi('mesma_empresa', 'Você já está nesta empresa.', 409)
+    return this.noTenant(p.tenantId, async (tx) => {
+      const [alvo] = await tx.execute<{ contato_id: string }>(sql`
+        SELECT a.contato_id FROM portal_acessos a
+        JOIN empresas e ON e.id = a.empresa_id AND e.excluido_em IS NULL
+        JOIN contatos c ON c.id = a.contato_id AND c.excluido_em IS NULL
+        WHERE a.id = ${acessoId} AND a.email = ${p.email} AND a.situacao = 'ativo' AND a.excluido_em IS NULL`)
+      if (!alvo) {
+        throw new ErroApi('empresa_indisponivel', 'Você não tem acesso a esta empresa.', 404)
+      }
+      await tx.execute(sql`
+        UPDATE portal_sessoes SET revogada_em = now(), atualizado_em = now()
+        WHERE id = ${p.sessaoId} AND revogada_em IS NULL`)
+      return this.abrirSessao(
+        tx,
+        p.tenantId,
+        acessoId,
+        alvo.contato_id,
+        'troca_de_empresa',
+        ip,
+        agente,
+      )
+    })
   }
 
   // ------------------------------------------------------------------------- conferir e consumir o link

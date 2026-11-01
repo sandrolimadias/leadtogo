@@ -1,7 +1,13 @@
 import { z } from 'zod'
 
 import { TAMANHO_MAXIMO_DE_PAGINA } from './paginacao.js'
-import { alcanceDaPublicacaoSchema, MAXIMO_DE_EMPRESAS_NO_ALCANCE } from './publicacoes.js'
+import {
+  alcanceDaPublicacaoSchema,
+  MAXIMO_DE_EMPRESAS_NO_ALCANCE,
+  tagDoAlcanceSchema,
+  tagIdsDoAlcanceSchema,
+  validarAudiencia,
+} from './publicacoes.js'
 
 // Portal do cliente, Fase 3E: avisos curtos (notificação no sino + push + e-mail), preferências de quem recebe,
 // inscrição de push (Web Push/VAPID) e busca global. Docs: plano_portal_cliente.md (seção 8) e funcionalidades.md (9G).
@@ -59,6 +65,7 @@ export const avisoSchema = z
     emailsEnfileirados: z.number().int().nonnegative(),
     criadoEm: instante,
     empresas: z.array(z.object({ id: z.uuid(), nome: z.string() })),
+    tags: z.array(tagDoAlcanceSchema),
   })
   .meta({ id: 'Aviso' })
 export type Aviso = z.infer<typeof avisoSchema>
@@ -101,6 +108,7 @@ export const criarAvisoSchema = z
     urgencia: urgenciaDoAvisoSchema.default('normal'),
     alcance: alcanceDaPublicacaoSchema,
     empresaIds: z.array(z.uuid()).max(MAXIMO_DE_EMPRESAS_NO_ALCANCE).default([]),
+    tagIds: tagIdsDoAlcanceSchema.default([]),
     /** Vazio = enviar agora; com data = agendar (precisa estar no futuro) */
     enviarEm: instante
       .nullable()
@@ -108,22 +116,7 @@ export const criarAvisoSchema = z
       .transform((v) => v ?? null),
   })
   .strict()
-  .superRefine((d, ctx) => {
-    if (d.alcance === 'empresas' && d.empresaIds.length === 0) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['empresaIds'],
-        message: 'escolha ao menos uma empresa',
-      })
-    }
-    if (d.alcance === 'todos' && d.empresaIds.length > 0) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['empresaIds'],
-        message: 'o alcance "todos" não tem lista de empresas',
-      })
-    }
-  })
+  .superRefine(validarAudiencia)
   .meta({ id: 'CriarAvisoEntrada' })
 export type CriarAvisoEntrada = z.infer<typeof criarAvisoSchema>
 
@@ -139,6 +132,8 @@ export const preferenciasDoPortalSchema = z
     emailChamados: z.boolean(),
     emailEventos: z.boolean(),
     emailAvisos: z.boolean(),
+    /** Tema do portal (Fase 4A); salvo à parte, em `PUT /portal/preferencias/tema` */
+    tema: z.enum(['claro', 'escuro', 'sistema']),
   })
   .meta({ id: 'PreferenciasDoPortal' })
 export type PreferenciasDoPortal = z.infer<typeof preferenciasDoPortalSchema>
@@ -149,9 +144,21 @@ export const PREFERENCIAS_PADRAO_DO_PORTAL: PreferenciasDoPortal = {
   emailChamados: true,
   emailEventos: true,
   emailAvisos: true,
+  tema: 'sistema',
 }
 
+export const TEMAS_DO_PORTAL = ['claro', 'escuro', 'sistema'] as const
+export type TemaDoPortal = (typeof TEMAS_DO_PORTAL)[number]
+export const salvarTemaDoPortalSchema = z
+  .object({ tema: z.enum(TEMAS_DO_PORTAL) })
+  .strict()
+  .meta({ id: 'SalvarTemaDoPortalEntrada' })
+export type SalvarTemaDoPortalEntrada = z.infer<typeof salvarTemaDoPortalSchema>
+
 export const salvarPreferenciasDoPortalSchema = preferenciasDoPortalSchema
+  .omit({ tema: true })
+  // O tema é opcional aqui (ausente não muda); a tela de tema usa `PUT /portal/preferencias/tema`
+  .extend({ tema: z.enum(TEMAS_DO_PORTAL).optional() })
   .strict()
   .superRefine((d, ctx) => {
     if ((d.silencioInicio === null) !== (d.silencioFim === null)) {

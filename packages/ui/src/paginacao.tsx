@@ -9,19 +9,24 @@ import { cn } from './cn'
  * linhas por página (25, 50 ou 100) e Anterior / Próxima. Fica colada embaixo da
  * tabela. A escolha do tamanho é guardada por tabela nas preferências da pessoa (`usePorPagina`).
  */
-export function Paginacao({
+export function Paginacao<T extends number = TamanhoDePagina>({
   pagina,
   porPagina,
   total,
   aoMudarPagina,
   aoMudarPorPagina,
+  tamanhos = TAMANHOS_DE_PAGINA as unknown as readonly T[],
+  rotuloDoTamanho = 'Linhas por página',
   className,
 }: {
   pagina: number
   porPagina: number
   total: number
   aoMudarPagina: (pagina: number) => void
-  aoMudarPorPagina: (porPagina: TamanhoDePagina) => void
+  aoMudarPorPagina: (porPagina: T) => void
+  /** Os tamanhos oferecidos (padrão: 25, 50 e 100 das tabelas) */
+  tamanhos?: readonly T[]
+  rotuloDoTamanho?: string
   className?: string
 }) {
   const paginas = Math.max(1, Math.ceil(total / porPagina))
@@ -41,13 +46,13 @@ export function Paginacao({
       </span>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <label className="flex items-center gap-2 text-ink-muted">
-          Linhas por página
+          {rotuloDoTamanho}
           <Select
-            aria-label="Linhas por página"
+            aria-label={rotuloDoTamanho}
             className="w-[84px]"
             value={String(porPagina)}
-            options={TAMANHOS_DE_PAGINA.map((n) => ({ value: String(n), label: String(n) }))}
-            onChange={(e) => aoMudarPorPagina(Number(e.target.value) as TamanhoDePagina)}
+            options={tamanhos.map((n) => ({ value: String(n), label: String(n) }))}
+            onChange={(e) => aoMudarPorPagina(Number(e.target.value) as T)}
           />
         </label>
         <span className="text-ink-muted tabular-nums">

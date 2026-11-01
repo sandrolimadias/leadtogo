@@ -1,4 +1,7 @@
 import type {
+  EnvioDeImagem,
+  ItemDeFormulario,
+  MidiaDaPublicacao,
   AcessoDoPortal,
   ConfiguracaoDoPortal,
   IndicadoresDoHub,
@@ -7,6 +10,9 @@ import type {
   EnvioDeDocumento,
   ListaDeEventos,
   ListaDeParticipantes,
+  CheckinDoEvento,
+  ListaDeEventosDaEmpresa,
+  ResultadoDoPedidoDeAvaliacao,
   ListaDeBaixasDeDocumento,
   ListaDeComentariosParaModeracao,
   ListaDeDocumentos,
@@ -130,6 +136,9 @@ import type {
 } from '@leadtogo/api-client'
 import type {
   AbrirChamadoEntrada,
+  Formulario,
+  RespostaDeFormulario,
+  SalvarFormularioEntrada,
   AlterarChamadoEntrada,
   AlterarPontoDePartidaEntrada,
   AlterarAreaEntrada,
@@ -225,6 +234,8 @@ import type {
   EditarDocumentoEntrada,
   CancelarEventoEntrada,
   SalvarEventoEntrada,
+  FinalidadeDeFormulario,
+  IncluirParticipanteEntrada,
   CriarAvisoEntrada,
   CampoComValores,
   ConverterSocioEntrada,
@@ -707,6 +718,13 @@ export interface ServicosDoPortalNoCrm {
       exigeDoisFatoresDoResponsavel?: boolean
       comentariosAtivos?: boolean
       avisosLimiteSemanal?: number
+      formularioSatisfacaoId?: string | null
+      eventosCrmAtivo?: boolean
+      eventosCrmResponsavelId?: string | null
+      avaliacaoPorEmail?: boolean
+      slug?: string | null
+      paginaEventosAtiva?: boolean
+      formularioAssociacaoId?: string | null
     }) => Promise<Resultado<ConfiguracaoDoPortal>>
   }
   /** Publicações do portal (Fase 3B): `portal.ver`/`publicar`/`moderar` para ver, `publicar` para escrever, `moderar` nos comentários */
@@ -721,6 +739,29 @@ export interface ServicosDoPortalNoCrm {
     editar: (id: string, dados: SalvarPublicacaoEntrada) => Promise<Resultado<Publicacao>>
     excluir: (id: string) => Promise<Resultado>
     fixar: (id: string, fixada: boolean) => Promise<Resultado<Publicacao>>
+    /** Cópia em rascunho ("Cópia de …"), com o mesmo corpo e alcance */
+    duplicar: (id: string) => Promise<Resultado<Publicacao>>
+    /** Imagens e vídeo (Fase 4D) */
+    adicionarVideo: (
+      id: string,
+      dados: { url: string; legenda?: string | null },
+    ) => Promise<Resultado<MidiaDaPublicacao>>
+    adicionarImagem: (
+      id: string,
+      dados: {
+        textoAlternativo: string
+        legenda?: string | null
+        arquivo: { nome: string; mime: string; tamanho: number }
+      },
+    ) => Promise<Resultado<EnvioDeImagem>>
+    /** O arquivo vai direto ao armazenamento (URL pré-assinada), com os cabeçalhos combinados */
+    enviarImagem: (
+      url: string,
+      arquivo: Blob,
+      cabecalhos: Record<string, string>,
+    ) => Promise<Resultado>
+    confirmarImagem: (id: string, midiaId: string) => Promise<Resultado<MidiaDaPublicacao>>
+    removerMidia: (id: string, midiaId: string) => Promise<Resultado>
     bloquearComentarios: (id: string, bloqueados: boolean) => Promise<Resultado<Publicacao>>
     comentarios: (id: string) => Promise<Resultado<ListaDeComentariosParaModeracao>>
     moderar: (
@@ -728,6 +769,35 @@ export interface ServicosDoPortalNoCrm {
       comentarioId: string,
       dados: ModerarComentarioEntrada,
     ) => Promise<Resultado<ListaDeComentariosParaModeracao>>
+  }
+  /** Formulários do portal (Fase 4E): `portal.ver`/`formularios` para ver, `formularios` para editar */
+  formularios: {
+    listar: (consulta?: {
+      situacao?: 'rascunho' | 'publicado' | 'arquivado'
+      finalidade?: FinalidadeDeFormulario
+      pagina?: number
+      porPagina?: number
+    }) => Promise<Resultado<{ itens: ItemDeFormulario[]; total: number }>>
+    obter: (id: string) => Promise<Resultado<Formulario>>
+    criar: (dados: SalvarFormularioEntrada) => Promise<Resultado<Formulario>>
+    salvar: (id: string, dados: SalvarFormularioEntrada) => Promise<Resultado<Formulario>>
+    publicar: (id: string) => Promise<Resultado<Formulario>>
+    arquivar: (id: string, arquivado: boolean) => Promise<Resultado<Formulario>>
+    duplicar: (id: string) => Promise<Resultado<Formulario>>
+    excluir: (id: string) => Promise<Resultado>
+    segredo: (id: string) => Promise<Resultado<{ segredo: string }>>
+    respostas: (
+      id: string,
+      consulta?: { pagina?: number; porPagina?: number },
+    ) => Promise<
+      Resultado<{
+        itens: RespostaDeFormulario[]
+        total: number
+        campos: { id: string; rotulo: string; tipo: string }[]
+      }>
+    >
+    /** O CSV das respostas (texto), para baixar */
+    exportar: (id: string) => Promise<Resultado<{ nome: string; conteudo: Blob }>>
   }
   /** Avisos do portal (Fase 3E): `portal.ver`/`avisos` para ver, `avisos` para enviar, agendar e cancelar */
   avisos: {
@@ -760,6 +830,33 @@ export interface ServicosDoPortalNoCrm {
       id: string,
       confirmacaoId: string,
     ) => Promise<Resultado<ListaDeParticipantes>>
+    /** Fase 4G: `portal.eventos_presenca` ou `portal.agenda` */
+    registrarPresenca: (
+      id: string,
+      participacaoId: string,
+      presente: boolean,
+    ) => Promise<Resultado<ListaDeParticipantes>>
+    /** Fase 4G: quem veio sem se inscrever entra já presente */
+    incluirParticipante: (
+      id: string,
+      dados: IncluirParticipanteEntrada,
+    ) => Promise<Resultado<ListaDeParticipantes>>
+    /** 409 `evento_nao_comecou` / `evento_ja_encerrado` */
+    encerrar: (id: string) => Promise<Resultado<ResultadoDoPedidoDeAvaliacao>>
+    /** 409 `evento_nao_encerrado` */
+    reenviarAvaliacao: (
+      id: string,
+      participacaoIds?: string[],
+    ) => Promise<Resultado<ResultadoDoPedidoDeAvaliacao>>
+    /** Gera (ou troca) o QR de check-in: o endereço só aparece agora */
+    gerarCheckin: (id: string) => Promise<Resultado<CheckinDoEvento>>
+    /** `portal.eventos_relatorios` ou `portal.agenda` */
+    exportarInscritos: (
+      id: string,
+      formato: 'csv' | 'xlsx' | 'html',
+    ) => Promise<Resultado<{ nome: string; conteudo: Blob }>>
+    /** Aba Eventos da ficha da empresa (regra de carteira) */
+    daEmpresa: (empresaId: string) => Promise<Resultado<ListaDeEventosDaEmpresa>>
   }
   /** Documentos do portal (Fase 3C): `portal.ver`/`documentos` para ver, `documentos` para escrever */
   documentos: {

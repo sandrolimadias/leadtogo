@@ -22,6 +22,7 @@ import { toast } from '@leadtogo/ui/toast'
 import { dataHora } from '../chamados/rotulos'
 
 import { SelecaoDeEmpresas } from './selecao-de-empresas'
+import { SelecaoDeTags } from './selecao-de-tags'
 
 const TOM: Record<SituacaoDoAviso, TomDoBadge> = {
   agendado: 'info',
@@ -38,7 +39,9 @@ const paraIso = (local: string): string | null => {
 const audiencia = (a: Aviso): string =>
   a.alcance === 'todos'
     ? 'Todos os clientes'
-    : `${a.empresas.length} ${a.empresas.length === 1 ? 'empresa' : 'empresas'}`
+    : a.alcance === 'tags'
+      ? `Tags: ${a.tags.map((t) => t.nome).join(', ')}`
+      : `${a.empresas.length} ${a.empresas.length === 1 ? 'empresa' : 'empresas'}`
 
 /** Como o aviso chega no celular: a mensagem inteira, sem corte. */
 function Previa({ mensagem, urgente }: { mensagem: string; urgente: boolean }) {
@@ -80,8 +83,9 @@ function NovoAviso({
   const servicos = useServicos()
   const [mensagem, setMensagem] = useState('')
   const [link, setLink] = useState('')
-  const [alcance, setAlcance] = useState<'todos' | 'empresas'>('todos')
+  const [alcance, setAlcance] = useState<'todos' | 'empresas' | 'tags'>('todos')
   const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>([])
+  const [tags, setTags] = useState<{ id: string; nome: string }[]>([])
   const [envio, setEnvio] = useState<'agora' | 'agendar'>('agora')
   const [quando, setQuando] = useState('')
   const [urgente, setUrgente] = useState(false)
@@ -90,7 +94,8 @@ function NovoAviso({
   const [erro, setErro] = useState<string | null>(null)
 
   const quandoIso = paraIso(quando)
-  const semEmpresa = alcance === 'empresas' && empresas.length === 0
+  const semEmpresa =
+    (alcance === 'empresas' && empresas.length === 0) || (alcance === 'tags' && tags.length === 0)
   const semHorario = envio === 'agendar' && !quandoIso
   const noLimite = !urgente && semana.usados >= semana.limite
   const invalido = mensagem.trim() === '' || semEmpresa || semHorario
@@ -104,6 +109,7 @@ function NovoAviso({
       urgencia: urgente ? 'urgente' : 'normal',
       alcance,
       empresaIds: alcance === 'empresas' ? empresas.map((e) => e.id) : [],
+      tagIds: alcance === 'tags' ? tags.map((t) => t.id) : [],
       enviarEm: envio === 'agendar' ? quandoIso : null,
     })
     setOcupado(false)
@@ -124,7 +130,9 @@ function NovoAviso({
   const para =
     alcance === 'todos'
       ? 'todos os clientes com acesso ativo'
-      : `${empresas.length} ${empresas.length === 1 ? 'empresa escolhida' : 'empresas escolhidas'}`
+      : alcance === 'tags'
+        ? `quem tem ${tags.length === 1 ? 'a tag' : 'alguma das tags'} ${tags.map((t) => t.nome).join(', ')}`
+        : `${empresas.length} ${empresas.length === 1 ? 'empresa escolhida' : 'empresas escolhidas'}`
 
   return (
     <section
@@ -154,15 +162,17 @@ function NovoAviso({
         <SegmentedControl
           label="Para quem"
           value={alcance}
-          onChange={(v) => setAlcance(v as 'todos' | 'empresas')}
+          onChange={(v) => setAlcance(v as 'todos' | 'empresas' | 'tags')}
           options={[
             { value: 'todos', label: 'Todos os clientes' },
             { value: 'empresas', label: 'Empresas escolhidas' },
+            { value: 'tags', label: 'Contatos com tags' },
           ]}
         />
         {alcance === 'empresas' ? (
           <SelecaoDeEmpresas empresas={empresas} aoMudar={setEmpresas} />
         ) : null}
+        {alcance === 'tags' ? <SelecaoDeTags tags={tags} aoMudar={setTags} /> : null}
       </div>
       <div className="flex flex-col gap-2">
         <SegmentedControl

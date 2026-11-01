@@ -2,7 +2,16 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { evento, falha, id, ok, renderizar, servicosFalsos } from './fakes'
+import {
+  evento,
+  falha,
+  formularioParaResponder,
+  id,
+  ok,
+  renderizar,
+  servicosFalsos,
+  servicosSemLogin,
+} from './fakes'
 
 const comEventos = (itens = [evento()], troca: Record<string, unknown> = {}) =>
   servicosFalsos({
@@ -176,5 +185,105 @@ describe('agenda', () => {
     renderizar(comEventos([]), '/')
     await screen.findByText('Publicações da equipe')
     expect(screen.queryByRole('region', { name: 'Próximos eventos' })).toBeNull()
+  })
+})
+
+describe('eventos 2.0 (Fase 4G)', () => {
+  it('evento com formulário: "Inscrever-se" abre o formulário preenchido e inscreve', async () => {
+    const inscrever = vi.fn(async () =>
+      ok(evento({ minhaSituacao: 'confirmado', podeConfirmar: false, podeCancelar: true })),
+    )
+    const servicos = comEventos([evento({ formularioInscricaoId: id(940) })], { inscrever })
+    servicos.formularios.abrir = vi.fn(async () => ok(formularioParaResponder()))
+    renderizar(servicos, '/agenda')
+    const usuario = userEvent.setup()
+    await usuario.click(await screen.findByRole('button', { name: 'Inscrever-se' }))
+    const dialogo = await screen.findByRole('dialog', { name: /Inscrição:/ })
+    expect(within(dialogo).getByLabelText(/^E-mail/)).toHaveValue('daniel@usidantec.com.br')
+    await usuario.selectOptions(within(dialogo).getByLabelText(/Vai ao jantar/), 'sim')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Confirmar inscrição' }))
+    await waitFor(() =>
+      expect(inscrever).toHaveBeenCalledWith(id(80), {
+        versao: 2,
+        botao: 'enviar',
+        respostas: expect.objectContaining({ vai: 'sim' }) as unknown,
+      }),
+    )
+    expect(servicos.eventos.confirmar).not.toHaveBeenCalled()
+  })
+
+  it('presente depois do encerramento: "Você esteve lá" e o botão de avaliar', async () => {
+    const servicos = comEventos([
+      evento({
+        minhaSituacao: 'confirmado',
+        podeConfirmar: false,
+        presente: true,
+        avaliar: { formularioId: id(941) },
+      }),
+    ])
+    servicos.eventos.formularioDeAvaliacao = vi.fn(async () =>
+      ok(formularioParaResponder({ nome: 'Avaliação', preenchidos: {}, travados: [] })),
+    )
+    renderizar(servicos, '/agenda')
+    const cartao = await screen.findByRole('article', { name: 'Encontro anual de clientes 2026' })
+    expect(within(cartao).getByText('Você esteve lá')).toBeInTheDocument()
+    await userEvent.setup().click(within(cartao).getByRole('button', { name: 'Avaliar o evento' }))
+    expect(await screen.findByRole('dialog', { name: /Avaliação:/ })).toBeInTheDocument()
+    expect(servicos.eventos.formularioDeAvaliacao).toHaveBeenCalledWith(id(80))
+  })
+
+  it('check-in sem login: o e-mail, depois o código quando o evento pede', async () => {
+    const semLogin = vi
+      .fn()
+      .mockResolvedValueOnce(ok({ situacao: 'codigo_enviado', nome: null }))
+      .mockResolvedValueOnce(ok({ situacao: 'registrado', nome: 'Rui Alves' }))
+    const servicos = servicosSemLogin({
+      checkin: {
+        abrir: vi.fn(async () =>
+          ok({
+            titulo: 'Encontro anual',
+            inicioEm: '2026-11-12T21:30:00.000Z',
+            local: 'Auditório',
+            exigeCodigo: true,
+            aberto: true,
+          }),
+        ),
+        logado: vi.fn(),
+        semLogin,
+      },
+    })
+    renderizar(servicos, '/checkin/tok')
+    const usuario = userEvent.setup()
+    await usuario.type(await screen.findByLabelText(/E-mail da inscrição/), 'rui@exemplo.com')
+    await usuario.click(screen.getByRole('button', { name: 'Enviar código' }))
+    await usuario.type(await screen.findByLabelText(/Código enviado/), '123 456')
+    await usuario.click(screen.getByRole('button', { name: 'Registrar presença' }))
+    expect(await screen.findByText('Presença registrada')).toBeInTheDocument()
+    expect(semLogin).toHaveBeenLastCalledWith('tok', { email: 'rui@exemplo.com', codigo: '123456' })
+  })
+
+  it('check-in logado: um toque', async () => {
+    const logado = vi.fn(async () => ok({ situacao: 'registrado' as const, nome: 'Daniel' }))
+    const servicos = servicosFalsos({
+      checkin: {
+        abrir: vi.fn(async () =>
+          ok({
+            titulo: 'Encontro anual',
+            inicioEm: '2026-11-12T21:30:00.000Z',
+            local: null,
+            exigeCodigo: false,
+            aberto: true,
+          }),
+        ),
+        logado,
+        semLogin: vi.fn(),
+      },
+    })
+    renderizar(servicos, '/checkin/tok')
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('button', { name: 'Registrar minha presença' }))
+    expect(await screen.findByText('Presença registrada')).toBeInTheDocument()
+    expect(logado).toHaveBeenCalledWith('tok')
   })
 })

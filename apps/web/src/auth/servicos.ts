@@ -1,4 +1,5 @@
 import type { ErroDaApi } from '@leadtogo/api-client'
+import type { Formulario } from '@leadtogo/shared'
 
 import { api } from '@/api/cliente'
 
@@ -11,6 +12,7 @@ import type {
   Resultado,
   ServicosDeAcesso,
   ServicosDeCadastro,
+  ServicosDoPortalNoCrm,
 } from './tipos'
 
 const ok = <T>(dados: T): Resultado<T> => ({ ok: true, dados })
@@ -1005,6 +1007,63 @@ export const servicosReais: ServicosDeAcesso = {
         protegido(async () =>
           semCorpo(await api.DELETE('/v1/portal-publicacoes/{id}', { params: { path: { id } } })),
         ),
+      duplicar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-publicacoes/{id}/duplicar', { params: { path: { id } } }),
+          ),
+        ),
+      adicionarVideo: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-publicacoes/{id}/midias/videos', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      adicionarImagem: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-publicacoes/{id}/midias/imagens', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      enviarImagem: (url, arquivo, cabecalhos) =>
+        protegido(async () => {
+          const r = await globalThis.fetch(url, {
+            method: 'PUT',
+            body: arquivo,
+            headers: cabecalhos,
+          })
+          return r.ok
+            ? ok(undefined)
+            : {
+                ok: false,
+                erro: traduzirErro(r.status, {
+                  erro: 'envio_falhou',
+                  mensagem: 'Não consegui enviar a imagem.',
+                }),
+              }
+        }),
+      confirmarImagem: (id, midiaId) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-publicacoes/{id}/midias/{midiaId}/confirmar', {
+              params: { path: { id, midiaId } },
+            }),
+          ),
+        ),
+      removerMidia: (id, midiaId) =>
+        protegido(async () =>
+          semCorpo(
+            await api.DELETE('/v1/portal-publicacoes/{id}/midias/{midiaId}', {
+              params: { path: { id, midiaId } },
+            }),
+          ),
+        ),
       fixar: (id, fixada) =>
         protegido(async () =>
           daApi(
@@ -1040,6 +1099,85 @@ export const servicosReais: ServicosDeAcesso = {
             }),
           ),
         ),
+    },
+    formularios: {
+      listar: (consulta = {}) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-formularios', { params: { query: consulta } })),
+        ),
+      obter: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-formularios/{id}', { params: { path: { id } } })),
+        ) as Promise<Resultado<Formulario>>,
+      criar: (dados) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-formularios', { body: dados })),
+        ) as Promise<Resultado<Formulario>>,
+      salvar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/portal-formularios/{id}', { params: { path: { id } }, body: dados }),
+          ),
+        ) as Promise<Resultado<Formulario>>,
+      publicar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-formularios/{id}/publicar', { params: { path: { id } } }),
+          ),
+        ) as Promise<Resultado<Formulario>>,
+      arquivar: (id, arquivado) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/portal-formularios/{id}/arquivado', {
+              params: { path: { id } },
+              body: { arquivado },
+            }),
+          ),
+        ) as Promise<Resultado<Formulario>>,
+      duplicar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-formularios/{id}/duplicar', { params: { path: { id } } }),
+          ),
+        ) as Promise<Resultado<Formulario>>,
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/portal-formularios/{id}', { params: { path: { id } } })),
+        ),
+      segredo: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-formularios/{id}/segredo', { params: { path: { id } } }),
+          ),
+        ),
+      respostas: (id, consulta = {}) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/portal-formularios/{id}/respostas', {
+              params: { path: { id }, query: consulta },
+            }),
+          ),
+        ) as ReturnType<ServicosDoPortalNoCrm['formularios']['respostas']>,
+      exportar: (id) =>
+        protegido(async () => {
+          const r = await api.GET('/v1/portal-formularios/{id}/respostas.csv', {
+            params: { path: { id } },
+            parseAs: 'blob',
+          })
+          if (!r.response.ok || !r.data) {
+            return {
+              ok: false,
+              erro: traduzirErro(r.response.status, {
+                erro: 'exportacao_falhou',
+                mensagem: 'Não consegui exportar as respostas.',
+              }),
+            }
+          }
+          const nome =
+            /filename="([^"]+)"/.exec(r.response.headers.get('Content-Disposition') ?? '')?.[1] ??
+            'respostas.csv'
+          return ok({ nome, conteudo: r.data })
+        }),
     },
     avisos: {
       listar: (consulta = {}) =>
@@ -1099,6 +1237,70 @@ export const servicosReais: ServicosDeAcesso = {
             await api.DELETE('/v1/portal-eventos/{id}/participantes/{confirmacaoId}', {
               params: { path: { id, confirmacaoId } },
             }),
+          ),
+        ),
+      registrarPresenca: (id, participacaoId, presente) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/portal-eventos/{id}/participantes/{participacaoId}/presenca', {
+              params: { path: { id, participacaoId } },
+              body: { presente },
+            }),
+          ),
+        ),
+      incluirParticipante: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-eventos/{id}/participantes', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      encerrar: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-eventos/{id}/encerrar', { params: { path: { id } } })),
+        ),
+      reenviarAvaliacao: (id, participacaoIds) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-eventos/{id}/avaliacoes/reenviar', {
+              params: { path: { id } },
+              body: participacaoIds ? { participacaoIds } : {},
+            }),
+          ),
+        ),
+      gerarCheckin: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-eventos/{id}/checkin', { params: { path: { id } } })),
+        ),
+      exportarInscritos: (id, formato) =>
+        protegido(async () => {
+          const opcoes = { params: { path: { id } }, parseAs: 'blob' as const }
+          const r =
+            formato === 'csv'
+              ? await api.GET('/v1/portal-eventos/{id}/inscritos.csv', opcoes)
+              : formato === 'xlsx'
+                ? await api.GET('/v1/portal-eventos/{id}/inscritos.xlsx', opcoes)
+                : await api.GET('/v1/portal-eventos/{id}/inscritos.html', opcoes)
+          if (!r.response.ok || !r.data) {
+            return {
+              ok: false,
+              erro: traduzirErro(r.response.status, {
+                erro: 'exportacao_falhou',
+                mensagem: 'Não consegui exportar os inscritos.',
+              }),
+            }
+          }
+          const nome =
+            /filename="([^"]+)"/.exec(r.response.headers.get('Content-Disposition') ?? '')?.[1] ??
+            `inscritos.${formato}`
+          return ok({ nome, conteudo: r.data })
+        }),
+      daEmpresa: (empresaId) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/empresas/{id}/eventos', { params: { path: { id: empresaId } } }),
           ),
         ),
     },

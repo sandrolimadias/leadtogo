@@ -31,6 +31,7 @@ const item = (extra: Partial<ItemDeDocumento> = {}): ItemDeDocumento => ({
 const documento = (extra: Partial<Documento> = {}): Documento => ({
   ...item(),
   empresas: [],
+  tags: [],
   ...extra,
 })
 
@@ -133,6 +134,7 @@ describe('hub do portal: documentos', () => {
         descricao: 'Valores 2027',
         alcance: 'todos',
         empresaIds: [],
+        tagIds: [],
         arquivo: { nome: 'precos.pdf', mime: 'application/pdf', tamanho: arquivo.size },
       }),
     )
@@ -180,6 +182,7 @@ describe('hub do portal: documentos', () => {
         descricao: 'Passo a passo',
         alcance: 'todos',
         empresaIds: [],
+        tagIds: [],
       }),
     )
     await usuario.click(await screen.findByRole('button', { name: 'Excluir' }))

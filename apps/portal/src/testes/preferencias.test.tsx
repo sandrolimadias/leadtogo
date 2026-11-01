@@ -73,9 +73,11 @@ describe('preferências: e-mail e horário de silêncio', () => {
             emailChamados: true,
             emailEventos: true,
             emailAvisos: true,
+            tema: 'sistema' as const,
           }),
         ),
         salvar: vi.fn(async (d) => ok(d)),
+        salvarTema: vi.fn(),
       },
     })
     const { usuario } = await abrir(servicos)

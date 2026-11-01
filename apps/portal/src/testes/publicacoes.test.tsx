@@ -30,6 +30,44 @@ describe('feed de publicações no início', () => {
     await waitFor(() => expect(servicos.publicacoes.marcarLidas).toHaveBeenCalledWith([id(50)]))
   })
 
+  it('mostra a imagem com a descrição e o vídeo só carrega ao tocar (Fase 4D)', async () => {
+    renderizar(
+      comFeed([
+        publicacao({
+          midias: [
+            {
+              id: id(70),
+              tipo: 'imagem',
+              legenda: 'Abertura',
+              textoAlternativo: 'Equipe no palco',
+              imagemUrl: 'https://files.exemplo.com/a.jpg',
+              video: null,
+            },
+            {
+              id: id(71),
+              tipo: 'video',
+              legenda: null,
+              textoAlternativo: null,
+              imagemUrl: null,
+              video: { provedor: 'youtube', id: 'dQw4w9WgXcQ' },
+            },
+          ],
+        }),
+      ]),
+      '/',
+    )
+    const cartao = await screen.findByRole('article', { name: 'Expediente reduzido na sexta' })
+    expect(within(cartao).getByRole('img', { name: 'Equipe no palco' })).toHaveAttribute(
+      'src',
+      'https://files.exemplo.com/a.jpg',
+    )
+    expect(cartao.querySelector('iframe')).toBeNull()
+    await userEvent.setup().click(within(cartao).getByRole('button', { name: /Assistir ao vídeo/ }))
+    expect(cartao.querySelector('iframe')?.getAttribute('src')).toBe(
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1',
+    )
+  })
+
   it('a fixada mostra o selo; sem publicação, explica', async () => {
     renderizar(comFeed([publicacao({ fixada: true })]), '/')
     expect(await screen.findByText('Fixada')).toBeInTheDocument()
@@ -50,7 +88,7 @@ describe('feed de publicações no início', () => {
 
   it('reagir liga a reação e usa o total que a API devolve', async () => {
     const reagir = vi.fn(async () =>
-      ok({ reacoes: { curtir: 5, apoiar: 0, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
+      ok({ reacoes: { curtir: 5, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
     )
     const servicos = comFeed([publicacao()], { reagir })
     renderizar(servicos, '/')

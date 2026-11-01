@@ -67,6 +67,13 @@ function servicos(
             exigeDoisFatoresDoResponsavel: false,
             comentariosAtivos: true,
             avisosLimiteSemanal: 3,
+            formularioSatisfacaoId: null,
+            eventosCrmAtivo: false,
+            eventosCrmResponsavelId: null,
+            avaliacaoPorEmail: false,
+            slug: null,
+            paginaEventosAtiva: false,
+            formularioAssociacaoId: null,
           }),
         ),
       },
@@ -83,6 +90,8 @@ function servicos(
               assunto: 'Inversor da ponte rolante desarmando',
               solicitante: { tipo: 'contato', nome: 'Sérgio Nunes' },
               empresaCliente: { id: id(302), nome: 'Caldeiraria Anchieta' },
+              status: 'resolvido',
+              notaDoCliente: 5,
             }),
           ],
           total: 1,
@@ -94,9 +103,18 @@ function servicos(
 }
 
 describe('hub do portal: chamados', () => {
+  it('o hub abre na aba Publicações', async () => {
+    renderizar(servicos(), '/portal')
+    expect(
+      await screen.findByRole('tab', { name: 'Publicações', selected: true }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Indicadores' })).not.toBeInTheDocument()
+  })
+
   it('mostra os quatro indicadores e os chamados dos clientes (filtrados por origem portal)', async () => {
     const s = servicos()
     renderizar(s, '/portal')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Chamados' }))
     const painel = await screen.findByRole('region', { name: 'Indicadores' })
     expect(within(painel).getByText('Em aberto')).toBeInTheDocument()
     expect(within(painel).getByText('92%')).toBeInTheDocument()
@@ -105,6 +123,7 @@ describe('hub do portal: chamados', () => {
     const lista = await screen.findByRole('list', { name: 'Chamados dos clientes' })
     expect(within(lista).getByText('Inversor da ponte rolante desarmando')).toBeInTheDocument()
     expect(within(lista).getByText(/Sérgio Nunes pelo portal/)).toBeInTheDocument()
+    expect(within(lista).getByRole('img', { name: 'Nota 5 de 5' })).toBeInTheDocument()
     await waitFor(() =>
       expect(s.chamados.listar).toHaveBeenCalledWith(
         expect.objectContaining({ aba: 'todos', origem: 'portal' }),
@@ -130,6 +149,7 @@ describe('hub do portal: chamados', () => {
             exigeDoisFatoresDoResponsavel: false,
             comentariosAtivos: true,
             avisosLimiteSemanal: 3,
+            formularioSatisfacaoId: null,
           }),
         ),
       },
@@ -144,6 +164,7 @@ describe('hub do portal: chamados', () => {
       ok({ itens: [], total: 0, abas: { triagem: 0, pendentes: 0, meus: 0, todos: 0 } }),
     )
     renderizar(s, '/portal')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Chamados' }))
     expect(await screen.findByText('Nenhum chamado de cliente')).toBeInTheDocument()
   })
 })
@@ -370,6 +391,62 @@ describe('hub do portal: acessos', () => {
 })
 
 describe('configurações do portal', () => {
+  it('escolhe o formulário da pesquisa de satisfação dos chamados (Fase 4F)', async () => {
+    const atualizar = vi.fn(async (dados: Record<string, unknown>) =>
+      ok({
+        ativo: true,
+        nome: null,
+        logoUrl: null,
+        exigeDoisFatoresDoResponsavel: false,
+        comentariosAtivos: true,
+        avisosLimiteSemanal: 3,
+        formularioSatisfacaoId: null,
+        ...dados,
+      }),
+    )
+    const base = servicosFalsos()
+    const s = servicos({
+      configuracao: { ...base.portal.configuracao, atualizar },
+      formularios: {
+        ...base.portal.formularios,
+        listar: vi.fn(async () =>
+          ok({
+            itens: [
+              {
+                id: id(810),
+                nome: 'Satisfação do atendimento',
+                finalidade: 'satisfacao_chamado' as const,
+                acesso: 'logado' as const,
+                situacao: 'publicado' as const,
+                slug: 'satisfacao-abc123',
+                versaoPublicada: 1,
+                temMudancas: false,
+                respostas: 0,
+                ultimaRespostaEm: null,
+                atualizadoEm: '2026-10-30T12:00:00.000Z',
+              },
+            ],
+            total: 1,
+          }),
+        ),
+      },
+    })
+    renderizar(s, '/configuracoes/portal')
+    const usuario = userEvent.setup()
+    const secao = await screen.findByRole('region', { name: 'Pesquisa de satisfação' })
+    await waitFor(() =>
+      expect(
+        within(secao).getByRole('option', { name: 'Satisfação do atendimento' }),
+      ).toBeInTheDocument(),
+    )
+    await usuario.selectOptions(
+      within(secao).getByLabelText(/Pesquisa de satisfação dos chamados/),
+      id(810),
+    )
+    await usuario.click(within(secao).getByRole('button', { name: 'Salvar pesquisa' }))
+    await waitFor(() => expect(atualizar).toHaveBeenCalledWith({ formularioSatisfacaoId: id(810) }))
+  })
+
   it('liga o portal, muda o nome e exige o 2FA do Responsável', async () => {
     const atualizar = vi.fn(async (dados: Record<string, unknown>) =>
       ok({
@@ -391,6 +468,7 @@ describe('configurações do portal', () => {
             exigeDoisFatoresDoResponsavel: false,
             comentariosAtivos: true,
             avisosLimiteSemanal: 3,
+            formularioSatisfacaoId: null,
           }),
         ),
         atualizar,

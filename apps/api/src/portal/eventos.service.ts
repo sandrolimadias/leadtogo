@@ -16,6 +16,7 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { tagsDoAlcance, trocarTagsDoAlcance } from './audiencia.js'
 import { agendarNotificacaoDeEvento } from './notificar-evento.js'
 
 type LinhaDoEvento = {
@@ -29,7 +30,7 @@ type LinhaDoEvento = {
   vagas_totais: number | null
   vagas_por_empresa: number | null
   prazo_confirmacao: string | Date | null
-  alcance: 'todos' | 'empresas'
+  alcance: 'todos' | 'empresas' | 'tags'
   situacao: SituacaoDoEvento
   publicado_em: string | Date | null
   cancelado_em: string | Date | null
@@ -37,6 +38,15 @@ type LinhaDoEvento = {
   total_confirmados: number
   total_lista_espera: number
   criado_em: string | Date
+  publico: boolean
+  formulario_inscricao_id: string | null
+  formulario_avaliacao_id: string | null
+  publicacao_id: string | null
+  encerrado_em: string | Date | null
+  checkin_exige_codigo: boolean
+  checkin_ativo: boolean
+  presentes: number
+  avaliaram: number
 }
 
 const iso = (v: string | Date | null): string | null =>
@@ -45,7 +55,13 @@ const naoEncontrado = () => new ErroApi('evento_nao_encontrado', 'Evento não en
 const COLUNAS = sql`
   e.id, e.titulo, e.descricao, e.local, e.link_online, e.inicio_em, e.fim_em, e.vagas_totais, e.vagas_por_empresa,
   e.prazo_confirmacao, e.alcance::text AS alcance, e.situacao::text AS situacao, e.publicado_em, e.cancelado_em,
-  e.cancelado_motivo, e.total_confirmados, e.total_lista_espera, e.criado_em`
+  e.cancelado_motivo, e.total_confirmados, e.total_lista_espera, e.criado_em, e.publico, e.formulario_inscricao_id,
+  e.formulario_avaliacao_id, e.publicacao_id, e.encerrado_em, e.checkin_exige_codigo,
+  e.checkin_token_hash IS NOT NULL AS checkin_ativo,
+  (SELECT count(*)::int FROM evento_confirmacoes x
+    WHERE x.evento_id = e.id AND x.situacao <> 'cancelado' AND x.presenca <> 'nao_registrada') AS presentes,
+  (SELECT count(*)::int FROM evento_confirmacoes x
+    WHERE x.evento_id = e.id AND x.situacao <> 'cancelado' AND x.avaliacao_resposta_id IS NOT NULL) AS avaliaram`
 
 /** Gestão da agenda do portal pela EQUIPE (`portal.agenda`). */
 @Injectable()
@@ -69,6 +85,8 @@ export class EventosService {
       prazoConfirmacao: iso(l.prazo_confirmacao),
       confirmados: l.total_confirmados,
       listaDeEspera: l.total_lista_espera,
+      publico: l.publico,
+      encerradoEm: iso(l.encerrado_em),
     }
   }
 
@@ -124,6 +142,14 @@ export class EventosService {
       canceladoMotivo: l.cancelado_motivo,
       criadoEm: new Date(l.criado_em).toISOString(),
       empresas: [...empresas],
+      tags: await tagsDoAlcance(this.ctx.db(), 'evento', id),
+      formularioInscricaoId: l.formulario_inscricao_id,
+      formularioAvaliacaoId: l.formulario_avaliacao_id,
+      publicacaoId: l.publicacao_id,
+      checkinExigeCodigo: l.checkin_exige_codigo,
+      checkinAtivo: l.checkin_ativo,
+      presentes: Number(l.presentes),
+      avaliaram: Number(l.avaliaram),
     }
   }
 
@@ -144,16 +170,50 @@ export class EventosService {
     }
   }
 
+  private async trocarAudiencia(id: string, d: SalvarEventoEntrada): Promise<void> {
+    await this.trocarEmpresas(id, d)
+    await trocarTagsDoAlcance(this.ctx.db(), 'evento', {
+      itemId: id,
+      tenantId: this.ctx.tenantId,
+      alcance: d.alcance,
+      tagIds: d.tagIds,
+      membroId: this.ctx.membro.id,
+    })
+  }
+
+  /** O formulário escolhido existe e tem a finalidade certa (inscrição ou avaliação de evento). */
+  private async conferirFormulario(
+    id: string | null,
+    finalidade: 'inscricao_evento' | 'avaliacao_evento',
+  ): Promise<void> {
+    if (!id) return
+    const [f] = await this.ctx.db().execute(sql`
+      SELECT 1 FROM formularios WHERE id = ${id} AND excluido_em IS NULL
+        AND finalidade = ${finalidade}::finalidade_formulario`)
+    if (!f) {
+      throw new ErroApi(
+        'formulario_invalido',
+        finalidade === 'inscricao_evento'
+          ? 'Escolha um formulário com a finalidade "Inscrição em evento".'
+          : 'Escolha um formulário com a finalidade "Avaliação de evento".',
+        422,
+      )
+    }
+  }
+
   async criar(d: SalvarEventoEntrada): Promise<Evento> {
+    await this.conferirFormulario(d.formularioInscricaoId, 'inscricao_evento')
+    await this.conferirFormulario(d.formularioAvaliacaoId, 'avaliacao_evento')
     const id = novoId()
     const eu = this.ctx.membro.id
     await this.ctx.db().execute(sql`
       INSERT INTO eventos (id, tenant_id, titulo, descricao, local, link_online, inicio_em, fim_em, vagas_totais,
-        vagas_por_empresa, prazo_confirmacao, alcance, criado_por, atualizado_por)
+        vagas_por_empresa, prazo_confirmacao, alcance, publico, formulario_inscricao_id, formulario_avaliacao_id,
+        checkin_exige_codigo, criado_por, atualizado_por)
       VALUES (${id}, ${this.ctx.tenantId}, ${d.titulo}, ${d.descricao}, ${d.local}, ${d.linkOnline}, ${d.inicioEm},
         ${d.fimEm}, ${d.vagasTotais}, ${d.vagasPorEmpresa}, ${d.prazoConfirmacao}, ${d.alcance}::alcance_evento,
-        ${eu}, ${eu})`)
-    await this.trocarEmpresas(id, d)
+        ${d.publico}, ${d.formularioInscricaoId}, ${d.formularioAvaliacaoId}, ${d.checkinExigeCodigo}, ${eu}, ${eu})`)
+    await this.trocarAudiencia(id, d)
     await this.auditoria.registrar({
       entidade: 'evento',
       entidadeId: id,
@@ -172,14 +232,19 @@ export class EventosService {
     if (antes.situacao === 'cancelado') {
       throw new ErroApi('evento_cancelado', 'Um evento cancelado não pode ser editado.', 409)
     }
+    await this.conferirFormulario(d.formularioInscricaoId, 'inscricao_evento')
+    await this.conferirFormulario(d.formularioAvaliacaoId, 'avaliacao_evento')
     await db.execute(sql`
       UPDATE eventos SET titulo = ${d.titulo}, descricao = ${d.descricao}, local = ${d.local},
         link_online = ${d.linkOnline}, inicio_em = ${d.inicioEm}, fim_em = ${d.fimEm},
         vagas_totais = ${d.vagasTotais}, vagas_por_empresa = ${d.vagasPorEmpresa},
         prazo_confirmacao = ${d.prazoConfirmacao}, alcance = ${d.alcance}::alcance_evento,
+        publico = ${d.publico}, formulario_inscricao_id = ${d.formularioInscricaoId},
+        formulario_avaliacao_id = ${d.formularioAvaliacaoId}, checkin_exige_codigo = ${d.checkinExigeCodigo},
         atualizado_em = now(), atualizado_por = ${this.ctx.membro.id}
       WHERE id = ${id}`)
-    await this.trocarEmpresas(id, d)
+    await this.trocarAudiencia(id, d)
+    await this.sincronizarPublicacao(id)
     // Vagas a mais (ou limite da empresa maior): quem estava esperando e passou a caber é promovido
     if (antes.situacao === 'publicado') await this.promover(id)
     await this.auditoria.registrar({
@@ -225,6 +290,7 @@ export class EventosService {
       UPDATE eventos SET situacao = 'publicado', publicado_em = now(), atualizado_em = now(),
         atualizado_por = ${this.ctx.membro.id}
       WHERE id = ${id}`)
+    await this.sincronizarPublicacao(id)
     await this.auditoria.registrar({ entidade: 'evento', entidadeId: id, acao: 'publicar' })
     return this.obter(id)
   }
@@ -248,6 +314,7 @@ export class EventosService {
       UPDATE eventos SET situacao = 'cancelado', cancelado_em = now(), cancelado_motivo = ${d.motivo},
         atualizado_em = now(), atualizado_por = ${this.ctx.membro.id}
       WHERE id = ${id}`)
+    await this.sincronizarPublicacao(id)
     await agendarNotificacaoDeEvento(db, this.ctx.tenantId, { tipo: 'cancelado', eventoId: id })
     await this.auditoria.registrar({
       entidade: 'evento',
@@ -277,43 +344,119 @@ export class EventosService {
     await this.auditoria.registrar({ entidade: 'evento', entidadeId: id, acao: 'excluir' })
   }
 
+  /**
+   * Evento publicado vira publicação (B-8): título, data, local e a descrição, com o mesmo alcance. Editar o evento
+   * atualiza a publicação; cancelar marca "Evento cancelado". Rascunho não tem publicação.
+   */
+  private async sincronizarPublicacao(id: string): Promise<void> {
+    const db = this.ctx.db()
+    const l = await this.linha(id)
+    if (l.situacao === 'rascunho') return
+    const quando = new Date(l.inicio_em).toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      dateStyle: 'full',
+      timeStyle: 'short',
+    })
+    const titulo = (
+      l.situacao === 'cancelado' ? `Evento cancelado: ${l.titulo}` : `Evento: ${l.titulo}`
+    ).slice(0, 160)
+    const corpo = [
+      `**${quando}**${l.local ? ` · ${l.local}` : ''}`,
+      l.situacao === 'cancelado' && l.cancelado_motivo ? `Cancelado: ${l.cancelado_motivo}` : null,
+      l.descricao,
+      l.situacao === 'cancelado' ? null : 'Inscreva-se na **Agenda** do portal.',
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+      .slice(0, 10_000)
+    const eu = this.ctx.membro.id
+    let publicacaoId = l.publicacao_id
+    if (!publicacaoId) {
+      publicacaoId = novoId()
+      await db.execute(sql`
+        INSERT INTO publicacoes (id, tenant_id, titulo, corpo, situacao, alcance, publicada_em, criado_por, atualizado_por)
+        VALUES (${publicacaoId}, ${this.ctx.tenantId}, ${titulo}, ${corpo}, 'publicada',
+                ${l.alcance}::alcance_publicacao, now(), ${eu}, ${eu})`)
+      await db.execute(sql`UPDATE eventos SET publicacao_id = ${publicacaoId} WHERE id = ${id}`)
+    } else {
+      await db.execute(sql`
+        UPDATE publicacoes SET titulo = ${titulo}, corpo = ${corpo}, alcance = ${l.alcance}::alcance_publicacao,
+          atualizado_em = now(), atualizado_por = ${eu}
+        WHERE id = ${publicacaoId}`)
+    }
+    // O mesmo público do evento
+    await db.execute(sql`DELETE FROM publicacao_empresas WHERE publicacao_id = ${publicacaoId}`)
+    await db.execute(sql`DELETE FROM publicacao_tags WHERE publicacao_id = ${publicacaoId}`)
+    const empresas = await db.execute<{ empresa_id: string }>(
+      sql`SELECT empresa_id FROM evento_empresas WHERE evento_id = ${id}`,
+    )
+    for (const { empresa_id: empresaId } of empresas) {
+      await db.execute(sql`
+        INSERT INTO publicacao_empresas (id, tenant_id, publicacao_id, empresa_id)
+        VALUES (${novoId()}, ${this.ctx.tenantId}, ${publicacaoId}, ${empresaId})`)
+    }
+    await db.execute(sql`
+      INSERT INTO publicacao_tags (tenant_id, publicacao_id, tag_id, aplicada_por)
+      SELECT tenant_id, ${publicacaoId}, tag_id, ${eu} FROM evento_tags WHERE evento_id = ${id}`)
+  }
+
   async participantes(id: string): Promise<ListaDeParticipantes> {
     await this.linha(id)
     const linhas = await this.ctx.db().execute<{
       id: string
       pessoa: string
       email: string
-      empresa: string
+      empresa: string | null
+      cnpj: string | null
+      origem: ParticipanteDoEvento['origem']
       situacao: SituacaoDaConfirmacao
+      presenca: ParticipanteDoEvento['presenca']
+      presenca_em: string | Date | null
+      avaliou: boolean
+      avaliacao_pedida_em: string | Date | null
+      lembretes: number
       entrou_na_fila_em: string | Date
       confirmado_em: string | Date | null
       promovido_em: string | Date | null
     }>(sql`
-      SELECT ec.id, ct.nome AS pessoa, pa.email::text AS email, coalesce(e.nome_fantasia, e.razao_social) AS empresa,
-             ec.situacao::text AS situacao, ec.entrou_na_fila_em, ec.confirmado_em, ec.promovido_em
+      SELECT ec.id, coalesce(ec.nome, ct.nome, '') AS pessoa, coalesce(ec.email::text, pa.email::text, '') AS email,
+             coalesce(e.nome_fantasia, e.razao_social) AS empresa, ec.cnpj, ec.origem::text AS origem,
+             ec.situacao::text AS situacao, ec.presenca::text AS presenca, ec.presenca_em,
+             ec.avaliacao_resposta_id IS NOT NULL AS avaliou, ec.avaliacao_pedida_em,
+             ec.avaliacao_lembretes AS lembretes, ec.entrou_na_fila_em, ec.confirmado_em, ec.promovido_em
       FROM evento_confirmacoes ec
-      JOIN portal_acessos pa ON pa.id = ec.acesso_id
-      JOIN contatos ct ON ct.id = pa.contato_id
-      JOIN empresas e ON e.id = ec.empresa_id
-      WHERE ec.evento_id = ${id} AND ec.situacao <> 'cancelado'
+      LEFT JOIN portal_acessos pa ON pa.id = ec.acesso_id
+      LEFT JOIN contatos ct ON ct.id = coalesce(ec.contato_id, pa.contato_id)
+      LEFT JOIN empresas e ON e.id = ec.empresa_id
+      WHERE ec.evento_id = ${id}
       ORDER BY ec.situacao, ec.entrou_na_fila_em, ec.id`)
     const confirmados: ParticipanteDoEvento[] = []
     const listaDeEspera: ParticipanteDoEvento[] = []
+    const cancelados: ParticipanteDoEvento[] = []
     for (const l of linhas) {
       const base = {
         id: l.id,
         pessoa: l.pessoa,
         email: l.email,
         empresa: l.empresa,
+        cnpj: l.cnpj,
+        origem: l.origem,
         situacao: l.situacao,
+        presenca: l.presenca,
+        presencaEm: iso(l.presenca_em),
+        avaliou: l.avaliou,
+        avaliacaoPedidaEm: iso(l.avaliacao_pedida_em),
+        lembretes: Number(l.lembretes),
         entrouNaFilaEm: new Date(l.entrou_na_fila_em).toISOString(),
         confirmadoEm: iso(l.confirmado_em),
         promovidoEm: iso(l.promovido_em),
       }
       if (l.situacao === 'confirmado') confirmados.push({ ...base, posicaoNaFila: null })
-      else listaDeEspera.push({ ...base, posicaoNaFila: listaDeEspera.length + 1 })
+      else if (l.situacao === 'lista_espera')
+        listaDeEspera.push({ ...base, posicaoNaFila: listaDeEspera.length + 1 })
+      else cancelados.push({ ...base, posicaoNaFila: null })
     }
-    return { confirmados, listaDeEspera }
+    return { confirmados, listaDeEspera, cancelados }
   }
 
   /** A equipe tira uma pessoa do evento (confirmada ou na fila); quem espera é promovido e avisado. */

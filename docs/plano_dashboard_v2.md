@@ -159,13 +159,13 @@ Hoje o Dashboard é só "Minha". Pedidos como "Quantidade de associados", "Churn
 | `atualizado_em` | timestamptz | |
 
 - É **referência nacional**, como `municipios` e `estados`: **sem `tenant_id` e sem RLS** (igual às outras de referência; leitura liberada ao papel da aplicação, escrita só pelo owner/seed). Registrar em `modelagem_banco.md` na seção das tabelas de referência.
-- Migração **só de expansão** (`0045_municipio_contornos.sql`), sem tocar em nada existente.
+- Migração **só de expansão** (`0054_dashboard_v2.sql`), sem tocar em nada existente.
 - **Carga:** script `pnpm db:seed-contornos -- --uf ES` (em `apps/api/src/seed-referencias.ts` ou ao lado), que baixa a malha do IBGE (API de malhas `servicodados.ibge.gov.br/api/v3/malhas/estados/{UF}?intrarregiao=municipio&formato=application/vnd.geo+json`, com `qualidade=intermediaria`), simplifica e grava em lote, idempotente (`ON CONFLICT DO UPDATE`). Roda **no ambiente do Ale** e na produção uma vez por UF usada (hoje só o ES), como as outras cargas geo; passo a passo no roteiro de produção. Tamanho esperado do ES: 78 municípios, ~150–300 KB de GeoJSON simplificado.
 - Testes da API usam um **contorno de teste** (dois quadrados) inserido pela fábrica, sem depender da internet.
 
 ### 6.2 Índices para os novos números
 
-- `empresa_tags_historico` já tem `(tenant_id, tag_id)` e `(tenant_id, empresa_id, em)`. Para "associado em T" por tag e data, acrescentar `(tenant_id, tag_id, empresa_id, em DESC)` **se** o `EXPLAIN` no volume da produção mostrar necessidade (medir antes; entra na mesma migração 0045 ou numa 0046).
+- `empresa_tags_historico` já tem `(tenant_id, tag_id)` e `(tenant_id, empresa_id, em)`. Para "associado em T" por tag e data, acrescentar `(tenant_id, tag_id, empresa_id, em DESC)` **se** o `EXPLAIN` no volume da produção mostrar necessidade (medir antes; entra na mesma migração).
 - Atividades realizadas no período: conferir se há índice por `(tenant_id, situacao, realizada_em)`; se não houver, criar (`CREATE INDEX CONCURRENTLY` não roda em transação: seguir o padrão das migrações de índice do projeto).
 
 ### 6.3 Passo 0: conferir o histórico em produção (antes de contar churn)
@@ -263,7 +263,7 @@ Cada linha é um commit (ou poucos), com os seus testes; a `main` continua deplo
 13. `feat(api): visão Minha, Equipe e Empresa nos resultados do Dashboard` + `feat(web): seletor de visão`.
 
 **Etapa 5 — mapas**
-14. `feat(db): contornos dos municípios (referência do IBGE)` (migração 0045 + script de carga + fábrica de teste).
+14. `feat(db): contornos dos municípios (referência do IBGE)` (migração 0054 + script de carga + fábrica de teste).
 15. `feat(api): contornos por UF e contagem por município para o Dashboard`.
 16. `feat(web): mapa de densidade com legenda lateral` (componente + `lib/densidade.ts`).
 17. `feat(web): quadro Carteira com os mapas de associados e de empresas` (15, 16).
@@ -298,13 +298,14 @@ Todas respondidas em 01/11/2026: **as nove como recomendado**.
 
 ## 13. Como ficou (implementação de 01/11/2026)
 
-Commits na ordem: banco e shared (migração 0045, períodos e schemas), API dos resultados, indicadores do portal por intervalo, a tela em duas abas, a contração do `GET /v1/carteira/dashboard` e os docs. Roteiro de teste em `roteiro_teste_dashboard_v2.md`.
+Commits na ordem: banco e shared (migração 0054, períodos e schemas), API dos resultados, indicadores do portal por intervalo, a tela em duas abas, a contração do `GET /v1/carteira/dashboard` e os docs. Roteiro de teste em `roteiro_teste_dashboard_v2.md`.
 
 **Diferenças em relação à proposta acima:**
+- **Número da migração:** `0054_dashboard_v2.sql` (a `main` já tinha 0045 a 0053, da Fase 4 do portal).
 - **Rota dos contornos:** `GET /v1/carteira/dashboard/contornos?uf=ES` (e não `/v1/referencias/contornos`), junto das outras rotas do Dashboard, com `Cache-Control: private, max-age=86400`. Devolve os polígonos de cada município (MultiPolygon do GeoJSON, 4 casas), não uma FeatureCollection.
 - **Carga dos contornos:** a malha fica **versionada** em `packages/db/seeds/dados/municipio_contornos.json` (só o ES, 78 municípios, ~150 KB) e entra com as outras referências a **cada start da API**, só reescrevendo o que mudou. Não há o comando `db:seed-contornos` nem passo manual em produção. O gerador (`seeds/gerar-dados.mjs contornos`, `CONTORNOS_UFS`) baixa da API de Malhas do IBGE; **esta versão** foi gerada a partir de uma cópia derivada da malha do IBGE (projeto geodata-br), porque a API do IBGE não estava acessível no ambiente da geração. O gerador separa as ilhas gravadas como "buracos" (Vitória, Vila Velha, Guarapari e Ibiraçu), para nenhum contorno ficar inválido. Para trocar pela malha oficial mais recente: rodar o gerador com internet e conferir o diff.
-- **Passo 0 (histórico):** em vez de conferir antes, a migração 0045 **sempre** grava, só onde falta, a linha `adicionada` do Status Cliente das empresas sem histórico (com a data de `aplicada_em`, automática). É idempotente e só acrescenta. Para listar as empresas sob o RLS forçado, cria e apaga uma política de leitura de `tenants` só para o owner dentro do mesmo bloco.
-- **Índices:** criados na própria 0045 (sem medir antes): histórico `(tenant_id, tag_id, empresa_id, em)` e atividades realizadas `(tenant_id, realizada_em) WHERE situacao = 'realizada'`.
+- **Passo 0 (histórico):** em vez de conferir antes, a migração 0054 **sempre** grava, só onde falta, a linha `adicionada` do Status Cliente das empresas sem histórico (com a data de `aplicada_em`, automática). É idempotente e só acrescenta. Para listar as empresas sob o RLS forçado, cria e apaga uma política de leitura de `tenants` só para o owner dentro do mesmo bloco.
+- **Índices:** criados na própria 0054 (sem medir antes): histórico `(tenant_id, tag_id, empresa_id, em)` e atividades realizadas `(tenant_id, realizada_em) WHERE situacao = 'realizada'`.
 - **Escopo das contagens:** as empresas **excluídas** saem de tudo (inclusive dos números de períodos passados), e a carteira é a de **hoje** (`vendedor_id` atual): uma empresa transferida conta para o vendedor atual também nos períodos passados.
 - **Anos anteriores:** os 10 anos antes do atual (sem olhar a data de criação da empresa).
 - **Cards Visitas e Atividades realizadas:** sem clique (a tela Atividades não filtra por período nem por "todos menos visita").

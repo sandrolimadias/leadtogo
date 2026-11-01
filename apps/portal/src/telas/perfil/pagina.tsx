@@ -1,20 +1,22 @@
 import type { SessaoDoPortal } from '@leadtogo/api-client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { LogOut, Plus } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { Lock, LogOut, Monitor, Moon, Plus, Sun } from 'lucide-react'
+import { type FormEvent, type ReactNode, useState } from 'react'
 
 import { Button } from '@leadtogo/ui/button'
 import { TextField } from '@leadtogo/ui/campos'
 import { Dialog } from '@leadtogo/ui/dialog'
 import { Badge } from '@leadtogo/ui/exibicao'
-import { Alert } from '@leadtogo/ui/feedback'
+import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { SegmentedControl } from '@leadtogo/ui/segmented-control'
 import { Tabs, ConteudoDaAba } from '@leadtogo/ui/tabs'
 import { toast } from '@leadtogo/ui/toast'
 
 import { CHAVE_DA_SESSAO } from '@/app/guardas'
 import { useSessaoAtual } from '@/app/sessao'
 import { dataEHora } from '@/casca/rotulos'
+import { guardarTema, type Tema, temaGuardado } from '@/casca/tema'
 import { useServicos } from '@/servicos/contexto'
 import { AtivarSegundoFator } from '../acesso/verificacao'
 import { Preferencias } from './preferencias'
@@ -27,107 +29,252 @@ function useAtualizarSessao() {
     )
 }
 
+const ROTULO_DO_TELEFONE = {
+  fixo: 'Fixo',
+  celular: 'Celular',
+  whatsapp: 'WhatsApp',
+  outro: 'Telefone',
+} as const
+
+/** Um dado só para leitura: rótulo pequeno em cima, valor embaixo. */
+function Dado({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <dt className="text-xs leading-4 text-ink-muted">{rotulo}</dt>
+      <dd className="m-0 text-sm leading-5 break-words">{children}</dd>
+    </div>
+  )
+}
+
+function Aparencia() {
+  const servicos = useServicos()
+  const queryClient = useQueryClient()
+  const [tema, setTema] = useState<Tema>(temaGuardado)
+  const mudar = async (novo: Tema) => {
+    setTema(novo)
+    guardarTema(novo)
+    const r = await servicos.preferencias.salvarTema(novo)
+    if (r.ok) queryClient.setQueryData(['preferencias'], r.dados)
+  }
+  return (
+    <section className="flex flex-col gap-2 rounded-md border border-border bg-surface p-4">
+      <h2 className="m-0 text-[15px] leading-5 font-semibold">Aparência</h2>
+      <p className="m-0 text-sm text-ink-muted">
+        &quot;Sistema&quot; segue o modo claro ou escuro do seu aparelho.
+      </p>
+      <SegmentedControl
+        label="Tema"
+        value={tema}
+        onChange={(v) => void mudar(v as Tema)}
+        options={[
+          { value: 'claro', label: 'Claro', icon: Sun },
+          { value: 'escuro', label: 'Escuro', icon: Moon },
+          { value: 'sistema', label: 'Sistema', icon: Monitor },
+        ]}
+      />
+    </section>
+  )
+}
+
 function MeuPerfil({ sessao }: { sessao: SessaoDoPortal }) {
   const servicos = useServicos()
+  const queryClient = useQueryClient()
   const atualizar = useAtualizarSessao()
-  const [nome, setNome] = useState(sessao.contato.nome)
+  const cadastro = useQuery({
+    queryKey: ['cadastro', 'perfil'],
+    queryFn: async () => {
+      const r = await servicos.cadastro.perfil()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+  const [nome, setNome] = useState<string | null>(null)
+  const [cargo, setCargo] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const [trocando, setTrocando] = useState(false)
-  const [novoEmail, setNovoEmail] = useState('')
-  const [pedindo, setPedindo] = useState(false)
-  const [erroEmail, setErroEmail] = useState<string | null>(null)
+  const p = cadastro.data
+  const nomeAtual = nome ?? p?.nome ?? sessao.contato.nome
+  const cargoAtual = cargo ?? p?.cargo ?? ''
+  const mudou = p ? nomeAtual.trim() !== p.nome || cargoAtual.trim() !== (p.cargo ?? '') : false
 
   const salvar = async (e: FormEvent) => {
     e.preventDefault()
     setSalvando(true)
     setErro(null)
-    const r = await servicos.sessao.corrigirNome(nome.trim())
+    const r = await servicos.sessao.salvarPerfil({
+      nome: nomeAtual.trim(),
+      cargo: cargoAtual.trim() || null,
+    })
     setSalvando(false)
-    if (!r.ok) setErro(r.erro.mensagem)
-    else {
-      atualizar({ contato: r.dados.contato })
-      toast.success('Nome atualizado')
-    }
-  }
-  const pedirTroca = async () => {
-    setPedindo(true)
-    setErroEmail(null)
-    const r = await servicos.sessao.trocarEmail(novoEmail.trim())
-    setPedindo(false)
     if (!r.ok) {
-      setErroEmail(r.erro.mensagem)
+      setErro(r.erro.mensagem)
       return
     }
-    setTrocando(false)
-    setNovoEmail('')
-    toast.success('Enviamos um link para o novo e-mail. O acesso só muda quando você o confirmar.')
+    atualizar({ contato: r.dados.contato })
+    setNome(null)
+    setCargo(null)
+    void queryClient.invalidateQueries({ queryKey: ['cadastro', 'perfil'] })
+    toast.success('Perfil atualizado')
   }
 
   return (
     <div className="flex flex-col gap-4">
+      {cadastro.isError ? <Alert tone="danger" title={cadastro.error.message} /> : null}
       <form
         onSubmit={(e) => void salvar(e)}
         className="flex flex-col gap-4 rounded-md border border-border bg-surface p-4"
         noValidate
       >
         {erro ? <Alert tone="danger" title={erro} /> : null}
-        <TextField
-          label="Nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          maxLength={120}
-        />
-        <TextField
-          label="E-mail de acesso"
-          value={sessao.contato.email}
-          readOnly
-          suffix={
-            <Button size="sm" variant="ghost" onClick={() => setTrocando(true)}>
-              Alterar
-            </Button>
-          }
-        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField
+            label="Nome"
+            value={nomeAtual}
+            onChange={(e) => setNome(e.target.value)}
+            maxLength={120}
+          />
+          <TextField
+            label="Cargo"
+            value={cargoAtual}
+            onChange={(e) => setCargo(e.target.value)}
+            maxLength={80}
+          />
+        </div>
         <div className="flex justify-end">
           <Button
             type="submit"
             variant="primary"
             loading={salvando}
-            disabled={nome.trim().length < 2 || nome.trim() === sessao.contato.nome}
+            disabled={!p || nomeAtual.trim().length < 2 || !mudou}
           >
             Salvar
           </Button>
         </div>
       </form>
-      <Dialog
-        open={trocando}
-        onOpenChange={setTrocando}
-        title="Alterar o e-mail de acesso"
-        description="Enviamos um link de confirmação para o novo endereço. O e-mail atual continua valendo até você confirmar."
-        footer={
-          <>
-            <Button onClick={() => setTrocando(false)}>Cancelar</Button>
-            <Button
-              variant="primary"
-              loading={pedindo}
-              disabled={!novoEmail.includes('@')}
-              onClick={() => void pedirTroca()}
-            >
-              Enviar link
-            </Button>
-          </>
-        }
+      <section
+        aria-label="Contato"
+        className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4"
       >
-        {erroEmail ? <Alert tone="danger" title={erroEmail} /> : null}
-        <TextField
-          label="Novo e-mail"
-          type="email"
-          autoComplete="email"
-          value={novoEmail}
-          onChange={(e) => setNovoEmail(e.target.value)}
-        />
-      </Dialog>
+        <div className="flex items-start gap-2">
+          <Lock size={16} strokeWidth={1.75} aria-hidden="true" className="mt-0.5 text-ink-muted" />
+          <p className="m-0 text-sm text-ink-muted">
+            E-mail e telefone só a equipe altera. Precisa mudar? Abra um chamado.
+          </p>
+        </div>
+        <dl className="m-0 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <Dado rotulo="E-mail de acesso">{sessao.contato.email}</Dado>
+          {p?.emails
+            .filter((e) => e.email.toLowerCase() !== sessao.contato.email.toLowerCase())
+            .map((e) => (
+              <Dado key={e.email} rotulo={e.tipo === 'pessoal' ? 'E-mail pessoal' : 'E-mail'}>
+                {e.email}
+              </Dado>
+            ))}
+          {p && p.telefones.length === 0 ? <Dado rotulo="Telefone">—</Dado> : null}
+          {p?.telefones.map((t) => (
+            <Dado key={t.numero} rotulo={ROTULO_DO_TELEFONE[t.tipo]}>
+              {t.numero}
+            </Dado>
+          ))}
+          {p?.aniversario ? (
+            <Dado rotulo="Aniversário">
+              {String(p.aniversario.dia).padStart(2, '0')}/
+              {String(p.aniversario.mes).padStart(2, '0')}
+            </Dado>
+          ) : null}
+        </dl>
+      </section>
+      <Aparencia />
     </div>
+  )
+}
+
+const documentoFormatado = (tipo: string, doc: string | null): string => {
+  if (!doc) return '—'
+  if (tipo === 'cnpj' && doc.length === 14)
+    return `${doc.slice(0, 2)}.${doc.slice(2, 5)}.${doc.slice(5, 8)}/${doc.slice(8, 12)}-${doc.slice(12)}`
+  if (tipo === 'cpf' && doc.length === 11)
+    return `${doc.slice(0, 3)}.${doc.slice(3, 6)}.${doc.slice(6, 9)}-${doc.slice(9)}`
+  return doc
+}
+
+/** O cadastro da empresa-cliente, só para leitura (F-6). */
+function CadastroDaEmpresa() {
+  const servicos = useServicos()
+  const empresa = useQuery({
+    queryKey: ['cadastro', 'empresa'],
+    queryFn: async () => {
+      const r = await servicos.cadastro.empresa()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+  if (empresa.isError) return <Alert tone="danger" title={empresa.error.message} />
+  const e = empresa.data
+  if (!e) return <Skeleton lines={6} />
+  const end = e.endereco
+  const linhaDoEndereco = [
+    [end.logradouro, end.numero].filter(Boolean).join(', '),
+    end.complemento,
+    end.bairro,
+    [end.municipio, end.uf].filter(Boolean).join('/'),
+    end.cep ? `CEP ${end.cep.slice(0, 5)}-${end.cep.slice(5)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return (
+    <section
+      aria-label="Cadastro da empresa"
+      className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4"
+    >
+      <div className="flex items-start gap-2">
+        <Lock size={16} strokeWidth={1.75} aria-hidden="true" className="mt-0.5 text-ink-muted" />
+        <p className="m-0 text-sm text-ink-muted">
+          Estes dados são mantidos pela equipe. Encontrou algo errado? Abra um chamado.
+        </p>
+      </div>
+      <dl className="m-0 grid grid-cols-1 gap-3 md:grid-cols-2">
+        <Dado rotulo="Razão social">{e.razaoSocial}</Dado>
+        <Dado rotulo="Nome fantasia">{e.nomeFantasia ?? '—'}</Dado>
+        <Dado rotulo={e.tipoDocumento === 'cpf' ? 'CPF' : 'CNPJ'}>
+          {documentoFormatado(e.tipoDocumento, e.documento)}
+          {e.matrizFilial ? ` (${e.matrizFilial === 'matriz' ? 'matriz' : 'filial'})` : ''}
+        </Dado>
+        <Dado rotulo="Porte">{e.porte ?? '—'}</Dado>
+        <Dado rotulo="Início das atividades">
+          {e.dataInicioAtividades ? e.dataInicioAtividades.split('-').reverse().join('/') : '—'}
+        </Dado>
+        <Dado rotulo="Site">{e.website ?? '—'}</Dado>
+        <div className="md:col-span-2">
+          <Dado rotulo="Endereço">{linhaDoEndereco || '—'}</Dado>
+        </div>
+        {e.telefones.length === 0 ? <Dado rotulo="Telefone">—</Dado> : null}
+        {e.telefones.map((t) => (
+          <Dado key={t.numero} rotulo={ROTULO_DO_TELEFONE[t.tipo]}>
+            {t.numero}
+          </Dado>
+        ))}
+        <div className="md:col-span-2">
+          <Dado rotulo="Atividade principal (CNAE)">
+            {e.cnaePrincipal ? `${e.cnaePrincipal.codigo} · ${e.cnaePrincipal.descricao}` : '—'}
+          </Dado>
+        </div>
+        {e.cnaesSecundarios.length > 0 ? (
+          <div className="md:col-span-2">
+            <Dado rotulo="Atividades secundárias">
+              <ul className="m-0 list-none p-0">
+                {e.cnaesSecundarios.map((c) => (
+                  <li key={c.codigo}>
+                    {c.codigo} · {c.descricao}
+                  </li>
+                ))}
+              </ul>
+            </Dado>
+          </div>
+        ) : null}
+        <Dado rotulo="Quem atende sua empresa">{e.responsavel ?? '—'}</Dado>
+      </dl>
+    </section>
   )
 }
 
@@ -187,6 +334,7 @@ function MinhaEmpresa({ sessao }: { sessao: SessaoDoPortal }) {
           Você é {responsavel ? 'o responsável' : 'colega'} nesta empresa.
         </p>
       </section>
+      <CadastroDaEmpresa />
       {responsavel ? (
         <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4">
           <h2 className="m-0 text-[15px] leading-5 font-semibold">Acesso para colegas</h2>
@@ -436,6 +584,7 @@ export function TelaPerfil({ inicial }: { inicial: SessaoDoPortal }) {
         </p>
       </header>
       <Tabs
+        quebrar
         label="Perfil e empresa"
         defaultValue="perfil"
         items={[

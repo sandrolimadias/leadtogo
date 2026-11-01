@@ -23,6 +23,7 @@ export function Tabs({
   label,
   preencher = false,
   className,
+  quebrar = false,
   children,
 }: {
   items: ItemDeAba[]
@@ -36,6 +37,11 @@ export function Tabs({
    */
   preencher?: boolean
   className?: string
+  /**
+   * Na tela estreita, as abas que não cabem descem para a linha de baixo em vez de rolar na horizontal:
+   * nunca aparece barra de rolagem, em nenhum navegador (o portal do cliente usa assim).
+   */
+  quebrar?: boolean
   children?: ReactNode
 }) {
   return (
@@ -53,7 +59,10 @@ export function Tabs({
         // na horizontal com o dedo, sem a barra. `flex-none`: numa coluna de altura fixa (painel da empresa no
         // mapa, Atividades), uma caixa com overflow tem altura mínima 0 e encolhia até sumir com as abas.
         className={cn(
-          'flex min-w-0 flex-none gap-1 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--border)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          'flex min-w-0 flex-none gap-1 shadow-[inset_0_-1px_0_var(--border)]',
+          quebrar
+            ? 'flex-wrap overflow-hidden'
+            : 'overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           preencher && 'max-md:gap-0',
         )}
       >

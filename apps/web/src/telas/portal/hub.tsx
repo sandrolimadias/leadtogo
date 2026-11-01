@@ -12,9 +12,11 @@ import { AgendaDoPortal } from './agenda'
 import { AvisosDoPortal } from './avisos'
 import { ChamadosDoPortal } from './chamados'
 import { DocumentosDoPortal } from './documentos'
+import { FormulariosDoPortal } from './formularios'
 import { PublicacoesDoPortal } from './publicacoes'
 
-type Aba = 'publicacoes' | 'chamados' | 'documentos' | 'agenda' | 'avisos' | 'acessos'
+type Aba =
+  'publicacoes' | 'chamados' | 'documentos' | 'agenda' | 'avisos' | 'formularios' | 'acessos'
 
 /**
  * O hub do Portal do Cliente: o que a equipe publica e vê do que acontece no portal. Hoje: publicações (3B),
@@ -25,7 +27,8 @@ export function TelaDoPortal() {
   const { pode } = usePermissoes()
   const verHub = pode('portal.ver')
   const [escolha, setAba] = useState<Aba | null>(null)
-  const aba: Aba = escolha ?? (verHub ? 'chamados' : 'publicacoes')
+  // A aba de entrada é Publicações para todos (Fase 4A, B-2)
+  const aba: Aba = escolha ?? 'publicacoes'
   const pedidos = useQuery({
     queryKey: ['portal', 'pedidos'],
     retry: false,
@@ -62,6 +65,7 @@ export function TelaDoPortal() {
         </p>
       </header>
       <Tabs
+        quebrar
         label="Portal do Cliente"
         value={aba}
         onChange={(v) => setAba(v as Aba)}
@@ -73,6 +77,9 @@ export function TelaDoPortal() {
             : []),
           ...(verHub || pode('portal.agenda') ? [{ value: 'agenda', label: 'Agenda' }] : []),
           ...(verHub || pode('portal.avisos') ? [{ value: 'avisos', label: 'Avisos' }] : []),
+          ...(verHub || pode('portal.formularios')
+            ? [{ value: 'formularios', label: 'Formulários' }]
+            : []),
           ...(verHub || pode('portal.acessos')
             ? [
                 {
@@ -94,6 +101,8 @@ export function TelaDoPortal() {
         <AgendaDoPortal />
       ) : aba === 'avisos' ? (
         <AvisosDoPortal />
+      ) : aba === 'formularios' ? (
+        <FormulariosDoPortal />
       ) : (
         <AcessosDoPortal />
       )}

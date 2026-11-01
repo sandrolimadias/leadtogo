@@ -17,11 +17,17 @@ import { Route as PortalIndexRouteImport } from './routes/_portal.index'
 import { Route as PortalAgendaRouteImport } from './routes/_portal.agenda'
 import { Route as PortalBuscaRouteImport } from './routes/_portal.busca'
 import { Route as PortalDocumentosRouteImport } from './routes/_portal.documentos'
+import { Route as PortalEmpresasRouteImport } from './routes/_portal.empresas'
 import { Route as PortalNotificacoesRouteImport } from './routes/_portal.notificacoes'
 import { Route as PortalPerfilRouteImport } from './routes/_portal.perfil'
+import { Route as AvaliacaoTokenRouteImport } from './routes/avaliacao.$token'
+import { Route as CheckinTokenRouteImport } from './routes/checkin.$token'
+import { Route as EventosSlugRouteImport } from './routes/eventos.$slug'
+import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as PortalChamadosIndexRouteImport } from './routes/_portal.chamados.index'
 import { Route as PortalChamadosChamadoIdRouteImport } from './routes/_portal.chamados.$chamadoId'
 import { Route as PortalChamadosNovoRouteImport } from './routes/_portal.chamados.novo'
+import { Route as PortalFormulariosFormularioIdRouteImport } from './routes/_portal.formularios.$formularioId'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/_portal',
@@ -62,6 +68,11 @@ const PortalDocumentosRoute = PortalDocumentosRouteImport.update({
   path: '/documentos',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalEmpresasRoute = PortalEmpresasRouteImport.update({
+  id: '/empresas',
+  path: '/empresas',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalNotificacoesRoute = PortalNotificacoesRouteImport.update({
   id: '/notificacoes',
   path: '/notificacoes',
@@ -71,6 +82,26 @@ const PortalPerfilRoute = PortalPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
   getParentRoute: () => PortalRoute,
+} as any)
+const AvaliacaoTokenRoute = AvaliacaoTokenRouteImport.update({
+  id: '/avaliacao/$token',
+  path: '/avaliacao/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckinTokenRoute = CheckinTokenRouteImport.update({
+  id: '/checkin/$token',
+  path: '/checkin/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventosSlugRoute = EventosSlugRouteImport.update({
+  id: '/eventos/$slug',
+  path: '/eventos/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FSlugRoute = FSlugRouteImport.update({
+  id: '/f/$slug',
+  path: '/f/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PortalChamadosIndexRoute = PortalChamadosIndexRouteImport.update({
   id: '/chamados/',
@@ -87,6 +118,11 @@ const PortalChamadosNovoRoute = PortalChamadosNovoRouteImport.update({
   path: '/chamados/novo',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalFormulariosFormularioIdRoute = PortalFormulariosFormularioIdRouteImport.update({
+  id: '/formularios/$formularioId',
+  path: '/formularios/$formularioId',
+  getParentRoute: () => PortalRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PortalIndexRoute
@@ -96,10 +132,16 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof PortalAgendaRoute
   '/busca': typeof PortalBuscaRoute
   '/documentos': typeof PortalDocumentosRoute
+  '/empresas': typeof PortalEmpresasRoute
   '/notificacoes': typeof PortalNotificacoesRoute
   '/perfil': typeof PortalPerfilRoute
+  '/avaliacao/$token': typeof AvaliacaoTokenRoute
+  '/checkin/$token': typeof CheckinTokenRoute
+  '/eventos/$slug': typeof EventosSlugRoute
+  '/f/$slug': typeof FSlugRoute
   '/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
   '/chamados/novo': typeof PortalChamadosNovoRoute
+  '/formularios/$formularioId': typeof PortalFormulariosFormularioIdRoute
   '/chamados/': typeof PortalChamadosIndexRoute
 }
 export interface FileRoutesByTo {
@@ -109,11 +151,17 @@ export interface FileRoutesByTo {
   '/agenda': typeof PortalAgendaRoute
   '/busca': typeof PortalBuscaRoute
   '/documentos': typeof PortalDocumentosRoute
+  '/empresas': typeof PortalEmpresasRoute
   '/notificacoes': typeof PortalNotificacoesRoute
   '/perfil': typeof PortalPerfilRoute
+  '/avaliacao/$token': typeof AvaliacaoTokenRoute
+  '/checkin/$token': typeof CheckinTokenRoute
+  '/eventos/$slug': typeof EventosSlugRoute
+  '/f/$slug': typeof FSlugRoute
   '/': typeof PortalIndexRoute
   '/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
   '/chamados/novo': typeof PortalChamadosNovoRoute
+  '/formularios/$formularioId': typeof PortalFormulariosFormularioIdRoute
   '/chamados': typeof PortalChamadosIndexRoute
 }
 export interface FileRoutesById {
@@ -125,11 +173,17 @@ export interface FileRoutesById {
   '/_portal/agenda': typeof PortalAgendaRoute
   '/_portal/busca': typeof PortalBuscaRoute
   '/_portal/documentos': typeof PortalDocumentosRoute
+  '/_portal/empresas': typeof PortalEmpresasRoute
   '/_portal/notificacoes': typeof PortalNotificacoesRoute
   '/_portal/perfil': typeof PortalPerfilRoute
+  '/avaliacao/$token': typeof AvaliacaoTokenRoute
+  '/checkin/$token': typeof CheckinTokenRoute
+  '/eventos/$slug': typeof EventosSlugRoute
+  '/f/$slug': typeof FSlugRoute
   '/_portal/': typeof PortalIndexRoute
   '/_portal/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
   '/_portal/chamados/novo': typeof PortalChamadosNovoRoute
+  '/_portal/formularios/$formularioId': typeof PortalFormulariosFormularioIdRoute
   '/_portal/chamados/': typeof PortalChamadosIndexRoute
 }
 export interface FileRouteTypes {
@@ -142,10 +196,16 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/busca'
     | '/documentos'
+    | '/empresas'
     | '/notificacoes'
     | '/perfil'
+    | '/avaliacao/$token'
+    | '/checkin/$token'
+    | '/eventos/$slug'
+    | '/f/$slug'
     | '/chamados/$chamadoId'
     | '/chamados/novo'
+    | '/formularios/$formularioId'
     | '/chamados/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,11 +215,17 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/busca'
     | '/documentos'
+    | '/empresas'
     | '/notificacoes'
     | '/perfil'
+    | '/avaliacao/$token'
+    | '/checkin/$token'
+    | '/eventos/$slug'
+    | '/f/$slug'
     | '/'
     | '/chamados/$chamadoId'
     | '/chamados/novo'
+    | '/formularios/$formularioId'
     | '/chamados'
   id:
     | '__root__'
@@ -170,11 +236,17 @@ export interface FileRouteTypes {
     | '/_portal/agenda'
     | '/_portal/busca'
     | '/_portal/documentos'
+    | '/_portal/empresas'
     | '/_portal/notificacoes'
     | '/_portal/perfil'
+    | '/avaliacao/$token'
+    | '/checkin/$token'
+    | '/eventos/$slug'
+    | '/f/$slug'
     | '/_portal/'
     | '/_portal/chamados/$chamadoId'
     | '/_portal/chamados/novo'
+    | '/_portal/formularios/$formularioId'
     | '/_portal/chamados/'
   fileRoutesById: FileRoutesById
 }
@@ -183,6 +255,10 @@ export interface RootRouteChildren {
   AcessoRoute: typeof AcessoRoute
   EntrarRoute: typeof EntrarRoute
   VerificacaoRoute: typeof VerificacaoRoute
+  AvaliacaoTokenRoute: typeof AvaliacaoTokenRoute
+  CheckinTokenRoute: typeof CheckinTokenRoute
+  EventosSlugRoute: typeof EventosSlugRoute
+  FSlugRoute: typeof FSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -243,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalDocumentosRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/_portal/empresas': {
+      id: '/_portal/empresas'
+      path: '/empresas'
+      fullPath: '/empresas'
+      preLoaderRoute: typeof PortalEmpresasRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/_portal/notificacoes': {
       id: '/_portal/notificacoes'
       path: '/notificacoes'
@@ -256,6 +339,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/perfil'
       preLoaderRoute: typeof PortalPerfilRouteImport
       parentRoute: typeof PortalRoute
+    }
+    '/avaliacao/$token': {
+      id: '/avaliacao/$token'
+      path: '/avaliacao/$token'
+      fullPath: '/avaliacao/$token'
+      preLoaderRoute: typeof AvaliacaoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkin/$token': {
+      id: '/checkin/$token'
+      path: '/checkin/$token'
+      fullPath: '/checkin/$token'
+      preLoaderRoute: typeof CheckinTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/eventos/$slug': {
+      id: '/eventos/$slug'
+      path: '/eventos/$slug'
+      fullPath: '/eventos/$slug'
+      preLoaderRoute: typeof EventosSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/f/$slug': {
+      id: '/f/$slug'
+      path: '/f/$slug'
+      fullPath: '/f/$slug'
+      preLoaderRoute: typeof FSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_portal/chamados/': {
       id: '/_portal/chamados/'
@@ -278,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalChamadosNovoRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/_portal/formularios/$formularioId': {
+      id: '/_portal/formularios/$formularioId'
+      path: '/formularios/$formularioId'
+      fullPath: '/formularios/$formularioId'
+      preLoaderRoute: typeof PortalFormulariosFormularioIdRouteImport
+      parentRoute: typeof PortalRoute
+    }
   }
 }
 
@@ -285,11 +403,13 @@ interface PortalRouteChildren {
   PortalAgendaRoute: typeof PortalAgendaRoute
   PortalBuscaRoute: typeof PortalBuscaRoute
   PortalDocumentosRoute: typeof PortalDocumentosRoute
+  PortalEmpresasRoute: typeof PortalEmpresasRoute
   PortalNotificacoesRoute: typeof PortalNotificacoesRoute
   PortalPerfilRoute: typeof PortalPerfilRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalChamadosChamadoIdRoute: typeof PortalChamadosChamadoIdRoute
   PortalChamadosNovoRoute: typeof PortalChamadosNovoRoute
+  PortalFormulariosFormularioIdRoute: typeof PortalFormulariosFormularioIdRoute
   PortalChamadosIndexRoute: typeof PortalChamadosIndexRoute
 }
 
@@ -297,11 +417,13 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalAgendaRoute: PortalAgendaRoute,
   PortalBuscaRoute: PortalBuscaRoute,
   PortalDocumentosRoute: PortalDocumentosRoute,
+  PortalEmpresasRoute: PortalEmpresasRoute,
   PortalNotificacoesRoute: PortalNotificacoesRoute,
   PortalPerfilRoute: PortalPerfilRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalChamadosChamadoIdRoute: PortalChamadosChamadoIdRoute,
   PortalChamadosNovoRoute: PortalChamadosNovoRoute,
+  PortalFormulariosFormularioIdRoute: PortalFormulariosFormularioIdRoute,
   PortalChamadosIndexRoute: PortalChamadosIndexRoute,
 }
 
@@ -312,6 +434,10 @@ const rootRouteChildren: RootRouteChildren = {
   AcessoRoute: AcessoRoute,
   EntrarRoute: EntrarRoute,
   VerificacaoRoute: VerificacaoRoute,
+  AvaliacaoTokenRoute: AvaliacaoTokenRoute,
+  CheckinTokenRoute: CheckinTokenRoute,
+  EventosSlugRoute: EventosSlugRoute,
+  FSlugRoute: FSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

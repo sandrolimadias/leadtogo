@@ -11,8 +11,14 @@ import {
   removerInscricaoDePushSchema,
   type ResultadoDaBuscaDoPortal,
   resultadoDaBuscaDoPortalSchema,
+  type MeuPerfilDoPortal,
+  meuPerfilDoPortalSchema,
+  type MinhaEmpresaDoPortal,
+  minhaEmpresaDoPortalSchema,
   type SalvarPreferenciasDoPortalEntrada,
   salvarPreferenciasDoPortalSchema,
+  type SalvarTemaDoPortalEntrada,
+  salvarTemaDoPortalSchema,
 } from '@leadtogo/shared'
 import { Body, Controller, Delete, Get, HttpCode, Post, Put, Query } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
@@ -21,6 +27,7 @@ import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { PortalBuscaService } from './portal-busca.service.js'
+import { PortalPerfilService } from './portal-perfil.service.js'
 import { PortalPreferenciasService } from './portal-preferencias.service.js'
 import { RotaDoPortal } from './portal.decorators.js'
 
@@ -32,7 +39,47 @@ export class PortalPreferenciasController {
   constructor(
     private readonly preferencias: PortalPreferenciasService,
     private readonly busca: PortalBuscaService,
+    private readonly perfil: PortalPerfilService,
   ) {}
+
+  @Documenta({
+    resumo: 'Meu perfil',
+    descricao:
+      'O cadastro do contato como a equipe guardou: nome, cargo na empresa da sessão, e-mails, telefones e aniversário. Só nome e cargo o cliente altera (`PUT /portal/perfil`).',
+    resposta: meuPerfilDoPortalSchema,
+    erros: [401, 403, 404, 503],
+  })
+  @Get('perfil')
+  meuPerfil(): Promise<MeuPerfilDoPortal> {
+    return this.perfil.meuPerfil()
+  }
+
+  @Documenta({
+    resumo: 'Minha empresa',
+    descricao:
+      'O cadastro completo da empresa-cliente da sessão, só para leitura: documento, endereço, telefones, CNAEs, porte e o primeiro nome do responsável na equipe.',
+    resposta: minhaEmpresaDoPortalSchema,
+    erros: [401, 403, 404, 503],
+  })
+  @Get('empresa')
+  minhaEmpresa(): Promise<MinhaEmpresaDoPortal> {
+    return this.perfil.minhaEmpresa()
+  }
+
+  @Documenta({
+    resumo: 'Salvar o tema',
+    descricao: 'Claro, escuro ou sistema (padrão). Vale em todos os aparelhos da pessoa.',
+    corpo: salvarTemaDoPortalSchema,
+    resposta: preferenciasDoPortalSchema,
+    erros: [400, 401, 403, 429, 503],
+  })
+  @Put('preferencias/tema')
+  @Limite({ nome: 'portal-preferencias', max: 60, janelaS: 3600 })
+  salvarTema(
+    @Body(new ZodPipe(salvarTemaDoPortalSchema)) dados: SalvarTemaDoPortalEntrada,
+  ): Promise<PreferenciasDoPortal> {
+    return this.preferencias.salvarTema(dados.tema)
+  }
 
   @Documenta({
     resumo: 'Minhas preferências',

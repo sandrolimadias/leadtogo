@@ -214,8 +214,20 @@ const esquema = z
     VAPID_SUBJECT: opcional(
       z.string().regex(/^(mailto:\S+@\S+|https:\/\/\S+)$/, 'use mailto:... ou https://...'),
     ),
+
+    // Captcha dos formulários públicos (Fase 4E, Cloudflare Turnstile). Sem o par, o captcha fica desligado e a
+    // proteção é o limite por IP e o campo isca.
+    TURNSTILE_SITE_KEY: opcional(z.string().min(10)),
+    TURNSTILE_SECRET: opcional(z.string().min(10)),
   })
   .superRefine((env, ctx) => {
+    if (Boolean(env.TURNSTILE_SITE_KEY) !== Boolean(env.TURNSTILE_SECRET)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TURNSTILE_SECRET'],
+        message: 'TURNSTILE_SITE_KEY e TURNSTILE_SECRET vão juntas',
+      })
+    }
     if (Boolean(env.VAPID_PUBLIC_KEY) !== Boolean(env.VAPID_PRIVATE_KEY)) {
       ctx.addIssue({
         code: 'custom',

@@ -13,54 +13,77 @@ const comoColega = () =>
   })
 
 describe('meu perfil', () => {
-  it('corrige o próprio nome; o botão só liga quando há mudança', async () => {
+  it('mostra o cadastro; corrige nome e cargo; o botão só liga quando há mudança', async () => {
     const servicos = servicosFalsos()
     renderizar(servicos, '/perfil')
     const usuario = userEvent.setup()
-    const salvar = await screen.findByRole('button', { name: 'Salvar' })
+    const campo = await screen.findByDisplayValue('Daniel Prates')
+    const salvar = screen.getByRole('button', { name: 'Salvar' })
     expect(salvar).toBeDisabled()
-    const campo = screen.getByLabelText('Nome')
     await usuario.clear(campo)
     await usuario.type(campo, 'Daniel P. Prates')
+    const cargo = screen.getByLabelText('Cargo')
+    await usuario.clear(cargo)
+    await usuario.type(cargo, 'Diretor')
     await usuario.click(salvar)
     await waitFor(() =>
-      expect(servicos.sessao.corrigirNome).toHaveBeenCalledWith('Daniel P. Prates'),
-    )
-  })
-
-  it('troca o e-mail por um link enviado ao endereço novo', async () => {
-    const servicos = servicosFalsos()
-    renderizar(servicos, '/perfil')
-    const usuario = userEvent.setup()
-    await usuario.click(await screen.findByRole('button', { name: 'Alterar' }))
-    const dialogo = await screen.findByRole('dialog')
-    await usuario.type(within(dialogo).getByLabelText('Novo e-mail'), 'novo@usidantec.com.br')
-    await usuario.click(within(dialogo).getByRole('button', { name: 'Enviar link' }))
-    await waitFor(() =>
-      expect(servicos.sessao.trocarEmail).toHaveBeenCalledWith('novo@usidantec.com.br'),
-    )
-  })
-
-  it('e-mail de outro acesso mostra o erro e mantém o diálogo', async () => {
-    const servicos = servicosFalsos()
-    servicos.sessao.trocarEmail = vi.fn(async () =>
-      falha({
-        codigo: 'email_em_uso',
-        mensagem: 'Este e-mail já é usado por outro acesso.',
-        status: 409,
+      expect(servicos.sessao.salvarPerfil).toHaveBeenCalledWith({
+        nome: 'Daniel P. Prates',
+        cargo: 'Diretor',
       }),
     )
+  })
+
+  it('e-mail e telefone aparecem travados, sem botão de alterar', async () => {
+    renderizar(servicosFalsos(), '/perfil')
+    const contato = await screen.findByRole('region', { name: 'Contato' })
+    expect(await within(contato).findByText('(27) 99999-1234')).toBeInTheDocument()
+    expect(within(contato).getByText('daniel@usidantec.com.br')).toBeInTheDocument()
+    expect(within(contato).getByText(/só a equipe altera/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Alterar' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('E-mail de acesso')).not.toBeInTheDocument()
+  })
+
+  it('troca o tema: aplica na hora, guarda no aparelho e na conta', async () => {
+    const servicos = servicosFalsos()
     renderizar(servicos, '/perfil')
     const usuario = userEvent.setup()
-    await usuario.click(await screen.findByRole('button', { name: 'Alterar' }))
-    const dialogo = await screen.findByRole('dialog')
-    await usuario.type(within(dialogo).getByLabelText('Novo e-mail'), 'colega@usidantec.com.br')
-    await usuario.click(within(dialogo).getByRole('button', { name: 'Enviar link' }))
-    expect(await within(dialogo).findByText(/já é usado por outro acesso/)).toBeInTheDocument()
+    const grupo = await screen.findByRole('group', { name: 'Tema' })
+    await usuario.click(within(grupo).getByRole('button', { name: /Escuro/ }))
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+    await waitFor(() => expect(servicos.preferencias.salvarTema).toHaveBeenCalledWith('escuro'))
+    await usuario.click(within(grupo).getByRole('button', { name: /Sistema/ }))
+    expect(document.documentElement).not.toHaveAttribute('data-theme')
+  })
+
+  it('erro ao salvar aparece', async () => {
+    const servicos = servicosFalsos()
+    servicos.sessao.salvarPerfil = vi.fn(async () =>
+      falha({ codigo: 'indisponivel', mensagem: 'Tente de novo.', status: 503 }),
+    )
+    renderizar(servicos, '/perfil')
+    const usuario = userEvent.setup()
+    const campo = await screen.findByDisplayValue('Daniel Prates')
+    await usuario.type(campo, ' Jr')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByText('Tente de novo.')).toBeInTheDocument()
   })
 })
 
 describe('minha empresa', () => {
+  it('mostra o cadastro completo da empresa, só para leitura', async () => {
+    renderizar(servicosFalsos(), '/perfil')
+    const usuario = userEvent.setup()
+    await usuario.click(await screen.findByRole('tab', { name: 'Minha empresa' }))
+    const cadastro = await screen.findByRole('region', { name: 'Cadastro da empresa' })
+    expect(within(cadastro).getByText('USIDANTEC USINAGEM LTDA')).toBeInTheDocument()
+    expect(within(cadastro).getByText(/12\.345\.678\/0001-90/)).toBeInTheDocument()
+    expect(within(cadastro).getByText(/Serra\/ES/)).toBeInTheDocument()
+    expect(within(cadastro).getByText(/2539-0\/01/)).toBeInTheDocument()
+    expect(within(cadastro).queryByRole('textbox')).not.toBeInTheDocument()
+    expect(within(cadastro).queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('o Responsável pede acesso para um colega e vê como a equipe tratou os pedidos', async () => {
     const servicos = servicosFalsos()
     servicos.pedidos.listar = vi.fn(async () =>

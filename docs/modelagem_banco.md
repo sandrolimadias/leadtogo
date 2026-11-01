@@ -284,7 +284,7 @@ O **mesmo usuário** (`usuario_id`) pode ter um registro em `membros` em **cada 
 
 > O app só **lê** essas tabelas; a escrita fica com o *worker*. `receita_consultas` é a única que cresce com o uso.
 
-> **Implementação (Dashboard v2, migração 0045, só expansão; plano em `plano_dashboard_v2.md`):** tabela de referência nova **`municipio_contornos`** (`municipio_codigo` int PK e FK → `municipios`, `uf` char(2) FK → `estados` com índice, `contorno` `geometry(MultiPolygon, 4326)` já simplificado, `fonte` text, `atualizado_em`), **sem `tenant_id` e sem RLS** (como `municipios`), com `SELECT` para o `leadtogo_app`. A carga vem de `seeds/dados/municipio_contornos.json` (hoje só o ES, 78 municípios) e roda com as outras referências a cada start da API, só reescrevendo o que mudou. Serve aos mapas de densidade do Dashboard (`GET /v1/referencias/contornos`). A mesma migração cria dois índices — `empresa_tags_historico (tenant_id, tag_id, empresa_id, em)` ("era associada no instante T") e `atividades (tenant_id, realizada_em) WHERE situacao = 'realizada'` (realizadas no período) — e **acrescenta** ao histórico de Status a linha `adicionada` (automática, `por` nulo, com a data de `empresa_tags.aplicada_em`) de toda empresa com a tag Cliente que não a tinha, para a contagem de associados em datas passadas e o churn. Para listar as empresas sob o RLS forçado, a migração cria e apaga, dentro do mesmo bloco, uma política de leitura de `tenants` só para o owner.
+> **Implementação (Dashboard v2, migração 0054, só expansão; plano em `plano_dashboard_v2.md`):** tabela de referência nova **`municipio_contornos`** (`municipio_codigo` int PK e FK → `municipios`, `uf` char(2) FK → `estados` com índice, `contorno` `geometry(MultiPolygon, 4326)` já simplificado, `fonte` text, `atualizado_em`), **sem `tenant_id` e sem RLS** (como `municipios`), com `SELECT` para o `leadtogo_app`. A carga vem de `seeds/dados/municipio_contornos.json` (hoje só o ES, 78 municípios) e roda com as outras referências a cada start da API, só reescrevendo o que mudou. Serve aos mapas de densidade do Dashboard (`GET /v1/referencias/contornos`). A mesma migração cria dois índices — `empresa_tags_historico (tenant_id, tag_id, empresa_id, em)` ("era associada no instante T") e `atividades (tenant_id, realizada_em) WHERE situacao = 'realizada'` (realizadas no período) — e **acrescenta** ao histórico de Status a linha `adicionada` (automática, `por` nulo, com a data de `empresa_tags.aplicada_em`) de toda empresa com a tag Cliente que não a tinha, para a contagem de associados em datas passadas e o churn. Para listar as empresas sob o RLS forçado, a migração cria e apaga, dentro do mesmo bloco, uma política de leitura de `tenants` só para o owner.
 
 > **Implementação (E7):** o `leadtogo_app` (API e worker usam o mesmo papel) tem só `SELECT` em `cnaes`, `municipios`, `estados`, `paises`, `portes` e `qualificacoes_socio`; a carga é do `leadtogo_owner` (seeds). Em `receita_consultas` ele tem `SELECT`, `INSERT` e `UPDATE` (sem `DELETE`). A inclusão automática de um CNAE novo, citada acima, ainda não tem permissão de escrita: quando a prospecção a implementar, entra por uma função `SECURITY DEFINER` mínima, não por `INSERT` direto. `municipios.localizacao` é `geometry(Point, 4326)`, nula até a carga dos centros. `municipios.codigo_siafi` é `UNIQUE`; a carga inicial traz todos preenchidos. A busca por nome usa `f_unaccent()` (invólucro imutável de `unaccent`) com índice trigram.
 
@@ -991,12 +991,67 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 | `avisos` | mensagem (1 a 140), link (caminho do portal ou http/https), urgencia (`normal` · `urgente`), alcance (`todos` · `empresas`), situacao (`agendado` · `enviado` · `cancelado`), enviar_em, enviado_em, cancelado_em, destinatarios | CHECKs: mensagem não vazia e até 140; link `/caminho` ou `http(s)://` (nunca `//` nem `javascript:`); `enviado` exige `enviado_em`; `cancelado` exige `cancelado_em` |
 | `aviso_empresas` | aviso_id, empresa_id | Alcance "empresas" |
 | `aviso_entregas` | aviso_id, acesso_id, empresa_id, notificacao_id, push_enviar_em, push_enviado_em, push_aceitos, email_enfileirado_em, lido_em | **Uma entrega por aviso e pessoa** (único). `push_enviar_em` já considera o horário de silêncio; `push_enviado_em` é o "claim" que garante envio no máximo uma vez |
-| `portal_preferencias` | acesso_id (único), silencio_inicio, silencio_fim, email_chamados, email_eventos, email_avisos | Silêncio exige os dois horários e que sejam diferentes |
+| `portal_preferencias` | acesso_id (único), silencio_inicio, silencio_fim, email_chamados, email_eventos, email_avisos, **tema** (0045: `claro`, `escuro` ou `sistema`, padrão `sistema`) | Silêncio exige os dois horários e que sejam diferentes |
 | `portal_push_inscricoes` | acesso_id, endpoint (único), chave_p256dh, chave_auth, falhas, revogada_em | Uma por navegador/aparelho; 404/410 do serviço de push revoga |
 
 **O que a sessão do portal enxerga:** `avisos` e `aviso_empresas` ficam **fechados** (política `portal_negado`: só a equipe e o worker). `aviso_entregas`: lê e marca como lida **só a própria**, sem criar nem apagar. `portal_preferencias`: lê, cria e atualiza só a própria (sem apagar). `portal_push_inscricoes`: gerencia só as próprias.
 
 **Varredura do worker (cross-tenant):** `app_avisos_a_enviar()` (avisos agendados que venceram) e `app_pushes_pendentes()` (entregas com `push_enviar_em` vencido e sem envio), ambas devolvem `(id, tenant_id)` com LIMIT 200 e usam políticas só para o dono travadas em `app.varrendo_avisos`, como nas fases anteriores.
+
+## Portal, Fase 4A (migração 0045, só expansão; plano em `plano_portal_formularios_e_eventos.md`)
+
+- `portal_preferencias.tema` (acima).
+- **Cargo pelo próprio cliente:** `empresa_contatos` deixa de ser só leitura para o portal **na linha do próprio contato com a empresa da sessão** (política `portal_escopo_upd`). O gatilho `empresa_contatos_portal_so_cargo` (`app_portal_so_cargo()`) devolve a linha ao que era e mantém só `cargo` e `atualizado_em` quando a sessão é do portal (principal, ativo, empresa e contato continuam com a equipe).
+- **Minha empresa:** `empresa_telefones` e `empresa_cnaes` trocam o `portal_negado` por leitura da **própria empresa-cliente** (`portal_escopo_sel`), sem gravar (`portal_so_leitura_*`).
+
+## Portal, Fase 4B (migração 0046, só expansão)
+
+| Tabela | Colunas principais | Regras |
+|---|---|---|
+| `portal_codigos` | email (citext), codigo_hash, expira_em, tentativas (0 a 5), usado_em, ip | Código de 6 dígitos da entrada: só o hash (SHA-256 de `email:código`), 10 minutos, uso único; um vivo por e-mail e tenant (pedir de novo marca o anterior como usado) |
+
+**Isolamento:** RLS do tenant e `portal_negado` (a sessão do portal nunca enxerga). O código chega sem o tenant, então a função `app_portal_conferir_codigo(email, hash)` (SECURITY DEFINER do dono, como `app_portal_acessos_por_email`) acha o código vivo que bate e devolve `(tenant_id, codigo_id)`, ou conta uma tentativa em todos os códigos vivos do e-mail; a API **gasta** o código na transação do tenant (`UPDATE … WHERE usado_em IS NULL`), depois de conferir o aviso de privacidade. Políticas só do dono, travadas em `app.portal_codigo` e `app.portal_email`.
+
+## Portal, Fase 4C (migração 0047, só expansão)
+
+- Valor **`tags`** em `alcance_publicacao`, `alcance_evento`, `alcance_documento` e `alcance_aviso`.
+- `publicacao_tags`, `evento_tags`, `documento_tags`, `aviso_tags` (tenant_id, `<item>_id`, tag_id, aplicada_em, aplicada_por; PK `(item, tag)`): a linha é o vínculo; o gatilho `app_conferir_alvo_da_tag` só aceita tag de grupo de **contato**.
+- **Portal:** `contato_tags` passa a ser lida pela sessão do portal **só nas linhas do próprio contato** (nunca grava). `app_portal_tem_tag(uuid[])` (STABLE) diz se o contato da sessão tem alguma das tags; os vínculos de tag dos itens só aparecem ao portal nas tags que ele tem. As políticas `portal_escopo_sel` de `publicacoes`, `documentos` e `eventos` ganham o ramo `alcance::text = 'tags' AND EXISTS (vínculo visível)`. Avisos: a entrega (worker) e o limite semanal consideram os contatos com a tag.
+
+## Portal, Fase 4D (migração 0048, só expansão)
+
+| Tabela | Colunas principais | Regras |
+|---|---|---|
+| `publicacao_midias` | publicacao_id, tipo (`imagem`, `video`), ordem, legenda, texto_alternativo; imagem: chave_arquivo, nome, mime, tamanho, estado, enviado_em, varrido_em, assinatura, tentativas_varredura, ultimo_erro; vídeo: video_provedor (`youtube`, `vimeo`), video_id | Check: imagem exige arquivo, descrição e até 10 MB; vídeo exige provedor e ID (`^[A-Za-z0-9_-]{6,32}$`). A mesma chave de arquivo pode aparecer em duas publicações (duplicar) |
+
+**Portal:** lê só mídia não excluída de publicação que ele enxerga e, na imagem, só a `limpa` e enviada; nunca grava. O antivírus usa o mesmo processador dos anexos e documentos (job `tipo: 'midia'`, evento `portal.varrer_midia`).
+
+## Portal, Fase 4E (migração 0049, só expansão)
+
+| Tabela | Colunas principais | Regras |
+|---|---|---|
+| `formularios` | nome, finalidade, acesso (`publico`, `logado`), situacao (`rascunho`, `publicado`, `arquivado`), slug (único no sistema), captcha, definicao (jsonb, o rascunho), versao_publicada, tem_mudancas, segredo_webhook (cifrado) | Publicado exige versão |
+| `formulario_versoes` | formulario_id, versao, definicao, publicada_em, publicada_por | Imutável; única por formulário e versão |
+| `formulario_respostas` | formulario_id, versao, origem (`portal`, `publico`, `crm`), botao, respostas (jsonb), acesso_id, contato_id, empresa_id, contexto_tipo + contexto_id, ip, agente, consentimento_em | Contexto: os dois ou nenhum |
+| `formulario_acoes_execucoes` | resposta_id, indice, tipo, situacao (`pendente`, `ok`, `falhou`), tentativas, status_http, detalhe | Uma por resposta e ação |
+
+**Portal:** lê formulário **publicado** e as versões dele; grava e lê só as **próprias** respostas (`acesso_id` da sessão, origem `portal`); as execuções ficam fechadas. **Público:** `app_formulario_publico(slug)` (SECURITY DEFINER do dono) devolve o tenant de um formulário publicado e público; a resposta pública é gravada no contexto do tenant pela API.
+
+## Portal, Fase 4F (migração 0050, só expansão)
+
+- `tenant_configuracoes.portal_formulario_satisfacao_id` (FK para `formularios`, só no SQL para evitar ciclo no schema): o formulário da pesquisa de satisfação dos chamados. A resposta vai para `formulario_respostas` com `contexto_tipo = 'chamado'`; a primeira nota de 1 a 5 também vira `chamado_avaliacoes`.
+
+## Portal, Fase 4G (migrações 0051 e 0052, só expansão)
+
+- **`eventos`:** `publico` (aparece na página pública da Fase 4H), `formulario_inscricao_id` e `formulario_avaliacao_id` (FK `formularios`), `publicacao_id` (a publicação do feed criada ao publicar), `encerrado_em` / `encerrado_por`, `checkin_token_hash` (só o hash do QR), `checkin_exige_codigo`, `checkin_abre_minutos` (padrão 60).
+- **`evento_confirmacoes`:** `acesso_id` e `empresa_id` passam a aceitar nulo (inscrição da equipe ou pública); `origem` (`portal` · `equipe` · `publico`), `nome`, `email`, `telefone`, `cnpj`, `contato_id`, `resposta_id` (resposta do formulário de inscrição), `presenca` (enum `presenca_evento`: `nao_registrada` · `checkin_qr` · `manual`), `presenca_em`, `presenca_por`, `avaliacao_resposta_id`, `avaliacao_token_hash` (link pessoal do e-mail), `avaliacao_pedida_em`, `avaliacao_lembretes`, `crm_tratado_em` (idempotência do vínculo com o CRM).
+- **`tenant_configuracoes`:** `portal_eventos_crm_ativo`, `portal_eventos_crm_responsavel_id` (FK `membros`), `portal_avaliacao_por_email`.
+- **Funções:** `app_evento_inscrever(evento, id, dados jsonb)` (vagas, fila e alcance, inclusive por tags; a confirmação antiga delega a ela), `app_evento_registrar_avaliacao(evento, resposta)` e `app_evento_checkin_portal(evento)` (sessão do portal; erros `sem_presenca`, `ja_avaliado`, `sem_inscricao`). Sem tenant na sessão, `SECURITY DEFINER` com política só do dono e chave de `set_config`: `app_evento_por_checkin(hash)` e `app_participacao_por_avaliacao(hash)` devolvem o tenant e o evento ou a participação. As tabelas continuam com o RLS do tenant e as políticas restritivas do portal.
+
+## Portal, Fase 4H (migração 0053, só expansão)
+
+- **`tenant_configuracoes`:** `portal_slug` (`varchar(40)`, CHECK do formato, **único** por índice parcial `tenant_configuracoes_portal_slug_uq` onde não nulo), `portal_pagina_eventos_ativa` (padrão falso) e `portal_formulario_associacao_id` (FK `formularios`).
+- **Função `app_portal_publico(slug)`** (`SECURITY DEFINER`, política só do dono travada em `app.portal_slug`): devolve o tenant do endereço quando o portal e a página estão ligados. A página pública e a inscrição sem login rodam depois na transação desse tenant (RLS normal); a inscrição usa `app_evento_inscrever` com origem `publico`.
 
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 

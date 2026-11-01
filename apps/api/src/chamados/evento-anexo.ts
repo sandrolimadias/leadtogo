@@ -19,6 +19,18 @@ export async function agendarVarredura(
 
 /** Tipo do evento do outbox que manda o worker varrer o arquivo de um documento do portal. */
 export const EVENTO_VARRER_DOCUMENTO = 'portal.varrer_documento'
+export const EVENTO_VARRER_MIDIA = 'portal.varrer_midia'
+
+/** Imagem de publicação enviada ao Garage (Fase 4D): o mesmo antivírus dos documentos. */
+export async function agendarVarreduraDeMidia(
+  tx: Transacao,
+  tenantId: string,
+  midiaId: string,
+): Promise<void> {
+  await tx.execute(sql`
+    INSERT INTO eventos_outbox (id, tenant_id, tipo, entidade_id, payload)
+    VALUES (${novoId()}, ${tenantId}, ${EVENTO_VARRER_MIDIA}, ${midiaId}, ${JSON.stringify({ midiaId })}::jsonb)`)
+}
 
 export async function agendarVarreduraDeDocumento(
   tx: Transacao,

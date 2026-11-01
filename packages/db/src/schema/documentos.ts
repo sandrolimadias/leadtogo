@@ -41,7 +41,7 @@ const doTenant = () =>
 /** Tamanho máximo do arquivo, o mesmo dos anexos (25 MB) */
 const TAMANHO_MAXIMO_DO_DOCUMENTO = 25 * 1024 * 1024
 
-export const alcanceDoDocumento = pgEnum('alcance_documento', ['todos', 'empresas'])
+export const alcanceDoDocumento = pgEnum('alcance_documento', ['todos', 'empresas', 'tags'])
 
 /** Arquivo publicado para os clientes. O cliente só o vê com o arquivo "limpo" e `visivel_no_portal`. */
 export const documentos = pgTable(

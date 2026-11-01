@@ -7,11 +7,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { configuracaoDeTeste, criarAppComRotas } from '../testes/app-teste.js'
 import { chamarEm, empresaDeChamados, noTenant } from '../testes/chamados.js'
 import {
+  aplicarTagNoContato,
   chamarPortalEm,
   configuracaoDoPortalDeTeste,
   configurarPortal,
   entrarNoPortal,
   novaEmpresaCliente,
+  novaTagDeContato,
   novoAcesso,
 } from '../testes/portal.js'
 import { dono } from '../testes/mundo.js'
@@ -248,6 +250,49 @@ describe('publicar, agendar, editar, fixar e excluir', () => {
     expect(depois.map((i) => i.titulo)).toEqual(['Pub A'])
   })
 
+  it('duplicar: a cópia nasce rascunho com o mesmo corpo e alcance, sem fixar e sem métricas', async () => {
+    const c = await cenario()
+    const original = await c.publicar({
+      titulo: 'Original',
+      corpo: 'Corpo **forte**',
+      alcance: 'empresas',
+      empresaIds: [c.empresaA],
+    })
+    expect(
+      (await crm('put', c.d.cookie, `/portal-publicacoes/${original.id}/fixada`, { fixada: true }))
+        .status,
+    ).toBe(200)
+    await portal('post', `/portal/publicacoes/${original.id}/reacoes`, {
+      cookie: c.cookieA,
+      corpo: { tipo: 'curtir' },
+    })
+    expect(
+      (await crm('post', c.leitor.cookie, `/portal-publicacoes/${original.id}/duplicar`)).status,
+    ).toBe(403)
+    const r = await crm('post', c.editor.cookie, `/portal-publicacoes/${original.id}/duplicar`)
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body).toMatchObject({
+      titulo: 'Cópia de Original',
+      corpo: 'Corpo **forte**',
+      situacao: 'rascunho',
+      alcance: 'empresas',
+      fixada: false,
+      publicadaEm: null,
+      metricas: { leitores: 0, reacoes: { curtir: 0, parabens: 0 }, comentarios: 0 },
+    })
+    expect(r.body.empresas.map((e: { id: string }) => e.id)).toEqual([c.empresaA])
+    expect(r.body.id).not.toBe(original.id)
+    // A cópia é rascunho: o cliente não vê
+    const feed = (await portal('get', '/portal/publicacoes', { cookie: c.cookieA })).body.itens as {
+      titulo: string
+    }[]
+    expect(feed.map((i) => i.titulo)).toEqual(['Original'])
+    const inexistente = '01900000-0000-7000-8000-000000000000'
+    expect(
+      (await crm('post', c.d.cookie, `/portal-publicacoes/${inexistente}/duplicar`)).status,
+    ).toBe(404)
+  })
+
   it('a lista traz as abas com contagens', async () => {
     const c = await cenario()
     await c.publicar({ titulo: 'Pub 1' })
@@ -267,7 +312,7 @@ describe('o cliente: reações, comentários e denúncia', () => {
     const reagir = (cookie: string, tipo: string) =>
       portal('post', `/portal/publicacoes/${p.id}/reacoes`, { cookie, corpo: { tipo } })
     expect((await reagir(c.cookieA, 'curtir')).body).toEqual({
-      reacoes: { curtir: 1, apoiar: 0, parabens: 0 },
+      reacoes: { curtir: 1, parabens: 0 },
       minhasReacoes: ['curtir'],
     })
     expect((await reagir(c.cookieB, 'curtir')).body.reacoes.curtir).toBe(2)
@@ -276,7 +321,7 @@ describe('o cliente: reações, comentários e denúncia', () => {
     )
     const desfeita = await reagir(c.cookieA, 'curtir')
     expect(desfeita.body).toEqual({
-      reacoes: { curtir: 1, apoiar: 0, parabens: 1 },
+      reacoes: { curtir: 1, parabens: 1 },
       minhasReacoes: [],
     })
     expect((await reagir(c.cookieA, 'amei')).status).toBe(400)
@@ -289,6 +334,7 @@ describe('o cliente: reações, comentários e denúncia', () => {
         'corpo',
         'fixada',
         'id',
+        'midias',
         'minhasReacoes',
         'publicadaEm',
         'reacoes',
@@ -297,7 +343,7 @@ describe('o cliente: reações, comentários e denúncia', () => {
     )
     // a equipe vê o total nas métricas
     const detalhe = await crm('get', c.d.cookie, `/portal-publicacoes/${p.id}`)
-    expect(detalhe.body.metricas.reacoes).toEqual({ curtir: 1, apoiar: 0, parabens: 1 })
+    expect(detalhe.body.metricas.reacoes).toEqual({ curtir: 1, parabens: 1 })
   })
 
   it('não reage nem comenta em publicação que não enxerga', async () => {
@@ -551,6 +597,117 @@ describe('leituras e alcance', () => {
     expect(await m(todas.id)).toMatchObject({ leitores: 2, alvo: 2, empresasAlcancadas: 2 })
     expect(await m(soB.id)).toMatchObject({ leitores: 1, alvo: 1, empresasAlcancadas: 1 })
   })
+
+  it('o alcance nunca passa de 100%: leitura de acesso revogado ou fora do alcance não conta', async () => {
+    const c = await cenario()
+    const outro = await novoAcesso(c.d, { empresaId: c.empresaA, nome: 'Ana Prado' })
+    const cookieOutro = await entrarNoPortal(portal, outro)
+    const todas = await c.publicar({ titulo: 'Para todos' })
+    const soB = await c.publicar({ titulo: 'Só B', alcance: 'empresas', empresaIds: [c.empresaB] })
+    const ler = (cookie: string, ids: string[]) =>
+      portal('post', '/portal/publicacoes/leituras', { cookie, corpo: { ids } })
+    await ler(c.cookieA, [todas.id])
+    await ler(cookieOutro, [todas.id])
+    await ler(c.cookieB, [todas.id, soB.id])
+    const m = async (id: string) =>
+      (await crm('get', c.d.cookie, `/portal-publicacoes/${id}`)).body.metricas as {
+        leitores: number
+        alvo: number
+      }
+    expect(await m(todas.id)).toMatchObject({ leitores: 3, alvo: 3 })
+    // Revogar quem leu tira a pessoa do numerador E do denominador
+    expect((await crm('delete', c.d.cookie, `/portal-acessos/${outro.acessoId}`)).status).toBe(204)
+    expect(await m(todas.id)).toMatchObject({ leitores: 2, alvo: 2 })
+    // A empresa B sai do alcance: a leitura antiga dela não conta mais
+    expect(
+      (
+        await crm('patch', c.d.cookie, `/portal-publicacoes/${soB.id}`, {
+          titulo: 'Só B',
+          corpo: 'Texto',
+          alcance: 'empresas',
+          situacao: 'publicada',
+          empresaIds: [c.empresaA],
+        })
+      ).status,
+    ).toBe(200)
+    const depois = await m(soB.id)
+    expect(depois).toMatchObject({ leitores: 0, alvo: 1 })
+    expect(depois.leitores).toBeLessThanOrEqual(depois.alvo)
+  })
+})
+
+describe('alcance por tags de contato (Fase 4C)', () => {
+  it('só quem tem alguma das tags vê; o alvo do alcance conta só essas pessoas; tag de empresa é 422', async () => {
+    const c = await cenario()
+    const diretoria = await novaTagDeContato(c.d.tenantId, 'Diretoria')
+    const conselho = await novaTagDeContato(c.d.tenantId, 'Conselho')
+    await aplicarTagNoContato(c.d.tenantId, c.acessoB.contatoId, conselho)
+    const r = await crm('post', c.d.cookie, '/portal-publicacoes', {
+      titulo: 'Só diretoria e conselho',
+      corpo: 'Texto',
+      alcance: 'tags',
+      tagIds: [diretoria, conselho],
+      situacao: 'publicada',
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body.tags.map((t: { nome: string }) => t.nome).sort()).toEqual([
+      'Conselho',
+      'Diretoria',
+    ])
+    expect(r.body.metricas.alvo).toBe(1)
+    const feed = async (cookie: string) =>
+      (
+        (await portal('get', '/portal/publicacoes', { cookie })).body.itens as { titulo: string }[]
+      ).map((i) => i.titulo)
+    expect(await feed(c.cookieB)).toContain('Só diretoria e conselho')
+    expect(await feed(c.cookieA)).not.toContain('Só diretoria e conselho')
+    // Direto pela URL também não
+    expect(
+      (await portal('get', `/portal/publicacoes/${r.body.id}/comentarios`, { cookie: c.cookieA }))
+        .status,
+    ).toBe(404)
+    // Tirar a tag tira a visibilidade na hora
+    await noTenant(
+      c.d.tenantId,
+      (tx) => tx`DELETE FROM contato_tags WHERE contato_id = ${c.acessoB.contatoId}`,
+    )
+    expect(await feed(c.cookieB)).not.toContain('Só diretoria e conselho')
+    // Validações: sem tags é 400; tags fora do alcance "tags" é 400
+    expect(
+      (
+        await crm('post', c.d.cookie, '/portal-publicacoes', {
+          titulo: 'Teste de alcance',
+          corpo: 'Texto',
+          alcance: 'tags',
+          situacao: 'rascunho',
+        })
+      ).status,
+    ).toBe(400)
+    expect(
+      (
+        await crm('post', c.d.cookie, '/portal-publicacoes', {
+          titulo: 'Teste de alcance',
+          corpo: 'Texto',
+          alcance: 'todos',
+          tagIds: [diretoria],
+          situacao: 'rascunho',
+        })
+      ).status,
+    ).toBe(400)
+    // Tag de outro alvo (empresa) ou inexistente é 422
+    const inexistente = '01900000-0000-7000-8000-000000000000'
+    expect(
+      (
+        await crm('post', c.d.cookie, '/portal-publicacoes', {
+          titulo: 'Teste de alcance',
+          corpo: 'Texto',
+          alcance: 'tags',
+          tagIds: [inexistente],
+          situacao: 'rascunho',
+        })
+      ).status,
+    ).toBe(422)
+  })
 })
 
 describe('isolamento entre empresas da equipe', () => {
@@ -584,5 +741,136 @@ describe('isolamento entre empresas da equipe', () => {
       ).status,
     ).toBe(404)
     expect((await crm('delete', x.d.cookie, `/portal-publicacoes/${doY.id}`)).status).toBe(404)
+  })
+})
+
+describe('imagens e vídeo (Fase 4D)', () => {
+  it('vídeo do YouTube: guarda só o ID, aparece no feed, sai com a exclusão; duplicar leva a mídia', async () => {
+    const c = await cenario()
+    const pub = await c.publicar({ titulo: 'Com vídeo' })
+    const ruim = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/videos`, {
+      url: 'https://exemplo.com/video.mp4',
+    })
+    expect(ruim.status).toBe(400)
+    expect(
+      (
+        await crm('post', c.leitor.cookie, `/portal-publicacoes/${pub.id}/midias/videos`, {
+          url: 'https://youtu.be/dQw4w9WgXcQ',
+        })
+      ).status,
+    ).toBe(403)
+    const r = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/videos`, {
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30',
+      legenda: 'Palestra de abertura',
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body).toMatchObject({
+      tipo: 'video',
+      legenda: 'Palestra de abertura',
+      video: { provedor: 'youtube', id: 'dQw4w9WgXcQ' },
+      imagem: null,
+    })
+    const detalhe = await crm('get', c.d.cookie, `/portal-publicacoes/${pub.id}`)
+    expect(detalhe.body.midias).toHaveLength(1)
+
+    const doFeed = async (cookie: string) =>
+      (
+        (await portal('get', '/portal/publicacoes', { cookie })).body.itens as {
+          id: string
+          midias: unknown[]
+        }[]
+      ).find((i) => i.id === pub.id)
+    expect((await doFeed(c.cookieA))?.midias).toEqual([
+      expect.objectContaining({ tipo: 'video', video: { provedor: 'youtube', id: 'dQw4w9WgXcQ' } }),
+    ])
+
+    const copia = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/duplicar`)
+    expect(copia.body.midias).toEqual([
+      expect.objectContaining({ video: { provedor: 'youtube', id: 'dQw4w9WgXcQ' } }),
+    ])
+
+    const midiaId = (r.body as { id: string }).id
+    expect(
+      (await crm('delete', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/${midiaId}`))
+        .status,
+    ).toBe(204)
+    expect((await doFeed(c.cookieA))?.midias).toEqual([])
+    expect(
+      (await crm('delete', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/${midiaId}`))
+        .status,
+    ).toBe(404)
+  })
+
+  it('no máximo 6 mídias; publicação de outra empresa-cliente não mostra a mídia', async () => {
+    const c = await cenario()
+    const soB = await c.publicar({ alcance: 'empresas', empresaIds: [c.empresaB] })
+    for (let i = 0; i < 6; i++) {
+      const r = await crm('post', c.editor.cookie, `/portal-publicacoes/${soB.id}/midias/videos`, {
+        url: 'https://vimeo.com/76979871',
+      })
+      expect(r.status).toBe(201)
+    }
+    const setima = await crm(
+      'post',
+      c.editor.cookie,
+      `/portal-publicacoes/${soB.id}/midias/videos`,
+      {
+        url: 'https://vimeo.com/76979871',
+      },
+    )
+    expect(setima.status).toBe(409)
+    expect(setima.body.erro).toBe('limite_de_midias')
+    // O cliente A não vê a publicação nem, direto no banco, as mídias dela
+    const visiveis = await noTenant(c.d.tenantId, async (tx) => {
+      await tx`SELECT set_config('app.portal_acesso_id', ${c.acessoA.acessoId}, true)`
+      await tx`SELECT set_config('app.portal_empresa_id', ${c.empresaA}, true)`
+      await tx`SELECT set_config('app.portal_contato_id', ${c.acessoA.contatoId}, true)`
+      return tx`SELECT id FROM publicacao_midias WHERE publicacao_id = ${soB.id}`
+    })
+    expect(visiveis).toHaveLength(0)
+  })
+
+  it('imagem: tipo fora da lista é 400; reservada, devolve a URL de envio e o cliente só a vê depois de limpa', async () => {
+    const c = await cenario()
+    const pub = await c.publicar({ titulo: 'Com imagem' })
+    const svg = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/imagens`, {
+      textoAlternativo: 'Logo',
+      arquivo: { nome: 'logo.svg', mime: 'image/svg+xml', tamanho: 100 },
+    })
+    expect(svg.status).toBe(400)
+    const r = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/imagens`, {
+      textoAlternativo: 'Equipe reunida',
+      arquivo: { nome: 'foto.jpg', mime: 'image/jpeg', tamanho: 1000 },
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body.envio.url).toMatch(/^https?:\/\//)
+    expect(r.body.envio.cabecalhos).toEqual({ 'Content-Type': 'image/jpeg' })
+    expect(r.body.midia).toMatchObject({
+      tipo: 'imagem',
+      textoAlternativo: 'Equipe reunida',
+      imagem: { estado: 'pendente_varredura', enviada: false, url: null },
+    })
+    // Em verificação: o cliente não vê
+    const feed = (await portal('get', '/portal/publicacoes', { cookie: c.cookieA })).body.itens as {
+      id: string
+      midias: unknown[]
+    }[]
+    expect(feed.find((i) => i.id === pub.id)?.midias).toEqual([])
+    // Limpa (o antivírus liberou): aparece com URL de leitura
+    await noTenant(
+      c.d.tenantId,
+      (tx) =>
+        tx`UPDATE publicacao_midias SET estado = 'limpo', enviado_em = now(), varrido_em = now()
+           WHERE id = ${(r.body as { midia: { id: string } }).midia.id}`,
+    )
+    const depois = (await portal('get', '/portal/publicacoes', { cookie: c.cookieA })).body
+      .itens as {
+      id: string
+      midias: { tipo: string; imagemUrl: string | null; textoAlternativo: string }[]
+    }[]
+    const midias = depois.find((i) => i.id === pub.id)?.midias ?? []
+    expect(midias).toHaveLength(1)
+    expect(midias[0]?.imagemUrl).toMatch(/^https?:\/\//)
+    expect(midias[0]?.textoAlternativo).toBe('Equipe reunida')
   })
 })

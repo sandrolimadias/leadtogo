@@ -1,9 +1,19 @@
 import type { SessaoDoPortal } from '@leadtogo/api-client'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { Bell, CalendarDays, FileText, Home, LifeBuoy, Plus, Search, User } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  Bell,
+  CalendarDays,
+  FileText,
+  Home,
+  LifeBuoy,
+  Plus,
+  Search,
+  User,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { type FormEvent, type ReactNode, useCallback, useState } from 'react'
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react'
 
 import { Avatar } from '@leadtogo/ui/exibicao'
 import { Button } from '@leadtogo/ui/button'
@@ -13,10 +23,12 @@ import { toast } from '@leadtogo/ui/toast'
 
 import { useSessaoAtual } from '@/app/sessao'
 import { useServicos } from '@/servicos/contexto'
+import { useEmpresasDoAcesso } from '@/telas/empresas/hooks'
 
 import { useDispositivo } from './dispositivo'
 import { useFluxoDoSino } from './fluxo-do-sino'
 import { primeiroNome } from './rotulos'
+import { guardarTema, temaGuardado } from './tema'
 
 interface ItemDoMenu {
   para: '/' | '/chamados' | '/documentos' | '/agenda' | '/notificacoes' | '/perfil'
@@ -59,6 +71,23 @@ function useContagens() {
   return { aguardando: inicio.data?.aguardandoVoce ?? 0, naoLidas: notificacoes.data ?? 0 }
 }
 
+/** O tema salvo na conta vale em qualquer aparelho: ao entrar, ele substitui o guardado neste aparelho. */
+function useTemaDaConta() {
+  const servicos = useServicos()
+  const preferencias = useQuery({
+    queryKey: ['preferencias'],
+    queryFn: async () => {
+      const r = await servicos.preferencias.obter()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+  const tema = preferencias.data?.tema
+  useEffect(() => {
+    if (tema && tema !== temaGuardado()) guardarTema(tema)
+  }, [tema])
+}
+
 /** O campo de busca do cabeçalho: Enter leva à tela de resultados. */
 function CampoDeBusca() {
   const navegar = useNavigate()
@@ -92,6 +121,8 @@ export function Casca({
   children: ReactNode
 }) {
   const sessao = useSessaoAtual(inicial)
+  useTemaDaConta()
+  const variasEmpresas = (useEmpresasDoAcesso().data?.length ?? 0) > 1
   const dispositivo = useDispositivo()
   const router = useRouter()
   const { aguardando, naoLidas } = useContagens()
@@ -120,6 +151,15 @@ export function Casca({
             <p className="m-0 truncate text-sm leading-5 font-semibold">{sessao.nomeDoPortal}</p>
             <p className="m-0 truncate text-xs leading-4 text-ink-muted">Portal do Cliente</p>
           </div>
+          {variasEmpresas ? (
+            <Link
+              to="/empresas"
+              aria-label="Trocar de empresa"
+              className="inline-flex size-9 items-center justify-center rounded-sm text-ink hover:bg-surface-hover"
+            >
+              <ArrowLeftRight size={20} strokeWidth={1.75} aria-hidden="true" />
+            </Link>
+          ) : null}
           <Link
             to="/busca"
             search={{ q: '' }}
@@ -203,8 +243,25 @@ export function Casca({
                 {sessao.empresaCliente.nome} ·{' '}
                 {sessao.papel === 'responsavel' ? 'Responsável' : 'Colega'}
               </p>
+              {variasEmpresas ? (
+                <Link
+                  to="/empresas"
+                  className="inline-flex items-center gap-1 text-xs leading-4 font-semibold text-brand no-underline hover:underline"
+                >
+                  <ArrowLeftRight size={12} aria-hidden="true" /> Trocar de empresa
+                </Link>
+              ) : null}
             </div>
           )}
+          {recolhido && variasEmpresas ? (
+            <Link
+              to="/empresas"
+              aria-label="Trocar de empresa"
+              className="inline-flex size-8 items-center justify-center rounded-sm text-ink hover:bg-surface-hover"
+            >
+              <ArrowLeftRight size={16} strokeWidth={1.75} aria-hidden="true" />
+            </Link>
+          ) : null}
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

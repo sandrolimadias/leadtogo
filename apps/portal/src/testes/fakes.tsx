@@ -2,11 +2,14 @@ import type {
   ChamadoDoPortal,
   EventoDoPortal,
   InicioDoPortal,
+  MeuPerfilDoPortal,
+  MinhaEmpresaDoPortal,
   PreferenciasDoPortal,
   PublicacaoDoPortal,
   ItemDeChamadoDoPortal,
   SessaoDoPortal,
 } from '@leadtogo/api-client'
+import { definicaoDeFormularioSchema, type FormularioParaResponder } from '@leadtogo/shared'
 import { render } from '@testing-library/react'
 import { createMemoryHistory, type RouterHistory } from '@tanstack/react-router'
 import { vi } from 'vitest'
@@ -40,7 +43,72 @@ export const preferenciasPadrao: PreferenciasDoPortal = {
   emailChamados: true,
   emailEventos: true,
   emailAvisos: true,
+  tema: 'sistema',
 }
+
+export const formularioParaResponder = (
+  extra: Partial<FormularioParaResponder> = {},
+): FormularioParaResponder => ({
+  id: id(940),
+  nome: 'Inscrição no encontro',
+  versao: 2,
+  definicao: definicaoDeFormularioSchema.parse({
+    campos: [
+      { id: 'nome', tipo: 'texto', rotulo: 'Nome', obrigatorio: true },
+      { id: 'email', tipo: 'email', rotulo: 'E-mail', obrigatorio: true },
+      {
+        id: 'vai',
+        tipo: 'selecao',
+        rotulo: 'Vai ao jantar?',
+        obrigatorio: true,
+        opcoes: [
+          { valor: 'sim', rotulo: 'Sim' },
+          { valor: 'nao', rotulo: 'Não' },
+        ],
+      },
+    ],
+    botoes: [{ id: 'enviar', rotulo: 'Confirmar inscrição' }],
+  }),
+  preenchidos: { nome: 'Daniel Prates', email: 'daniel@usidantec.com.br' },
+  travados: ['nome'],
+  captchaChave: null,
+  ...extra,
+})
+
+export const meuPerfil = (extra: Partial<MeuPerfilDoPortal> = {}): MeuPerfilDoPortal => ({
+  nome: 'Daniel Prates',
+  cargo: 'Gerente de manutenção',
+  emailDeAcesso: 'daniel@usidantec.com.br',
+  emails: [{ email: 'daniel@usidantec.com.br', tipo: 'trabalho' }],
+  telefones: [{ numero: '(27) 99999-1234', tipo: 'celular' }],
+  aniversario: null,
+  ...extra,
+})
+
+export const minhaEmpresa = (extra: Partial<MinhaEmpresaDoPortal> = {}): MinhaEmpresaDoPortal => ({
+  razaoSocial: 'USIDANTEC USINAGEM LTDA',
+  nomeFantasia: 'Usidantec',
+  tipoDocumento: 'cnpj',
+  documento: '12345678000190',
+  matrizFilial: 'matriz',
+  porte: 'Pequeno porte',
+  dataInicioAtividades: '2010-05-03',
+  website: null,
+  endereco: {
+    cep: '29160000',
+    logradouro: 'Rua das Indústrias',
+    numero: '100',
+    complemento: null,
+    bairro: 'Civit II',
+    municipio: 'Serra',
+    uf: 'ES',
+  },
+  telefones: [{ numero: '(27) 3333-4444', tipo: 'fixo' }],
+  cnaePrincipal: { codigo: '2539-0/01', descricao: 'Serviços de usinagem, tornearia e solda' },
+  cnaesSecundarios: [],
+  responsavel: 'Ana',
+  ...extra,
+})
 
 export const item = (extra: Partial<ItemDeChamadoDoPortal> = {}): ItemDeChamadoDoPortal => ({
   id: id(10),
@@ -58,6 +126,7 @@ export const chamado = (extra: Partial<ChamadoDoPortal> = {}): ChamadoDoPortal =
   ...item(),
   descricao: 'Preciso do boleto atualizado.',
   resolvidoEm: null,
+  pesquisa: null,
   mensagens: [
     {
       id: id(20),
@@ -90,6 +159,10 @@ export const evento = (extra: Partial<EventoDoPortal> = {}): EventoDoPortal => (
   podeConfirmar: true,
   podeCancelar: false,
   motivoDoBloqueio: null,
+  formularioInscricaoId: null,
+  publico: false,
+  presente: false,
+  avaliar: null,
   ...extra,
 })
 
@@ -99,7 +172,8 @@ export const publicacao = (extra: Partial<PublicacaoDoPortal> = {}): PublicacaoD
   corpo: 'Lembrete: o expediente desta sexta encerra às **14h** por manutenção elétrica.',
   publicadaEm: '2026-10-21T12:00:00.000Z',
   fixada: false,
-  reacoes: { curtir: 0, apoiar: 0, parabens: 0 },
+  reacoes: { curtir: 0, parabens: 0 },
+  midias: [],
   minhasReacoes: [],
   comentarios: 0,
   comentariosAbertos: true,
@@ -132,6 +206,27 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
         }),
       ),
       consumir: vi.fn(async () => ok(sessao())),
+      entrarComCodigo: vi.fn(async () => ok(sessao())),
+    },
+    formularios: {
+      abrir: vi.fn(async () => ok(formularioParaResponder())),
+      responder: vi.fn(async () =>
+        ok({ id: id(950), mensagem: 'Recebemos sua resposta. Obrigado!' }),
+      ),
+      abrirPublico: vi.fn(async () =>
+        ok({ ...formularioParaResponder(), preenchidos: {}, travados: [] }),
+      ),
+      responderPublico: vi.fn(async () => ok({ id: id(951), mensagem: 'Obrigado!' })),
+    },
+    empresas: {
+      listar: vi.fn(async () =>
+        ok({
+          itens: [
+            { acessoId: id(1), nome: 'Usidantec', papel: 'responsavel' as const, atual: true },
+          ],
+        }),
+      ),
+      trocar: vi.fn(async () => ok(sessao())),
     },
     sessao: {
       atual: vi.fn(async () => ok(sessao())),
@@ -152,10 +247,13 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       ),
       encerrar: vi.fn(async () => ok(undefined)),
       encerrarOutras: vi.fn(async () => ok(undefined)),
-      trocarEmail: vi.fn(async () => ok(undefined)),
-      corrigirNome: vi.fn(async (nome: string) =>
-        ok(sessao({ contato: { id: id(2), nome, email: 'daniel@usidantec.com.br' } })),
+      salvarPerfil: vi.fn(async (dados: { nome: string; cargo?: string | null }) =>
+        ok(sessao({ contato: { id: id(2), nome: dados.nome, email: 'daniel@usidantec.com.br' } })),
       ),
+    },
+    cadastro: {
+      perfil: vi.fn(async () => ok(meuPerfil())),
+      empresa: vi.fn(async () => ok(minhaEmpresa())),
     },
     segundoFator: {
       iniciar: vi.fn(async () =>
@@ -176,6 +274,7 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       abrir: vi.fn(async () => ok(chamado())),
       responder: vi.fn(async () => ok(chamado())),
       reabrir: vi.fn(async () => ok(chamado())),
+      responderPesquisa: vi.fn(async () => ok(chamado({ estado: 'resolvido', pesquisa: null }))),
       avaliar: vi.fn(async () => ok(chamado())),
       anexar: vi.fn(async (_id: string, arquivo: File) =>
         ok({ anexoId: id(50), nome: arquivo.name }),
@@ -196,10 +295,60 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       cancelar: vi.fn(async () =>
         falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
       ),
+      inscrever: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      formularioDeAvaliacao: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      avaliar: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+    },
+    checkin: {
+      abrir: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      logado: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      semLogin: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+    },
+    pagina: {
+      abrir: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      formularioDeInscricao: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      inscrever: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      formularioDeAssociacao: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      associar: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+    },
+    avaliacaoPorLink: {
+      abrir: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      responder: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
     },
     preferencias: {
       obter: vi.fn(async () => ok(preferenciasPadrao)),
-      salvar: vi.fn(async (dados: PreferenciasDoPortal) => ok(dados)),
+      salvar: vi.fn(async (dados: Omit<PreferenciasDoPortal, 'tema'>) =>
+        ok({ ...preferenciasPadrao, ...dados }),
+      ),
+      salvarTema: vi.fn(async (tema: PreferenciasDoPortal['tema']) =>
+        ok({ ...preferenciasPadrao, tema }),
+      ),
     },
     push: {
       configuracao: vi.fn(async () =>
@@ -233,7 +382,7 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
         }),
       ),
       reagir: vi.fn(async () =>
-        ok({ reacoes: { curtir: 1, apoiar: 0, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
+        ok({ reacoes: { curtir: 1, parabens: 0 }, minhasReacoes: ['curtir' as const] }),
       ),
       denunciar: vi.fn(async () => ok(undefined)),
       marcarLidas: vi.fn(async () => ok({ marcadas: 0 })),

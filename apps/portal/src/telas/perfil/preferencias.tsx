@@ -172,7 +172,9 @@ export function Preferencias() {
     e.preventDefault()
     setSalvando(true)
     setErro(null)
-    const r = await servicos.preferencias.salvar(form)
+    // O tema é salvo à parte (Aparência); aqui só o silêncio e os e-mails
+    const { tema: _tema, ...semTema } = form
+    const r = await servicos.preferencias.salvar(semTema)
     setSalvando(false)
     if (!r.ok) {
       setErro(r.erro.mensagem)

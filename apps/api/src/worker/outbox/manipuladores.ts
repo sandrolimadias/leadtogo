@@ -15,7 +15,11 @@ import { enfileirarBloco } from '../../importacao/fila.js'
 import { EVENTO_GEOCODIFICAR_EMPRESA } from '../../geolocalizacao/evento.js'
 import { EVENTO_EXECUTAR_LOTE_GEO } from '../../geolocalizacao/evento-lote.js'
 import { enfileirarBlocoDoLote, enfileirarEmpresa } from '../../geolocalizacao/fila.js'
-import { EVENTO_VARRER_ANEXO, EVENTO_VARRER_DOCUMENTO } from '../../chamados/evento-anexo.js'
+import {
+  EVENTO_VARRER_ANEXO,
+  EVENTO_VARRER_DOCUMENTO,
+  EVENTO_VARRER_MIDIA,
+} from '../../chamados/evento-anexo.js'
 import {
   EVENTO_NOTIFICAR_CHAMADO,
   manipuladorDeNotificacaoDeChamado,
@@ -34,6 +38,16 @@ import {
 } from '../../integracoes/webhooks/processador.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
+import { EVENTO_VINCULAR_CRM, manipuladorDoVinculoNoCrm } from '../../portal/evento-crm.js'
+import { EVENTO_ASSOCIACAO_CRM, manipuladorDaAssociacaoNoCrm } from '../../portal/associacao-crm.js'
+import {
+  EVENTO_PEDIR_AVALIACAO,
+  manipuladorDoPedidoDeAvaliacao,
+} from '../../portal/avaliacao-evento.js'
+import {
+  EVENTO_ACOES_DO_FORMULARIO,
+  manipuladorDasAcoesDoFormulario,
+} from '../../portal/acoes-formulario.js'
 
 /** Id do job de um evento: o BullMQ descarta repetição enquanto o job existir. */
 export const jobIdDoEvento = (eventoId: string) => `evento-${eventoId}`
@@ -176,6 +190,29 @@ export function manipuladoresPadrao(
       anexoId: documentoId,
       eventoId: evento.id,
       tipo: 'documento',
+    })
+  }
+
+  /** Inscrição com CNPJ: empresa, contato e tarefa no CRM (Fase 4G, B-17) */
+  manipuladores[EVENTO_VINCULAR_CRM] = manipuladorDoVinculoNoCrm(receita)
+
+  /** Pedido de associação com CNPJ: Lead, contato e a tarefa do responsável (Fase 4H) */
+  manipuladores[EVENTO_ASSOCIACAO_CRM] = manipuladorDaAssociacaoNoCrm(receita)
+
+  /** Pedido de avaliação do evento aos presentes (Fase 4G) */
+  manipuladores[EVENTO_PEDIR_AVALIACAO] = manipuladorDoPedidoDeAvaliacao(config, publicar)
+
+  /** Resposta de formulário (Fase 4E): as ações do botão (e-mail e webhook) */
+  manipuladores[EVENTO_ACOES_DO_FORMULARIO] = manipuladorDasAcoesDoFormulario(config)
+
+  /** Imagem de publicação enviada ao Garage (Fase 4D): o mesmo antivírus, em outra tabela. */
+  manipuladores[EVENTO_VARRER_MIDIA] = async (evento, { filas }) => {
+    const { midiaId } = evento.payload as { midiaId: string }
+    await enfileirarVarredura(filas.fila(FILAS.antivirus), {
+      tenantId: evento.tenantId,
+      anexoId: midiaId,
+      eventoId: evento.id,
+      tipo: 'midia',
     })
   }
 

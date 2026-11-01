@@ -3,6 +3,8 @@ export interface ErroDoPortal {
   codigo: string
   mensagem: string
   status: number
+  /** Erros por campo (formulários: 422 `respostas_invalidas`) */
+  detalhes?: { campo: string; mensagem: string }[]
 }
 
 export type Resultado<T = void> = { ok: true; dados: T } | { ok: false; erro: ErroDoPortal }
@@ -23,7 +25,7 @@ const MENSAGENS_POR_CODIGO: Record<string, string> = {
   nao_autenticado: 'Sua sessão terminou. Entre de novo.',
   link_invalido: 'Este link não vale mais. Peça um novo.',
   privacidade_obrigatoria: 'Para continuar, aceite o aviso de privacidade do portal.',
-  codigo_invalido: 'Código incorreto ou vencido. Confira o aplicativo e tente de novo.',
+  codigo_invalido: 'Código incorreto ou vencido. Confira e tente de novo.',
   muitas_tentativas: 'Muitas tentativas. Aguarde alguns minutos e tente de novo.',
   origem_invalida: 'Não foi possível concluir por este endereço. Abra o portal pelo link oficial.',
   portal_indisponivel: 'O portal ainda não está disponível. Fale com a equipe.',
@@ -40,7 +42,11 @@ export const erroDeRede = (): ErroDoPortal => ({
 /** Traduz o corpo de erro da API (`{ erro, mensagem }`) num erro do portal. */
 export function traduzirErro(
   status: number,
-  corpo?: { erro?: string; mensagem?: string } | null,
+  corpo?: {
+    erro?: string
+    mensagem?: string
+    detalhes?: { campo: string; mensagem: string }[]
+  } | null,
 ): ErroDoPortal {
   const codigo = corpo?.erro ?? `http_${status}`
   const mensagem =
@@ -49,5 +55,10 @@ export function traduzirErro(
     corpo?.mensagem ??
     MENSAGENS_PADRAO[status] ??
     'Não foi possível concluir agora. Tente de novo em alguns minutos.'
-  return { codigo, mensagem, status }
+  return {
+    codigo,
+    mensagem,
+    status,
+    ...(Array.isArray(corpo?.detalhes) ? { detalhes: corpo.detalhes } : {}),
+  }
 }

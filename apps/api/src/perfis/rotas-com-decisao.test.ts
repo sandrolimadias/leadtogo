@@ -39,9 +39,31 @@ const FORA_DOS_PERFIS: Record<string, string> = {
  * regra de perfis do CRM. Aqui ficam, com o motivo, as ÚNICAS que dispensam a sessão do portal.
  */
 const PORTAL_SEM_SESSAO: Record<string, string> = {
-  'PortalAuthController.pedirEntrada': 'pedir o link de entrada por e-mail (resposta sempre igual)',
+  'PortalAuthController.pedirEntrada':
+    'pedir o código de entrada por e-mail (resposta sempre igual)',
+  'PortalAuthController.entrarComCodigo':
+    'troca o código de 6 dígitos pela sessão (uso único, 5 tentativas)',
   'PortalAuthController.consultarLink': 'prévia do link, sem consumi-lo',
   'PortalAuthController.consumirLink': 'troca o link de uso único pela sessão',
+  'PortalFormulariosController.abrirPublico':
+    'formulário público: só publicado e com acesso público',
+  'PortalFormulariosController.responderPublico':
+    'resposta do formulário público (aceite, captcha quando ligado, isca e limite por IP)',
+  'PortalEventosInscricaoController.checkinPublico':
+    'QR do check-in: só o evento e se o check-in está aberto (token com hash no banco)',
+  'PortalEventosInscricaoController.fazerCheckin':
+    'check-in sem login: e-mail da inscrição, código por e-mail quando exigido, limite por IP',
+  'PortalEventosInscricaoController.avaliacaoPorLink':
+    'avaliação pelo link pessoal enviado por e-mail (token com hash no banco)',
+  'PortalEventosInscricaoController.avaliarPorLink':
+    'resposta da avaliação pelo link pessoal (uma por participação, limite por IP)',
+  'PaginaPublicaController.pagina': 'página pública de eventos: só o mínimo de cada evento',
+  'PaginaPublicaController.formularioDeInscricao': 'formulário da inscrição pública',
+  'PaginaPublicaController.inscrever':
+    'inscrição sem login (aceite, captcha quando ligado, isca e limite por IP)',
+  'PaginaPublicaController.formularioDeAssociacao': 'formulário "Seja um Associado"',
+  'PaginaPublicaController.associar':
+    'pedido de associação (aceite, captcha quando ligado, isca e limite por IP)',
 }
 
 type Rota = {
@@ -117,7 +139,7 @@ describe('nenhuma rota sem decisão', () => {
     expect(comMarca).toEqual([])
   })
 
-  it('as rotas do portal exigem sessão, salvo as três da lista explícita (e a lista não tem sobras)', () => {
+  it('as rotas do portal exigem sessão, salvo as da lista explícita (e a lista não tem sobras)', () => {
     const doPortal = rotas.filter((r) => r.portal && !r.chave.startsWith('IsolamentoDeTeste.'))
     expect(doPortal.length).toBeGreaterThan(10)
     const publicas = doPortal.filter((r) => r.portalPublica).map((r) => r.chave)

@@ -166,6 +166,20 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   portalComentariosAtivos: boolean().notNull().default(true),
   /** Avisos NORMAIS por semana (a semana é de segunda a domingo, no fuso de São Paulo); urgentes não contam (Fase 3E) */
   portalAvisosLimiteSemanal: smallint().notNull().default(3),
+  /** Formulário da pesquisa de satisfação dos chamados (Fase 4F; FK só no SQL da migração, evita ciclo) */
+  portalFormularioSatisfacaoId: uuid(),
+  /** Eventos (Fase 4G, B-17): cadastrar no CRM a empresa e o contato do CNPJ da inscrição e criar a tarefa */
+  portalEventosCrmAtivo: boolean().notNull().default(false),
+  /** Administrador ou gestor que recebe a tarefa e a empresa nova (FK só no SQL) */
+  portalEventosCrmResponsavelId: uuid(),
+  /** Mandar a avaliação do evento por e-mail a participantes sem acesso ao portal (R-13) */
+  portalAvaliacaoPorEmail: boolean().notNull().default(false),
+  /** Endereço público do portal (Fase 4H): /eventos/<slug>; único no sistema (índice parcial só no SQL) */
+  portalSlug: varchar({ length: 40 }),
+  /** Página pública de eventos ligada (Fase 4H, F-4) */
+  portalPaginaEventosAtiva: boolean().notNull().default(false),
+  /** Formulário do "Seja um Associado" (finalidade associacao; FK só no SQL) */
+  portalFormularioAssociacaoId: uuid(),
   ...carimbos(),
 })
 

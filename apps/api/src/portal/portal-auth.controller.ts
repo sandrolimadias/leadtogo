@@ -5,7 +5,10 @@ import {
   type ConsumirLinkEntrada,
   consumirLinkSchema,
   consultaDoLinkSchema,
+  type EntrarComCodigoEntrada,
+  entrarComCodigoSchema,
   iniciarSegundoFatorRespostaSchema,
+  listaDeEmpresasDoAcessoSchema,
   listaDeSessoesSchema,
   MENSAGEM_DE_ENTRADA_ENVIADA,
   type PedirEntradaEntrada,
@@ -19,6 +22,8 @@ import {
   sessaoDoPortalSchema,
   type TrocarEmailEntrada,
   trocarEmailSchema,
+  type TrocarEmpresaEntrada,
+  trocarEmpresaSchema,
   VALIDADE_DA_SESSAO_DIAS,
 } from '@leadtogo/shared'
 import {
@@ -42,15 +47,12 @@ import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { Documenta } from '../documentacao/documenta.js'
-import { emailPortalTrocaDeEmail } from '../email/modelos.js'
-import { EmailService } from '../email/email.service.js'
 import { ErroApi } from '../http/erro-api.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
 import { auditarAtoDoPortal } from './portal-auditoria.js'
 import { sessaoDoPortalDe } from './portal-dto.js'
 import { PortalEntradaService } from './portal-entrada.service.js'
-import { PortalLinksService } from './portal-links.service.js'
 import { PortalSegundoFatorService } from './portal-segundo-fator.service.js'
 import { PortalSessaoService } from './portal-sessao.service.js'
 import { nomeDoCookieDoPortal } from './portal-token.js'
@@ -66,8 +68,6 @@ export class PortalAuthController {
     private readonly entrada: PortalEntradaService,
     private readonly sessoes: PortalSessaoService,
     private readonly segundoFator: PortalSegundoFatorService,
-    private readonly links: PortalLinksService,
-    private readonly email: EmailService,
   ) {}
 
   private opcoesDoCookie() {
@@ -82,9 +82,9 @@ export class PortalAuthController {
   // ------------------------------------------------------------------------------------ sem sessão
 
   @Documenta({
-    resumo: 'Pedir o link de entrada',
+    resumo: 'Pedir o código de entrada',
     descricao:
-      'Público. Envia ao e-mail um link de entrada de uso único, válido por 15 minutos. A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail.',
+      'Público. Envia ao e-mail um código de 6 dígitos, de uso único, válido por 10 minutos (um por CRM, mesmo que o e-mail acesse várias empresas-clientes). A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail. Pedir de novo invalida o código anterior.',
     corpo: pedirEntradaSchema,
     resposta: respostaDePedirEntradaSchema,
     status: 202,
@@ -100,6 +100,35 @@ export class PortalAuthController {
   ): { mensagem: string } {
     this.entrada.pedirEntrada(dados.email, req.ip)
     return { mensagem: MENSAGEM_DE_ENTRADA_ENVIADA }
+  }
+
+  @Documenta({
+    resumo: 'Entrar com o código',
+    descricao:
+      'Público. Confere o código de 6 dígitos (uso único, 10 minutos; 5 erros queimam o código) e abre a sessão no cookie `HttpOnly`, no acesso usado por último. Quem acessa mais de uma empresa-cliente escolhe depois em `/portal/empresas`. Código errado ou vencido: 401 `codigo_invalido`. No primeiro acesso exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`, sem gastar o código).',
+    corpo: entrarComCodigoSchema,
+    resposta: sessaoDoPortalSchema,
+    erros: [400, 401, 403, 422, 429, 503],
+  })
+  @PortalPublica()
+  @Post('entrada/codigo')
+  @HttpCode(200)
+  @Limite({ nome: 'portal-entrada-codigo', max: 30, janelaS: 3600, falhaFechada: true })
+  async entrarComCodigo(
+    @Body(new ZodPipe(entrarComCodigoSchema)) dados: EntrarComCodigoEntrada,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SessaoDoPortal> {
+    this.entrada.conferirPortal()
+    const r = await this.entrada.entrarComCodigo(
+      dados.email,
+      dados.codigo,
+      dados.aceitaPrivacidade,
+      req.ip,
+      req.headers['user-agent'],
+    )
+    this.gravarCookie(res, r.cookie)
+    return sessaoDoPortalDe(r.portal)
   }
 
   @Documenta({
@@ -141,11 +170,15 @@ export class PortalAuthController {
       req.ip,
       req.headers['user-agent'],
     )
-    res.cookie(nomeDoCookieDoPortal(this.config), r.cookie, {
+    this.gravarCookie(res, r.cookie)
+    return sessaoDoPortalDe(r.portal)
+  }
+
+  private gravarCookie(res: Response, token: string): void {
+    res.cookie(nomeDoCookieDoPortal(this.config), token, {
       ...this.opcoesDoCookie(),
       maxAge: VALIDADE_DA_SESSAO_DIAS * 86_400_000,
     })
-    return sessaoDoPortalDe(r.portal)
   }
 
   // ------------------------------------------------------------------------------------- com sessão
@@ -161,6 +194,44 @@ export class PortalAuthController {
   @Get('sessao')
   sessao(): SessaoDoPortal {
     return sessaoDoPortalDe(this.ctx.portal)
+  }
+
+  @Documenta({
+    resumo: 'Minhas empresas',
+    descricao:
+      'As empresas-clientes que o mesmo e-mail acessa neste portal (acessos ativos), com a atual marcada. Com mais de uma, a tela oferece a troca.',
+    resposta: listaDeEmpresasDoAcessoSchema,
+    erros: [401, 403, 503],
+  })
+  @Get('empresas')
+  async empresas() {
+    return { itens: await this.entrada.empresasDoEmail(this.ctx.portal) }
+  }
+
+  @Documenta({
+    resumo: 'Trocar de empresa',
+    descricao:
+      'Passa para outra empresa-cliente do mesmo e-mail sem pedir outro código: abre uma sessão no acesso escolhido (novo cookie) e encerra a atual. Acesso de outro e-mail, revogado ou suspenso: 404 `empresa_indisponivel`; a mesma empresa: 409.',
+    corpo: trocarEmpresaSchema,
+    resposta: sessaoDoPortalSchema,
+    erros: [400, 401, 403, 404, 409, 429, 503],
+  })
+  @Post('empresas/trocar')
+  @HttpCode(200)
+  @Limite({ nome: 'portal-trocar-empresa', max: 60, janelaS: 3600 })
+  async trocarEmpresa(
+    @Body(new ZodPipe(trocarEmpresaSchema)) dados: TrocarEmpresaEntrada,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SessaoDoPortal> {
+    const r = await this.entrada.trocarEmpresa(
+      this.ctx.portal,
+      dados.acessoId,
+      req.ip,
+      req.headers['user-agent'],
+    )
+    this.gravarCookie(res, r.cookie)
+    return sessaoDoPortalDe(r.portal)
   }
 
   @Documenta({
@@ -293,62 +364,27 @@ export class PortalAuthController {
   // ----------------------------------------------------------------------------- e-mail e perfil
 
   @Documenta({
-    resumo: 'Pedir a troca do e-mail de entrada',
+    resumo: 'Pedir a troca do e-mail de entrada (desligado)',
     descricao:
-      'Envia um link ao e-mail NOVO (válido por 1 hora, uso único). O e-mail só muda quando o link é confirmado. E-mail já usado por outro acesso da empresa dá 409.',
+      'Fase 4A: o e-mail e o telefone do cliente ficam travados; só a equipe altera, pela ficha do contato. Responde sempre 403 `email_travado` (a rota sai na contração).',
     corpo: trocarEmailSchema,
     status: 202,
-    erros: [400, 401, 403, 409, 429, 503],
+    erros: [400, 401, 403],
   })
   @Post('email/troca')
   @HttpCode(202)
-  @Limite({ nome: 'portal-troca-email', max: 10, janelaS: 3600 })
-  async trocarEmail(
-    @Body(new ZodPipe(trocarEmailSchema)) dados: TrocarEmailEntrada,
-    @Req() req: Request,
-  ): Promise<void> {
-    const p = this.ctx.portal
-    const db = this.ctx.db()
-    const [ocupado] = await db.execute(sql`
-      SELECT 1 FROM portal_acessos
-      WHERE empresa_id = ${p.empresaId} AND email = ${dados.email} AND situacao <> 'revogado' AND excluido_em IS NULL
-        AND id <> ${p.acessoId}`)
-    if (ocupado) {
-      throw new ErroApi(
-        'email_em_uso',
-        'Este e-mail já é usado por outro acesso desta empresa.',
-        409,
-      )
-    }
-    const token = await this.links.criar(db, {
-      tenantId: p.tenantId,
-      acessoId: p.acessoId,
-      finalidade: 'troca_email',
-      emailDestino: dados.email,
-      ip: req.ip,
-    })
-    await auditarAtoDoPortal(db, {
-      tenantId: p.tenantId,
-      acessoId: p.acessoId,
-      contatoId: p.contatoId,
-      entidade: 'portal_acesso',
-      entidadeId: p.acessoId,
-      acao: 'troca_de_email_pedida',
-      ip: req.ip,
-    })
-    await this.email.enfileirar(
-      dados.email,
-      emailPortalTrocaDeEmail({
-        nome: p.nome,
-        portal: p.nomeDoPortal,
-        link: this.links.enderecoDoLink(token),
-      }),
+  trocarEmail(@Body(new ZodPipe(trocarEmailSchema)) _dados: TrocarEmailEntrada): void {
+    throw new ErroApi(
+      'email_travado',
+      'O e-mail de acesso só pode ser alterado pela equipe. Fale com ela por um chamado.',
+      403,
     )
   }
 
   @Documenta({
-    resumo: 'Corrigir o próprio nome',
-    descricao: 'O cliente só altera o próprio nome; cargo e vínculo com a empresa são da equipe.',
+    resumo: 'Corrigir o próprio nome e cargo',
+    descricao:
+      'O cliente altera o próprio nome e o cargo na empresa da sessão (`cargo` ausente não muda; nulo apaga). E-mail, telefone e o vínculo com a empresa são da equipe.',
     corpo: perfilDoPortalSchema,
     resposta: sessaoDoPortalSchema,
     erros: [400, 401, 403, 503],
@@ -361,6 +397,12 @@ export class PortalAuthController {
     const p = this.ctx.portal
     await this.ctx.db().execute(sql`
       UPDATE contatos SET nome = ${dados.nome}, atualizado_em = now() WHERE id = ${p.contatoId}`)
+    if (dados.cargo !== undefined) {
+      // O gatilho do banco garante que, pela sessão do portal, só o cargo muda nesta linha
+      await this.ctx.db().execute(sql`
+        UPDATE empresa_contatos SET cargo = ${dados.cargo || null}, atualizado_em = now()
+        WHERE contato_id = ${p.contatoId} AND empresa_id = ${p.empresaId}`)
+    }
     await auditarAtoDoPortal(this.ctx.db(), {
       tenantId: p.tenantId,
       acessoId: p.acessoId,
@@ -368,7 +410,7 @@ export class PortalAuthController {
       entidade: 'contato',
       entidadeId: p.contatoId,
       acao: 'nome_corrigido_pelo_cliente',
-      alteracoes: { antes: p.nome, depois: dados.nome },
+      alteracoes: { antes: p.nome, depois: dados.nome, cargo: dados.cargo },
       ip: req.ip,
     })
     return sessaoDoPortalDe({ ...p, nome: dados.nome })

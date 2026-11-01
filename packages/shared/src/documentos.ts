@@ -7,7 +7,13 @@ import {
   TAMANHO_MAXIMO_DO_ANEXO,
 } from './chamados.js'
 import { TAMANHO_MAXIMO_DE_PAGINA } from './paginacao.js'
-import { alcanceDaPublicacaoSchema, MAXIMO_DE_EMPRESAS_NO_ALCANCE } from './publicacoes.js'
+import {
+  alcanceDaPublicacaoSchema,
+  MAXIMO_DE_EMPRESAS_NO_ALCANCE,
+  tagDoAlcanceSchema,
+  tagIdsDoAlcanceSchema,
+  validarAudiencia,
+} from './publicacoes.js'
 
 // Portal do cliente, Fase 3C: documentos (docs/plano_portal_cliente.md, seção 7). A equipe publica arquivos para
 // todos os clientes ou para algumas empresas; o cliente lista e baixa; cada download fica registrado. O arquivo
@@ -48,7 +54,10 @@ export const itemDeDocumentoSchema = z
 export type ItemDeDocumento = z.infer<typeof itemDeDocumentoSchema>
 
 export const documentoSchema = itemDeDocumentoSchema
-  .extend({ empresas: z.array(z.object({ id: z.uuid(), nome: z.string() })) })
+  .extend({
+    empresas: z.array(z.object({ id: z.uuid(), nome: z.string() })),
+    tags: z.array(tagDoAlcanceSchema),
+  })
   .meta({ id: 'Documento' })
 export type Documento = z.infer<typeof documentoSchema>
 
@@ -85,21 +94,7 @@ const descricaoSchema = z
   .optional()
   .transform((v) => (v ? v : null))
 
-const validarAlcance = (
-  d: { alcance?: string | undefined; empresaIds?: string[] | undefined },
-  ctx: z.RefinementCtx,
-) => {
-  if (d.alcance === 'empresas' && (d.empresaIds?.length ?? 0) === 0) {
-    ctx.addIssue({ code: 'custom', path: ['empresaIds'], message: 'escolha ao menos uma empresa' })
-  }
-  if (d.alcance === 'todos' && (d.empresaIds?.length ?? 0) > 0) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['empresaIds'],
-      message: 'o alcance "todos" não tem lista de empresas',
-    })
-  }
-}
+const validarAlcance = validarAudiencia
 
 /** Passo 1: o cadastro do documento já reserva o arquivo e devolve a URL de envio. */
 export const criarDocumentoSchema = z
@@ -108,6 +103,7 @@ export const criarDocumentoSchema = z
     descricao: descricaoSchema,
     alcance: alcanceDaPublicacaoSchema,
     empresaIds: z.array(z.uuid()).max(MAXIMO_DE_EMPRESAS_NO_ALCANCE).default([]),
+    tagIds: tagIdsDoAlcanceSchema.default([]),
     arquivo: pedirEnvioDeAnexoSchema,
   })
   .strict()
@@ -143,16 +139,17 @@ export const editarDocumentoSchema = z
       .optional(),
     alcance: alcanceDaPublicacaoSchema.optional(),
     empresaIds: z.array(z.uuid()).max(MAXIMO_DE_EMPRESAS_NO_ALCANCE).optional(),
+    tagIds: tagIdsDoAlcanceSchema.optional(),
     visivelNoPortal: z.boolean().optional(),
   })
   .strict()
   .superRefine((d, ctx) => {
     if (d.alcance !== undefined) validarAlcance(d, ctx)
-    else if (d.empresaIds !== undefined) {
+    else if (d.empresaIds !== undefined || d.tagIds !== undefined) {
       ctx.addIssue({
         code: 'custom',
         path: ['alcance'],
-        message: 'informe o alcance junto da lista de empresas',
+        message: 'informe o alcance junto da lista de empresas ou de tags',
       })
     }
   })

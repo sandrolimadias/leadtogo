@@ -12,9 +12,9 @@ afterAll(async () => {
   await owner.end()
 })
 
-/** O bloco da migração 0045 que grava o histórico dos associados antigos (roda de novo, é idempotente). */
+/** O bloco da migração 0054 que grava o histórico dos associados antigos (roda de novo, é idempotente). */
 async function cargaDoHistorico(): Promise<string> {
-  const arquivo = fileURLToPath(new URL('../../migrations/0045_dashboard_v2.sql', import.meta.url))
+  const arquivo = fileURLToPath(new URL('../../migrations/0054_dashboard_v2.sql', import.meta.url))
   const sql = await readFile(arquivo, 'utf8')
   const inicio = sql.indexOf('DO $$')
   return sql.slice(inicio, sql.indexOf('END $$;', inicio) + 'END $$;'.length)
@@ -47,7 +47,7 @@ async function cenario() {
   })
 }
 
-describe('migração 0045: histórico de Status dos associados antigos', () => {
+describe('migração 0054: histórico de Status dos associados antigos', () => {
   it('grava a linha "adicionada" só onde falta, com a data da tag e uuid v7; repetir não duplica', async () => {
     const c = await cenario()
     const bloco = await cargaDoHistorico()

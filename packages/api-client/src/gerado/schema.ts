@@ -2484,6 +2484,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/empresas/{id}/eventos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Eventos da empresa
+         * @description Regra de carteira (empresa que o usuário não vê responde 404). Quem da empresa se inscreveu nos eventos do portal, com a presença e a nota da avaliação.
+         */
+        get: operations["EventosDaEmpresaController_eventos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/geolocalizacao/empresas/{id}/confirmar-endereco": {
         parameters: {
             query?: never;
@@ -4064,6 +4084,26 @@ export interface paths {
         patch: operations["EventosController_editar"];
         trace?: never;
     };
+    "/v1/portal-eventos/{id}/avaliacoes/reenviar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reenviar o pedido de avaliação
+         * @description Exige `portal.agenda`. A quem esteve presente e ainda não avaliou (ou às pessoas escolhidas); no máximo 3 pedidos por pessoa.
+         */
+        post: operations["EventosParticipacaoController_reenviar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal-eventos/{id}/cancelar": {
         parameters: {
             query?: never;
@@ -4084,6 +4124,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal-eventos/{id}/checkin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gerar o QR de check-in
+         * @description Exige `portal.agenda`. Gera (ou troca) o endereço do QR: aparece só nesta resposta (no banco, só o hash). O QR antigo para de valer.
+         */
+        post: operations["EventosParticipacaoController_gerarCheckin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-eventos/{id}/encerrar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Encerrar o evento
+         * @description Exige `portal.agenda`. Depois do início. Quem não tem presença fica ausente; os presentes recebem o pedido de avaliação (push e sino no portal; e-mail com link pessoal para quem não tem acesso, se ligado em Configurações → Portal).
+         */
+        post: operations["EventosParticipacaoController_encerrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-eventos/{id}/inscritos.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inscritos (CSV)
+         * @description Exige `portal.eventos_relatorios` ou `portal.agenda`. Todas as inscrições (inclusive canceladas), com presença, avaliação e os campos do formulário de inscrição.
+         */
+        get: operations["EventosParticipacaoController_csv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-eventos/{id}/inscritos.html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inscritos (para imprimir ou salvar em PDF)
+         * @description Exige `portal.eventos_relatorios` ou `portal.agenda`. Página A4 paisagem que abre a impressão do navegador ("Salvar como PDF").
+         */
+        get: operations["EventosParticipacaoController_impressao"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-eventos/{id}/inscritos.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inscritos (Excel)
+         * @description Exige `portal.eventos_relatorios` ou `portal.agenda`.
+         */
+        get: operations["EventosParticipacaoController_xlsx"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal-eventos/{id}/participantes": {
         parameters: {
             query?: never;
@@ -4097,7 +4237,11 @@ export interface paths {
          */
         get: operations["EventosController_participantes"];
         put?: never;
-        post?: never;
+        /**
+         * Incluir participante presente
+         * @description Exige `portal.eventos_presenca` ou `portal.agenda`. Quem veio sem se inscrever entra já com a presença registrada; com CNPJ, vai ao CRM como as inscrições (quando ligado).
+         */
+        post: operations["EventosParticipacaoController_incluir"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4124,6 +4268,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal-eventos/{id}/participantes/{participacaoId}/presenca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Registrar ou desfazer a presença
+         * @description Exige `portal.eventos_presenca` ou `portal.agenda`. Para quem participou sem fazer o check-in (B-20).
+         */
+        put: operations["EventosParticipacaoController_presenca"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal-eventos/{id}/publicar": {
         parameters: {
             query?: never;
@@ -4138,6 +4302,178 @@ export interface paths {
          * @description Exige `portal.agenda`. Só o rascunho (409 `evento_ja_publicado`); o início precisa estar no futuro (422 `inicio_no_passado`).
          */
         post: operations["EventosController_publicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-formularios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar formulários
+         * @description Exige `portal.ver` ou `portal.formularios`. Os mais recentes primeiro, com o total de respostas.
+         */
+        get: operations["FormulariosController_listar"];
+        put?: never;
+        /**
+         * Criar um formulário
+         * @description Exige `portal.formularios`. Nasce rascunho, com um endereço público próprio (`slug`). Só passa a aceitar respostas depois de publicado.
+         */
+        post: operations["FormulariosController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-formularios/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver um formulário
+         * @description Exige `portal.ver` ou `portal.formularios`. Traz o rascunho (a definição que o construtor edita).
+         */
+        get: operations["FormulariosController_obter"];
+        /**
+         * Salvar o rascunho
+         * @description Exige `portal.formularios`. O que está publicado só muda ao publicar de novo (as respostas guardam a versão).
+         */
+        put: operations["FormulariosController_salvar"];
+        post?: never;
+        /**
+         * Excluir
+         * @description Exige `portal.formularios`. Exclusão lógica: some da lista e deixa de aceitar respostas.
+         */
+        delete: operations["FormulariosController_excluir"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-formularios/{id}/arquivado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Arquivar ou reativar
+         * @description Exige `portal.formularios`. Arquivado não aceita respostas; as que existem ficam.
+         */
+        put: operations["FormulariosController_arquivar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-formularios/{id}/duplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Duplicar
+         * @description Exige `portal.formularios`. Cópia em rascunho, sem respostas.
+         */
+        post: operations["FormulariosController_duplicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-formularios/{id}/publicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publicar
+         * @description Exige `portal.formularios`. Congela o rascunho numa versão nova e passa a aceitar respostas. Definição inválida: 422 `definicao_invalida`.
+         */
+        post: operations["FormulariosController_publicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-formularios/{id}/respostas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Respostas
+         * @description Exige `portal.ver` ou `portal.formularios`. As mais recentes primeiro, com a pessoa e a empresa (quando logadas) e os campos da versão publicada.
+         */
+        get: operations["FormulariosController_respostas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-formularios/{id}/respostas.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Exportar as respostas (CSV)
+         * @description Exige `portal.formularios`. CSV em UTF-8 com BOM e ";" (abre direto no Excel em português). A exportação fica na auditoria.
+         */
+        get: operations["FormulariosController_exportar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-formularios/{id}/segredo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gerar o segredo dos webhooks
+         * @description Exige `portal.formularios`. Gera (ou troca) o segredo que assina as ações de webhook (`X-Leadtogo-Assinatura`, HMAC-SHA256). Aparece só nesta resposta.
+         */
+        post: operations["FormulariosController_regerarSegredo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4316,6 +4652,26 @@ export interface paths {
         patch: operations["PublicacoesController_moderar"];
         trace?: never;
     };
+    "/v1/portal-publicacoes/{id}/duplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Duplicar uma publicação
+         * @description Exige `portal.publicar`. A cópia ("Cópia de …") leva o corpo e o alcance e nasce rascunho, sem fixar, sem agenda e sem reações, comentários nem leituras.
+         */
+        post: operations["PublicacoesController_duplicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal-publicacoes/{id}/fixada": {
         parameters: {
             query?: never;
@@ -4330,6 +4686,86 @@ export interface paths {
          */
         put: operations["PublicacoesController_fixar"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/midias/{midiaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Tirar uma imagem ou vídeo
+         * @description Exige `portal.publicar`. Exclusão lógica.
+         */
+        delete: operations["PublicacoesController_removerMidia"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/midias/{midiaId}/confirmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar o envio da imagem
+         * @description Exige `portal.publicar`. Confere a imagem no armazenamento (tamanho igual ao informado) e manda o antivírus varrer; o cliente só a vê "limpa". Idempotente.
+         */
+        post: operations["PublicacoesController_confirmarImagem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/midias/imagens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adicionar uma imagem
+         * @description Exige `portal.publicar`. Passo 1: reserva a imagem (JPG, PNG ou WebP, até 10 MB, texto alternativo obrigatório) e devolve a URL pré-assinada para o navegador enviar o arquivo direto ao armazenamento. Passo 2: `POST /portal-publicacoes/{id}/midias/{midiaId}/confirmar`. No máximo 6 mídias por publicação (409 `limite_de_midias`). Sem o antivírus configurado: 503 `anexos_indisponiveis`.
+         */
+        post: operations["PublicacoesController_adicionarImagem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/midias/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adicionar um vídeo
+         * @description Exige `portal.publicar`. Só links https do YouTube ou do Vimeo; guarda só o provedor e o ID (o portal monta o embed sem cookies).
+         */
+        post: operations["PublicacoesController_adicionarVideo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4600,6 +5036,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal/chamados/{id}/pesquisa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Responder a pesquisa de satisfação
+         * @description Chamado resolvido ou fechado, com o formulário de satisfação configurado pela equipe. Grava a resposta (contexto = chamado) e, se o formulário tem nota de 1 a 5, alimenta a avaliação do chamado. Uma por chamado (409 `ja_avaliado`); sem pesquisa configurada: 404 `sem_pesquisa`.
+         */
+        post: operations["PortalChamadosController_responderPesquisa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/chamados/{id}/reabrir": {
         parameters: {
             query?: never;
@@ -4614,6 +5070,26 @@ export interface paths {
          * @description Até 7 dias depois de Resolvido (409 `prazo_de_reabertura_vencido`); depois, abra um novo chamado.
          */
         post: operations["PortalChamadosController_reabrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/checkin/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check-in pelo QR (logado)
+         * @description Um toque: marca a presença da própria inscrição confirmada. Fora do horário: 409 `checkin_fechado`.
+         */
+        post: operations["PortalEventosInscricaoController_checkinLogado"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4670,10 +5146,70 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Pedir a troca do e-mail de entrada
-         * @description Envia um link ao e-mail NOVO (válido por 1 hora, uso único). O e-mail só muda quando o link é confirmado. E-mail já usado por outro acesso da empresa dá 409.
+         * Pedir a troca do e-mail de entrada (desligado)
+         * @description Fase 4A: o e-mail e o telefone do cliente ficam travados; só a equipe altera, pela ficha do contato. Responde sempre 403 `email_travado` (a rota sai na contração).
          */
         post: operations["PortalAuthController_trocarEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/empresa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Minha empresa
+         * @description O cadastro completo da empresa-cliente da sessão, só para leitura: documento, endereço, telefones, CNAEs, porte e o primeiro nome do responsável na equipe.
+         */
+        get: operations["PortalPreferenciasController_minhaEmpresa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/empresas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Minhas empresas
+         * @description As empresas-clientes que o mesmo e-mail acessa neste portal (acessos ativos), com a atual marcada. Com mais de uma, a tela oferece a troca.
+         */
+        get: operations["PortalAuthController_empresas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/empresas/trocar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trocar de empresa
+         * @description Passa para outra empresa-cliente do mesmo e-mail sem pedir outro código: abre uma sessão no acesso escolhido (novo cookie) e encerra a atual. Acesso de outro e-mail, revogado ou suspenso: 404 `empresa_indisponivel`; a mesma empresa: 409.
+         */
+        post: operations["PortalAuthController_trocarEmpresa"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4690,10 +5226,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Pedir o link de entrada
-         * @description Público. Envia ao e-mail um link de entrada de uso único, válido por 15 minutos. A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail.
+         * Pedir o código de entrada
+         * @description Público. Envia ao e-mail um código de 6 dígitos, de uso único, válido por 10 minutos (um por CRM, mesmo que o e-mail acesse várias empresas-clientes). A resposta é SEMPRE a mesma, tenha o e-mail acesso ao portal ou não. Limite por IP e por e-mail. Pedir de novo invalida o código anterior.
          */
         post: operations["PortalAuthController_pedirEntrada"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/entrada/codigo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Entrar com o código
+         * @description Público. Confere o código de 6 dígitos (uso único, 10 minutos; 5 erros queimam o código) e abre a sessão no cookie `HttpOnly`, no acesso usado por último. Quem acessa mais de uma empresa-cliente escolhe depois em `/portal/empresas`. Código errado ou vencido: 401 `codigo_invalido`. No primeiro acesso exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`, sem gastar o código).
+         */
+        post: operations["PortalAuthController_entrarComCodigo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4731,6 +5287,30 @@ export interface paths {
         get: operations["PortalEventosController_obter"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/eventos/{id}/avaliacao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Formulário de avaliação do evento
+         * @description Só para quem esteve presente, depois do encerramento e enquanto não avaliou.
+         */
+        get: operations["PortalEventosInscricaoController_formularioDeAvaliacao"];
+        put?: never;
+        /**
+         * Avaliar o evento
+         * @description Só presente, depois do encerramento; uma vez (409 `ja_avaliado`).
+         */
+        post: operations["PortalEventosInscricaoController_avaliar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4781,6 +5361,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal/eventos/{id}/inscricao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inscrever-se com o formulário do evento
+         * @description O formulário vem preenchido com o cadastro (CNPJ, empresa, nome, telefone, e-mail) para conferência. Vagas e lista de espera como na confirmação.
+         */
+        post: operations["PortalEventosInscricaoController_inscrever"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/eventos/proximos": {
         parameters: {
             query?: never;
@@ -4795,6 +5395,46 @@ export interface paths {
         get: operations["PortalEventosController_proximos"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/formularios/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Abrir um formulário (logado)
+         * @description A versão publicada, com os valores do preenchimento automático montados pelo servidor (os travados não mudam).
+         */
+        get: operations["PortalFormulariosController_abrir"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/formularios/{id}/respostas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Responder (logado)
+         * @description Valida tudo de novo no servidor (condicionais, obrigatórios, formatos; os campos travados vêm da sessão). Versão antiga: 409 `versao_desatualizada`. Campos inválidos: 422 `respostas_invalidas` com os detalhes por campo.
+         */
+        post: operations["PortalFormulariosController_responder"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4966,10 +5606,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
         /**
-         * Corrigir o próprio nome
-         * @description O cliente só altera o próprio nome; cargo e vínculo com a empresa são da equipe.
+         * Meu perfil
+         * @description O cadastro do contato como a equipe guardou: nome, cargo na empresa da sessão, e-mails, telefones e aniversário. Só nome e cargo o cliente altera (`PUT /portal/perfil`).
+         */
+        get: operations["PortalPreferenciasController_meuPerfil"];
+        /**
+         * Corrigir o próprio nome e cargo
+         * @description O cliente altera o próprio nome e o cargo na empresa da sessão (`cargo` ausente não muda; nulo apaga). E-mail, telefone e o vínculo com a empresa são da equipe.
          */
         put: operations["PortalAuthController_perfil"];
         post?: never;
@@ -4993,6 +5637,26 @@ export interface paths {
         get: operations["PortalPreferenciasController_obter"];
         /** Salvar minhas preferências */
         put: operations["PortalPreferenciasController_salvar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/preferencias/tema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Salvar o tema
+         * @description Claro, escuro ou sistema (padrão). Vale em todos os aparelhos da pessoa.
+         */
+        put: operations["PortalPreferenciasController_salvarTema"];
         post?: never;
         delete?: never;
         options?: never;
@@ -5072,7 +5736,7 @@ export interface paths {
         put?: never;
         /**
          * Reagir (ou desfazer a reação)
-         * @description Clicar liga a reação (curtir, apoiar ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.
+         * @description Clicar liga a reação (curtir ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.
          */
         post: operations["PortalPublicacoesController_reagir"];
         delete?: never;
@@ -5115,6 +5779,162 @@ export interface paths {
          * @description Registra a leitura (uma por pessoa e publicação) das que o cliente enxerga; as outras são ignoradas. Base do alcance que a equipe vê.
          */
         post: operations["PortalPublicacoesController_leituras"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publico/avaliacao/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Abrir a avaliação pelo link pessoal
+         * @description Público. O link que chega por e-mail a quem não tem acesso ao portal.
+         */
+        get: operations["PortalEventosInscricaoController_avaliacaoPorLink"];
+        put?: never;
+        /**
+         * Avaliar pelo link pessoal
+         * @description Público. Uma avaliação por participação (409 `ja_avaliado`).
+         */
+        post: operations["PortalEventosInscricaoController_avaliarPorLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publico/checkin/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Abrir o QR de check-in
+         * @description Público. O evento, se o check-in está aberto agora e se pede o código por e-mail.
+         */
+        get: operations["PortalEventosInscricaoController_checkinPublico"];
+        put?: never;
+        /**
+         * Fazer o check-in sem login
+         * @description Público. Com o e-mail da inscrição. Se o evento exige, o primeiro envio manda o código de 6 dígitos ao e-mail (`codigo_enviado`) e o segundo confere. Limite por IP.
+         */
+        post: operations["PortalEventosInscricaoController_fazerCheckin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publico/formularios/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Abrir um formulário público
+         * @description Público. Só formulário publicado e com acesso "público". Traz a chave do captcha quando ligado.
+         */
+        get: operations["PortalFormulariosController_abrirPublico"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publico/formularios/{slug}/respostas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Responder um formulário público
+         * @description Público. Exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`) e o captcha quando ligado (422 `captcha_invalido`). Limite por IP.
+         */
+        post: operations["PortalFormulariosController_responderPublico"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publico/paginas/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Página pública de eventos
+         * @description Público. O nome do portal, se há "Seja um Associado" e os eventos publicados para todos os clientes que ainda não acabaram (sem participantes nem o número de vagas). 404 `pagina_nao_encontrada` com o portal ou a página desligados.
+         */
+        get: operations["PaginaPublicaController_pagina"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publico/paginas/{slug}/associacao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Formulário "Seja um Associado"
+         * @description Público. 404 `sem_associacao` quando o portal não escolheu o formulário.
+         */
+        get: operations["PaginaPublicaController_formularioDeAssociacao"];
+        put?: never;
+        /**
+         * Pedir associação
+         * @description Público. Aceite de privacidade, captcha quando ligado, isca e limite por IP. A resposta fica em Formulários → Respostas; com CNPJ e o vínculo ao CRM ligado, a empresa entra como Lead e o responsável recebe a tarefa.
+         */
+        post: operations["PaginaPublicaController_associar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal/publico/paginas/{slug}/eventos/{id}/inscricao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Formulário da inscrição pública
+         * @description Público. O formulário de inscrição do evento, ou nome, e-mail, telefone e CNPJ. 403 `evento_so_associados` para o evento exclusivo de associados.
+         */
+        get: operations["PaginaPublicaController_formularioDeInscricao"];
+        put?: never;
+        /**
+         * Inscrever-se sem login
+         * @description Público (Q-5: sem código por e-mail). Aceite de privacidade, captcha quando ligado, campo isca e limite por IP. O mesmo e-mail no mesmo evento não duplica. Lotado: lista de espera.
+         */
+        post: operations["PaginaPublicaController_inscrever"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5693,15 +6513,24 @@ export interface components {
             reabrir: boolean;
             statusPossiveis: components["schemas"]["StatusDoChamado"][];
         };
+        AdicionarImagemEntrada: {
+            textoAlternativo: string;
+            legenda?: string | null;
+            arquivo: components["schemas"]["PedirEnvioDeAnexoEntrada"];
+        };
         AdicionarParadasEntrada: {
             empresaIds: string[];
+        };
+        AdicionarVideoEntrada: {
+            url: string;
+            legenda?: string | null;
         };
         AjustarPosicao: {
             latitude: number;
             longitude: number;
         };
         /** @enum {string} */
-        AlcanceDaPublicacao: "todos" | "empresas";
+        AlcanceDaPublicacao: "todos" | "empresas" | "tags";
         Alertas: {
             /** @enum {string} */
             status: "ok" | "alerta" | "erro";
@@ -6161,6 +6990,16 @@ export interface components {
             exigeDoisFatoresDoResponsavel?: boolean;
             comentariosAtivos?: boolean;
             avisosLimiteSemanal?: number;
+            /** Format: uuid */
+            formularioSatisfacaoId?: string | null;
+            eventosCrmAtivo?: boolean;
+            /** Format: uuid */
+            eventosCrmResponsavelId?: string | null;
+            avaliacaoPorEmail?: boolean;
+            slug?: string | null;
+            paginaEventosAtiva?: boolean;
+            /** Format: uuid */
+            formularioAssociacaoId?: string | null;
         };
         AvaliacaoDoChamado: {
             nota: number;
@@ -6197,6 +7036,12 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 nome: string;
+            }[];
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                grupo: string;
             }[];
         };
         BaixaDeDocumento: {
@@ -6306,6 +7151,7 @@ export interface components {
             resolvidoEm: string | null;
             prazoResposta: components["schemas"]["PrazoDoChamado"] | null;
             prazoResolucao: components["schemas"]["PrazoDoChamado"] | null;
+            notaDoCliente: number | null;
             descricao: string | null;
             /** Format: date-time */
             fechadoEm: string | null;
@@ -6314,6 +7160,12 @@ export interface components {
             notasInternas: components["schemas"]["NotaInterna"][];
             eventos: components["schemas"]["EventoDoChamado"][];
             acoes: components["schemas"]["AcoesDoChamado"];
+            avaliacao: {
+                nota: number;
+                comentario: string | null;
+                /** Format: date-time */
+                avaliadoEm: string;
+            } | null;
         };
         ChamadoDoPortal: {
             /** Format: uuid */
@@ -6333,6 +7185,10 @@ export interface components {
             mensagens: components["schemas"]["MensagemDoPortal"][];
             marcos: components["schemas"]["MarcoDoChamadoNoPortal"][];
             avaliacao: components["schemas"]["AvaliacaoDoChamado"] | null;
+            pesquisa: {
+                /** Format: uuid */
+                formularioId: string;
+            } | null;
             acoes: {
                 responder: boolean;
                 reabrir: boolean;
@@ -6380,6 +7236,19 @@ export interface components {
             em: string;
             posicao: components["schemas"]["PosicaoDoAparelho"];
             offline: boolean;
+        };
+        CheckinDoEvento: {
+            /** Format: uri */
+            url: string;
+            token: string;
+        };
+        CheckinPublico: {
+            titulo: string;
+            /** Format: date-time */
+            inicioEm: string;
+            local: string | null;
+            exigeCodigo: boolean;
+            aberto: boolean;
         };
         ChipDoMapa: {
             /** Format: uuid */
@@ -6516,6 +7385,16 @@ export interface components {
             exigeDoisFatoresDoResponsavel: boolean;
             comentariosAtivos: boolean;
             avisosLimiteSemanal: number;
+            /** Format: uuid */
+            formularioSatisfacaoId: string | null;
+            eventosCrmAtivo: boolean;
+            /** Format: uuid */
+            eventosCrmResponsavelId: string | null;
+            avaliacaoPorEmail: boolean;
+            slug: string | null;
+            paginaEventosAtiva: boolean;
+            /** Format: uuid */
+            formularioAssociacaoId: string | null;
         };
         ConfirmarEndereco: {
             /** @enum {string} */
@@ -6769,6 +7648,8 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+            /** @default [] */
+            tagIds: string[];
             /** Format: date-time */
             enviarEm?: string | null;
         };
@@ -6809,6 +7690,8 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+            /** @default [] */
+            tagIds: string[];
             arquivo: components["schemas"]["PedirEnvioDeAnexoEntrada"];
         };
         CriarEmpresaDaCarteiraEntrada: {
@@ -7142,6 +8025,12 @@ export interface components {
                 id: string;
                 nome: string;
             }[];
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                grupo: string;
+            }[];
         };
         DocumentoDoPortal: {
             /** Format: uuid */
@@ -7167,6 +8056,7 @@ export interface components {
             descricao?: string | null;
             alcance?: components["schemas"]["AlcanceDaPublicacao"];
             empresaIds?: string[];
+            tagIds?: string[];
             visivelNoPortal?: boolean;
         };
         EditarPerfil: {
@@ -7307,6 +8197,13 @@ export interface components {
                 transferir: boolean;
             };
         };
+        EmpresaDoAcesso: {
+            /** Format: uuid */
+            acessoId: string;
+            nome: string;
+            papel: components["schemas"]["PapelDoPortal"];
+            atual: boolean;
+        };
         EmpresaDoUsuario: {
             /** Format: uuid */
             id: string;
@@ -7404,6 +8301,11 @@ export interface components {
             titulo: string;
             detalhe: string | null;
         };
+        EntrarComCodigoEntrada: {
+            email: string;
+            codigo: string;
+            aceitaPrivacidade?: boolean;
+        };
         EntregaDeWebhook: {
             /** Format: uuid */
             id: string;
@@ -7428,6 +8330,16 @@ export interface components {
             /** @default [] */
             anexoIds: string[];
         };
+        EnviarRespostaEntrada: {
+            versao: number;
+            botao: string;
+            respostas: {
+                [key: string]: unknown;
+            };
+            aceitaPrivacidade?: boolean;
+            captcha?: string;
+            site?: string;
+        };
         EnvioDeAnexo: {
             /** Format: uuid */
             anexoId: string;
@@ -7441,6 +8353,18 @@ export interface components {
         };
         EnvioDeDocumento: {
             documento: components["schemas"]["Documento"];
+            envio: {
+                /** Format: uri */
+                url: string;
+                cabecalhos: {
+                    [key: string]: string;
+                };
+                /** Format: date-time */
+                expiraEm: string;
+            };
+        };
+        EnvioDeImagem: {
+            midia: components["schemas"]["MidiaDaPublicacao"];
             envio: {
                 /** Format: uri */
                 url: string;
@@ -7485,6 +8409,9 @@ export interface components {
             prazoConfirmacao: string | null;
             confirmados: number;
             listaDeEspera: number;
+            publico: boolean;
+            /** Format: date-time */
+            encerradoEm: string | null;
             descricao: string | null;
             linkOnline: string | null;
             /** Format: date-time */
@@ -7499,6 +8426,35 @@ export interface components {
                 id: string;
                 nome: string;
             }[];
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                grupo: string;
+            }[];
+            /** Format: uuid */
+            formularioInscricaoId: string | null;
+            /** Format: uuid */
+            formularioAvaliacaoId: string | null;
+            /** Format: uuid */
+            publicacaoId: string | null;
+            checkinExigeCodigo: boolean;
+            checkinAtivo: boolean;
+            presentes: number;
+            avaliaram: number;
+        };
+        EventoDaEmpresa: {
+            /** Format: uuid */
+            eventoId: string;
+            titulo: string;
+            /** Format: date-time */
+            inicioEm: string;
+            pessoa: string;
+            situacao: components["schemas"]["SituacaoDaConfirmacao"];
+            /** @enum {string} */
+            presenca: "nao_registrada" | "checkin_qr" | "manual";
+            avaliou: boolean;
+            nota: number | null;
         };
         /** @enum {string} */
         EventoDeWebhook: "empresa.criada" | "empresa.atualizada" | "empresa.tag_alterada" | "empresa.responsavel_alterado" | "contato.criado" | "contato.atualizado" | "atividade.criada" | "atividade.concluida" | "oportunidade.criada" | "oportunidade.fase_alterada" | "oportunidade.status_alterado" | "importacao.concluida";
@@ -7547,6 +8503,31 @@ export interface components {
             podeConfirmar: boolean;
             podeCancelar: boolean;
             motivoDoBloqueio: components["schemas"]["MotivoDeBloqueioDoEvento"] | null;
+            /** Format: uuid */
+            formularioInscricaoId: string | null;
+            publico: boolean;
+            presente: boolean;
+            avaliar: {
+                /** Format: uuid */
+                formularioId: string;
+            } | null;
+        };
+        EventoPublico: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            descricao: string | null;
+            local: string | null;
+            online: boolean;
+            /** Format: date-time */
+            inicioEm: string;
+            /** Format: date-time */
+            fimEm: string;
+            /** Format: date-time */
+            prazoConfirmacao: string | null;
+            inscricaoAberta: boolean;
+            /** @enum {string} */
+            disponibilidade: "disponivel" | "poucas_vagas" | "lotado";
         };
         Expediente: {
             faixas: components["schemas"]["FaixaDeExpediente"][];
@@ -7557,6 +8538,11 @@ export interface components {
             diaSemana: number;
             inicio: string;
             fim: string;
+        };
+        FazerCheckinEntrada: {
+            /** Format: email */
+            email?: string;
+            codigo?: string;
         };
         FecharOportunidadeEntrada: {
             /** @enum {string} */
@@ -7600,6 +8586,39 @@ export interface components {
         FixarPublicacaoEntrada: {
             fixada: boolean;
         };
+        Formulario: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            /** @enum {string} */
+            finalidade: "livre" | "inscricao_evento" | "avaliacao_evento" | "satisfacao_chamado" | "associacao";
+            /** @enum {string} */
+            acesso: "publico" | "logado";
+            /** @enum {string} */
+            situacao: "rascunho" | "publicado" | "arquivado";
+            slug: string;
+            versaoPublicada: number | null;
+            temMudancas: boolean;
+            respostas: number;
+            /** Format: date-time */
+            ultimaRespostaEm: string | null;
+            /** Format: date-time */
+            atualizadoEm: string;
+            captcha: boolean;
+            definicao: unknown;
+        };
+        FormularioParaResponder: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            versao: number;
+            definicao: unknown;
+            preenchidos: {
+                [key: string]: unknown;
+            };
+            travados: string[];
+            captchaChave: string | null;
+        };
         Funil: {
             /** Format: uuid */
             id: string;
@@ -7632,6 +8651,13 @@ export interface components {
         };
         ImportarForaDoPerfilEntrada: {
             linhaIds?: string[];
+        };
+        IncluirParticipanteEntrada: {
+            nome: string;
+            /** Format: email */
+            email: string;
+            telefone?: string | null;
+            cnpj?: string | null;
         };
         IndicadoresDeChamados: {
             total: number;
@@ -7670,6 +8696,11 @@ export interface components {
                 p256dh: string;
                 auth: string;
             };
+        };
+        InscricaoPublicaFeita: {
+            /** @enum {string} */
+            situacao: "confirmado" | "lista_espera";
+            mensagem: string;
         };
         ItemDaBuscaGlobal: {
             /** Format: uuid */
@@ -7784,6 +8815,7 @@ export interface components {
             resolvidoEm: string | null;
             prazoResposta: components["schemas"]["PrazoDoChamado"] | null;
             prazoResolucao: components["schemas"]["PrazoDoChamado"] | null;
+            notaDoCliente: number | null;
         };
         ItemDeChamadoDoPortal: {
             /** Format: uuid */
@@ -7829,6 +8861,28 @@ export interface components {
             prazoConfirmacao: string | null;
             confirmados: number;
             listaDeEspera: number;
+            publico: boolean;
+            /** Format: date-time */
+            encerradoEm: string | null;
+        };
+        ItemDeFormulario: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            /** @enum {string} */
+            finalidade: "livre" | "inscricao_evento" | "avaliacao_evento" | "satisfacao_chamado" | "associacao";
+            /** @enum {string} */
+            acesso: "publico" | "logado";
+            /** @enum {string} */
+            situacao: "rascunho" | "publicado" | "arquivado";
+            slug: string;
+            versaoPublicada: number | null;
+            temMudancas: boolean;
+            respostas: number;
+            /** Format: date-time */
+            ultimaRespostaEm: string | null;
+            /** Format: date-time */
+            atualizadoEm: string;
         };
         ItemDePublicacao: {
             /** Format: uuid */
@@ -8045,6 +9099,9 @@ export interface components {
             pagina: number;
             porPagina: number;
         };
+        ListaDeEmpresasDoAcesso: {
+            itens: components["schemas"]["EmpresaDoAcesso"][];
+        };
         ListaDeEntregasDeWebhook: {
             itens: components["schemas"]["EntregaDeWebhook"][];
             total: number;
@@ -8060,8 +9117,16 @@ export interface components {
                 rascunhos: number;
             };
         };
+        ListaDeEventosDaEmpresa: {
+            itens: components["schemas"]["EventoDaEmpresa"][];
+            total: number;
+        };
         ListaDeEventosDoPortal: {
             itens: components["schemas"]["EventoDoPortal"][];
+            total: number;
+        };
+        ListaDeFormularios: {
+            itens: components["schemas"]["ItemDeFormulario"][];
             total: number;
         };
         ListaDeLotesDeImportacao: {
@@ -8115,6 +9180,7 @@ export interface components {
         ListaDeParticipantes: {
             confirmados: components["schemas"]["ParticipanteDoEvento"][];
             listaDeEspera: components["schemas"]["ParticipanteDoEvento"][];
+            cancelados: components["schemas"]["ParticipanteDoEvento"][];
         };
         ListaDePedidosDeAcesso: {
             itens: components["schemas"]["PedidoDeAcesso"][];
@@ -8133,6 +9199,15 @@ export interface components {
                 rascunhos: number;
             };
             denunciasAbertas: number;
+        };
+        ListaDeRespostas: {
+            itens: components["schemas"]["RespostaDeFormulario"][];
+            total: number;
+            campos: {
+                id: string;
+                rotulo: string;
+                tipo: string;
+            }[];
         };
         ListaDeRotas: {
             itens: components["schemas"]["ItemDeRota"][];
@@ -8375,7 +9450,6 @@ export interface components {
             empresasAlcancadas: number;
             reacoes: {
                 curtir: number;
-                apoiar: number;
                 parabens: number;
             };
             comentarios: number;
@@ -8426,8 +9500,98 @@ export interface components {
             }[];
             truncado: boolean;
         };
+        MeuPerfilDoPortal: {
+            nome: string;
+            cargo: string | null;
+            emailDeAcesso: string;
+            emails: {
+                email: string;
+                /** @enum {string} */
+                tipo: "pessoal" | "trabalho";
+            }[];
+            telefones: {
+                numero: string;
+                /** @enum {string} */
+                tipo: "fixo" | "celular" | "whatsapp" | "outro";
+            }[];
+            aniversario: {
+                dia: number;
+                mes: number;
+            } | null;
+        };
+        MidiaDaPublicacao: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            tipo: "imagem" | "video";
+            ordem: number;
+            legenda: string | null;
+            textoAlternativo: string | null;
+            imagem: {
+                nome: string;
+                tamanho: number;
+                /** @enum {string} */
+                estado: "pendente_varredura" | "limpo" | "infectado";
+                enviada: boolean;
+                url: string | null;
+            } | null;
+            video: {
+                /** @enum {string} */
+                provedor: "youtube" | "vimeo";
+                id: string;
+            } | null;
+        };
+        MidiaDoPortal: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            tipo: "imagem" | "video";
+            legenda: string | null;
+            textoAlternativo: string | null;
+            imagemUrl: string | null;
+            video: {
+                /** @enum {string} */
+                provedor: "youtube" | "vimeo";
+                id: string;
+            } | null;
+        };
+        MinhaEmpresaDoPortal: {
+            razaoSocial: string;
+            nomeFantasia: string | null;
+            /** @enum {string} */
+            tipoDocumento: "cnpj" | "cpf" | "nenhum";
+            documento: string | null;
+            /** @enum {string|null} */
+            matrizFilial: "matriz" | "filial" | null;
+            porte: string | null;
+            dataInicioAtividades: string | null;
+            website: string | null;
+            endereco: {
+                cep: string | null;
+                logradouro: string | null;
+                numero: string | null;
+                complemento: string | null;
+                bairro: string | null;
+                municipio: string | null;
+                uf: string | null;
+            };
+            telefones: {
+                numero: string;
+                /** @enum {string} */
+                tipo: "fixo" | "celular" | "whatsapp" | "outro";
+            }[];
+            cnaePrincipal: {
+                codigo: string;
+                descricao: string;
+            } | null;
+            cnaesSecundarios: {
+                codigo: string;
+                descricao: string;
+            }[];
+            responsavel: string | null;
+        };
         /** @enum {string} */
-        MinhaSituacaoNoEvento: "nenhuma" | "confirmado" | "lista_espera";
+        MinhaSituacaoNoEvento: "nenhuma" | "confirmado" | "lista_espera" | "cancelado";
         ModeloDeVisita: {
             /** Format: uuid */
             id: string;
@@ -8775,6 +9939,12 @@ export interface components {
             ignoradas: number;
             geradoEm: string;
         };
+        PaginaPublica: {
+            nome: string;
+            logoUrl: string | null;
+            associacao: boolean;
+            eventos: components["schemas"]["EventoPublico"][];
+        };
         /** @enum {string} */
         PapelDoPortal: "responsavel" | "colega";
         PapelNaDecisao: {
@@ -8820,8 +9990,19 @@ export interface components {
             id: string;
             pessoa: string;
             email: string;
-            empresa: string;
+            empresa: string | null;
+            cnpj: string | null;
+            /** @enum {string} */
+            origem: "portal" | "publico" | "equipe";
             situacao: components["schemas"]["SituacaoDaConfirmacao"];
+            /** @enum {string} */
+            presenca: "nao_registrada" | "checkin_qr" | "manual";
+            /** Format: date-time */
+            presencaEm: string | null;
+            avaliou: boolean;
+            /** Format: date-time */
+            avaliacaoPedidaEm: string | null;
+            lembretes: number;
             /** Format: date-time */
             entrouNaFilaEm: string;
             /** Format: date-time */
@@ -8915,6 +10096,7 @@ export interface components {
         };
         PerfilDoPortalEntrada: {
             nome: string;
+            cargo?: string | null;
         };
         PermissoesDoPerfil: {
             [key: string]: ("propria" | "equipe" | "todas") | true;
@@ -9021,6 +10203,8 @@ export interface components {
             emailChamados: boolean;
             emailEventos: boolean;
             emailAvisos: boolean;
+            /** @enum {string} */
+            tema: "claro" | "escuro" | "sistema";
         };
         PreferenciasPatch: {
             /** @enum {string|null} */
@@ -9125,6 +10309,13 @@ export interface components {
                 id: string;
                 nome: string;
             }[];
+            tags: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                grupo: string;
+            }[];
+            midias: components["schemas"]["MidiaDaPublicacao"][];
         };
         PublicacaoDoPortal: {
             /** Format: uuid */
@@ -9136,12 +10327,12 @@ export interface components {
             fixada: boolean;
             reacoes: {
                 curtir: number;
-                apoiar: number;
                 parabens: number;
             };
             minhasReacoes: components["schemas"]["TipoDeReacao"][];
             comentarios: number;
             comentariosAbertos: boolean;
+            midias: components["schemas"]["MidiaDoPortal"][];
         };
         PularParadaEntrada: {
             motivo: string;
@@ -9149,13 +10340,15 @@ export interface components {
         ReacoesDaPublicacao: {
             reacoes: {
                 curtir: number;
-                apoiar: number;
                 parabens: number;
             };
             minhasReacoes: components["schemas"]["TipoDeReacao"][];
         };
         ReagirNoPortalEntrada: {
             tipo: components["schemas"]["TipoDeReacao"];
+        };
+        ReenviarAvaliacaoEntrada: {
+            participacaoIds?: string[];
         };
         ReenvioDeEntregas: {
             reenviadas: number;
@@ -9171,6 +10364,9 @@ export interface components {
                 nome: string;
                 uf: string;
             }[];
+        };
+        RegistrarPresencaEntrada: {
+            presente: boolean;
         };
         RelatorioDeVisita: {
             /** Format: uuid */
@@ -9226,6 +10422,26 @@ export interface components {
             /** @default [] */
             anexoIds: string[];
         };
+        RespostaDeFormulario: {
+            /** Format: uuid */
+            id: string;
+            versao: number;
+            /** @enum {string} */
+            origem: "portal" | "publico" | "crm";
+            botao: string;
+            valores: {
+                [key: string]: unknown;
+            };
+            pessoa: string | null;
+            empresa: string | null;
+            contexto: {
+                tipo: string;
+                /** Format: uuid */
+                id: string;
+            } | null;
+            /** Format: date-time */
+            criadoEm: string;
+        };
         RespostaDePedirEntrada: {
             mensagem: string;
         };
@@ -9233,6 +10449,11 @@ export interface components {
             /** Format: uuid */
             campoId: string;
             valor: unknown;
+        };
+        RespostaEnviada: {
+            /** Format: uuid */
+            id: string | null;
+            mensagem: string;
         };
         RespostaGravada: {
             /** Format: uuid */
@@ -9275,12 +10496,22 @@ export interface components {
             ativo: boolean;
             ordem: number;
         };
+        ResultadoDoCheckin: {
+            /** @enum {string} */
+            situacao: "registrado" | "codigo_enviado";
+            nome: string | null;
+        };
         ResultadoDoMovimento: {
             oportunidade: components["schemas"]["Oportunidade"];
             avisoDeProbabilidade: {
                 atual: number;
                 sugerida: number;
             } | null;
+        };
+        ResultadoDoPedidoDeAvaliacao: {
+            porPush: number;
+            porEmail: number;
+            ignorados: number;
         };
         ResultadosDoDashboard: {
             periodo: {
@@ -9472,6 +10703,124 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+            /** @default [] */
+            tagIds: string[];
+            /** @default false */
+            publico: boolean;
+            /**
+             * Format: uuid
+             * @default null
+             */
+            formularioInscricaoId: string | null;
+            /**
+             * Format: uuid
+             * @default null
+             */
+            formularioAvaliacaoId: string | null;
+            /** @default false */
+            checkinExigeCodigo: boolean;
+        };
+        SalvarFormularioEntrada: {
+            nome: string;
+            /**
+             * @default livre
+             * @enum {string}
+             */
+            finalidade: "livre" | "inscricao_evento" | "avaliacao_evento" | "satisfacao_chamado" | "associacao";
+            /**
+             * @default logado
+             * @enum {string}
+             */
+            acesso: "publico" | "logado";
+            /** @default true */
+            captcha: boolean;
+            definicao: {
+                campos: {
+                    id: string;
+                    /** @enum {string} */
+                    tipo: "texto" | "texto_longo" | "email" | "telefone" | "cnpj" | "cpf" | "numero" | "moeda" | "data" | "hora" | "selecao" | "multipla" | "sim_nao" | "avaliacao" | "nps" | "aceite" | "oculto" | "titulo" | "informativo" | "quebra_de_pagina";
+                    rotulo: string;
+                    ajuda?: string;
+                    /** @default false */
+                    obrigatorio: boolean;
+                    /**
+                     * @default inteira
+                     * @enum {string}
+                     */
+                    largura: "inteira" | "metade" | "terco";
+                    opcoes?: {
+                        valor: string;
+                        rotulo: string;
+                    }[];
+                    minimo?: number;
+                    maximo?: number;
+                    valorPadrao?: string;
+                    preenchimento?: {
+                        /** @enum {string} */
+                        fonte: "contato.nome" | "contato.email" | "contato.telefone" | "contato.cargo" | "empresa.cnpj" | "empresa.razao_social" | "empresa.nome_fantasia" | "empresa.cidade" | "empresa.uf";
+                        /** @default false */
+                        travado: boolean;
+                    };
+                    visivelQuando?: {
+                        /** @enum {string} */
+                        combinacao: "todas" | "qualquer";
+                        condicoes: {
+                            campo: string;
+                            /** @enum {string} */
+                            operador: "igual" | "diferente" | "contem" | "maior" | "menor" | "preenchido" | "vazio";
+                            valor?: string;
+                        }[];
+                    };
+                    texto?: string;
+                }[];
+                botoes: {
+                    id: string;
+                    rotulo: string;
+                    /**
+                     * @default primario
+                     * @enum {string}
+                     */
+                    estilo: "primario" | "secundario";
+                    /** @default [] */
+                    acoes: ({
+                        /** @enum {string} */
+                        tipo: "webhook";
+                        /** Format: uri */
+                        url: string;
+                        condicao?: {
+                            /** @enum {string} */
+                            combinacao: "todas" | "qualquer";
+                            condicoes: {
+                                campo: string;
+                                /** @enum {string} */
+                                operador: "igual" | "diferente" | "contem" | "maior" | "menor" | "preenchido" | "vazio";
+                                valor?: string;
+                            }[];
+                        };
+                    } | {
+                        /** @enum {string} */
+                        tipo: "email";
+                        /** @enum {string} */
+                        para: "fixo" | "campo";
+                        enderecos?: string[];
+                        campo?: string;
+                        assunto: string;
+                        mensagem: string;
+                        condicao?: {
+                            /** @enum {string} */
+                            combinacao: "todas" | "qualquer";
+                            condicoes: {
+                                campo: string;
+                                /** @enum {string} */
+                                operador: "igual" | "diferente" | "contem" | "maior" | "menor" | "preenchido" | "vazio";
+                                valor?: string;
+                            }[];
+                        };
+                    })[];
+                }[];
+                /** @default Recebemos sua resposta. Obrigado! */
+                mensagemDeSucesso: string;
+            };
         };
         SalvarPreferenciasDoPortalEntrada: {
             silencioInicio: string | null;
@@ -9479,6 +10828,8 @@ export interface components {
             emailChamados: boolean;
             emailEventos: boolean;
             emailAvisos: boolean;
+            /** @enum {string} */
+            tema?: "claro" | "escuro" | "sistema";
         };
         SalvarPublicacaoEntrada: {
             titulo: string;
@@ -9486,6 +10837,8 @@ export interface components {
             alcance: components["schemas"]["AlcanceDaPublicacao"];
             /** @default [] */
             empresaIds: string[];
+            /** @default [] */
+            tagIds: string[];
             situacao: components["schemas"]["SituacaoDaPublicacao"];
             /**
              * Format: date-time
@@ -9512,6 +10865,10 @@ export interface components {
             empresaIds: string[];
             posicaoAtual?: components["schemas"]["Coordenada"];
             otimizada?: boolean;
+        };
+        SalvarTemaDoPortalEntrada: {
+            /** @enum {string} */
+            tema: "claro" | "escuro" | "sistema";
         };
         SalvarVisitaEntrada: {
             /** Format: uuid */
@@ -9754,7 +11111,7 @@ export interface components {
             chaveSistema: string | null;
         };
         /** @enum {string} */
-        TipoDeReacao: "curtir" | "apoiar" | "parabens";
+        TipoDeReacao: "curtir" | "parabens";
         TratarPedidoDeAcessoEntrada: {
             /** @enum {string} */
             decisao: "aprovar" | "recusar";
@@ -9769,6 +11126,10 @@ export interface components {
         };
         TrocarEmailEntrada: {
             email: string;
+        };
+        TrocarEmpresaEntrada: {
+            /** Format: uuid */
+            acessoId: string;
         };
         /** @enum {string} */
         UrgenciaDoAviso: "normal" | "urgente";
@@ -20144,6 +21505,64 @@ export interface operations {
             };
         };
     };
+    EventosDaEmpresaController_eventos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeEventosDaEmpresa"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     GeolocalizacaoController_confirmar: {
         parameters: {
             query?: never;
@@ -26184,6 +27603,77 @@ export interface operations {
             };
         };
     };
+    EventosParticipacaoController_reenviar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReenviarAvaliacaoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoDoPedidoDeAvaliacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     EventosController_cancelar: {
         parameters: {
             query?: never;
@@ -26255,6 +27745,317 @@ export interface operations {
             };
         };
     };
+    EventosParticipacaoController_gerarCheckin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckinDoEvento"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EventosParticipacaoController_encerrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoDoPedidoDeAvaliacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EventosParticipacaoController_csv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EventosParticipacaoController_impressao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EventosParticipacaoController_xlsx: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     EventosController_participantes: {
         parameters: {
             query?: never;
@@ -26313,6 +28114,77 @@ export interface operations {
             };
         };
     };
+    EventosParticipacaoController_incluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncluirParticipanteEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeParticipantes"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     EventosController_removerParticipante: {
         parameters: {
             query?: never;
@@ -26324,6 +28196,69 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeParticipantes"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    EventosParticipacaoController_presenca: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                participacaoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrarPresencaEntrada"];
+            };
+        };
         responses: {
             /** @description Sucesso */
             200: {
@@ -26439,6 +28374,660 @@ export interface operations {
             };
             /** @description Erro */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_listar: {
+        parameters: {
+            query?: {
+                situacao?: "rascunho" | "publicado" | "arquivado";
+                finalidade?: "livre" | "inscricao_evento" | "avaliacao_evento" | "satisfacao_chamado" | "associacao";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeFormularios"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarFormularioEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Formulario"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Formulario"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_salvar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarFormularioEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Formulario"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_arquivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    arquivado: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Formulario"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_duplicar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Formulario"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_publicar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Formulario"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_respostas: {
+        parameters: {
+            query?: {
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeRespostas"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_exportar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    FormulariosController_regerarSegredo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        segredo: string;
+                    };
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27141,6 +29730,64 @@ export interface operations {
             };
         };
     };
+    PublicacoesController_duplicar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Publicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PublicacoesController_fixar: {
         parameters: {
             query?: never;
@@ -27203,6 +29850,300 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_removerMidia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                midiaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_confirmarImagem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                midiaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MidiaDaPublicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_adicionarImagem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdicionarImagemEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvioDeImagem"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_adicionarVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdicionarVideoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MidiaDaPublicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28252,6 +31193,104 @@ export interface operations {
             };
         };
     };
+    PortalChamadosController_responderPesquisa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChamadoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalChamadosController_reabrir: {
         parameters: {
             query?: never;
@@ -28270,6 +31309,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChamadoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalEventosInscricaoController_checkinLogado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoDoCheckin"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
@@ -28511,6 +31626,169 @@ export interface operations {
                     "application/json": components["schemas"]["Erro"];
                 };
             };
+        };
+    };
+    PortalPreferenciasController_minhaEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinhaEmpresaDoPortal"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAuthController_empresas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDeEmpresasDoAcesso"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAuthController_trocarEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrocarEmpresaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessaoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
                 headers: {
@@ -28573,6 +31851,84 @@ export interface operations {
             };
             /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalAuthController_entrarComCodigo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntrarComCodigoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessaoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28709,6 +32065,180 @@ export interface operations {
             };
             /** @description Não encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalEventosInscricaoController_formularioDeAvaliacao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormularioParaResponder"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalEventosInscricaoController_avaliar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28962,6 +32492,104 @@ export interface operations {
             };
         };
     };
+    PortalEventosInscricaoController_inscrever: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalEventosController_proximos: {
         parameters: {
             query?: never;
@@ -28991,6 +32619,180 @@ export interface operations {
             };
             /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalFormulariosController_abrir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormularioParaResponder"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalFormulariosController_responder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespostaEnviada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29554,6 +33356,62 @@ export interface operations {
             };
         };
     };
+    PortalPreferenciasController_meuPerfil: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeuPerfilDoPortal"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
     PortalAuthController_perfil: {
         parameters: {
             query?: never;
@@ -29671,6 +33529,75 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SalvarPreferenciasDoPortalEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferenciasDoPortal"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalPreferenciasController_salvarTema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalvarTemaDoPortalEntrada"];
             };
         };
         responses: {
@@ -30212,6 +34139,741 @@ export interface operations {
             };
             /** @description Serviço indisponível (`servico_indisponivel`) */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalEventosInscricaoController_avaliacaoPorLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        nome: string;
+                        versao: number;
+                        definicao: unknown;
+                        preenchidos: {
+                            [key: string]: unknown;
+                        };
+                        travados: string[];
+                        captchaChave: string | null;
+                        evento: string;
+                    };
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalEventosInscricaoController_avaliarPorLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespostaEnviada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalEventosInscricaoController_checkinPublico: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckinPublico"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalEventosInscricaoController_fazerCheckin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FazerCheckinEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoDoCheckin"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalFormulariosController_abrirPublico: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormularioParaResponder"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PortalFormulariosController_responderPublico: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespostaEnviada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PaginaPublicaController_pagina: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginaPublica"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PaginaPublicaController_formularioDeAssociacao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormularioParaResponder"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PaginaPublicaController_associar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespostaEnviada"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PaginaPublicaController_formularioDeInscricao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormularioParaResponder"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PaginaPublicaController_inscrever: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarRespostaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InscricaoPublicaFeita"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`) */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -38,9 +38,23 @@ import { EventosController } from './eventos.controller.js'
 import { EventosService } from './eventos.service.js'
 import { PortalEventosController } from './portal-eventos.controller.js'
 import { PortalEventosService } from './portal-eventos.service.js'
+import { PaginaPublicaController } from './pagina-publica.controller.js'
+import { PaginaPublicaService } from './pagina-publica.service.js'
+import {
+  EventosDaEmpresaController,
+  EventosParticipacaoController,
+  PortalEventosInscricaoController,
+} from './eventos-participacao.controller.js'
+import { EventosInscricaoService } from './eventos-inscricao.service.js'
+import { EventosParticipacaoService } from './eventos-participacao.service.js'
 import { AvisosController } from './avisos.controller.js'
 import { AvisosService } from './avisos.service.js'
 import { PortalBuscaService } from './portal-busca.service.js'
+import { FormulariosController, PortalFormulariosController } from './formularios.controller.js'
+import { FormulariosService } from './formularios.service.js'
+import { MidiasService } from './midias.service.js'
+import { ResponderFormularioService } from './responder-formulario.service.js'
+import { PortalPerfilService } from './portal-perfil.service.js'
 import { PortalPreferenciasController } from './portal-preferencias.controller.js'
 import { PortalPreferenciasService } from './portal-preferencias.service.js'
 import { PortalGuard } from './portal.guard.js'
@@ -49,6 +63,8 @@ import { PortalInterceptor } from './portal.interceptor.js'
 @Module({
   imports: [ChamadosModule, NotificacoesModule, CarteiraModule],
   controllers: [
+    FormulariosController,
+    PortalFormulariosController,
     PortalAuthController,
     PortalChamadosController,
     PortalNotificacoesController,
@@ -64,10 +80,18 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalDocumentosController,
     EventosController,
     PortalEventosController,
+    EventosParticipacaoController,
+    EventosDaEmpresaController,
+    PortalEventosInscricaoController,
+    PaginaPublicaController,
     AvisosController,
     PortalPreferenciasController,
   ],
   providers: [
+    FormulariosService,
+    ResponderFormularioService,
+    MidiasService,
+    PortalPerfilService,
     LimitePorChave,
     PortalLinksService,
     PortalSessaoService,
@@ -77,6 +101,9 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalDocumentosService,
     EventosService,
     PortalEventosService,
+    EventosParticipacaoService,
+    EventosInscricaoService,
+    PaginaPublicaService,
     AvisosService,
     PortalPreferenciasService,
     PortalBuscaService,
