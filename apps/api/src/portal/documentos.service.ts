@@ -28,6 +28,7 @@ import { agendarVarreduraDeDocumento } from '../chamados/evento-anexo.js'
 import type { Configuracao } from '../configuracao/configuracao.js'
 import { CONFIGURACAO } from '../configuracao/configuracao.module.js'
 import { ErroApi } from '../http/erro-api.js'
+import { tagsDoAlcance, trocarTagsDoAlcance } from './audiencia.js'
 import { ARMAZENAMENTO } from '../infra/infra.module.js'
 import { criarClienteS3 } from '../infra/s3.js'
 
@@ -41,7 +42,7 @@ type LinhaDoDocumento = {
   id: string
   titulo: string
   descricao: string | null
-  alcance: 'todos' | 'empresas'
+  alcance: 'todos' | 'empresas' | 'tags'
   visivel_no_portal: boolean
   chave_arquivo: string
   nome: string
@@ -143,16 +144,28 @@ export class DocumentosService {
     const empresas = await this.ctx.db().execute<{ id: string; nome: string }>(sql`
       SELECT e.id, e.razao_social AS nome FROM documento_empresas de
       JOIN empresas e ON e.id = de.empresa_id WHERE de.documento_id = ${id} ORDER BY lower(e.razao_social)`)
-    return { ...this.paraItem(l), empresas: [...empresas] }
+    return {
+      ...this.paraItem(l),
+      empresas: [...empresas],
+      tags: await tagsDoAlcance(this.ctx.db(), 'documento', id),
+    }
   }
 
   private async trocarEmpresas(
     id: string,
-    alcance: 'todos' | 'empresas',
+    alcance: 'todos' | 'empresas' | 'tags',
     empresaIds: string[],
+    tagIds: string[] = [],
   ): Promise<void> {
     const db = this.ctx.db()
     await db.execute(sql`DELETE FROM documento_empresas WHERE documento_id = ${id}`)
+    await trocarTagsDoAlcance(db, 'documento', {
+      itemId: id,
+      tenantId: this.ctx.tenantId,
+      alcance,
+      tagIds,
+      membroId: this.ctx.membro.id,
+    })
     if (alcance !== 'empresas') return
     const unicas = [...new Set(empresaIds)]
     const validas = await db.execute<{ id: string }>(sql`
@@ -178,7 +191,7 @@ export class DocumentosService {
         criado_por, atualizado_por)
       VALUES (${id}, ${this.ctx.tenantId}, ${d.titulo}, ${d.descricao}, ${d.alcance}::alcance_documento, ${chave},
         ${nomeDoArquivo(d.arquivo.nome)}, ${d.arquivo.mime}, ${d.arquivo.tamanho}, ${eu}, ${eu})`)
-    await this.trocarEmpresas(id, d.alcance, d.empresaIds)
+    await this.trocarEmpresas(id, d.alcance, d.empresaIds, d.tagIds)
     await this.auditoria.registrar({
       entidade: 'documento',
       entidadeId: id,
@@ -261,7 +274,8 @@ export class DocumentosService {
         visivel_no_portal = ${d.visivelNoPortal ?? antes.visivel_no_portal},
         atualizado_em = now(), atualizado_por = ${this.ctx.membro.id}
       WHERE id = ${id}`)
-    if (d.alcance !== undefined) await this.trocarEmpresas(id, d.alcance, d.empresaIds ?? [])
+    if (d.alcance !== undefined)
+      await this.trocarEmpresas(id, d.alcance, d.empresaIds ?? [], d.tagIds ?? [])
     await this.auditoria.registrar({
       entidade: 'documento',
       entidadeId: id,

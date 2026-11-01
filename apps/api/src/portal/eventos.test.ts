@@ -15,6 +15,8 @@ import {
   entrarNoPortal,
   novaEmpresaCliente,
   novoAcesso,
+  aplicarTagNoContato,
+  novaTagDeContato,
 } from '../testes/portal.js'
 import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import { processadorDeManutencao } from '../worker/manutencao.js'
@@ -296,8 +298,9 @@ describe('o cliente: confirmar, lista de espera e cancelar', () => {
       vagasRestantes: 9,
     })
     const volta = await cancelar(a1, id)
+    // F-2: os dados ficam e a situação é "presença cancelada"; o botão de inscrição volta a valer
     expect(volta.body).toMatchObject({
-      minhaSituacao: 'nenhuma',
+      minhaSituacao: 'cancelado',
       vagasRestantes: 10,
       podeConfirmar: true,
     })
@@ -328,7 +331,7 @@ describe('o cliente: confirmar, lista de espera e cancelar', () => {
     ])
     expect(lista.body.listaDeEspera).toMatchObject([{ pessoa: 'Alice Araújo', posicaoNaFila: 1 }])
 
-    expect((await cancelar(a1, id)).body.minhaSituacao).toBe('nenhuma')
+    expect((await cancelar(a1, id)).body.minhaSituacao).toBe('cancelado')
     expect((await doCliente(a3, id))['minhaSituacao']).toBe('confirmado')
     await esperarAte(async () =>
       (await sinoDoCliente(c, a3)).some((n) => n.tipo === 'evento.vaga' && n.canal === 'sino'),
@@ -445,9 +448,11 @@ describe('o cliente: confirmar, lista de espera e cancelar', () => {
       expect(texto).not.toContain(nome)
     expect(Object.keys(r.body).sort()).toEqual(
       [
+        'avaliar',
         'cancelado',
         'descricao',
         'fimEm',
+        'formularioInscricaoId',
         'id',
         'inicioEm',
         'linkOnline',
@@ -458,6 +463,8 @@ describe('o cliente: confirmar, lista de espera e cancelar', () => {
         'podeCancelar',
         'podeConfirmar',
         'prazoConfirmacao',
+        'presente',
+        'publico',
         'titulo',
         'vagasDaEmpresa',
         'vagasRestantes',
@@ -485,7 +492,7 @@ describe('a equipe: participantes, vagas e cancelamento do evento', () => {
     expect(removida.body.confirmados.map((p: { pessoa: string }) => p.pessoa)).toEqual([
       'Alex Abreu',
     ])
-    expect((await doCliente(a1, id))['minhaSituacao']).toBe('nenhuma')
+    expect((await doCliente(a1, id))['minhaSituacao']).toBe('cancelado')
     expect(
       (await crm('delete', c.gestor.cookie, `/portal-eventos/${id}/participantes/${confirmacaoA1}`))
         .status,
@@ -648,5 +655,29 @@ describe('isolamento entre empresas da equipe', () => {
     expect((await crm('get', x.gestor.cookie, `/portal-eventos/${doY}/participantes`)).status).toBe(
       404,
     )
+  })
+})
+
+describe('alcance por tags de contato (Fase 4C)', () => {
+  it('o evento com tags aparece só para quem tem a tag, e só ele confirma', async () => {
+    const c = await cenario()
+    const tag = await novaTagDeContato(c.d.tenantId, 'Associado premium')
+    const [ana, alex] = c.clientes as [Cliente, Cliente]
+    await aplicarTagNoContato(c.d.tenantId, ana.contatoId, tag)
+    const id = await publicar(c, { alcance: 'tags', tagIds: [tag] })
+    const detalhe = await crm('get', c.gestor.cookie, `/portal-eventos/${id}`)
+    expect(detalhe.body.tags).toEqual([
+      expect.objectContaining({ id: tag, nome: 'Associado premium' }),
+    ])
+    const lista = async (cliente: Cliente) =>
+      (
+        (await portal('get', '/portal/eventos', { cookie: cliente.cookie })).body.itens as {
+          id: string
+        }[]
+      ).map((e) => e.id)
+    expect(await lista(ana)).toContain(id)
+    expect(await lista(alex)).not.toContain(id)
+    expect((await confirmar(alex, id)).status).toBe(404)
+    expect((await confirmar(ana, id)).status).toBe(200)
   })
 })

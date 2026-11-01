@@ -3,8 +3,16 @@ import type {
   ChamadoDoPortal,
   ComentarioDoPortal,
   EventoDoPortal,
+  InscricaoPublicaFeita,
+  PaginaPublica,
+  CheckinPublico,
+  ResultadoDoCheckin,
   ListaDeEventosDoPortal,
   ProximosEventosDoPortal,
+  EmpresaDoAcesso,
+  RespostaEnviada,
+  MeuPerfilDoPortal,
+  MinhaEmpresaDoPortal,
   PreferenciasDoPortal,
   ConfiguracaoDePush,
   ResultadoDaBuscaDoPortal,
@@ -23,7 +31,12 @@ import type {
   SessaoDoPortal,
 } from '@leadtogo/api-client'
 
-import type { MotivoDeDenuncia, TipoDeReacao } from '@leadtogo/shared'
+import type {
+  EnviarRespostaEntrada,
+  FormularioParaResponder,
+  MotivoDeDenuncia,
+  TipoDeReacao,
+} from '@leadtogo/shared'
 
 import type { Resultado } from './resultado'
 
@@ -45,6 +58,27 @@ export interface ServicosDoPortal {
     pedir: (email: string) => Promise<Resultado<{ mensagem: string }>>
     previa: (token: string) => Promise<Resultado<PreviaDoLink>>
     consumir: (token: string, aceitaPrivacidade: boolean) => Promise<Resultado<SessaoDoPortal>>
+    /** Entrar com o código de 6 dígitos (Fase 4B) */
+    entrarComCodigo: (dados: {
+      email: string
+      codigo: string
+      aceitaPrivacidade?: boolean
+    }) => Promise<Resultado<SessaoDoPortal>>
+  }
+  /** Formulários (Fase 4E): logado (com preenchimento automático) e público (sem login) */
+  formularios: {
+    abrir: (id: string) => Promise<Resultado<FormularioParaResponder>>
+    responder: (id: string, dados: EnviarRespostaEntrada) => Promise<Resultado<RespostaEnviada>>
+    abrirPublico: (slug: string) => Promise<Resultado<FormularioParaResponder>>
+    responderPublico: (
+      slug: string,
+      dados: EnviarRespostaEntrada,
+    ) => Promise<Resultado<RespostaEnviada>>
+  }
+  /** As empresas-clientes do mesmo e-mail e a troca entre elas (Fase 4B) */
+  empresas: {
+    listar: () => Promise<Resultado<{ itens: EmpresaDoAcesso[] }>>
+    trocar: (acessoId: string) => Promise<Resultado<SessaoDoPortal>>
   }
   sessao: {
     atual: () => Promise<Resultado<SessaoDoPortal>>
@@ -52,8 +86,16 @@ export interface ServicosDoPortal {
     sessoes: () => Promise<Resultado<{ itens: SessaoAtivaDoPortal[] }>>
     encerrar: (id: string) => Promise<Resultado>
     encerrarOutras: () => Promise<Resultado>
-    trocarEmail: (email: string) => Promise<Resultado>
-    corrigirNome: (nome: string) => Promise<Resultado<SessaoDoPortal>>
+    /** Nome e cargo (e-mail e telefone só a equipe muda) */
+    salvarPerfil: (dados: {
+      nome: string
+      cargo?: string | null
+    }) => Promise<Resultado<SessaoDoPortal>>
+  }
+  /** "Meu perfil" e "Minha empresa": o cadastro como a equipe guardou (Fase 4A) */
+  cadastro: {
+    perfil: () => Promise<Resultado<MeuPerfilDoPortal>>
+    empresa: () => Promise<Resultado<MinhaEmpresaDoPortal>>
   }
   segundoFator: {
     iniciar: () => Promise<Resultado<IniciarSegundoFatorResposta>>
@@ -76,6 +118,11 @@ export interface ServicosDoPortal {
       dados: { corpo: string; anexoIds: string[] },
     ) => Promise<Resultado<ChamadoDoPortal>>
     reabrir: (id: string) => Promise<Resultado<ChamadoDoPortal>>
+    /** Pesquisa de satisfação (Fase 4F), com o formulário configurado pela equipe */
+    responderPesquisa: (
+      id: string,
+      dados: EnviarRespostaEntrada,
+    ) => Promise<Resultado<ChamadoDoPortal>>
     avaliar: (
       id: string,
       dados: { nota: number; comentario?: string | null },
@@ -98,6 +145,40 @@ export interface ServicosDoPortal {
     proximos: () => Promise<Resultado<ProximosEventosDoPortal>>
     confirmar: (id: string) => Promise<Resultado<EventoDoPortal>>
     cancelar: (id: string) => Promise<Resultado<EventoDoPortal>>
+    /** Fase 4G: inscrição com o formulário do evento */
+    inscrever: (id: string, dados: EnviarRespostaEntrada) => Promise<Resultado<EventoDoPortal>>
+    /** Só para quem esteve presente, depois do encerramento */
+    formularioDeAvaliacao: (id: string) => Promise<Resultado<FormularioParaResponder>>
+    avaliar: (id: string, dados: EnviarRespostaEntrada) => Promise<Resultado<EventoDoPortal>>
+  }
+  /** Check-in pelo QR do evento (Fase 4G): logado é um toque; sem login, o e-mail (e o código, se o evento pede) */
+  checkin: {
+    abrir: (token: string) => Promise<Resultado<CheckinPublico>>
+    logado: (token: string) => Promise<Resultado<ResultadoDoCheckin>>
+    semLogin: (
+      token: string,
+      dados: { email: string; codigo?: string },
+    ) => Promise<Resultado<ResultadoDoCheckin>>
+  }
+  /** Página pública de eventos e "Seja um Associado" (Fase 4H), sem login */
+  pagina: {
+    abrir: (slug: string) => Promise<Resultado<PaginaPublica>>
+    formularioDeInscricao: (
+      slug: string,
+      eventoId: string,
+    ) => Promise<Resultado<FormularioParaResponder>>
+    inscrever: (
+      slug: string,
+      eventoId: string,
+      dados: EnviarRespostaEntrada,
+    ) => Promise<Resultado<InscricaoPublicaFeita>>
+    formularioDeAssociacao: (slug: string) => Promise<Resultado<FormularioParaResponder>>
+    associar: (slug: string, dados: EnviarRespostaEntrada) => Promise<Resultado<RespostaEnviada>>
+  }
+  /** Avaliação pelo link pessoal enviado por e-mail a quem não tem acesso (Fase 4G) */
+  avaliacaoPorLink: {
+    abrir: (token: string) => Promise<Resultado<FormularioParaResponder & { evento: string }>>
+    responder: (token: string, dados: EnviarRespostaEntrada) => Promise<Resultado<RespostaEnviada>>
   }
   /** Documentos que a equipe compartilha (Fase 3C): lista e download (registrado, URL de 60 segundos) */
   documentos: {
@@ -116,7 +197,10 @@ export interface ServicosDoPortal {
   /** Preferências da própria pessoa (Fase 3E): horário de silêncio e e-mail por tipo */
   preferencias: {
     obter: () => Promise<Resultado<PreferenciasDoPortal>>
-    salvar: (dados: PreferenciasDoPortal) => Promise<Resultado<PreferenciasDoPortal>>
+    salvar: (
+      dados: Omit<PreferenciasDoPortal, 'tema'> & { tema?: PreferenciasDoPortal['tema'] },
+    ) => Promise<Resultado<PreferenciasDoPortal>>
+    salvarTema: (tema: PreferenciasDoPortal['tema']) => Promise<Resultado<PreferenciasDoPortal>>
   }
   /** Push (Web Push/VAPID): só depois do consentimento da pessoa, por aparelho */
   push: {

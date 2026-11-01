@@ -107,7 +107,11 @@ function Linha({ d, aoMudar }: { d: ItemDeDocumento; aoMudar: () => void }) {
         <span className="truncate font-semibold">{d.titulo}</span>
         <span className="truncate text-xs text-ink-muted">
           {d.arquivo.nome} · {tamanhoLegivel(d.arquivo.tamanho)} · {dataCurta(d.criadoEm)}
-          {d.alcance === 'empresas' ? ' · empresas escolhidas' : ' · todos os clientes'}
+          {d.alcance === 'empresas'
+            ? ' · empresas escolhidas'
+            : d.alcance === 'tags'
+              ? ' · contatos com tags'
+              : ' · todos os clientes'}
         </span>
       </div>
       <span className="flex flex-wrap items-center gap-1.5">

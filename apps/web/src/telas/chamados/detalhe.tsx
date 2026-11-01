@@ -32,6 +32,7 @@ import { Checkbox } from '@leadtogo/ui/checkbox'
 import { Dialog } from '@leadtogo/ui/dialog'
 import { Badge } from '@leadtogo/ui/exibicao'
 import { Alert, Skeleton } from '@leadtogo/ui/feedback'
+import { Estrelas } from '@leadtogo/ui/estrelas'
 import { PaginaDeTabela } from '@leadtogo/ui/pagina'
 import { toast } from '@leadtogo/ui/toast'
 import { cn } from '@leadtogo/ui/cn'
@@ -813,6 +814,19 @@ export function TelaDoChamado({ chamadoId }: { chamadoId: string }) {
             {c.resolvidoEm ? <Dado rotulo="Resolvido em">{dataHora(c.resolvidoEm)}</Dado> : null}
             {c.reaberturas > 0 ? <Dado rotulo="Reaberturas">{c.reaberturas}</Dado> : null}
           </dl>
+          {c.avaliacao ? (
+            <section
+              aria-label="Avaliação do cliente"
+              className="flex flex-col gap-1.5 rounded-md border border-border bg-surface p-3"
+            >
+              <h2 className="m-0 text-[13px] font-semibold text-ink-muted">Avaliação do cliente</h2>
+              <Estrelas nota={c.avaliacao.nota} tamanho={18} />
+              {c.avaliacao.comentario ? (
+                <p className="m-0 text-sm whitespace-pre-wrap">“{c.avaliacao.comentario}”</p>
+              ) : null}
+              <p className="m-0 text-xs text-ink-muted">{dataHora(c.avaliacao.avaliadoEm)}</p>
+            </section>
+          ) : null}
           <TarefasDoChamado c={c} />
           {c.prazoResposta || c.prazoResolucao ? (
             <dl className="m-0 flex flex-col gap-2 rounded-md border border-border bg-surface p-3 text-[13px]">

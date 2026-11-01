@@ -26,7 +26,13 @@ export function processadorDeAntivirus(deps: {
   return async (job: Job<JobDeVarredura>): Promise<Desfecho> => {
     const { tenantId, anexoId } = job.data
     // Só estas duas tabelas (nunca vem de fora): as colunas do arquivo têm os mesmos nomes nas duas
-    const tabela = sql.raw(job.data.tipo === 'documento' ? 'documentos' : 'chamado_anexos')
+    const tabela = sql.raw(
+      job.data.tipo === 'documento'
+        ? 'documentos'
+        : job.data.tipo === 'midia'
+          ? 'publicacao_midias'
+          : 'chamado_anexos',
+    )
     const comTenant = <T>(
       fn: (tx: Parameters<Parameters<Conexao['db']['transaction']>[0]>[0]) => Promise<T>,
     ) =>

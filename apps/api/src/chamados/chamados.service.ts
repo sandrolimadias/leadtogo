@@ -232,6 +232,7 @@ export class ChamadosService {
 
   private async paraItens(linhas: LinhaDoChamado[]): Promise<ItemDeChamado[]> {
     const mudancas = await this.mudancasDe(linhas.map((l) => l.id))
+    const notas = await this.notasDoCliente(linhas.map((l) => l.id))
     const calendario = await this.expediente.calendario()
     const agora = new Date()
     return linhas.map((l) => ({
@@ -260,7 +261,16 @@ export class ChamadosService {
       resolvidoEm: iso(l.resolvido_em),
       prazoResposta: this.prazoDe(l, 'resposta', mudancas.get(l.id) ?? [], calendario, agora),
       prazoResolucao: this.prazoDe(l, 'resolucao', mudancas.get(l.id) ?? [], calendario, agora),
+      notaDoCliente: notas.get(l.id) ?? null,
     }))
+  }
+
+  /** As notas que os clientes deram pelo portal, de vários chamados de uma vez. */
+  private async notasDoCliente(ids: string[]): Promise<Map<string, number>> {
+    if (ids.length === 0) return new Map()
+    const linhas = await this.ctx.db().execute<{ chamado_id: string; nota: number }>(sql`
+      SELECT chamado_id, nota FROM chamado_avaliacoes WHERE chamado_id = ANY (${`{${ids.join(',')}}`}::uuid[])`)
+    return new Map([...linhas].map((l) => [l.chamado_id, Number(l.nota)]))
   }
 
   /** A condição da consulta (visibilidade, aba e filtros) e as condições de cada aba, para as contagens. */
@@ -432,8 +442,20 @@ export class ChamadosService {
       WHERE ev.chamado_id = ${id}
         AND (ev.tipo <> 'nota_interna' OR ${this.acesso.podeAnotar()})
       ORDER BY ev.em, ev.id`)
+    const [avaliacao] = await db.execute<{
+      nota: number
+      comentario: string | null
+      criado_em: string
+    }>(sql`SELECT nota, comentario, criado_em FROM chamado_avaliacoes WHERE chamado_id = ${id}`)
     return {
       ...item,
+      avaliacao: avaliacao
+        ? {
+            nota: Number(avaliacao.nota),
+            comentario: avaliacao.comentario,
+            avaliadoEm: iso(avaliacao.criado_em) as string,
+          }
+        : null,
       descricao: l.descricao,
       fechadoEm: iso(l.fechado_em),
       reaberturas: l.reaberturas,

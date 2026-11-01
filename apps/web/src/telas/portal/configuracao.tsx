@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { SLUG_DO_PORTAL } from '@leadtogo/shared'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
 import { Button } from '@leadtogo/ui/button'
-import { TextField } from '@leadtogo/ui/campos'
+import { Select, TextField } from '@leadtogo/ui/campos'
 import { Switch } from '@leadtogo/ui/checkbox'
 import { Alert, Skeleton } from '@leadtogo/ui/feedback'
 import { toast } from '@leadtogo/ui/toast'
@@ -152,6 +153,277 @@ export function TelaDeConfiguracoesDoPortal() {
           </Button>
         </div>
       </section>
+      <PesquisaDeSatisfacao
+        atual={c.formularioSatisfacaoId}
+        salvando={salvando}
+        aoSalvar={(formularioSatisfacaoId) =>
+          void salvar(
+            { formularioSatisfacaoId },
+            formularioSatisfacaoId
+              ? 'Pesquisa de satisfação ligada'
+              : 'Pesquisa de satisfação desligada',
+          )
+        }
+      />
+      <PaginaPublicaDoPortal
+        slug={c.slug}
+        ativa={c.paginaEventosAtiva}
+        associacaoId={c.formularioAssociacaoId}
+        salvando={salvando}
+        aoSalvar={(dados, sucesso) => void salvar(dados, sucesso)}
+      />
+      <EventosNoCrm
+        ativo={c.eventosCrmAtivo}
+        responsavelId={c.eventosCrmResponsavelId}
+        avaliacaoPorEmail={c.avaliacaoPorEmail}
+        salvando={salvando}
+        aoSalvar={(dados, sucesso) => void salvar(dados, sucesso)}
+      />
     </div>
+  )
+}
+
+/**
+ * Eventos (Fase 4G): levar ao CRM quem se inscreve com CNPJ (empresa como Lead, contato e a tarefa "Contato
+ * pós-evento" para o administrador ou gestor escolhido, que redistribui ao vendedor) e pedir a avaliação por
+ * e-mail a quem não tem acesso ao portal.
+ */
+function EventosNoCrm({
+  ativo,
+  responsavelId,
+  avaliacaoPorEmail,
+  salvando,
+  aoSalvar,
+}: {
+  ativo: boolean
+  responsavelId: string | null
+  avaliacaoPorEmail: boolean
+  salvando: boolean
+  aoSalvar: (
+    dados: {
+      eventosCrmAtivo?: boolean
+      eventosCrmResponsavelId?: string | null
+      avaliacaoPorEmail?: boolean
+    },
+    sucesso: string,
+  ) => void
+}) {
+  const servicos = useServicos()
+  const equipe = useQuery({
+    queryKey: ['equipe', 'ativos'],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.equipe()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.filter(
+        (m) => m.ativo && m.temLogin && (m.papel === 'admin' || m.papel === 'gestor'),
+      )
+    },
+  })
+  const [escolha, setEscolha] = useState<string | null>(null)
+  const responsavel = escolha ?? responsavelId ?? ''
+  return (
+    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4">
+      <h3 className="m-0 text-[15px] font-semibold">Eventos</h3>
+      <Select
+        label="Responsável pelos inscritos novos"
+        value={responsavel}
+        disabled={salvando}
+        hint="Administrador ou gestor: recebe a empresa e a tarefa do dia útil seguinte ao evento e redistribui ao vendedor."
+        options={[
+          { value: '', label: 'Escolha' },
+          ...(equipe.data ?? []).map((m) => ({ value: m.id, label: m.nome })),
+        ]}
+        onChange={(e) => {
+          setEscolha(e.target.value)
+          if (e.target.value && ativo) {
+            aoSalvar({ eventosCrmResponsavelId: e.target.value }, 'Responsável atualizado')
+          }
+        }}
+      />
+      <Switch
+        checked={ativo}
+        disabled={salvando || (!ativo && !responsavel)}
+        onChange={(e) =>
+          aoSalvar(
+            e.target.checked
+              ? { eventosCrmAtivo: true, eventosCrmResponsavelId: responsavel || null }
+              : { eventosCrmAtivo: false },
+            e.target.checked ? 'Vínculo com o CRM ligado' : 'Vínculo com o CRM desligado',
+          )
+        }
+        label="Levar ao CRM quem se inscreve com CNPJ"
+      />
+      <p className="m-0 text-[13px] text-ink-muted">
+        Vale para inscrições com o campo CNPJ (página pública e inclusão pela equipe). CNPJ que já
+        está na carteira só ganha o contato; CNPJ novo vira Lead com a tarefa “Contato pós-evento”.
+      </p>
+      <Switch
+        checked={avaliacaoPorEmail}
+        disabled={salvando}
+        onChange={(e) =>
+          aoSalvar(
+            { avaliacaoPorEmail: e.target.checked },
+            e.target.checked ? 'Avaliação por e-mail ligada' : 'Avaliação por e-mail desligada',
+          )
+        }
+        label="Pedir a avaliação por e-mail a quem não tem acesso ao portal"
+      />
+      <p className="m-0 text-[13px] text-ink-muted">
+        Quem tem acesso recebe o pedido no portal (sino e notificação no celular). Sem acesso, chega
+        um e-mail com um link pessoal para avaliar.
+      </p>
+    </section>
+  )
+}
+
+/**
+ * A pesquisa de satisfação dos chamados (Fase 4F): um formulário publicado com a finalidade "Satisfação do
+ * chamado". Ao resolver o chamado, o cliente vê a pesquisa no portal; a primeira nota de 1 a 5 vira a avaliação.
+ */
+function PesquisaDeSatisfacao({
+  atual,
+  salvando,
+  aoSalvar,
+}: {
+  atual: string | null
+  salvando: boolean
+  aoSalvar: (id: string | null) => void
+}) {
+  const servicos = useServicos()
+  const [escolha, setEscolha] = useState<string | null>(null)
+  const formularios = useQuery({
+    queryKey: ['portal', 'formularios', 'satisfacao'],
+    queryFn: async () => {
+      const r = await servicos.portal.formularios.listar({ situacao: 'publicado', porPagina: 100 })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.itens.filter((f) => f.finalidade === 'satisfacao_chamado')
+    },
+  })
+  const valor = escolha ?? atual ?? ''
+  return (
+    <section
+      aria-label="Pesquisa de satisfação"
+      className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4"
+    >
+      <Select
+        label="Pesquisa de satisfação dos chamados"
+        hint="Formulários publicados com a finalidade “Satisfação do chamado”. Sem pesquisa, o cliente avalia só com as estrelas."
+        value={valor}
+        placeholder="Sem pesquisa (só as estrelas)"
+        options={(formularios.data ?? []).map((f) => ({ value: f.id, label: f.nome }))}
+        onChange={(e) => setEscolha(e.target.value)}
+      />
+      <div>
+        <Button
+          variant="primary"
+          loading={salvando}
+          disabled={escolha === null || escolha === (atual ?? '')}
+          onClick={() => aoSalvar(escolha || null)}
+        >
+          Salvar pesquisa
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Página pública de eventos e "Seja um Associado" (Fase 4H): o endereço do portal, a chave da página e o
+ * formulário de associação (finalidade "Associação").
+ */
+function PaginaPublicaDoPortal({
+  slug,
+  ativa,
+  associacaoId,
+  salvando,
+  aoSalvar,
+}: {
+  slug: string | null
+  ativa: boolean
+  associacaoId: string | null
+  salvando: boolean
+  aoSalvar: (
+    dados: {
+      slug?: string | null
+      paginaEventosAtiva?: boolean
+      formularioAssociacaoId?: string | null
+    },
+    sucesso: string,
+  ) => void
+}) {
+  const servicos = useServicos()
+  const formularios = useQuery({
+    queryKey: ['portal', 'formularios', 'finalidade', 'associacao'],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.portal.formularios.listar({
+        finalidade: 'associacao',
+        situacao: 'publicado',
+        porPagina: 100,
+      })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.itens
+    },
+  })
+  const [endereco, setEndereco] = useState<string | null>(null)
+  const atual = endereco ?? slug ?? ''
+  const valido = SLUG_DO_PORTAL.test(atual)
+  return (
+    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4">
+      <h3 className="m-0 text-[15px] font-semibold">Página pública de eventos</h3>
+      <div className="flex flex-wrap items-end gap-2">
+        <TextField
+          label="Endereço do portal"
+          value={atual}
+          maxLength={40}
+          className="min-w-64 flex-1"
+          hint={
+            atual && !valido
+              ? 'De 3 a 40 letras minúsculas, números e hífens (sem hífen nas pontas).'
+              : `A página fica no portal, em /eventos/${atual || '<endereço>'}`
+          }
+          onChange={(e) => setEndereco(e.target.value.toLowerCase())}
+        />
+        <Button
+          disabled={salvando || !valido || atual === slug}
+          onClick={() => aoSalvar({ slug: atual }, 'Endereço salvo')}
+        >
+          Salvar endereço
+        </Button>
+      </div>
+      <Switch
+        checked={ativa}
+        disabled={salvando || (!ativa && !slug)}
+        onChange={(e) =>
+          aoSalvar(
+            { paginaEventosAtiva: e.target.checked },
+            e.target.checked ? 'Página pública ligada' : 'Página pública desligada',
+          )
+        }
+        label="Página pública ligada"
+      />
+      <p className="m-0 text-[13px] text-ink-muted">
+        Mostra os eventos publicados para todos os clientes. Os marcados como “página pública”
+        aceitam inscrição sem login; os outros aparecem como exclusivos para associados. Eventos
+        para empresas ou tags escolhidas nunca aparecem.
+      </p>
+      <Select
+        label="Formulário do “Seja um Associado”"
+        value={associacaoId ?? ''}
+        disabled={salvando}
+        hint="Publicado, com a finalidade Associação. Sem formulário, o botão não aparece."
+        options={[
+          { value: '', label: 'Nenhum (sem o botão)' },
+          ...(formularios.data ?? []).map((f) => ({ value: f.id, label: f.nome })),
+        ]}
+        onChange={(e) =>
+          aoSalvar(
+            { formularioAssociacaoId: e.target.value || null },
+            e.target.value ? 'Formulário de associação escolhido' : 'Botão de associação retirado',
+          )
+        }
+      />
+    </section>
   )
 }

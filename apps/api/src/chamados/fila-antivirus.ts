@@ -6,7 +6,7 @@ export interface JobDeVarredura {
   anexoId: string
   eventoId: string
   /** O que se varre; ausente = anexo de chamado (jobs antigos continuam valendo) */
-  tipo?: 'anexo' | 'documento'
+  tipo?: 'anexo' | 'documento' | 'midia'
 }
 
 /** Tentativas e espera entre elas: o clamd pode estar atualizando as assinaturas ou ainda subindo. */

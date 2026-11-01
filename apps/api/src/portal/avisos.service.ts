@@ -12,6 +12,7 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { trocarTagsDoAlcance } from './audiencia.js'
 import { agendarEnvioDoAviso } from './notificar-aviso.js'
 
 type LinhaDoAviso = {
@@ -19,7 +20,7 @@ type LinhaDoAviso = {
   mensagem: string
   link: string | null
   urgencia: 'normal' | 'urgente'
-  alcance: 'todos' | 'empresas'
+  alcance: 'todos' | 'empresas' | 'tags'
   situacao: SituacaoDoAviso
   enviar_em: string | Date
   enviado_em: string | Date | null
@@ -63,12 +64,21 @@ export class AvisosService {
         WHERE a.excluido_em IS NULL AND a.situacao <> 'cancelado' AND a.urgencia = 'normal'
           AND date_trunc('week', a.enviar_em AT TIME ZONE ${FUSO})
               = date_trunc('week', ${alvo.toISOString()}::timestamptz AT TIME ZONE ${FUSO})),
-      por_empresa AS (
-        SELECT ae.empresa_id, count(*)::int AS n
-        FROM semana s JOIN aviso_empresas ae ON ae.aviso_id = s.id
+      -- As empresas atingidas por aviso de segmento: as escolhidas (alcance "empresas") ou as dos acessos ativos
+      -- cujo contato tem alguma das tags (alcance "tags", Fase 4C)
+      atingidas AS (
+        SELECT s.id AS aviso_id, ae.empresa_id FROM semana s JOIN aviso_empresas ae ON ae.aviso_id = s.id
         WHERE s.alcance = 'empresas'
-          AND (${empresas === null} OR ae.empresa_id = ANY (${`{${(empresas ?? []).join(',')}}`}::uuid[]))
-        GROUP BY ae.empresa_id)
+        UNION
+        SELECT s.id, pa.empresa_id FROM semana s
+        JOIN aviso_tags at ON at.aviso_id = s.id
+        JOIN contato_tags ct ON ct.tag_id = at.tag_id
+        JOIN portal_acessos pa ON pa.contato_id = ct.contato_id AND pa.situacao = 'ativo' AND pa.excluido_em IS NULL
+        WHERE s.alcance::text = 'tags'),
+      por_empresa AS (
+        SELECT empresa_id, count(*)::int AS n FROM atingidas
+        WHERE (${empresas === null} OR empresa_id = ANY (${`{${(empresas ?? []).join(',')}}`}::uuid[]))
+        GROUP BY empresa_id)
       SELECT (SELECT count(*)::int FROM semana WHERE alcance = 'todos')
              + coalesce((SELECT max(n) FROM por_empresa), 0) AS n`)
     return r?.n ?? 0
@@ -86,6 +96,16 @@ export class AvisosService {
       FROM aviso_empresas ae JOIN empresas e ON e.id = ae.empresa_id
       WHERE ae.aviso_id = ANY (${`{${ids.join(',')}}`}::uuid[])
       ORDER BY nome`)
+    const tags = await this.ctx.db().execute<{
+      aviso_id: string
+      id: string
+      nome: string
+      grupo: string
+    }>(sql`
+      SELECT v.aviso_id, t.id, t.nome, g.nome AS grupo
+      FROM aviso_tags v JOIN tags t ON t.id = v.tag_id JOIN tag_grupos g ON g.id = t.tag_grupo_id
+      WHERE v.aviso_id = ANY (${`{${ids.join(',')}}`}::uuid[])
+      ORDER BY lower(g.nome), lower(t.nome)`)
     return linhas.map((l) => ({
       id: l.id,
       mensagem: l.mensagem,
@@ -105,6 +125,9 @@ export class AvisosService {
       empresas: [...empresas]
         .filter((e) => e.aviso_id === l.id)
         .map((e) => ({ id: e.id, nome: e.nome })),
+      tags: [...tags]
+        .filter((t) => t.aviso_id === l.id)
+        .map((t) => ({ id: t.id, nome: t.nome, grupo: t.grupo })),
     }))
   }
 
@@ -164,11 +187,25 @@ export class AvisosService {
         throw new ErroApi('empresa_invalida', 'Alguma empresa escolhida não existe.', 422)
       }
     }
+    // Alcance por tags: o limite vale para as empresas dos acessos ativos cujo contato tem alguma das tags
+    const empresasDasTags =
+      d.alcance === 'tags'
+        ? (
+            await db.execute<{ empresa_id: string }>(sql`
+              SELECT DISTINCT pa.empresa_id FROM portal_acessos pa
+              JOIN contato_tags ct ON ct.contato_id = pa.contato_id
+              WHERE ct.tag_id = ANY (${`{${[...new Set(d.tagIds)].join(',')}}`}::uuid[])
+                AND pa.situacao = 'ativo' AND pa.excluido_em IS NULL`)
+          ).map((r) => r.empresa_id)
+        : []
     // Duas pessoas criando ao mesmo tempo não passam do limite: a trava vale até o fim da transação
     await db.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`avisos:${this.ctx.tenantId}`}))`)
     if (d.urgencia === 'normal') {
       const limite = await this.limiteSemanal()
-      const usados = await this.usadosNaSemana(quando, d.alcance === 'empresas' ? empresaIds : null)
+      const usados = await this.usadosNaSemana(
+        quando,
+        d.alcance === 'empresas' ? empresaIds : d.alcance === 'tags' ? empresasDasTags : null,
+      )
       if (usados + 1 > limite) {
         throw new ErroApi(
           'limite_semanal',
@@ -183,6 +220,13 @@ export class AvisosService {
       INSERT INTO avisos (id, tenant_id, mensagem, link, urgencia, alcance, situacao, enviar_em, criado_por, atualizado_por)
       VALUES (${id}, ${this.ctx.tenantId}, ${d.mensagem}, ${d.link}, ${d.urgencia}::urgencia_aviso,
               ${d.alcance}::alcance_aviso, 'agendado', ${quando.toISOString()}::timestamptz, ${eu}, ${eu})`)
+    await trocarTagsDoAlcance(db, 'aviso', {
+      itemId: id,
+      tenantId: this.ctx.tenantId,
+      alcance: d.alcance,
+      tagIds: d.tagIds,
+      membroId: eu,
+    })
     if (d.alcance === 'empresas') {
       for (const empresaId of empresaIds) {
         await db.execute(sql`

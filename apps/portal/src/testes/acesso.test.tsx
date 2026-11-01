@@ -1,8 +1,8 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { falha, ok, renderizar, servicosFalsos, servicosSemLogin, sessao } from './fakes'
+import { falha, id, ok, renderizar, servicosFalsos, servicosSemLogin, sessao } from './fakes'
 
 afterEach(() => {
   window.history.replaceState(null, '', '/')
@@ -59,18 +59,115 @@ describe('guardas de acesso', () => {
   })
 })
 
-describe('entrar pelo e-mail', () => {
-  it('pede o link e mostra a mesma mensagem, tenha o e-mail acesso ou não', async () => {
+describe('entrar pelo código de 6 dígitos', () => {
+  it('pede o código, digita e entra; a mensagem é a mesma tenha o e-mail acesso ou não', async () => {
     const servicos = servicosSemLogin()
-    renderizar(servicos, '/entrar')
+    const { historico } = renderizar(servicos, '/entrar')
     const usuario = userEvent.setup()
     await usuario.type(await screen.findByLabelText(/^E-mail/), 'cliente@exemplo.com.br')
-    await usuario.click(screen.getByRole('button', { name: 'Enviar link de entrada' }))
+    await usuario.click(screen.getByRole('button', { name: 'Enviar código' }))
     expect(await screen.findByText(/Se este e-mail tem acesso/)).toBeInTheDocument()
     expect(servicos.entrada.pedir).toHaveBeenCalledWith('cliente@exemplo.com.br')
+    expect(screen.getByRole('button', { name: /Reenviar em \d+ s/ })).toBeDisabled()
+    const entrar = screen.getByRole('button', { name: 'Entrar' })
+    expect(entrar).toBeDisabled()
+    await usuario.type(screen.getByLabelText(/Código de acesso/), '123 456')
+    await usuario.click(entrar)
+    await waitFor(() =>
+      expect(servicos.entrada.entrarComCodigo).toHaveBeenCalledWith({
+        email: 'cliente@exemplo.com.br',
+        codigo: '123456',
+      }),
+    )
+    await waitFor(() => expect(historico.location.pathname).toBe('/'))
   })
 
-  it('o botão só liga com um e-mail e o limite de tentativas aparece como erro', async () => {
+  it('código errado mostra o erro e fica na tela', async () => {
+    const servicos = servicosSemLogin({
+      entrada: {
+        ...servicosFalsos().entrada,
+        entrarComCodigo: vi.fn(async () =>
+          falha({
+            codigo: 'codigo_invalido',
+            mensagem: 'Código inválido ou expirado. Peça um novo código.',
+            status: 401,
+          }),
+        ),
+      },
+    })
+    renderizar(servicos, '/entrar')
+    const usuario = userEvent.setup()
+    await usuario.type(await screen.findByLabelText(/^E-mail/), 'a@b.com')
+    await usuario.click(screen.getByRole('button', { name: 'Enviar código' }))
+    await usuario.type(await screen.findByLabelText(/Código de acesso/), '000000')
+    await usuario.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByText(/Código inválido ou expirado/)).toBeInTheDocument()
+  })
+
+  it('no primeiro acesso pede o aceite e manda o mesmo código de novo', async () => {
+    const entrarComCodigo = vi
+      .fn()
+      .mockResolvedValueOnce(
+        falha({ codigo: 'privacidade_obrigatoria', mensagem: 'Aceite.', status: 422 }),
+      )
+      .mockResolvedValueOnce(ok(sessao()))
+    const servicos = servicosSemLogin({
+      entrada: { ...servicosFalsos().entrada, entrarComCodigo },
+    })
+    const { historico } = renderizar(servicos, '/entrar')
+    const usuario = userEvent.setup()
+    await usuario.type(await screen.findByLabelText(/^E-mail/), 'a@b.com')
+    await usuario.click(screen.getByRole('button', { name: 'Enviar código' }))
+    await usuario.type(await screen.findByLabelText(/Código de acesso/), '111222')
+    await usuario.click(screen.getByRole('button', { name: 'Entrar' }))
+    const aceite = await screen.findByLabelText(/Li e aceito o aviso de privacidade/)
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeDisabled()
+    await usuario.click(aceite)
+    await usuario.click(screen.getByRole('button', { name: 'Entrar' }))
+    await waitFor(() =>
+      expect(entrarComCodigo).toHaveBeenLastCalledWith({
+        email: 'a@b.com',
+        codigo: '111222',
+        aceitaPrivacidade: true,
+      }),
+    )
+    await waitFor(() => expect(historico.location.pathname).toBe('/'))
+  })
+
+  it('quem acessa duas empresas escolhe a empresa depois de entrar', async () => {
+    const base = servicosFalsos()
+    const servicos = servicosSemLogin({
+      empresas: {
+        ...base.empresas,
+        listar: vi.fn(async () =>
+          ok({
+            itens: [
+              { acessoId: id(1), nome: 'Usidantec', papel: 'responsavel' as const, atual: true },
+              {
+                acessoId: id(9),
+                nome: 'Metalúrgica Serra',
+                papel: 'colega' as const,
+                atual: false,
+              },
+            ],
+          }),
+        ),
+      },
+    })
+    const { historico } = renderizar(servicos, '/entrar')
+    const usuario = userEvent.setup()
+    await usuario.type(await screen.findByLabelText(/^E-mail/), 'a@b.com')
+    await usuario.click(screen.getByRole('button', { name: 'Enviar código' }))
+    await usuario.type(await screen.findByLabelText(/Código de acesso/), '123456')
+    await usuario.click(screen.getByRole('button', { name: 'Entrar' }))
+    await waitFor(() => expect(historico.location.pathname).toBe('/empresas'))
+    const lista = await screen.findByRole('list', { name: 'Empresas' })
+    await usuario.click(within(lista).getByRole('button', { name: /Metalúrgica Serra/ }))
+    await waitFor(() => expect(servicos.empresas.trocar).toHaveBeenCalledWith(id(9)))
+    await waitFor(() => expect(historico.location.pathname).toBe('/'))
+  })
+
+  it('o limite de tentativas aparece como erro', async () => {
     const servicos = servicosSemLogin({
       entrada: {
         ...servicosFalsos().entrada,
@@ -85,7 +182,7 @@ describe('entrar pelo e-mail', () => {
     })
     renderizar(servicos, '/entrar')
     const usuario = userEvent.setup()
-    const botao = await screen.findByRole('button', { name: 'Enviar link de entrada' })
+    const botao = await screen.findByRole('button', { name: 'Enviar código' })
     expect(botao).toBeDisabled()
     await usuario.type(screen.getByLabelText(/^E-mail/), 'a@b.com')
     await usuario.click(botao)
@@ -244,5 +341,35 @@ describe('verificação em duas etapas', () => {
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Sair' }))
     await waitFor(() => expect(servicos.sessao.sair).toHaveBeenCalled())
     await waitFor(() => expect(historico.location.pathname).toBe('/entrar'))
+  })
+})
+
+describe('troca de empresa no menu', () => {
+  it('só aparece para quem acessa mais de uma empresa', async () => {
+    const base = servicosFalsos()
+    renderizar(base, '/')
+    await screen.findByRole('navigation', { name: 'Principal' })
+    expect(screen.queryByRole('link', { name: /Trocar de empresa/ })).not.toBeInTheDocument()
+  })
+
+  it('com duas empresas, o link leva à escolha', async () => {
+    const base = servicosFalsos()
+    const servicos = servicosFalsos({
+      empresas: {
+        ...base.empresas,
+        listar: vi.fn(async () =>
+          ok({
+            itens: [
+              { acessoId: id(1), nome: 'Usidantec', papel: 'responsavel' as const, atual: true },
+              { acessoId: id(9), nome: 'Outra', papel: 'colega' as const, atual: false },
+            ],
+          }),
+        ),
+      },
+    })
+    const { historico } = renderizar(servicos, '/')
+    const [link] = await screen.findAllByRole('link', { name: /Trocar de empresa/ })
+    await userEvent.setup().click(link as HTMLElement)
+    await waitFor(() => expect(historico.location.pathname).toBe('/empresas'))
   })
 })

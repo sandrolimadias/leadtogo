@@ -18,6 +18,8 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { MidiasService } from './midias.service.js'
+import { acessoNoAlcance, tagsDoAlcance, trocarTagsDoAlcance } from './audiencia.js'
 
 type LinhaDaPublicacao = {
   id: string
@@ -55,6 +57,7 @@ export class PublicacoesService {
   constructor(
     private readonly ctx: ContextoTenantService,
     private readonly auditoria: AuditoriaService,
+    private readonly midias: MidiasService,
   ) {}
 
   // ------------------------------------------------------------------------------------ leitura
@@ -65,21 +68,31 @@ export class PublicacoesService {
     if (linhas.length === 0) return resultado
     const ids = `{${linhas.map((l) => l.id).join(',')}}`
     const db = this.ctx.db()
-    const alvo = await db.execute<{ id: string; alvo: number }>(sql`
-      SELECT p.id, (
-        SELECT count(*)::int FROM portal_acessos a
-        WHERE a.situacao = 'ativo' AND a.excluido_em IS NULL
-          AND (p.alcance = 'todos' OR EXISTS (
-            SELECT 1 FROM publicacao_empresas pe WHERE pe.publicacao_id = p.id AND pe.empresa_id = a.empresa_id))
-      ) AS alvo
-      FROM publicacoes p WHERE p.id = ANY (${ids}::uuid[])`)
-    const leituras = await db.execute<{
-      publicacao_id: string
+    // Alcance = pessoas distintas que leram ÷ pessoas que podem ler, sobre o MESMO conjunto: acessos ativos
+    // dentro do alcance da publicação. Leitura de acesso revogado, excluído ou fora do alcance não conta,
+    // então o indicador nunca passa de 100% (docs/plano_portal_formularios_e_eventos.md, B-7).
+    const alcance = await db.execute<{
+      id: string
+      alvo: number
       leitores: number
       empresas: number
     }>(sql`
-      SELECT publicacao_id, count(DISTINCT acesso_id)::int AS leitores, count(DISTINCT empresa_id)::int AS empresas
-      FROM publicacao_leituras WHERE publicacao_id = ANY (${ids}::uuid[]) GROUP BY publicacao_id`)
+      WITH pode_ler AS (
+        SELECT p.id AS publicacao_id, a.id AS acesso_id
+        FROM publicacoes p
+        JOIN portal_acessos a ON a.situacao = 'ativo' AND a.excluido_em IS NULL
+          AND ${acessoNoAlcance('publicacao', sql`p`, sql`a`, 'publicacao_empresas')}
+        WHERE p.id = ANY (${ids}::uuid[])
+      )
+      SELECT p.id,
+             (SELECT count(*)::int FROM pode_ler pl WHERE pl.publicacao_id = p.id) AS alvo,
+             (SELECT count(DISTINCT l.acesso_id)::int FROM publicacao_leituras l
+               JOIN pode_ler pl ON pl.publicacao_id = l.publicacao_id AND pl.acesso_id = l.acesso_id
+               WHERE l.publicacao_id = p.id) AS leitores,
+             (SELECT count(DISTINCT l.empresa_id)::int FROM publicacao_leituras l
+               JOIN pode_ler pl ON pl.publicacao_id = l.publicacao_id AND pl.acesso_id = l.acesso_id
+               WHERE l.publicacao_id = p.id) AS empresas
+      FROM publicacoes p WHERE p.id = ANY (${ids}::uuid[])`)
     const comentarios = await db.execute<{
       publicacao_id: string
       total: number
@@ -94,16 +107,15 @@ export class PublicacoesService {
       WHERE d.tratada_em IS NULL AND c.publicacao_id = ANY (${ids}::uuid[]) GROUP BY c.publicacao_id`)
     const por = <T extends { publicacao_id: string }>(l: Iterable<T>) =>
       new Map([...l].map((x) => [x.publicacao_id, x]))
-    const mapaLeituras = por(leituras)
     const mapaComentarios = por(comentarios)
     const mapaDenuncias = por(denuncias)
-    const mapaAlvo = new Map([...alvo].map((a) => [a.id, a.alvo]))
+    const mapaAlcance = new Map([...alcance].map((a) => [a.id, a]))
     for (const l of linhas) {
       resultado.set(l.id, {
-        leitores: mapaLeituras.get(l.id)?.leitores ?? 0,
-        alvo: mapaAlvo.get(l.id) ?? 0,
-        empresasAlcancadas: mapaLeituras.get(l.id)?.empresas ?? 0,
-        reacoes: { curtir: l.total_curtir, apoiar: l.total_apoiar, parabens: l.total_parabens },
+        leitores: mapaAlcance.get(l.id)?.leitores ?? 0,
+        alvo: mapaAlcance.get(l.id)?.alvo ?? 0,
+        empresasAlcancadas: mapaAlcance.get(l.id)?.empresas ?? 0,
+        reacoes: { curtir: l.total_curtir, parabens: l.total_parabens },
         comentarios: mapaComentarios.get(l.id)?.total ?? 0,
         comentariosOcultos: mapaComentarios.get(l.id)?.ocultos ?? 0,
         denunciasAbertas: mapaDenuncias.get(l.id)?.abertas ?? 0,
@@ -142,7 +154,8 @@ export class PublicacoesService {
     const linhas = [
       ...(await db.execute<LinhaDaPublicacao>(sql`
         SELECT ${COLUNAS} ${JUNCOES} WHERE ${onde}
-        ORDER BY p.fixada DESC, coalesce(p.publicada_em, p.agendada_para, p.atualizado_em) DESC, p.id DESC
+        -- Da mais recente para a mais antiga (B-5); a fixada leva o selo na lista, mas não pula a ordem
+        ORDER BY coalesce(p.publicada_em, p.agendada_para, p.criado_em) DESC, p.id DESC
         LIMIT ${c.porPagina} OFFSET ${(c.pagina - 1) * c.porPagina}`)),
     ]
     const metricas = await this.metricas(linhas)
@@ -188,6 +201,8 @@ export class PublicacoesService {
       autorNome: l.autor_nome,
       criadoEm: new Date(l.criado_em).toISOString(),
       empresas: [...empresas],
+      tags: await tagsDoAlcance(db, 'publicacao', id),
+      midias: await this.midias.daPublicacao(db, id),
     }
   }
 
@@ -202,6 +217,13 @@ export class PublicacoesService {
   private async trocarEmpresas(id: string, d: SalvarPublicacaoEntrada): Promise<void> {
     const db = this.ctx.db()
     await db.execute(sql`DELETE FROM publicacao_empresas WHERE publicacao_id = ${id}`)
+    await trocarTagsDoAlcance(db, 'publicacao', {
+      itemId: id,
+      tenantId: this.ctx.tenantId,
+      alcance: d.alcance,
+      tagIds: d.tagIds,
+      membroId: this.ctx.membro.id,
+    })
     if (d.alcance !== 'empresas') return
     const unicas = [...new Set(d.empresaIds)]
     const validas = await db.execute<{ id: string }>(sql`
@@ -264,6 +286,45 @@ export class PublicacoesService {
       alteracoes: { situacaoAnterior: antes.situacao, situacao: d.situacao, alcance: d.alcance },
     })
     return this.detalhe(id)
+  }
+
+  /**
+   * Duplica uma publicação (B-4): copia título ("Cópia de …"), corpo e alcance (com as empresas). A cópia nasce
+   * rascunho, sem fixar, sem agenda e sem reações, comentários nem leituras.
+   */
+  async duplicar(id: string): Promise<Publicacao> {
+    const db = this.ctx.db()
+    const [o] = await db.execute<{ titulo: string }>(
+      sql`SELECT p.titulo FROM publicacoes p WHERE p.id = ${id} AND ${NAO_EXCLUIDA}`,
+    )
+    if (!o) throw naoEncontrada()
+    const novo = novoId()
+    const titulo = `Cópia de ${o.titulo}`.slice(0, 160)
+    await db.execute(sql`
+      INSERT INTO publicacoes (id, tenant_id, titulo, corpo, situacao, alcance, comentarios_bloqueados,
+                               criado_por, atualizado_por)
+      SELECT ${novo}, tenant_id, ${titulo}, corpo, 'rascunho', alcance, comentarios_bloqueados,
+             ${this.ctx.membro.id}, ${this.ctx.membro.id}
+      FROM publicacoes WHERE id = ${id}`)
+    const empresas = await db.execute<{ empresa_id: string }>(
+      sql`SELECT empresa_id FROM publicacao_empresas WHERE publicacao_id = ${id}`,
+    )
+    for (const { empresa_id: empresaId } of empresas) {
+      await db.execute(sql`
+        INSERT INTO publicacao_empresas (id, tenant_id, publicacao_id, empresa_id)
+        VALUES (${novoId()}, ${this.ctx.tenantId}, ${novo}, ${empresaId})`)
+    }
+    await db.execute(sql`
+      INSERT INTO publicacao_tags (tenant_id, publicacao_id, tag_id, aplicada_por)
+      SELECT tenant_id, ${novo}, tag_id, ${this.ctx.membro.id} FROM publicacao_tags WHERE publicacao_id = ${id}`)
+    await this.midias.copiar(id, novo)
+    await this.auditoria.registrar({
+      entidade: 'publicacao',
+      entidadeId: novo,
+      acao: 'criar',
+      alteracoes: { duplicadaDe: id, titulo },
+    })
+    return this.detalhe(novo)
   }
 
   async excluir(id: string): Promise<void> {

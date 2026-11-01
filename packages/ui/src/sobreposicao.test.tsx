@@ -90,6 +90,22 @@ describe('Dialog e Sheet', () => {
 })
 
 describe('Tabs e Tooltip', () => {
+  it('com "quebrar", as abas descem de linha e a lista nunca rola (sem barra de rolagem)', () => {
+    render(
+      <Tabs
+        quebrar
+        label="Perfil"
+        items={[
+          { value: 'a', label: 'Meu perfil' },
+          { value: 'b', label: 'Minha empresa' },
+        ]}
+      />,
+    )
+    const lista = screen.getByRole('tablist', { name: 'Perfil' })
+    expect(lista.className).toContain('flex-wrap')
+    expect(lista.className).not.toContain('overflow-x-auto')
+  })
+
   it('abas: setas movem a seleção, role tablist nomeado e contador', async () => {
     const onChange = vi.fn()
     render(

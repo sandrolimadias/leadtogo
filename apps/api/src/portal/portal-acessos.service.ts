@@ -52,6 +52,9 @@ const acessoDe = (l: LinhaDoAcesso): AcessoDoPortal => ({
 const naoEncontrado = () => new ErroApi('acesso_nao_encontrado', 'Acesso não encontrado.', 404)
 
 /** Gestão, pela equipe, do acesso dos contatos ao portal (permissão `portal.acessos`). */
+const slugEmUso = () =>
+  new ErroApi('slug_em_uso', 'Este endereço já é usado por outro portal. Escolha outro.', 409)
+
 @Injectable()
 export class PortalAcessosService {
   constructor(
@@ -308,9 +311,20 @@ export class PortalAcessosService {
       exige: boolean
       comentarios: boolean
       limite: number
+      satisfacao: string | null
+      crm_ativo: boolean
+      crm_responsavel: string | null
+      avaliacao_email: boolean
+      slug: string | null
+      pagina: boolean
+      associacao: string | null
     }>(sql`
       SELECT portal_ativo AS ativo, portal_nome AS nome, portal_exige_dois_fatores_responsavel AS exige,
-             portal_comentarios_ativos AS comentarios, portal_avisos_limite_semanal AS limite
+             portal_comentarios_ativos AS comentarios, portal_avisos_limite_semanal AS limite,
+             portal_formulario_satisfacao_id AS satisfacao, portal_eventos_crm_ativo AS crm_ativo,
+             portal_eventos_crm_responsavel_id AS crm_responsavel, portal_avaliacao_por_email AS avaliacao_email,
+             portal_slug AS slug, portal_pagina_eventos_ativa AS pagina,
+             portal_formulario_associacao_id AS associacao
       FROM tenant_configuracoes`)
     return {
       ativo: c?.ativo ?? false,
@@ -319,6 +333,13 @@ export class PortalAcessosService {
       exigeDoisFatoresDoResponsavel: c?.exige ?? false,
       comentariosAtivos: c?.comentarios ?? true,
       avisosLimiteSemanal: c?.limite ?? LIMITE_SEMANAL_PADRAO_DE_AVISOS,
+      formularioSatisfacaoId: c?.satisfacao ?? null,
+      eventosCrmAtivo: c?.crm_ativo ?? false,
+      eventosCrmResponsavelId: c?.crm_responsavel ?? null,
+      avaliacaoPorEmail: c?.avaliacao_email ?? false,
+      slug: c?.slug ?? null,
+      paginaEventosAtiva: c?.pagina ?? false,
+      formularioAssociacaoId: c?.associacao ?? null,
     }
   }
 
@@ -326,14 +347,74 @@ export class PortalAcessosService {
     d: AtualizarConfiguracaoDoPortalEntrada,
   ): Promise<ConfiguracaoDoPortal> {
     const antes = await this.configuracao()
-    await this.ctx.db().execute(sql`
-      UPDATE tenant_configuracoes
-      SET portal_ativo = ${d.ativo ?? antes.ativo},
-          portal_nome = ${d.nome === undefined ? antes.nome : d.nome},
-          portal_exige_dois_fatores_responsavel = ${d.exigeDoisFatoresDoResponsavel ?? antes.exigeDoisFatoresDoResponsavel},
-          portal_comentarios_ativos = ${d.comentariosAtivos ?? antes.comentariosAtivos},
-          portal_avisos_limite_semanal = ${d.avisosLimiteSemanal ?? antes.avisosLimiteSemanal},
-          atualizado_em = now()`)
+    if (d.formularioSatisfacaoId) {
+      const [f] = await this.ctx.db().execute(sql`
+        SELECT 1 FROM formularios WHERE id = ${d.formularioSatisfacaoId} AND excluido_em IS NULL
+          AND finalidade = 'satisfacao_chamado' AND situacao = 'publicado'`)
+      if (!f) {
+        throw new ErroApi(
+          'formulario_invalido',
+          'Escolha um formulário publicado com a finalidade "Satisfação do chamado".',
+          422,
+        )
+      }
+    }
+    if (d.formularioAssociacaoId) {
+      const [f] = await this.ctx.db().execute(sql`
+        SELECT 1 FROM formularios WHERE id = ${d.formularioAssociacaoId} AND excluido_em IS NULL
+          AND finalidade = 'associacao' AND situacao = 'publicado'`)
+      if (!f) {
+        throw new ErroApi(
+          'formulario_invalido',
+          'Escolha um formulário publicado com a finalidade "Associação".',
+          422,
+        )
+      }
+    }
+    const slug = d.slug === undefined ? antes.slug : d.slug
+    if ((d.paginaEventosAtiva ?? antes.paginaEventosAtiva) && !slug) {
+      throw new ErroApi(
+        'slug_obrigatorio',
+        'Para ligar a página pública, escolha o endereço do portal.',
+        422,
+      )
+    }
+    const responsavel =
+      d.eventosCrmResponsavelId === undefined
+        ? antes.eventosCrmResponsavelId
+        : d.eventosCrmResponsavelId
+    if (d.eventosCrmResponsavelId) {
+      // Só um administrador ou gestor ativo (Q-3): ele redistribui para o vendedor
+      const [m] = await this.ctx.db().execute(sql`
+        SELECT 1 FROM membros m JOIN perfis_acesso p ON p.id = m.perfil_id
+        WHERE m.id = ${d.eventosCrmResponsavelId} AND m.ativo AND p.chave_sistema IN ('admin', 'gestor')`)
+      if (!m) {
+        throw new ErroApi(
+          'responsavel_invalido',
+          'Escolha um administrador ou gestor ativo para receber as tarefas dos eventos.',
+          422,
+        )
+      }
+    }
+    if ((d.eventosCrmAtivo ?? antes.eventosCrmAtivo) && !responsavel) {
+      throw new ErroApi(
+        'responsavel_obrigatorio',
+        'Para cadastrar no CRM pelo CNPJ, escolha quem recebe a tarefa.',
+        422,
+      )
+    }
+    // O endereço é único no sistema: o índice parcial decide (o RLS esconde o dos outros portais)
+    try {
+      await this.gravarConfiguracao(d, antes, responsavel, slug)
+    } catch (e) {
+      if (
+        (e as { cause?: { code?: string } }).cause?.code === '23505' ||
+        (e as { code?: string }).code === '23505'
+      ) {
+        throw slugEmUso()
+      }
+      throw e
+    }
     const depois = await this.configuracao()
     await this.auditoria.registrar({
       entidade: 'portal_configuracao',
@@ -341,5 +422,28 @@ export class PortalAcessosService {
       alteracoes: { antes, depois },
     })
     return depois
+  }
+
+  private async gravarConfiguracao(
+    d: AtualizarConfiguracaoDoPortalEntrada,
+    antes: ConfiguracaoDoPortal,
+    responsavel: string | null,
+    slug: string | null,
+  ): Promise<void> {
+    await this.ctx.db().execute(sql`
+      UPDATE tenant_configuracoes
+      SET portal_ativo = ${d.ativo ?? antes.ativo},
+          portal_nome = ${d.nome === undefined ? antes.nome : d.nome},
+          portal_exige_dois_fatores_responsavel = ${d.exigeDoisFatoresDoResponsavel ?? antes.exigeDoisFatoresDoResponsavel},
+          portal_comentarios_ativos = ${d.comentariosAtivos ?? antes.comentariosAtivos},
+          portal_avisos_limite_semanal = ${d.avisosLimiteSemanal ?? antes.avisosLimiteSemanal},
+          portal_eventos_crm_ativo = ${d.eventosCrmAtivo ?? antes.eventosCrmAtivo},
+          portal_eventos_crm_responsavel_id = ${responsavel},
+          portal_avaliacao_por_email = ${d.avaliacaoPorEmail ?? antes.avaliacaoPorEmail},
+          portal_formulario_satisfacao_id = ${d.formularioSatisfacaoId === undefined ? antes.formularioSatisfacaoId : d.formularioSatisfacaoId},
+          portal_slug = ${slug},
+          portal_pagina_eventos_ativa = ${d.paginaEventosAtiva ?? antes.paginaEventosAtiva},
+          portal_formulario_associacao_id = ${d.formularioAssociacaoId === undefined ? antes.formularioAssociacaoId : d.formularioAssociacaoId},
+          atualizado_em = now()`)
   }
 }

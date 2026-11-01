@@ -377,6 +377,18 @@ describe('o ciclo do chamado', () => {
     })
     expect(outra.status).toBe(409)
     expect(erroDe(outra)).toBe('ja_avaliado')
+
+    // A equipe vê a nota no detalhe e na lista do CRM (B-10)
+    expect((await dadosNoCrm(c, ch.id)).avaliacao).toMatchObject({
+      nota: 4,
+      comentario: 'Bom atendimento',
+    })
+    const lista = await crm('get', c.e.d.cookie, '/chamados?origem=portal&aba=todos')
+    expect(
+      (lista.body as { itens: { id: string; notaDoCliente: number | null }[] }).itens.find(
+        (i) => i.id === ch.id,
+      )?.notaDoCliente,
+    ).toBe(4)
   })
 
   it('não reabre depois de 7 dias; não avalia chamado em andamento', async () => {
@@ -677,5 +689,73 @@ describe('tempo real do sino (SSE)', () => {
     const sem = await fetch(`http://127.0.0.1:${porta}/v1/portal/notificacoes/fluxo`)
     expect(sem.status).toBe(401)
     await sem.body?.cancel()
+  })
+})
+
+describe('pesquisa de satisfação (Fase 4F)', () => {
+  it('configurada pela equipe: aparece no chamado resolvido, alimenta as estrelas e responde uma vez', async () => {
+    const c = await cenario()
+    const ch = await abrir(c, { assunto: 'Boleto duplicado', areaId: c.juridico })
+    await crm('post', c.e.d.cookie, `/chamados/${ch.id}/assumir`)
+    await crm('post', c.e.d.cookie, `/chamados/${ch.id}/status`, { status: 'resolvido' })
+    // Sem pesquisa configurada: vale a avaliação por estrelas
+    const sem = (await portal('get', `/portal/chamados/${ch.id}`, { cookie: c.cookieAna }))
+      .body as ChamadoDoPortal
+    expect(sem.pesquisa).toBeNull()
+
+    const f = await crm('post', c.e.d.cookie, '/portal-formularios', {
+      nome: 'Satisfação do atendimento',
+      finalidade: 'satisfacao_chamado',
+      definicao: {
+        campos: [
+          { id: 'nota', tipo: 'avaliacao', rotulo: 'Como foi o atendimento?', obrigatorio: true },
+          { id: 'melhorar', tipo: 'texto_longo', rotulo: 'O que podemos melhorar?' },
+          { id: 'nps', tipo: 'nps', rotulo: 'Recomendaria?' },
+        ],
+        botoes: [{ id: 'enviar', rotulo: 'Enviar' }],
+      },
+    })
+    expect(f.status, JSON.stringify(f.body)).toBe(201)
+    const formId = (f.body as { id: string }).id
+    // Formulário em rascunho não pode virar a pesquisa
+    const rascunho = await crm('put', c.e.d.cookie, '/portal-configuracao', {
+      formularioSatisfacaoId: formId,
+    })
+    expect(rascunho.status).toBe(422)
+    await crm('post', c.e.d.cookie, `/portal-formularios/${formId}/publicar`)
+    const cfg = await crm('put', c.e.d.cookie, '/portal-configuracao', {
+      formularioSatisfacaoId: formId,
+    })
+    expect(cfg.status, JSON.stringify(cfg.body)).toBe(200)
+    expect((cfg.body as { formularioSatisfacaoId: string }).formularioSatisfacaoId).toBe(formId)
+
+    const com = (await portal('get', `/portal/chamados/${ch.id}`, { cookie: c.cookieAna }))
+      .body as ChamadoDoPortal
+    expect(com.pesquisa).toEqual({ formularioId: formId })
+    const r = await portal('post', `/portal/chamados/${ch.id}/pesquisa`, {
+      cookie: c.cookieAna,
+      corpo: {
+        versao: 1,
+        botao: 'enviar',
+        respostas: { nota: 4, melhorar: 'Responder mais rápido', nps: 9 },
+      },
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body).toMatchObject({
+      pesquisa: null,
+      avaliacao: { nota: 4, comentario: 'Responder mais rápido' },
+      acoes: { avaliar: false },
+    })
+    expect((await dadosNoCrm(c, ch.id)).avaliacao).toMatchObject({ nota: 4 })
+    const respostas = await crm('get', c.e.d.cookie, `/portal-formularios/${formId}/respostas`)
+    expect((respostas.body as { itens: unknown[] }).itens[0]).toMatchObject({
+      contexto: { tipo: 'chamado', id: ch.id },
+      valores: { nota: 4, nps: 9 },
+    })
+    const de_novo = await portal('post', `/portal/chamados/${ch.id}/pesquisa`, {
+      cookie: c.cookieAna,
+      corpo: { versao: 1, botao: 'enviar', respostas: { nota: 5 } },
+    })
+    expect(de_novo.status).toBe(409)
   })
 })

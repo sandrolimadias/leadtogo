@@ -15,6 +15,7 @@ import { Markdown } from '@leadtogo/ui/markdown'
 import { toast } from '@leadtogo/ui/toast'
 
 import { SelecaoDeEmpresas } from './selecao-de-empresas'
+import { SelecaoDeTags } from './selecao-de-tags'
 
 type Quando = 'rascunho' | 'publicada' | 'agendada'
 
@@ -46,8 +47,11 @@ export function EditorDePublicacao({
   const servicos = useServicos()
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '')
   const [corpo, setCorpo] = useState(inicial?.corpo ?? '')
-  const [alcance, setAlcance] = useState<'todos' | 'empresas'>(inicial?.alcance ?? 'todos')
+  const [alcance, setAlcance] = useState<'todos' | 'empresas' | 'tags'>(inicial?.alcance ?? 'todos')
   const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>(inicial?.empresas ?? [])
+  const [tags, setTags] = useState<{ id: string; nome: string }[]>(inicial?.tags ?? [])
+  const semAudiencia =
+    (alcance === 'empresas' && empresas.length === 0) || (alcance === 'tags' && tags.length === 0)
   const [quando, setQuando] = useState<Quando>(
     inicial?.situacao === 'publicada' ? 'publicada' : (inicial?.situacao ?? 'rascunho'),
   )
@@ -78,6 +82,7 @@ export function EditorDePublicacao({
       corpo: corpo.trim(),
       alcance,
       empresaIds: alcance === 'empresas' ? empresas.map((e) => e.id) : [],
+      tagIds: alcance === 'tags' ? tags.map((t) => t.id) : [],
       situacao: quando,
       agendadaPara,
     }
@@ -117,7 +122,7 @@ export function EditorDePublicacao({
           <Button
             variant="primary"
             loading={ocupado}
-            disabled={titulo.trim().length < 3 || corpo.trim() === ''}
+            disabled={titulo.trim().length < 3 || corpo.trim() === '' || semAudiencia}
             onClick={() => void salvar()}
           >
             {rotuloDoBotao}
@@ -170,12 +175,14 @@ export function EditorDePublicacao({
           options={[
             { value: 'todos', label: 'Todos os clientes' },
             { value: 'empresas', label: 'Empresas escolhidas' },
+            { value: 'tags', label: 'Contatos com tags' },
           ]}
-          onChange={(e) => setAlcance(e.target.value as 'todos' | 'empresas')}
+          onChange={(e) => setAlcance(e.target.value as 'todos' | 'empresas' | 'tags')}
         />
         {alcance === 'empresas' ? (
           <SelecaoDeEmpresas empresas={empresas} aoMudar={setEmpresas} />
         ) : null}
+        {alcance === 'tags' ? <SelecaoDeTags tags={tags} aoMudar={setTags} /> : null}
 
         {jaPublicada ? null : (
           <>

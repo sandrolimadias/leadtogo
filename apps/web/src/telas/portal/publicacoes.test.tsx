@@ -22,7 +22,7 @@ const metricas = (extra = {}) => ({
   leitores: 98,
   alvo: 186,
   empresasAlcancadas: 32,
-  reacoes: { curtir: 20, apoiar: 5, parabens: 4 },
+  reacoes: { curtir: 20, parabens: 4 },
   comentarios: 2,
   comentariosOcultos: 0,
   denunciasAbertas: 0,
@@ -49,6 +49,8 @@ const publicacao = (extra: Partial<Publicacao> = {}): Publicacao => ({
   autorNome: 'Lívia Coutinho',
   criadoEm: '2026-10-21T10:00:00.000Z',
   empresas: [],
+  tags: [],
+  midias: [],
   ...extra,
 })
 
@@ -103,7 +105,7 @@ describe('hub do portal: publicações', () => {
     const itens = await screen.findByRole('list', { name: 'Publicações' })
     expect(within(itens).getByText('Inscrições: Encontro anual de clientes')).toBeInTheDocument()
     expect(
-      within(itens).getByText(/53% de alcance · 29 reações · 2 comentários/),
+      within(itens).getByText(/53% de alcance · 24 reações · 2 comentários/),
     ).toBeInTheDocument()
     expect(within(itens).getByText('1 denúncia')).toBeInTheDocument()
     expect(screen.getByText('1 comentário denunciado aguarda análise')).toBeInTheDocument()
@@ -112,6 +114,32 @@ describe('hub do portal: publicações', () => {
     expect(within(metricasDoDetalhe).getByText('98 de 186 clientes')).toBeInTheDocument()
     expect(within(metricasDoDetalhe).getByText('32')).toBeInTheDocument()
     expect(screen.getByText('Encontro anual').tagName).toBe('STRONG')
+  })
+
+  it('pagina a lista com 5, 10 (padrão) ou 20 por página e guarda a escolha', async () => {
+    localStorage.removeItem('leadtogo:por-pagina:portal_publicacoes')
+    const s = servicos()
+    renderizar(s, '/portal')
+    const usuario = userEvent.setup()
+    await screen.findByRole('list', { name: 'Publicações' })
+    await waitFor(() =>
+      expect(s.portal.publicacoes.listar).toHaveBeenLastCalledWith(
+        expect.objectContaining({ pagina: 1, porPagina: 10 }),
+      ),
+    )
+    const tamanho = screen.getByRole('combobox', { name: 'Por página' })
+    expect(
+      within(tamanho)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['5', '10', '20'])
+    await usuario.selectOptions(tamanho, '5')
+    await waitFor(() =>
+      expect(s.portal.publicacoes.listar).toHaveBeenLastCalledWith(
+        expect.objectContaining({ pagina: 1, porPagina: 5 }),
+      ),
+    )
+    expect(localStorage.getItem('leadtogo:por-pagina:portal_publicacoes')).toBe('5')
   })
 
   it('modera: mantém, oculta com motivo e bloqueia os comentários', async () => {
@@ -162,10 +190,91 @@ describe('hub do portal: publicações', () => {
         corpo: 'Fechado na segunda.',
         alcance: 'todos',
         empresaIds: [],
+        tagIds: [],
         situacao: 'publicada',
         agendadaPara: null,
       }),
     )
+  })
+
+  it('para contatos com tags: marca as tags de contato e manda os ids (Fase 4C)', async () => {
+    const criar = vi.fn(async () => ok(publicacao()))
+    const s = servicos({ criar })
+    s.tags.listar = vi.fn(async () =>
+      ok([
+        {
+          id: id(60),
+          nome: 'Cargo',
+          selecao: 'multipla' as const,
+          obrigatorio: false,
+          sistema: false,
+          automatico: false,
+          aplicaA: 'contato' as const,
+          ativo: true,
+          ordem: 0,
+          tags: [
+            {
+              id: id(61),
+              tagGrupoId: id(60),
+              nome: 'Diretoria',
+              cor: 'blue' as const,
+              ativo: true,
+              ordem: 0,
+              chaveSistema: null,
+              apareceNoMapa: true,
+              visivelAoAbrir: true,
+            },
+          ],
+        },
+      ]),
+    )
+    renderizar(s, '/portal')
+    const usuario = userEvent.setup()
+    await usuario.click(await screen.findByRole('button', { name: 'Nova publicação' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Nova publicação' })
+    await usuario.type(within(dialogo).getByLabelText(/Título/), 'Só diretoria')
+    await usuario.type(within(dialogo).getByLabelText(/Texto/), 'Reunião fechada.')
+    await usuario.selectOptions(within(dialogo).getByLabelText('Para quem'), 'tags')
+    expect(within(dialogo).getByRole('button', { name: 'Salvar rascunho' })).toBeDisabled()
+    await usuario.click(await within(dialogo).findByLabelText('Diretoria'))
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar rascunho' }))
+    await waitFor(() =>
+      expect(criar).toHaveBeenCalledWith(
+        expect.objectContaining({ alcance: 'tags', empresaIds: [], tagIds: [id(61)] }),
+      ),
+    )
+    expect(s.tags.listar).toHaveBeenCalledWith('contato')
+  })
+
+  it('adiciona um vídeo do YouTube pelo link (Fase 4D)', async () => {
+    const adicionarVideo = vi.fn(async () =>
+      ok({
+        id: id(700),
+        tipo: 'video' as const,
+        ordem: 0,
+        legenda: null,
+        textoAlternativo: null,
+        imagem: null,
+        video: { provedor: 'youtube' as const, id: 'dQw4w9WgXcQ' },
+      }),
+    )
+    renderizar(servicos({ adicionarVideo }), '/portal')
+    const usuario = userEvent.setup()
+    const secao = await screen.findByRole('region', { name: 'Imagens e vídeo' })
+    const botao = within(secao).getByRole('button', { name: 'Adicionar vídeo' })
+    await usuario.type(within(secao).getByLabelText(/Link do vídeo/), 'https://exemplo.com/x')
+    expect(botao).toBeDisabled()
+    await usuario.clear(within(secao).getByLabelText(/Link do vídeo/))
+    await usuario.type(
+      within(secao).getByLabelText(/Link do vídeo/),
+      'https://youtu.be/dQw4w9WgXcQ',
+    )
+    await usuario.click(botao)
+    await waitFor(() =>
+      expect(adicionarVideo).toHaveBeenCalledWith(id(400), { url: 'https://youtu.be/dQw4w9WgXcQ' }),
+    )
+    // Imagem: a descrição é obrigatória antes de escolher o arquivo
+    expect(within(secao).getByRole('button', { name: 'Enviar imagem' })).toBeDisabled()
   })
 
   it('agendar exige a data; erro da API aparece no diálogo', async () => {
@@ -233,6 +342,22 @@ describe('hub do portal: publicações', () => {
           situacao: 'publicada',
           titulo: 'Inscrições: Encontro anual de clientes',
         }),
+      ),
+    )
+  })
+
+  it('duplica: cria a cópia em rascunho e abre a aba Rascunhos', async () => {
+    const duplicar = vi.fn(async () =>
+      ok(publicacao({ id: id(401), titulo: 'Cópia de Inscrições', situacao: 'rascunho' })),
+    )
+    const s = servicos({ duplicar })
+    renderizar(s, '/portal')
+    const usuario = userEvent.setup()
+    await usuario.click(await screen.findByRole('button', { name: 'Duplicar' }))
+    await waitFor(() => expect(duplicar).toHaveBeenCalledWith(id(400)))
+    await waitFor(() =>
+      expect(s.portal.publicacoes.listar).toHaveBeenLastCalledWith(
+        expect.objectContaining({ aba: 'rascunhos', pagina: 1 }),
       ),
     )
   })

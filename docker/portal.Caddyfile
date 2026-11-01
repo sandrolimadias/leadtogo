@@ -21,7 +21,7 @@
 		X-Robots-Tag "noindex, nofollow"
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 		# 'unsafe-inline' só em estilos (Radix e Sonner injetam <style>); nenhum script inline.
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://files.crm.aledias.com.br; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://files.crm.aledias.com.br; font-src 'self'; connect-src 'self' https://files.crm.aledias.com.br; frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://challenges.cloudflare.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	}
 
 	handle /health {

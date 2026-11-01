@@ -9,6 +9,11 @@ export type TamanhoDePagina = (typeof TAMANHOS_DE_PAGINA)[number]
 export const TAMANHO_DE_PAGINA_PADRAO: TamanhoDePagina = 25
 export const TAMANHO_MAXIMO_DE_PAGINA = 100
 
+/** Listas de cartões do hub do portal (Publicações e Agenda): 5, 10 (padrão) ou 20 por página. */
+export const TAMANHOS_DE_PAGINA_DE_CARTOES = [5, 10, 20] as const
+export type TamanhoDePaginaDeCartoes = (typeof TAMANHOS_DE_PAGINA_DE_CARTOES)[number]
+export const TAMANHO_DE_PAGINA_DE_CARTOES_PADRAO: TamanhoDePaginaDeCartoes = 10
+
 /**
  * As tabelas que lembram o tamanho de página. Tabela nova de dados entra aqui (e usa o componente
  * `Paginacao` da web), para a escolha ser guardada por tabela.

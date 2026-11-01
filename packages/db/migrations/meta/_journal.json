@@ -316,6 +316,69 @@
       "when": 1793462544221,
       "tag": "0044_tags_de_oportunidade",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1793485942825,
+      "tag": "0045_portal_4a_tema_e_cargo",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793487620233,
+      "tag": "0046_portal_4b_codigo_de_entrada",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793488715230,
+      "tag": "0047_portal_4c_alcance_por_tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793490325900,
+      "tag": "0048_portal_4d_midias",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1793496702860,
+      "tag": "0049_portal_4e_formularios",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793499067458,
+      "tag": "0050_portal_4f_pesquisa_de_satisfacao",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1793500325432,
+      "tag": "0051_portal_4g_eventos",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1793514317679,
+      "tag": "0052_portal_4g_avaliacao_e_checkin",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793517432349,
+      "tag": "0053_portal_4h_pagina_publica",
+      "breakpoints": true
     }
   ]
 }

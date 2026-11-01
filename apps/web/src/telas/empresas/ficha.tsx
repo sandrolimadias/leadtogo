@@ -42,6 +42,7 @@ import { ComparacaoComAReceita } from './ficha-receita'
 import { EditarTags } from './ficha-tags'
 import { useContatosDaEmpresa } from './contatos-da-empresa'
 import { ContatosDaEmpresaAba } from './ficha-contatos'
+import { EventosDaEmpresaAba } from './ficha-eventos'
 import { HistoricoDaEmpresaAba } from './ficha-historico'
 import { CartaoDaPosicao } from '@/telas/geolocalizacao/ficha-posicao'
 import { BotaoDeVisita } from '@/telas/visitas/campo/checkin'
@@ -63,6 +64,7 @@ const abasDaEmpresa = (totais: {
   oportunidades: number | undefined
   chamados: number | undefined
   verChamados: boolean
+  verEventos: boolean
 }): ItemDeAba[] => {
   const comTotal = (value: string, label: string, count: number | undefined): ItemDeAba =>
     count === undefined ? { value, label } : { value, label, count }
@@ -72,6 +74,7 @@ const abasDaEmpresa = (totais: {
     comTotal('atividades', 'Atividades', totais.atividades),
     comTotal('oportunidades', 'Oportunidades', totais.oportunidades),
     ...(totais.verChamados ? [comTotal('chamados', 'Chamados', totais.chamados)] : []),
+    ...(totais.verEventos ? [{ value: 'eventos', label: 'Eventos' }] : []),
     { value: 'historico', label: 'Histórico' },
   ]
 }
@@ -208,6 +211,8 @@ export function FichaDaEmpresa() {
     },
   }).data
   const verChamados = usePermissoes().pode('chamados.ver')
+  // A aba Eventos só faz sentido para quem usa o portal do cliente
+  const verEventos = usePermissoes().pode('portal.ver')
   const chamadosAbertos = useChamadosAbertosDaEmpresa(empresaId, verChamados).data
   const atualizar = () => queryClient.invalidateQueries({ queryKey: ['carteira'] })
   const voltar = () => void navegar({ to: '/empresas' })
@@ -579,6 +584,7 @@ export function FichaDaEmpresa() {
           oportunidades: totalDeOportunidades,
           chamados: chamadosAbertos?.total,
           verChamados,
+          verEventos,
         })}
         value={aba}
         onChange={setAba}
@@ -676,6 +682,11 @@ export function FichaDaEmpresa() {
           {verChamados ? (
             <ConteudoDaAba value="chamados">
               <ChamadosDaEmpresa empresa={{ id: e.id, nome: e.nome }} />
+            </ConteudoDaAba>
+          ) : null}
+          {verEventos ? (
+            <ConteudoDaAba value="eventos">
+              <EventosDaEmpresaAba empresaId={e.id} />
             </ConteudoDaAba>
           ) : null}
           <ConteudoDaAba value="historico">

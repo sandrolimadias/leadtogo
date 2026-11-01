@@ -103,7 +103,7 @@ export class PortalPublicacoesController {
   @Documenta({
     resumo: 'Reagir (ou desfazer a reação)',
     descricao:
-      'Clicar liga a reação (curtir, apoiar ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.',
+      'Clicar liga a reação (curtir ou parabéns); clicar de novo desliga. Devolve os totais e as reações da pessoa.',
     corpo: reagirNoPortalSchema,
     resposta: reacoesDaPublicacaoSchema,
     status: 200,

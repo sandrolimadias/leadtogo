@@ -921,6 +921,16 @@ fabricas['portal_links'] = definirFabrica<{ acessoId: string }>({
   },
 })
 
+fabricas['portal_codigos'] = definirFabrica({
+  colunaAlteravel: 'ip',
+  criar: async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO portal_codigos (id, tenant_id, email, codigo_hash, expira_em)
+      VALUES (${id}, ${tenantId}, ${`cliente-${id}@exemplo.com.br`}, ${`hash-${id}`}, now() + interval '10 minutes')`
+    return id
+  },
+})
+
 fabricas['portal_sessoes'] = definirFabrica<{ acessoId: string }>({
   colunaAlteravel: 'agente',
   preparar: async (owner, tenantId) => {
@@ -1354,6 +1364,116 @@ fabricas['buscas_recentes'] = definirFabrica<{ membroId: string }>({
     const id = novoId()
     await tx`INSERT INTO buscas_recentes (id, tenant_id, membro_id, termo, termo_comparavel)
       VALUES (${id}, ${tenantId}, ${membroId}, ${`termo ${id}`}, ${`termo ${id}`})`
+    return id
+  },
+})
+
+// Portal, Fase 4C: alcance por tags de contato (a linha é o vínculo item–tag)
+async function tagDeContatoPai(owner: Sql, tenantId: string): Promise<string> {
+  return comTenant(owner, tenantId, async (tx) => {
+    const grupoId = novoId()
+    const id = novoId()
+    await tx`INSERT INTO tag_grupos (id, tenant_id, nome, aplica_a) VALUES (${grupoId}, ${tenantId}, ${`Segmento ${grupoId.slice(-6)}`}, 'contato')`
+    await tx`INSERT INTO tags (id, tenant_id, nome, tag_grupo_id) VALUES (${id}, ${tenantId}, 'Diretoria', ${grupoId})`
+    return id
+  })
+}
+
+const fabricaDeTagDoAlcance = (
+  tabela: 'publicacao_tags' | 'evento_tags' | 'documento_tags' | 'aviso_tags',
+  coluna: 'publicacao_id' | 'evento_id' | 'documento_id' | 'aviso_id',
+  criarItem: (tx: TransactionSql, tenantId: string) => Promise<string>,
+) =>
+  definirFabrica<{ itemId: string; tagId: string }>({
+    chave: coluna,
+    colunaAlteravel: 'aplicada_em',
+    preparar: async (owner, tenantId) => ({
+      itemId: await comTenant(owner, tenantId, (tx) => criarItem(tx, tenantId)),
+      tagId: await tagDeContatoPai(owner, tenantId),
+    }),
+    criar: async (tx, tenantId, { itemId, tagId }) => {
+      await tx`INSERT INTO ${tx(tabela)} (tenant_id, ${tx(coluna)}, tag_id) VALUES (${tenantId}, ${itemId}, ${tagId})`
+      return itemId
+    },
+  })
+
+fabricas['publicacao_tags'] = fabricaDeTagDoAlcance(
+  'publicacao_tags',
+  'publicacao_id',
+  async (tx, tenantId) => {
+    const id = novoId()
+    await tx`INSERT INTO publicacoes (id, tenant_id, titulo, corpo) VALUES (${id}, ${tenantId}, 'Rascunho', 'Corpo')`
+    return id
+  },
+)
+fabricas['evento_tags'] = fabricaDeTagDoAlcance('evento_tags', 'evento_id', (tx, tenantId) =>
+  inserirEvento(tx, tenantId),
+)
+fabricas['documento_tags'] = fabricaDeTagDoAlcance(
+  'documento_tags',
+  'documento_id',
+  (tx, tenantId) => inserirDocumento(tx, tenantId, 'pendente_varredura'),
+)
+fabricas['aviso_tags'] = fabricaDeTagDoAlcance('aviso_tags', 'aviso_id', (tx, tenantId) =>
+  inserirAviso(tx, tenantId),
+)
+
+// Portal, Fase 4D: mídia da publicação (um vídeo: não precisa de arquivo)
+fabricas['publicacao_midias'] = definirFabrica({
+  colunaAlteravel: 'legenda',
+  criar: async (tx, tenantId) => {
+    const publicacaoId = novoId()
+    const id = novoId()
+    await tx`INSERT INTO publicacoes (id, tenant_id, titulo, corpo) VALUES (${publicacaoId}, ${tenantId}, 'Rascunho', 'Corpo')`
+    await tx`INSERT INTO publicacao_midias (id, tenant_id, publicacao_id, tipo, video_provedor, video_id)
+      VALUES (${id}, ${tenantId}, ${publicacaoId}, 'video', 'youtube', 'dQw4w9WgXcQ')`
+    return id
+  },
+})
+
+// Portal, Fase 4E: construtor de formulários
+const DEFINICAO = JSON.stringify({
+  campos: [{ id: 'nome', tipo: 'texto', rotulo: 'Nome' }],
+  botoes: [],
+})
+async function inserirFormulario(tx: TransactionSql, tenantId: string): Promise<string> {
+  const id = novoId()
+  await tx`INSERT INTO formularios (id, tenant_id, nome, slug, definicao)
+    VALUES (${id}, ${tenantId}, 'Inscrição', ${`f-${id.slice(-12)}`}, ${DEFINICAO}::jsonb)`
+  return id
+}
+async function inserirResposta(tx: TransactionSql, tenantId: string): Promise<string> {
+  const formularioId = await inserirFormulario(tx, tenantId)
+  const id = novoId()
+  await tx`INSERT INTO formulario_respostas (id, tenant_id, formulario_id, versao, origem, botao, respostas)
+    VALUES (${id}, ${tenantId}, ${formularioId}, 1, 'crm', 'enviar', '{}'::jsonb)`
+  return id
+}
+fabricas['formularios'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: (tx, tenantId) => inserirFormulario(tx, tenantId),
+})
+fabricas['formulario_versoes'] = definirFabrica({
+  colunaAlteravel: 'atualizado_em',
+  criar: async (tx, tenantId) => {
+    const formularioId = await inserirFormulario(tx, tenantId)
+    const id = novoId()
+    await tx`INSERT INTO formulario_versoes (id, tenant_id, formulario_id, versao, definicao)
+      VALUES (${id}, ${tenantId}, ${formularioId}, 1, ${DEFINICAO}::jsonb)`
+    return id
+  },
+})
+fabricas['formulario_respostas'] = definirFabrica({
+  colunaAlteravel: 'botao',
+  criar: (tx, tenantId) => inserirResposta(tx, tenantId),
+})
+fabricas['formulario_acoes_execucoes'] = definirFabrica({
+  colunaAlteravel: 'detalhe',
+  criar: async (tx, tenantId) => {
+    const respostaId = await inserirResposta(tx, tenantId)
+    const id = novoId()
+    await tx`INSERT INTO formulario_acoes_execucoes (id, tenant_id, resposta_id, indice, tipo)
+      VALUES (${id}, ${tenantId}, ${respostaId}, 0, 'email')`
     return id
   },
 })

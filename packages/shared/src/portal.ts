@@ -165,6 +165,9 @@ export type TratarPedidoDeAcessoEntrada = z.infer<typeof tratarPedidoDeAcessoSch
 
 // ---- Configuração do portal (CRM) ----
 
+/** Endereço público do portal: o mesmo formato do CHECK da migração 0053 */
+export const SLUG_DO_PORTAL = /^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/
+
 export const configuracaoDoPortalSchema = z
   .object({
     ativo: z.boolean(),
@@ -175,6 +178,20 @@ export const configuracaoDoPortalSchema = z
     comentariosAtivos: z.boolean(),
     /** Quantos avisos normais cada cliente pode receber por semana (os urgentes não contam) */
     avisosLimiteSemanal: z.number().int().min(1).max(20),
+    /** Formulário da pesquisa de satisfação dos chamados (Fase 4F); nulo = só as estrelas */
+    formularioSatisfacaoId: z.uuid().nullable(),
+    /** Eventos (Fase 4G, B-17): cadastrar no CRM a empresa e o contato do CNPJ da inscrição e criar a tarefa */
+    eventosCrmAtivo: z.boolean(),
+    /** Administrador ou gestor que recebe a tarefa e a empresa nova */
+    eventosCrmResponsavelId: z.uuid().nullable(),
+    /** Mandar a avaliação do evento por e-mail a quem não tem acesso ao portal */
+    avaliacaoPorEmail: z.boolean(),
+    /** Endereço público do portal (Fase 4H): a página de eventos fica em /eventos/<slug> */
+    slug: z.string().nullable(),
+    /** Página pública de eventos ligada (Fase 4H) */
+    paginaEventosAtiva: z.boolean(),
+    /** Formulário do "Seja um Associado" (finalidade Associação); nulo = sem o botão */
+    formularioAssociacaoId: z.uuid().nullable(),
   })
   .meta({ id: 'ConfiguracaoDoPortal' })
 export type ConfiguracaoDoPortal = z.infer<typeof configuracaoDoPortalSchema>
@@ -186,6 +203,22 @@ export const atualizarConfiguracaoDoPortalSchema = z
     exigeDoisFatoresDoResponsavel: z.boolean().optional(),
     comentariosAtivos: z.boolean().optional(),
     avisosLimiteSemanal: z.number().int().min(1).max(20).optional(),
+    formularioSatisfacaoId: z.uuid().nullable().optional(),
+    eventosCrmAtivo: z.boolean().optional(),
+    eventosCrmResponsavelId: z.uuid().nullable().optional(),
+    avaliacaoPorEmail: z.boolean().optional(),
+    slug: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(
+        SLUG_DO_PORTAL,
+        'use de 3 a 40 letras minúsculas, números e hífens (sem hífen nas pontas)',
+      )
+      .nullable()
+      .optional(),
+    paginaEventosAtiva: z.boolean().optional(),
+    formularioAssociacaoId: z.uuid().nullable().optional(),
   })
   .strict()
   .meta({ id: 'AtualizarConfiguracaoDoPortalEntrada' })
@@ -206,7 +239,44 @@ export const respostaDePedirEntradaSchema = z
   .object({ mensagem: z.string() })
   .meta({ id: 'RespostaDePedirEntrada' })
 export const MENSAGEM_DE_ENTRADA_ENVIADA =
-  'Se este e-mail tem acesso ao portal, enviamos um link de entrada. Ele vale 15 minutos.'
+  'Se este e-mail tem acesso ao portal, enviamos um código de 6 dígitos. Ele vale 10 minutos.'
+
+/** Entrar com o código de 6 dígitos enviado por e-mail (Fase 4B, B-23). */
+export const entrarComCodigoSchema = z
+  .object({
+    email: emailSchema,
+    /** Seis dígitos; espaços e traços são ignorados (o e-mail mostra "123 456") */
+    codigo: z
+      .string()
+      .transform((v) => v.replace(/[\s-]/g, ''))
+      .pipe(z.string().regex(/^\d{6}$/, 'o código tem 6 dígitos')),
+    /** Obrigatório no primeiro acesso (422 `privacidade_obrigatoria` sem ele; o código não é gasto) */
+    aceitaPrivacidade: z.boolean().optional(),
+  })
+  .strict()
+  .meta({ id: 'EntrarComCodigoEntrada' })
+export type EntrarComCodigoEntrada = z.infer<typeof entrarComCodigoSchema>
+
+/** As empresas-clientes que o mesmo e-mail acessa neste portal (Fase 4B, B-1). */
+export const empresaDoAcessoSchema = z
+  .object({
+    acessoId: z.uuid(),
+    nome: z.string(),
+    papel: papelDoPortalSchema,
+    /** A empresa da sessão atual */
+    atual: z.boolean(),
+  })
+  .meta({ id: 'EmpresaDoAcesso' })
+export type EmpresaDoAcesso = z.infer<typeof empresaDoAcessoSchema>
+export const listaDeEmpresasDoAcessoSchema = z
+  .object({ itens: z.array(empresaDoAcessoSchema) })
+  .meta({ id: 'ListaDeEmpresasDoAcesso' })
+
+export const trocarEmpresaSchema = z
+  .object({ acessoId: z.uuid() })
+  .strict()
+  .meta({ id: 'TrocarEmpresaEntrada' })
+export type TrocarEmpresaEntrada = z.infer<typeof trocarEmpresaSchema>
 
 /** O que a página de confirmação mostra antes do clique (a leitura não consome o link). */
 export const consultaDoLinkSchema = z
@@ -297,11 +367,63 @@ export const trocarEmailSchema = z
 export type TrocarEmailEntrada = z.infer<typeof trocarEmailSchema>
 
 /** O cliente corrige só o próprio nome; cargo e vínculo são da equipe (a empresa é cadastro do CRM). */
+/** O que o cliente corrige no próprio perfil (Fase 4A): nome e cargo. E-mail e telefone são da equipe. */
 export const perfilDoPortalSchema = z
-  .object({ nome: z.string().trim().min(2, 'informe o nome').max(120) })
+  .object({
+    nome: z.string().trim().min(2, 'informe o nome').max(120),
+    /** Cargo na empresa da sessão; vazio apaga; ausente não muda */
+    cargo: z.string().trim().max(80).nullable().optional(),
+  })
   .strict()
   .meta({ id: 'PerfilDoPortalEntrada' })
 export type PerfilDoPortalEntrada = z.infer<typeof perfilDoPortalSchema>
+
+/** "Meu perfil": o cadastro do contato como a equipe guardou (só nome e cargo o cliente altera). */
+export const meuPerfilDoPortalSchema = z
+  .object({
+    nome: z.string(),
+    cargo: z.string().nullable(),
+    /** O e-mail de entrada no portal */
+    emailDeAcesso: z.string(),
+    emails: z.array(z.object({ email: z.string(), tipo: z.enum(['pessoal', 'trabalho']) })),
+    telefones: z.array(
+      z.object({ numero: z.string(), tipo: z.enum(['fixo', 'celular', 'whatsapp', 'outro']) }),
+    ),
+    aniversario: z.object({ dia: z.number().int(), mes: z.number().int() }).nullable(),
+  })
+  .meta({ id: 'MeuPerfilDoPortal' })
+export type MeuPerfilDoPortal = z.infer<typeof meuPerfilDoPortalSchema>
+
+/** "Minha empresa": o cadastro completo da empresa-cliente, só para leitura (nada da carteira interna). */
+export const minhaEmpresaDoPortalSchema = z
+  .object({
+    razaoSocial: z.string(),
+    nomeFantasia: z.string().nullable(),
+    tipoDocumento: z.enum(['cnpj', 'cpf', 'nenhum']),
+    documento: z.string().nullable(),
+    matrizFilial: z.enum(['matriz', 'filial']).nullable(),
+    porte: z.string().nullable(),
+    dataInicioAtividades: z.string().nullable(),
+    website: z.string().nullable(),
+    endereco: z.object({
+      cep: z.string().nullable(),
+      logradouro: z.string().nullable(),
+      numero: z.string().nullable(),
+      complemento: z.string().nullable(),
+      bairro: z.string().nullable(),
+      municipio: z.string().nullable(),
+      uf: z.string().nullable(),
+    }),
+    telefones: z.array(
+      z.object({ numero: z.string(), tipo: z.enum(['fixo', 'celular', 'whatsapp', 'outro']) }),
+    ),
+    cnaePrincipal: z.object({ codigo: z.string(), descricao: z.string() }).nullable(),
+    cnaesSecundarios: z.array(z.object({ codigo: z.string(), descricao: z.string() })),
+    /** Primeiro nome de quem cuida da empresa na equipe */
+    responsavel: z.string().nullable(),
+  })
+  .meta({ id: 'MinhaEmpresaDoPortal' })
+export type MinhaEmpresaDoPortal = z.infer<typeof minhaEmpresaDoPortalSchema>
 
 export const pedirAcessoParaColegaSchema = z
   .object({
@@ -464,6 +586,11 @@ export const chamadoDoPortalSchema = itemDeChamadoDoPortalSchema
     mensagens: z.array(mensagemDoPortalSchema),
     marcos: z.array(marcoDoChamadoSchema),
     avaliacao: avaliacaoDoChamadoSchema.nullable(),
+    /**
+     * Pesquisa de satisfação (Fase 4F): o formulário configurado pela equipe, enquanto o chamado está resolvido
+     * e ainda sem resposta. Nulo = sem pesquisa (vale a avaliação por estrelas).
+     */
+    pesquisa: z.object({ formularioId: z.uuid() }).nullable(),
     acoes: z.object({
       responder: z.boolean(),
       reabrir: z.boolean(),

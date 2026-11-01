@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { criarAppComRotas, configuracaoDeTeste } from '../testes/app-teste.js'
 import { noTenant } from '../testes/chamados.js'
-import { limparCaixa, aguardarMensagem, mensagensPara, primeiroLink } from '../testes/mailpit.js'
+import { limparCaixa, aguardarMensagem, mensagensPara } from '../testes/mailpit.js'
 import { mudarSituacao, novoDono } from '../testes/mundo.js'
 import {
   chamarPortalEm,
@@ -76,13 +76,16 @@ afterAll(async () => {
   await app.close()
 })
 
-const tokenDoEmail = async (email: string) => {
-  const link = primeiroLink(await aguardarMensagem(email))
-  return link.split('#')[1] ?? ''
+/** O código de 6 dígitos do último e-mail de entrada (o texto traz "Seu código de acesso: 123 456"). */
+const codigoDoEmail = async (email: string) => {
+  const m = /código de acesso: (\d{3}) (\d{3})/.exec((await aguardarMensagem(email)).Text)
+  if (!m) throw new Error('o e-mail não tem o código')
+  return `${m[1]}${m[2]}`
 }
 
-describe('entrada pelo e-mail (link mágico)', () => {
-  it('a resposta é a mesma com e sem acesso; só quem tem acesso recebe o link, que entra uma vez', async () => {
+describe('entrada pelo código de 6 dígitos (Fase 4B)', () => {
+  it('a resposta é a mesma com e sem acesso; só quem tem acesso recebe o código, que entra uma vez', async () => {
+    await limparCaixa()
     const c = await novoClienteDoPortal(app)
     const semAcesso = `ninguem-${c.acessoId}@exemplo.com.br`
 
@@ -93,44 +96,193 @@ describe('entrada pelo e-mail (link mágico)', () => {
     expect(a.body).toEqual(b.body)
     await app.get(PortalEntradaService).aguardarPendentes()
 
-    const token = await tokenDoEmail(c.email)
+    const codigo = await codigoDoEmail(c.email)
+    expect(codigo).toMatch(/^\d{6}$/)
     await esperarAte(async () => (await mensagensPara(semAcesso)).length === 0)
     expect(await mensagensPara(semAcesso)).toHaveLength(0)
 
-    // O link guarda só o hash e vale uma vez
+    // Só o hash fica no banco
     const [linha] = await noTenant(
       c.tenantId,
       (tx) =>
         tx<
-          { token_hash: string }[]
-        >`SELECT token_hash FROM portal_links WHERE acesso_id = ${c.acessoId}`,
+          { codigo_hash: string }[]
+        >`SELECT codigo_hash FROM portal_codigos WHERE email = ${c.email}`,
     )
-    expect(linha?.token_hash).not.toContain(token.split('.')[1] ?? 'x')
+    expect(linha?.codigo_hash).toMatch(/^[0-9a-f]{64}$/)
+    expect(linha?.codigo_hash).not.toContain(codigo)
 
-    const previa = await chamar('post', '/portal/link/consulta', { corpo: { token } })
-    expect(previa.status).toBe(200)
-    expect(previa.body).toMatchObject({ finalidade: 'entrada', exigeAceiteDePrivacidade: true })
-
-    const sem = await chamar('post', '/portal/link/consumir', { corpo: { token } })
+    // Primeiro acesso sem o aceite: 422 e o código NÃO é gasto
+    const sem = await chamar('post', '/portal/entrada/codigo', {
+      corpo: { email: c.email, codigo },
+    })
     expect(sem.status).toBe(422)
     expect((sem.body as { erro: string }).erro).toBe('privacidade_obrigatoria')
 
-    const entrou = await chamar('post', '/portal/link/consumir', {
-      corpo: { token, aceitaPrivacidade: true },
+    // Espaço no meio (como no e-mail) é aceito
+    const entrou = await chamar('post', '/portal/entrada/codigo', {
+      corpo: {
+        email: c.email.toUpperCase(),
+        codigo: `${codigo.slice(0, 3)} ${codigo.slice(3)}`,
+        aceitaPrivacidade: true,
+      },
     })
-    expect(entrou.status).toBe(200)
+    expect(entrou.status, JSON.stringify(entrou.body)).toBe(200)
     expect(entrou.body).toMatchObject({ papel: 'colega', segundoFatorPendente: false })
     const set = (entrou.headers['set-cookie'] as unknown as string[])[0] ?? ''
     expect(set).toMatch(/HttpOnly/i)
     expect(set).toMatch(/SameSite=Lax/i)
-    expect(set).not.toMatch(/Domain=/i)
 
-    const de_novo = await chamar('post', '/portal/link/consumir', {
-      corpo: { token, aceitaPrivacidade: true },
+    const de_novo = await chamar('post', '/portal/entrada/codigo', {
+      corpo: { email: c.email, codigo, aceitaPrivacidade: true },
     })
-    expect(de_novo.status).toBe(404)
+    expect(de_novo.status).toBe(401)
+    expect((de_novo.body as { erro: string }).erro).toBe('codigo_invalido')
   })
 
+  it('cinco erros queimam o código; pedir de novo invalida o anterior; código vencido não entra', async () => {
+    await limparCaixa()
+    const c = await novoClienteDoPortal(app)
+    await noTenant(
+      c.tenantId,
+      (tx) => tx`UPDATE portal_acessos SET privacidade_aceita_em = now() WHERE id = ${c.acessoId}`,
+    )
+    await chamar('post', '/portal/entrada', { corpo: { email: c.email } })
+    await app.get(PortalEntradaService).aguardarPendentes()
+    const certo = await codigoDoEmail(c.email)
+    const errado = certo === '000000' ? '111111' : '000000'
+    for (let i = 0; i < 5; i++) {
+      const r = await chamar('post', '/portal/entrada/codigo', {
+        corpo: { email: c.email, codigo: errado },
+      })
+      expect(r.status).toBe(401)
+    }
+    // Depois de 5 erros, nem o certo entra
+    expect(
+      (await chamar('post', '/portal/entrada/codigo', { corpo: { email: c.email, codigo: certo } }))
+        .status,
+    ).toBe(401)
+
+    // Pedir de novo: o anterior para de valer
+    await limparCaixa()
+    await chamar('post', '/portal/entrada', { corpo: { email: c.email } })
+    await app.get(PortalEntradaService).aguardarPendentes()
+    const primeiro = await codigoDoEmail(c.email)
+    await limparCaixa()
+    await chamar('post', '/portal/entrada', { corpo: { email: c.email } })
+    await app.get(PortalEntradaService).aguardarPendentes()
+    const segundo = await codigoDoEmail(c.email)
+    if (primeiro !== segundo) {
+      expect(
+        (
+          await chamar('post', '/portal/entrada/codigo', {
+            corpo: { email: c.email, codigo: primeiro },
+          })
+        ).status,
+      ).toBe(401)
+    }
+    // Vencido
+    await noTenant(
+      c.tenantId,
+      (tx) =>
+        tx`UPDATE portal_codigos SET expira_em = now() - interval '1 minute' WHERE email = ${c.email}`,
+    )
+    expect(
+      (
+        await chamar('post', '/portal/entrada/codigo', {
+          corpo: { email: c.email, codigo: segundo },
+        })
+      ).status,
+    ).toBe(401)
+    // Formato inválido é 400
+    expect(
+      (
+        await chamar('post', '/portal/entrada/codigo', {
+          corpo: { email: c.email, codigo: '12ab' },
+        })
+      ).status,
+    ).toBe(400)
+  })
+
+  it('mesmo e-mail em duas empresas-clientes: um código só, escolhe e troca de empresa sem novo código', async () => {
+    await limparCaixa()
+    const c = await novoClienteDoPortal(app)
+    const outra = await novoAcesso(c.dono, { email: c.email, papel: 'responsavel' })
+    const estranho = await novoAcesso(c.dono, {})
+    await noTenant(
+      c.tenantId,
+      (tx) =>
+        tx`UPDATE portal_acessos SET privacidade_aceita_em = now() WHERE tenant_id = ${c.tenantId}`,
+    )
+    await chamar('post', '/portal/entrada', { corpo: { email: c.email } })
+    await app.get(PortalEntradaService).aguardarPendentes()
+    await esperarAte(async () => (await mensagensPara(c.email)).length > 0)
+    expect(await mensagensPara(c.email)).toHaveLength(1)
+    const codigo = await codigoDoEmail(c.email)
+    const entrou = await chamar('post', '/portal/entrada/codigo', {
+      corpo: { email: c.email, codigo },
+    })
+    expect(entrou.status).toBe(200)
+    const cookie = cookieDe(entrou)
+
+    const empresas = await chamar('get', '/portal/empresas', { cookie })
+    expect(empresas.status).toBe(200)
+    const itens = (empresas.body as { itens: { acessoId: string; atual: boolean }[] }).itens
+    expect(itens.map((i) => i.acessoId).sort()).toEqual([c.acessoId, outra.acessoId].sort())
+    expect(itens.filter((i) => i.atual)).toHaveLength(1)
+    const atual = (entrou.body as { acessoId: string }).acessoId
+    const alvo = atual === c.acessoId ? outra : c
+
+    // Acesso de outro e-mail: 404; a mesma empresa: 409
+    expect(
+      (
+        await chamar('post', '/portal/empresas/trocar', {
+          cookie,
+          corpo: { acessoId: estranho.acessoId },
+        })
+      ).status,
+    ).toBe(404)
+    expect(
+      (await chamar('post', '/portal/empresas/trocar', { cookie, corpo: { acessoId: atual } }))
+        .status,
+    ).toBe(409)
+
+    const trocou = await chamar('post', '/portal/empresas/trocar', {
+      cookie,
+      corpo: { acessoId: alvo.acessoId },
+    })
+    expect(trocou.status, JSON.stringify(trocou.body)).toBe(200)
+    expect(trocou.body).toMatchObject({
+      acessoId: alvo.acessoId,
+      empresaCliente: { id: alvo.empresaId },
+    })
+    const novoCookie = cookieDe(trocou)
+    // A sessão antiga foi encerrada; a nova vale
+    expect((await chamar('get', '/portal/sessao', { cookie })).status).toBe(401)
+    expect(
+      ((await chamar('get', '/portal/sessao', { cookie: novoCookie })).body as { acessoId: string })
+        .acessoId,
+    ).toBe(alvo.acessoId)
+
+    // Acesso suspenso some da lista e não troca
+    await noTenant(
+      c.tenantId,
+      (tx) => tx`UPDATE portal_acessos SET situacao = 'suspenso' WHERE id = ${atual}`,
+    )
+    const depois = await chamar('get', '/portal/empresas', { cookie: novoCookie })
+    expect((depois.body as { itens: unknown[] }).itens).toHaveLength(1)
+    expect(
+      (
+        await chamar('post', '/portal/empresas/trocar', {
+          cookie: novoCookie,
+          corpo: { acessoId: atual },
+        })
+      ).status,
+    ).toBe(404)
+  })
+})
+
+describe('links (convite e os já enviados)', () => {
   it('a conferência do link não o consome (verificadores de e-mail); link vencido ou de outro tenant dá 404', async () => {
     const c = await novoClienteDoPortal(app)
     const token = await criarLinkDireto(c, 'entrada')
@@ -502,39 +654,82 @@ describe('verificação em duas etapas', () => {
 })
 
 describe('e-mail e perfil', () => {
-  it('troca de e-mail: o link vai ao endereço novo e só ele muda o acesso; endereço ocupado dá 409', async () => {
+  it('o e-mail fica travado: pedir a troca dá 403 e o acesso não muda (Fase 4A)', async () => {
     const c = await novoClienteDoPortal(app)
-    const colega = await novoAcesso(c.dono, { empresaId: c.empresaId })
     const cookie = await entrarNoPortal(chamar, c)
-    const novo = `novo-${c.acessoId}@exemplo.com.br`
-
-    expect(
-      (await chamar('post', '/portal/email/troca', { cookie, corpo: { email: colega.email } }))
-        .status,
-    ).toBe(409)
-    expect(
-      (await chamar('post', '/portal/email/troca', { cookie, corpo: { email: novo } })).status,
-    ).toBe(202)
-    const antes = await noTenant(
-      c.tenantId,
-      (tx) =>
-        tx<{ email: string }[]>`SELECT email::text FROM portal_acessos WHERE id = ${c.acessoId}`,
-    )
-    expect(antes[0]?.email).toBe(c.email)
-
-    const token = await tokenDoEmail(novo)
-    const previa = await chamar('post', '/portal/link/consulta', { corpo: { token } })
-    expect(previa.body).toMatchObject({
-      finalidade: 'troca_email',
-      exigeAceiteDePrivacidade: false,
+    const r = await chamar('post', '/portal/email/troca', {
+      cookie,
+      corpo: { email: `novo-${c.acessoId}@exemplo.com.br` },
     })
-    expect((await chamar('post', '/portal/link/consumir', { corpo: { token } })).status).toBe(200)
+    expect(r.status).toBe(403)
+    expect((r.body as { erro: string }).erro).toBe('email_travado')
     const depois = await noTenant(
       c.tenantId,
       (tx) =>
         tx<{ email: string }[]>`SELECT email::text FROM portal_acessos WHERE id = ${c.acessoId}`,
     )
-    expect(depois[0]?.email).toBe(novo)
+    expect(depois[0]?.email).toBe(c.email)
+  })
+
+  it('meu perfil: mostra o cadastro; o cliente muda nome e cargo, e só o cargo muda no vínculo', async () => {
+    const c = await novoClienteDoPortal(app)
+    await noTenant(
+      c.tenantId,
+      (tx) => tx`
+        INSERT INTO contato_telefones (id, tenant_id, contato_id, numero, numero_e164, tipo, principal)
+        VALUES (gen_random_uuid(), ${c.tenantId}, ${c.contatoId}, '(27) 99999-0000', '+5527999990000', 'celular', true)`,
+    )
+    const cookie = await entrarNoPortal(chamar, c)
+    const antes = await chamar('get', '/portal/perfil', { cookie })
+    expect(antes.status).toBe(200)
+    expect(antes.body).toMatchObject({
+      emailDeAcesso: c.email,
+      telefones: [{ numero: '(27) 99999-0000', tipo: 'celular' }],
+    })
+    const r = await chamar('put', '/portal/perfil', {
+      cookie,
+      corpo: { nome: 'Maria Nova', cargo: 'Diretora financeira' },
+    })
+    expect(r.status).toBe(200)
+    const depois = await chamar('get', '/portal/perfil', { cookie })
+    expect(depois.body).toMatchObject({ nome: 'Maria Nova', cargo: 'Diretora financeira' })
+    const vinculo = await noTenant(
+      c.tenantId,
+      (tx) => tx<{ cargo: string; principal: boolean; ativo: boolean }[]>`
+        SELECT cargo, principal, ativo FROM empresa_contatos
+        WHERE contato_id = ${c.contatoId} AND empresa_id = ${c.empresaId}`,
+    )
+    expect(vinculo[0]).toMatchObject({ cargo: 'Diretora financeira', ativo: true })
+  })
+
+  it('minha empresa: o cadastro completo, só da empresa da sessão', async () => {
+    const c = await novoClienteDoPortal(app)
+    const cookie = await entrarNoPortal(chamar, c)
+    const r = await chamar('get', '/portal/empresa', { cookie })
+    expect(r.status).toBe(200)
+    expect(r.body).toHaveProperty('razaoSocial')
+    expect(r.body).toHaveProperty('endereco')
+    expect(r.body).not.toHaveProperty('vendedorId')
+    expect(r.body).not.toHaveProperty('observacoes')
+    // Sem sessão não há empresa
+    expect((await chamar('get', '/portal/empresa', {})).status).toBe(401)
+  })
+
+  it('o tema fica nas preferências e segue a pessoa', async () => {
+    const c = await novoClienteDoPortal(app)
+    const cookie = await entrarNoPortal(chamar, c)
+    const padrao = await chamar('get', '/portal/preferencias', { cookie })
+    expect((padrao.body as { tema: string }).tema).toBe('sistema')
+    const r = await chamar('put', '/portal/preferencias/tema', {
+      cookie,
+      corpo: { tema: 'escuro' },
+    })
+    expect(r.status).toBe(200)
+    expect((r.body as { tema: string }).tema).toBe('escuro')
+    expect(
+      (await chamar('put', '/portal/preferencias/tema', { cookie, corpo: { tema: 'roxo' } }))
+        .status,
+    ).toBe(400)
   })
 
   it('corrigir o nome grava a auditoria com o ator "contato" e nunca registra segredos', async () => {

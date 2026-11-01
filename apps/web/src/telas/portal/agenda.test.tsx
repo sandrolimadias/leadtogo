@@ -22,6 +22,8 @@ const item = (extra: Partial<ItemDeEvento> = {}): ItemDeEvento => ({
   prazoConfirmacao: null,
   confirmados: 2,
   listaDeEspera: 1,
+  publico: false,
+  encerradoEm: null,
   ...extra,
 })
 
@@ -34,6 +36,14 @@ const evento = (extra: Partial<Evento> = {}): Evento => ({
   canceladoMotivo: null,
   criadoEm: '2026-10-20T09:00:00.000Z',
   empresas: [],
+  tags: [],
+  formularioInscricaoId: null,
+  formularioAvaliacaoId: null,
+  publicacaoId: null,
+  checkinExigeCodigo: false,
+  checkinAtivo: false,
+  presentes: 0,
+  avaliaram: 0,
   ...extra,
 })
 
@@ -42,7 +52,14 @@ const pessoa = (extra: Partial<ParticipanteDoEvento> = {}): ParticipanteDoEvento
   pessoa: 'Ana Alves',
   email: 'ana@alfa.com.br',
   empresa: 'Caldeiraria Alfa',
+  cnpj: null,
+  origem: 'portal',
   situacao: 'confirmado',
+  presenca: 'nao_registrada',
+  presencaEm: null,
+  avaliou: false,
+  avaliacaoPedidaEm: null,
+  lembretes: 0,
   entrouNaFilaEm: '2026-10-21T10:00:00.000Z',
   confirmadoEm: '2026-10-21T10:00:00.000Z',
   promovidoEm: null,
@@ -90,6 +107,7 @@ function servicos(
                 posicaoNaFila: 1,
               }),
             ],
+            cancelados: [],
           }),
         ),
         ...troca,
@@ -124,13 +142,78 @@ describe('hub do portal: agenda', () => {
   })
 
   it('tira um participante com confirmação', async () => {
-    const removerParticipante = vi.fn(async () => ok({ confirmados: [], listaDeEspera: [] }))
+    const removerParticipante = vi.fn(async () =>
+      ok({ confirmados: [], listaDeEspera: [], cancelados: [] }),
+    )
     const usuario = await abrirAba(servicos({ removerParticipante }))
     const confirmados = await screen.findByRole('list', { name: 'Confirmados' })
     await usuario.click(within(confirmados).getByRole('button', { name: 'Tirar Ana Alves' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Tirar do evento' })
     await usuario.click(within(dialogo).getByRole('button', { name: 'Tirar' }))
     await waitFor(() => expect(removerParticipante).toHaveBeenCalledWith(id(600), id(610)))
+  })
+
+  it('evento em andamento: marca a presença, encerra e pede a avaliação', async () => {
+    const agora = evento({
+      inicioEm: new Date(Date.now() - 3_600_000).toISOString(),
+      fimEm: new Date(Date.now() + 3_600_000).toISOString(),
+      formularioAvaliacaoId: id(700),
+    })
+    const registrarPresenca = vi.fn(async () =>
+      ok({ confirmados: [], listaDeEspera: [], cancelados: [] }),
+    )
+    const encerrar = vi.fn(async () => ok({ porPush: 2, porEmail: 0, ignorados: 0 }))
+    const usuario = await abrirAba(
+      servicos({ obter: vi.fn(async () => ok(agora)), registrarPresenca, encerrar }),
+    )
+    const confirmados = await screen.findByRole('list', { name: 'Confirmados' })
+    await usuario.click(
+      within(confirmados).getByRole('button', { name: 'Marcar presença de Ana Alves' }),
+    )
+    await waitFor(() => expect(registrarPresenca).toHaveBeenCalledWith(id(600), id(610), true))
+    await usuario.click(screen.getByRole('button', { name: 'Encerrar evento' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Encerrar evento' })
+    expect(within(dialogo).getByText(/recebe o pedido de avaliação/)).toBeInTheDocument()
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Encerrar' }))
+    await waitFor(() => expect(encerrar).toHaveBeenCalledWith(id(600)))
+  })
+
+  it('evento futuro: não marca presença nem encerra; gera o QR de check-in', async () => {
+    const gerarCheckin = vi.fn(async () =>
+      ok({ url: 'https://portal.exemplo.com/checkin/abc', token: 'abc' }),
+    )
+    const usuario = await abrirAba(servicos({ gerarCheckin }))
+    const confirmados = await screen.findByRole('list', { name: 'Confirmados' })
+    expect(within(confirmados).queryByRole('button', { name: /Marcar presença/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Encerrar evento' })).toBeNull()
+    await usuario.click(screen.getByRole('button', { name: 'QR de check-in' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'QR de check-in' })
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Gerar QR' }))
+    await waitFor(() => expect(gerarCheckin).toHaveBeenCalledWith(id(600)))
+    expect(
+      await within(dialogo).findByText('https://portal.exemplo.com/checkin/abc'),
+    ).toBeInTheDocument()
+  })
+
+  it('só a presença: a recepção marca, mas não gera QR nem encerra', async () => {
+    const agora = evento({
+      inicioEm: new Date(Date.now() - 3_600_000).toISOString(),
+      fimEm: new Date(Date.now() + 3_600_000).toISOString(),
+    })
+    await abrirAba(
+      servicos(
+        { obter: vi.fn(async () => ok(agora)) },
+        { 'portal.ver': true, 'portal.eventos_presenca': true },
+      ),
+    )
+    const confirmados = await screen.findByRole('list', { name: 'Confirmados' })
+    expect(
+      within(confirmados).getByRole('button', { name: 'Marcar presença de Ana Alves' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Incluir participante' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'QR de check-in' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Encerrar evento' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'CSV' })).toBeNull()
   })
 
   it('cria um evento como rascunho com vagas, prazo e alcance', async () => {
@@ -158,6 +241,7 @@ describe('hub do portal: agenda', () => {
         prazoConfirmacao: null,
         alcance: 'todos',
         empresaIds: [],
+        tagIds: [],
       }),
     )
   })

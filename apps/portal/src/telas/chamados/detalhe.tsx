@@ -14,6 +14,7 @@ import { TextArea } from '@leadtogo/ui/campos'
 import { cn } from '@leadtogo/ui/cn'
 import { Alert, Skeleton } from '@leadtogo/ui/feedback'
 import { Badge } from '@leadtogo/ui/exibicao'
+import { FormularioDinamico } from '@leadtogo/ui/formulario'
 import { toast } from '@leadtogo/ui/toast'
 
 import { dataEHora, tamanhoLegivel } from '@/casca/rotulos'
@@ -250,6 +251,63 @@ function Estrelas({ valor, onChange }: { valor: number; onChange?: (n: number) =
   )
 }
 
+/** A pesquisa de satisfação (Fase 4F): o formulário que a equipe escolheu, no lugar das estrelas. */
+function PesquisaDeSatisfacao({
+  chamado,
+  atualizar,
+}: {
+  chamado: ChamadoDoPortal
+  atualizar: (c: ChamadoDoPortal) => void
+}) {
+  const servicos = useServicos()
+  const [enviando, setEnviando] = useState(false)
+  const formularioId = chamado.pesquisa?.formularioId ?? ''
+  const f = useQuery({
+    queryKey: ['formulario', formularioId],
+    enabled: formularioId !== '',
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.formularios.abrir(formularioId)
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados
+    },
+  })
+  if (f.isError) return <Alert tone="danger" title={f.error.message} />
+  if (!f.data) return <Skeleton lines={3} />
+  const dados = f.data
+  return (
+    <section aria-label="Pesquisa de satisfação" className="flex flex-col gap-2">
+      <p className="m-0 text-sm font-semibold">Como foi o atendimento? Responda a pesquisa.</p>
+      <FormularioDinamico
+        definicao={dados.definicao}
+        preenchidos={dados.preenchidos}
+        travados={dados.travados}
+        enviando={enviando}
+        aoEnviar={async (botao, respostas) => {
+          setEnviando(true)
+          const r = await servicos.chamados.responderPesquisa(chamado.id, {
+            versao: dados.versao,
+            botao,
+            respostas,
+          })
+          setEnviando(false)
+          if (!r.ok) {
+            return {
+              mensagem: r.erro.mensagem,
+              ...(r.erro.detalhes
+                ? { erros: Object.fromEntries(r.erro.detalhes.map((d) => [d.campo, d.mensagem])) }
+                : {}),
+            }
+          }
+          toast.success('Obrigado por responder a pesquisa')
+          atualizar(r.dados)
+          return undefined
+        }}
+      />
+    </section>
+  )
+}
+
 /** Chamado resolvido ou fechado: reabrir (até 7 dias) e avaliar (uma vez). */
 function Encerramento({
   chamado,
@@ -318,6 +376,8 @@ function Encerramento({
             <p className="m-0 text-sm text-ink-muted">{chamado.avaliacao.comentario}</p>
           ) : null}
         </div>
+      ) : chamado.pesquisa ? (
+        <PesquisaDeSatisfacao chamado={chamado} atualizar={atualizar} />
       ) : chamado.acoes.avaliar ? (
         <div className="flex flex-col gap-2">
           <p className="m-0 text-sm font-semibold">Como foi o atendimento?</p>
