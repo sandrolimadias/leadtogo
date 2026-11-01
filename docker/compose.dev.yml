@@ -5,7 +5,7 @@ name: leadtogo-dev
 
 services:
   postgres:
-    image: imresamu/postgis:17-3.5
+    image: imresamu/postgis:17-3.6
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -43,7 +43,7 @@ services:
       retries: 20
 
   garage:
-    image: dxflrs/garage:v2.1.0
+    image: dxflrs/garage:v2.5.0
     restart: unless-stopped
     environment:
       # Só para desenvolvimento; em produção o segredo fica no Coolify
@@ -65,7 +65,7 @@ services:
   # docker/.data/clamav. Precisa de ~1,5 GB de RAM (o clamd carrega as assinaturas inteiras).
   # Fica num perfil à parte (`antivirus`): o `pnpm dev:up` o sobe sem esperar a primeira carga das assinaturas.
   clamav:
-    image: clamav/clamav:1.4
+    image: clamav/clamav:1.5
     profiles: [antivirus]
     restart: unless-stopped
     environment:
@@ -87,7 +87,7 @@ services:
   # Servidor SMTP de desenvolvimento: captura os e-mails (recuperação de senha, verificação,
   # convites) sem enviar nada. Interface e API em http://localhost:8025. Não guarda em disco.
   mailpit:
-    image: axllent/mailpit:v1.31
+    image: axllent/mailpit:v1.32
     restart: unless-stopped
     environment:
       MP_MAX_MESSAGES: 500
