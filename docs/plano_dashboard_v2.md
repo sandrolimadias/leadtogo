@@ -1,6 +1,6 @@
 # Plano: Dashboard v2 (abas, períodos, novos indicadores e mapas)
 
-*Proposta de 01/11/2026, **aguardando a aprovação do Ale** (decisões na seção 12). Dezoito pedidos sobre o Dashboard. Mexe em `packages/shared`, `apps/api`, `apps/web`, `packages/db` (uma tabela de referência nova, só expansão) e nos docs. Nenhuma variável de ambiente nova. Cada etapa da seção 11 vira commits pequenos, cada um com os seus testes.*
+*Proposta de 01/11/2026, **aprovada pelo Ale em 01/11/2026** (as nove decisões da seção 12 como recomendado). **Implantação ainda não iniciada:** começa pela etapa 0 da seção 11 quando o Ale pedir. Dezoito pedidos sobre o Dashboard. Mexe em `packages/shared`, `apps/api`, `apps/web`, `packages/db` (uma tabela de referência nova, só expansão) e nos docs. Nenhuma variável de ambiente nova. Cada etapa da seção 11 vira commits pequenos, cada um com os seus testes.*
 
 ## 1. Resumo dos pedidos
 
@@ -86,7 +86,7 @@ O seletor de período **não aparece** nesta aba. Os contadores das abas de ativ
 Notas:
 - Visita **"não localizada"** é Realizada e **conta** (regra do Ale de 22/10/2026: `conta_visita = false` nunca tira a atividade das contagens). Canceladas não contam.
 - O card **"Sem contato há N dias" sai** (pedido 14). A configuração `dias_sem_contato_alerta` e o filtro "Sem contato há N dias" da lista de Empresas **continuam** (são usados fora do Dashboard).
-- Tarefas (tipo de sistema `tarefa`) entram em "Atividades realizadas"? **Decisão D4** (recomendação: entram; é esforço registrado).
+- As Tarefas (tipo de sistema `tarefa`) entram em "Atividades realizadas": **sim** (decisão D4: é esforço registrado).
 
 ### 4.3 Funil e resultado
 
@@ -132,7 +132,7 @@ Duas faixas de quatro cards no fim da aba, **cada uma só para quem tem a permis
 
 ### 4.7 Visão (de quem são os números)
 
-Hoje o Dashboard é só "Minha". Pedidos como "Quantidade de associados", "Churn" e os mapas do "total de empresas do cadastro" pedem a visão da **empresa** para o gestor e o admin. Proposta (decisão D1):
+Hoje o Dashboard é só "Minha". Pedidos como "Quantidade de associados", "Churn" e os mapas do "total de empresas do cadastro" pedem a visão da **empresa** para o gestor e o admin. Decidido (D1):
 
 - Seletor **Visão: Minha | Equipe | Empresa** na barra de período da aba Resultados, mostrando só as opções que o **alcance de `empresas.ver`** do perfil permite (alcance `propria` → nem aparece; `equipe` → Minha | Equipe; `todas` → as três). Padrão: **Minha**.
 - "Minha": como hoje (responsável da oportunidade/atividade; `vendedor_id` da empresa). "Equipe": os membros da equipe do gestor. "Empresa": todos.
@@ -259,7 +259,7 @@ Cada linha é um commit (ou poucos), com os seus testes; a `main` continua deplo
 11. `feat(web): aba Resultados com a barra de período e os oito indicadores` (2, 3 e os cards).
 12. `feat(web): novos associados e desassociados no Dashboard`.
 
-**Etapa 4 — visão Equipe/Empresa (se D1 aprovada)**
+**Etapa 4 — visão Equipe/Empresa (D1)**
 13. `feat(api): visão Minha, Equipe e Empresa nos resultados do Dashboard` + `feat(web): seletor de visão`.
 
 **Etapa 5 — mapas**
@@ -280,14 +280,16 @@ Cada linha é um commit (ou poucos), com os seus testes; a `main` continua deplo
 
 **Estimativa:** etapas 1–3 ≈ 3 a 4 dias; etapa 4 ≈ 1 dia; etapa 5 ≈ 2 dias; etapa 6 ≈ 1 dia. Total ≈ 7 a 8 dias de trabalho.
 
-## 12. Decisões para o Ale
+## 12. Decisões do Ale
 
-| # | Pergunta | Recomendação |
+Todas respondidas em 01/11/2026: **as nove como recomendado**.
+
+| # | Pergunta | Decisão (01/11/2026) |
 |---|---|---|
 | **D1** | Os Resultados ficam só na visão **"Minha"** (como hoje) ou ganham **Minha · Equipe · Empresa** (limitado pelo perfil)? | **Ganhar a visão** (4.7). Associados, churn e "total de empresas do cadastro" fazem mais sentido para a empresa inteira; o vendedor continua vendo só a dele. |
 | **D2** | Previsão: soma o **valor total** ou o **ponderado** das oportunidades na fase final? E só as com **data prevista no período** ou todas que estão na fase final hoje? | **Valor total**, só as com data prevista no período (as sem data aparecem na dica como "M sem data prevista"; o ponderado também vai na dica). |
 | **D3** | "Fase mais avançada" = a **última fase ativa** (maior ordem) de cada funil? | **Sim.** Se algum funil tiver uma fase final que não é "quase fechado", dá para, no futuro, marcar a fase de previsão no cadastro do funil. |
-| **D4** | "Atividades realizadas" inclui as **Tarefas** (tipo de sistema `tarefa`)? | **Incluir** (é esforço registrado). Alternativa: só os tipos de contato com cliente. |
+| **D4** | "Atividades realizadas" inclui as **Tarefas** (tipo de sistema `tarefa`)? | **Incluir** (é esforço registrado). |
 | **D5** | Empresa que **virou e deixou de ser** associada dentro do mesmo período aparece em alguma lista? | **Não** (conta o saldo do período: estava no início × está no fim). |
 | **D6** | Excluir uma empresa associada conta como **desassociação** (churn)? | **Não** (exclusão é limpeza de cadastro). |
 | **D7** | Os mapas usam a cidade do **cadastro** (endereço da Receita) ou a posição **geocodificada**? | **Cidade do cadastro** (toda empresa tem; a geocodificação não cobre todas). |
