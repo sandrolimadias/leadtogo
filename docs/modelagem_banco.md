@@ -1039,6 +1039,13 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 
 - `tenant_configuracoes.portal_formulario_satisfacao_id` (FK para `formularios`, só no SQL para evitar ciclo no schema): o formulário da pesquisa de satisfação dos chamados. A resposta vai para `formulario_respostas` com `contexto_tipo = 'chamado'`; a primeira nota de 1 a 5 também vira `chamado_avaliacoes`.
 
+## Portal, Fase 4G (migrações 0051 e 0052, só expansão)
+
+- **`eventos`:** `publico` (aparece na página pública da Fase 4H), `formulario_inscricao_id` e `formulario_avaliacao_id` (FK `formularios`), `publicacao_id` (a publicação do feed criada ao publicar), `encerrado_em` / `encerrado_por`, `checkin_token_hash` (só o hash do QR), `checkin_exige_codigo`, `checkin_abre_minutos` (padrão 60).
+- **`evento_confirmacoes`:** `acesso_id` e `empresa_id` passam a aceitar nulo (inscrição da equipe ou pública); `origem` (`portal` · `equipe` · `publico`), `nome`, `email`, `telefone`, `cnpj`, `contato_id`, `resposta_id` (resposta do formulário de inscrição), `presenca` (enum `presenca_evento`: `nao_registrada` · `checkin_qr` · `manual`), `presenca_em`, `presenca_por`, `avaliacao_resposta_id`, `avaliacao_token_hash` (link pessoal do e-mail), `avaliacao_pedida_em`, `avaliacao_lembretes`, `crm_tratado_em` (idempotência do vínculo com o CRM).
+- **`tenant_configuracoes`:** `portal_eventos_crm_ativo`, `portal_eventos_crm_responsavel_id` (FK `membros`), `portal_avaliacao_por_email`.
+- **Funções:** `app_evento_inscrever(evento, id, dados jsonb)` (vagas, fila e alcance, inclusive por tags; a confirmação antiga delega a ela), `app_evento_registrar_avaliacao(evento, resposta)` e `app_evento_checkin_portal(evento)` (sessão do portal; erros `sem_presenca`, `ja_avaliado`, `sem_inscricao`). Sem tenant na sessão, `SECURITY DEFINER` com política só do dono e chave de `set_config`: `app_evento_por_checkin(hash)` e `app_participacao_por_avaliacao(hash)` devolvem o tenant e o evento ou a participação. As tabelas continuam com o RLS do tenant e as políticas restritivas do portal.
+
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 
 **Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (busca das oportunidades pelo título, sem acento). Empresas e contatos já tinham os seus (0017 e 0018). Os índices trigram são criados por SQL na migração e não aparecem no schema do Drizzle nem nos snapshots, por isso o `db:generate` não os enxerga nem tenta apagá-los.

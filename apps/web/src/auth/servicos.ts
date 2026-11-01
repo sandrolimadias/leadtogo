@@ -1211,6 +1211,70 @@ export const servicosReais: ServicosDeAcesso = {
             }),
           ),
         ),
+      registrarPresenca: (id, participacaoId, presente) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/portal-eventos/{id}/participantes/{participacaoId}/presenca', {
+              params: { path: { id, participacaoId } },
+              body: { presente },
+            }),
+          ),
+        ),
+      incluirParticipante: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-eventos/{id}/participantes', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      encerrar: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-eventos/{id}/encerrar', { params: { path: { id } } })),
+        ),
+      reenviarAvaliacao: (id, participacaoIds) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-eventos/{id}/avaliacoes/reenviar', {
+              params: { path: { id } },
+              body: participacaoIds ? { participacaoIds } : {},
+            }),
+          ),
+        ),
+      gerarCheckin: (id) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-eventos/{id}/checkin', { params: { path: { id } } })),
+        ),
+      exportarInscritos: (id, formato) =>
+        protegido(async () => {
+          const opcoes = { params: { path: { id } }, parseAs: 'blob' as const }
+          const r =
+            formato === 'csv'
+              ? await api.GET('/v1/portal-eventos/{id}/inscritos.csv', opcoes)
+              : formato === 'xlsx'
+                ? await api.GET('/v1/portal-eventos/{id}/inscritos.xlsx', opcoes)
+                : await api.GET('/v1/portal-eventos/{id}/inscritos.html', opcoes)
+          if (!r.response.ok || !r.data) {
+            return {
+              ok: false,
+              erro: traduzirErro(r.response.status, {
+                erro: 'exportacao_falhou',
+                mensagem: 'Não consegui exportar os inscritos.',
+              }),
+            }
+          }
+          const nome =
+            /filename="([^"]+)"/.exec(r.response.headers.get('Content-Disposition') ?? '')?.[1] ??
+            `inscritos.${formato}`
+          return ok({ nome, conteudo: r.data })
+        }),
+      daEmpresa: (empresaId) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/empresas/{id}/eventos', { params: { path: { id: empresaId } } }),
+          ),
+        ),
     },
     documentos: {
       listar: (consulta = {}) =>

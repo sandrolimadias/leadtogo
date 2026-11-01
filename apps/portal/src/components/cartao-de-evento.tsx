@@ -1,5 +1,5 @@
 import type { EventoDoPortal } from '@leadtogo/api-client'
-import { Download, ExternalLink, MapPin } from 'lucide-react'
+import { Download, ExternalLink, MapPin, Star } from 'lucide-react'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -11,6 +11,10 @@ import { toast } from '@leadtogo/ui/toast'
 import { resumoDoEvento } from '@/casca/eventos'
 import { dataEHora, diaEMes, diaPorExtenso, periodoDoEvento } from '@/casca/rotulos'
 import { useServicos } from '@/servicos/contexto'
+
+import { comoResultadoDoEnvio } from '@/casca/resultado-do-envio'
+
+import { DialogoDoFormularioDoEvento } from './formulario-do-evento'
 
 function Vagas({ e }: { e: EventoDoPortal }) {
   const partes: string[] = []
@@ -38,7 +42,9 @@ export function CartaoDeEvento({ e }: { e: EventoDoPortal }) {
   const servicos = useServicos()
   const queryClient = useQueryClient()
   const [ocupado, setOcupado] = useState(false)
+  const [formulario, setFormulario] = useState<'inscricao' | 'avaliacao' | null>(null)
   const dm = diaEMes(e.inicioEm)
+  const inscricaoId = e.formularioInscricaoId
 
   async function agir(acao: 'confirmar' | 'cancelar') {
     setOcupado(true)
@@ -112,14 +118,28 @@ export function CartaoDeEvento({ e }: { e: EventoDoPortal }) {
           {e.cancelado ? (
             <p className="m-0 text-sm text-danger">Este evento foi cancelado pela equipe.</p>
           ) : null}
+          {e.presente ? (
+            <p className="m-0 text-sm text-success">Sua presença foi registrada.</p>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {e.podeConfirmar ? (
-              <Button variant="primary" loading={ocupado} onClick={() => void agir('confirmar')}>
+              <Button
+                variant="primary"
+                loading={ocupado}
+                onClick={() => (inscricaoId ? setFormulario('inscricao') : void agir('confirmar'))}
+              >
                 {e.lotado ||
                 (e.vagasDaEmpresa.limite !== null &&
                   e.vagasDaEmpresa.confirmados >= e.vagasDaEmpresa.limite)
                   ? 'Entrar na lista de espera'
-                  : 'Confirmar presença'}
+                  : inscricaoId
+                    ? 'Inscrever-se'
+                    : 'Confirmar presença'}
+              </Button>
+            ) : null}
+            {e.avaliar ? (
+              <Button variant="primary" icon={Star} onClick={() => setFormulario('avaliacao')}>
+                Avaliar o evento
               </Button>
             ) : null}
             {e.podeCancelar ? (
@@ -139,6 +159,52 @@ export function CartaoDeEvento({ e }: { e: EventoDoPortal }) {
           </div>
         </div>
       </div>
+      {formulario === 'inscricao' && inscricaoId ? (
+        <DialogoDoFormularioDoEvento
+          chave={['formulario', inscricaoId]}
+          titulo={`Inscrição: ${e.titulo}`}
+          descricao="Confira os dados do seu cadastro e complete o que faltar."
+          carregar={() => servicos.formularios.abrir(inscricaoId)}
+          enviando={ocupado}
+          aoFechar={() => setFormulario(null)}
+          enviar={async (f, botao, respostas) => {
+            setOcupado(true)
+            const r = await servicos.eventos.inscrever(e.id, { versao: f.versao, botao, respostas })
+            setOcupado(false)
+            if (r.ok) {
+              setFormulario(null)
+              toast.success(
+                r.dados.minhaSituacao === 'lista_espera'
+                  ? 'Você entrou na lista de espera. Avisamos se abrir uma vaga.'
+                  : 'Inscrição confirmada',
+              )
+              void queryClient.invalidateQueries({ queryKey: ['eventos'] })
+            }
+            return comoResultadoDoEnvio(r)
+          }}
+        />
+      ) : null}
+      {formulario === 'avaliacao' ? (
+        <DialogoDoFormularioDoEvento
+          chave={['evento', e.id, 'avaliacao']}
+          titulo={`Avaliação: ${e.titulo}`}
+          descricao="Obrigado por participar. Sua opinião ajuda a fazer o próximo ainda melhor."
+          carregar={() => servicos.eventos.formularioDeAvaliacao(e.id)}
+          enviando={ocupado}
+          aoFechar={() => setFormulario(null)}
+          enviar={async (f, botao, respostas) => {
+            setOcupado(true)
+            const r = await servicos.eventos.avaliar(e.id, { versao: f.versao, botao, respostas })
+            setOcupado(false)
+            if (r.ok) {
+              setFormulario(null)
+              toast.success('Avaliação enviada. Obrigado!')
+              void queryClient.invalidateQueries({ queryKey: ['eventos'] })
+            }
+            return comoResultadoDoEnvio(r)
+          }}
+        />
+      ) : null}
     </article>
   )
 }

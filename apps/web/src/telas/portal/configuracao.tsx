@@ -164,7 +164,108 @@ export function TelaDeConfiguracoesDoPortal() {
           )
         }
       />
+      <EventosNoCrm
+        ativo={c.eventosCrmAtivo}
+        responsavelId={c.eventosCrmResponsavelId}
+        avaliacaoPorEmail={c.avaliacaoPorEmail}
+        salvando={salvando}
+        aoSalvar={(dados, sucesso) => void salvar(dados, sucesso)}
+      />
     </div>
+  )
+}
+
+/**
+ * Eventos (Fase 4G): levar ao CRM quem se inscreve com CNPJ (empresa como Lead, contato e a tarefa "Contato
+ * pós-evento" para o administrador ou gestor escolhido, que redistribui ao vendedor) e pedir a avaliação por
+ * e-mail a quem não tem acesso ao portal.
+ */
+function EventosNoCrm({
+  ativo,
+  responsavelId,
+  avaliacaoPorEmail,
+  salvando,
+  aoSalvar,
+}: {
+  ativo: boolean
+  responsavelId: string | null
+  avaliacaoPorEmail: boolean
+  salvando: boolean
+  aoSalvar: (
+    dados: {
+      eventosCrmAtivo?: boolean
+      eventosCrmResponsavelId?: string | null
+      avaliacaoPorEmail?: boolean
+    },
+    sucesso: string,
+  ) => void
+}) {
+  const servicos = useServicos()
+  const equipe = useQuery({
+    queryKey: ['equipe', 'ativos'],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.equipe()
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.filter(
+        (m) => m.ativo && m.temLogin && (m.papel === 'admin' || m.papel === 'gestor'),
+      )
+    },
+  })
+  const [escolha, setEscolha] = useState<string | null>(null)
+  const responsavel = escolha ?? responsavelId ?? ''
+  return (
+    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4">
+      <h3 className="m-0 text-[15px] font-semibold">Eventos</h3>
+      <Select
+        label="Responsável pelos inscritos novos"
+        value={responsavel}
+        disabled={salvando}
+        hint="Administrador ou gestor: recebe a empresa e a tarefa do dia útil seguinte ao evento e redistribui ao vendedor."
+        options={[
+          { value: '', label: 'Escolha' },
+          ...(equipe.data ?? []).map((m) => ({ value: m.id, label: m.nome })),
+        ]}
+        onChange={(e) => {
+          setEscolha(e.target.value)
+          if (e.target.value && ativo) {
+            aoSalvar({ eventosCrmResponsavelId: e.target.value }, 'Responsável atualizado')
+          }
+        }}
+      />
+      <Switch
+        checked={ativo}
+        disabled={salvando || (!ativo && !responsavel)}
+        onChange={(e) =>
+          aoSalvar(
+            e.target.checked
+              ? { eventosCrmAtivo: true, eventosCrmResponsavelId: responsavel || null }
+              : { eventosCrmAtivo: false },
+            e.target.checked ? 'Vínculo com o CRM ligado' : 'Vínculo com o CRM desligado',
+          )
+        }
+        label="Levar ao CRM quem se inscreve com CNPJ"
+      />
+      <p className="m-0 text-[13px] text-ink-muted">
+        Vale para inscrições com o campo CNPJ (página pública e inclusão pela equipe). CNPJ que já
+        está na carteira só ganha o contato; CNPJ novo vira Lead com a tarefa “Contato pós-evento”.
+      </p>
+      <Switch
+        checked={avaliacaoPorEmail}
+        disabled={salvando}
+        onChange={(e) =>
+          aoSalvar(
+            { avaliacaoPorEmail: e.target.checked },
+            e.target.checked ? 'Avaliação por e-mail ligada' : 'Avaliação por e-mail desligada',
+          )
+        }
+        label="Pedir a avaliação por e-mail a quem não tem acesso ao portal"
+      />
+      <p className="m-0 text-[13px] text-ink-muted">
+        Quem tem acesso recebe o pedido no portal (sino e notificação no celular). Sem acesso, chega
+        um e-mail com um link pessoal para avaliar.
+      </p>
+    </section>
   )
 }
 

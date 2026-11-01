@@ -218,6 +218,54 @@ export const servicosReais: ServicosDoPortal = {
       protegido(async () =>
         daApi(await api.DELETE('/v1/portal/eventos/{id}/confirmacao', chave(id))),
       ),
+    inscrever: (id, dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/eventos/{id}/inscricao', { ...chave(id), body: dados })),
+      ),
+    formularioDeAvaliacao: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/portal/eventos/{id}/avaliacao', chave(id))),
+      ) as Promise<Resultado<FormularioParaResponder>>,
+    avaliar: (id, dados) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/eventos/{id}/avaliacao', { ...chave(id), body: dados })),
+      ),
+  },
+  checkin: {
+    abrir: (token) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/portal/publico/checkin/{token}', { params: { path: { token } } })),
+      ),
+    logado: (token) =>
+      protegido(async () =>
+        daApi(await api.POST('/v1/portal/checkin/{token}', { params: { path: { token } } })),
+      ),
+    semLogin: (token, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/portal/publico/checkin/{token}', {
+            params: { path: { token } },
+            body: dados,
+          }),
+        ),
+      ),
+  },
+  avaliacaoPorLink: {
+    abrir: (token) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/portal/publico/avaliacao/{token}', { params: { path: { token } } }),
+        ),
+      ) as Promise<Resultado<FormularioParaResponder & { evento: string }>>,
+    responder: (token, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/portal/publico/avaliacao/{token}', {
+            params: { path: { token } },
+            body: dados,
+          }),
+        ),
+      ),
   },
   preferencias: {
     obter: () => protegido(async () => daApi(await api.GET('/v1/portal/preferencias'))),

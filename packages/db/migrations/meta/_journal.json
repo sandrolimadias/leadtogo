@@ -365,6 +365,13 @@
       "when": 1793500325432,
       "tag": "0051_portal_4g_eventos",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1793514317679,
+      "tag": "0052_portal_4g_avaliacao_e_checkin",
+      "breakpoints": true
     }
   ]
 }

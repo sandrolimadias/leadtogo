@@ -49,6 +49,14 @@ const PORTAL_SEM_SESSAO: Record<string, string> = {
     'formulário público: só publicado e com acesso público',
   'PortalFormulariosController.responderPublico':
     'resposta do formulário público (aceite, captcha quando ligado, isca e limite por IP)',
+  'PortalEventosInscricaoController.checkinPublico':
+    'QR do check-in: só o evento e se o check-in está aberto (token com hash no banco)',
+  'PortalEventosInscricaoController.fazerCheckin':
+    'check-in sem login: e-mail da inscrição, código por e-mail quando exigido, limite por IP',
+  'PortalEventosInscricaoController.avaliacaoPorLink':
+    'avaliação pelo link pessoal enviado por e-mail (token com hash no banco)',
+  'PortalEventosInscricaoController.avaliarPorLink':
+    'resposta da avaliação pelo link pessoal (uma por participação, limite por IP)',
 }
 
 type Rota = {

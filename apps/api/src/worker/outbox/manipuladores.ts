@@ -38,6 +38,11 @@ import {
 } from '../../integracoes/webhooks/processador.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
+import { EVENTO_VINCULAR_CRM, manipuladorDoVinculoNoCrm } from '../../portal/evento-crm.js'
+import {
+  EVENTO_PEDIR_AVALIACAO,
+  manipuladorDoPedidoDeAvaliacao,
+} from '../../portal/avaliacao-evento.js'
 import {
   EVENTO_ACOES_DO_FORMULARIO,
   manipuladorDasAcoesDoFormulario,
@@ -186,6 +191,12 @@ export function manipuladoresPadrao(
       tipo: 'documento',
     })
   }
+
+  /** Inscrição com CNPJ: empresa, contato e tarefa no CRM (Fase 4G, B-17) */
+  manipuladores[EVENTO_VINCULAR_CRM] = manipuladorDoVinculoNoCrm(receita)
+
+  /** Pedido de avaliação do evento aos presentes (Fase 4G) */
+  manipuladores[EVENTO_PEDIR_AVALIACAO] = manipuladorDoPedidoDeAvaliacao(config, publicar)
 
   /** Resposta de formulário (Fase 4E): as ações do botão (e-mail e webhook) */
   manipuladores[EVENTO_ACOES_DO_FORMULARIO] = manipuladorDasAcoesDoFormulario(config)

@@ -298,8 +298,9 @@ describe('o cliente: confirmar, lista de espera e cancelar', () => {
       vagasRestantes: 9,
     })
     const volta = await cancelar(a1, id)
+    // F-2: os dados ficam e a situação é "presença cancelada"; o botão de inscrição volta a valer
     expect(volta.body).toMatchObject({
-      minhaSituacao: 'nenhuma',
+      minhaSituacao: 'cancelado',
       vagasRestantes: 10,
       podeConfirmar: true,
     })
@@ -330,7 +331,7 @@ describe('o cliente: confirmar, lista de espera e cancelar', () => {
     ])
     expect(lista.body.listaDeEspera).toMatchObject([{ pessoa: 'Alice Araújo', posicaoNaFila: 1 }])
 
-    expect((await cancelar(a1, id)).body.minhaSituacao).toBe('nenhuma')
+    expect((await cancelar(a1, id)).body.minhaSituacao).toBe('cancelado')
     expect((await doCliente(a3, id))['minhaSituacao']).toBe('confirmado')
     await esperarAte(async () =>
       (await sinoDoCliente(c, a3)).some((n) => n.tipo === 'evento.vaga' && n.canal === 'sino'),
@@ -447,9 +448,11 @@ describe('o cliente: confirmar, lista de espera e cancelar', () => {
       expect(texto).not.toContain(nome)
     expect(Object.keys(r.body).sort()).toEqual(
       [
+        'avaliar',
         'cancelado',
         'descricao',
         'fimEm',
+        'formularioInscricaoId',
         'id',
         'inicioEm',
         'linkOnline',
@@ -460,6 +463,8 @@ describe('o cliente: confirmar, lista de espera e cancelar', () => {
         'podeCancelar',
         'podeConfirmar',
         'prazoConfirmacao',
+        'presente',
+        'publico',
         'titulo',
         'vagasDaEmpresa',
         'vagasRestantes',
@@ -487,7 +492,7 @@ describe('a equipe: participantes, vagas e cancelamento do evento', () => {
     expect(removida.body.confirmados.map((p: { pessoa: string }) => p.pessoa)).toEqual([
       'Alex Abreu',
     ])
-    expect((await doCliente(a1, id))['minhaSituacao']).toBe('nenhuma')
+    expect((await doCliente(a1, id))['minhaSituacao']).toBe('cancelado')
     expect(
       (await crm('delete', c.gestor.cookie, `/portal-eventos/${id}/participantes/${confirmacaoA1}`))
         .status,

@@ -33,6 +33,10 @@ type LinhaDoEvento = {
   prazo_vencido: boolean
   da_empresa: number
   minha: MinhaSituacaoNoEvento
+  publico: boolean
+  formulario_inscricao_id: string | null
+  presente: boolean
+  avaliar_id: string | null
 }
 
 /** Mensagem do erro lançado pelas funções do banco → erro da API. */
@@ -46,6 +50,11 @@ const ERROS_DA_AGENDA: Record<string, ErroApi> = {
     409,
   ),
   sem_presenca: new ErroApi('sem_presenca', 'Você não tem presença neste evento.', 409),
+  evento_so_associados: new ErroApi(
+    'evento_so_associados',
+    'Este evento é só para associados: entre no portal para se inscrever.',
+    403,
+  ),
 }
 
 /**
@@ -80,8 +89,17 @@ export class PortalEventosService {
       (e.prazo_confirmacao IS NOT NULL AND e.prazo_confirmacao <= now()) AS prazo_vencido,
       (SELECT count(*)::int FROM evento_confirmacoes c
         WHERE c.evento_id = e.id AND c.empresa_id = ${empresaId} AND c.situacao = 'confirmado') AS da_empresa,
+      -- A participação mais recente: depois de cancelar, "cancelado" (os dados ficam; dá para se inscrever de novo)
       coalesce((SELECT c.situacao::text FROM evento_confirmacoes c
-        WHERE c.evento_id = e.id AND c.acesso_id = ${acessoId} AND c.situacao <> 'cancelado'), 'nenhuma') AS minha`
+        WHERE c.evento_id = e.id AND c.acesso_id = ${acessoId}
+        ORDER BY (c.situacao <> 'cancelado') DESC, c.entrou_na_fila_em DESC LIMIT 1), 'nenhuma') AS minha,
+      e.publico, e.formulario_inscricao_id,
+      EXISTS (SELECT 1 FROM evento_confirmacoes c WHERE c.evento_id = e.id AND c.acesso_id = ${acessoId}
+        AND c.situacao <> 'cancelado' AND c.presenca <> 'nao_registrada') AS presente,
+      CASE WHEN e.encerrado_em IS NOT NULL AND e.formulario_avaliacao_id IS NOT NULL AND EXISTS (
+        SELECT 1 FROM evento_confirmacoes c WHERE c.evento_id = e.id AND c.acesso_id = ${acessoId}
+          AND c.situacao <> 'cancelado' AND c.presenca <> 'nao_registrada' AND c.avaliacao_resposta_id IS NULL)
+      THEN e.formulario_avaliacao_id END AS avaliar_id`
   }
 
   private paraEvento(l: LinhaDoEvento): EventoDoPortal {
@@ -91,7 +109,8 @@ export class PortalEventosService {
     let motivo: MotivoDeBloqueioDoEvento | null = null
     if (cancelado) motivo = 'evento_cancelado'
     else if (l.iniciado) motivo = 'evento_encerrado'
-    else if (l.prazo_vencido && l.minha === 'nenhuma') motivo = 'prazo_encerrado'
+    else if (l.prazo_vencido && (l.minha === 'nenhuma' || l.minha === 'cancelado'))
+      motivo = 'prazo_encerrado'
     return {
       id: l.id,
       titulo: l.titulo,
@@ -107,9 +126,14 @@ export class PortalEventosService {
       lotado: restantes === 0,
       vagasDaEmpresa: { limite: l.vagas_por_empresa, confirmados: l.da_empresa },
       minhaSituacao: l.minha,
-      podeConfirmar: motivo === null && l.minha === 'nenhuma',
-      podeCancelar: !cancelado && !l.iniciado && l.minha !== 'nenhuma',
+      podeConfirmar: motivo === null && (l.minha === 'nenhuma' || l.minha === 'cancelado'),
+      podeCancelar:
+        !cancelado && !l.iniciado && (l.minha === 'confirmado' || l.minha === 'lista_espera'),
       motivoDoBloqueio: motivo,
+      formularioInscricaoId: l.formulario_inscricao_id,
+      publico: l.publico,
+      presente: l.presente,
+      avaliar: l.avaliar_id ? { formularioId: l.avaliar_id } : null,
     }
   }
 

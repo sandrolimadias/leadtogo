@@ -64,6 +64,10 @@ export const itemDeEventoSchema = z
     prazoConfirmacao: instante.nullable(),
     confirmados: z.number().int().nonnegative(),
     listaDeEspera: z.number().int().nonnegative(),
+    /** Fase 4G: qualquer pessoa se inscreve (página pública); falso = só associados */
+    publico: z.boolean(),
+    /** Encerrado pela equipe (pedido de avaliação enviado aos presentes) */
+    encerradoEm: instante.nullable(),
   })
   .meta({ id: 'ItemDeEvento' })
 export type ItemDeEvento = z.infer<typeof itemDeEventoSchema>
@@ -78,6 +82,16 @@ export const eventoSchema = itemDeEventoSchema
     criadoEm: instante,
     empresas: z.array(z.object({ id: z.uuid(), nome: z.string() })),
     tags: z.array(tagDoAlcanceSchema),
+    formularioInscricaoId: z.uuid().nullable(),
+    formularioAvaliacaoId: z.uuid().nullable(),
+    /** A publicação que nasceu do evento */
+    publicacaoId: z.uuid().nullable(),
+    checkinExigeCodigo: z.boolean(),
+    /** Já há um QR de check-in gerado */
+    checkinAtivo: z.boolean(),
+    /** Presentes, avaliaram e faltam avaliar (acompanhamento da avaliação) */
+    presentes: z.number().int().nonnegative(),
+    avaliaram: z.number().int().nonnegative(),
   })
   .meta({ id: 'Evento' })
 export type Evento = z.infer<typeof eventoSchema>
@@ -155,6 +169,10 @@ export const salvarEventoSchema = z
     alcance: alcanceDaPublicacaoSchema,
     empresaIds: z.array(z.uuid()).max(MAXIMO_DE_EMPRESAS_NO_ALCANCE).default([]),
     tagIds: tagIdsDoAlcanceSchema.default([]),
+    publico: z.boolean().default(false),
+    formularioInscricaoId: z.uuid().nullable().default(null),
+    formularioAvaliacaoId: z.uuid().nullable().default(null),
+    checkinExigeCodigo: z.boolean().default(false),
   })
   .strict()
   .superRefine((d, ctx) => {
@@ -190,14 +208,25 @@ export const cancelarEventoSchema = z
   .meta({ id: 'CancelarEventoEntrada' })
 export type CancelarEventoEntrada = z.infer<typeof cancelarEventoSchema>
 
+export const PRESENCAS = ['nao_registrada', 'checkin_qr', 'manual'] as const
+export const ORIGENS_DA_PARTICIPACAO = ['portal', 'publico', 'equipe'] as const
+
 export const participanteDoEventoSchema = z
   .object({
     /** Id da confirmação (para a equipe tirar a pessoa do evento) */
     id: z.uuid(),
     pessoa: z.string(),
     email: z.string(),
-    empresa: z.string(),
+    /** Nula para quem se inscreveu sem empresa (página pública sem CNPJ) */
+    empresa: z.string().nullable(),
+    cnpj: z.string().nullable(),
+    origem: z.enum(ORIGENS_DA_PARTICIPACAO),
     situacao: situacaoDaConfirmacaoSchema,
+    presenca: z.enum(PRESENCAS),
+    presencaEm: instante.nullable(),
+    avaliou: z.boolean(),
+    avaliacaoPedidaEm: instante.nullable(),
+    lembretes: z.number().int().nonnegative(),
     entrouNaFilaEm: instante,
     confirmadoEm: instante.nullable(),
     promovidoEm: instante.nullable(),
@@ -211,14 +240,58 @@ export const listaDeParticipantesSchema = z
   .object({
     confirmados: z.array(participanteDoEventoSchema),
     listaDeEspera: z.array(participanteDoEventoSchema),
+    /** Presença cancelada: os dados ficam (F-2) */
+    cancelados: z.array(participanteDoEventoSchema),
   })
   .meta({ id: 'ListaDeParticipantes' })
+
+/** A equipe marca (ou desfaz) a presença de quem participou sem fazer check-in (B-20). */
+export const registrarPresencaSchema = z
+  .object({ presente: z.boolean() })
+  .strict()
+  .meta({ id: 'RegistrarPresencaEntrada' })
+
+/** A equipe inclui quem veio sem se inscrever, já presente (B-20). */
+export const incluirParticipanteSchema = z
+  .object({
+    nome: z.string().trim().min(2, 'informe o nome').max(160),
+    email: z.email().max(254),
+    telefone: z.string().trim().max(20).nullable().optional(),
+    cnpj: z.string().trim().max(18).nullable().optional(),
+  })
+  .strict()
+  .meta({ id: 'IncluirParticipanteEntrada' })
+export type IncluirParticipanteEntrada = z.infer<typeof incluirParticipanteSchema>
+
+/** Reenviar o pedido de avaliação (B-16): a quem falta, ou às pessoas escolhidas. */
+export const reenviarAvaliacaoSchema = z
+  .object({ participacaoIds: z.array(z.uuid()).max(1000).optional() })
+  .strict()
+  .meta({ id: 'ReenviarAvaliacaoEntrada' })
+export type ReenviarAvaliacaoEntrada = z.infer<typeof reenviarAvaliacaoSchema>
+
+/** No máximo 3 lembretes por pessoa, e 1 por dia (B-16). */
+export const MAXIMO_DE_LEMBRETES_DE_AVALIACAO = 3
+
+export const resultadoDoPedidoDeAvaliacaoSchema = z
+  .object({
+    porPush: z.number().int(),
+    porEmail: z.number().int(),
+    ignorados: z.number().int(),
+  })
+  .meta({ id: 'ResultadoDoPedidoDeAvaliacao' })
+export type ResultadoDoPedidoDeAvaliacao = z.infer<typeof resultadoDoPedidoDeAvaliacaoSchema>
+
+/** O QR de check-in recém-gerado: o endereço só aparece agora (no banco, só o hash). */
+export const checkinDoEventoSchema = z
+  .object({ url: z.url(), token: z.string() })
+  .meta({ id: 'CheckinDoEvento' })
 export type ListaDeParticipantes = z.infer<typeof listaDeParticipantesSchema>
 
 // -------------------------------------------------------------------------------------------- cliente
 
 export const minhaSituacaoNoEventoSchema = z
-  .enum(['nenhuma', 'confirmado', 'lista_espera'])
+  .enum(['nenhuma', 'confirmado', 'lista_espera', 'cancelado'])
   .meta({ id: 'MinhaSituacaoNoEvento' })
 export type MinhaSituacaoNoEvento = z.infer<typeof minhaSituacaoNoEventoSchema>
 
@@ -245,6 +318,13 @@ export const eventoDoPortalSchema = z
     podeConfirmar: z.boolean(),
     podeCancelar: z.boolean(),
     motivoDoBloqueio: motivoDeBloqueioDoEventoSchema.nullable(),
+    /** Fase 4G: inscrição pelo formulário do evento (nulo = confirmar com um toque) */
+    formularioInscricaoId: z.uuid().nullable(),
+    publico: z.boolean(),
+    /** Presença registrada (check-in ou pela equipe) */
+    presente: z.boolean(),
+    /** Encerrado e presente, ainda sem avaliação: o formulário de avaliação */
+    avaliar: z.object({ formularioId: z.uuid() }).nullable(),
   })
   .meta({ id: 'EventoDoPortal' })
 export type EventoDoPortal = z.infer<typeof eventoDoPortalSchema>
@@ -268,3 +348,63 @@ export const proximosEventosDoPortalSchema = z
   .object({ itens: z.array(eventoDoPortalSchema) })
   .meta({ id: 'ProximosEventosDoPortal' })
 export type ProximosEventosDoPortal = z.infer<typeof proximosEventosDoPortalSchema>
+
+/** Responder um formulário no contexto do evento (inscrição ou avaliação). */
+export { enviarRespostaSchema as respostaDoEventoSchema } from './formularios.js'
+
+// ------------------------------------------------------------------------------------------ check-in
+
+/** O que a página do QR mostra antes do check-in. */
+export const checkinPublicoSchema = z
+  .object({
+    titulo: z.string(),
+    inicioEm: instante,
+    local: z.string().nullable(),
+    /** Pedir o código por e-mail (o evento liga ou desliga) */
+    exigeCodigo: z.boolean(),
+    /** O check-in está aberto agora (da abertura até o fim do evento) */
+    aberto: z.boolean(),
+  })
+  .meta({ id: 'CheckinPublico' })
+export type CheckinPublico = z.infer<typeof checkinPublicoSchema>
+
+export const fazerCheckinSchema = z
+  .object({
+    email: z.email().max(254).optional(),
+    /** Só quando o evento exige: o código de 6 dígitos enviado ao e-mail */
+    codigo: z
+      .string()
+      .transform((v) => v.replace(/[\s-]/g, ''))
+      .pipe(z.string().regex(/^\d{6}$/, 'o código tem 6 dígitos'))
+      .optional(),
+  })
+  .strict()
+  .meta({ id: 'FazerCheckinEntrada' })
+export type FazerCheckinEntrada = z.infer<typeof fazerCheckinSchema>
+
+export const resultadoDoCheckinSchema = z
+  .object({
+    /** registrado; codigo_enviado (falta digitar o código) */
+    situacao: z.enum(['registrado', 'codigo_enviado']),
+    nome: z.string().nullable(),
+  })
+  .meta({ id: 'ResultadoDoCheckin' })
+export type ResultadoDoCheckin = z.infer<typeof resultadoDoCheckinSchema>
+
+/** A participação de uma empresa em eventos, para a aba Eventos da ficha (B-21). */
+export const eventoDaEmpresaSchema = z
+  .object({
+    eventoId: z.uuid(),
+    titulo: z.string(),
+    inicioEm: instante,
+    pessoa: z.string(),
+    situacao: situacaoDaConfirmacaoSchema,
+    presenca: z.enum(PRESENCAS),
+    avaliou: z.boolean(),
+    nota: z.number().int().nullable(),
+  })
+  .meta({ id: 'EventoDaEmpresa' })
+export type EventoDaEmpresa = z.infer<typeof eventoDaEmpresaSchema>
+export const listaDeEventosDaEmpresaSchema = z
+  .object({ itens: z.array(eventoDaEmpresaSchema), total: z.number().int() })
+  .meta({ id: 'ListaDeEventosDaEmpresa' })

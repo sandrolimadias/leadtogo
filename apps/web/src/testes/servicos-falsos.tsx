@@ -513,7 +513,22 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         cancelar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
         excluir: vi.fn(async () => ok(undefined)),
         participantes: vi.fn(async () => ok({ confirmados: [], listaDeEspera: [] })),
-        removerParticipante: vi.fn(async () => ok({ confirmados: [], listaDeEspera: [] })),
+        removerParticipante: vi.fn(async () =>
+          ok({ confirmados: [], listaDeEspera: [], cancelados: [] }),
+        ),
+        registrarPresenca: vi.fn(async () =>
+          ok({ confirmados: [], listaDeEspera: [], cancelados: [] }),
+        ),
+        incluirParticipante: vi.fn(async () =>
+          ok({ confirmados: [], listaDeEspera: [], cancelados: [] }),
+        ),
+        encerrar: vi.fn(async () => ok({ porPush: 0, porEmail: 0, ignorados: 0 })),
+        reenviarAvaliacao: vi.fn(async () => ok({ porPush: 0, porEmail: 0, ignorados: 0 })),
+        gerarCheckin: vi.fn(async () =>
+          ok({ url: 'https://portal.exemplo.com/checkin/x', token: 'x' }),
+        ),
+        exportarInscritos: vi.fn(async () => ok({ nome: 'inscritos.csv', conteudo: new Blob([]) })),
+        daEmpresa: vi.fn(async () => ok({ itens: [], total: 0 })),
       },
       documentos: {
         listar: vi.fn(async () => ok({ itens: [], total: 0 })),

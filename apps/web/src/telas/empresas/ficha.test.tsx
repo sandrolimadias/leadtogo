@@ -345,6 +345,7 @@ describe('Ficha da empresa: cabeçalho', () => {
         'Atividades7',
         'Oportunidades3',
         'Chamados2',
+        'Eventos',
         'Histórico',
       ]),
     )
@@ -778,6 +779,48 @@ describe('Ficha da empresa: aba Histórico', () => {
     await abrir(x)
     await userEvent.click(screen.getByRole('tab', { name: 'Histórico' }))
     expect(await screen.findByText('Nada no histórico ainda')).toBeInTheDocument()
+  })
+})
+
+describe('Ficha da empresa: aba Eventos', () => {
+  it('lista as inscrições da empresa com presença e nota', async () => {
+    const x = servicos()
+    const daEmpresa = vi.fn(async () =>
+      ok({
+        itens: [
+          {
+            eventoId: id(600),
+            titulo: 'Encontro anual de clientes',
+            inicioEm: '2026-11-12T21:30:00.000Z',
+            pessoa: 'Ana Alves',
+            situacao: 'confirmado' as const,
+            presenca: 'checkin_qr' as const,
+            avaliou: true,
+            nota: 5,
+          },
+          {
+            eventoId: id(601),
+            titulo: 'Café com clientes',
+            inicioEm: '2026-10-12T12:00:00.000Z',
+            pessoa: 'Bruno Barros',
+            situacao: 'cancelado' as const,
+            presenca: 'nao_registrada' as const,
+            avaliou: false,
+            nota: null,
+          },
+        ],
+        total: 2,
+      }),
+    )
+    x.s.portal.eventos.daEmpresa = daEmpresa
+    await abrir(x)
+    await userEvent.click(screen.getByRole('tab', { name: 'Eventos' }))
+    const lista = await screen.findByRole('list', { name: 'Eventos da empresa' })
+    expect(within(lista).getByText('Encontro anual de clientes')).toBeInTheDocument()
+    expect(within(lista).getByText('Presente (QR)')).toBeInTheDocument()
+    expect(within(lista).getByLabelText('Nota 5')).toBeInTheDocument()
+    expect(within(lista).getByText('Cancelou')).toBeInTheDocument()
+    expect(daEmpresa).toHaveBeenCalledWith(id(100))
   })
 })
 

@@ -207,6 +207,44 @@ export class ResponderFormularioService {
 
   // ------------------------------------------------------------------------------------ público
 
+  /** O formulário publicado para quem responde por um link pessoal (sem login), dentro da transação do tenant. */
+  async paraConvite(tx: Transacao, formularioId: string): Promise<FormularioParaResponder> {
+    const f = await this.publicado(tx, formularioId)
+    return {
+      id: f.id,
+      nome: f.nome,
+      versao: f.versao,
+      definicao: f.definicao,
+      preenchidos: {},
+      travados: [],
+      captchaChave: null,
+    }
+  }
+
+  /**
+   * Resposta por um link pessoal (avaliação do evento por e-mail): quem tem o link já foi identificado, então não
+   * pede captcha nem exige formulário público. Roda na transação do tenant que o chamador abriu.
+   */
+  async responderPorConvite(
+    tx: Transacao,
+    tenantId: string,
+    formularioId: string,
+    d: EnviarRespostaEntrada,
+    contexto: ContextoDaResposta,
+    ip: string | undefined,
+  ): Promise<{ id: string; mensagem: string; valores: Respostas }> {
+    const f = await this.publicado(tx, formularioId)
+    const valores = this.conferir(f, d, {})
+    const respostaId = novoId()
+    await tx.execute(sql`
+      INSERT INTO formulario_respostas (id, tenant_id, formulario_id, versao, origem, botao, respostas, contexto_tipo,
+        contexto_id, ip, consentimento_em)
+      VALUES (${respostaId}, ${tenantId}, ${f.id}, ${f.versao}, 'publico', ${d.botao}, ${JSON.stringify(valores)}::jsonb,
+        ${contexto.tipo}, ${contexto.id}, ${ip ?? null}, now())`)
+    await agendarAcoesDoFormulario(tx, tenantId, respostaId)
+    return { id: respostaId, mensagem: f.mensagem, valores }
+  }
+
   private async noTenant<T>(tenantId: string, fn: (tx: Transacao) => Promise<T>): Promise<T> {
     return this.banco.db.transaction(async (tx) => {
       await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)

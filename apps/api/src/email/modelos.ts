@@ -232,6 +232,23 @@ export function emailPortalEvento(p: {
   )
 }
 
+/** Pedido de avaliação de um evento (Fase 4G), com o link pessoal (quem não tem acesso ao portal). */
+export function emailPortalAvaliacaoDeEvento(p: {
+  nome: string
+  portal: string
+  titulo: string
+  link: string
+}): ModeloDeEmail {
+  return montar(
+    `Avalie o evento: ${p.titulo}`,
+    `Olá, ${p.nome}.`,
+    [`Obrigado por participar de “${p.titulo}”. Conte como foi: leva um minuto.`],
+    { texto: 'Avaliar o evento', link: p.link },
+    `Você recebe este e-mail porque participou de um evento do ${p.portal}. O link é pessoal.`,
+    p.portal,
+  )
+}
+
 /** Aviso curto do portal (Fase 3E): a mensagem inteira e um botão para o link, quando houver. */
 export function emailPortalAviso(p: {
   nome: string

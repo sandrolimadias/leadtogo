@@ -177,6 +177,12 @@ export const configuracaoDoPortalSchema = z
     avisosLimiteSemanal: z.number().int().min(1).max(20),
     /** Formulário da pesquisa de satisfação dos chamados (Fase 4F); nulo = só as estrelas */
     formularioSatisfacaoId: z.uuid().nullable(),
+    /** Eventos (Fase 4G, B-17): cadastrar no CRM a empresa e o contato do CNPJ da inscrição e criar a tarefa */
+    eventosCrmAtivo: z.boolean(),
+    /** Administrador ou gestor que recebe a tarefa e a empresa nova */
+    eventosCrmResponsavelId: z.uuid().nullable(),
+    /** Mandar a avaliação do evento por e-mail a quem não tem acesso ao portal */
+    avaliacaoPorEmail: z.boolean(),
   })
   .meta({ id: 'ConfiguracaoDoPortal' })
 export type ConfiguracaoDoPortal = z.infer<typeof configuracaoDoPortalSchema>
@@ -189,6 +195,9 @@ export const atualizarConfiguracaoDoPortalSchema = z
     comentariosAtivos: z.boolean().optional(),
     avisosLimiteSemanal: z.number().int().min(1).max(20).optional(),
     formularioSatisfacaoId: z.uuid().nullable().optional(),
+    eventosCrmAtivo: z.boolean().optional(),
+    eventosCrmResponsavelId: z.uuid().nullable().optional(),
+    avaliacaoPorEmail: z.boolean().optional(),
   })
   .strict()
   .meta({ id: 'AtualizarConfiguracaoDoPortalEntrada' })

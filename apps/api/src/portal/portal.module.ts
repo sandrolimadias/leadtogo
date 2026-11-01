@@ -38,6 +38,13 @@ import { EventosController } from './eventos.controller.js'
 import { EventosService } from './eventos.service.js'
 import { PortalEventosController } from './portal-eventos.controller.js'
 import { PortalEventosService } from './portal-eventos.service.js'
+import {
+  EventosDaEmpresaController,
+  EventosParticipacaoController,
+  PortalEventosInscricaoController,
+} from './eventos-participacao.controller.js'
+import { EventosInscricaoService } from './eventos-inscricao.service.js'
+import { EventosParticipacaoService } from './eventos-participacao.service.js'
 import { AvisosController } from './avisos.controller.js'
 import { AvisosService } from './avisos.service.js'
 import { PortalBuscaService } from './portal-busca.service.js'
@@ -71,6 +78,9 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalDocumentosController,
     EventosController,
     PortalEventosController,
+    EventosParticipacaoController,
+    EventosDaEmpresaController,
+    PortalEventosInscricaoController,
     AvisosController,
     PortalPreferenciasController,
   ],
@@ -88,6 +98,8 @@ import { PortalInterceptor } from './portal.interceptor.js'
     PortalDocumentosService,
     EventosService,
     PortalEventosService,
+    EventosParticipacaoService,
+    EventosInscricaoService,
     AvisosService,
     PortalPreferenciasService,
     PortalBuscaService,

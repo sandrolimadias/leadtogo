@@ -20,6 +20,8 @@ import { Route as PortalDocumentosRouteImport } from './routes/_portal.documento
 import { Route as PortalEmpresasRouteImport } from './routes/_portal.empresas'
 import { Route as PortalNotificacoesRouteImport } from './routes/_portal.notificacoes'
 import { Route as PortalPerfilRouteImport } from './routes/_portal.perfil'
+import { Route as AvaliacaoTokenRouteImport } from './routes/avaliacao.$token'
+import { Route as CheckinTokenRouteImport } from './routes/checkin.$token'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as PortalChamadosIndexRouteImport } from './routes/_portal.chamados.index'
 import { Route as PortalChamadosChamadoIdRouteImport } from './routes/_portal.chamados.$chamadoId'
@@ -80,6 +82,16 @@ const PortalPerfilRoute = PortalPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => PortalRoute,
 } as any)
+const AvaliacaoTokenRoute = AvaliacaoTokenRouteImport.update({
+  id: '/avaliacao/$token',
+  path: '/avaliacao/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckinTokenRoute = CheckinTokenRouteImport.update({
+  id: '/checkin/$token',
+  path: '/checkin/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FSlugRoute = FSlugRouteImport.update({
   id: '/f/$slug',
   path: '/f/$slug',
@@ -117,6 +129,8 @@ export interface FileRoutesByFullPath {
   '/empresas': typeof PortalEmpresasRoute
   '/notificacoes': typeof PortalNotificacoesRoute
   '/perfil': typeof PortalPerfilRoute
+  '/avaliacao/$token': typeof AvaliacaoTokenRoute
+  '/checkin/$token': typeof CheckinTokenRoute
   '/f/$slug': typeof FSlugRoute
   '/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
   '/chamados/novo': typeof PortalChamadosNovoRoute
@@ -133,6 +147,8 @@ export interface FileRoutesByTo {
   '/empresas': typeof PortalEmpresasRoute
   '/notificacoes': typeof PortalNotificacoesRoute
   '/perfil': typeof PortalPerfilRoute
+  '/avaliacao/$token': typeof AvaliacaoTokenRoute
+  '/checkin/$token': typeof CheckinTokenRoute
   '/f/$slug': typeof FSlugRoute
   '/': typeof PortalIndexRoute
   '/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
@@ -152,6 +168,8 @@ export interface FileRoutesById {
   '/_portal/empresas': typeof PortalEmpresasRoute
   '/_portal/notificacoes': typeof PortalNotificacoesRoute
   '/_portal/perfil': typeof PortalPerfilRoute
+  '/avaliacao/$token': typeof AvaliacaoTokenRoute
+  '/checkin/$token': typeof CheckinTokenRoute
   '/f/$slug': typeof FSlugRoute
   '/_portal/': typeof PortalIndexRoute
   '/_portal/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
@@ -172,6 +190,8 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/notificacoes'
     | '/perfil'
+    | '/avaliacao/$token'
+    | '/checkin/$token'
     | '/f/$slug'
     | '/chamados/$chamadoId'
     | '/chamados/novo'
@@ -188,6 +208,8 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/notificacoes'
     | '/perfil'
+    | '/avaliacao/$token'
+    | '/checkin/$token'
     | '/f/$slug'
     | '/'
     | '/chamados/$chamadoId'
@@ -206,6 +228,8 @@ export interface FileRouteTypes {
     | '/_portal/empresas'
     | '/_portal/notificacoes'
     | '/_portal/perfil'
+    | '/avaliacao/$token'
+    | '/checkin/$token'
     | '/f/$slug'
     | '/_portal/'
     | '/_portal/chamados/$chamadoId'
@@ -219,6 +243,8 @@ export interface RootRouteChildren {
   AcessoRoute: typeof AcessoRoute
   EntrarRoute: typeof EntrarRoute
   VerificacaoRoute: typeof VerificacaoRoute
+  AvaliacaoTokenRoute: typeof AvaliacaoTokenRoute
+  CheckinTokenRoute: typeof CheckinTokenRoute
   FSlugRoute: typeof FSlugRoute
 }
 
@@ -301,6 +327,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalPerfilRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/avaliacao/$token': {
+      id: '/avaliacao/$token'
+      path: '/avaliacao/$token'
+      fullPath: '/avaliacao/$token'
+      preLoaderRoute: typeof AvaliacaoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkin/$token': {
+      id: '/checkin/$token'
+      path: '/checkin/$token'
+      fullPath: '/checkin/$token'
+      preLoaderRoute: typeof CheckinTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/f/$slug': {
       id: '/f/$slug'
       path: '/f/$slug'
@@ -374,6 +414,8 @@ const rootRouteChildren: RootRouteChildren = {
   AcessoRoute: AcessoRoute,
   EntrarRoute: EntrarRoute,
   VerificacaoRoute: VerificacaoRoute,
+  AvaliacaoTokenRoute: AvaliacaoTokenRoute,
+  CheckinTokenRoute: CheckinTokenRoute,
   FSlugRoute: FSlugRoute,
 }
 export const routeTree = rootRouteImport

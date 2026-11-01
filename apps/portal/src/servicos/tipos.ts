@@ -3,6 +3,8 @@ import type {
   ChamadoDoPortal,
   ComentarioDoPortal,
   EventoDoPortal,
+  CheckinPublico,
+  ResultadoDoCheckin,
   ListaDeEventosDoPortal,
   ProximosEventosDoPortal,
   EmpresaDoAcesso,
@@ -141,6 +143,25 @@ export interface ServicosDoPortal {
     proximos: () => Promise<Resultado<ProximosEventosDoPortal>>
     confirmar: (id: string) => Promise<Resultado<EventoDoPortal>>
     cancelar: (id: string) => Promise<Resultado<EventoDoPortal>>
+    /** Fase 4G: inscrição com o formulário do evento */
+    inscrever: (id: string, dados: EnviarRespostaEntrada) => Promise<Resultado<EventoDoPortal>>
+    /** Só para quem esteve presente, depois do encerramento */
+    formularioDeAvaliacao: (id: string) => Promise<Resultado<FormularioParaResponder>>
+    avaliar: (id: string, dados: EnviarRespostaEntrada) => Promise<Resultado<EventoDoPortal>>
+  }
+  /** Check-in pelo QR do evento (Fase 4G): logado é um toque; sem login, o e-mail (e o código, se o evento pede) */
+  checkin: {
+    abrir: (token: string) => Promise<Resultado<CheckinPublico>>
+    logado: (token: string) => Promise<Resultado<ResultadoDoCheckin>>
+    semLogin: (
+      token: string,
+      dados: { email: string; codigo?: string },
+    ) => Promise<Resultado<ResultadoDoCheckin>>
+  }
+  /** Avaliação pelo link pessoal enviado por e-mail a quem não tem acesso (Fase 4G) */
+  avaliacaoPorLink: {
+    abrir: (token: string) => Promise<Resultado<FormularioParaResponder & { evento: string }>>
+    responder: (token: string, dados: EnviarRespostaEntrada) => Promise<Resultado<RespostaEnviada>>
   }
   /** Documentos que a equipe compartilha (Fase 3C): lista e download (registrado, URL de 60 segundos) */
   documentos: {

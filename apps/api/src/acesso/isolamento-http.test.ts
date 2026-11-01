@@ -307,6 +307,11 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
     // Formulário público (Fase 4E): abrir e responder pelo endereço /f/<slug>
     'GET /v1/portal/publico/formularios/:slug',
     'POST /v1/portal/publico/formularios/:slug/respostas',
+    // Eventos (Fase 4G): o QR de check-in e o link pessoal da avaliação
+    'GET /v1/portal/publico/checkin/:token',
+    'POST /v1/portal/publico/checkin/:token',
+    'GET /v1/portal/publico/avaliacao/:token',
+    'POST /v1/portal/publico/avaliacao/:token',
   ]
 
   const rotas = () => listarRotas(app)

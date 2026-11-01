@@ -10,6 +10,9 @@ import type {
   EnvioDeDocumento,
   ListaDeEventos,
   ListaDeParticipantes,
+  CheckinDoEvento,
+  ListaDeEventosDaEmpresa,
+  ResultadoDoPedidoDeAvaliacao,
   ListaDeBaixasDeDocumento,
   ListaDeComentariosParaModeracao,
   ListaDeDocumentos,
@@ -224,6 +227,8 @@ import type {
   EditarDocumentoEntrada,
   CancelarEventoEntrada,
   SalvarEventoEntrada,
+  FinalidadeDeFormulario,
+  IncluirParticipanteEntrada,
   CriarAvisoEntrada,
   CampoComValores,
   ConverterSocioEntrada,
@@ -694,6 +699,9 @@ export interface ServicosDoPortalNoCrm {
       comentariosAtivos?: boolean
       avisosLimiteSemanal?: number
       formularioSatisfacaoId?: string | null
+      eventosCrmAtivo?: boolean
+      eventosCrmResponsavelId?: string | null
+      avaliacaoPorEmail?: boolean
     }) => Promise<Resultado<ConfiguracaoDoPortal>>
   }
   /** Publicações do portal (Fase 3B): `portal.ver`/`publicar`/`moderar` para ver, `publicar` para escrever, `moderar` nos comentários */
@@ -743,6 +751,7 @@ export interface ServicosDoPortalNoCrm {
   formularios: {
     listar: (consulta?: {
       situacao?: 'rascunho' | 'publicado' | 'arquivado'
+      finalidade?: FinalidadeDeFormulario
       pagina?: number
       porPagina?: number
     }) => Promise<Resultado<{ itens: ItemDeFormulario[]; total: number }>>
@@ -798,6 +807,33 @@ export interface ServicosDoPortalNoCrm {
       id: string,
       confirmacaoId: string,
     ) => Promise<Resultado<ListaDeParticipantes>>
+    /** Fase 4G: `portal.eventos_presenca` ou `portal.agenda` */
+    registrarPresenca: (
+      id: string,
+      participacaoId: string,
+      presente: boolean,
+    ) => Promise<Resultado<ListaDeParticipantes>>
+    /** Fase 4G: quem veio sem se inscrever entra já presente */
+    incluirParticipante: (
+      id: string,
+      dados: IncluirParticipanteEntrada,
+    ) => Promise<Resultado<ListaDeParticipantes>>
+    /** 409 `evento_nao_comecou` / `evento_ja_encerrado` */
+    encerrar: (id: string) => Promise<Resultado<ResultadoDoPedidoDeAvaliacao>>
+    /** 409 `evento_nao_encerrado` */
+    reenviarAvaliacao: (
+      id: string,
+      participacaoIds?: string[],
+    ) => Promise<Resultado<ResultadoDoPedidoDeAvaliacao>>
+    /** Gera (ou troca) o QR de check-in: o endereço só aparece agora */
+    gerarCheckin: (id: string) => Promise<Resultado<CheckinDoEvento>>
+    /** `portal.eventos_relatorios` ou `portal.agenda` */
+    exportarInscritos: (
+      id: string,
+      formato: 'csv' | 'xlsx' | 'html',
+    ) => Promise<Resultado<{ nome: string; conteudo: Blob }>>
+    /** Aba Eventos da ficha da empresa (regra de carteira) */
+    daEmpresa: (empresaId: string) => Promise<Resultado<ListaDeEventosDaEmpresa>>
   }
   /** Documentos do portal (Fase 3C): `portal.ver`/`documentos` para ver, `documentos` para escrever */
   documentos: {

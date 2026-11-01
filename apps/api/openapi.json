@@ -12851,6 +12851,76 @@
         "tags": ["Empresas do grupo"]
       }
     },
+    "/v1/empresas/{id}/eventos": {
+      "get": {
+        "description": "Regra de carteira (empresa que o usuário não vê responde 404). Quem da empresa se inscreveu nos eventos do portal, com a presença e a nota da avaliação.",
+        "operationId": "EventosDaEmpresaController_eventos",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeEventosDaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Eventos da empresa",
+        "tags": ["Carteira: empresas"]
+      }
+    },
     "/v1/geolocalizacao/empresas/{id}/confirmar-endereco": {
       "post": {
         "description": "Quem edita a empresa. `manter_posicao` guarda a posição ajustada à mão; `refazer` descarta o ajuste e geocodifica o endereço novo (o worker faz).",
@@ -20598,6 +20668,96 @@
         "tags": ["Portal do cliente: agenda"]
       }
     },
+    "/v1/portal-eventos/{id}/avaliacoes/reenviar": {
+      "post": {
+        "description": "Exige `portal.agenda`. A quem esteve presente e ainda não avaliou (ou às pessoas escolhidas); no máximo 3 pedidos por pessoa.",
+        "operationId": "EventosParticipacaoController_reenviar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReenviarAvaliacaoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDoPedidoDeAvaliacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reenviar o pedido de avaliação",
+        "tags": ["Portal do cliente: agenda"]
+      }
+    },
     "/v1/portal-eventos/{id}/cancelar": {
       "post": {
         "description": "Exige `portal.agenda`. Só o publicado. O cliente continua vendo o evento como cancelado, e quem estava confirmado ou na lista de espera recebe aviso (sino e e-mail) com o motivo.",
@@ -20688,6 +20848,365 @@
         "tags": ["Portal do cliente: agenda"]
       }
     },
+    "/v1/portal-eventos/{id}/checkin": {
+      "post": {
+        "description": "Exige `portal.agenda`. Gera (ou troca) o endereço do QR: aparece só nesta resposta (no banco, só o hash). O QR antigo para de valer.",
+        "operationId": "EventosParticipacaoController_gerarCheckin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckinDoEvento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Gerar o QR de check-in",
+        "tags": ["Portal do cliente: agenda"]
+      }
+    },
+    "/v1/portal-eventos/{id}/encerrar": {
+      "post": {
+        "description": "Exige `portal.agenda`. Depois do início. Quem não tem presença fica ausente; os presentes recebem o pedido de avaliação (push e sino no portal; e-mail com link pessoal para quem não tem acesso, se ligado em Configurações → Portal).",
+        "operationId": "EventosParticipacaoController_encerrar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDoPedidoDeAvaliacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Encerrar o evento",
+        "tags": ["Portal do cliente: agenda"]
+      }
+    },
+    "/v1/portal-eventos/{id}/inscritos.csv": {
+      "get": {
+        "description": "Exige `portal.eventos_relatorios` ou `portal.agenda`. Todas as inscrições (inclusive canceladas), com presença, avaliação e os campos do formulário de inscrição.",
+        "operationId": "EventosParticipacaoController_csv",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Inscritos (CSV)",
+        "tags": ["Portal do cliente: agenda"]
+      }
+    },
+    "/v1/portal-eventos/{id}/inscritos.html": {
+      "get": {
+        "description": "Exige `portal.eventos_relatorios` ou `portal.agenda`. Página A4 paisagem que abre a impressão do navegador (\"Salvar como PDF\").",
+        "operationId": "EventosParticipacaoController_impressao",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Inscritos (para imprimir ou salvar em PDF)",
+        "tags": ["Portal do cliente: agenda"]
+      }
+    },
+    "/v1/portal-eventos/{id}/inscritos.xlsx": {
+      "get": {
+        "description": "Exige `portal.eventos_relatorios` ou `portal.agenda`.",
+        "operationId": "EventosParticipacaoController_xlsx",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Inscritos (Excel)",
+        "tags": ["Portal do cliente: agenda"]
+      }
+    },
     "/v1/portal-eventos/{id}/participantes": {
       "get": {
         "description": "Exige `portal.ver` ou `portal.agenda`. Os confirmados e a lista de espera (com a posição na fila), com a pessoa, o e-mail e a empresa-cliente.",
@@ -20755,6 +21274,94 @@
           }
         },
         "summary": "Participantes do evento",
+        "tags": ["Portal do cliente: agenda"]
+      },
+      "post": {
+        "description": "Exige `portal.eventos_presenca` ou `portal.agenda`. Quem veio sem se inscrever entra já com a presença registrada; com CNPJ, vai ao CRM como as inscrições (quando ligado).",
+        "operationId": "EventosParticipacaoController_incluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncluirParticipanteEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeParticipantes"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Incluir participante presente",
         "tags": ["Portal do cliente: agenda"]
       }
     },
@@ -20833,6 +21440,94 @@
           }
         },
         "summary": "Tirar um participante do evento",
+        "tags": ["Portal do cliente: agenda"]
+      }
+    },
+    "/v1/portal-eventos/{id}/participantes/{participacaoId}/presenca": {
+      "put": {
+        "description": "Exige `portal.eventos_presenca` ou `portal.agenda`. Para quem participou sem fazer o check-in (B-20).",
+        "operationId": "EventosParticipacaoController_presenca",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "participacaoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarPresencaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeParticipantes"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Registrar ou desfazer a presença",
         "tags": ["Portal do cliente: agenda"]
       }
     },
@@ -24730,6 +25425,101 @@
         ]
       }
     },
+    "/v1/portal/checkin/{token}": {
+      "post": {
+        "description": "Um toque: marca a presença da própria inscrição confirmada. Fora do horário: 409 `checkin_fechado`.",
+        "operationId": "PortalEventosInscricaoController_checkinLogado",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDoCheckin"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Check-in pelo QR (logado)",
+        "tags": ["Portal do cliente: agenda"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/documentos": {
       "get": {
         "description": "Só os documentos já verificados pelo antivírus, visíveis no portal e do alcance da empresa do cliente, os mais novos primeiro. Busca pelo título ou pela descrição.",
@@ -25557,6 +26347,224 @@
         ]
       }
     },
+    "/v1/portal/eventos/{id}/avaliacao": {
+      "get": {
+        "description": "Só para quem esteve presente, depois do encerramento e enquanto não avaliou.",
+        "operationId": "PortalEventosInscricaoController_formularioDeAvaliacao",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormularioParaResponder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Formulário de avaliação do evento",
+        "tags": ["Portal do cliente: agenda"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      },
+      "post": {
+        "description": "Só presente, depois do encerramento; uma vez (409 `ja_avaliado`).",
+        "operationId": "PortalEventosInscricaoController_avaliar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarRespostaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Avaliar o evento",
+        "tags": ["Portal do cliente: agenda"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/eventos/{id}/confirmacao": {
       "post": {
         "description": "Vaga livre: fica confirmado. Lotado (no total ou nas vagas da empresa): entra na lista de espera e é promovido, na ordem, quando abrir uma vaga. Idempotente. Recusas: 404 `evento_nao_encontrado` (fora do alcance), 409 `evento_cancelado`, `evento_encerrado` (já começou) e `prazo_encerrado`.",
@@ -25835,6 +26843,131 @@
           }
         },
         "summary": "Arquivo .ics do evento",
+        "tags": ["Portal do cliente: agenda"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/eventos/{id}/inscricao": {
+      "post": {
+        "description": "O formulário vem preenchido com o cadastro (CNPJ, empresa, nome, telefone, e-mail) para conferência. Vagas e lista de espera como na confirmação.",
+        "operationId": "PortalEventosInscricaoController_inscrever",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarRespostaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventoDoPortal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Inscrever-se com o formulário do evento",
         "tags": ["Portal do cliente: agenda"],
         "security": [
           {
@@ -27792,6 +28925,399 @@
             "sessaoPortal": []
           }
         ]
+      }
+    },
+    "/v1/portal/publico/avaliacao/{token}": {
+      "get": {
+        "description": "Público. O link que chega por e-mail a quem não tem acesso ao portal.",
+        "operationId": "PortalEventosInscricaoController_avaliacaoPorLink",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "versao": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "definicao": {},
+                    "preenchidos": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "travados": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "captchaChave": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "evento": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nome",
+                    "versao",
+                    "definicao",
+                    "preenchidos",
+                    "travados",
+                    "captchaChave",
+                    "evento"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abrir a avaliação pelo link pessoal",
+        "tags": ["Portal do cliente: agenda"],
+        "security": []
+      },
+      "post": {
+        "description": "Público. Uma avaliação por participação (409 `ja_avaliado`).",
+        "operationId": "PortalEventosInscricaoController_avaliarPorLink",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarRespostaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaEnviada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Avaliar pelo link pessoal",
+        "tags": ["Portal do cliente: agenda"],
+        "security": []
+      }
+    },
+    "/v1/portal/publico/checkin/{token}": {
+      "get": {
+        "description": "Público. O evento, se o check-in está aberto agora e se pede o código por e-mail.",
+        "operationId": "PortalEventosInscricaoController_checkinPublico",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckinPublico"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abrir o QR de check-in",
+        "tags": ["Portal do cliente: agenda"],
+        "security": []
+      },
+      "post": {
+        "description": "Público. Com o e-mail da inscrição. Se o evento exige, o primeiro envio manda o código de 6 dígitos ao e-mail (`codigo_enviado`) e o segundo confere. Limite por IP.",
+        "operationId": "PortalEventosInscricaoController_fazerCheckin",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FazerCheckinEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoDoCheckin"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Fazer o check-in sem login",
+        "tags": ["Portal do cliente: agenda"],
+        "security": []
       }
     },
     "/v1/portal/publico/formularios/{slug}": {
@@ -31963,6 +33489,17 @@
             "nullable": true,
             "type": "string",
             "format": "uuid"
+          },
+          "eventosCrmAtivo": {
+            "type": "boolean"
+          },
+          "eventosCrmResponsavelId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "avaliacaoPorEmail": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -32822,6 +34359,44 @@
         "required": ["em", "posicao", "offline"],
         "additionalProperties": false
       },
+      "CheckinDoEvento": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": ["url", "token"],
+        "additionalProperties": false
+      },
+      "CheckinPublico": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string"
+          },
+          "inicioEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "local": {
+            "nullable": true,
+            "type": "string"
+          },
+          "exigeCodigo": {
+            "type": "boolean"
+          },
+          "aberto": {
+            "type": "boolean"
+          }
+        },
+        "required": ["titulo", "inicioEm", "local", "exigeCodigo", "aberto"],
+        "additionalProperties": false
+      },
       "ChipDoMapa": {
         "type": "object",
         "properties": {
@@ -33341,6 +34916,17 @@
             "nullable": true,
             "type": "string",
             "format": "uuid"
+          },
+          "eventosCrmAtivo": {
+            "type": "boolean"
+          },
+          "eventosCrmResponsavelId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "avaliacaoPorEmail": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -33350,7 +34936,10 @@
           "exigeDoisFatoresDoResponsavel",
           "comentariosAtivos",
           "avisosLimiteSemanal",
-          "formularioSatisfacaoId"
+          "formularioSatisfacaoId",
+          "eventosCrmAtivo",
+          "eventosCrmResponsavelId",
+          "avaliacaoPorEmail"
         ],
         "additionalProperties": false
       },
@@ -37257,6 +38846,14 @@
             "minimum": 0,
             "maximum": 9007199254740991
           },
+          "publico": {
+            "type": "boolean"
+          },
+          "encerradoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
           "descricao": {
             "nullable": true,
             "type": "string"
@@ -37319,6 +38916,37 @@
               "required": ["id", "nome", "grupo"],
               "additionalProperties": false
             }
+          },
+          "formularioInscricaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "formularioAvaliacaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "publicacaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "checkinExigeCodigo": {
+            "type": "boolean"
+          },
+          "checkinAtivo": {
+            "type": "boolean"
+          },
+          "presentes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "avaliaram": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -37334,6 +38962,8 @@
           "prazoConfirmacao",
           "confirmados",
           "listaDeEspera",
+          "publico",
+          "encerradoEm",
           "descricao",
           "linkOnline",
           "publicadoEm",
@@ -37341,7 +38971,60 @@
           "canceladoMotivo",
           "criadoEm",
           "empresas",
-          "tags"
+          "tags",
+          "formularioInscricaoId",
+          "formularioAvaliacaoId",
+          "publicacaoId",
+          "checkinExigeCodigo",
+          "checkinAtivo",
+          "presentes",
+          "avaliaram"
+        ],
+        "additionalProperties": false
+      },
+      "EventoDaEmpresa": {
+        "type": "object",
+        "properties": {
+          "eventoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "inicioEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pessoa": {
+            "type": "string"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDaConfirmacao"
+          },
+          "presenca": {
+            "type": "string",
+            "enum": ["nao_registrada", "checkin_qr", "manual"]
+          },
+          "avaliou": {
+            "type": "boolean"
+          },
+          "nota": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "eventoId",
+          "titulo",
+          "inicioEm",
+          "pessoa",
+          "situacao",
+          "presenca",
+          "avaliou",
+          "nota"
         ],
         "additionalProperties": false
       },
@@ -37554,6 +39237,29 @@
                 "$ref": "#/components/schemas/MotivoDeBloqueioDoEvento"
               }
             ]
+          },
+          "formularioInscricaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "publico": {
+            "type": "boolean"
+          },
+          "presente": {
+            "type": "boolean"
+          },
+          "avaliar": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "formularioId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["formularioId"],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -37572,7 +39278,11 @@
           "minhaSituacao",
           "podeConfirmar",
           "podeCancelar",
-          "motivoDoBloqueio"
+          "motivoDoBloqueio",
+          "formularioInscricaoId",
+          "publico",
+          "presente",
+          "avaliar"
         ],
         "additionalProperties": false
       },
@@ -37616,6 +39326,20 @@
           }
         },
         "required": ["diaSemana", "inicio", "fim"],
+        "additionalProperties": false
+      },
+      "FazerCheckinEntrada": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "codigo": {
+            "type": "string"
+          }
+        },
         "additionalProperties": false
       },
       "FecharOportunidadeEntrada": {
@@ -38020,6 +39744,33 @@
             }
           }
         },
+        "additionalProperties": false
+      },
+      "IncluirParticipanteEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "telefone": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 20
+          },
+          "cnpj": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 18
+          }
+        },
+        "required": ["nome", "email"],
         "additionalProperties": false
       },
       "IndicadoresDeChamados": {
@@ -38755,6 +40506,14 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "publico": {
+            "type": "boolean"
+          },
+          "encerradoEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -38769,7 +40528,9 @@
           "vagasPorEmpresa",
           "prazoConfirmacao",
           "confirmados",
-          "listaDeEspera"
+          "listaDeEspera",
+          "publico",
+          "encerradoEm"
         ],
         "additionalProperties": false
       },
@@ -39816,6 +41577,24 @@
         "required": ["itens", "total", "abas"],
         "additionalProperties": false
       },
+      "ListaDeEventosDaEmpresa": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoDaEmpresa"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
+        "additionalProperties": false
+      },
       "ListaDeEventosDoPortal": {
         "type": "object",
         "properties": {
@@ -40079,9 +41858,15 @@
             "items": {
               "$ref": "#/components/schemas/ParticipanteDoEvento"
             }
+          },
+          "cancelados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParticipanteDoEvento"
+            }
           }
         },
-        "required": ["confirmados", "listaDeEspera"],
+        "required": ["confirmados", "listaDeEspera", "cancelados"],
         "additionalProperties": false
       },
       "ListaDePedidosDeAcesso": {
@@ -41463,7 +43248,7 @@
       },
       "MinhaSituacaoNoEvento": {
         "type": "string",
-        "enum": ["nenhuma", "confirmado", "lista_espera"]
+        "enum": ["nenhuma", "confirmado", "lista_espera", "cancelado"]
       },
       "ModeloDeVisita": {
         "type": "object",
@@ -42862,10 +44647,41 @@
             "type": "string"
           },
           "empresa": {
+            "nullable": true,
             "type": "string"
+          },
+          "cnpj": {
+            "nullable": true,
+            "type": "string"
+          },
+          "origem": {
+            "type": "string",
+            "enum": ["portal", "publico", "equipe"]
           },
           "situacao": {
             "$ref": "#/components/schemas/SituacaoDaConfirmacao"
+          },
+          "presenca": {
+            "type": "string",
+            "enum": ["nao_registrada", "checkin_qr", "manual"]
+          },
+          "presencaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "avaliou": {
+            "type": "boolean"
+          },
+          "avaliacaoPedidaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "lembretes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "entrouNaFilaEm": {
             "type": "string",
@@ -42894,7 +44710,14 @@
           "pessoa",
           "email",
           "empresa",
+          "cnpj",
+          "origem",
           "situacao",
+          "presenca",
+          "presencaEm",
+          "avaliou",
+          "avaliacaoPedidaEm",
+          "lembretes",
           "entrouNaFilaEm",
           "confirmadoEm",
           "promovidoEm",
@@ -44173,6 +45996,20 @@
         "required": ["tipo"],
         "additionalProperties": false
       },
+      "ReenviarAvaliacaoEntrada": {
+        "type": "object",
+        "properties": {
+          "participacaoIds": {
+            "maxItems": 1000,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "ReenvioDeEntregas": {
         "type": "object",
         "properties": {
@@ -44225,6 +46062,16 @@
           }
         },
         "required": ["id", "tipo", "nome", "uf", "municipios"],
+        "additionalProperties": false
+      },
+      "RegistrarPresencaEntrada": {
+        "type": "object",
+        "properties": {
+          "presente": {
+            "type": "boolean"
+          }
+        },
+        "required": ["presente"],
         "additionalProperties": false
       },
       "RelatorioDeVisita": {
@@ -44657,6 +46504,21 @@
         "required": ["id", "nome", "chaveSistema", "modeloId", "ativo", "ordem"],
         "additionalProperties": false
       },
+      "ResultadoDoCheckin": {
+        "type": "object",
+        "properties": {
+          "situacao": {
+            "type": "string",
+            "enum": ["registrado", "codigo_enviado"]
+          },
+          "nome": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["situacao", "nome"],
+        "additionalProperties": false
+      },
       "ResultadoDoMovimento": {
         "type": "object",
         "properties": {
@@ -44683,6 +46545,28 @@
           }
         },
         "required": ["oportunidade", "avisoDeProbabilidade"],
+        "additionalProperties": false
+      },
+      "ResultadoDoPedidoDeAvaliacao": {
+        "type": "object",
+        "properties": {
+          "porPush": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porEmail": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ignorados": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["porPush", "porEmail", "ignorados"],
         "additionalProperties": false
       },
       "ResumoDaGeolocalizacao": {
@@ -45002,6 +46886,26 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "publico": {
+            "default": false,
+            "type": "boolean"
+          },
+          "formularioInscricaoId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "formularioAvaliacaoId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "checkinExigeCodigo": {
+            "default": false,
+            "type": "boolean"
           }
         },
         "required": ["titulo", "inicioEm", "fimEm", "alcance"],

@@ -309,10 +309,14 @@ export class PortalAcessosService {
       comentarios: boolean
       limite: number
       satisfacao: string | null
+      crm_ativo: boolean
+      crm_responsavel: string | null
+      avaliacao_email: boolean
     }>(sql`
       SELECT portal_ativo AS ativo, portal_nome AS nome, portal_exige_dois_fatores_responsavel AS exige,
              portal_comentarios_ativos AS comentarios, portal_avisos_limite_semanal AS limite,
-             portal_formulario_satisfacao_id AS satisfacao
+             portal_formulario_satisfacao_id AS satisfacao, portal_eventos_crm_ativo AS crm_ativo,
+             portal_eventos_crm_responsavel_id AS crm_responsavel, portal_avaliacao_por_email AS avaliacao_email
       FROM tenant_configuracoes`)
     return {
       ativo: c?.ativo ?? false,
@@ -322,6 +326,9 @@ export class PortalAcessosService {
       comentariosAtivos: c?.comentarios ?? true,
       avisosLimiteSemanal: c?.limite ?? LIMITE_SEMANAL_PADRAO_DE_AVISOS,
       formularioSatisfacaoId: c?.satisfacao ?? null,
+      eventosCrmAtivo: c?.crm_ativo ?? false,
+      eventosCrmResponsavelId: c?.crm_responsavel ?? null,
+      avaliacaoPorEmail: c?.avaliacao_email ?? false,
     }
   }
 
@@ -341,6 +348,30 @@ export class PortalAcessosService {
         )
       }
     }
+    const responsavel =
+      d.eventosCrmResponsavelId === undefined
+        ? antes.eventosCrmResponsavelId
+        : d.eventosCrmResponsavelId
+    if (d.eventosCrmResponsavelId) {
+      // Só um administrador ou gestor ativo (Q-3): ele redistribui para o vendedor
+      const [m] = await this.ctx.db().execute(sql`
+        SELECT 1 FROM membros m JOIN perfis_acesso p ON p.id = m.perfil_id
+        WHERE m.id = ${d.eventosCrmResponsavelId} AND m.ativo AND p.chave_sistema IN ('admin', 'gestor')`)
+      if (!m) {
+        throw new ErroApi(
+          'responsavel_invalido',
+          'Escolha um administrador ou gestor ativo para receber as tarefas dos eventos.',
+          422,
+        )
+      }
+    }
+    if ((d.eventosCrmAtivo ?? antes.eventosCrmAtivo) && !responsavel) {
+      throw new ErroApi(
+        'responsavel_obrigatorio',
+        'Para cadastrar no CRM pelo CNPJ, escolha quem recebe a tarefa.',
+        422,
+      )
+    }
     await this.ctx.db().execute(sql`
       UPDATE tenant_configuracoes
       SET portal_ativo = ${d.ativo ?? antes.ativo},
@@ -348,6 +379,9 @@ export class PortalAcessosService {
           portal_exige_dois_fatores_responsavel = ${d.exigeDoisFatoresDoResponsavel ?? antes.exigeDoisFatoresDoResponsavel},
           portal_comentarios_ativos = ${d.comentariosAtivos ?? antes.comentariosAtivos},
           portal_avisos_limite_semanal = ${d.avisosLimiteSemanal ?? antes.avisosLimiteSemanal},
+          portal_eventos_crm_ativo = ${d.eventosCrmAtivo ?? antes.eventosCrmAtivo},
+          portal_eventos_crm_responsavel_id = ${responsavel},
+          portal_avaliacao_por_email = ${d.avaliacaoPorEmail ?? antes.avaliacaoPorEmail},
           portal_formulario_satisfacao_id = ${d.formularioSatisfacaoId === undefined ? antes.formularioSatisfacaoId : d.formularioSatisfacaoId},
           atualizado_em = now()`)
     const depois = await this.configuracao()

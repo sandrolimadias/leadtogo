@@ -642,6 +642,8 @@ describe('busca global', () => {
     expect(itens.map((i) => `${i.tipo}:${i.titulo}`).sort()).toEqual([
       'documento:Manual de conciliação',
       'evento:Treinamento de conciliação',
+      // publicar o evento cria a publicação dele no feed (Fase 4G, B-8)
+      'publicacao:Evento: Treinamento de conciliação',
       'publicacao:Novidades da versão',
     ])
     expect(itens.find((i) => i.tipo === 'evento')?.destino).toBe('/agenda')

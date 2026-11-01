@@ -78,6 +78,8 @@ export const TELAS: TelaDoApp[] = [
       'portal.agenda',
       'portal.avisos',
       'portal.formularios',
+      'portal.eventos_presenca',
+      'portal.eventos_relatorios',
     ],
   },
   { caminho: '/mapa', titulo: 'Mapa', icone: MapaIcone, permissoes: ['empresas.ver'] },

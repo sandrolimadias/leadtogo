@@ -159,6 +159,10 @@ export const evento = (extra: Partial<EventoDoPortal> = {}): EventoDoPortal => (
   podeConfirmar: true,
   podeCancelar: false,
   motivoDoBloqueio: null,
+  formularioInscricaoId: null,
+  publico: false,
+  presente: false,
+  avaliar: null,
   ...extra,
 })
 
@@ -289,6 +293,34 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
         falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
       ),
       cancelar: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      inscrever: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      formularioDeAvaliacao: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      avaliar: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+    },
+    checkin: {
+      abrir: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      logado: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      semLogin: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+    },
+    avaliacaoPorLink: {
+      abrir: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      responder: vi.fn(async () =>
         falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
       ),
     },
