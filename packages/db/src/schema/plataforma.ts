@@ -168,6 +168,12 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   portalAvisosLimiteSemanal: smallint().notNull().default(3),
   /** Formulário da pesquisa de satisfação dos chamados (Fase 4F; FK só no SQL da migração, evita ciclo) */
   portalFormularioSatisfacaoId: uuid(),
+  /** Eventos (Fase 4G, B-17): cadastrar no CRM a empresa e o contato do CNPJ da inscrição e criar a tarefa */
+  portalEventosCrmAtivo: boolean().notNull().default(false),
+  /** Administrador ou gestor que recebe a tarefa e a empresa nova (FK só no SQL) */
+  portalEventosCrmResponsavelId: uuid(),
+  /** Mandar a avaliação do evento por e-mail a participantes sem acesso ao portal (R-13) */
+  portalAvaliacaoPorEmail: boolean().notNull().default(false),
   ...carimbos(),
 })
 
