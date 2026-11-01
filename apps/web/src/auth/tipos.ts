@@ -93,6 +93,10 @@ import type {
   Expediente,
   Feriado,
   MetricasDeChamados,
+  ResultadosDoDashboard,
+  AssociadosDoDashboard,
+  MapaDoDashboard,
+  ContornosDaUf,
   OpcoesDeConfiguracaoDeChamados,
   Chamado,
   ConfiguracaoDeRotas,
@@ -133,6 +137,9 @@ import type {
   AtribuirChamadoEntrada,
   ConsultaDeChamados,
   ConsultaDeMetricas,
+  ConsultaDeResultadosEntrada,
+  ConsultaDeAssociadosEntrada,
+  ConsultaDoMapaDoDashboardEntrada,
   CriarAreaEntrada,
   CriarFeriadoEntrada,
   DefinirExpedienteEntrada,
@@ -369,8 +376,16 @@ export interface ServicosDeAtividades {
 
 /** Dashboard (Módulo 7), visão "Minha". */
 export interface ServicosDoDashboard {
-  /** Os números do período, de uma vez só (sem `funilId`, o funil padrão) */
+  /** Aba Minhas atividades: o membro e as contagens das janelas de atividades */
   carregar: (consulta: ConsultaDoDashboardEntrada) => Promise<Resultado<Dashboard>>
+  /** Aba Resultados: os indicadores do período, na visão escolhida (sem `funilId`, o funil padrão) */
+  resultados: (consulta: ConsultaDeResultadosEntrada) => Promise<Resultado<ResultadosDoDashboard>>
+  /** Novos associados ou desassociados do período, paginado */
+  associados: (consulta: ConsultaDeAssociadosEntrada) => Promise<Resultado<AssociadosDoDashboard>>
+  /** Associados e empresas por município da UF da empresa */
+  mapa: (consulta: ConsultaDoMapaDoDashboardEntrada) => Promise<Resultado<MapaDoDashboard>>
+  /** Contornos dos municípios da UF (referência; fica em cache) */
+  contornos: (uf: string) => Promise<Resultado<ContornosDaUf>>
 }
 
 /** Busca global da barra do topo (docs/plano_busca_global.md) e as buscas recentes de quem está logado. */
@@ -677,8 +692,13 @@ export interface ServicosDeChamados {
 
 /** Gestão do portal do cliente pela equipe (Fase 3A): hub, acessos, pedidos dos colegas e configuração. */
 export interface ServicosDoPortalNoCrm {
-  /** Indicadores do hub (`portal.ver`); `dias` é a janela de 1ª resposta e nota (padrão 30) */
-  indicadores: (dias?: number) => Promise<Resultado<IndicadoresDoHub>>
+  /**
+   * Indicadores do hub (`portal.ver`); `dias` é a janela de 1ª resposta e nota (padrão 30), ou o intervalo
+   * `{ de, ate }` (o Dashboard)
+   */
+  indicadores: (
+    janela?: number | { de: string; ate: string },
+  ) => Promise<Resultado<IndicadoresDoHub>>
   configuracao: {
     obter: () => Promise<Resultado<ConfiguracaoDoPortal>>
     atualizar: (dados: {

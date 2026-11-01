@@ -1,4 +1,4 @@
-import type { Dashboard } from '@leadtogo/api-client'
+import type { ResultadosDoDashboard as Dashboard } from '@leadtogo/api-client'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Area, AreaChart, Bar, BarChart, LabelList, Tooltip, XAxis, YAxis } from 'recharts'
 
@@ -6,14 +6,7 @@ import { ConteudoDoTooltip, ContainerDoGrafico, GraficoVazio } from '@leadtogo/u
 import { corDaTag, useReduzirMovimento } from '@/lib/grafico'
 import { reais, reaisCurto } from '@/telas/oportunidades/formatos'
 
-import {
-  linkDaFase,
-  linkDeConquistadas,
-  linkDePerdas,
-  linkDoMes,
-  linkDoMotivo,
-  linkDoStatus,
-} from './links'
+import { linkDaFase, linkDeConquistadas, linkDePerdas, linkDoMes, linkDoMotivo } from './links'
 
 const AVISO_CLIQUE = 'Clique para ver a lista'
 
@@ -47,12 +40,12 @@ function LinksDoGrafico({
   )
 }
 
-/** O mini-gráfico do MRR conquistado: área dos últimos 6 meses, dentro do indicador. */
+/** O mini-gráfico do MRR conquistado: área dos meses da série (6 nos períodos curtos), dentro do indicador. */
 export function GraficoDeMrr({ serie }: { serie: Dashboard['mrr']['serie'] }) {
   const navegar = useNavigate()
   const reduzir = useReduzirMovimento()
   if (serie.every((p) => p.valor === 0)) {
-    return <GraficoVazio texto="Sem MRR conquistado nos últimos 6 meses." altura={48} />
+    return <GraficoVazio texto="Sem MRR conquistado nestes meses." altura={48} />
   }
   return (
     <>
@@ -358,81 +351,6 @@ export function GraficoDeMotivos({
         itens={motivos.map((m) => ({
           rotulo: `${m.nome}: ${m.quantidade}`,
           link: linkDoMotivo(m.id, periodo),
-        }))}
-      />
-    </>
-  )
-}
-
-/** A carteira por Status: uma barra empilhada nas cores das tags, com as contagens. */
-export function GraficoDaCarteira({
-  carteira,
-  membroId,
-}: {
-  carteira: Dashboard['carteira']
-  membroId: string
-}) {
-  const navegar = useNavigate()
-  const reduzir = useReduzirMovimento()
-  if (carteira.total === 0) {
-    return <GraficoVazio texto="Nenhuma empresa na sua carteira." altura={56} />
-  }
-  const linha: Record<string, number | string> = { nome: 'Carteira' }
-  for (const s of carteira.porStatus) linha[s.id] = s.quantidade
-  return (
-    <>
-      <ContainerDoGrafico
-        altura={44}
-        rotulo={`Carteira por status: ${carteira.porStatus.map((s) => `${s.nome} ${s.quantidade}`).join(', ')}`}
-        config={Object.fromEntries(
-          carteira.porStatus.map((s) => [s.id, { rotulo: s.nome, cor: corDaTag(s.cor) }]),
-        )}
-        className="[&_.recharts-rectangle]:cursor-pointer"
-      >
-        <BarChart
-          data={[linha]}
-          layout="vertical"
-          margin={{ top: 4, right: 0, bottom: 4, left: 0 }}
-          accessibilityLayer
-        >
-          <XAxis type="number" hide domain={[0, carteira.total]} />
-          <YAxis type="category" dataKey="nome" hide />
-          <Tooltip
-            cursor={false}
-            content={({ active, payload }) => {
-              const item = payload?.[0]
-              const s = carteira.porStatus.find((x) => x.id === item?.dataKey)
-              if (!active || !s) return null
-              return (
-                <ConteudoDoTooltip
-                  titulo={s.nome}
-                  linhas={[
-                    { rotulo: 'Empresas', valor: String(s.quantidade), cor: corDaTag(s.cor) },
-                    { rotulo: 'Da carteira', valor: percentual(s.quantidade, carteira.total) },
-                  ]}
-                  aviso={AVISO_CLIQUE}
-                />
-              )
-            }}
-          />
-          {carteira.porStatus.map((s) => (
-            <Bar
-              key={s.id}
-              dataKey={s.id}
-              stackId="carteira"
-              fill={corDaTag(s.cor)}
-              isAnimationActive={!reduzir}
-              animationDuration={500}
-              onClick={() => void navegar(linkDoStatus(s.id, membroId))}
-            />
-          ))}
-        </BarChart>
-      </ContainerDoGrafico>
-      <LinksDoGrafico
-        titulo="Empresas por status"
-        itens={carteira.porStatus.map((s) => ({
-          rotulo: `${s.nome}: ${s.quantidade}`,
-          link: linkDoStatus(s.id, membroId),
         }))}
       />
     </>

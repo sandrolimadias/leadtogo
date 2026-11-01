@@ -487,6 +487,32 @@ export const servicosReais: ServicosDeAcesso = {
       protegido(async () =>
         daApi(await api.GET('/v1/carteira/dashboard', { params: { query: consulta as never } })),
       ),
+    resultados: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/dashboard/resultados', {
+            params: { query: consulta as never },
+          }),
+        ),
+      ),
+    associados: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/dashboard/associados', {
+            params: { query: consulta as never },
+          }),
+        ),
+      ),
+    mapa: (consulta) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/carteira/dashboard/mapa', { params: { query: consulta as never } }),
+        ),
+      ),
+    contornos: (uf) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/carteira/dashboard/contornos', { params: { query: { uf } } })),
+      ),
   },
 
   busca: {
@@ -940,11 +966,13 @@ export const servicosReais: ServicosDeAcesso = {
   },
 
   portal: {
-    indicadores: (dias) =>
+    indicadores: (janela) =>
       protegido(async () =>
         daApi(
           await api.GET('/v1/portal-hub/indicadores', {
-            params: { query: dias ? { dias } : {} },
+            params: {
+              query: typeof janela === 'number' ? { dias: janela } : janela ? { ...janela } : {},
+            } as never,
           }),
         ),
       ),

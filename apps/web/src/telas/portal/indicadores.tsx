@@ -34,14 +34,21 @@ function Cartao({
 
 const percentual = (v: number | null) => (v === null ? '—' : `${String(v).replace('.', ',')}%`)
 
-/** Os quatro números do hub, dos chamados abertos pelos clientes: Em aberto, Prazo estourando, 1ª resposta e Nota. */
-export function IndicadoresDoPortal() {
+/**
+ * Os quatro números do hub, dos chamados abertos pelos clientes: Em aberto, Prazo estourando, 1ª resposta e
+ * Nota. Com `janela` (o Dashboard), 1ª resposta e Nota valem nesses dias; sem ela, nos últimos 30.
+ */
+export function IndicadoresDoPortal({
+  janela,
+}: { janela?: { de: string; ate: string; rotulo: string } } = {}) {
   const servicos = useServicos()
   const consulta = useQuery({
-    queryKey: ['portal', 'indicadores'],
+    queryKey: ['portal', 'indicadores', janela?.de, janela?.ate],
     retry: false,
     queryFn: async () => {
-      const r = await servicos.portal.indicadores()
+      const r = await servicos.portal.indicadores(
+        janela ? { de: janela.de, ate: janela.ate } : undefined,
+      )
       if (!r.ok) throw new Error(r.erro.mensagem)
       return r.dados
     },
@@ -77,7 +84,7 @@ export function IndicadoresDoPortal() {
       <Cartao
         rotulo="1ª resposta no prazo"
         valor={percentual(i.primeiraRespostaNoPrazo)}
-        nota={`últimos ${i.periodoDias} dias`}
+        nota={janela ? janela.rotulo : `últimos ${i.periodoDias} dias`}
         {...(i.primeiraRespostaNoPrazo !== null && i.primeiraRespostaNoPrazo >= 90
           ? { tom: 'success' as const }
           : {})}
@@ -85,7 +92,7 @@ export function IndicadoresDoPortal() {
       <Cartao
         rotulo="Nota média"
         valor={i.notaMedia === null ? '—' : String(i.notaMedia).replace('.', ',')}
-        nota={`${i.avaliacoes} avaliaç${i.avaliacoes === 1 ? 'ão' : 'ões'} em ${i.periodoDias} dias`}
+        nota={`${i.avaliacoes} avaliaç${i.avaliacoes === 1 ? 'ão' : 'ões'} ${janela ? `· ${janela.rotulo}` : `em ${i.periodoDias} dias`}`}
       />
     </section>
   )

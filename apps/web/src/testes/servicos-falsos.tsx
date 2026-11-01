@@ -246,6 +246,10 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
     },
     dashboard: {
       carregar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      resultados: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      associados: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      mapa: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      contornos: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
     },
     busca: {
       buscar: vi.fn(async () => ok({ empresas: [], contatos: [], oportunidades: [] })),

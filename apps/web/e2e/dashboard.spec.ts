@@ -2,8 +2,8 @@ import { expect, type Page, test } from '@playwright/test'
 
 import { administradorComSessao, limparLimites } from './ambiente'
 
-// Módulo 7: o Dashboard (visão Minha) com números de verdade, os gráficos (tooltip e clique levando à lista
-// filtrada), a conclusão rápida e o layout (a página não rola).
+// Dashboard v2: as abas Minhas atividades e Resultados com números de verdade, os gráficos (tooltip e clique
+// levando à lista filtrada), a conclusão rápida, a troca de período e o layout (a página não rola).
 
 async function entrarComSessao(page: Page, nome: string) {
   const { api } = await administradorComSessao(nome)
@@ -74,16 +74,23 @@ test('dashboard: números, clique no gráfico do funil e conclusão rápida', as
 
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible()
+  // abre em Minhas atividades; os números ficam na aba Resultados
+  await expect(page.getByRole('region', { name: 'Minhas atividades' })).toBeVisible()
+  await page.getByRole('tab', { name: /Resultados/ }).click()
+  await expect(page).toHaveURL(/aba=resultados/)
 
   // 1. Os números do mês
   await expect(page.getByRole('region', { name: 'MRR conquistado' })).toContainText('R$ 300,00')
+  await expect(page.getByRole('region', { name: 'Vendas no período' })).toContainText('R$ 3.600,00')
   await expect(page.getByRole('region', { name: 'Taxa de conversão' })).toContainText('50%')
   await expect(page.getByRole('region', { name: 'Taxa de conversão' })).toContainText(
     '1 conquistadas × 1 perdidas',
   )
-  await expect(page.getByRole('region', { name: 'Previsão do período' })).toContainText(
-    '1 sem previsão',
+  // a que está em Proposta não é da fase final (Negociação): fora da previsão
+  await expect(page.getByRole('region', { name: 'Previsão (fase final)' })).toContainText(
+    '0 oportunidades',
   )
+  await expect(page.getByRole('region', { name: /Sem contato/ })).toHaveCount(0)
 
   // 2. Tooltip do gráfico do funil: valores e o aviso de clique (mouse sobre a barra)
   const funilGrafico = page.getByRole('group', { name: /^Funil Vendas/ })
@@ -103,20 +110,16 @@ test('dashboard: números, clique no gráfico do funil e conclusão rápida', as
   await expect(page.getByRole('table')).not.toContainText('Ganha')
 
   // 4. Clique nos motivos de perda: as perdidas daquele motivo no período
-  await page.goto('/')
+  await page.goto('/?aba=resultados')
   const motivosGrafico = page.getByRole('group', { name: /^Principais motivos de perda/ })
   await motivosGrafico.locator('.recharts-bar-rectangle').first().click()
   await expect(page).toHaveURL(/grupo=perdas/)
   await expect(page.getByRole('table')).toContainText('Perdida')
 
-  // 5. Carteira por status: clique leva às Empresas com o status
-  await page.goto('/')
-  await page
-    .getByRole('group', { name: /^Carteira por status/ })
-    .locator('.recharts-bar-rectangle')
-    .first()
-    .click()
-  await expect(page).toHaveURL(/\/empresas\?.*status=/)
+  // 5. O quadro Carteira (mapas do estado da empresa) e as entradas e saídas de associados
+  await page.goto('/?aba=resultados')
+  await expect(page.getByRole('region', { name: 'Carteira' })).toBeVisible()
+  await expect(page.getByRole('region', { name: /entradas e saídas/ })).toBeVisible()
 
   // 6. Conclusão rápida: o resultado é obrigatório e a atividade sai da lista
   await page.goto('/')
@@ -131,6 +134,7 @@ test('dashboard: números, clique no gráfico do funil e conclusão rápida', as
   await expect(card.getByText('Visita de hoje')).toHaveCount(0)
 
   // 7. Trocar o período muda os números (o mês anterior não tem o que o mês atual tem)
+  await page.getByRole('tab', { name: /Resultados/ }).click()
   await page.getByRole('button', { name: 'Mês anterior' }).click()
   await expect(page).toHaveURL(/periodo=mes_anterior/)
   await expect(page.getByRole('region', { name: 'MRR conquistado' })).toContainText('R$ 0,00')
@@ -141,31 +145,39 @@ test('dashboard: tema escuro, cores dos tokens e a página não rola (computador
 }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   const api = await entrarComSessao(page, 'dashtema')
-  await api.post('/v1/carteira/empresas', {
-    data: { tipoDocumento: 'nenhum', razaoSocial: 'Empresa do tema escuro' },
+  const empresa = (await (
+    await api.post('/v1/carteira/empresas', {
+      data: { tipoDocumento: 'nenhum', razaoSocial: 'Empresa do tema escuro' },
+    })
+  ).json()) as { id: string }
+  // uma oportunidade ativa: o gráfico do funil tem barra para conferir a cor
+  await api.post('/v1/carteira/oportunidades', {
+    data: { titulo: 'Do tema', empresaId: empresa.id, valorUnico: 100 },
   })
   for (const tela of [
     { width: 1366, height: 768 },
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(tela)
-    await page.goto('/')
-    await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible()
-    await expect(page.getByRole('region', { name: 'Carteira' })).toBeVisible()
-    const medidas = await page.evaluate(() => {
-      const e = document.scrollingElement!
-      return {
-        paginaVertical: e.scrollHeight === e.clientHeight,
-        paginaHorizontal: e.scrollWidth === e.clientWidth,
-      }
-    })
-    expect(medidas).toEqual({ paginaVertical: true, paginaHorizontal: true })
+    for (const aba of ['/', '/?aba=resultados']) {
+      await page.goto(aba)
+      await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible()
+      if (aba !== '/') await expect(page.getByRole('region', { name: 'Carteira' })).toBeVisible()
+      const medidas = await page.evaluate(() => {
+        const e = document.scrollingElement!
+        return {
+          paginaVertical: e.scrollHeight === e.clientHeight,
+          paginaHorizontal: e.scrollWidth === e.clientWidth,
+        }
+      })
+      expect(medidas).toEqual({ paginaVertical: true, paginaHorizontal: true })
+    }
   }
   // as barras usam a cor do token, resolvida pelo tema (nunca preto nem transparente)
   await page.setViewportSize({ width: 1366, height: 768 })
-  await page.goto('/')
+  await page.goto('/?aba=resultados')
   const cor = await page
-    .getByRole('group', { name: /^Carteira por status/ })
+    .getByRole('group', { name: /^Funil Vendas/ })
     .locator('.recharts-bar-rectangle path')
     .first()
     .evaluate((el) => getComputedStyle(el).fill)

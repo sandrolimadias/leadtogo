@@ -96,6 +96,14 @@ Os gráficos do app usam **Recharts**, no padrão do **shadcn/ui Charts**: um co
 - **Estados:** carregando (esqueleto do bloco), erro (alerta com "Tentar de novo") e **vazio** (`GraficoVazio`: uma frase que diz o que falta, como "Nenhuma perda neste período", nunca um gráfico em branco).
 - Valores sempre em `tabular-nums`; R$ com centavos nos tooltips e sem centavos nos rótulos curtos.
 
+## Mapa de densidade (regra, Dashboard v2)
+O quadro **Carteira** do Dashboard mostra o estado da empresa que usa o CRM com os municípios pintados pela quantidade (associados em **azul**, empresas do cadastro em **vermelho**). Componente em `apps/web/src/telas/dashboard/mapa-de-densidade.tsx`; contas puras (classes, cores e projeção) em `apps/web/src/lib/densidade.ts`, testadas à parte.
+- **SVG, não MapLibre:** os contornos (malha municipal do IBGE, simplificada, de `GET /v1/carteira/dashboard/contornos`) são desenhados num SVG sem mapa de ruas e sem zoom, que cabe no cartão e troca de tema pelos tokens. Projeção equirretangular com a correção pelo cosseno da latitude média.
+- **Classes:** até **5**, por quantis dos valores positivos **distintos** (as muitas cidades com 1 ou 2 não engolem as faixas); com poucos valores, as classes se juntam. Zero é "sem empresas".
+- **Cores só dos tokens, por mistura:** `color-mix(in oklch, var(--tag-blue-fg) P%, var(--surface))` (ou `--tag-red-fg`), com P = 22, 40, 58, 78 e 100 da classe mais clara à mais escura; município sem valor em `--surface-sunken`; contorno `--border-strong` e o destaque em `--accent`. Nada de hexadecimal; acompanha o tema escuro sozinho.
+- **Legenda lateral** (abaixo do mapa no celular): as faixas (quadrado de cor + "3–4") e a lista de cidades em ordem decrescente com a cor do mapa e a quantidade (`tabular-nums`), 10 de início e "Ver todas". Rodapé: quantos estão fora da UF, quantos sem cidade e "Limites municipais: IBGE".
+- **Interação:** passar o mouse, focar a cidade na legenda ou tocar no município destaca os dois e mostra "Vitória: 42 associados (12% do total)" numa linha `aria-live`. Clique (no toque, o segundo toque) leva à lista de Empresas filtrada pela cidade (e pelo Status Cliente, no azul). A legenda é a alternativa acessível (cada cidade é um link); o SVG tem `role="img"` e o resumo em palavras.
+
 ## Próximos passos
 1. Revisar o design system no artifact e pedir ajustes (cores, fonte, cantos, densidade).
 2. Prototipar as telas principais (Dashboard, Empresas, Ficha da empresa, Oportunidades, Tarefas, versões para celular) sobre este sistema.

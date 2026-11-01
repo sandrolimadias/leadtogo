@@ -1,4 +1,10 @@
-import type { Dashboard } from '@leadtogo/api-client'
+import type {
+  AssociadosDoDashboard,
+  ContornosDaUf,
+  Dashboard,
+  MapaDoDashboard,
+  ResultadosDoDashboard,
+} from '@leadtogo/api-client'
 
 import { id } from '@/telas/contatos/fixtures'
 
@@ -118,4 +124,130 @@ export const dashboard = (extra: Partial<Dashboard> = {}): Dashboard => ({
   },
   atividades: { hoje: 2, atrasadas: 1, proximos7: 3 },
   ...extra,
+})
+
+// ---- aba Resultados ----
+
+export const VITORIA = 3205309
+export const SERRA = 3205002
+
+const serie = dashboard().mrr.serie
+
+export const resultados = (extra: Partial<ResultadosDoDashboard> = {}): ResultadosDoDashboard => ({
+  periodo: {
+    chave: 'mes',
+    rotulo: 'outubro de 2026',
+    inicio: '2026-10-01',
+    fim: '2026-10-31',
+    anterior: { inicio: '2026-09-01', fim: '2026-09-30' },
+  },
+  visao: 'minha',
+  visoes: ['minha', 'equipe', 'empresa'],
+  previsao: {
+    valor: 12500,
+    ponderado: 9800,
+    quantidade: 3,
+    semPrevisao: 2,
+    porFunil: [
+      {
+        funilId: FUNIL_ID,
+        funil: 'Vendas',
+        faseId: FASE_PROPOSTA,
+        fase: 'Negociação',
+        valor: 12500,
+        quantidade: 3,
+      },
+    ],
+  },
+  vendas: { total: 41400, quantidade: 4, anterior: 36000, variacao: 15 },
+  mrr: { valor: 3450, quantidade: 4, anterior: 2925, variacao: 18, serie },
+  conversao: { taxa: 66.7, conquistadas: 4, perdidas: 2 },
+  resultado: dashboard().resultado,
+  motivosDePerda: dashboard().motivosDePerda,
+  funil: dashboard().funil,
+  associados: {
+    tag: { id: TAG_CLIENTE, nome: 'Associado', cor: 'green' },
+    atual: 70,
+    inicio: 68,
+    novos: 5,
+    desassociados: 3,
+    churn: 4.4,
+    historicoDesde: '2025-01-10T12:00:00.000Z',
+  },
+  visitas: { realizadas: 42, anterior: 30, variacao: 40 },
+  atividadesRealizadas: { realizadas: 120, anterior: 150, variacao: -20 },
+  ...extra,
+})
+
+export const listaDeAssociados = (
+  tipo: AssociadosDoDashboard['tipo'],
+  extra: Partial<AssociadosDoDashboard> = {},
+): AssociadosDoDashboard => ({
+  tipo,
+  periodo: resultados().periodo,
+  total: tipo === 'novos' ? 5 : 3,
+  pagina: 1,
+  porPagina: 8,
+  itens:
+    tipo === 'novos'
+      ? [
+          {
+            id: id(31),
+            nome: 'Supermercado Bom Preço',
+            cidade: { nome: 'Vitória', uf: 'ES' },
+            em: '2026-10-12T15:00:00.000Z',
+            vendedor: { id: MEMBRO, nome: 'Alessandro Dias' },
+            por: { id: MEMBRO, nome: 'Alessandro Dias' },
+            mrr: 350,
+            statusAtual: null,
+          },
+        ]
+      : [
+          {
+            id: id(32),
+            nome: 'Padaria Sol',
+            cidade: null,
+            em: '2026-10-20T15:00:00.000Z',
+            vendedor: null,
+            por: null,
+            mrr: null,
+            statusAtual: { id: id(993), nome: 'Inativo', cor: 'gray' },
+          },
+        ],
+  ...extra,
+})
+
+export const mapa = (extra: Partial<MapaDoDashboard> = {}): MapaDoDashboard => ({
+  uf: 'ES',
+  periodo: resultados().periodo,
+  municipios: [
+    { codigo: VITORIA, nome: 'Vitória', associados: 42, empresas: 90 },
+    { codigo: SERRA, nome: 'Serra', associados: 3, empresas: 40 },
+  ],
+  total: { associados: 46, empresas: 135 },
+  foraDaUf: { associados: 1, empresas: 4 },
+  semCidade: { associados: 0, empresas: 1 },
+  ...extra,
+})
+
+const quadrado = (x: number, y: number): [number, number][][][] => [
+  [
+    [
+      [x, y],
+      [x + 0.1, y],
+      [x + 0.1, y + 0.1],
+      [x, y + 0.1],
+      [x, y],
+    ],
+  ],
+]
+
+export const contornos = (): ContornosDaUf => ({
+  uf: 'ES',
+  fonte: 'IBGE, malha municipal (simplificada)',
+  municipios: [
+    { codigo: SERRA, nome: 'Serra', poligonos: quadrado(-40.3, -20.2) },
+    { codigo: VITORIA, nome: 'Vitória', poligonos: quadrado(-40.4, -20.3) },
+    { codigo: 3201308, nome: 'Cariacica', poligonos: quadrado(-40.5, -20.3) },
+  ],
 })

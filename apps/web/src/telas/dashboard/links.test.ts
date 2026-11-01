@@ -7,8 +7,7 @@ import {
   linkDePerdas,
   linkDoMes,
   linkDoMotivo,
-  linkDoStatus,
-  linkSemContato,
+  linkDeEmpresas,
 } from './links'
 
 const periodo = { inicio: '2026-10-01', fim: '2026-10-31' }
@@ -21,10 +20,14 @@ describe('para onde cada clique do Dashboard leva', () => {
     })
   })
 
-  it('status da carteira → Empresas com o status, só as do usuário', () => {
-    expect(linkDoStatus('t1', 'm1')).toEqual({
+  it('associados e cidades dos mapas → Empresas com o status e a cidade; na visão Minha, só as do usuário', () => {
+    expect(linkDeEmpresas({ status: 't1', vendedor: 'm1' })).toEqual({
       to: '/empresas',
       search: { status: 't1', vendedor: 'm1' },
+    })
+    expect(linkDeEmpresas({ cidade: 3205309 })).toEqual({
+      to: '/empresas',
+      search: { cidade: 3205309 },
     })
   })
 
@@ -50,15 +53,11 @@ describe('para onde cada clique do Dashboard leva', () => {
     expect(diaAnterior('2028-03-01')).toBe('2028-02-29')
   })
 
-  it('conquistadas e perdidas e canceladas do período; sem contato com o prazo e o vendedor', () => {
+  it('conquistadas e perdidas e canceladas do período', () => {
     expect(linkDeConquistadas(periodo).search).toMatchObject({
       status: 'conquistado',
       de: '2026-10-01',
     })
     expect(linkDePerdas(periodo).search).toMatchObject({ grupo: 'perdas', ate: '2026-10-31' })
-    expect(linkSemContato(60, 'm1')).toEqual({
-      to: '/empresas',
-      search: { semContato: 60, vendedor: 'm1' },
-    })
   })
 })
