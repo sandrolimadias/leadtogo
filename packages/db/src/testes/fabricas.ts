@@ -1430,3 +1430,50 @@ fabricas['publicacao_midias'] = definirFabrica({
     return id
   },
 })
+
+// Portal, Fase 4E: construtor de formulários
+const DEFINICAO = JSON.stringify({
+  campos: [{ id: 'nome', tipo: 'texto', rotulo: 'Nome' }],
+  botoes: [],
+})
+async function inserirFormulario(tx: TransactionSql, tenantId: string): Promise<string> {
+  const id = novoId()
+  await tx`INSERT INTO formularios (id, tenant_id, nome, slug, definicao)
+    VALUES (${id}, ${tenantId}, 'Inscrição', ${`f-${id.slice(-12)}`}, ${DEFINICAO}::jsonb)`
+  return id
+}
+async function inserirResposta(tx: TransactionSql, tenantId: string): Promise<string> {
+  const formularioId = await inserirFormulario(tx, tenantId)
+  const id = novoId()
+  await tx`INSERT INTO formulario_respostas (id, tenant_id, formulario_id, versao, origem, botao, respostas)
+    VALUES (${id}, ${tenantId}, ${formularioId}, 1, 'crm', 'enviar', '{}'::jsonb)`
+  return id
+}
+fabricas['formularios'] = definirFabrica({
+  colunaAlteravel: 'nome',
+  criar: (tx, tenantId) => inserirFormulario(tx, tenantId),
+})
+fabricas['formulario_versoes'] = definirFabrica({
+  colunaAlteravel: 'atualizado_em',
+  criar: async (tx, tenantId) => {
+    const formularioId = await inserirFormulario(tx, tenantId)
+    const id = novoId()
+    await tx`INSERT INTO formulario_versoes (id, tenant_id, formulario_id, versao, definicao)
+      VALUES (${id}, ${tenantId}, ${formularioId}, 1, ${DEFINICAO}::jsonb)`
+    return id
+  },
+})
+fabricas['formulario_respostas'] = definirFabrica({
+  colunaAlteravel: 'botao',
+  criar: (tx, tenantId) => inserirResposta(tx, tenantId),
+})
+fabricas['formulario_acoes_execucoes'] = definirFabrica({
+  colunaAlteravel: 'detalhe',
+  criar: async (tx, tenantId) => {
+    const respostaId = await inserirResposta(tx, tenantId)
+    const id = novoId()
+    await tx`INSERT INTO formulario_acoes_execucoes (id, tenant_id, resposta_id, indice, tipo)
+      VALUES (${id}, ${tenantId}, ${respostaId}, 0, 'email')`
+    return id
+  },
+})

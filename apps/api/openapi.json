@@ -20926,6 +20926,851 @@
         "tags": ["Portal do cliente: agenda"]
       }
     },
+    "/v1/portal-formularios": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.formularios`. Os mais recentes primeiro, com o total de respostas.",
+        "operationId": "FormulariosController_listar",
+        "parameters": [
+          {
+            "name": "situacao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["rascunho", "publicado", "arquivado"]
+            }
+          },
+          {
+            "name": "finalidade",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "livre",
+                "inscricao_evento",
+                "avaliacao_evento",
+                "satisfacao_chamado",
+                "associacao"
+              ]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeFormularios"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar formulários",
+        "tags": ["Portal do cliente: formulários"]
+      },
+      "post": {
+        "description": "Exige `portal.formularios`. Nasce rascunho, com um endereço público próprio (`slug`). Só passa a aceitar respostas depois de publicado.",
+        "operationId": "FormulariosController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarFormularioEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formulario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar um formulário",
+        "tags": ["Portal do cliente: formulários"]
+      }
+    },
+    "/v1/portal-formularios/{id}": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.formularios`. Traz o rascunho (a definição que o construtor edita).",
+        "operationId": "FormulariosController_obter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formulario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ver um formulário",
+        "tags": ["Portal do cliente: formulários"]
+      },
+      "put": {
+        "description": "Exige `portal.formularios`. O que está publicado só muda ao publicar de novo (as respostas guardam a versão).",
+        "operationId": "FormulariosController_salvar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarFormularioEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formulario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Salvar o rascunho",
+        "tags": ["Portal do cliente: formulários"]
+      },
+      "delete": {
+        "description": "Exige `portal.formularios`. Exclusão lógica: some da lista e deixa de aceitar respostas.",
+        "operationId": "FormulariosController_excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Excluir",
+        "tags": ["Portal do cliente: formulários"]
+      }
+    },
+    "/v1/portal-formularios/{id}/arquivado": {
+      "put": {
+        "description": "Exige `portal.formularios`. Arquivado não aceita respostas; as que existem ficam.",
+        "operationId": "FormulariosController_arquivar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "arquivado": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["arquivado"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formulario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Arquivar ou reativar",
+        "tags": ["Portal do cliente: formulários"]
+      }
+    },
+    "/v1/portal-formularios/{id}/duplicar": {
+      "post": {
+        "description": "Exige `portal.formularios`. Cópia em rascunho, sem respostas.",
+        "operationId": "FormulariosController_duplicar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formulario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Duplicar",
+        "tags": ["Portal do cliente: formulários"]
+      }
+    },
+    "/v1/portal-formularios/{id}/publicar": {
+      "post": {
+        "description": "Exige `portal.formularios`. Congela o rascunho numa versão nova e passa a aceitar respostas. Definição inválida: 422 `definicao_invalida`.",
+        "operationId": "FormulariosController_publicar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formulario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Publicar",
+        "tags": ["Portal do cliente: formulários"]
+      }
+    },
+    "/v1/portal-formularios/{id}/respostas": {
+      "get": {
+        "description": "Exige `portal.ver` ou `portal.formularios`. As mais recentes primeiro, com a pessoa e a empresa (quando logadas) e os campos da versão publicada.",
+        "operationId": "FormulariosController_respostas",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDeRespostas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Respostas",
+        "tags": ["Portal do cliente: formulários"]
+      }
+    },
+    "/v1/portal-formularios/{id}/respostas.csv": {
+      "get": {
+        "description": "Exige `portal.formularios`. CSV em UTF-8 com BOM e \";\" (abre direto no Excel em português). A exportação fica na auditoria.",
+        "operationId": "FormulariosController_exportar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Exportar as respostas (CSV)",
+        "tags": ["Portal do cliente: formulários"]
+      }
+    },
+    "/v1/portal-formularios/{id}/segredo": {
+      "post": {
+        "description": "Exige `portal.formularios`. Gera (ou troca) o segredo que assina as ações de webhook (`X-Leadtogo-Assinatura`, HMAC-SHA256). Aparece só nesta resposta.",
+        "operationId": "FormulariosController_regerarSegredo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "segredo": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["segredo"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Gerar o segredo dos webhooks",
+        "tags": ["Portal do cliente: formulários"]
+      }
+    },
     "/v1/portal-hub/indicadores": {
       "get": {
         "description": "Exige `portal.ver`. Dos chamados abertos pelos clientes: Em aberto e Prazo estourando (do momento), 1ª resposta no prazo e Nota média (na janela de `dias`, padrão 30), além de acessos ativos e pedidos pendentes. Vale o conjunto de TODOS os chamados do portal.",
@@ -24929,6 +25774,226 @@
         ]
       }
     },
+    "/v1/portal/formularios/{id}": {
+      "get": {
+        "description": "A versão publicada, com os valores do preenchimento automático montados pelo servidor (os travados não mudam).",
+        "operationId": "PortalFormulariosController_abrir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormularioParaResponder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abrir um formulário (logado)",
+        "tags": ["Portal do cliente: formulários"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
+    "/v1/portal/formularios/{id}/respostas": {
+      "post": {
+        "description": "Valida tudo de novo no servidor (condicionais, obrigatórios, formatos; os campos travados vêm da sessão). Versão antiga: 409 `versao_desatualizada`. Campos inválidos: 422 `respostas_invalidas` com os detalhes por campo.",
+        "operationId": "PortalFormulariosController_responder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarRespostaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaEnviada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Responder (logado)",
+        "tags": ["Portal do cliente: formulários"],
+        "security": [
+          {
+            "sessaoPortal": []
+          }
+        ]
+      }
+    },
     "/v1/portal/inicio": {
       "get": {
         "description": "Contagens (em aberto, aguardando você, para avaliar) e os chamados mais recentes.",
@@ -26602,6 +27667,188 @@
             "sessaoPortal": []
           }
         ]
+      }
+    },
+    "/v1/portal/publico/formularios/{slug}": {
+      "get": {
+        "description": "Público. Só formulário publicado e com acesso \"público\". Traz a chave do captcha quando ligado.",
+        "operationId": "PortalFormulariosController_abrirPublico",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormularioParaResponder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abrir um formulário público",
+        "tags": ["Portal do cliente: formulários"],
+        "security": []
+      }
+    },
+    "/v1/portal/publico/formularios/{slug}/respostas": {
+      "post": {
+        "description": "Público. Exige `aceitaPrivacidade: true` (422 `privacidade_obrigatoria`) e o captcha quando ligado (422 `captcha_invalido`). Limite por IP.",
+        "operationId": "PortalFormulariosController_responderPublico",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarRespostaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaEnviada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Responder um formulário público",
+        "tags": ["Portal do cliente: formulários"],
+        "security": []
       }
     },
     "/v1/portal/push/configuracao": {
@@ -35637,6 +36884,37 @@
         "required": ["corpo"],
         "additionalProperties": false
       },
+      "EnviarRespostaEntrada": {
+        "type": "object",
+        "properties": {
+          "versao": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "botao": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,39}$"
+          },
+          "respostas": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "aceitaPrivacidade": {
+            "type": "boolean"
+          },
+          "captcha": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "site": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": ["versao", "botao", "respostas"],
+        "additionalProperties": false
+      },
       "EnvioDeAnexo": {
         "type": "object",
         "properties": {
@@ -36340,6 +37618,124 @@
           }
         },
         "required": ["fixada"],
+        "additionalProperties": false
+      },
+      "Formulario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "finalidade": {
+            "type": "string",
+            "enum": [
+              "livre",
+              "inscricao_evento",
+              "avaliacao_evento",
+              "satisfacao_chamado",
+              "associacao"
+            ]
+          },
+          "acesso": {
+            "type": "string",
+            "enum": ["publico", "logado"]
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["rascunho", "publicado", "arquivado"]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "versaoPublicada": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "temMudancas": {
+            "type": "boolean"
+          },
+          "respostas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ultimaRespostaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "captcha": {
+            "type": "boolean"
+          },
+          "definicao": {}
+        },
+        "required": [
+          "id",
+          "nome",
+          "finalidade",
+          "acesso",
+          "situacao",
+          "slug",
+          "versaoPublicada",
+          "temMudancas",
+          "respostas",
+          "ultimaRespostaEm",
+          "atualizadoEm",
+          "captcha",
+          "definicao"
+        ],
+        "additionalProperties": false
+      },
+      "FormularioParaResponder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "versao": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "definicao": {},
+          "preenchidos": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "travados": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "captchaChave": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "versao",
+          "definicao",
+          "preenchidos",
+          "travados",
+          "captchaChave"
+        ],
         "additionalProperties": false
       },
       "Funil": {
@@ -37225,6 +38621,76 @@
           "prazoConfirmacao",
           "confirmados",
           "listaDeEspera"
+        ],
+        "additionalProperties": false
+      },
+      "ItemDeFormulario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "finalidade": {
+            "type": "string",
+            "enum": [
+              "livre",
+              "inscricao_evento",
+              "avaliacao_evento",
+              "satisfacao_chamado",
+              "associacao"
+            ]
+          },
+          "acesso": {
+            "type": "string",
+            "enum": ["publico", "logado"]
+          },
+          "situacao": {
+            "type": "string",
+            "enum": ["rascunho", "publicado", "arquivado"]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "versaoPublicada": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "temMudancas": {
+            "type": "boolean"
+          },
+          "respostas": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ultimaRespostaEm": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "finalidade",
+          "acesso",
+          "situacao",
+          "slug",
+          "versaoPublicada",
+          "temMudancas",
+          "respostas",
+          "ultimaRespostaEm",
+          "atualizadoEm"
         ],
         "additionalProperties": false
       },
@@ -38219,6 +39685,24 @@
         "required": ["itens", "total"],
         "additionalProperties": false
       },
+      "ListaDeFormularios": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeFormulario"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["itens", "total"],
+        "additionalProperties": false
+      },
       "ListaDeLotesDeImportacao": {
         "type": "object",
         "properties": {
@@ -38530,6 +40014,43 @@
           }
         },
         "required": ["itens", "total", "abas", "denunciasAbertas"],
+        "additionalProperties": false
+      },
+      "ListaDeRespostas": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RespostaDeFormulario"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "rotulo": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "rotulo", "tipo"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["itens", "total", "campos"],
         "additionalProperties": false
       },
       "ListaDeRotas": {
@@ -42751,6 +44272,70 @@
         "required": ["corpo"],
         "additionalProperties": false
       },
+      "RespostaDeFormulario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versao": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "origem": {
+            "type": "string",
+            "enum": ["portal", "publico", "crm"]
+          },
+          "botao": {
+            "type": "string"
+          },
+          "valores": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "pessoa": {
+            "nullable": true,
+            "type": "string"
+          },
+          "empresa": {
+            "nullable": true,
+            "type": "string"
+          },
+          "contexto": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["tipo", "id"],
+            "additionalProperties": false
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "versao",
+          "origem",
+          "botao",
+          "valores",
+          "pessoa",
+          "empresa",
+          "contexto",
+          "criadoEm"
+        ],
+        "additionalProperties": false
+      },
       "RespostaDePedirEntrada": {
         "type": "object",
         "properties": {
@@ -42771,6 +44356,21 @@
           "valor": {}
         },
         "required": ["campoId", "valor"],
+        "additionalProperties": false
+      },
+      "RespostaEnviada": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          "mensagem": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "mensagem"],
         "additionalProperties": false
       },
       "RespostaGravada": {
@@ -43256,6 +44856,373 @@
           }
         },
         "required": ["titulo", "inicioEm", "fimEm", "alcance"],
+        "additionalProperties": false
+      },
+      "SalvarFormularioEntrada": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "finalidade": {
+            "default": "livre",
+            "type": "string",
+            "enum": [
+              "livre",
+              "inscricao_evento",
+              "avaliacao_evento",
+              "satisfacao_chamado",
+              "associacao"
+            ]
+          },
+          "acesso": {
+            "default": "logado",
+            "type": "string",
+            "enum": ["publico", "logado"]
+          },
+          "captcha": {
+            "default": true,
+            "type": "boolean"
+          },
+          "definicao": {
+            "type": "object",
+            "properties": {
+              "campos": {
+                "minItems": 1,
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "enum": [
+                        "texto",
+                        "texto_longo",
+                        "email",
+                        "telefone",
+                        "cnpj",
+                        "cpf",
+                        "numero",
+                        "moeda",
+                        "data",
+                        "hora",
+                        "selecao",
+                        "multipla",
+                        "sim_nao",
+                        "avaliacao",
+                        "nps",
+                        "aceite",
+                        "oculto",
+                        "titulo",
+                        "informativo",
+                        "quebra_de_pagina"
+                      ]
+                    },
+                    "rotulo": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "ajuda": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "obrigatorio": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "largura": {
+                      "default": "inteira",
+                      "type": "string",
+                      "enum": ["inteira", "metade", "terco"]
+                    },
+                    "opcoes": {
+                      "maxItems": 50,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "valor": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "rotulo": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          }
+                        },
+                        "required": ["valor", "rotulo"]
+                      }
+                    },
+                    "minimo": {
+                      "type": "number"
+                    },
+                    "maximo": {
+                      "type": "number"
+                    },
+                    "valorPadrao": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "preenchimento": {
+                      "type": "object",
+                      "properties": {
+                        "fonte": {
+                          "type": "string",
+                          "enum": [
+                            "contato.nome",
+                            "contato.email",
+                            "contato.telefone",
+                            "contato.cargo",
+                            "empresa.cnpj",
+                            "empresa.razao_social",
+                            "empresa.nome_fantasia",
+                            "empresa.cidade",
+                            "empresa.uf"
+                          ]
+                        },
+                        "travado": {
+                          "default": false,
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["fonte"]
+                    },
+                    "visivelQuando": {
+                      "type": "object",
+                      "properties": {
+                        "combinacao": {
+                          "type": "string",
+                          "enum": ["todas", "qualquer"]
+                        },
+                        "condicoes": {
+                          "minItems": 1,
+                          "maxItems": 10,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "campo": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                              },
+                              "operador": {
+                                "type": "string",
+                                "enum": [
+                                  "igual",
+                                  "diferente",
+                                  "contem",
+                                  "maior",
+                                  "menor",
+                                  "preenchido",
+                                  "vazio"
+                                ]
+                              },
+                              "valor": {
+                                "type": "string",
+                                "maxLength": 200
+                              }
+                            },
+                            "required": ["campo", "operador"]
+                          }
+                        }
+                      },
+                      "required": ["combinacao", "condicoes"]
+                    },
+                    "texto": {
+                      "type": "string",
+                      "maxLength": 5000
+                    }
+                  },
+                  "required": ["id", "tipo", "rotulo"]
+                }
+              },
+              "botoes": {
+                "minItems": 1,
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                    },
+                    "rotulo": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60
+                    },
+                    "estilo": {
+                      "default": "primario",
+                      "type": "string",
+                      "enum": ["primario", "secundario"]
+                    },
+                    "acoes": {
+                      "default": [],
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "tipo": {
+                                "type": "string",
+                                "enum": ["webhook"]
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 500,
+                                "format": "uri"
+                              },
+                              "condicao": {
+                                "type": "object",
+                                "properties": {
+                                  "combinacao": {
+                                    "type": "string",
+                                    "enum": ["todas", "qualquer"]
+                                  },
+                                  "condicoes": {
+                                    "minItems": 1,
+                                    "maxItems": 10,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "campo": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                                        },
+                                        "operador": {
+                                          "type": "string",
+                                          "enum": [
+                                            "igual",
+                                            "diferente",
+                                            "contem",
+                                            "maior",
+                                            "menor",
+                                            "preenchido",
+                                            "vazio"
+                                          ]
+                                        },
+                                        "valor": {
+                                          "type": "string",
+                                          "maxLength": 200
+                                        }
+                                      },
+                                      "required": ["campo", "operador"]
+                                    }
+                                  }
+                                },
+                                "required": ["combinacao", "condicoes"]
+                              }
+                            },
+                            "required": ["tipo", "url"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "tipo": {
+                                "type": "string",
+                                "enum": ["email"]
+                              },
+                              "para": {
+                                "type": "string",
+                                "enum": ["fixo", "campo"]
+                              },
+                              "enderecos": {
+                                "maxItems": 10,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "email"
+                                }
+                              },
+                              "campo": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                              },
+                              "assunto": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 160
+                              },
+                              "mensagem": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 5000
+                              },
+                              "condicao": {
+                                "type": "object",
+                                "properties": {
+                                  "combinacao": {
+                                    "type": "string",
+                                    "enum": ["todas", "qualquer"]
+                                  },
+                                  "condicoes": {
+                                    "minItems": 1,
+                                    "maxItems": 10,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "campo": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                                        },
+                                        "operador": {
+                                          "type": "string",
+                                          "enum": [
+                                            "igual",
+                                            "diferente",
+                                            "contem",
+                                            "maior",
+                                            "menor",
+                                            "preenchido",
+                                            "vazio"
+                                          ]
+                                        },
+                                        "valor": {
+                                          "type": "string",
+                                          "maxLength": 200
+                                        }
+                                      },
+                                      "required": ["campo", "operador"]
+                                    }
+                                  }
+                                },
+                                "required": ["combinacao", "condicoes"]
+                              }
+                            },
+                            "required": ["tipo", "para", "assunto", "mensagem"]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["id", "rotulo"]
+                }
+              },
+              "mensagemDeSucesso": {
+                "default": "Recebemos sua resposta. Obrigado!",
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "required": ["campos", "botoes"]
+          }
+        },
+        "required": ["nome", "definicao"],
         "additionalProperties": false
       },
       "SalvarPreferenciasDoPortalEntrada": {

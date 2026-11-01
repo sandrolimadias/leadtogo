@@ -38,6 +38,10 @@ import {
 } from '../../integracoes/webhooks/processador.js'
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
+import {
+  EVENTO_ACOES_DO_FORMULARIO,
+  manipuladorDasAcoesDoFormulario,
+} from '../../portal/acoes-formulario.js'
 
 /** Id do job de um evento: o BullMQ descarta repetição enquanto o job existir. */
 export const jobIdDoEvento = (eventoId: string) => `evento-${eventoId}`
@@ -182,6 +186,9 @@ export function manipuladoresPadrao(
       tipo: 'documento',
     })
   }
+
+  /** Resposta de formulário (Fase 4E): as ações do botão (e-mail e webhook) */
+  manipuladores[EVENTO_ACOES_DO_FORMULARIO] = manipuladorDasAcoesDoFormulario(config)
 
   /** Imagem de publicação enviada ao Garage (Fase 4D): o mesmo antivírus, em outra tabela. */
   manipuladores[EVENTO_VARRER_MIDIA] = async (evento, { filas }) => {

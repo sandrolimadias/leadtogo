@@ -160,7 +160,7 @@ export type Campo = z.infer<typeof campoSchema>
 export const acaoSchema = z.discriminatedUnion('tipo', [
   z.object({
     tipo: z.literal('webhook'),
-    /** https (o servidor também confere o destino e recusa rede interna) */
+    /** Em produção só https; o worker também confere o destino e recusa rede interna */
     url: z.url().max(500),
     condicao: regraSchema.optional(),
   }),
@@ -252,11 +252,12 @@ export const definicaoDeFormularioSchema = z
             })
           }
         }
-        if (a.tipo === 'webhook' && !a.url.startsWith('https://')) {
+        // Em produção o worker só chama https e nunca a rede interna (a mesma política dos webhooks da API)
+        if (a.tipo === 'webhook' && !/^https?:\/\//.test(a.url)) {
           ctx.addIssue({
             code: 'custom',
             path: ['botoes', i, 'acoes', j, 'url'],
-            message: 'use um endereço https',
+            message: 'use um endereço http(s)',
           })
         }
       })

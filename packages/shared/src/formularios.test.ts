@@ -72,7 +72,7 @@ describe('definição do formulário', () => {
     expect(mensagens).toContain('a condição só pode usar um campo de resposta que vem antes')
   })
 
-  it('ação de e-mail para um campo exige um campo de e-mail; webhook só https', () => {
+  it('ação de e-mail para um campo exige um campo de e-mail; webhook só http(s)', () => {
     const r = definicaoDeFormularioSchema.safeParse({
       campos: [{ id: 'nome', tipo: 'texto', rotulo: 'Nome' }],
       botoes: [
@@ -81,14 +81,14 @@ describe('definição do formulário', () => {
           rotulo: 'Enviar',
           acoes: [
             { tipo: 'email', para: 'campo', campo: 'nome', assunto: 'Oi', mensagem: 'Olá' },
-            { tipo: 'webhook', url: 'http://exemplo.com/gancho' },
+            { tipo: 'webhook', url: 'ftp://exemplo.com/gancho' },
           ],
         },
       ],
     })
     expect(r.error?.issues.map((i) => i.message)).toEqual([
       'escolha um campo de e-mail do formulário',
-      'use um endereço https',
+      'use um endereço http(s)',
     ])
   })
 

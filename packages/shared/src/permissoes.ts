@@ -111,6 +111,11 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
     'avisos',
     'Enviar, agendar e cancelar avisos curtos (notificação e push) aos clientes do portal',
   ),
+  p(
+    'portal',
+    'formularios',
+    'Criar, publicar e arquivar formulários do portal e ver e exportar as respostas',
+  ),
   p('cadastros', 'gerir', 'Gerir tags, funis, tipos, origens, motivos e demais cadastros'),
   p('equipe', 'ver_emails', 'Ver o e-mail dos membros da equipe'),
   p('equipe', 'gerir', 'Convidar, desativar e ver o acesso dos membros'),
@@ -130,7 +135,7 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
  * os perfis de SISTEMA das empresas com versão menor recebem as chaves novas que o seu padrão tem (as
  * outras permissões não mudam). Perfis criados pela empresa nunca recebem permissão automaticamente.
  */
-export const VERSAO_DO_CATALOGO = 11
+export const VERSAO_DO_CATALOGO = 12
 
 /** As chaves que cada versão acrescentou (a versão 1 é o catálogo inicial). */
 export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
@@ -153,6 +158,7 @@ export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
   9: ['portal.avisos'],
   10: ['integracoes.gerir'],
   11: ['oportunidades.data_fechamento', 'oportunidades.data_criacao'],
+  12: ['portal.formularios'],
 }
 
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
