@@ -115,8 +115,10 @@
 ## Dashboard
 | Item | Motivo de ter ficado fora | Origem |
 |---|---|---|
-| Visão Equipe e por usuário específico (gestor e admin) | Só a visão "Minha" no MVP (um usuário) | Módulo 7 / `escopo_mvp.md` |
-| Período personalizado (datas escolhidas) | Só Mês atual, Mês anterior e Trimestre | Módulo 7 |
+| Visão por usuário específico (gestor e admin) | A visão Minha · Equipe · Empresa entrou no Dashboard v2 (01/11/2026); escolher um vendedor específico, não | Módulo 7 / `plano_dashboard_v2.md` |
+| Exportar CSV das listas de novos associados e desassociados | Não existe permissão de exportar empresas; criar uma junto | Dashboard v2 |
+| Mapa de densidade com outra UF ou o Brasil inteiro (d3-geo) e contornos de outras UFs | Hoje só o ES tem contornos (`CONTORNOS_UFS`); a projeção própria basta para um estado | Dashboard v2 |
+| Fase de previsão marcada no cadastro do funil | A previsão usa a última fase ativa de cada funil | Dashboard v2 (D3) |
 | Resumo do quadro de Tarefas no rodapé de "Minhas atividades" | O Kanban de Tarefas está fora do MVP; entrou o atalho "Ver todas as atividades" | Módulo 7 |
 | "Novos leads" por origem (quantos vieram da Prospecção) | A Prospecção não está no MVP; o bloco mostra só as empresas novas no período | Módulo 7 |
 | Comparativos além da variação do MRR sobre o período anterior | Não pedido | Módulo 7 |

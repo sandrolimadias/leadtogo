@@ -1,6 +1,6 @@
 # Plano: Dashboard v2 (abas, períodos, novos indicadores e mapas)
 
-*Proposta de 01/11/2026, **aprovada pelo Ale em 01/11/2026** (as nove decisões da seção 12 como recomendado). **Implantação ainda não iniciada:** começa pela etapa 0 da seção 11 quando o Ale pedir. Dezoito pedidos sobre o Dashboard. Mexe em `packages/shared`, `apps/api`, `apps/web`, `packages/db` (uma tabela de referência nova, só expansão) e nos docs. Nenhuma variável de ambiente nova. Cada etapa da seção 11 vira commits pequenos, cada um com os seus testes.*
+*Proposta de 01/11/2026, **aprovada pelo Ale em 01/11/2026** (as nove decisões da seção 12 como recomendado). **Implementado em 01/11/2026** (ver seção 13, "Como ficou"). Dezoito pedidos sobre o Dashboard. Mexe em `packages/shared`, `apps/api`, `apps/web`, `packages/db` (uma tabela de referência nova, só expansão) e nos docs. Nenhuma variável de ambiente nova. Cada etapa da seção 11 vira commits pequenos, cada um com os seus testes.*
 
 ## 1. Resumo dos pedidos
 
@@ -295,3 +295,22 @@ Todas respondidas em 01/11/2026: **as nove como recomendado**.
 | **D7** | Os mapas usam a cidade do **cadastro** (endereço da Receita) ou a posição **geocodificada**? | **Cidade do cadastro** (toda empresa tem; a geocodificação não cobre todas). |
 | **D8** | O mapa vermelho mostra **todas** as empresas do cadastro (Lead, Prospect, Cliente, Inativo) ou tira os Inativos? | **Todas**, com um filtro rápido por Status no cartão numa evolução futura, se precisar. |
 | **D9** | Os cards de Chamados/Portal ficam no **fim da aba Resultados** ou numa **terceira aba** "Atendimento"? | **Fim da aba Resultados** (o pedido é de duas abas). |
+
+## 13. Como ficou (implementação de 01/11/2026)
+
+Commits na ordem: banco e shared (migração 0045, períodos e schemas), API dos resultados, indicadores do portal por intervalo, a tela em duas abas, a contração do `GET /v1/carteira/dashboard` e os docs. Roteiro de teste em `roteiro_teste_dashboard_v2.md`.
+
+**Diferenças em relação à proposta acima:**
+- **Rota dos contornos:** `GET /v1/carteira/dashboard/contornos?uf=ES` (e não `/v1/referencias/contornos`), junto das outras rotas do Dashboard, com `Cache-Control: private, max-age=86400`. Devolve os polígonos de cada município (MultiPolygon do GeoJSON, 4 casas), não uma FeatureCollection.
+- **Carga dos contornos:** a malha fica **versionada** em `packages/db/seeds/dados/municipio_contornos.json` (só o ES, 78 municípios, ~150 KB) e entra com as outras referências a **cada start da API**, só reescrevendo o que mudou. Não há o comando `db:seed-contornos` nem passo manual em produção. O gerador (`seeds/gerar-dados.mjs contornos`, `CONTORNOS_UFS`) baixa da API de Malhas do IBGE; **esta versão** foi gerada a partir de uma cópia derivada da malha do IBGE (projeto geodata-br), porque a API do IBGE não estava acessível no ambiente da geração. O gerador separa as ilhas gravadas como "buracos" (Vitória, Vila Velha, Guarapari e Ibiraçu), para nenhum contorno ficar inválido. Para trocar pela malha oficial mais recente: rodar o gerador com internet e conferir o diff.
+- **Passo 0 (histórico):** em vez de conferir antes, a migração 0045 **sempre** grava, só onde falta, a linha `adicionada` do Status Cliente das empresas sem histórico (com a data de `aplicada_em`, automática). É idempotente e só acrescenta. Para listar as empresas sob o RLS forçado, cria e apaga uma política de leitura de `tenants` só para o owner dentro do mesmo bloco.
+- **Índices:** criados na própria 0045 (sem medir antes): histórico `(tenant_id, tag_id, empresa_id, em)` e atividades realizadas `(tenant_id, realizada_em) WHERE situacao = 'realizada'`.
+- **Escopo das contagens:** as empresas **excluídas** saem de tudo (inclusive dos números de períodos passados), e a carteira é a de **hoje** (`vendedor_id` atual): uma empresa transferida conta para o vendedor atual também nos períodos passados.
+- **Anos anteriores:** os 10 anos antes do atual (sem olhar a data de criação da empresa).
+- **Cards Visitas e Atividades realizadas:** sem clique (a tela Atividades não filtra por período nem por "todos menos visita").
+- **Lista de novos associados:** o MRR é o das oportunidades da empresa **conquistadas no período** (e não "no mesmo dia").
+- **Listas sem exportar CSV** (não existe permissão de exportar empresas; ficou no backlog).
+- **Período específico:** os campos De/Até abrem logo abaixo da barra (não num popover).
+- **Classes do mapa:** quantis dos valores **distintos** (as muitas cidades com 1 ou 2 não engolem as faixas).
+- **`GET /v1/carteira/dashboard`:** passou a devolver só `membro` e `atividades`; os parâmetros antigos (`periodo`, `funilId`) são aceitos e ignorados, para telas abertas antes da atualização (PWA) não quebrarem.
+- **Testes:** o E2E `apps/web/e2e/dashboard.spec.ts` foi atualizado para as duas abas, mas **não foi executado** no ambiente da implementação (sem Garage e Mailpit); os testes de unidade e integração (shared, banco, API e web) rodaram.

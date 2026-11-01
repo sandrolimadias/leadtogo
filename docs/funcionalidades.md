@@ -527,6 +527,19 @@ Filtro de período no topo: mês atual, mês anterior, trimestre ou personalizad
 - **Funil e previsão:** funil por fase (as ativas de hoje), Conquistadas × Perdidas e canceladas e Principais motivos de perda, em **gráficos interativos** (tooltip e clique levando à lista filtrada; `design_system.md`, "Gráficos").
 - **Carteira:** barra por Status nas cores das tags (pelo nome que a empresa deu), empresas novas no período e a lista "Sem contato" (até 8) com "Ver as N".
 
+### Dashboard v2 (01/11/2026; plano em `plano_dashboard_v2.md`, roteiro em `roteiro_teste_dashboard_v2.md`)
+> Substitui, onde diverge, os blocos acima ("Indicadores do Dashboard" e "Dashboard como ficou no Módulo 7"): sai o "Sem contato há N dias" (card e lista) e a barra da Carteira por Status.
+
+- **Duas abas.** **Minhas atividades** (sem período): Rota de hoje, Relatórios de visita pendentes, Chamados pendentes e Minhas atividades (Hoje · Atrasadas · Próximos 7 dias, com a conclusão rápida). **Resultados**: o resto, por período. A aba fica na URL (`?aba=resultados`).
+- **Período:** Mês atual, Mês anterior, Trimestre, Semestre e Ano (do calendário, no fuso da empresa), **anos anteriores** (os 10 anteriores, ano inteiro) e **período específico** (De/Até, até 3 anos). O "anterior" das variações é o intervalo de mesmo tamanho logo antes.
+- **Visão:** Minha · Equipe · Empresa, limitada pelo alcance de `empresas.ver` (vendedor: só Minha). Vale para cards, funil, listas e mapas.
+- **Cards (8):** **Previsão (fase final)** = valor total das ativas na **última fase ativa de cada funil ativo** (somando os funis), com data prevista no período (ponderado e "sem data prevista" na dica) · **Vendas no período** = valor total das conquistadas · **MRR conquistado** · **Taxa de conversão** · **Associados** (Status de chave `cliente`, no fim do período, pelo histórico de Status) · **Churn** = desassociados ÷ associados no início · **Visitas realizadas** (tipo de sistema `visita`, inclusive as não localizadas) · **Atividades realizadas** (os outros tipos, inclusive Tarefas).
+- **Associados e churn (decisões do Ale, 01/11/2026):** quem entrou e saiu no mesmo período não conta; empresa excluída não é desassociação; a contagem segue a carteira de hoje (`vendedor_id` atual).
+- **Funil e resultado:** o funil das ativas de hoje (como antes), Conquistadas × Perdidas e canceladas e Principais motivos de perda.
+- **Entradas e saídas:** listas de **novos associados** (com o MRR conquistado no período) e **desassociados** (com o Status de agora e quem tirou), até 8 e "Ver todos" (50 por página).
+- **Carteira (mapas):** dois mapas de densidade do **estado da empresa que usa o CRM** (endereço em Configurações → Empresa): **associados** (azul) e **empresas do cadastro** (vermelho, qualquer Status, criadas até o fim do período), pela **cidade do cadastro**, com a legenda lateral (cidade, quantidade e cor). Clique na cidade → Empresas filtradas.
+- **Atendimento:** os cards das **Métricas dos chamados** (`chamados.ver_metricas`) e do **Portal do cliente** (`portal.ver`), no período.
+
 ## 9A. Tarefas — Kanban do vendedor
 
 Quadro estilo *to-do* em Kanban, **customizável**, para o vendedor organizar o próprio trabalho.
