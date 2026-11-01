@@ -1,5 +1,6 @@
 import type { Server } from 'node:http'
 
+import { diaNoFuso } from '@leadtogo/shared'
 import type { Chamado, ChamadoDoPortal, IndicadoresDoHub, TarefaDoChamado } from '@leadtogo/shared'
 import type { INestApplication } from '@nestjs/common'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -121,6 +122,29 @@ describe('indicadores do hub', () => {
       ((await crm('get', c.e.d.cookie, '/portal-hub/indicadores?dias=90')).body as IndicadoresDoHub)
         .periodoDias,
     ).toBe(90)
+
+    // com de e ate (o Dashboard): a janela é a desses dias; Em aberto continua sendo do momento
+    const hoje = diaNoFuso(new Date())
+    const doDia = (await crm('get', c.e.d.cookie, `/portal-hub/indicadores?de=${hoje}&ate=${hoje}`))
+      .body as IndicadoresDoHub
+    expect(doDia).toMatchObject({ periodoDias: 1, emAberto: 3, notaMedia: 4, avaliacoes: 1 })
+    const antiga = (
+      await crm('get', c.e.d.cookie, '/portal-hub/indicadores?de=2020-01-01&ate=2020-01-31')
+    ).body as IndicadoresDoHub
+    expect(antiga).toMatchObject({
+      periodoDias: 31,
+      emAberto: 3,
+      notaMedia: null,
+      avaliacoes: 0,
+      primeiraRespostaNoPrazo: null,
+    })
+    expect((await crm('get', c.e.d.cookie, '/portal-hub/indicadores?de=2026-01-01')).status).toBe(
+      400,
+    )
+    expect(
+      (await crm('get', c.e.d.cookie, '/portal-hub/indicadores?de=2026-02-01&ate=2026-01-01'))
+        .status,
+    ).toBe(400)
   })
 
   it('a lista de chamados filtra por origem', async () => {

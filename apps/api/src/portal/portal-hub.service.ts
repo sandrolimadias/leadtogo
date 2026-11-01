@@ -1,5 +1,8 @@
 import { novoId, sql } from '@leadtogo/db'
 import {
+  diasNoIntervalo,
+  inicioDoDiaNoFuso,
+  somarDias,
   type ConsultaDoHub,
   type CriarTarefaDoChamadoEntrada,
   type IndicadoresDoHub,
@@ -12,6 +15,7 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { PermissaoService } from '../acesso/permissao.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
+import { fusoDaEmpresa } from '../carteira/atividades-leitura.js'
 import { AtividadesService } from '../carteira/atividades.service.js'
 import { ChamadosService } from '../chamados/chamados.service.js'
 import { ExpedienteService } from '../chamados/expediente.service.js'
@@ -44,6 +48,7 @@ export class PortalHubService {
 
   async indicadores(c: ConsultaDoHub): Promise<IndicadoresDoHub> {
     const db = this.ctx.db()
+    const janela = await this.janela(c)
     const linhas = await db.execute<LinhaDoHub>(sql`
       SELECT c.id, c.status::text AS status, c.area_id, a.nome AS area_nome, a.meta_resposta_min,
         a.meta_resolucao_min, c.responsavel_id, r.nome AS responsavel_nome, c.criado_em,
@@ -52,7 +57,7 @@ export class PortalHubService {
       LEFT JOIN areas_atendimento a ON a.id = c.area_id
       LEFT JOIN membros r ON r.id = c.responsavel_id
       WHERE c.origem = 'portal' AND c.excluido_em IS NULL
-        AND (c.status NOT IN ('resolvido', 'fechado') OR c.criado_em >= now() - ${`${c.dias} days`}::interval)
+        AND (c.status NOT IN ('resolvido', 'fechado') OR c.criado_em >= ${janela.de.toISOString()}::timestamptz)
       ORDER BY c.criado_em DESC LIMIT ${LIMITE}`)
     const ids = linhas.map((l) => l.id)
     const mudancas = new Map<string, MudancaDeEstado[]>()
@@ -73,20 +78,22 @@ export class PortalHubService {
       ({ m }) =>
         (m.respostaMin === null && m.respostaNoPrazo === false) || m.resolucaoNoPrazo === false,
     )
-    const noPeriodo = medidas.filter(
-      ({ l }) => new Date(l.criado_em).getTime() >= agora.getTime() - c.dias * 86_400_000,
-    )
+    const noPeriodo = medidas.filter(({ l }) => {
+      const criado = new Date(l.criado_em).getTime()
+      return criado >= janela.de.getTime() && criado < janela.ate.getTime()
+    })
     const resp = noPeriodo.map(({ m }) => m.respostaNoPrazo).filter((v): v is boolean => v !== null)
 
     const [av] = await db.execute<{ media: string | null; total: number }>(sql`
       SELECT avg(v.nota)::numeric(4,2)::text AS media, count(*)::int AS total
       FROM chamado_avaliacoes v
-      WHERE v.criado_em >= now() - ${`${c.dias} days`}::interval`)
+      WHERE v.criado_em >= ${janela.de.toISOString()}::timestamptz
+        AND v.criado_em < ${janela.ate.toISOString()}::timestamptz`)
     const [acessos] = await db.execute<{ ativos: number; pedidos: number }>(sql`
       SELECT (SELECT count(*)::int FROM portal_acessos WHERE situacao = 'ativo' AND excluido_em IS NULL) AS ativos,
              (SELECT count(*)::int FROM portal_pedidos_acesso WHERE situacao = 'pendente') AS pedidos`)
     return {
-      periodoDias: c.dias,
+      periodoDias: janela.dias,
       emAberto: abertos.length,
       prazoEstourando: estourando.length,
       primeiraRespostaNoPrazo:
@@ -97,6 +104,24 @@ export class PortalHubService {
       avaliacoes: av?.total ?? 0,
       acessosAtivos: acessos?.ativos ?? 0,
       pedidosPendentes: acessos?.pedidos ?? 0,
+    }
+  }
+
+  /** A janela dos indicadores: os últimos `dias` ou, com `de` e `ate`, esses dias no fuso da empresa. */
+  private async janela(c: ConsultaDoHub): Promise<{ de: Date; ate: Date; dias: number }> {
+    if (c.de && c.ate) {
+      const fuso = await fusoDaEmpresa(this.ctx.db(), this.ctx.tenantId)
+      return {
+        de: inicioDoDiaNoFuso(c.de, fuso),
+        ate: inicioDoDiaNoFuso(somarDias(c.ate, 1), fuso),
+        dias: diasNoIntervalo(c.de, c.ate),
+      }
+    }
+    const agora = Date.now()
+    return {
+      de: new Date(agora - c.dias * 86_400_000),
+      ate: new Date(agora + 60_000),
+      dias: c.dias,
     }
   }
 

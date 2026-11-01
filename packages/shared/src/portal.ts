@@ -542,8 +542,20 @@ export type InicioDoPortal = z.infer<typeof inicioDoPortalSchema>
 // ---- CRM: hub do portal (aba Chamados) ----
 
 export const consultaDoHubSchema = z
-  .object({ dias: z.coerce.number().int().min(7).max(365).default(30) })
+  .object({
+    dias: z.coerce.number().int().min(7).max(365).default(30),
+    /** Em vez de `dias`: a janela de `de` a `ate` (inclusive, no fuso da empresa; o Dashboard usa) */
+    de: z.iso.date().optional(),
+    ate: z.iso.date().optional(),
+  })
   .strict()
+  .superRefine((v, ctx) => {
+    if ((v.de === undefined) !== (v.ate === undefined)) {
+      ctx.addIssue({ code: 'custom', path: ['de'], message: 'informe o início e o fim' })
+    } else if (v.de && v.ate && v.de > v.ate) {
+      ctx.addIssue({ code: 'custom', path: ['ate'], message: 'o fim vem antes do início' })
+    }
+  })
 export type ConsultaDoHub = z.infer<typeof consultaDoHubSchema>
 
 export const indicadoresDoHubSchema = z

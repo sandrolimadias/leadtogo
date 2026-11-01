@@ -26549,6 +26549,8 @@ export interface operations {
         parameters: {
             query?: {
                 dias?: number;
+                de?: string;
+                ate?: string;
             };
             header?: never;
             path?: never;
