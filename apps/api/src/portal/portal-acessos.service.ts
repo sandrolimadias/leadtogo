@@ -52,6 +52,9 @@ const acessoDe = (l: LinhaDoAcesso): AcessoDoPortal => ({
 const naoEncontrado = () => new ErroApi('acesso_nao_encontrado', 'Acesso não encontrado.', 404)
 
 /** Gestão, pela equipe, do acesso dos contatos ao portal (permissão `portal.acessos`). */
+const slugEmUso = () =>
+  new ErroApi('slug_em_uso', 'Este endereço já é usado por outro portal. Escolha outro.', 409)
+
 @Injectable()
 export class PortalAcessosService {
   constructor(
@@ -312,11 +315,16 @@ export class PortalAcessosService {
       crm_ativo: boolean
       crm_responsavel: string | null
       avaliacao_email: boolean
+      slug: string | null
+      pagina: boolean
+      associacao: string | null
     }>(sql`
       SELECT portal_ativo AS ativo, portal_nome AS nome, portal_exige_dois_fatores_responsavel AS exige,
              portal_comentarios_ativos AS comentarios, portal_avisos_limite_semanal AS limite,
              portal_formulario_satisfacao_id AS satisfacao, portal_eventos_crm_ativo AS crm_ativo,
-             portal_eventos_crm_responsavel_id AS crm_responsavel, portal_avaliacao_por_email AS avaliacao_email
+             portal_eventos_crm_responsavel_id AS crm_responsavel, portal_avaliacao_por_email AS avaliacao_email,
+             portal_slug AS slug, portal_pagina_eventos_ativa AS pagina,
+             portal_formulario_associacao_id AS associacao
       FROM tenant_configuracoes`)
     return {
       ativo: c?.ativo ?? false,
@@ -329,6 +337,9 @@ export class PortalAcessosService {
       eventosCrmAtivo: c?.crm_ativo ?? false,
       eventosCrmResponsavelId: c?.crm_responsavel ?? null,
       avaliacaoPorEmail: c?.avaliacao_email ?? false,
+      slug: c?.slug ?? null,
+      paginaEventosAtiva: c?.pagina ?? false,
+      formularioAssociacaoId: c?.associacao ?? null,
     }
   }
 
@@ -347,6 +358,26 @@ export class PortalAcessosService {
           422,
         )
       }
+    }
+    if (d.formularioAssociacaoId) {
+      const [f] = await this.ctx.db().execute(sql`
+        SELECT 1 FROM formularios WHERE id = ${d.formularioAssociacaoId} AND excluido_em IS NULL
+          AND finalidade = 'associacao' AND situacao = 'publicado'`)
+      if (!f) {
+        throw new ErroApi(
+          'formulario_invalido',
+          'Escolha um formulário publicado com a finalidade "Associação".',
+          422,
+        )
+      }
+    }
+    const slug = d.slug === undefined ? antes.slug : d.slug
+    if ((d.paginaEventosAtiva ?? antes.paginaEventosAtiva) && !slug) {
+      throw new ErroApi(
+        'slug_obrigatorio',
+        'Para ligar a página pública, escolha o endereço do portal.',
+        422,
+      )
     }
     const responsavel =
       d.eventosCrmResponsavelId === undefined
@@ -372,6 +403,33 @@ export class PortalAcessosService {
         422,
       )
     }
+    // O endereço é único no sistema: o índice parcial decide (o RLS esconde o dos outros portais)
+    try {
+      await this.gravarConfiguracao(d, antes, responsavel, slug)
+    } catch (e) {
+      if (
+        (e as { cause?: { code?: string } }).cause?.code === '23505' ||
+        (e as { code?: string }).code === '23505'
+      ) {
+        throw slugEmUso()
+      }
+      throw e
+    }
+    const depois = await this.configuracao()
+    await this.auditoria.registrar({
+      entidade: 'portal_configuracao',
+      acao: 'configurar',
+      alteracoes: { antes, depois },
+    })
+    return depois
+  }
+
+  private async gravarConfiguracao(
+    d: AtualizarConfiguracaoDoPortalEntrada,
+    antes: ConfiguracaoDoPortal,
+    responsavel: string | null,
+    slug: string | null,
+  ): Promise<void> {
     await this.ctx.db().execute(sql`
       UPDATE tenant_configuracoes
       SET portal_ativo = ${d.ativo ?? antes.ativo},
@@ -383,13 +441,9 @@ export class PortalAcessosService {
           portal_eventos_crm_responsavel_id = ${responsavel},
           portal_avaliacao_por_email = ${d.avaliacaoPorEmail ?? antes.avaliacaoPorEmail},
           portal_formulario_satisfacao_id = ${d.formularioSatisfacaoId === undefined ? antes.formularioSatisfacaoId : d.formularioSatisfacaoId},
+          portal_slug = ${slug},
+          portal_pagina_eventos_ativa = ${d.paginaEventosAtiva ?? antes.paginaEventosAtiva},
+          portal_formulario_associacao_id = ${d.formularioAssociacaoId === undefined ? antes.formularioAssociacaoId : d.formularioAssociacaoId},
           atualizado_em = now()`)
-    const depois = await this.configuracao()
-    await this.auditoria.registrar({
-      entidade: 'portal_configuracao',
-      acao: 'configurar',
-      alteracoes: { antes, depois },
-    })
-    return depois
   }
 }

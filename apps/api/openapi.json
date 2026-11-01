@@ -29502,6 +29502,383 @@
         "security": []
       }
     },
+    "/v1/portal/publico/paginas/{slug}": {
+      "get": {
+        "description": "Público. O nome do portal, se há \"Seja um Associado\" e os eventos publicados para todos os clientes que ainda não acabaram (sem participantes nem o número de vagas). 404 `pagina_nao_encontrada` com o portal ou a página desligados.",
+        "operationId": "PaginaPublicaController_pagina",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaPublica"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Página pública de eventos",
+        "tags": ["Portal do cliente: página pública"],
+        "security": []
+      }
+    },
+    "/v1/portal/publico/paginas/{slug}/associacao": {
+      "get": {
+        "description": "Público. 404 `sem_associacao` quando o portal não escolheu o formulário.",
+        "operationId": "PaginaPublicaController_formularioDeAssociacao",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormularioParaResponder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Formulário \"Seja um Associado\"",
+        "tags": ["Portal do cliente: página pública"],
+        "security": []
+      },
+      "post": {
+        "description": "Público. Aceite de privacidade, captcha quando ligado, isca e limite por IP. A resposta fica em Formulários → Respostas; com CNPJ e o vínculo ao CRM ligado, a empresa entra como Lead e o responsável recebe a tarefa.",
+        "operationId": "PaginaPublicaController_associar",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarRespostaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaEnviada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Pedir associação",
+        "tags": ["Portal do cliente: página pública"],
+        "security": []
+      }
+    },
+    "/v1/portal/publico/paginas/{slug}/eventos/{id}/inscricao": {
+      "get": {
+        "description": "Público. O formulário de inscrição do evento, ou nome, e-mail, telefone e CNPJ. 403 `evento_so_associados` para o evento exclusivo de associados.",
+        "operationId": "PaginaPublicaController_formularioDeInscricao",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormularioParaResponder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Formulário da inscrição pública",
+        "tags": ["Portal do cliente: página pública"],
+        "security": []
+      },
+      "post": {
+        "description": "Público (Q-5: sem código por e-mail). Aceite de privacidade, captcha quando ligado, campo isca e limite por IP. O mesmo e-mail no mesmo evento não duplica. Lotado: lista de espera.",
+        "operationId": "PaginaPublicaController_inscrever",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnviarRespostaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InscricaoPublicaFeita"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições (`muitas_requisicoes`; veja o cabeçalho `Retry-After`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Inscrever-se sem login",
+        "tags": ["Portal do cliente: página pública"],
+        "security": []
+      }
+    },
     "/v1/portal/push/configuracao": {
       "get": {
         "description": "Se o push está disponível neste servidor, a chave pública (VAPID) e quantos aparelhos desta conta estão inscritos.",
@@ -33500,6 +33877,19 @@
           },
           "avaliacaoPorEmail": {
             "type": "boolean"
+          },
+          "slug": {
+            "nullable": true,
+            "type": "string",
+            "pattern": "^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$"
+          },
+          "paginaEventosAtiva": {
+            "type": "boolean"
+          },
+          "formularioAssociacaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false
@@ -34927,6 +35317,18 @@
           },
           "avaliacaoPorEmail": {
             "type": "boolean"
+          },
+          "slug": {
+            "nullable": true,
+            "type": "string"
+          },
+          "paginaEventosAtiva": {
+            "type": "boolean"
+          },
+          "formularioAssociacaoId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -34939,7 +35341,10 @@
           "formularioSatisfacaoId",
           "eventosCrmAtivo",
           "eventosCrmResponsavelId",
-          "avaliacaoPorEmail"
+          "avaliacaoPorEmail",
+          "slug",
+          "paginaEventosAtiva",
+          "formularioAssociacaoId"
         ],
         "additionalProperties": false
       },
@@ -39286,6 +39691,62 @@
         ],
         "additionalProperties": false
       },
+      "EventoPublico": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "nullable": true,
+            "type": "string"
+          },
+          "local": {
+            "nullable": true,
+            "type": "string"
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "inicioEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fimEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "prazoConfirmacao": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "inscricaoAberta": {
+            "type": "boolean"
+          },
+          "disponibilidade": {
+            "type": "string",
+            "enum": ["disponivel", "poucas_vagas", "lotado"]
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "descricao",
+          "local",
+          "online",
+          "inicioEm",
+          "fimEm",
+          "prazoConfirmacao",
+          "inscricaoAberta",
+          "disponibilidade"
+        ],
+        "additionalProperties": false
+      },
       "Expediente": {
         "type": "object",
         "properties": {
@@ -39945,6 +40406,20 @@
           }
         },
         "required": ["endpoint", "keys"],
+        "additionalProperties": false
+      },
+      "InscricaoPublicaFeita": {
+        "type": "object",
+        "properties": {
+          "situacao": {
+            "type": "string",
+            "enum": ["confirmado", "lista_espera"]
+          },
+          "mensagem": {
+            "type": "string"
+          }
+        },
+        "required": ["situacao", "mensagem"],
         "additionalProperties": false
       },
       "ItemDaBuscaGlobal": {
@@ -44476,6 +44951,29 @@
           }
         },
         "required": ["empresas", "ignoradas", "geradoEm"],
+        "additionalProperties": false
+      },
+      "PaginaPublica": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "associacao": {
+            "type": "boolean"
+          },
+          "eventos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoPublico"
+            }
+          }
+        },
+        "required": ["nome", "logoUrl", "associacao", "eventos"],
         "additionalProperties": false
       },
       "PapelDoPortal": {

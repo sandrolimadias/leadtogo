@@ -22,6 +22,7 @@ import { Route as PortalNotificacoesRouteImport } from './routes/_portal.notific
 import { Route as PortalPerfilRouteImport } from './routes/_portal.perfil'
 import { Route as AvaliacaoTokenRouteImport } from './routes/avaliacao.$token'
 import { Route as CheckinTokenRouteImport } from './routes/checkin.$token'
+import { Route as EventosSlugRouteImport } from './routes/eventos.$slug'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as PortalChamadosIndexRouteImport } from './routes/_portal.chamados.index'
 import { Route as PortalChamadosChamadoIdRouteImport } from './routes/_portal.chamados.$chamadoId'
@@ -92,6 +93,11 @@ const CheckinTokenRoute = CheckinTokenRouteImport.update({
   path: '/checkin/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventosSlugRoute = EventosSlugRouteImport.update({
+  id: '/eventos/$slug',
+  path: '/eventos/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FSlugRoute = FSlugRouteImport.update({
   id: '/f/$slug',
   path: '/f/$slug',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof PortalPerfilRoute
   '/avaliacao/$token': typeof AvaliacaoTokenRoute
   '/checkin/$token': typeof CheckinTokenRoute
+  '/eventos/$slug': typeof EventosSlugRoute
   '/f/$slug': typeof FSlugRoute
   '/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
   '/chamados/novo': typeof PortalChamadosNovoRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof PortalPerfilRoute
   '/avaliacao/$token': typeof AvaliacaoTokenRoute
   '/checkin/$token': typeof CheckinTokenRoute
+  '/eventos/$slug': typeof EventosSlugRoute
   '/f/$slug': typeof FSlugRoute
   '/': typeof PortalIndexRoute
   '/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/_portal/perfil': typeof PortalPerfilRoute
   '/avaliacao/$token': typeof AvaliacaoTokenRoute
   '/checkin/$token': typeof CheckinTokenRoute
+  '/eventos/$slug': typeof EventosSlugRoute
   '/f/$slug': typeof FSlugRoute
   '/_portal/': typeof PortalIndexRoute
   '/_portal/chamados/$chamadoId': typeof PortalChamadosChamadoIdRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/avaliacao/$token'
     | '/checkin/$token'
+    | '/eventos/$slug'
     | '/f/$slug'
     | '/chamados/$chamadoId'
     | '/chamados/novo'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/avaliacao/$token'
     | '/checkin/$token'
+    | '/eventos/$slug'
     | '/f/$slug'
     | '/'
     | '/chamados/$chamadoId'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/_portal/perfil'
     | '/avaliacao/$token'
     | '/checkin/$token'
+    | '/eventos/$slug'
     | '/f/$slug'
     | '/_portal/'
     | '/_portal/chamados/$chamadoId'
@@ -245,6 +257,7 @@ export interface RootRouteChildren {
   VerificacaoRoute: typeof VerificacaoRoute
   AvaliacaoTokenRoute: typeof AvaliacaoTokenRoute
   CheckinTokenRoute: typeof CheckinTokenRoute
+  EventosSlugRoute: typeof EventosSlugRoute
   FSlugRoute: typeof FSlugRoute
 }
 
@@ -341,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/eventos/$slug': {
+      id: '/eventos/$slug'
+      path: '/eventos/$slug'
+      fullPath: '/eventos/$slug'
+      preLoaderRoute: typeof EventosSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/f/$slug': {
       id: '/f/$slug'
       path: '/f/$slug'
@@ -416,6 +436,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerificacaoRoute: VerificacaoRoute,
   AvaliacaoTokenRoute: AvaliacaoTokenRoute,
   CheckinTokenRoute: CheckinTokenRoute,
+  EventosSlugRoute: EventosSlugRoute,
   FSlugRoute: FSlugRoute,
 }
 export const routeTree = rootRouteImport

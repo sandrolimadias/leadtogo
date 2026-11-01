@@ -174,6 +174,12 @@ export const tenantConfiguracoes = pgTable('tenant_configuracoes', {
   portalEventosCrmResponsavelId: uuid(),
   /** Mandar a avaliação do evento por e-mail a participantes sem acesso ao portal (R-13) */
   portalAvaliacaoPorEmail: boolean().notNull().default(false),
+  /** Endereço público do portal (Fase 4H): /eventos/<slug>; único no sistema (índice parcial só no SQL) */
+  portalSlug: varchar({ length: 40 }),
+  /** Página pública de eventos ligada (Fase 4H, F-4) */
+  portalPaginaEventosAtiva: boolean().notNull().default(false),
+  /** Formulário do "Seja um Associado" (finalidade associacao; FK só no SQL) */
+  portalFormularioAssociacaoId: uuid(),
   ...carimbos(),
 })
 

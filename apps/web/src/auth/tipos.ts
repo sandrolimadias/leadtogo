@@ -702,6 +702,9 @@ export interface ServicosDoPortalNoCrm {
       eventosCrmAtivo?: boolean
       eventosCrmResponsavelId?: string | null
       avaliacaoPorEmail?: boolean
+      slug?: string | null
+      paginaEventosAtiva?: boolean
+      formularioAssociacaoId?: string | null
     }) => Promise<Resultado<ConfiguracaoDoPortal>>
   }
   /** Publicações do portal (Fase 3B): `portal.ver`/`publicar`/`moderar` para ver, `publicar` para escrever, `moderar` nos comentários */

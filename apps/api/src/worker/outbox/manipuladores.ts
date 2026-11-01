@@ -39,6 +39,7 @@ import {
 import { manipuladorDaSituacao } from './empresa-situacao.js'
 import type { ManipuladorDeEvento } from './relay.js'
 import { EVENTO_VINCULAR_CRM, manipuladorDoVinculoNoCrm } from '../../portal/evento-crm.js'
+import { EVENTO_ASSOCIACAO_CRM, manipuladorDaAssociacaoNoCrm } from '../../portal/associacao-crm.js'
 import {
   EVENTO_PEDIR_AVALIACAO,
   manipuladorDoPedidoDeAvaliacao,
@@ -194,6 +195,9 @@ export function manipuladoresPadrao(
 
   /** Inscrição com CNPJ: empresa, contato e tarefa no CRM (Fase 4G, B-17) */
   manipuladores[EVENTO_VINCULAR_CRM] = manipuladorDoVinculoNoCrm(receita)
+
+  /** Pedido de associação com CNPJ: Lead, contato e a tarefa do responsável (Fase 4H) */
+  manipuladores[EVENTO_ASSOCIACAO_CRM] = manipuladorDaAssociacaoNoCrm(receita)
 
   /** Pedido de avaliação do evento aos presentes (Fase 4G) */
   manipuladores[EVENTO_PEDIR_AVALIACAO] = manipuladorDoPedidoDeAvaliacao(config, publicar)

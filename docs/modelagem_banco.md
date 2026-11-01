@@ -1046,6 +1046,11 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 - **`tenant_configuracoes`:** `portal_eventos_crm_ativo`, `portal_eventos_crm_responsavel_id` (FK `membros`), `portal_avaliacao_por_email`.
 - **Funções:** `app_evento_inscrever(evento, id, dados jsonb)` (vagas, fila e alcance, inclusive por tags; a confirmação antiga delega a ela), `app_evento_registrar_avaliacao(evento, resposta)` e `app_evento_checkin_portal(evento)` (sessão do portal; erros `sem_presenca`, `ja_avaliado`, `sem_inscricao`). Sem tenant na sessão, `SECURITY DEFINER` com política só do dono e chave de `set_config`: `app_evento_por_checkin(hash)` e `app_participacao_por_avaliacao(hash)` devolvem o tenant e o evento ou a participação. As tabelas continuam com o RLS do tenant e as políticas restritivas do portal.
 
+## Portal, Fase 4H (migração 0053, só expansão)
+
+- **`tenant_configuracoes`:** `portal_slug` (`varchar(40)`, CHECK do formato, **único** por índice parcial `tenant_configuracoes_portal_slug_uq` onde não nulo), `portal_pagina_eventos_ativa` (padrão falso) e `portal_formulario_associacao_id` (FK `formularios`).
+- **Função `app_portal_publico(slug)`** (`SECURITY DEFINER`, política só do dono travada em `app.portal_slug`): devolve o tenant do endereço quando o portal e a página estão ligados. A página pública e a inscrição sem login rodam depois na transação desse tenant (RLS normal); a inscrição usa `app_evento_inscrever` com origem `publico`.
+
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 
 **Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (busca das oportunidades pelo título, sem acento). Empresas e contatos já tinham os seus (0017 e 0018). Os índices trigram são criados por SQL na migração e não aparecem no schema do Drizzle nem nos snapshots, por isso o `db:generate` não os enxerga nem tenta apagá-los.

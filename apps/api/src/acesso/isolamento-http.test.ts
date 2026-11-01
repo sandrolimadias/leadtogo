@@ -312,6 +312,12 @@ describe('rede de segurança: toda rota é protegida, a não ser as públicas li
     'POST /v1/portal/publico/checkin/:token',
     'GET /v1/portal/publico/avaliacao/:token',
     'POST /v1/portal/publico/avaliacao/:token',
+    // Página pública de eventos e "Seja um Associado" (Fase 4H)
+    'GET /v1/portal/publico/paginas/:slug',
+    'GET /v1/portal/publico/paginas/:slug/eventos/:id/inscricao',
+    'POST /v1/portal/publico/paginas/:slug/eventos/:id/inscricao',
+    'GET /v1/portal/publico/paginas/:slug/associacao',
+    'POST /v1/portal/publico/paginas/:slug/associacao',
   ]
 
   const rotas = () => listarRotas(app)

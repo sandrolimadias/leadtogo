@@ -250,6 +250,46 @@ export const servicosReais: ServicosDoPortal = {
         ),
       ),
   },
+  pagina: {
+    abrir: (slug) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/portal/publico/paginas/{slug}', { params: { path: { slug } } })),
+      ),
+    formularioDeInscricao: (slug, id) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/portal/publico/paginas/{slug}/eventos/{id}/inscricao', {
+            params: { path: { slug, id } },
+          }),
+        ),
+      ) as Promise<Resultado<FormularioParaResponder>>,
+    inscrever: (slug, id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/portal/publico/paginas/{slug}/eventos/{id}/inscricao', {
+            params: { path: { slug, id } },
+            body: dados,
+          }),
+        ),
+      ),
+    formularioDeAssociacao: (slug) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/portal/publico/paginas/{slug}/associacao', {
+            params: { path: { slug } },
+          }),
+        ),
+      ) as Promise<Resultado<FormularioParaResponder>>,
+    associar: (slug, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/portal/publico/paginas/{slug}/associacao', {
+            params: { path: { slug } },
+            body: dados,
+          }),
+        ),
+      ),
+  },
   avaliacaoPorLink: {
     abrir: (token) =>
       protegido(async () =>

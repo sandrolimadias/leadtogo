@@ -3,6 +3,8 @@ import type {
   ChamadoDoPortal,
   ComentarioDoPortal,
   EventoDoPortal,
+  InscricaoPublicaFeita,
+  PaginaPublica,
   CheckinPublico,
   ResultadoDoCheckin,
   ListaDeEventosDoPortal,
@@ -157,6 +159,21 @@ export interface ServicosDoPortal {
       token: string,
       dados: { email: string; codigo?: string },
     ) => Promise<Resultado<ResultadoDoCheckin>>
+  }
+  /** Página pública de eventos e "Seja um Associado" (Fase 4H), sem login */
+  pagina: {
+    abrir: (slug: string) => Promise<Resultado<PaginaPublica>>
+    formularioDeInscricao: (
+      slug: string,
+      eventoId: string,
+    ) => Promise<Resultado<FormularioParaResponder>>
+    inscrever: (
+      slug: string,
+      eventoId: string,
+      dados: EnviarRespostaEntrada,
+    ) => Promise<Resultado<InscricaoPublicaFeita>>
+    formularioDeAssociacao: (slug: string) => Promise<Resultado<FormularioParaResponder>>
+    associar: (slug: string, dados: EnviarRespostaEntrada) => Promise<Resultado<RespostaEnviada>>
   }
   /** Avaliação pelo link pessoal enviado por e-mail a quem não tem acesso (Fase 4G) */
   avaliacaoPorLink: {

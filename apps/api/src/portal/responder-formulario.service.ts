@@ -245,6 +245,99 @@ export class ResponderFormularioService {
     return { id: respostaId, mensagem: f.mensagem, valores }
   }
 
+  // ------------------------------------------------------------- página pública (Fase 4H)
+
+  /** Captcha configurado no ambiente (as duas chaves do Turnstile). */
+  captchaDisponivel(): boolean {
+    return Boolean(this.config.TURNSTILE_SECRET && this.config.TURNSTILE_SITE_KEY)
+  }
+
+  /** A chave do captcha para o navegador, ou nula (sem captcha). */
+  chaveDoCaptcha(ligado: boolean): string | null {
+    return ligado && this.captchaDisponivel() ? (this.config.TURNSTILE_SITE_KEY ?? null) : null
+  }
+
+  /** O formulário publicado para a página pública, na transação do tenant (captcha conforme o formulário). */
+  async paraPagina(tx: Transacao, formularioId: string): Promise<FormularioParaResponder> {
+    const f = await this.publicado(tx, formularioId)
+    return {
+      id: f.id,
+      nome: f.nome,
+      versao: f.versao,
+      definicao: f.definicao,
+      preenchidos: {},
+      travados: [],
+      captchaChave: this.chaveDoCaptcha(f.captcha),
+    }
+  }
+
+  /** Captcha do formulário (ligado nele) na página pública. */
+  async captchaDoFormulario(tx: Transacao, formularioId: string): Promise<boolean> {
+    return (await this.publicado(tx, formularioId)).captcha
+  }
+
+  /** Envio sem login: aceite de privacidade obrigatório e captcha quando ligado (422). */
+  async exigirEnvioPublico(
+    d: EnviarRespostaEntrada,
+    captcha: boolean,
+    ip: string | undefined,
+  ): Promise<void> {
+    if (d.aceitaPrivacidade !== true) {
+      throw new ErroApi(
+        'privacidade_obrigatoria',
+        'Para enviar, aceite o aviso de privacidade.',
+        422,
+      )
+    }
+    if (captcha && this.captchaDisponivel() && !(await this.captchaValido(d.captcha, ip))) {
+      throw new ErroApi('captcha_invalido', 'Confirme que você não é um robô e envie de novo.', 422)
+    }
+  }
+
+  /** Confere as respostas contra uma definição sem formulário guardado (a inscrição padrão, versão 1). */
+  conferirDefinicao(definicao: DefinicaoDeFormulario, d: EnviarRespostaEntrada): Respostas {
+    return this.conferir(
+      {
+        id: '',
+        nome: '',
+        acesso: 'publico',
+        captcha: true,
+        versao: 1,
+        definicao,
+        mensagem: '',
+      },
+      d,
+      {},
+    )
+  }
+
+  /** Grava a resposta pública de um formulário guardado, na transação do tenant, e agenda as ações dos botões. */
+  async gravarRespostaPublica(
+    tx: Transacao,
+    tenantId: string,
+    formularioId: string,
+    d: EnviarRespostaEntrada,
+    contexto: ContextoDaResposta | null,
+    ip: string | undefined,
+    agente: string | undefined,
+  ): Promise<{
+    id: string
+    mensagem: string
+    valores: Respostas
+    definicao: DefinicaoDeFormulario
+  }> {
+    const f = await this.publicado(tx, formularioId)
+    const valores = this.conferir(f, d, {})
+    const respostaId = novoId()
+    await tx.execute(sql`
+      INSERT INTO formulario_respostas (id, tenant_id, formulario_id, versao, origem, botao, respostas, contexto_tipo,
+        contexto_id, ip, agente, consentimento_em)
+      VALUES (${respostaId}, ${tenantId}, ${f.id}, ${f.versao}, 'publico', ${d.botao}, ${JSON.stringify(valores)}::jsonb,
+        ${contexto?.tipo ?? null}, ${contexto?.id ?? null}, ${ip ?? null}, ${agente?.slice(0, 300) ?? null}, now())`)
+    await agendarAcoesDoFormulario(tx, tenantId, respostaId)
+    return { id: respostaId, mensagem: f.mensagem, valores, definicao: f.definicao }
+  }
+
   private async noTenant<T>(tenantId: string, fn: (tx: Transacao) => Promise<T>): Promise<T> {
     return this.banco.db.transaction(async (tx) => {
       await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`)

@@ -316,6 +316,23 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
         falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
       ),
     },
+    pagina: {
+      abrir: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      formularioDeInscricao: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      inscrever: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      formularioDeAssociacao: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+      associar: vi.fn(async () =>
+        falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),
+      ),
+    },
     avaliacaoPorLink: {
       abrir: vi.fn(async () =>
         falha({ codigo: 'indisponivel', mensagem: 'Não configurado no teste.', status: 500 }),

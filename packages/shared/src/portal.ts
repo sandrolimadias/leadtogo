@@ -165,6 +165,9 @@ export type TratarPedidoDeAcessoEntrada = z.infer<typeof tratarPedidoDeAcessoSch
 
 // ---- Configuração do portal (CRM) ----
 
+/** Endereço público do portal: o mesmo formato do CHECK da migração 0053 */
+export const SLUG_DO_PORTAL = /^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/
+
 export const configuracaoDoPortalSchema = z
   .object({
     ativo: z.boolean(),
@@ -183,6 +186,12 @@ export const configuracaoDoPortalSchema = z
     eventosCrmResponsavelId: z.uuid().nullable(),
     /** Mandar a avaliação do evento por e-mail a quem não tem acesso ao portal */
     avaliacaoPorEmail: z.boolean(),
+    /** Endereço público do portal (Fase 4H): a página de eventos fica em /eventos/<slug> */
+    slug: z.string().nullable(),
+    /** Página pública de eventos ligada (Fase 4H) */
+    paginaEventosAtiva: z.boolean(),
+    /** Formulário do "Seja um Associado" (finalidade Associação); nulo = sem o botão */
+    formularioAssociacaoId: z.uuid().nullable(),
   })
   .meta({ id: 'ConfiguracaoDoPortal' })
 export type ConfiguracaoDoPortal = z.infer<typeof configuracaoDoPortalSchema>
@@ -198,6 +207,18 @@ export const atualizarConfiguracaoDoPortalSchema = z
     eventosCrmAtivo: z.boolean().optional(),
     eventosCrmResponsavelId: z.uuid().nullable().optional(),
     avaliacaoPorEmail: z.boolean().optional(),
+    slug: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(
+        SLUG_DO_PORTAL,
+        'use de 3 a 40 letras minúsculas, números e hífens (sem hífen nas pontas)',
+      )
+      .nullable()
+      .optional(),
+    paginaEventosAtiva: z.boolean().optional(),
+    formularioAssociacaoId: z.uuid().nullable().optional(),
   })
   .strict()
   .meta({ id: 'AtualizarConfiguracaoDoPortalEntrada' })

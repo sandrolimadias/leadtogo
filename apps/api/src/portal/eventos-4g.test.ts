@@ -19,7 +19,7 @@ import {
 } from '../testes/portal.js'
 import { subirWorkerDeTeste } from '../testes/worker-teste.js'
 import { diaUtilSeguinte } from './evento-crm.js'
-import { dadosDaPessoa } from './eventos-inscricao.service.js'
+import { dadosDaPessoa } from './pessoa-do-formulario.js'
 
 let app: INestApplication<Server>
 let worker: Awaited<ReturnType<typeof subirWorkerDeTeste>>

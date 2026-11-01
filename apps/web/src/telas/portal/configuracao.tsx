@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { SLUG_DO_PORTAL } from '@leadtogo/shared'
 import { useState } from 'react'
 
 import { useServicos } from '@/auth/contexto'
@@ -164,6 +165,13 @@ export function TelaDeConfiguracoesDoPortal() {
           )
         }
       />
+      <PaginaPublicaDoPortal
+        slug={c.slug}
+        ativa={c.paginaEventosAtiva}
+        associacaoId={c.formularioAssociacaoId}
+        salvando={salvando}
+        aoSalvar={(dados, sucesso) => void salvar(dados, sucesso)}
+      />
       <EventosNoCrm
         ativo={c.eventosCrmAtivo}
         responsavelId={c.eventosCrmResponsavelId}
@@ -316,6 +324,106 @@ function PesquisaDeSatisfacao({
           Salvar pesquisa
         </Button>
       </div>
+    </section>
+  )
+}
+
+/**
+ * Página pública de eventos e "Seja um Associado" (Fase 4H): o endereço do portal, a chave da página e o
+ * formulário de associação (finalidade "Associação").
+ */
+function PaginaPublicaDoPortal({
+  slug,
+  ativa,
+  associacaoId,
+  salvando,
+  aoSalvar,
+}: {
+  slug: string | null
+  ativa: boolean
+  associacaoId: string | null
+  salvando: boolean
+  aoSalvar: (
+    dados: {
+      slug?: string | null
+      paginaEventosAtiva?: boolean
+      formularioAssociacaoId?: string | null
+    },
+    sucesso: string,
+  ) => void
+}) {
+  const servicos = useServicos()
+  const formularios = useQuery({
+    queryKey: ['portal', 'formularios', 'finalidade', 'associacao'],
+    retry: false,
+    queryFn: async () => {
+      const r = await servicos.portal.formularios.listar({
+        finalidade: 'associacao',
+        situacao: 'publicado',
+        porPagina: 100,
+      })
+      if (!r.ok) throw new Error(r.erro.mensagem)
+      return r.dados.itens
+    },
+  })
+  const [endereco, setEndereco] = useState<string | null>(null)
+  const atual = endereco ?? slug ?? ''
+  const valido = SLUG_DO_PORTAL.test(atual)
+  return (
+    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-4">
+      <h3 className="m-0 text-[15px] font-semibold">Página pública de eventos</h3>
+      <div className="flex flex-wrap items-end gap-2">
+        <TextField
+          label="Endereço do portal"
+          value={atual}
+          maxLength={40}
+          className="min-w-64 flex-1"
+          hint={
+            atual && !valido
+              ? 'De 3 a 40 letras minúsculas, números e hífens (sem hífen nas pontas).'
+              : `A página fica no portal, em /eventos/${atual || '<endereço>'}`
+          }
+          onChange={(e) => setEndereco(e.target.value.toLowerCase())}
+        />
+        <Button
+          disabled={salvando || !valido || atual === slug}
+          onClick={() => aoSalvar({ slug: atual }, 'Endereço salvo')}
+        >
+          Salvar endereço
+        </Button>
+      </div>
+      <Switch
+        checked={ativa}
+        disabled={salvando || (!ativa && !slug)}
+        onChange={(e) =>
+          aoSalvar(
+            { paginaEventosAtiva: e.target.checked },
+            e.target.checked ? 'Página pública ligada' : 'Página pública desligada',
+          )
+        }
+        label="Página pública ligada"
+      />
+      <p className="m-0 text-[13px] text-ink-muted">
+        Mostra os eventos publicados para todos os clientes. Os marcados como “página pública”
+        aceitam inscrição sem login; os outros aparecem como exclusivos para associados. Eventos
+        para empresas ou tags escolhidas nunca aparecem.
+      </p>
+      <Select
+        label="Formulário do “Seja um Associado”"
+        value={associacaoId ?? ''}
+        disabled={salvando}
+        hint="Publicado, com a finalidade Associação. Sem formulário, o botão não aparece."
+        options={[
+          { value: '', label: 'Nenhum (sem o botão)' },
+          ...(formularios.data ?? []).map((f) => ({ value: f.id, label: f.nome })),
+        ]}
+        onChange={(e) =>
+          aoSalvar(
+            { formularioAssociacaoId: e.target.value || null },
+            e.target.value ? 'Formulário de associação escolhido' : 'Botão de associação retirado',
+          )
+        }
+      />
     </section>
   )
 }

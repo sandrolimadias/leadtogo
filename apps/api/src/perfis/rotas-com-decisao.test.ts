@@ -57,6 +57,13 @@ const PORTAL_SEM_SESSAO: Record<string, string> = {
     'avaliação pelo link pessoal enviado por e-mail (token com hash no banco)',
   'PortalEventosInscricaoController.avaliarPorLink':
     'resposta da avaliação pelo link pessoal (uma por participação, limite por IP)',
+  'PaginaPublicaController.pagina': 'página pública de eventos: só o mínimo de cada evento',
+  'PaginaPublicaController.formularioDeInscricao': 'formulário da inscrição pública',
+  'PaginaPublicaController.inscrever':
+    'inscrição sem login (aceite, captcha quando ligado, isca e limite por IP)',
+  'PaginaPublicaController.formularioDeAssociacao': 'formulário "Seja um Associado"',
+  'PaginaPublicaController.associar':
+    'pedido de associação (aceite, captcha quando ligado, isca e limite por IP)',
 }
 
 type Rota = {
