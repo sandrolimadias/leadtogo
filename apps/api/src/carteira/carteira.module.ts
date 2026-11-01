@@ -11,6 +11,7 @@ import { ListaDeOportunidadesService } from './lista-oportunidades.service.js'
 import { OportunidadesController } from './oportunidades.controller.js'
 import { OportunidadesService } from './oportunidades.service.js'
 import { DashboardController } from './dashboard.controller.js'
+import { DashboardResultadosService } from './dashboard-resultados.service.js'
 import { DashboardService } from './dashboard.service.js'
 import { ConverterSocioService } from './converter-socio.service.js'
 import { ContatosController } from './contatos.controller.js'
@@ -49,6 +50,7 @@ import { ListaDeEmpresasService } from './lista.service.js'
     OportunidadesService,
     ListaDeOportunidadesService,
     DashboardService,
+    DashboardResultadosService,
     BuscaGlobalService,
   ],
   // Visitas (G3b) cria o contato e o próximo passo do relatório pelas mesmas regras da carteira

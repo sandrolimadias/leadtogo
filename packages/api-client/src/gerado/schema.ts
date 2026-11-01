@@ -396,6 +396,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/carteira/dashboard/associados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dashboard: novos associados e desassociados
+         * @description A lista paginada das empresas que viraram associadas (`novos`: não eram no início e são no fim do período) ou deixaram de ser (`desassociados`), da mais recente para a mais antiga. Período: `mes`, `mes_anterior`, `trimestre`, `semestre` e `ano` (do calendário, no fuso da empresa), `ano_anterior` (com `ano`) ou `personalizado` (com `de` e `ate`, inclusive, até 3 anos). Visão: `minha` (padrão), `equipe` ou `empresa`, limitada pelo alcance de `empresas.ver` (403 `acesso_negado` acima dele).
+         */
+        get: operations["DashboardController_associados"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/dashboard/contornos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dashboard: contornos dos municípios da UF
+         * @description Os contornos simplificados (malha municipal do IBGE) dos municípios da UF, como MultiPolygon do GeoJSON, para desenhar o mapa de densidade. Referência igual para toda empresa: pode ficar em cache. UF sem contornos carregados: lista vazia.
+         */
+        get: operations["DashboardController_contornos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/dashboard/mapa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dashboard: associados e empresas por município
+         * @description Para os mapas do quadro Carteira: a UF da empresa que usa o CRM (pelo endereço do cadastro dela) e, por município dessa UF, os associados no fim do período e as empresas do cadastro criadas até o fim do período (pela cidade do cadastro da empresa). As de outras UFs e as sem cidade vêm somadas à parte. Período: `mes`, `mes_anterior`, `trimestre`, `semestre` e `ano` (do calendário, no fuso da empresa), `ano_anterior` (com `ano`) ou `personalizado` (com `de` e `ate`, inclusive, até 3 anos). Visão: `minha` (padrão), `equipe` ou `empresa`, limitada pelo alcance de `empresas.ver` (403 `acesso_negado` acima dele).
+         */
+        get: operations["DashboardController_mapa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/carteira/dashboard/resultados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dashboard: resultados do período
+         * @description Os indicadores da aba Resultados. Período: `mes`, `mes_anterior`, `trimestre`, `semestre` e `ano` (do calendário, no fuso da empresa), `ano_anterior` (com `ano`) ou `personalizado` (com `de` e `ate`, inclusive, até 3 anos). Visão: `minha` (padrão), `equipe` ou `empresa`, limitada pelo alcance de `empresas.ver` (403 `acesso_negado` acima dele). Previsão: valor total das oportunidades ativas na última fase ativa de cada funil ativo, com data prevista no período (as da fase sem data em `semPrevisao`). Vendas: valor total das conquistadas pela data de fechamento. MRR, conversão, conquistadas × perdidas e motivos de perda como antes; o funil por fase é o de hoje. Associados: empresas com o Status de chave `cliente` no fim e no início do período, pelo histórico de Status; churn = desassociados ÷ associados no início. Visitas: atividades Realizadas do tipo de sistema `visita` (as não localizadas contam); atividades realizadas: as dos outros tipos.
+         */
+        get: operations["DashboardController_resultados"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/carteira/empresas": {
         parameters: {
             query?: never;
@@ -5967,6 +6047,52 @@ export interface components {
             estado: components["schemas"]["EstadoDeAnexo"];
             enviado: boolean;
         };
+        AssociadosDoDashboard: {
+            /** @enum {string} */
+            tipo: "novos" | "desassociados";
+            periodo: {
+                /** @enum {string} */
+                chave: "mes" | "mes_anterior" | "trimestre" | "semestre" | "ano" | "ano_anterior" | "personalizado";
+                rotulo: string;
+                inicio: string;
+                fim: string;
+                anterior: {
+                    inicio: string;
+                    fim: string;
+                };
+            };
+            total: number;
+            pagina: number;
+            porPagina: number;
+            itens: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                cidade: {
+                    nome: string;
+                    uf: string;
+                } | null;
+                /** Format: date-time */
+                em: string;
+                vendedor: {
+                    /** Format: uuid */
+                    id: string;
+                    nome: string;
+                } | null;
+                por: {
+                    /** Format: uuid */
+                    id: string;
+                    nome: string;
+                } | null;
+                mrr: number | null;
+                statusAtual: {
+                    /** Format: uuid */
+                    id: string;
+                    nome: string;
+                    cor: components["schemas"]["CorDeTag"];
+                } | null;
+            }[];
+        };
         AtendenteDoChamado: {
             /** Format: uuid */
             id: string;
@@ -6515,6 +6641,15 @@ export interface components {
             email: string | null;
             naoQuerContato: boolean;
         };
+        ContornosDaUf: {
+            uf: string;
+            fonte: string | null;
+            municipios: {
+                codigo: number;
+                nome: string;
+                poligonos: (number)[][][][];
+            }[];
+        };
         ConverterSocioEntrada: {
             telefone?: string;
             email?: string;
@@ -6952,7 +7087,7 @@ export interface components {
             };
             periodo: {
                 /** @enum {string} */
-                chave: "mes" | "mes_anterior" | "trimestre";
+                chave: "mes" | "mes_anterior" | "trimestre" | "semestre" | "ano" | "ano_anterior" | "personalizado";
                 rotulo: string;
                 inicio: string;
                 fim: string;
@@ -8186,6 +8321,38 @@ export interface components {
             criadoEm: string;
             criadoPor: string | null;
         };
+        MapaDoDashboard: {
+            uf: string | null;
+            periodo: {
+                /** @enum {string} */
+                chave: "mes" | "mes_anterior" | "trimestre" | "semestre" | "ano" | "ano_anterior" | "personalizado";
+                rotulo: string;
+                inicio: string;
+                fim: string;
+                anterior: {
+                    inicio: string;
+                    fim: string;
+                };
+            };
+            municipios: {
+                associados: number;
+                empresas: number;
+                codigo: number;
+                nome: string;
+            }[];
+            total: {
+                associados: number;
+                empresas: number;
+            };
+            foraDaUf: {
+                associados: number;
+                empresas: number;
+            };
+            semCidade: {
+                associados: number;
+                empresas: number;
+            };
+        };
         MarcadasComoLidas: {
             marcadas: number;
             naoLidas: number;
@@ -9208,6 +9375,120 @@ export interface components {
                 atual: number;
                 sugerida: number;
             } | null;
+        };
+        ResultadosDoDashboard: {
+            periodo: {
+                /** @enum {string} */
+                chave: "mes" | "mes_anterior" | "trimestre" | "semestre" | "ano" | "ano_anterior" | "personalizado";
+                rotulo: string;
+                inicio: string;
+                fim: string;
+                anterior: {
+                    inicio: string;
+                    fim: string;
+                };
+            };
+            /** @enum {string} */
+            visao: "minha" | "equipe" | "empresa";
+            visoes: ("minha" | "equipe" | "empresa")[];
+            previsao: {
+                valor: number;
+                ponderado: number;
+                quantidade: number;
+                semPrevisao: number;
+                porFunil: {
+                    /** Format: uuid */
+                    funilId: string;
+                    funil: string;
+                    /** Format: uuid */
+                    faseId: string;
+                    fase: string;
+                    valor: number;
+                    quantidade: number;
+                }[];
+            };
+            vendas: {
+                anterior: number;
+                variacao: number | null;
+                total: number;
+                quantidade: number;
+            };
+            mrr: {
+                anterior: number;
+                variacao: number | null;
+                valor: number;
+                quantidade: number;
+                serie: {
+                    mes: string;
+                    rotulo: string;
+                    inicio: string;
+                    fimExclusivo: string;
+                    valor: number;
+                    quantidade: number;
+                }[];
+            };
+            conversao: {
+                taxa: number | null;
+                conquistadas: number;
+                perdidas: number;
+            };
+            resultado: {
+                conquistadas: {
+                    quantidade: number;
+                    total: number;
+                    mensal: number;
+                };
+                perdidasECanceladas: {
+                    quantidade: number;
+                    total: number;
+                    perdidas: number;
+                    canceladas: number;
+                };
+            };
+            motivosDePerda: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                quantidade: number;
+                total: number;
+            }[];
+            funil: {
+                /** Format: uuid */
+                id: string;
+                nome: string;
+                fases: {
+                    /** Format: uuid */
+                    id: string;
+                    nome: string;
+                    cor: components["schemas"]["CorDeTag"];
+                    quantidade: number;
+                    total: number;
+                }[];
+            };
+            associados: {
+                tag: {
+                    /** Format: uuid */
+                    id: string;
+                    nome: string;
+                    cor: components["schemas"]["CorDeTag"];
+                } | null;
+                atual: number;
+                inicio: number;
+                novos: number;
+                desassociados: number;
+                churn: number | null;
+                historicoDesde: string | null;
+            };
+            visitas: {
+                anterior: number;
+                variacao: number | null;
+                realizadas: number;
+            };
+            atividadesRealizadas: {
+                anterior: number;
+                variacao: number | null;
+                realizadas: number;
+            };
         };
         ResumoDaGeolocalizacao: {
             cnefeCarregado: boolean;
@@ -11148,6 +11429,218 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DashboardController_associados: {
+        parameters: {
+            query: {
+                periodo?: "mes" | "mes_anterior" | "trimestre" | "semestre" | "ano" | "ano_anterior" | "personalizado";
+                ano?: number;
+                de?: string;
+                ate?: string;
+                visao?: "minha" | "equipe" | "empresa";
+                tipo: "novos" | "desassociados";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssociadosDoDashboard"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DashboardController_contornos: {
+        parameters: {
+            query: {
+                uf: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContornosDaUf"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DashboardController_mapa: {
+        parameters: {
+            query?: {
+                periodo?: "mes" | "mes_anterior" | "trimestre" | "semestre" | "ano" | "ano_anterior" | "personalizado";
+                ano?: number;
+                de?: string;
+                ate?: string;
+                visao?: "minha" | "equipe" | "empresa";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapaDoDashboard"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DashboardController_resultados: {
+        parameters: {
+            query?: {
+                periodo?: "mes" | "mes_anterior" | "trimestre" | "semestre" | "ano" | "ano_anterior" | "personalizado";
+                ano?: number;
+                de?: string;
+                ate?: string;
+                visao?: "minha" | "equipe" | "empresa";
+                funilId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadosDoDashboard"];
                 };
             };
             /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */

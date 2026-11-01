@@ -2011,6 +2011,431 @@
         "tags": ["Carteira: dashboard"]
       }
     },
+    "/v1/carteira/dashboard/associados": {
+      "get": {
+        "description": "A lista paginada das empresas que viraram associadas (`novos`: não eram no início e são no fim do período) ou deixaram de ser (`desassociados`), da mais recente para a mais antiga. Período: `mes`, `mes_anterior`, `trimestre`, `semestre` e `ano` (do calendário, no fuso da empresa), `ano_anterior` (com `ano`) ou `personalizado` (com `de` e `ate`, inclusive, até 3 anos). Visão: `minha` (padrão), `equipe` ou `empresa`, limitada pelo alcance de `empresas.ver` (403 `acesso_negado` acima dele).",
+        "operationId": "DashboardController_associados",
+        "parameters": [
+          {
+            "name": "periodo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "mes",
+              "type": "string",
+              "enum": [
+                "mes",
+                "mes_anterior",
+                "trimestre",
+                "semestre",
+                "ano",
+                "ano_anterior",
+                "personalizado"
+              ]
+            }
+          },
+          {
+            "name": "ano",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 2100
+            }
+          },
+          {
+            "name": "de",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "ate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "visao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "minha",
+              "type": "string",
+              "enum": ["minha", "equipe", "empresa"]
+            }
+          },
+          {
+            "name": "tipo",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["novos", "desassociados"]
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "porPagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 8,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssociadosDoDashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dashboard: novos associados e desassociados",
+        "tags": ["Carteira: dashboard"]
+      }
+    },
+    "/v1/carteira/dashboard/contornos": {
+      "get": {
+        "description": "Os contornos simplificados (malha municipal do IBGE) dos municípios da UF, como MultiPolygon do GeoJSON, para desenhar o mapa de densidade. Referência igual para toda empresa: pode ficar em cache. UF sem contornos carregados: lista vazia.",
+        "operationId": "DashboardController_contornos",
+        "parameters": [
+          {
+            "name": "uf",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContornosDaUf"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dashboard: contornos dos municípios da UF",
+        "tags": ["Carteira: dashboard"]
+      }
+    },
+    "/v1/carteira/dashboard/mapa": {
+      "get": {
+        "description": "Para os mapas do quadro Carteira: a UF da empresa que usa o CRM (pelo endereço do cadastro dela) e, por município dessa UF, os associados no fim do período e as empresas do cadastro criadas até o fim do período (pela cidade do cadastro da empresa). As de outras UFs e as sem cidade vêm somadas à parte. Período: `mes`, `mes_anterior`, `trimestre`, `semestre` e `ano` (do calendário, no fuso da empresa), `ano_anterior` (com `ano`) ou `personalizado` (com `de` e `ate`, inclusive, até 3 anos). Visão: `minha` (padrão), `equipe` ou `empresa`, limitada pelo alcance de `empresas.ver` (403 `acesso_negado` acima dele).",
+        "operationId": "DashboardController_mapa",
+        "parameters": [
+          {
+            "name": "periodo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "mes",
+              "type": "string",
+              "enum": [
+                "mes",
+                "mes_anterior",
+                "trimestre",
+                "semestre",
+                "ano",
+                "ano_anterior",
+                "personalizado"
+              ]
+            }
+          },
+          {
+            "name": "ano",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 2100
+            }
+          },
+          {
+            "name": "de",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "ate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "visao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "minha",
+              "type": "string",
+              "enum": ["minha", "equipe", "empresa"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapaDoDashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dashboard: associados e empresas por município",
+        "tags": ["Carteira: dashboard"]
+      }
+    },
+    "/v1/carteira/dashboard/resultados": {
+      "get": {
+        "description": "Os indicadores da aba Resultados. Período: `mes`, `mes_anterior`, `trimestre`, `semestre` e `ano` (do calendário, no fuso da empresa), `ano_anterior` (com `ano`) ou `personalizado` (com `de` e `ate`, inclusive, até 3 anos). Visão: `minha` (padrão), `equipe` ou `empresa`, limitada pelo alcance de `empresas.ver` (403 `acesso_negado` acima dele). Previsão: valor total das oportunidades ativas na última fase ativa de cada funil ativo, com data prevista no período (as da fase sem data em `semPrevisao`). Vendas: valor total das conquistadas pela data de fechamento. MRR, conversão, conquistadas × perdidas e motivos de perda como antes; o funil por fase é o de hoje. Associados: empresas com o Status de chave `cliente` no fim e no início do período, pelo histórico de Status; churn = desassociados ÷ associados no início. Visitas: atividades Realizadas do tipo de sistema `visita` (as não localizadas contam); atividades realizadas: as dos outros tipos.",
+        "operationId": "DashboardController_resultados",
+        "parameters": [
+          {
+            "name": "periodo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "mes",
+              "type": "string",
+              "enum": [
+                "mes",
+                "mes_anterior",
+                "trimestre",
+                "semestre",
+                "ano",
+                "ano_anterior",
+                "personalizado"
+              ]
+            }
+          },
+          {
+            "name": "ano",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 2100
+            }
+          },
+          {
+            "name": "de",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "ate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "visao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "minha",
+              "type": "string",
+              "enum": ["minha", "equipe", "empresa"]
+            }
+          },
+          {
+            "name": "funilId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadosDoDashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dashboard: resultados do período",
+        "tags": ["Carteira: dashboard"]
+      }
+    },
     "/v1/carteira/empresas": {
       "get": {
         "description": "Regra de carteira: admin e gestor veem e editam tudo; o vendedor vê a própria carteira (ou todas, se a empresa ligou \"Vendedores podem ver todas as empresas\") e edita só a própria. Empresa que o usuário não vê responde 404. Busca sem acento (nome, razão social, CNPJ/CPF com ou sem máscara, cidade), filtros (`tags`: a empresa precisa ter todas; vendedor, cidade, última visita), chips fixos e paginação. Os chips \"sem visita há 90 dias\", \"nunca visitadas\" e \"sem próxima atividade\" consideram só Status Cliente e Prospect, salvo `incluirLeads=true`. Cada item traz todas as tags, o telefone principal (Ligar/WhatsApp) e o endereço para a rota.",
@@ -29445,6 +29870,160 @@
         "required": ["nome", "mime", "tamanho", "estado", "enviado"],
         "additionalProperties": false
       },
+      "AssociadosDoDashboard": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": ["novos", "desassociados"]
+          },
+          "periodo": {
+            "type": "object",
+            "properties": {
+              "chave": {
+                "type": "string",
+                "enum": [
+                  "mes",
+                  "mes_anterior",
+                  "trimestre",
+                  "semestre",
+                  "ano",
+                  "ano_anterior",
+                  "personalizado"
+                ]
+              },
+              "rotulo": {
+                "type": "string"
+              },
+              "inicio": {
+                "type": "string"
+              },
+              "fim": {
+                "type": "string"
+              },
+              "anterior": {
+                "type": "object",
+                "properties": {
+                  "inicio": {
+                    "type": "string"
+                  },
+                  "fim": {
+                    "type": "string"
+                  }
+                },
+                "required": ["inicio", "fim"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["chave", "rotulo", "inicio", "fim", "anterior"],
+            "additionalProperties": false
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "porPagina": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "cidade": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "nome": {
+                      "type": "string"
+                    },
+                    "uf": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["nome", "uf"],
+                  "additionalProperties": false
+                },
+                "em": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "vendedor": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "nome"],
+                  "additionalProperties": false
+                },
+                "por": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "nome"],
+                  "additionalProperties": false
+                },
+                "mrr": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "statusAtual": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "cor": {
+                      "$ref": "#/components/schemas/CorDeTag"
+                    }
+                  },
+                  "required": ["id", "nome", "cor"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["id", "nome", "cidade", "em", "vendedor", "por", "mrr", "statusAtual"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["tipo", "periodo", "total", "pagina", "porPagina", "itens"],
+        "additionalProperties": false
+      },
       "AtendenteDoChamado": {
         "type": "object",
         "properties": {
@@ -31457,6 +32036,62 @@
         ],
         "additionalProperties": false
       },
+      "ContornosDaUf": {
+        "type": "object",
+        "properties": {
+          "uf": {
+            "type": "string"
+          },
+          "fonte": {
+            "nullable": true,
+            "type": "string"
+          },
+          "municipios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigo": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "poligonos": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    }
+                  }
+                }
+              },
+              "required": ["codigo", "nome", "poligonos"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["uf", "fonte", "municipios"],
+        "additionalProperties": false
+      },
       "ConverterSocioEntrada": {
         "type": "object",
         "properties": {
@@ -32932,7 +33567,15 @@
             "properties": {
               "chave": {
                 "type": "string",
-                "enum": ["mes", "mes_anterior", "trimestre"]
+                "enum": [
+                  "mes",
+                  "mes_anterior",
+                  "trimestre",
+                  "semestre",
+                  "ano",
+                  "ano_anterior",
+                  "personalizado"
+                ]
               },
               "rotulo": {
                 "type": "string"
@@ -37749,6 +38392,137 @@
         ],
         "additionalProperties": false
       },
+      "MapaDoDashboard": {
+        "type": "object",
+        "properties": {
+          "uf": {
+            "nullable": true,
+            "type": "string"
+          },
+          "periodo": {
+            "type": "object",
+            "properties": {
+              "chave": {
+                "type": "string",
+                "enum": [
+                  "mes",
+                  "mes_anterior",
+                  "trimestre",
+                  "semestre",
+                  "ano",
+                  "ano_anterior",
+                  "personalizado"
+                ]
+              },
+              "rotulo": {
+                "type": "string"
+              },
+              "inicio": {
+                "type": "string"
+              },
+              "fim": {
+                "type": "string"
+              },
+              "anterior": {
+                "type": "object",
+                "properties": {
+                  "inicio": {
+                    "type": "string"
+                  },
+                  "fim": {
+                    "type": "string"
+                  }
+                },
+                "required": ["inicio", "fim"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["chave", "rotulo", "inicio", "fim", "anterior"],
+            "additionalProperties": false
+          },
+          "municipios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "associados": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "empresas": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "codigo": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "nome": {
+                  "type": "string"
+                }
+              },
+              "required": ["associados", "empresas", "codigo", "nome"],
+              "additionalProperties": false
+            }
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "associados": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "empresas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["associados", "empresas"],
+            "additionalProperties": false
+          },
+          "foraDaUf": {
+            "type": "object",
+            "properties": {
+              "associados": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "empresas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["associados", "empresas"],
+            "additionalProperties": false
+          },
+          "semCidade": {
+            "type": "object",
+            "properties": {
+              "associados": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "empresas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["associados", "empresas"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["uf", "periodo", "municipios", "total", "foraDaUf", "semCidade"],
+        "additionalProperties": false
+      },
       "MarcadasComoLidas": {
         "type": "object",
         "properties": {
@@ -41459,6 +42233,445 @@
           }
         },
         "required": ["oportunidade", "avisoDeProbabilidade"],
+        "additionalProperties": false
+      },
+      "ResultadosDoDashboard": {
+        "type": "object",
+        "properties": {
+          "periodo": {
+            "type": "object",
+            "properties": {
+              "chave": {
+                "type": "string",
+                "enum": [
+                  "mes",
+                  "mes_anterior",
+                  "trimestre",
+                  "semestre",
+                  "ano",
+                  "ano_anterior",
+                  "personalizado"
+                ]
+              },
+              "rotulo": {
+                "type": "string"
+              },
+              "inicio": {
+                "type": "string"
+              },
+              "fim": {
+                "type": "string"
+              },
+              "anterior": {
+                "type": "object",
+                "properties": {
+                  "inicio": {
+                    "type": "string"
+                  },
+                  "fim": {
+                    "type": "string"
+                  }
+                },
+                "required": ["inicio", "fim"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["chave", "rotulo", "inicio", "fim", "anterior"],
+            "additionalProperties": false
+          },
+          "visao": {
+            "type": "string",
+            "enum": ["minha", "equipe", "empresa"]
+          },
+          "visoes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["minha", "equipe", "empresa"]
+            }
+          },
+          "previsao": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "number"
+              },
+              "ponderado": {
+                "type": "number"
+              },
+              "quantidade": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "semPrevisao": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "porFunil": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "funilId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "funil": {
+                      "type": "string"
+                    },
+                    "faseId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "fase": {
+                      "type": "string"
+                    },
+                    "valor": {
+                      "type": "number"
+                    },
+                    "quantidade": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["funilId", "funil", "faseId", "fase", "valor", "quantidade"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["valor", "ponderado", "quantidade", "semPrevisao", "porFunil"],
+            "additionalProperties": false
+          },
+          "vendas": {
+            "type": "object",
+            "properties": {
+              "anterior": {
+                "type": "number"
+              },
+              "variacao": {
+                "nullable": true,
+                "type": "number"
+              },
+              "total": {
+                "type": "number"
+              },
+              "quantidade": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["anterior", "variacao", "total", "quantidade"],
+            "additionalProperties": false
+          },
+          "mrr": {
+            "type": "object",
+            "properties": {
+              "anterior": {
+                "type": "number"
+              },
+              "variacao": {
+                "nullable": true,
+                "type": "number"
+              },
+              "valor": {
+                "type": "number"
+              },
+              "quantidade": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "serie": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "mes": {
+                      "type": "string"
+                    },
+                    "rotulo": {
+                      "type": "string"
+                    },
+                    "inicio": {
+                      "type": "string"
+                    },
+                    "fimExclusivo": {
+                      "type": "string"
+                    },
+                    "valor": {
+                      "type": "number"
+                    },
+                    "quantidade": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["mes", "rotulo", "inicio", "fimExclusivo", "valor", "quantidade"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["anterior", "variacao", "valor", "quantidade", "serie"],
+            "additionalProperties": false
+          },
+          "conversao": {
+            "type": "object",
+            "properties": {
+              "taxa": {
+                "nullable": true,
+                "type": "number"
+              },
+              "conquistadas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "perdidas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["taxa", "conquistadas", "perdidas"],
+            "additionalProperties": false
+          },
+          "resultado": {
+            "type": "object",
+            "properties": {
+              "conquistadas": {
+                "type": "object",
+                "properties": {
+                  "quantidade": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "total": {
+                    "type": "number"
+                  },
+                  "mensal": {
+                    "type": "number"
+                  }
+                },
+                "required": ["quantidade", "total", "mensal"],
+                "additionalProperties": false
+              },
+              "perdidasECanceladas": {
+                "type": "object",
+                "properties": {
+                  "quantidade": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "total": {
+                    "type": "number"
+                  },
+                  "perdidas": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "canceladas": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": ["quantidade", "total", "perdidas", "canceladas"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["conquistadas", "perdidasECanceladas"],
+            "additionalProperties": false
+          },
+          "motivosDePerda": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome": {
+                  "type": "string"
+                },
+                "quantidade": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "total": {
+                  "type": "number"
+                }
+              },
+              "required": ["id", "nome", "quantidade", "total"],
+              "additionalProperties": false
+            }
+          },
+          "funil": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "fases": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "cor": {
+                      "$ref": "#/components/schemas/CorDeTag"
+                    },
+                    "quantidade": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["id", "nome", "cor", "quantidade", "total"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["id", "nome", "fases"],
+            "additionalProperties": false
+          },
+          "associados": {
+            "type": "object",
+            "properties": {
+              "tag": {
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "cor": {
+                    "$ref": "#/components/schemas/CorDeTag"
+                  }
+                },
+                "required": ["id", "nome", "cor"],
+                "additionalProperties": false
+              },
+              "atual": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "inicio": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "novos": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "desassociados": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "churn": {
+                "nullable": true,
+                "type": "number"
+              },
+              "historicoDesde": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "tag",
+              "atual",
+              "inicio",
+              "novos",
+              "desassociados",
+              "churn",
+              "historicoDesde"
+            ],
+            "additionalProperties": false
+          },
+          "visitas": {
+            "type": "object",
+            "properties": {
+              "anterior": {
+                "type": "number"
+              },
+              "variacao": {
+                "nullable": true,
+                "type": "number"
+              },
+              "realizadas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["anterior", "variacao", "realizadas"],
+            "additionalProperties": false
+          },
+          "atividadesRealizadas": {
+            "type": "object",
+            "properties": {
+              "anterior": {
+                "type": "number"
+              },
+              "variacao": {
+                "nullable": true,
+                "type": "number"
+              },
+              "realizadas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["anterior", "variacao", "realizadas"],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "periodo",
+          "visao",
+          "visoes",
+          "previsao",
+          "vendas",
+          "mrr",
+          "conversao",
+          "resultado",
+          "motivosDePerda",
+          "funil",
+          "associados",
+          "visitas",
+          "atividadesRealizadas"
+        ],
         "additionalProperties": false
       },
       "ResumoDaGeolocalizacao": {
