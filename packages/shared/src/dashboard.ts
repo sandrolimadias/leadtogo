@@ -515,115 +515,18 @@ export type ContornosDaUf = z.infer<typeof contornosDaUfSchema>
 // Aba Minhas atividades (GET /v1/carteira/dashboard)
 // ---------------------------------------------------------------------------------------------------------
 
-export const consultaDoDashboardSchema = z
-  .object({
-    periodo: z.enum(['mes', 'mes_anterior', 'trimestre']).default('mes'),
-    /** Funil do bloco "Funil e previsão"; sem ele, o funil padrão */
-    funilId: z.uuid().optional(),
-  })
-  .strict()
+/**
+ * Sem parâmetros: a aba Minhas atividades não depende do período. Parâmetros antigos (`periodo`, `funilId`,
+ * de telas abertas antes da atualização) são aceitos e ignorados.
+ */
+export const consultaDoDashboardSchema = z.object({})
 export type ConsultaDoDashboard = z.output<typeof consultaDoDashboardSchema>
 export type ConsultaDoDashboardEntrada = z.input<typeof consultaDoDashboardSchema>
-
-const dinheiroEQtd = z.object({ quantidade: z.number().int(), total: z.number() })
 
 export const dashboardSchema = z
   .object({
     membro: z.object({ id: z.uuid(), nome: z.string() }),
-    periodo: z.object({
-      chave: periodoDoDashboardSchema,
-      rotulo: z.string(),
-      inicio: z.string(),
-      fim: z.string(),
-    }),
-    /** Oportunidades ativas com data prevista dentro do período (valor ponderado); as sem data ficam de fora */
-    previsao: z.object({
-      valor: z.number(),
-      quantidade: z.number().int(),
-      semPrevisao: z.number().int(),
-    }),
-    /** MRR conquistado: soma do valor mensal das conquistadas no período, pela data de fechamento */
-    mrr: z.object({
-      valor: z.number(),
-      quantidade: z.number().int(),
-      anterior: z.number(),
-      /** Em %; nulo quando o período anterior não teve MRR */
-      variacao: z.number().nullable(),
-      /** Os últimos 6 meses (o período termina no último deles) */
-      serie: z.array(
-        z.object({
-          mes: z.string(),
-          rotulo: z.string(),
-          inicio: z.string(),
-          fimExclusivo: z.string(),
-          valor: z.number(),
-          quantidade: z.number().int(),
-        }),
-      ),
-    }),
-    conversao: z.object({
-      /** Em %; nulo sem conquistadas nem perdidas no período */
-      taxa: z.number().nullable(),
-      conquistadas: z.number().int(),
-      perdidas: z.number().int(),
-    }),
-    resultado: z.object({
-      conquistadas: dinheiroEQtd.extend({ mensal: z.number() }),
-      perdidasECanceladas: dinheiroEQtd.extend({
-        perdidas: z.number().int(),
-        canceladas: z.number().int(),
-      }),
-    }),
-    motivosDePerda: z.array(
-      z.object({
-        id: z.uuid(),
-        nome: z.string(),
-        quantidade: z.number().int(),
-        total: z.number(),
-      }),
-    ),
-    funil: z.object({
-      id: z.uuid(),
-      nome: z.string(),
-      fases: z.array(
-        z.object({
-          id: z.uuid(),
-          nome: z.string(),
-          cor: corDeTagSchema,
-          quantidade: z.number().int(),
-          total: z.number(),
-        }),
-      ),
-    }),
-    carteira: z.object({
-      total: z.number().int(),
-      porStatus: z.array(
-        z.object({
-          id: z.uuid(),
-          nome: z.string(),
-          cor: corDeTagSchema,
-          chaveSistema: z.string().nullable(),
-          quantidade: z.number().int(),
-        }),
-      ),
-      /** Empresas cadastradas ou importadas dentro do período */
-      novas: z.number().int(),
-    }),
-    semContato: z.object({
-      /** O prazo configurado na empresa (padrão 60) */
-      dias: z.number().int(),
-      total: z.number().int(),
-      itens: z.array(
-        z.object({
-          id: z.uuid(),
-          nome: z.string(),
-          cidade: z.object({ nome: z.string(), uf: z.string() }).nullable(),
-          status: z.object({ nome: z.string(), cor: corDeTagSchema }).nullable(),
-          /** Dias desde o último contato; nulo = nunca teve contato */
-          diasSemContato: z.number().int().nullable(),
-        }),
-      ),
-    }),
+    /** As janelas da tela Atividades, só as minhas */
     atividades: z.object({
       hoje: z.number().int(),
       atrasadas: z.number().int(),

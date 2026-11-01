@@ -32,7 +32,7 @@ import { DashboardService } from './dashboard.service.js'
 const PERIODO_E_VISAO =
   'Período: `mes`, `mes_anterior`, `trimestre`, `semestre` e `ano` (do calendário, no fuso da empresa), `ano_anterior` (com `ano`) ou `personalizado` (com `de` e `ate`, inclusive, até 3 anos). Visão: `minha` (padrão), `equipe` ou `empresa`, limitada pelo alcance de `empresas.ver` (403 `acesso_negado` acima dele).'
 
-/** O Dashboard da empresa ativa (visão "Minha"). */
+/** O Dashboard da empresa ativa: Minhas atividades e a aba Resultados (período e visão). */
 @ApiTags('Carteira: dashboard')
 @Controller('carteira/dashboard')
 export class DashboardController {
@@ -42,9 +42,9 @@ export class DashboardController {
   ) {}
 
   @Documenta({
-    resumo: 'Dashboard (visão Minha)',
+    resumo: 'Dashboard: minhas atividades',
     descricao:
-      'Os números do usuário no período (`mes`, `mes_anterior` ou `trimestre` do calendário, no fuso da empresa): previsão (valor ponderado das oportunidades ativas com data prevista no período; as sem data vêm em `semPrevisao`), MRR conquistado (soma do valor mensal das conquistadas, pela data de fechamento, com a variação sobre o período anterior e os últimos 6 meses), taxa de conversão (conquistadas ÷ (conquistadas + perdidas); as canceladas ficam fora), conquistadas × perdidas e canceladas, principais motivos de perda, o funil por fase (as ativas de hoje; sem `funilId`, o funil padrão), a carteira por Status (pela chave do sistema), as empresas novas, as sem contato há N dias (Cliente e Prospect, inclui as nunca contatadas, pelo prazo configurado na empresa) e a contagem das atividades de hoje, atrasadas e dos próximos 7 dias. "Minha" = as oportunidades e atividades de que o usuário é o responsável e as empresas da carteira dele.',
+      'A aba Minhas atividades: o nome do usuário e a contagem das atividades dele de hoje, atrasadas e dos próximos 7 dias (as janelas da tela Atividades, no fuso da empresa). Sem parâmetros (os antigos `periodo` e `funilId` são ignorados); os números do período estão em `/resultados`.',
     consulta: consultaDoDashboardSchema,
     resposta: dashboardSchema,
     erros: [400, 401, 403, 404],

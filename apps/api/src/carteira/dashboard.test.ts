@@ -2,10 +2,10 @@ import type { Server } from 'node:http'
 
 import {
   type Dashboard,
+  type ResultadosDoDashboard,
   diaNoFuso,
   inicioDoDiaNoFuso,
   type ListaDeAtividades,
-  type ListaDeEmpresas,
   type ListaDeOportunidades,
   periodoDoDashboard,
 } from '@leadtogo/shared'
@@ -118,6 +118,12 @@ const dashboard = async (cookie: string, q = '') => {
   expect(r.status, JSON.stringify(r.body)).toBe(200)
   return r.body as Dashboard
 }
+/** A aba Resultados (os números do período) */
+const resultados = async (cookie: string, q = '') => {
+  const r = await chamar('get', cookie, `${DASH}/resultados${q}`)
+  expect(r.status, JSON.stringify(r.body)).toBe(200)
+  return r.body as ResultadosDoDashboard
+}
 /** Fecha a oportunidade e coloca a data de fechamento onde o teste quer (instante ISO). */
 async function fecharEm(
   c: Cenario,
@@ -148,92 +154,44 @@ const somarDias = (dia: string, n: number): string => {
 const periodoAtual = () => periodoDoDashboard('mes', agora())
 
 describe('Dashboard: estrutura', () => {
-  it('empresa nova: tudo zerado, o funil padrão com as fases, os Status e o prazo de 60 dias', async () => {
+  it('Minhas atividades: o membro e as janelas zeradas; a aba Resultados com o funil padrão', async () => {
     const c = await cenario()
     const x = await dashboard(c.d.cookie)
-    expect(x.periodo).toMatchObject({
+    expect(Object.keys(x).sort()).toEqual(['atividades', 'membro'])
+    expect(x.atividades).toEqual({ hoje: 0, atrasadas: 0, proximos7: 0 })
+    const r = await resultados(c.d.cookie)
+    expect(r.periodo).toMatchObject({
       chave: 'mes',
       inicio: periodoAtual().inicio,
       fim: periodoAtual().fim,
     })
-    expect(x.previsao).toEqual({ valor: 0, quantidade: 0, semPrevisao: 0 })
-    expect(x.mrr).toMatchObject({ valor: 0, quantidade: 0, anterior: 0, variacao: null })
-    expect(x.mrr.serie).toHaveLength(6)
-    expect(x.conversao).toEqual({ taxa: null, conquistadas: 0, perdidas: 0 })
-    expect(x.motivosDePerda).toEqual([])
-    expect(x.funil.nome).toBe(c.funil.nome)
-    expect(x.funil.fases.map((f) => f.nome)).toEqual([
+    expect(r.mrr).toMatchObject({ valor: 0, quantidade: 0, anterior: 0, variacao: null })
+    expect(r.mrr.serie).toHaveLength(6)
+    expect(r.conversao).toEqual({ taxa: null, conquistadas: 0, perdidas: 0 })
+    expect(r.motivosDePerda).toEqual([])
+    expect(r.funil.nome).toBe(c.funil.nome)
+    expect(r.funil.fases.map((f) => f.nome)).toEqual([
       'Qualificação',
       'Diagnóstico',
       'Proposta',
       'Negociação',
     ])
-    expect(x.carteira.porStatus.map((s) => s.chaveSistema)).toEqual([
-      'lead',
-      'prospect',
-      'cliente',
-      'inativo',
-    ])
-    expect(x.carteira.total).toBe(0)
-    expect(x.semContato).toEqual({ dias: 60, total: 0, itens: [] })
-    expect(x.atividades).toEqual({ hoje: 0, atrasadas: 0, proximos7: 0 })
   })
 
-  it('período inválido é recusado e sem sessão é 401', async () => {
+  it('parâmetros antigos são ignorados (telas abertas antes da atualização); período inválido nos resultados; sem sessão é 401', async () => {
     const c = await cenario()
-    expect((await chamar('get', c.d.cookie, `${DASH}?periodo=ano`)).status).toBe(400)
+    expect((await chamar('get', c.d.cookie, `${DASH}?periodo=mes&funilId=x`)).status).toBe(200)
+    expect((await chamar('get', c.d.cookie, `${DASH}/resultados?periodo=dia`)).status).toBe(400)
     expect((await chamar('get', undefined, DASH)).status).toBe(401)
     expect(
       erroDe(
-        await chamar('get', c.d.cookie, `${DASH}?funilId=0191f2b4-0000-7000-8000-000000000009`),
+        await chamar(
+          'get',
+          c.d.cookie,
+          `${DASH}/resultados?funilId=0191f2b4-0000-7000-8000-000000000009`,
+        ),
       ),
     ).toBe('funil_nao_encontrado')
-  })
-})
-
-describe('Dashboard: previsão', () => {
-  it('soma o valor ponderado das ativas com data prevista no período; as sem data vão para "sem previsão"', async () => {
-    const c = await cenario()
-    const e = await empresa(c.d.cookie, 'Mercado')
-    const noMes = periodoAtual()
-    const dentro = (n: number) => somarDias(noMes.inicio, n)
-    // 1.000 × 10% = 100 e 2.000 × 50% = 1.000 (dentro do mês)
-    await nova(c.d.cookie, {
-      titulo: 'A',
-      empresaId: e.id,
-      valorUnico: 1000,
-      dataPrevistaFechamento: dentro(2),
-    })
-    await nova(c.d.cookie, {
-      titulo: 'B',
-      empresaId: e.id,
-      valorUnico: 2000,
-      probabilidade: 50,
-      dataPrevistaFechamento: noMes.fim,
-    })
-    // fora do mês, sem data e fechada: não entram
-    await nova(c.d.cookie, {
-      titulo: 'Fora',
-      empresaId: e.id,
-      valorUnico: 9000,
-      dataPrevistaFechamento: somarDias(noMes.fim, 1),
-    })
-    await nova(c.d.cookie, { titulo: 'Sem data', empresaId: e.id, valorUnico: 5000 })
-    const fechada = await nova(c.d.cookie, {
-      titulo: 'Fechada',
-      empresaId: e.id,
-      valorUnico: 7000,
-      dataPrevistaFechamento: dentro(1),
-    })
-    await chamar('post', c.d.cookie, `${OPS}/${fechada.id}/fechar`, {
-      status: 'conquistado',
-      empresaViraCliente: false,
-    })
-
-    const x = await dashboard(c.d.cookie)
-    expect(x.previsao).toEqual({ valor: 1100, quantidade: 2, semPrevisao: 1 })
-    // o mês anterior não tem nada previsto
-    expect((await dashboard(c.d.cookie, '?periodo=mes_anterior')).previsao.quantidade).toBe(0)
   })
 })
 
@@ -274,7 +232,7 @@ describe('Dashboard: conquistadas, perdidas, conversão e MRR', () => {
       retomarEm: somarDias(hoje(), 30),
     })
 
-    const x = await dashboard(c.d.cookie)
+    const x = await resultados(c.d.cookie)
     // MRR = 100 + 200; o do mês passado = 100 → +200%
     expect(x.mrr).toMatchObject({ valor: 300, quantidade: 2, anterior: 100, variacao: 200 })
     expect(x.resultado.conquistadas).toEqual({ quantidade: 2, total: 2000 + 1000, mensal: 300 })
@@ -289,7 +247,7 @@ describe('Dashboard: conquistadas, perdidas, conversão e MRR', () => {
     expect(x.mrr.serie[5]).toMatchObject({ valor: 300, quantidade: 2 })
     expect(x.mrr.serie[4]?.valor).toBe(100)
     // o mês anterior olha para o que fechou lá
-    const ant = await dashboard(c.d.cookie, '?periodo=mes_anterior')
+    const ant = await resultados(c.d.cookie, '?periodo=mes_anterior')
     expect(ant.mrr).toMatchObject({ valor: 100, quantidade: 1 })
     expect(ant.mrr.serie[5]?.valor).toBe(100)
   })
@@ -310,9 +268,9 @@ describe('Dashboard: conquistadas, perdidas, conversão e MRR', () => {
     })
     await fecharEm(c, c.d.cookie, a, 'conquistado', as22)
     await fecharEm(c, c.d.cookie, b, 'conquistado', as0030)
-    const x = await dashboard(c.d.cookie)
+    const x = await resultados(c.d.cookie)
     expect(x.mrr).toMatchObject({ valor: 40, anterior: 100 }) // a de 22h é do mês passado, mesmo que em UTC já fosse o dia 1º
-    const ant = await dashboard(c.d.cookie, '?periodo=mes_anterior')
+    const ant = await resultados(c.d.cookie, '?periodo=mes_anterior')
     expect(ant.mrr.valor).toBe(100)
   })
 
@@ -330,7 +288,7 @@ describe('Dashboard: conquistadas, perdidas, conversão e MRR', () => {
       'conquistado',
       new Date(inicioDoDiaNoFuso(t.fimExclusivo).getTime() - 3_600_000),
     )
-    const x = await dashboard(c.d.cookie, '?periodo=trimestre')
+    const x = await resultados(c.d.cookie, '?periodo=trimestre')
     expect(x.periodo).toMatchObject({ chave: 'trimestre', inicio: t.inicio, fim: t.fim })
     expect(x.mrr.valor).toBe(30)
   })
@@ -359,18 +317,18 @@ describe('Dashboard: conquistadas, perdidas, conversão e MRR', () => {
     await perder('b', m1, 200)
     await perder('c', m1, 300)
     await perder('d', m2, 1000)
-    const x = await dashboard(c.d.cookie)
+    const x = await resultados(c.d.cookie)
     expect(x.motivosDePerda).toHaveLength(2)
     expect(x.motivosDePerda[0]).toMatchObject({ id: m1, quantidade: 3, total: 600 })
     expect(x.motivosDePerda[1]).toMatchObject({ id: m2, quantidade: 1, total: 1000 })
     // fechadas fora do período não contam
     await perder('antiga', m2, 5000)
-    const dentro = (await dashboard(c.d.cookie)).motivosDePerda.find((m) => m.id === m2)
+    const dentro = (await resultados(c.d.cookie)).motivosDePerda.find((m) => m.id === m2)
     expect(dentro?.quantidade).toBe(2)
   })
 })
 
-describe('Dashboard: funil, carteira e sem contato', () => {
+describe('Dashboard: funil', () => {
   it('o funil mostra só as ativas de hoje, por fase ativa; troca de funil; fase inativa some', async () => {
     const c = await cenario()
     const e = await empresa(c.d.cookie, 'Funilaria')
@@ -388,7 +346,7 @@ describe('Dashboard: funil, carteira e sem contato', () => {
       status: 'conquistado',
       empresaViraCliente: false,
     })
-    const x = await dashboard(c.d.cookie)
+    const x = await resultados(c.d.cookie)
     const por = (n: string) => x.funil.fases.find((f) => f.nome === n)
     expect(por('Qualificação')).toMatchObject({ quantidade: 1, total: 1000 })
     expect(por('Proposta')).toMatchObject({ quantidade: 1, total: 1000 })
@@ -396,121 +354,18 @@ describe('Dashboard: funil, carteira e sem contato', () => {
     await chamar('patch', c.d.cookie, `/v1/configuracoes/funis/fases/${c.fase('Negociação')}`, {
       ativo: false,
     })
-    expect((await dashboard(c.d.cookie)).funil.fases.map((f) => f.nome)).not.toContain('Negociação')
+    expect((await resultados(c.d.cookie)).funil.fases.map((f) => f.nome)).not.toContain(
+      'Negociação',
+    )
     const outro = (
       await chamar('post', c.d.cookie, '/v1/configuracoes/funis', {
         nome: 'Renovação',
         fases: [{ nome: 'Aviso' }],
       })
     ).body as Funil
-    expect((await dashboard(c.d.cookie, `?funilId=${outro.id}`)).funil).toMatchObject({
+    expect((await resultados(c.d.cookie, `?funilId=${outro.id}`)).funil).toMatchObject({
       nome: 'Renovação',
     })
-  })
-
-  it('carteira por Status pela chave do sistema (renomear não muda), só as minhas; novas no período', async () => {
-    const c = await cenario()
-    await chamar('patch', c.d.cookie, `/v1/configuracoes/tags/${c.tag('cliente').id}`, {
-      nome: 'Associado',
-    })
-    await empresa(c.ana.cookie, 'Lead da Ana')
-    await empresa(c.ana.cookie, 'Cliente da Ana', { statusTagId: c.tag('cliente').id })
-    await empresa(c.bia.cookie, 'Lead da Bia')
-    const ana = await dashboard(c.ana.cookie)
-    expect(ana.carteira.total).toBe(2)
-    expect(ana.carteira.novas).toBe(2)
-    const por = (chave: string) => ana.carteira.porStatus.find((s) => s.chaveSistema === chave)
-    expect(por('lead')).toMatchObject({ quantidade: 1, nome: 'Lead' })
-    expect(por('cliente')).toMatchObject({ quantidade: 1, nome: 'Associado' })
-    // uma empresa cadastrada antes do período não é "nova"
-    await sqlCru(
-      c.d.tenantId,
-      `UPDATE empresas SET criado_em = $1 WHERE razao_social = 'Lead da Ana'`,
-      [inicioDoDiaNoFuso(somarDias(periodoAtual().inicio, -3)).toISOString()],
-    )
-    expect((await dashboard(c.ana.cookie)).carteira.novas).toBe(1)
-    expect((await dashboard(c.bia.cookie)).carteira.total).toBe(1)
-  })
-
-  it('sem contato: só Cliente e Prospect (pela chave), inclui os nunca contatados, no prazo da empresa', async () => {
-    const c = await cenario()
-    const nunca = await empresa(c.ana.cookie, 'Cliente nunca contatado', {
-      statusTagId: c.tag('cliente').id,
-    })
-    const velho = await empresa(c.ana.cookie, 'Prospect antigo', {
-      statusTagId: c.tag('prospect').id,
-    })
-    const recente = await empresa(c.ana.cookie, 'Cliente recente', {
-      statusTagId: c.tag('cliente').id,
-    })
-    await empresa(c.ana.cookie, 'Lead sem contato') // lead: fora
-    await empresa(c.bia.cookie, 'Cliente da Bia', { statusTagId: c.tag('cliente').id }) // de outra carteira
-    await sqlCru(
-      c.d.tenantId,
-      `UPDATE empresas SET ultimo_contato_em = now() - interval '90 days' WHERE id = $1`,
-      [velho.id],
-    )
-    await sqlCru(
-      c.d.tenantId,
-      `UPDATE empresas SET ultimo_contato_em = now() - interval '10 days' WHERE id = $1`,
-      [recente.id],
-    )
-
-    const x = await dashboard(c.ana.cookie)
-    expect(x.semContato.dias).toBe(60)
-    expect(x.semContato.total).toBe(2)
-    // as nunca contatadas primeiro, depois a mais antiga
-    expect(x.semContato.itens.map((i) => i.nome)).toEqual([
-      'Cliente nunca contatado',
-      'Prospect antigo',
-    ])
-    expect(x.semContato.itens[0]).toMatchObject({
-      diasSemContato: null,
-      status: { nome: 'Cliente' },
-    })
-    expect(x.semContato.itens[1]).toMatchObject({
-      diasSemContato: 90,
-      status: { nome: 'Prospect' },
-    })
-
-    // o prazo configurado na empresa vale
-    await sqlCru(
-      c.d.tenantId,
-      `UPDATE tenant_configuracoes SET dias_sem_contato_alerta = 5 WHERE tenant_id = $1`,
-      [c.d.tenantId],
-    )
-    const x2 = await dashboard(c.ana.cookie)
-    expect(x2.semContato).toMatchObject({ dias: 5, total: 3 })
-    void nunca
-  })
-
-  it('a lista traz no máximo 8, mas o total conta todas; o filtro "semContato" da lista de Empresas bate com o total', async () => {
-    const c = await cenario()
-    for (let i = 1; i <= 10; i += 1) {
-      await empresa(c.ana.cookie, `Cliente ${String(i).padStart(2, '0')}`, {
-        statusTagId: c.tag('cliente').id,
-      })
-    }
-    const x = await dashboard(c.ana.cookie)
-    expect(x.semContato.total).toBe(10)
-    expect(x.semContato.itens).toHaveLength(8)
-    const lista = (
-      await chamar(
-        'get',
-        c.ana.cookie,
-        `/v1/carteira/empresas?semContato=${x.semContato.dias}&vendedorId=${c.ana.membroId}`,
-      )
-    ).body as ListaDeEmpresas
-    expect(lista.total).toBe(10)
-    // lead só entra com "incluir leads"
-    await empresa(c.ana.cookie, 'Um lead')
-    const sem = (await chamar('get', c.ana.cookie, `/v1/carteira/empresas?semContato=60`))
-      .body as ListaDeEmpresas
-    expect(sem.total).toBe(10)
-    const com = (
-      await chamar('get', c.ana.cookie, `/v1/carteira/empresas?semContato=60&incluirLeads=true`)
-    ).body as ListaDeEmpresas
-    expect(com.total).toBe(11)
   })
 })
 
@@ -627,9 +482,9 @@ describe('Dashboard: isolamento entre empresas', () => {
       meses: 12,
     })
     await fecharEm(a, a.d.cookie, o, 'conquistado', new Date())
-    expect((await dashboard(a.d.cookie)).mrr.valor).toBe(1000)
-    const doB = await dashboard(b.d.cookie)
+    expect((await resultados(a.d.cookie)).mrr.valor).toBe(1000)
+    const doB = await resultados(b.d.cookie, '?visao=empresa')
     expect(doB.mrr.valor).toBe(0)
-    expect(doB.carteira.total).toBe(0)
+    expect(doB.vendas.total).toBe(0)
   })
 })

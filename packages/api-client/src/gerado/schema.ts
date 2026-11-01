@@ -384,8 +384,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Dashboard (visão Minha)
-         * @description Os números do usuário no período (`mes`, `mes_anterior` ou `trimestre` do calendário, no fuso da empresa): previsão (valor ponderado das oportunidades ativas com data prevista no período; as sem data vêm em `semPrevisao`), MRR conquistado (soma do valor mensal das conquistadas, pela data de fechamento, com a variação sobre o período anterior e os últimos 6 meses), taxa de conversão (conquistadas ÷ (conquistadas + perdidas); as canceladas ficam fora), conquistadas × perdidas e canceladas, principais motivos de perda, o funil por fase (as ativas de hoje; sem `funilId`, o funil padrão), a carteira por Status (pela chave do sistema), as empresas novas, as sem contato há N dias (Cliente e Prospect, inclui as nunca contatadas, pelo prazo configurado na empresa) e a contagem das atividades de hoje, atrasadas e dos próximos 7 dias. "Minha" = as oportunidades e atividades de que o usuário é o responsável e as empresas da carteira dele.
+         * Dashboard: minhas atividades
+         * @description A aba Minhas atividades: o nome do usuário e a contagem das atividades dele de hoje, atrasadas e dos próximos 7 dias (as janelas da tela Atividades, no fuso da empresa). Sem parâmetros (os antigos `periodo` e `funilId` são ignorados); os números do período estão em `/resultados`.
          */
         get: operations["DashboardController_dashboard"];
         put?: never;
@@ -7085,100 +7085,6 @@ export interface components {
                 id: string;
                 nome: string;
             };
-            periodo: {
-                /** @enum {string} */
-                chave: "mes" | "mes_anterior" | "trimestre" | "semestre" | "ano" | "ano_anterior" | "personalizado";
-                rotulo: string;
-                inicio: string;
-                fim: string;
-            };
-            previsao: {
-                valor: number;
-                quantidade: number;
-                semPrevisao: number;
-            };
-            mrr: {
-                valor: number;
-                quantidade: number;
-                anterior: number;
-                variacao: number | null;
-                serie: {
-                    mes: string;
-                    rotulo: string;
-                    inicio: string;
-                    fimExclusivo: string;
-                    valor: number;
-                    quantidade: number;
-                }[];
-            };
-            conversao: {
-                taxa: number | null;
-                conquistadas: number;
-                perdidas: number;
-            };
-            resultado: {
-                conquistadas: {
-                    quantidade: number;
-                    total: number;
-                    mensal: number;
-                };
-                perdidasECanceladas: {
-                    quantidade: number;
-                    total: number;
-                    perdidas: number;
-                    canceladas: number;
-                };
-            };
-            motivosDePerda: {
-                /** Format: uuid */
-                id: string;
-                nome: string;
-                quantidade: number;
-                total: number;
-            }[];
-            funil: {
-                /** Format: uuid */
-                id: string;
-                nome: string;
-                fases: {
-                    /** Format: uuid */
-                    id: string;
-                    nome: string;
-                    cor: components["schemas"]["CorDeTag"];
-                    quantidade: number;
-                    total: number;
-                }[];
-            };
-            carteira: {
-                total: number;
-                porStatus: {
-                    /** Format: uuid */
-                    id: string;
-                    nome: string;
-                    cor: components["schemas"]["CorDeTag"];
-                    chaveSistema: string | null;
-                    quantidade: number;
-                }[];
-                novas: number;
-            };
-            semContato: {
-                dias: number;
-                total: number;
-                itens: {
-                    /** Format: uuid */
-                    id: string;
-                    nome: string;
-                    cidade: {
-                        nome: string;
-                        uf: string;
-                    } | null;
-                    status: {
-                        nome: string;
-                        cor: components["schemas"]["CorDeTag"];
-                    } | null;
-                    diasSemContato: number | null;
-                }[];
-            };
             atividades: {
                 hoje: number;
                 atrasadas: number;
@@ -11412,10 +11318,7 @@ export interface operations {
     };
     DashboardController_dashboard: {
         parameters: {
-            query?: {
-                periodo?: "mes" | "mes_anterior" | "trimestre";
-                funilId?: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
