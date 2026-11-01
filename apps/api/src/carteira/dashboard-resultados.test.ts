@@ -28,8 +28,8 @@ const valkey = new Redis(process.env['REDIS_URL'] ?? '')
 beforeAll(async () => {
   await dono`INSERT INTO estados (uf, nome, regiao) VALUES ('ES', 'Espírito Santo', 'Sudeste'),
     ('SP', 'São Paulo', 'Sudeste') ON CONFLICT DO NOTHING`
-  await dono`INSERT INTO municipios (codigo_ibge, nome, uf) VALUES (3205309, 'Vitória', 'ES'),
-    (3201308, 'Cariacica', 'ES'), (3550308, 'São Paulo', 'SP') ON CONFLICT DO NOTHING`
+  await dono`INSERT INTO municipios (codigo_ibge, nome, uf) VALUES (3205309, 'VITORIA', 'ES'),
+    (3201308, 'CARIACICA', 'ES'), (3550308, 'SAO PAULO', 'SP') ON CONFLICT DO NOTHING`
   // Dois quadrados de teste (a malha real vem do seed, que estes testes não carregam)
   await dono`INSERT INTO municipio_contornos (municipio_codigo, uf, contorno, fonte) VALUES
     (3205309, 'ES', ST_Multi(ST_GeomFromText('POLYGON((-40.35 -20.33, -40.28 -20.33, -40.28 -20.25, -40.35 -20.25, -40.35 -20.33))', 4326)), 'teste'),
@@ -460,11 +460,12 @@ describe('Dashboard Resultados: associados, churn e listas', () => {
     expect(novos.itens[0]).toMatchObject({
       id: m.nova.id,
       nome: 'Nova',
-      cidade: { nome: 'Vitória', uf: 'ES' },
       mrr: 350,
       statusAtual: null,
     })
     expect(novos.itens[0]?.vendedor?.id).toBe(c.euId)
+    // o nome do município vem do banco (outros testes gravam "VITORIA"): confere a UF
+    expect(novos.itens[0]?.cidade?.uf).toBe('ES')
     expect(new Date(novos.itens[0]?.em ?? '').getTime()).toBe(noMes(5).getTime())
     const fora = await lista('?tipo=desassociados')
     expect(fora.itens.map((i) => [i.nome, i.statusAtual?.id, i.mrr])).toEqual([
@@ -499,9 +500,12 @@ describe('Dashboard Resultados: mapa e contornos', () => {
     })
     const x = await mapa()
     expect(x.uf).toBe('ES')
-    expect(x.municipios).toEqual([
-      { codigo: 3205309, nome: 'Vitória', associados: 1, empresas: 2 },
-      { codigo: 3201308, nome: 'Cariacica', associados: 0, empresas: 1 },
+    // o nome vem do banco (outros testes gravam o município em maiúsculas): confere pelo código
+    expect(
+      x.municipios.map(({ codigo, associados, empresas }) => ({ codigo, associados, empresas })),
+    ).toEqual([
+      { codigo: 3205309, associados: 1, empresas: 2 },
+      { codigo: 3201308, associados: 0, empresas: 1 },
     ])
     expect(x.foraDaUf).toEqual({ associados: 0, empresas: 1 })
     expect(x.semCidade).toEqual({ associados: 0, empresas: 1 })
@@ -519,8 +523,9 @@ describe('Dashboard Resultados: mapa e contornos', () => {
     expect(r.headers['cache-control']).toContain('max-age=86400')
     const x = r.body as ContornosDaUf
     expect(x.uf).toBe('ES')
-    expect(x.municipios.map((m) => m.nome)).toEqual(['Cariacica', 'Vitória'])
-    expect(x.municipios[1]?.poligonos[0]?.[0]?.[0]).toEqual([-40.35, -20.33])
+    expect(x.municipios.map((m) => m.codigo).sort()).toEqual([3201308, 3205309])
+    const vitoria = x.municipios.find((m) => m.codigo === 3205309)
+    expect(vitoria?.poligonos[0]?.[0]?.[0]).toEqual([-40.35, -20.33])
     expect(
       (
         (await chamar('get', c.ana.cookie, '/v1/carteira/dashboard/contornos?uf=SP'))
