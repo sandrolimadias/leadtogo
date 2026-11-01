@@ -25,6 +25,7 @@ import { toast } from '@leadtogo/ui/toast'
 import { dataCurta, dataHora } from '../chamados/rotulos'
 
 import { EditorDePublicacao } from './editor-de-publicacao'
+import { MidiasDaPublicacao } from './midias-da-publicacao'
 
 const TOM: Record<SituacaoDaPublicacao, TomDoBadge> = {
   rascunho: 'neutral',
@@ -300,6 +301,12 @@ function Detalhe({
         <div className="rounded-sm bg-surface-sunken p-3">
           <Markdown texto={p.corpo} />
         </div>
+        <MidiasDaPublicacao
+          publicacaoId={p.id}
+          midias={p.midias}
+          podeEditar={podePublicar}
+          aoMudar={recarregar}
+        />
         {p.alcance === 'empresas' && p.empresas.length > 0 ? (
           <p className="m-0 text-[13px] text-ink-muted">
             Empresas: {p.empresas.map((e) => e.nome).join(', ')}

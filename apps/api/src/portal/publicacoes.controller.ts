@@ -1,4 +1,12 @@
 import {
+  type AdicionarImagemEntrada,
+  adicionarImagemSchema,
+  type AdicionarVideoEntrada,
+  adicionarVideoSchema,
+  type EnvioDeImagem,
+  envioDeImagemSchema,
+  type MidiaDaPublicacao,
+  midiaDaPublicacaoSchema,
   type BloquearComentariosEntrada,
   bloquearComentariosSchema,
   type ConsultaDePublicacoes,
@@ -31,10 +39,11 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
-import { Permissao } from '../acesso/acesso.decorators.js'
+import { Permissao, TransacaoSobDemanda } from '../acesso/acesso.decorators.js'
 import { Documenta } from '../documentacao/documenta.js'
 import { ZodPipe } from '../http/zod.pipe.js'
 import { Limite } from '../rate-limit/limite.decorator.js'
+import { MidiasService } from './midias.service.js'
 import { PublicacoesService } from './publicacoes.service.js'
 
 const uuid = () => new ParseUUIDPipe()
@@ -43,7 +52,84 @@ const uuid = () => new ParseUUIDPipe()
 @ApiTags('Portal do cliente: publicações')
 @Controller('portal-publicacoes')
 export class PublicacoesController {
-  constructor(private readonly servico: PublicacoesService) {}
+  constructor(
+    private readonly servico: PublicacoesService,
+    private readonly midias: MidiasService,
+  ) {}
+
+  // ------------------------------------------------------------------------- imagens e vídeo (4D)
+
+  @Documenta({
+    resumo: 'Adicionar uma imagem',
+    descricao:
+      'Exige `portal.publicar`. Passo 1: reserva a imagem (JPG, PNG ou WebP, até 10 MB, texto alternativo obrigatório) e devolve a URL pré-assinada para o navegador enviar o arquivo direto ao armazenamento. Passo 2: `POST /portal-publicacoes/{id}/midias/{midiaId}/confirmar`. No máximo 6 mídias por publicação (409 `limite_de_midias`). Sem o antivírus configurado: 503 `anexos_indisponiveis`.',
+    corpo: adicionarImagemSchema,
+    resposta: envioDeImagemSchema,
+    status: 201,
+    erros: [400, 401, 403, 404, 409, 503],
+  })
+  @Permissao('portal.publicar')
+  @Post(':id/midias/imagens')
+  @Limite({ nome: 'portal-publicar', max: 120, janelaS: 3600 })
+  adicionarImagem(
+    @Param('id', uuid()) id: string,
+    @Body(new ZodPipe(adicionarImagemSchema)) dados: AdicionarImagemEntrada,
+  ): Promise<EnvioDeImagem> {
+    return this.midias.adicionarImagem(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Confirmar o envio da imagem',
+    descricao:
+      'Exige `portal.publicar`. Confere a imagem no armazenamento (tamanho igual ao informado) e manda o antivírus varrer; o cliente só a vê "limpa". Idempotente.',
+    resposta: midiaDaPublicacaoSchema,
+    erros: [400, 401, 403, 404, 409, 503],
+  })
+  @Permissao('portal.publicar')
+  @TransacaoSobDemanda()
+  @Post(':id/midias/:midiaId/confirmar')
+  @HttpCode(200)
+  confirmarImagem(
+    @Param('id', uuid()) id: string,
+    @Param('midiaId', uuid()) midiaId: string,
+  ): Promise<MidiaDaPublicacao> {
+    return this.midias.confirmarImagem(id, midiaId)
+  }
+
+  @Documenta({
+    resumo: 'Adicionar um vídeo',
+    descricao:
+      'Exige `portal.publicar`. Só links https do YouTube ou do Vimeo; guarda só o provedor e o ID (o portal monta o embed sem cookies).',
+    corpo: adicionarVideoSchema,
+    resposta: midiaDaPublicacaoSchema,
+    status: 201,
+    erros: [400, 401, 403, 404, 409, 422],
+  })
+  @Permissao('portal.publicar')
+  @Post(':id/midias/videos')
+  @Limite({ nome: 'portal-publicar', max: 120, janelaS: 3600 })
+  adicionarVideo(
+    @Param('id', uuid()) id: string,
+    @Body(new ZodPipe(adicionarVideoSchema)) dados: AdicionarVideoEntrada,
+  ): Promise<MidiaDaPublicacao> {
+    return this.midias.adicionarVideo(id, dados)
+  }
+
+  @Documenta({
+    resumo: 'Tirar uma imagem ou vídeo',
+    descricao: 'Exige `portal.publicar`. Exclusão lógica.',
+    status: 204,
+    erros: [400, 401, 403, 404],
+  })
+  @Permissao('portal.publicar')
+  @Delete(':id/midias/:midiaId')
+  @HttpCode(204)
+  async removerMidia(
+    @Param('id', uuid()) id: string,
+    @Param('midiaId', uuid()) midiaId: string,
+  ): Promise<void> {
+    await this.midias.remover(id, midiaId)
+  }
 
   @Documenta({
     resumo: 'Publicações do portal',

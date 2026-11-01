@@ -1016,6 +1016,14 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 - `publicacao_tags`, `evento_tags`, `documento_tags`, `aviso_tags` (tenant_id, `<item>_id`, tag_id, aplicada_em, aplicada_por; PK `(item, tag)`): a linha é o vínculo; o gatilho `app_conferir_alvo_da_tag` só aceita tag de grupo de **contato**.
 - **Portal:** `contato_tags` passa a ser lida pela sessão do portal **só nas linhas do próprio contato** (nunca grava). `app_portal_tem_tag(uuid[])` (STABLE) diz se o contato da sessão tem alguma das tags; os vínculos de tag dos itens só aparecem ao portal nas tags que ele tem. As políticas `portal_escopo_sel` de `publicacoes`, `documentos` e `eventos` ganham o ramo `alcance::text = 'tags' AND EXISTS (vínculo visível)`. Avisos: a entrega (worker) e o limite semanal consideram os contatos com a tag.
 
+## Portal, Fase 4D (migração 0048, só expansão)
+
+| Tabela | Colunas principais | Regras |
+|---|---|---|
+| `publicacao_midias` | publicacao_id, tipo (`imagem`, `video`), ordem, legenda, texto_alternativo; imagem: chave_arquivo, nome, mime, tamanho, estado, enviado_em, varrido_em, assinatura, tentativas_varredura, ultimo_erro; vídeo: video_provedor (`youtube`, `vimeo`), video_id | Check: imagem exige arquivo, descrição e até 10 MB; vídeo exige provedor e ID (`^[A-Za-z0-9_-]{6,32}$`). A mesma chave de arquivo pode aparecer em duas publicações (duplicar) |
+
+**Portal:** lê só mídia não excluída de publicação que ele enxerga e, na imagem, só a `limpa` e enviada; nunca grava. O antivírus usa o mesmo processador dos anexos e documentos (job `tipo: 'midia'`, evento `portal.varrer_midia`).
+
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 
 **Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (busca das oportunidades pelo título, sem acento). Empresas e contatos já tinham os seus (0017 e 0018). Os índices trigram são criados por SQL na migração e não aparecem no schema do Drizzle nem nos snapshots, por isso o `db:generate` não os enxerga nem tenta apagá-los.

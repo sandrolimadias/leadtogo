@@ -18,6 +18,7 @@ import { Injectable } from '@nestjs/common'
 import { ContextoTenantService } from '../acesso/contexto-tenant.service.js'
 import { AuditoriaService } from '../auditoria/auditoria.service.js'
 import { ErroApi } from '../http/erro-api.js'
+import { MidiasService } from './midias.service.js'
 import { acessoNoAlcance, tagsDoAlcance, trocarTagsDoAlcance } from './audiencia.js'
 
 type LinhaDaPublicacao = {
@@ -56,6 +57,7 @@ export class PublicacoesService {
   constructor(
     private readonly ctx: ContextoTenantService,
     private readonly auditoria: AuditoriaService,
+    private readonly midias: MidiasService,
   ) {}
 
   // ------------------------------------------------------------------------------------ leitura
@@ -200,6 +202,7 @@ export class PublicacoesService {
       criadoEm: new Date(l.criado_em).toISOString(),
       empresas: [...empresas],
       tags: await tagsDoAlcance(db, 'publicacao', id),
+      midias: await this.midias.daPublicacao(db, id),
     }
   }
 
@@ -314,6 +317,7 @@ export class PublicacoesService {
     await db.execute(sql`
       INSERT INTO publicacao_tags (tenant_id, publicacao_id, tag_id, aplicada_por)
       SELECT tenant_id, ${novo}, tag_id, ${this.ctx.membro.id} FROM publicacao_tags WHERE publicacao_id = ${id}`)
+    await this.midias.copiar(id, novo)
     await this.auditoria.registrar({
       entidade: 'publicacao',
       entidadeId: novo,

@@ -1,12 +1,14 @@
 import { sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
+  bigint,
   boolean,
   check,
   index,
   integer,
   pgEnum,
   pgTable,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -15,6 +17,7 @@ import {
 } from 'drizzle-orm/pg-core'
 
 import { empresas } from './carteira.js'
+import { estadoAnexo } from './chamados.js'
 import { portalAcessos } from './portal.js'
 import { membros, tenants } from './plataforma.js'
 import { carimbos, chaveUuid } from './tipos.js'
@@ -209,4 +212,60 @@ export const publicacaoLeituras = pgTable(
     ...carimbos(),
   },
   (t) => [uniqueIndex('publicacao_leituras_uq').on(t.publicacaoId, t.acessoId)],
+)
+
+export const tipoMidiaPublicacao = pgEnum('tipo_midia_publicacao', ['imagem', 'video'])
+export const provedorVideo = pgEnum('provedor_video', ['youtube', 'vimeo'])
+
+/** Até 10 MB por imagem (JPG, PNG ou WebP) */
+export const TAMANHO_MAXIMO_DA_IMAGEM = 10 * 1024 * 1024
+
+/**
+ * Imagem ou vídeo da publicação (Fase 4D, B-3). Imagem: arquivo no Garage pelo mesmo pipeline dos documentos
+ * (URL pré-assinada, conferência do tamanho e ClamAV; o cliente só vê a "limpa"). Vídeo: só o ID do YouTube ou do
+ * Vimeo (o portal monta o embed; nunca um iframe livre).
+ */
+export const publicacaoMidias = pgTable(
+  'publicacao_midias',
+  {
+    id: chaveUuid(),
+    tenantId: doTenant(),
+    publicacaoId: uuid()
+      .notNull()
+      .references(() => publicacoes.id),
+    tipo: tipoMidiaPublicacao().notNull(),
+    ordem: smallint().notNull().default(0),
+    legenda: varchar({ length: 200 }),
+    /** Obrigatório na imagem (acessibilidade) */
+    textoAlternativo: varchar({ length: 300 }),
+    // Imagem
+    chaveArquivo: text(),
+    nome: text(),
+    mime: text(),
+    tamanho: bigint({ mode: 'number' }),
+    estado: estadoAnexo().notNull().default('pendente_varredura'),
+    enviadoEm: timestamp({ withTimezone: true }),
+    varridoEm: timestamp({ withTimezone: true }),
+    assinatura: text(),
+    tentativasVarredura: smallint().notNull().default(0),
+    ultimoErro: text(),
+    // Vídeo
+    videoProvedor: provedorVideo(),
+    videoId: varchar({ length: 32 }),
+    ...autoria(),
+  },
+  (t) => [
+    index('publicacao_midias_publicacao_idx').on(t.publicacaoId, t.ordem),
+    check(
+      'publicacao_midias_tipo_chk',
+      sql`(${t.tipo} = 'imagem' AND ${t.chaveArquivo} IS NOT NULL AND ${t.textoAlternativo} IS NOT NULL
+           AND ${t.tamanho} BETWEEN 1 AND ${sql.raw(String(TAMANHO_MAXIMO_DA_IMAGEM))} AND ${t.videoId} IS NULL)
+        OR (${t.tipo} = 'video' AND ${t.videoProvedor} IS NOT NULL AND ${t.videoId} IS NOT NULL
+           AND ${t.chaveArquivo} IS NULL)`,
+    ),
+    check(
+      'publicacao_midias_video_id_chk',
+      sql`${t.videoId} IS NULL OR ${t.videoId} ~ '^[A-Za-z0-9_-]{6,32}$'`,
+    ),
+  ],
 )

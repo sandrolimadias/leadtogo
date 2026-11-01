@@ -50,6 +50,7 @@ const publicacao = (extra: Partial<Publicacao> = {}): Publicacao => ({
   criadoEm: '2026-10-21T10:00:00.000Z',
   empresas: [],
   tags: [],
+  midias: [],
   ...extra,
 })
 
@@ -243,6 +244,37 @@ describe('hub do portal: publicações', () => {
       ),
     )
     expect(s.tags.listar).toHaveBeenCalledWith('contato')
+  })
+
+  it('adiciona um vídeo do YouTube pelo link (Fase 4D)', async () => {
+    const adicionarVideo = vi.fn(async () =>
+      ok({
+        id: id(700),
+        tipo: 'video' as const,
+        ordem: 0,
+        legenda: null,
+        textoAlternativo: null,
+        imagem: null,
+        video: { provedor: 'youtube' as const, id: 'dQw4w9WgXcQ' },
+      }),
+    )
+    renderizar(servicos({ adicionarVideo }), '/portal')
+    const usuario = userEvent.setup()
+    const secao = await screen.findByRole('region', { name: 'Imagens e vídeo' })
+    const botao = within(secao).getByRole('button', { name: 'Adicionar vídeo' })
+    await usuario.type(within(secao).getByLabelText(/Link do vídeo/), 'https://exemplo.com/x')
+    expect(botao).toBeDisabled()
+    await usuario.clear(within(secao).getByLabelText(/Link do vídeo/))
+    await usuario.type(
+      within(secao).getByLabelText(/Link do vídeo/),
+      'https://youtu.be/dQw4w9WgXcQ',
+    )
+    await usuario.click(botao)
+    await waitFor(() =>
+      expect(adicionarVideo).toHaveBeenCalledWith(id(400), { url: 'https://youtu.be/dQw4w9WgXcQ' }),
+    )
+    // Imagem: a descrição é obrigatória antes de escolher o arquivo
+    expect(within(secao).getByRole('button', { name: 'Enviar imagem' })).toBeDisabled()
   })
 
   it('agendar exige a data; erro da API aparece no diálogo', async () => {

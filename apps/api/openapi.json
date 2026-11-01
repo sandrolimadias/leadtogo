@@ -21954,6 +21954,375 @@
         "tags": ["Portal do cliente: publicações"]
       }
     },
+    "/v1/portal-publicacoes/{id}/midias/{midiaId}": {
+      "delete": {
+        "description": "Exige `portal.publicar`. Exclusão lógica.",
+        "operationId": "PublicacoesController_removerMidia",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "midiaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sucesso, sem corpo"
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Tirar uma imagem ou vídeo",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
+    "/v1/portal-publicacoes/{id}/midias/{midiaId}/confirmar": {
+      "post": {
+        "description": "Exige `portal.publicar`. Confere a imagem no armazenamento (tamanho igual ao informado) e manda o antivírus varrer; o cliente só a vê \"limpa\". Idempotente.",
+        "operationId": "PublicacoesController_confirmarImagem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "midiaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MidiaDaPublicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Confirmar o envio da imagem",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
+    "/v1/portal-publicacoes/{id}/midias/imagens": {
+      "post": {
+        "description": "Exige `portal.publicar`. Passo 1: reserva a imagem (JPG, PNG ou WebP, até 10 MB, texto alternativo obrigatório) e devolve a URL pré-assinada para o navegador enviar o arquivo direto ao armazenamento. Passo 2: `POST /portal-publicacoes/{id}/midias/{midiaId}/confirmar`. No máximo 6 mídias por publicação (409 `limite_de_midias`). Sem o antivírus configurado: 503 `anexos_indisponiveis`.",
+        "operationId": "PublicacoesController_adicionarImagem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdicionarImagemEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvioDeImagem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível (`servico_indisponivel`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Adicionar uma imagem",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
+    "/v1/portal-publicacoes/{id}/midias/videos": {
+      "post": {
+        "description": "Exige `portal.publicar`. Só links https do YouTube ou do Vimeo; guarda só o provedor e o ID (o portal monta o embed sem cookies).",
+        "operationId": "PublicacoesController_adicionarVideo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdicionarVideoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MidiaDaPublicacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Adicionar um vídeo",
+        "tags": ["Portal do cliente: publicações"]
+      }
+    },
     "/v1/portal/2fa/conferir": {
       "post": {
         "description": "Código do aplicativo ou código de recuperação (que se gasta). Libera as rotas do portal nesta sessão. Limite de tentativas por acesso.",
@@ -28638,6 +29007,30 @@
         ],
         "additionalProperties": false
       },
+      "AdicionarImagemEntrada": {
+        "type": "object",
+        "properties": {
+          "textoAlternativo": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 300
+          },
+          "legenda": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "arquivo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PedirEnvioDeAnexoEntrada"
+              }
+            ]
+          }
+        },
+        "required": ["textoAlternativo", "arquivo"],
+        "additionalProperties": false
+      },
       "AdicionarParadasEntrada": {
         "type": "object",
         "properties": {
@@ -28652,6 +29045,22 @@
           }
         },
         "required": ["empresaIds"],
+        "additionalProperties": false
+      },
+      "AdicionarVideoEntrada": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "legenda": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": ["url"],
         "additionalProperties": false
       },
       "AjustarPosicao": {
@@ -35284,6 +35693,37 @@
         "required": ["documento", "envio"],
         "additionalProperties": false
       },
+      "EnvioDeImagem": {
+        "type": "object",
+        "properties": {
+          "midia": {
+            "$ref": "#/components/schemas/MidiaDaPublicacao"
+          },
+          "envio": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "cabecalhos": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "expiraEm": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": ["url", "cabecalhos", "expiraEm"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["midia", "envio"],
+        "additionalProperties": false
+      },
       "Erro": {
         "type": "object",
         "properties": {
@@ -39100,6 +39540,118 @@
         "required": ["nome", "cargo", "emailDeAcesso", "emails", "telefones", "aniversario"],
         "additionalProperties": false
       },
+      "MidiaDaPublicacao": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": ["imagem", "video"]
+          },
+          "ordem": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "legenda": {
+            "nullable": true,
+            "type": "string"
+          },
+          "textoAlternativo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "imagem": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "nome": {
+                "type": "string"
+              },
+              "tamanho": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "estado": {
+                "type": "string",
+                "enum": ["pendente_varredura", "limpo", "infectado"]
+              },
+              "enviada": {
+                "type": "boolean"
+              },
+              "url": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": ["nome", "tamanho", "estado", "enviada", "url"],
+            "additionalProperties": false
+          },
+          "video": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "provedor": {
+                "type": "string",
+                "enum": ["youtube", "vimeo"]
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["provedor", "id"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "tipo", "ordem", "legenda", "textoAlternativo", "imagem", "video"],
+        "additionalProperties": false
+      },
+      "MidiaDoPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": ["imagem", "video"]
+          },
+          "legenda": {
+            "nullable": true,
+            "type": "string"
+          },
+          "textoAlternativo": {
+            "nullable": true,
+            "type": "string"
+          },
+          "imagemUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "video": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "provedor": {
+                "type": "string",
+                "enum": ["youtube", "vimeo"]
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["provedor", "id"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "tipo", "legenda", "textoAlternativo", "imagemUrl", "video"],
+        "additionalProperties": false
+      },
       "MinhaEmpresaDoPortal": {
         "type": "object",
         "properties": {
@@ -41799,6 +42351,12 @@
               "required": ["id", "nome", "grupo"],
               "additionalProperties": false
             }
+          },
+          "midias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MidiaDaPublicacao"
+            }
           }
         },
         "required": [
@@ -41816,7 +42374,8 @@
           "autorNome",
           "criadoEm",
           "empresas",
-          "tags"
+          "tags",
+          "midias"
         ],
         "additionalProperties": false
       },
@@ -41870,6 +42429,12 @@
           },
           "comentariosAbertos": {
             "type": "boolean"
+          },
+          "midias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MidiaDoPortal"
+            }
           }
         },
         "required": [
@@ -41881,7 +42446,8 @@
           "reacoes",
           "minhasReacoes",
           "comentarios",
-          "comentariosAbertos"
+          "comentariosAbertos",
+          "midias"
         ],
         "additionalProperties": false
       },

@@ -138,6 +138,7 @@ export const publicacao = (extra: Partial<PublicacaoDoPortal> = {}): PublicacaoD
   publicadaEm: '2026-10-21T12:00:00.000Z',
   fixada: false,
   reacoes: { curtir: 0, parabens: 0 },
+  midias: [],
   minhasReacoes: [],
   comentarios: 0,
   comentariosAbertos: true,

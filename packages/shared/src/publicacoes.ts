@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { midiaDaPublicacaoSchema, midiaDoPortalSchema } from './midias.js'
 import { TAMANHO_MAXIMO_DE_PAGINA } from './paginacao.js'
 
 // Portal do cliente, Fase 3B: publicações (docs/plano_portal_cliente.md, seção 7). A equipe publica no feed;
@@ -133,6 +134,8 @@ export const publicacaoSchema = itemDePublicacaoSchema
     criadoEm: z.iso.datetime({ offset: true }),
     empresas: z.array(z.object({ id: z.uuid(), nome: z.string() })),
     tags: z.array(tagDoAlcanceSchema),
+    /** Imagens e vídeo (Fase 4D), na ordem */
+    midias: z.array(midiaDaPublicacaoSchema),
   })
   .meta({ id: 'Publicacao' })
 export type Publicacao = z.infer<typeof publicacaoSchema>
@@ -281,6 +284,8 @@ export const publicacaoDoPortalSchema = z
     /** Comentários visíveis */
     comentarios: z.number().int().nonnegative(),
     comentariosAbertos: z.boolean(),
+    /** Imagens limpas e vídeo (Fase 4D) */
+    midias: z.array(midiaDoPortalSchema),
   })
   .meta({ id: 'PublicacaoDoPortal' })
 export type PublicacaoDoPortal = z.infer<typeof publicacaoDoPortalSchema>

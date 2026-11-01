@@ -337,6 +337,13 @@
       "when": 1793488715230,
       "tag": "0047_portal_4c_alcance_por_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793490325900,
+      "tag": "0048_portal_4d_midias",
+      "breakpoints": true
     }
   ]
 }

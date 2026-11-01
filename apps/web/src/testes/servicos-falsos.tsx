@@ -472,6 +472,11 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
         excluir: vi.fn(async () => ok(undefined)),
         fixar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
         duplicar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        adicionarVideo: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        adicionarImagem: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        enviarImagem: vi.fn(async () => ok(undefined)),
+        confirmarImagem: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+        removerMidia: vi.fn(async () => ok(undefined)),
         bloquearComentarios: vi.fn(async () =>
           falha('indisponivel', 'Não configurado no teste.', 500),
         ),

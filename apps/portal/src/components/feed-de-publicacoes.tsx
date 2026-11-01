@@ -19,6 +19,8 @@ import { Dialog } from '@leadtogo/ui/dialog'
 import { Avatar } from '@leadtogo/ui/exibicao'
 import { Alert, EmptyState, Skeleton } from '@leadtogo/ui/feedback'
 import { Markdown } from '@leadtogo/ui/markdown'
+
+import { MidiasDoFeed } from './midias-do-feed'
 import { toast } from '@leadtogo/ui/toast'
 
 import { dataEHora } from '@/casca/rotulos'
@@ -287,6 +289,7 @@ function Cartao({ pub, nomeDoPortal }: { pub: PublicacaoDoPortal; nomeDoPortal: 
         </header>
         <h2 className="m-0 text-base leading-6 font-semibold">{pub.titulo}</h2>
         <Markdown texto={pub.corpo} />
+        <MidiasDoFeed midias={pub.midias} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2.5">
         <Reacoes pub={pub} aoMudar={() => undefined} />

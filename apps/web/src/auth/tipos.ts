@@ -1,4 +1,6 @@
 import type {
+  EnvioDeImagem,
+  MidiaDaPublicacao,
   AcessoDoPortal,
   ConfiguracaoDoPortal,
   IndicadoresDoHub,
@@ -703,6 +705,27 @@ export interface ServicosDoPortalNoCrm {
     fixar: (id: string, fixada: boolean) => Promise<Resultado<Publicacao>>
     /** Cópia em rascunho ("Cópia de …"), com o mesmo corpo e alcance */
     duplicar: (id: string) => Promise<Resultado<Publicacao>>
+    /** Imagens e vídeo (Fase 4D) */
+    adicionarVideo: (
+      id: string,
+      dados: { url: string; legenda?: string | null },
+    ) => Promise<Resultado<MidiaDaPublicacao>>
+    adicionarImagem: (
+      id: string,
+      dados: {
+        textoAlternativo: string
+        legenda?: string | null
+        arquivo: { nome: string; mime: string; tamanho: number }
+      },
+    ) => Promise<Resultado<EnvioDeImagem>>
+    /** O arquivo vai direto ao armazenamento (URL pré-assinada), com os cabeçalhos combinados */
+    enviarImagem: (
+      url: string,
+      arquivo: Blob,
+      cabecalhos: Record<string, string>,
+    ) => Promise<Resultado>
+    confirmarImagem: (id: string, midiaId: string) => Promise<Resultado<MidiaDaPublicacao>>
+    removerMidia: (id: string, midiaId: string) => Promise<Resultado>
     bloquearComentarios: (id: string, bloqueados: boolean) => Promise<Resultado<Publicacao>>
     comentarios: (id: string) => Promise<Resultado<ListaDeComentariosParaModeracao>>
     moderar: (

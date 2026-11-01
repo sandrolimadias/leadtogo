@@ -983,6 +983,57 @@ export const servicosReais: ServicosDeAcesso = {
             await api.POST('/v1/portal-publicacoes/{id}/duplicar', { params: { path: { id } } }),
           ),
         ),
+      adicionarVideo: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-publicacoes/{id}/midias/videos', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      adicionarImagem: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-publicacoes/{id}/midias/imagens', {
+              params: { path: { id } },
+              body: dados,
+            }),
+          ),
+        ),
+      enviarImagem: (url, arquivo, cabecalhos) =>
+        protegido(async () => {
+          const r = await globalThis.fetch(url, {
+            method: 'PUT',
+            body: arquivo,
+            headers: cabecalhos,
+          })
+          return r.ok
+            ? ok(undefined)
+            : {
+                ok: false,
+                erro: traduzirErro(r.status, {
+                  erro: 'envio_falhou',
+                  mensagem: 'Não consegui enviar a imagem.',
+                }),
+              }
+        }),
+      confirmarImagem: (id, midiaId) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-publicacoes/{id}/midias/{midiaId}/confirmar', {
+              params: { path: { id, midiaId } },
+            }),
+          ),
+        ),
+      removerMidia: (id, midiaId) =>
+        protegido(async () =>
+          semCorpo(
+            await api.DELETE('/v1/portal-publicacoes/{id}/midias/{midiaId}', {
+              params: { path: { id, midiaId } },
+            }),
+          ),
+        ),
       fixar: (id, fixada) =>
         protegido(async () =>
           daApi(

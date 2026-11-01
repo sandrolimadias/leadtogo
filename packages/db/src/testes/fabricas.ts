@@ -1417,3 +1417,16 @@ fabricas['documento_tags'] = fabricaDeTagDoAlcance(
 fabricas['aviso_tags'] = fabricaDeTagDoAlcance('aviso_tags', 'aviso_id', (tx, tenantId) =>
   inserirAviso(tx, tenantId),
 )
+
+// Portal, Fase 4D: mídia da publicação (um vídeo: não precisa de arquivo)
+fabricas['publicacao_midias'] = definirFabrica({
+  colunaAlteravel: 'legenda',
+  criar: async (tx, tenantId) => {
+    const publicacaoId = novoId()
+    const id = novoId()
+    await tx`INSERT INTO publicacoes (id, tenant_id, titulo, corpo) VALUES (${publicacaoId}, ${tenantId}, 'Rascunho', 'Corpo')`
+    await tx`INSERT INTO publicacao_midias (id, tenant_id, publicacao_id, tipo, video_provedor, video_id)
+      VALUES (${id}, ${tenantId}, ${publicacaoId}, 'video', 'youtube', 'dQw4w9WgXcQ')`
+    return id
+  },
+})

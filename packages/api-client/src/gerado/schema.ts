@@ -4276,6 +4276,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/portal-publicacoes/{id}/midias/{midiaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Tirar uma imagem ou vídeo
+         * @description Exige `portal.publicar`. Exclusão lógica.
+         */
+        delete: operations["PublicacoesController_removerMidia"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/midias/{midiaId}/confirmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar o envio da imagem
+         * @description Exige `portal.publicar`. Confere a imagem no armazenamento (tamanho igual ao informado) e manda o antivírus varrer; o cliente só a vê "limpa". Idempotente.
+         */
+        post: operations["PublicacoesController_confirmarImagem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/midias/imagens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adicionar uma imagem
+         * @description Exige `portal.publicar`. Passo 1: reserva a imagem (JPG, PNG ou WebP, até 10 MB, texto alternativo obrigatório) e devolve a URL pré-assinada para o navegador enviar o arquivo direto ao armazenamento. Passo 2: `POST /portal-publicacoes/{id}/midias/{midiaId}/confirmar`. No máximo 6 mídias por publicação (409 `limite_de_midias`). Sem o antivírus configurado: 503 `anexos_indisponiveis`.
+         */
+        post: operations["PublicacoesController_adicionarImagem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/portal-publicacoes/{id}/midias/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adicionar um vídeo
+         * @description Exige `portal.publicar`. Só links https do YouTube ou do Vimeo; guarda só o provedor e o ID (o portal monta o embed sem cookies).
+         */
+        post: operations["PublicacoesController_adicionarVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/portal/2fa/conferir": {
         parameters: {
             query?: never;
@@ -5737,8 +5817,17 @@ export interface components {
             reabrir: boolean;
             statusPossiveis: components["schemas"]["StatusDoChamado"][];
         };
+        AdicionarImagemEntrada: {
+            textoAlternativo: string;
+            legenda?: string | null;
+            arquivo: components["schemas"]["PedirEnvioDeAnexoEntrada"];
+        };
         AdicionarParadasEntrada: {
             empresaIds: string[];
+        };
+        AdicionarVideoEntrada: {
+            url: string;
+            legenda?: string | null;
         };
         AjustarPosicao: {
             latitude: number;
@@ -7570,6 +7659,18 @@ export interface components {
                 expiraEm: string;
             };
         };
+        EnvioDeImagem: {
+            midia: components["schemas"]["MidiaDaPublicacao"];
+            envio: {
+                /** Format: uri */
+                url: string;
+                cabecalhos: {
+                    [key: string]: string;
+                };
+                /** Format: date-time */
+                expiraEm: string;
+            };
+        };
         Erro: {
             statusCode: number;
             erro: string;
@@ -8541,6 +8642,42 @@ export interface components {
                 mes: number;
             } | null;
         };
+        MidiaDaPublicacao: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            tipo: "imagem" | "video";
+            ordem: number;
+            legenda: string | null;
+            textoAlternativo: string | null;
+            imagem: {
+                nome: string;
+                tamanho: number;
+                /** @enum {string} */
+                estado: "pendente_varredura" | "limpo" | "infectado";
+                enviada: boolean;
+                url: string | null;
+            } | null;
+            video: {
+                /** @enum {string} */
+                provedor: "youtube" | "vimeo";
+                id: string;
+            } | null;
+        };
+        MidiaDoPortal: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            tipo: "imagem" | "video";
+            legenda: string | null;
+            textoAlternativo: string | null;
+            imagemUrl: string | null;
+            video: {
+                /** @enum {string} */
+                provedor: "youtube" | "vimeo";
+                id: string;
+            } | null;
+        };
         MinhaEmpresaDoPortal: {
             razaoSocial: string;
             nomeFantasia: string | null;
@@ -9284,6 +9421,7 @@ export interface components {
                 nome: string;
                 grupo: string;
             }[];
+            midias: components["schemas"]["MidiaDaPublicacao"][];
         };
         PublicacaoDoPortal: {
             /** Format: uuid */
@@ -9300,6 +9438,7 @@ export interface components {
             minhasReacoes: components["schemas"]["TipoDeReacao"][];
             comentarios: number;
             comentariosAbertos: boolean;
+            midias: components["schemas"]["MidiaDoPortal"][];
         };
         PularParadaEntrada: {
             motivo: string;
@@ -27107,6 +27246,300 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_removerMidia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                midiaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso, sem corpo */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_confirmarImagem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                midiaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MidiaDaPublicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_adicionarImagem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdicionarImagemEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvioDeImagem"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Serviço indisponível (`servico_indisponivel`) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    PublicacoesController_adicionarVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdicionarVideoEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MidiaDaPublicacao"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Erro */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

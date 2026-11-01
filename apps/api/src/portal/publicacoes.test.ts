@@ -334,6 +334,7 @@ describe('o cliente: reações, comentários e denúncia', () => {
         'corpo',
         'fixada',
         'id',
+        'midias',
         'minhasReacoes',
         'publicadaEm',
         'reacoes',
@@ -649,7 +650,10 @@ describe('alcance por tags de contato (Fase 4C)', () => {
       situacao: 'publicada',
     })
     expect(r.status, JSON.stringify(r.body)).toBe(201)
-    expect(r.body.tags.map((t: { nome: string }) => t.nome)).toEqual(['Conselho', 'Diretoria'])
+    expect(r.body.tags.map((t: { nome: string }) => t.nome).sort()).toEqual([
+      'Conselho',
+      'Diretoria',
+    ])
     expect(r.body.metricas.alvo).toBe(1)
     const feed = async (cookie: string) =>
       (
@@ -737,5 +741,136 @@ describe('isolamento entre empresas da equipe', () => {
       ).status,
     ).toBe(404)
     expect((await crm('delete', x.d.cookie, `/portal-publicacoes/${doY.id}`)).status).toBe(404)
+  })
+})
+
+describe('imagens e vídeo (Fase 4D)', () => {
+  it('vídeo do YouTube: guarda só o ID, aparece no feed, sai com a exclusão; duplicar leva a mídia', async () => {
+    const c = await cenario()
+    const pub = await c.publicar({ titulo: 'Com vídeo' })
+    const ruim = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/videos`, {
+      url: 'https://exemplo.com/video.mp4',
+    })
+    expect(ruim.status).toBe(400)
+    expect(
+      (
+        await crm('post', c.leitor.cookie, `/portal-publicacoes/${pub.id}/midias/videos`, {
+          url: 'https://youtu.be/dQw4w9WgXcQ',
+        })
+      ).status,
+    ).toBe(403)
+    const r = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/videos`, {
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30',
+      legenda: 'Palestra de abertura',
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body).toMatchObject({
+      tipo: 'video',
+      legenda: 'Palestra de abertura',
+      video: { provedor: 'youtube', id: 'dQw4w9WgXcQ' },
+      imagem: null,
+    })
+    const detalhe = await crm('get', c.d.cookie, `/portal-publicacoes/${pub.id}`)
+    expect(detalhe.body.midias).toHaveLength(1)
+
+    const doFeed = async (cookie: string) =>
+      (
+        (await portal('get', '/portal/publicacoes', { cookie })).body.itens as {
+          id: string
+          midias: unknown[]
+        }[]
+      ).find((i) => i.id === pub.id)
+    expect((await doFeed(c.cookieA))?.midias).toEqual([
+      expect.objectContaining({ tipo: 'video', video: { provedor: 'youtube', id: 'dQw4w9WgXcQ' } }),
+    ])
+
+    const copia = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/duplicar`)
+    expect(copia.body.midias).toEqual([
+      expect.objectContaining({ video: { provedor: 'youtube', id: 'dQw4w9WgXcQ' } }),
+    ])
+
+    const midiaId = (r.body as { id: string }).id
+    expect(
+      (await crm('delete', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/${midiaId}`))
+        .status,
+    ).toBe(204)
+    expect((await doFeed(c.cookieA))?.midias).toEqual([])
+    expect(
+      (await crm('delete', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/${midiaId}`))
+        .status,
+    ).toBe(404)
+  })
+
+  it('no máximo 6 mídias; publicação de outra empresa-cliente não mostra a mídia', async () => {
+    const c = await cenario()
+    const soB = await c.publicar({ alcance: 'empresas', empresaIds: [c.empresaB] })
+    for (let i = 0; i < 6; i++) {
+      const r = await crm('post', c.editor.cookie, `/portal-publicacoes/${soB.id}/midias/videos`, {
+        url: 'https://vimeo.com/76979871',
+      })
+      expect(r.status).toBe(201)
+    }
+    const setima = await crm(
+      'post',
+      c.editor.cookie,
+      `/portal-publicacoes/${soB.id}/midias/videos`,
+      {
+        url: 'https://vimeo.com/76979871',
+      },
+    )
+    expect(setima.status).toBe(409)
+    expect(setima.body.erro).toBe('limite_de_midias')
+    // O cliente A não vê a publicação nem, direto no banco, as mídias dela
+    const visiveis = await noTenant(c.d.tenantId, async (tx) => {
+      await tx`SELECT set_config('app.portal_acesso_id', ${c.acessoA.acessoId}, true)`
+      await tx`SELECT set_config('app.portal_empresa_id', ${c.empresaA}, true)`
+      await tx`SELECT set_config('app.portal_contato_id', ${c.acessoA.contatoId}, true)`
+      return tx`SELECT id FROM publicacao_midias WHERE publicacao_id = ${soB.id}`
+    })
+    expect(visiveis).toHaveLength(0)
+  })
+
+  it('imagem: tipo fora da lista é 400; reservada, devolve a URL de envio e o cliente só a vê depois de limpa', async () => {
+    const c = await cenario()
+    const pub = await c.publicar({ titulo: 'Com imagem' })
+    const svg = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/imagens`, {
+      textoAlternativo: 'Logo',
+      arquivo: { nome: 'logo.svg', mime: 'image/svg+xml', tamanho: 100 },
+    })
+    expect(svg.status).toBe(400)
+    const r = await crm('post', c.editor.cookie, `/portal-publicacoes/${pub.id}/midias/imagens`, {
+      textoAlternativo: 'Equipe reunida',
+      arquivo: { nome: 'foto.jpg', mime: 'image/jpeg', tamanho: 1000 },
+    })
+    expect(r.status, JSON.stringify(r.body)).toBe(201)
+    expect(r.body.envio.url).toMatch(/^https?:\/\//)
+    expect(r.body.envio.cabecalhos).toEqual({ 'Content-Type': 'image/jpeg' })
+    expect(r.body.midia).toMatchObject({
+      tipo: 'imagem',
+      textoAlternativo: 'Equipe reunida',
+      imagem: { estado: 'pendente_varredura', enviada: false, url: null },
+    })
+    // Em verificação: o cliente não vê
+    const feed = (await portal('get', '/portal/publicacoes', { cookie: c.cookieA })).body.itens as {
+      id: string
+      midias: unknown[]
+    }[]
+    expect(feed.find((i) => i.id === pub.id)?.midias).toEqual([])
+    // Limpa (o antivírus liberou): aparece com URL de leitura
+    await noTenant(
+      c.d.tenantId,
+      (tx) =>
+        tx`UPDATE publicacao_midias SET estado = 'limpo', enviado_em = now(), varrido_em = now()
+           WHERE id = ${(r.body as { midia: { id: string } }).midia.id}`,
+    )
+    const depois = (await portal('get', '/portal/publicacoes', { cookie: c.cookieA })).body
+      .itens as {
+      id: string
+      midias: { tipo: string; imagemUrl: string | null; textoAlternativo: string }[]
+    }[]
+    const midias = depois.find((i) => i.id === pub.id)?.midias ?? []
+    expect(midias).toHaveLength(1)
+    expect(midias[0]?.imagemUrl).toMatch(/^https?:\/\//)
+    expect(midias[0]?.textoAlternativo).toBe('Equipe reunida')
   })
 })
