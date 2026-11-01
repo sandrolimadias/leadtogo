@@ -1,5 +1,6 @@
 import type {
   EnvioDeImagem,
+  ItemDeFormulario,
   MidiaDaPublicacao,
   AcessoDoPortal,
   ConfiguracaoDoPortal,
@@ -128,6 +129,9 @@ import type {
 } from '@leadtogo/api-client'
 import type {
   AbrirChamadoEntrada,
+  Formulario,
+  RespostaDeFormulario,
+  SalvarFormularioEntrada,
   AlterarChamadoEntrada,
   AlterarPontoDePartidaEntrada,
   AlterarAreaEntrada,
@@ -733,6 +737,34 @@ export interface ServicosDoPortalNoCrm {
       comentarioId: string,
       dados: ModerarComentarioEntrada,
     ) => Promise<Resultado<ListaDeComentariosParaModeracao>>
+  }
+  /** Formulários do portal (Fase 4E): `portal.ver`/`formularios` para ver, `formularios` para editar */
+  formularios: {
+    listar: (consulta?: {
+      situacao?: 'rascunho' | 'publicado' | 'arquivado'
+      pagina?: number
+      porPagina?: number
+    }) => Promise<Resultado<{ itens: ItemDeFormulario[]; total: number }>>
+    obter: (id: string) => Promise<Resultado<Formulario>>
+    criar: (dados: SalvarFormularioEntrada) => Promise<Resultado<Formulario>>
+    salvar: (id: string, dados: SalvarFormularioEntrada) => Promise<Resultado<Formulario>>
+    publicar: (id: string) => Promise<Resultado<Formulario>>
+    arquivar: (id: string, arquivado: boolean) => Promise<Resultado<Formulario>>
+    duplicar: (id: string) => Promise<Resultado<Formulario>>
+    excluir: (id: string) => Promise<Resultado>
+    segredo: (id: string) => Promise<Resultado<{ segredo: string }>>
+    respostas: (
+      id: string,
+      consulta?: { pagina?: number; porPagina?: number },
+    ) => Promise<
+      Resultado<{
+        itens: RespostaDeFormulario[]
+        total: number
+        campos: { id: string; rotulo: string; tipo: string }[]
+      }>
+    >
+    /** O CSV das respostas (texto), para baixar */
+    exportar: (id: string) => Promise<Resultado<{ nome: string; conteudo: Blob }>>
   }
   /** Avisos do portal (Fase 3E): `portal.ver`/`avisos` para ver, `avisos` para enviar, agendar e cancelar */
   avisos: {

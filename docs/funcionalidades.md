@@ -646,6 +646,23 @@ Indicadores (chamados abertos pelo portal, tempo de resposta, avaliação média
 ### Isolamento (resumo)
 Duas camadas no banco: o **tenant** (RLS como em todo o sistema) e a **empresa-cliente** (variáveis `app.portal_*` preenchidas só pela sessão do portal, com políticas restritivas). As tabelas internas **negam tudo** à sessão do portal. Detalhe em `modelagem_banco.md`.
 
+## 9H. Portal do Cliente, Fase 4E (construtor de formulários)
+
+Plano em `plano_portal_formularios_e_eventos.md` (seção 7). Hub: Portal do Cliente → aba **Formulários**; cliente: `/formularios/<id>` (logado) e `/f/<endereço>` (público, sem login).
+
+### Permissões (catálogo v12; só o Administrador recebe)
+`portal.formularios` (criar, editar, publicar, arquivar, duplicar, excluir, gerar o segredo dos webhooks e exportar). `portal.ver` vê a lista e as respostas.
+
+### Construtor
+- **Campos:** texto curto e longo, e-mail, telefone, CNPJ, CPF, número, valor em R$, data, hora, escolha única, múltipla escolha, sim/não, avaliação (1 a 5 estrelas), nota de 0 a 10, aceite, campo oculto; de apresentação: título de seção, texto informativo (Markdown restrito) e **quebra de página** (etapas). Cada campo: rótulo, identificador, ajuda, obrigatório, largura (inteira, metade, um terço), opções, mínimo e máximo. Até 200 campos.
+- **Condicionais:** "Mostrar só quando" com uma ou mais condições (é igual, é diferente, contém, maior, menor, preenchido, vazio), combinadas por "todas" ou "qualquer", **só sobre campos anteriores** (nunca há ciclo). Campo escondido não é validado nem guardado.
+- **Preenchimento automático (logado):** o campo pode vir do cadastro (nome, e-mail, telefone e cargo da pessoa; CNPJ, razão social, nome fantasia, cidade e UF da empresa) e ficar **travado** (só conferência). O servidor monta os valores; o travado sempre vale o do cadastro, mesmo que o navegador mande outro.
+- **Botões e ações:** até 3 botões; cada um com ações, cada ação com condição opcional: **enviar e-mail** (para endereços fixos ou para o e-mail digitado num campo; assunto e mensagem com `{{id_do_campo}}`) e **disparar webhook** (POST JSON assinado com `X-Leadtogo-Assinatura`, HMAC-SHA256 com o segredo do formulário; em produção só https e nunca rede interna; até 3 tentativas). As ações rodam no worker, depois de gravar a resposta; cada execução fica registrada.
+- **Versões:** salvar guarda o **rascunho**; **Publicar** congela uma versão nova. Cada resposta guarda a versão; quem responde com versão antiga recebe 409 e recarrega. Arquivar para de aceitar respostas (as que existem ficam).
+- **Acesso:** só clientes logados, ou **público** pelo endereço `/f/<endereço>` (aceite de privacidade obrigatório, **captcha Cloudflare Turnstile** opcional por formulário quando as chaves estão configuradas, campo isca e limite de 20 respostas por hora por IP).
+- **Respostas:** tabela com a pessoa e a empresa (logados) e uma coluna por campo; **exportar CSV** (UTF-8 com BOM e `;`, abre no Excel; conteúdo que começa com `=`, `+`, `-` ou `@` é neutralizado). Excel e PDF entram com os relatórios de inscritos (4G).
+- **Finalidades:** livre, inscrição em evento, avaliação de evento, satisfação do chamado e "Seja um associado" (usadas pelas fases 4F a 4H).
+
 ## 9D. Portal do Cliente, Fase 3B (publicações)
 
 A equipe publica **comunicados** no feed do portal; o cliente lê, reage, comenta e denuncia. Hub: Portal do Cliente → aba **Publicações**; cliente: **Início** do portal. Roteiro em `roteiro_teste_portal_3b.md`.

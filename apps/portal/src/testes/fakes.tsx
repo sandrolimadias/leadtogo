@@ -9,6 +9,7 @@ import type {
   ItemDeChamadoDoPortal,
   SessaoDoPortal,
 } from '@leadtogo/api-client'
+import { definicaoDeFormularioSchema, type FormularioParaResponder } from '@leadtogo/shared'
 import { render } from '@testing-library/react'
 import { createMemoryHistory, type RouterHistory } from '@tanstack/react-router'
 import { vi } from 'vitest'
@@ -44,6 +45,35 @@ export const preferenciasPadrao: PreferenciasDoPortal = {
   emailAvisos: true,
   tema: 'sistema',
 }
+
+export const formularioParaResponder = (
+  extra: Partial<FormularioParaResponder> = {},
+): FormularioParaResponder => ({
+  id: id(940),
+  nome: 'Inscrição no encontro',
+  versao: 2,
+  definicao: definicaoDeFormularioSchema.parse({
+    campos: [
+      { id: 'nome', tipo: 'texto', rotulo: 'Nome', obrigatorio: true },
+      { id: 'email', tipo: 'email', rotulo: 'E-mail', obrigatorio: true },
+      {
+        id: 'vai',
+        tipo: 'selecao',
+        rotulo: 'Vai ao jantar?',
+        obrigatorio: true,
+        opcoes: [
+          { valor: 'sim', rotulo: 'Sim' },
+          { valor: 'nao', rotulo: 'Não' },
+        ],
+      },
+    ],
+    botoes: [{ id: 'enviar', rotulo: 'Confirmar inscrição' }],
+  }),
+  preenchidos: { nome: 'Daniel Prates', email: 'daniel@usidantec.com.br' },
+  travados: ['nome'],
+  captchaChave: null,
+  ...extra,
+})
 
 export const meuPerfil = (extra: Partial<MeuPerfilDoPortal> = {}): MeuPerfilDoPortal => ({
   nome: 'Daniel Prates',
@@ -172,6 +202,16 @@ export function servicosFalsos(troca: Partial<ServicosDoPortal> = {}): ServicosD
       ),
       consumir: vi.fn(async () => ok(sessao())),
       entrarComCodigo: vi.fn(async () => ok(sessao())),
+    },
+    formularios: {
+      abrir: vi.fn(async () => ok(formularioParaResponder())),
+      responder: vi.fn(async () =>
+        ok({ id: id(950), mensagem: 'Recebemos sua resposta. Obrigado!' }),
+      ),
+      abrirPublico: vi.fn(async () =>
+        ok({ ...formularioParaResponder(), preenchidos: {}, travados: [] }),
+      ),
+      responderPublico: vi.fn(async () => ok({ id: id(951), mensagem: 'Obrigado!' })),
     },
     empresas: {
       listar: vi.fn(async () =>

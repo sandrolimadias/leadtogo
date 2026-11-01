@@ -6,6 +6,7 @@ import type {
   ListaDeEventosDoPortal,
   ProximosEventosDoPortal,
   EmpresaDoAcesso,
+  RespostaEnviada,
   MeuPerfilDoPortal,
   MinhaEmpresaDoPortal,
   PreferenciasDoPortal,
@@ -26,7 +27,12 @@ import type {
   SessaoDoPortal,
 } from '@leadtogo/api-client'
 
-import type { MotivoDeDenuncia, TipoDeReacao } from '@leadtogo/shared'
+import type {
+  EnviarRespostaEntrada,
+  FormularioParaResponder,
+  MotivoDeDenuncia,
+  TipoDeReacao,
+} from '@leadtogo/shared'
 
 import type { Resultado } from './resultado'
 
@@ -54,6 +60,16 @@ export interface ServicosDoPortal {
       codigo: string
       aceitaPrivacidade?: boolean
     }) => Promise<Resultado<SessaoDoPortal>>
+  }
+  /** Formulários (Fase 4E): logado (com preenchimento automático) e público (sem login) */
+  formularios: {
+    abrir: (id: string) => Promise<Resultado<FormularioParaResponder>>
+    responder: (id: string, dados: EnviarRespostaEntrada) => Promise<Resultado<RespostaEnviada>>
+    abrirPublico: (slug: string) => Promise<Resultado<FormularioParaResponder>>
+    responderPublico: (
+      slug: string,
+      dados: EnviarRespostaEntrada,
+    ) => Promise<Resultado<RespostaEnviada>>
   }
   /** As empresas-clientes do mesmo e-mail e a troca entre elas (Fase 4B) */
   empresas: {

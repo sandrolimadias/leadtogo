@@ -1,4 +1,5 @@
 import type { ErroDaApi } from '@leadtogo/api-client'
+import type { Formulario } from '@leadtogo/shared'
 
 import { api } from '@/api/cliente'
 
@@ -11,6 +12,7 @@ import type {
   Resultado,
   ServicosDeAcesso,
   ServicosDeCadastro,
+  ServicosDoPortalNoCrm,
 } from './tipos'
 
 const ok = <T>(dados: T): Resultado<T> => ({ ok: true, dados })
@@ -1069,6 +1071,85 @@ export const servicosReais: ServicosDeAcesso = {
             }),
           ),
         ),
+    },
+    formularios: {
+      listar: (consulta = {}) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-formularios', { params: { query: consulta } })),
+        ),
+      obter: (id) =>
+        protegido(async () =>
+          daApi(await api.GET('/v1/portal-formularios/{id}', { params: { path: { id } } })),
+        ) as Promise<Resultado<Formulario>>,
+      criar: (dados) =>
+        protegido(async () =>
+          daApi(await api.POST('/v1/portal-formularios', { body: dados })),
+        ) as Promise<Resultado<Formulario>>,
+      salvar: (id, dados) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/portal-formularios/{id}', { params: { path: { id } }, body: dados }),
+          ),
+        ) as Promise<Resultado<Formulario>>,
+      publicar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-formularios/{id}/publicar', { params: { path: { id } } }),
+          ),
+        ) as Promise<Resultado<Formulario>>,
+      arquivar: (id, arquivado) =>
+        protegido(async () =>
+          daApi(
+            await api.PUT('/v1/portal-formularios/{id}/arquivado', {
+              params: { path: { id } },
+              body: { arquivado },
+            }),
+          ),
+        ) as Promise<Resultado<Formulario>>,
+      duplicar: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-formularios/{id}/duplicar', { params: { path: { id } } }),
+          ),
+        ) as Promise<Resultado<Formulario>>,
+      excluir: (id) =>
+        protegido(async () =>
+          semCorpo(await api.DELETE('/v1/portal-formularios/{id}', { params: { path: { id } } })),
+        ),
+      segredo: (id) =>
+        protegido(async () =>
+          daApi(
+            await api.POST('/v1/portal-formularios/{id}/segredo', { params: { path: { id } } }),
+          ),
+        ),
+      respostas: (id, consulta = {}) =>
+        protegido(async () =>
+          daApi(
+            await api.GET('/v1/portal-formularios/{id}/respostas', {
+              params: { path: { id }, query: consulta },
+            }),
+          ),
+        ) as ReturnType<ServicosDoPortalNoCrm['formularios']['respostas']>,
+      exportar: (id) =>
+        protegido(async () => {
+          const r = await api.GET('/v1/portal-formularios/{id}/respostas.csv', {
+            params: { path: { id } },
+            parseAs: 'blob',
+          })
+          if (!r.response.ok || !r.data) {
+            return {
+              ok: false,
+              erro: traduzirErro(r.response.status, {
+                erro: 'exportacao_falhou',
+                mensagem: 'Não consegui exportar as respostas.',
+              }),
+            }
+          }
+          const nome =
+            /filename="([^"]+)"/.exec(r.response.headers.get('Content-Disposition') ?? '')?.[1] ??
+            'respostas.csv'
+          return ok({ nome, conteudo: r.data })
+        }),
     },
     avisos: {
       listar: (consulta = {}) =>

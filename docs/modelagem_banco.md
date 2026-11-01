@@ -1024,6 +1024,17 @@ Cinco tabelas novas, com `tenant_id`, **RLS habilitado e forçado** e teste de i
 
 **Portal:** lê só mídia não excluída de publicação que ele enxerga e, na imagem, só a `limpa` e enviada; nunca grava. O antivírus usa o mesmo processador dos anexos e documentos (job `tipo: 'midia'`, evento `portal.varrer_midia`).
 
+## Portal, Fase 4E (migração 0049, só expansão)
+
+| Tabela | Colunas principais | Regras |
+|---|---|---|
+| `formularios` | nome, finalidade, acesso (`publico`, `logado`), situacao (`rascunho`, `publicado`, `arquivado`), slug (único no sistema), captcha, definicao (jsonb, o rascunho), versao_publicada, tem_mudancas, segredo_webhook (cifrado) | Publicado exige versão |
+| `formulario_versoes` | formulario_id, versao, definicao, publicada_em, publicada_por | Imutável; única por formulário e versão |
+| `formulario_respostas` | formulario_id, versao, origem (`portal`, `publico`, `crm`), botao, respostas (jsonb), acesso_id, contato_id, empresa_id, contexto_tipo + contexto_id, ip, agente, consentimento_em | Contexto: os dois ou nenhum |
+| `formulario_acoes_execucoes` | resposta_id, indice, tipo, situacao (`pendente`, `ok`, `falhou`), tentativas, status_http, detalhe | Uma por resposta e ação |
+
+**Portal:** lê formulário **publicado** e as versões dele; grava e lê só as **próprias** respostas (`acesso_id` da sessão, origem `portal`); as execuções ficam fechadas. **Público:** `app_formulario_publico(slug)` (SECURITY DEFINER do dono) devolve o tenant de um formulário publicado e público; a resposta pública é gravada no contexto do tenant pela API.
+
 ## Busca global (migração 0042, só expansão; plano em `plano_busca_global.md`)
 
 **Índice novo:** `oportunidades_titulo_trgm_idx`, GIN em `lower(f_unaccent(titulo)) gin_trgm_ops` (busca das oportunidades pelo título, sem acento). Empresas e contatos já tinham os seus (0017 e 0018). Os índices trigram são criados por SQL na migração e não aparecem no schema do Drizzle nem nos snapshots, por isso o `db:generate` não os enxerga nem tenta apagá-los.

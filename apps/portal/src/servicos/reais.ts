@@ -1,6 +1,8 @@
 import { api } from '@/api/cliente'
 
 import { erroDeRede, falha, ok, type Resultado, traduzirErro } from './resultado'
+import type { FormularioParaResponder } from '@leadtogo/shared'
+
 import type { ServicosDoPortal } from './tipos'
 
 type RespostaApi<T> = { data?: T; error?: unknown; response: Response }
@@ -44,6 +46,35 @@ export const servicosReais: ServicosDoPortal = {
       ),
     entrarComCodigo: (dados) =>
       protegido(async () => daApi(await api.POST('/v1/portal/entrada/codigo', { body: dados }))),
+  },
+  formularios: {
+    abrir: (id) =>
+      protegido(async () =>
+        daApi(await api.GET('/v1/portal/formularios/{id}', chave(id))),
+      ) as Promise<Resultado<FormularioParaResponder>>,
+    responder: (id, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/portal/formularios/{id}/respostas', { ...chave(id), body: dados }),
+        ),
+      ),
+    abrirPublico: (slug) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/portal/publico/formularios/{slug}', {
+            params: { path: { slug } },
+          }),
+        ),
+      ) as Promise<Resultado<FormularioParaResponder>>,
+    responderPublico: (slug, dados) =>
+      protegido(async () =>
+        daApi(
+          await api.POST('/v1/portal/publico/formularios/{slug}/respostas', {
+            params: { path: { slug } },
+            body: dados,
+          }),
+        ),
+      ),
   },
   empresas: {
     listar: () => protegido(async () => daApi(await api.GET('/v1/portal/empresas'))),
