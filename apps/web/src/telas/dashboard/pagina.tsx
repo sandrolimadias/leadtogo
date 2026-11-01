@@ -1,4 +1,3 @@
-import { PERIODOS_DO_DASHBOARD, type PeriodoDoDashboard } from '@leadtogo/shared'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { CircleCheck, CircleX, Clock } from 'lucide-react'
@@ -30,7 +29,8 @@ import { CardDeChamadosPendentes } from '@/telas/chamados/cartao'
 
 const rota = getRouteApi('/_autenticado/')
 
-const ROTULO: Record<PeriodoDoDashboard, { cheio: string; curto: string }> = {
+const PERIODOS = ['mes', 'mes_anterior', 'trimestre'] as const
+const ROTULO: Record<(typeof PERIODOS)[number], { cheio: string; curto: string }> = {
   mes: { cheio: 'Mês atual', curto: 'Mês' },
   mes_anterior: { cheio: 'Mês anterior', curto: 'Anterior' },
   trimestre: { cheio: 'Trimestre', curto: 'Trimestre' },
@@ -109,7 +109,7 @@ export function PaginaDoDashboard() {
   const celular = useDispositivo() === 'celular'
   const busca = rota.useSearch({ select: (s) => lerBusca(s) })
   const navegar = rota.useNavigate()
-  const periodo: PeriodoDoDashboard = busca.periodo ?? 'mes'
+  const periodo: (typeof PERIODOS)[number] = busca.periodo ?? 'mes'
 
   const mudar = (patch: Partial<BuscaDoDashboard>) =>
     void navegar({
@@ -172,7 +172,7 @@ export function PaginaDoDashboard() {
         </div>
         <SegmentedControl
           label="Período"
-          options={PERIODOS_DO_DASHBOARD.map((p) => ({
+          options={PERIODOS.map((p) => ({
             value: p,
             label: celular ? ROTULO[p].curto : ROTULO[p].cheio,
           }))}

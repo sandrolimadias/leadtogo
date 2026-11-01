@@ -1,5 +1,6 @@
 import {
   char,
+  customType,
   geometry,
   index,
   integer,
@@ -80,6 +81,32 @@ export const municipios = pgTable(
 )
 
 /** Cache do JSON completo da Minha Receita (dado público, compartilhado entre tenants; validade 30 dias). */
+/** Polígono(s) de um município (SRID 4326), lido e gravado como GeoJSON pela consulta (ST_AsGeoJSON). */
+const multipoligono = customType<{ data: string; driverData: string }>({
+  dataType: () => 'geometry(MultiPolygon, 4326)',
+})
+
+/**
+ * Contorno simplificado de cada município (malha municipal do IBGE), para os mapas de densidade do Dashboard.
+ * Referência global, como `municipios`: sem tenant_id e sem RLS; vem de seeds/dados/municipio_contornos.json.
+ */
+export const municipioContornos = pgTable(
+  'municipio_contornos',
+  {
+    municipioCodigo: integer()
+      .primaryKey()
+      .references(() => municipios.codigoIbge),
+    uf: char({ length: 2 })
+      .notNull()
+      .references(() => estados.uf),
+    contorno: multipoligono().notNull(),
+    /** De onde veio a malha (ex.: "IBGE, malha municipal") */
+    fonte: text().notNull(),
+    atualizadoEm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('municipio_contornos_uf_idx').on(t.uf)],
+)
+
 export const receitaConsultas = pgTable('receita_consultas', {
   cnpj: varchar({ length: 14 }).primaryKey(),
   dados: jsonb().notNull(),

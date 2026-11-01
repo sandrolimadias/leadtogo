@@ -54,6 +54,7 @@ export function conectarDrizzleOwner() {
 
 /** Tabelas de referência globais, na ordem em que podem ser apagadas (quem aponta para quem vem antes). */
 const REFERENCIAS_GLOBAIS = [
+  'municipio_contornos',
   'municipios',
   'microrregioes',
   'cnaes',

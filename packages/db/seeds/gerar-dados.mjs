@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Gera os arquivos de seeds/dados/*.json a partir das fontes oficiais. Uso MANUAL, só para
 // atualizar os dados (os arquivos gerados são versionados); o `pnpm db:seed` nunca baixa nada.
-//   node packages/db/seeds/gerar-dados.mjs [estados] [paises] [portes] [qualificacoes] [cnaes] [municipios] [microrregioes]
+//   node packages/db/seeds/gerar-dados.mjs [estados] [paises] [portes] [qualificacoes] [cnaes] [municipios] [microrregioes] [contornos]
 // Sem argumentos, gera tudo. Fontes, URLs e datas: seeds/dados/README.md.
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -26,9 +26,13 @@ async function buscar(url, tipo = 'json', local = url.split('/').pop()) {
   return resposta.text()
 }
 
-async function gravar(nome, dados) {
+async function gravar(nome, dados, { compacto = false } = {}) {
   await mkdir(DESTINO, { recursive: true })
-  await writeFile(`${DESTINO}${nome}.json`, `${JSON.stringify(dados, null, 2)}\n`)
+  // compacto: um registro por linha (os contornos teriam um número por linha e o arquivo triplicaria)
+  const json = compacto
+    ? `[\n${dados.map((d) => JSON.stringify(d)).join(',\n')}\n]`
+    : JSON.stringify(dados, null, 2)
+  await writeFile(`${DESTINO}${nome}.json`, `${json}\n`)
   console.log(`${nome}.json: ${dados.length} registros`)
 }
 
@@ -58,6 +62,83 @@ function centroDaMalha(geometria) {
     if (!melhor || c.area > melhor.area) melhor = c
   }
   return melhor
+}
+
+// Simplificação de Douglas-Peucker num anel (graus). Mantém o primeiro e o último ponto (o anel fecha).
+function simplificarAnel(anel, tolerancia) {
+  if (anel.length <= 4) return anel
+  const manter = new Uint8Array(anel.length)
+  manter[0] = 1
+  manter[anel.length - 1] = 1
+  const pilha = [[0, anel.length - 1]]
+  while (pilha.length > 0) {
+    const [i, j] = pilha.pop()
+    const [x1, y1] = anel[i]
+    const [x2, y2] = anel[j]
+    const dx = x2 - x1
+    const dy = y2 - y1
+    const comprimento = Math.hypot(dx, dy)
+    let maior = -1
+    let indice = -1
+    for (let k = i + 1; k < j; k++) {
+      const [x, y] = anel[k]
+      const d =
+        comprimento === 0
+          ? Math.hypot(x - x1, y - y1)
+          : Math.abs(dy * x - dx * y + x2 * y1 - y2 * x1) / comprimento
+      if (d > maior) {
+        maior = d
+        indice = k
+      }
+    }
+    if (maior > tolerancia) {
+      manter[indice] = 1
+      pilha.push([i, indice], [indice, j])
+    }
+  }
+  const resultado = anel.filter((_, k) => manter[k] === 1)
+  return resultado.length >= 4 ? resultado : anel
+}
+
+const arredondar = (n) => Math.round(n * 1e4) / 1e4
+
+/** O ponto está dentro do anel? (raio para a direita) */
+function dentroDoAnel([x, y], anel) {
+  let dentro = false
+  for (let i = 0, j = anel.length - 1; i < anel.length; j = i++) {
+    const [xi, yi] = anel[i]
+    const [xj, yj] = anel[j]
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) dentro = !dentro
+  }
+  return dentro
+}
+
+/**
+ * Polígonos de verdade: algumas cópias da malha gravam ilhas como anéis internos ("buracos") que ficam FORA
+ * do anel externo, o que deixa a geometria inválida. Anel interno fora do externo vira polígono próprio.
+ */
+function separarIlhas(poligonos) {
+  const saida = []
+  for (const [externo, ...internos] of poligonos) {
+    const buracos = []
+    for (const anel of internos) {
+      if (dentroDoAnel(anel[0], externo)) buracos.push(anel)
+      else saida.push([anel])
+    }
+    saida.push([externo, ...buracos])
+  }
+  return saida
+}
+
+/** MultiPolygon simplificado e com 4 casas (~11 m): basta para o mapa de densidade do Dashboard. */
+function contornoSimplificado(geometria, tolerancia = 0.002) {
+  const brutos = geometria.type === 'Polygon' ? [geometria.coordinates] : geometria.coordinates
+  const poligonos = separarIlhas(brutos)
+  return poligonos.map((poligono) =>
+    poligono.map((anel) =>
+      simplificarAnel(anel, tolerancia).map(([x, y]) => [arredondar(x), arredondar(y)]),
+    ),
+  )
 }
 
 const ufDe = (m) =>
@@ -218,6 +299,35 @@ const geradores = {
         const descricao = resto.slice(0, -1).join(',')
         return { codigo: Number(codigo), descricao }
       }),
+    )
+  },
+  // Contornos dos municípios (malha municipal do IBGE, qualidade intermediária), simplificados, para os mapas
+  // de densidade do Dashboard. Só das UFs em CONTORNOS_UFS (padrão: ES), por tamanho. Com DADOS_LOCAIS, lê
+  // malha_<UF>.json (aceita `codarea`, do IBGE, ou `id`, de cópias derivadas da mesma malha).
+  async contornos() {
+    const ufs = (process.env['CONTORNOS_UFS'] ?? 'ES').split(',').map((u) => u.trim().toUpperCase())
+    const estados = await buscar(`${IBGE}/v1/localidades/estados`, 'json', 'estados.json')
+    const lista = []
+    for (const uf of ufs) {
+      const estado = estados.find((e) => e.sigla === uf)
+      if (!estado) throw new Error(`UF desconhecida: ${uf}`)
+      const malha = await buscar(
+        `${IBGE}/v3/malhas/estados/${estado.id}?intrarregiao=municipio&qualidade=intermediaria&formato=application/vnd.geo+json`,
+        'json',
+        `malha_${uf}.json`,
+      )
+      for (const f of malha.features) {
+        lista.push({
+          codigo_ibge: Number(f.properties.codarea ?? f.properties.id),
+          uf,
+          poligonos: contornoSimplificado(f.geometry),
+        })
+      }
+    }
+    await gravar(
+      'municipio_contornos',
+      lista.sort((a, b) => a.codigo_ibge - b.codigo_ibge),
+      { compacto: true },
     )
   },
 }

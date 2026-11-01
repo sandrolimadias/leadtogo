@@ -96,6 +96,10 @@ export const atividades = pgTable(
     index('atividades_oportunidade_idx').on(t.tenantId, t.oportunidadeId),
     index('atividades_contato_idx').on(t.tenantId, t.contatoId, t.dataInicio.desc()),
     index('atividades_importacao_idx').on(t.tenantId, t.importacaoId),
+    // Dashboard: atividades realizadas no período
+    index('atividades_realizadas_idx')
+      .on(t.tenantId, t.realizadaEm)
+      .where(sql`${t.situacao} = 'realizada'`),
     uniqueIndex('atividades_id_externo_uq')
       .on(t.tenantId, t.origem, t.idExterno)
       .where(sql`${t.idExterno} IS NOT NULL AND ${t.excluidoEm} IS NULL`),

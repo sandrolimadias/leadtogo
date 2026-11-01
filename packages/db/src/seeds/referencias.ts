@@ -7,6 +7,8 @@ import {
   portes,
   qualificacoesSocio,
 } from '../schema/index.js'
+import { sql } from 'drizzle-orm'
+
 import { lerDados } from './dados.js'
 import { type Db, upsert } from './upsert.js'
 
@@ -87,5 +89,40 @@ export async function semearReferencias(db: Db): Promise<Record<string, number>>
     ['descricao', 'secao', 'divisao', 'grupo', 'classe'],
   )
 
+  // Depois dos municípios (FK): os contornos da malha do IBGE para os mapas do Dashboard
+  total['municipio_contornos'] = await semearContornos(db)
+
   return total
+}
+
+interface ContornoArquivo {
+  codigo_ibge: number
+  uf: string
+  /** MultiPolygon do GeoJSON */
+  poligonos: number[][][][]
+}
+
+const FONTE_DOS_CONTORNOS = 'IBGE, malha municipal (simplificada)'
+
+/** Contornos dos municípios: upsert em SQL (a coluna é geometria), só reescrevendo o que mudou. */
+async function semearContornos(db: Db): Promise<number> {
+  const linhas = await lerDados<ContornoArquivo>('municipio_contornos')
+  const LOTE = 50
+  for (let i = 0; i < linhas.length; i += LOTE) {
+    const lote = linhas.slice(i, i + LOTE).map((l) => ({
+      codigo: l.codigo_ibge,
+      uf: l.uf,
+      geojson: JSON.stringify({ type: 'MultiPolygon', coordinates: l.poligonos }),
+    }))
+    await db.execute(sql`
+      INSERT INTO municipio_contornos (municipio_codigo, uf, contorno, fonte)
+      SELECT x.codigo, x.uf, ST_SetSRID(ST_Multi(ST_GeomFromGeoJSON(x.geojson)), 4326), ${FONTE_DOS_CONTORNOS}
+      FROM json_to_recordset(${JSON.stringify(lote)}::json) AS x(codigo integer, uf char(2), geojson text)
+      ON CONFLICT (municipio_codigo) DO UPDATE
+        SET uf = excluded.uf, contorno = excluded.contorno, fonte = excluded.fonte, atualizado_em = now()
+        WHERE municipio_contornos.uf IS DISTINCT FROM excluded.uf
+           OR municipio_contornos.fonte IS DISTINCT FROM excluded.fonte
+           OR ST_AsBinary(municipio_contornos.contorno) IS DISTINCT FROM ST_AsBinary(excluded.contorno)`)
+  }
+  return linhas.length
 }

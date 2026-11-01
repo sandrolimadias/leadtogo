@@ -284,6 +284,8 @@ O **mesmo usuário** (`usuario_id`) pode ter um registro em `membros` em **cada 
 
 > O app só **lê** essas tabelas; a escrita fica com o *worker*. `receita_consultas` é a única que cresce com o uso.
 
+> **Implementação (Dashboard v2, migração 0045, só expansão; plano em `plano_dashboard_v2.md`):** tabela de referência nova **`municipio_contornos`** (`municipio_codigo` int PK e FK → `municipios`, `uf` char(2) FK → `estados` com índice, `contorno` `geometry(MultiPolygon, 4326)` já simplificado, `fonte` text, `atualizado_em`), **sem `tenant_id` e sem RLS** (como `municipios`), com `SELECT` para o `leadtogo_app`. A carga vem de `seeds/dados/municipio_contornos.json` (hoje só o ES, 78 municípios) e roda com as outras referências a cada start da API, só reescrevendo o que mudou. Serve aos mapas de densidade do Dashboard (`GET /v1/referencias/contornos`). A mesma migração cria dois índices — `empresa_tags_historico (tenant_id, tag_id, empresa_id, em)` ("era associada no instante T") e `atividades (tenant_id, realizada_em) WHERE situacao = 'realizada'` (realizadas no período) — e **acrescenta** ao histórico de Status a linha `adicionada` (automática, `por` nulo, com a data de `empresa_tags.aplicada_em`) de toda empresa com a tag Cliente que não a tinha, para a contagem de associados em datas passadas e o churn. Para listar as empresas sob o RLS forçado, a migração cria e apaga, dentro do mesmo bloco, uma política de leitura de `tenants` só para o owner.
+
 > **Implementação (E7):** o `leadtogo_app` (API e worker usam o mesmo papel) tem só `SELECT` em `cnaes`, `municipios`, `estados`, `paises`, `portes` e `qualificacoes_socio`; a carga é do `leadtogo_owner` (seeds). Em `receita_consultas` ele tem `SELECT`, `INSERT` e `UPDATE` (sem `DELETE`). A inclusão automática de um CNAE novo, citada acima, ainda não tem permissão de escrita: quando a prospecção a implementar, entra por uma função `SECURITY DEFINER` mínima, não por `INSERT` direto. `municipios.localizacao` é `geometry(Point, 4326)`, nula até a carga dos centros. `municipios.codigo_siafi` é `UNIQUE`; a carga inicial traz todos preenchidos. A busca por nome usa `f_unaccent()` (invólucro imutável de `unaccent`) com índice trigram.
 
 ---
@@ -786,7 +788,7 @@ Trocar a `TOKEN_ENCRYPTION_KEY` exige recifrar `senha_cifrada` (por isso o prefi
 | Grupo | Tabelas | Qtd |
 |---|---|---|
 | Plataforma | contas, conta_administradores, tenants, tenant_configuracoes, membros, convites (+ tabelas do Better Auth) | 6 |
-| Referência 🌐 | cnaes, municipios, estados, paises, portes, qualificacoes_socio, receita_consultas | 7 |
+| Referência 🌐 | cnaes, municipios, municipio_contornos, estados, paises, portes, qualificacoes_socio, receita_consultas | 8 |
 | Cadastros auxiliares | verticais, faixas_funcionarios, faixas_faturamento, tag_grupos, tags, tipos_atividade, funis, funil_fases, origens, motivos, solucoes, papeis_decisao, etiquetas, campos_personalizados, produtos | 15 |
 | Empresas | empresas, empresa_telefones, empresa_cnaes, empresa_socios, empresa_tags, empresa_tags_historico | 6 |
 | Contatos | contatos, empresa_contatos, contato_telefones, contato_emails, contato_tags (0043) | 5 |

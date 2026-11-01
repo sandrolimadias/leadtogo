@@ -13,6 +13,7 @@ Para atualizar: rode o gerador, confira o `git diff` e atualize a data na tabela
 | `municipios.json`     |     5.571 | Nome, UF e código IBGE: IBGE, API de Localidades <https://servicodados.ibge.gov.br/api/v1/localidades/municipios>. Código SIAFI/TOM: Tesouro Nacional, "Lista de municípios do SIAFI" (traz SIAFI e IBGE juntos): <https://www.tesourotransparente.gov.br/ckan/dataset/abb968cb-3710-4f85-89cf-875c91b9c7f6> (`tabmun.csv`, atualizada em 21/12/2021) | 06/10/2026  |
 | `microrregioes.json`  |       558 | Microrregiões do IBGE (código, nome e UF), da mesma API de Localidades (`municipios[].microrregiao`); usadas como regiões prontas da geolocalização | 16/10/2026  |
 | `municipios_correcoes.json` | 1 | Correções manuais versionadas (ver nota abaixo) | 06/10/2026  |
+| `municipio_contornos.json` | 78 | Contornos dos municípios do **ES** (só as UFs de `CONTORNOS_UFS`), simplificados (Douglas-Peucker, 0,002°) e com 4 casas, para os mapas de densidade do Dashboard. Fonte oficial do gerador: IBGE, API de Malhas <https://servicodados.ibge.gov.br/api/v3/malhas/estados/32?intrarregiao=municipio&qualidade=intermediaria&formato=application/vnd.geo+json>. **Esta versão** foi gerada com `DADOS_LOCAIS` a partir de `geojs-32-mun.json` do projeto geodata-br (<https://github.com/tbrugz/geodata-br>, derivado da malha municipal do IBGE), porque a API do IBGE não estava acessível no ambiente da geração (ver nota) | 01/11/2026 |
 | `qualificacoes_socio.json` |   79 | Tabela de qualificação do responsável/sócio da Receita, como publicada no projeto socios-brasil (ver nota abaixo) | 06/10/2026  |
 
 ## Notas
@@ -45,6 +46,12 @@ Para atualizar: rode o gerador, confira o `git diff` e atualize a data na tabela
   PARATI, Assú × ACU), mas o mesmo código IBGE e a mesma UF; vale o nome do IBGE. Conferido o exemplo de
   `docs/modelagem_banco.md`: Serra, IBGE 3205002, SIAFI 5699. A linha "DEMAIS MUNICIPIOS" (IBGE 0) do Tesouro
   é ignorada. **Desde 16/10/2026** o arquivo também traz `microrregiao_codigo` (da API de Localidades) e o centro de cada município (`latitude` e `longitude`, o centroide ponderado pela área do maior polígono da malha do IBGE: <https://servicodados.ibge.gov.br/api/v3/malhas/paises/BR?intrarregiao=municipio&qualidade=minima&formato=application/vnd.geo+json>), que o seed grava em `municipios.localizacao`. Boa Esperança do Norte (MT, instalado em 2025) não está na malha nem na lista de microrregiões: fica sem centro e sem microrregião.
+- **Contornos dos municípios:** um registro por linha (`codigo_ibge`, `uf`, `poligonos` = MultiPolygon do
+  GeoJSON). O gerador separa as **ilhas** que algumas cópias da malha gravam como "buracos" fora do contorno
+  (Vitória, Vila Velha, Guarapari, Ibiraçu), para não ficar geometria inválida. Para trocar pela malha oficial
+  mais recente: `CONTORNOS_UFS=ES node packages/db/seeds/gerar-dados.mjs contornos` (com internet) e conferir o
+  `git diff`. Outra UF entra acrescentando a sigla (`CONTORNOS_UFS=ES,MG`). O seed grava em
+  `municipio_contornos` a cada start da API, só o que mudou.
 - **Reproduzir:** `node packages/db/seeds/gerar-dados.mjs` (com internet). Com `DADOS_LOCAIS=<pasta>` o
   gerador lê respostas já baixadas (`estados.json`, `subclasses.json`, `municipios.json`,
   `tabmun.csv`, `qualificacao-socio.csv`, `malha_municipios.json`). Os arquivos acima foram gerados e reconferidos assim.

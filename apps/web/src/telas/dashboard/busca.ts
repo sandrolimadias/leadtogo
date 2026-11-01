@@ -1,4 +1,5 @@
-import { PERIODOS_DO_DASHBOARD, type PeriodoDoDashboard } from '@leadtogo/shared'
+const PERIODOS_DO_DASHBOARD = ['mes', 'mes_anterior', 'trimestre'] as const
+type PeriodoDoDashboard = (typeof PERIODOS_DO_DASHBOARD)[number]
 
 /** O que fica na URL do Dashboard (só o que não é o padrão). */
 export interface BuscaDoDashboard {

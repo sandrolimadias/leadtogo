@@ -265,5 +265,7 @@ export const empresaTagsHistorico = pgTable(
   (t) => [
     index('empresa_tags_historico_empresa_idx').on(t.tenantId, t.empresaId, t.em),
     index('empresa_tags_historico_tag_idx').on(t.tenantId, t.tagId),
+    // Dashboard: "era associada no instante T" (a última linha da tag por empresa antes de T)
+    index('empresa_tags_historico_tag_empresa_idx').on(t.tenantId, t.tagId, t.empresaId, t.em),
   ],
 )

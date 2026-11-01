@@ -7,6 +7,7 @@ const { db, cliente: owner } = conectarDrizzleOwner()
 const app = conectarApp()
 
 const TABELAS = [
+  'municipio_contornos',
   'municipios',
   'microrregioes',
   'cnaes',
@@ -38,6 +39,7 @@ describe('seed das referências', () => {
   it('carrega estados, municípios, microrregiões, países, portes, qualificações e CNAEs', async () => {
     const lidos = await semearReferencias(db)
     expect(lidos).toEqual({
+      municipio_contornos: 78,
       municipios: 5571,
       microrregioes: 558,
       cnaes: 1332,
@@ -47,6 +49,7 @@ describe('seed das referências', () => {
       qualificacoes_socio: 79,
     })
     expect(await contar()).toEqual({
+      municipio_contornos: 78,
       municipios: 5571,
       microrregioes: 558,
       cnaes: 1332,
@@ -75,10 +78,30 @@ describe('seed das referências', () => {
     expect(es?.n).toBe(13)
   })
 
+  it('os contornos do ES: um por município, todos válidos e com o centro dentro (Vitória e Serra)', async () => {
+    await semearReferencias(db)
+    const [r] = await owner<{ n: number; validos: number; dentro: number }[]>`
+      SELECT count(*)::int AS n, count(*) FILTER (WHERE ST_IsValid(c.contorno))::int AS validos,
+             count(*) FILTER (WHERE c.municipio_codigo IN (3205309, 3205002)
+                              AND ST_Contains(c.contorno, m.localizacao))::int AS dentro
+      FROM municipio_contornos c JOIN municipios m ON m.codigo_ibge = c.municipio_codigo
+      WHERE c.uf = 'ES'`
+    // as ilhas de Vitória, Vila Velha e Guarapari viram polígonos próprios (nenhum contorno inválido)
+    expect(r).toEqual({ n: 78, validos: 78, dentro: 2 })
+    const versoes = async () =>
+      (
+        await owner<{ v: string }[]>`SELECT xmin::text AS v FROM municipio_contornos ORDER BY 1`
+      ).map((x) => x.v)
+    const antes = await versoes()
+    await semearReferencias(db)
+    expect(await versoes()).toEqual(antes)
+  })
+
   it('rodar de novo não duplica nada (idempotente)', async () => {
     await semearReferencias(db)
     await semearReferencias(db)
     expect(await contar()).toEqual({
+      municipio_contornos: 78,
       municipios: 5571,
       microrregioes: 558,
       cnaes: 1332,
