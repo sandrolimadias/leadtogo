@@ -259,6 +259,11 @@ export function servicosFalsos(troca: Partial<ServicosDeAcesso> = {}) {
       limpar: vi.fn(async () => ok(undefined)),
     },
     configuracaoDaCarteira: vi.fn(async () => ok({ bloquearEmpresaNaoAtiva: true })),
+    dadosDaEmpresa: {
+      obter: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      alterar: vi.fn(async () => falha('indisponivel', 'Não configurado no teste.', 500)),
+      municipios: vi.fn(async () => ok([])),
+    },
     alterarConfiguracaoDaCarteira: vi.fn(async () => ok({ bloquearEmpresaNaoAtiva: true })),
     funis: {
       listar: vi.fn(async () => ok([])),

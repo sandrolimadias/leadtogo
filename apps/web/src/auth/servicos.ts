@@ -550,6 +550,22 @@ export const servicosReais: ServicosDeAcesso = {
   alterarConfiguracaoDaCarteira: (patch) =>
     protegido(async () => daApi(await api.PATCH('/v1/configuracoes/carteira', { body: patch }))),
 
+  dadosDaEmpresa: {
+    obter: () => protegido(async () => daApi(await api.GET('/v1/configuracoes/empresa'))),
+    alterar: (dados) =>
+      protegido(async () =>
+        daApi(await api.PATCH('/v1/configuracoes/empresa', { body: dados as never })),
+      ),
+    municipios: (uf) =>
+      protegido(async () =>
+        daApi(
+          await api.GET('/v1/configuracoes/empresa/municipios', {
+            params: { query: { uf } as never },
+          }),
+        ),
+      ),
+  },
+
   cadastros: {
     verticais: cadastroReal('verticais'),
     papeisDecisao: cadastroReal('papeis-decisao'),

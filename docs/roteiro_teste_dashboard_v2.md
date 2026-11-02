@@ -19,6 +19,11 @@
 13. Celular, tema escuro e teclado
 14. Os números batem com as telas
 
+## 0. Endereço da empresa (antes de tudo)
+1. Em **Configurações → Empresa** (só para o administrador), preencha o endereço e escolha o **Estado** e a **Cidade**; **Salvar** mostra "Dados da empresa salvos".
+2. O CNPJ aparece, mas não muda por aqui. Quem não tem a permissão vê os dados só para leitura.
+3. Volte ao Dashboard → **Resultados**: o quadro **Carteira** passa a mostrar os mapas do estado escolhido.
+
 ## 1. As duas abas
 1. O Dashboard abre na aba **Minhas atividades**. A outra aba é **Resultados**.
 2. A aba escolhida fica no endereço (`?aba=resultados`): recarregar mantém.
@@ -66,7 +71,7 @@
 4. Mais de 8: **Ver todos (N)** abre o painel com a lista inteira, 50 por página.
 
 ## 10. Carteira: os dois mapas
-1. O mapa é do **estado da sua empresa** (pelo endereço em Configurações → Empresa). Sem endereço: "Cadastre o endereço da sua empresa… para ver o mapa do seu estado.".
+1. O mapa é do **estado da sua empresa** (pelo endereço em Configurações → Empresa). Sem endereço: "Cadastre a cidade da sua empresa em Configurações → Empresa…" e, para o administrador, o link **Cadastrar o endereço**.
 2. **Associados por município** (azul) e **Empresas no cadastro por município** (vermelho), lado a lado no computador e um embaixo do outro no celular. Quanto mais, mais escuro (até 5 faixas); município sem nenhuma, cinza claro.
 3. **Legenda lateral**: as faixas (ex.: "3–4") e a lista de cidades da maior para a menor, com a **cor do mapa** e a quantidade; 10 de início e **Ver todas**. Rodapé: quantas estão **fora do ES**, quantas **sem cidade** e "Limites municipais: IBGE".
 4. Passe o mouse num município (ou numa cidade da legenda): o contorno destaca e aparece "Vitória: 42 associados (12% do total)". **Clique** abre Empresas filtrada pela cidade (no azul, também pelo Status Associado; na visão Minha, só a sua carteira). No celular, o primeiro toque mostra o número e o segundo abre a lista.

@@ -1432,6 +1432,50 @@ export interface paths {
         patch: operations["ConfiguracaoDaCarteiraController_alterar"];
         trace?: never;
     };
+    "/v1/configuracoes/empresa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dados da empresa ativa
+         * @description Razão social, nome fantasia, CNPJ (só leitura), contatos e endereço da empresa que usa o CRM. A cidade do endereço diz o estado dos mapas do Dashboard. Todo membro lê.
+         */
+        get: operations["DadosDaEmpresaController_obter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Alterar os dados da empresa ativa
+         * @description Exige `empresa.configurar`. Só os campos enviados mudam; texto vazio apaga. `endereco.municipioCodigo` é o código IBGE da cidade (400 `municipio_invalido` se não existir). O CNPJ não muda por aqui. Registra na auditoria o antes e o depois.
+         */
+        patch: operations["DadosDaEmpresaController_alterar"];
+        trace?: never;
+    };
+    "/v1/configuracoes/empresa/municipios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Municípios de uma UF
+         * @description Os municípios da UF (código IBGE e nome), em ordem alfabética, para escolher a cidade do endereço. Referência igual para toda empresa: pode ficar em cache.
+         */
+        get: operations["DadosDaEmpresaController_municipios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/configuracoes/funis": {
         parameters: {
             query?: never;
@@ -6612,6 +6656,22 @@ export interface components {
             ignorarDuplicado?: boolean;
             tagIds?: string[];
         };
+        AlterarDadosDaEmpresaEntrada: {
+            razaoSocial?: string;
+            nomeFantasia?: string | null;
+            email?: ("" | string) | null;
+            telefone?: string | null;
+            website?: string | null;
+            endereco?: {
+                cep?: string | null;
+                tipoLogradouro?: string | null;
+                logradouro?: string | null;
+                numero?: string | null;
+                complemento?: string | null;
+                bairro?: string | null;
+                municipioCodigo?: number | null;
+            };
+        };
         AlterarEmpresaDaCarteiraEntrada: {
             razaoSocial?: string;
             nomeFantasia?: string | null;
@@ -7900,6 +7960,27 @@ export interface components {
             descricao: string;
             url: string;
             eventos: components["schemas"]["EventoDeWebhook"][];
+        };
+        DadosDaEmpresa: {
+            razaoSocial: string;
+            nomeFantasia: string | null;
+            cnpj: string | null;
+            email: string | null;
+            telefone: string | null;
+            website: string | null;
+            endereco: {
+                cep: string | null;
+                tipoLogradouro: string | null;
+                logradouro: string | null;
+                numero: string | null;
+                complemento: string | null;
+                bairro: string | null;
+                municipio: {
+                    codigo: number;
+                    nome: string;
+                    uf: string;
+                } | null;
+            };
         };
         DadosDaReceita: {
             cnpj: string;
@@ -9624,6 +9705,10 @@ export interface components {
             /** Format: uuid */
             faseId: string;
         };
+        MunicipiosDaUf: {
+            codigo: number;
+            nome: string;
+        }[];
         NaoLidasDoPortal: {
             naoLidas: number;
         };
@@ -16733,6 +16818,153 @@ export interface operations {
             };
             /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DadosDaEmpresaController_obter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DadosDaEmpresa"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DadosDaEmpresaController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlterarDadosDaEmpresaEntrada"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DadosDaEmpresa"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+        };
+    };
+    DadosDaEmpresaController_municipios: {
+        parameters: {
+            query: {
+                uf: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MunicipiosDaUf"];
+                };
+            };
+            /** @description Dados inválidos (`validacao_invalida`, com os campos em `detalhes`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Erro"];
+                };
+            };
+            /** @description Sem login (`nao_autenticado`) ou sessão expirada */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

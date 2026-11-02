@@ -396,8 +396,12 @@ describe('Dashboard Resultados: mapas do estado', () => {
     x.mapa.mockResolvedValue(ok(mapa({ uf: null, municipios: [] })))
     await abrir(x, RES)
     expect(
-      await screen.findByText(/Cadastre o endereço da sua empresa em Configurações → Empresa/),
+      await screen.findByText(/Cadastre a cidade da sua empresa em Configurações → Empresa/),
     ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Cadastrar o endereço' })).toHaveAttribute(
+      'href',
+      '/configuracoes/empresa',
+    )
     expect(x.contornos).not.toHaveBeenCalled()
   })
 })

@@ -77,10 +77,10 @@ describe('catálogo de permissões', () => {
 })
 
 describe('versão do catálogo', () => {
-  it('a versão 13 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
-    expect(VERSAO_DO_CATALOGO).toBe(13)
+  it('a versão 14 tem exatamente estas permissões: acrescentar exige subir a versão e listar as novas', () => {
+    expect(VERSAO_DO_CATALOGO).toBe(14)
     // `atividades.excluir` saiu (6d): excluir a atividade é parte de editá-la, como antes dos perfis
-    expect(CHAVES_DE_PERMISSAO).toHaveLength(55)
+    expect(CHAVES_DE_PERMISSAO).toHaveLength(56)
     expect(NOVAS_POR_VERSAO).toEqual({
       2: ['visitas.ver_localizacao'],
       3: ['rotas.ver', 'rotas.editar', 'rotas.atribuir'],
@@ -103,6 +103,7 @@ describe('versão do catálogo', () => {
       11: ['oportunidades.data_fechamento', 'oportunidades.data_criacao'],
       12: ['portal.formularios'],
       13: ['portal.eventos_presenca', 'portal.eventos_relatorios'],
+      14: ['empresa.configurar'],
     })
   })
 

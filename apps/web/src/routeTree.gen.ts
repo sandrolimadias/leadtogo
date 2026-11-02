@@ -45,6 +45,7 @@ import { Route as AutenticadoChamadosMetricasRouteImport } from './routes/_auten
 import { Route as AutenticadoConfiguracoesIndexRouteImport } from './routes/_autenticado.configuracoes.index'
 import { Route as AutenticadoConfiguracoesCarteiraRouteImport } from './routes/_autenticado.configuracoes.carteira'
 import { Route as AutenticadoConfiguracoesChamadosRouteImport } from './routes/_autenticado.configuracoes.chamados'
+import { Route as AutenticadoConfiguracoesEmpresaRouteImport } from './routes/_autenticado.configuracoes.empresa'
 import { Route as AutenticadoConfiguracoesFunisRouteImport } from './routes/_autenticado.configuracoes.funis'
 import { Route as AutenticadoConfiguracoesGeolocalizacaoRouteImport } from './routes/_autenticado.configuracoes.geolocalizacao'
 import { Route as AutenticadoConfiguracoesImportacaoRouteImport } from './routes/_autenticado.configuracoes.importacao'
@@ -266,6 +267,12 @@ const AutenticadoConfiguracoesChamadosRoute =
   AutenticadoConfiguracoesChamadosRouteImport.update({
     id: '/chamados',
     path: '/chamados',
+    getParentRoute: () => AutenticadoConfiguracoesRoute,
+  } as any)
+const AutenticadoConfiguracoesEmpresaRoute =
+  AutenticadoConfiguracoesEmpresaRouteImport.update({
+    id: '/empresa',
+    path: '/empresa',
     getParentRoute: () => AutenticadoConfiguracoesRoute,
   } as any)
 const AutenticadoConfiguracoesFunisRoute =
@@ -499,6 +506,7 @@ export interface FileRoutesByFullPath {
   '/chamados/metricas': typeof AutenticadoChamadosMetricasRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/chamados': typeof AutenticadoConfiguracoesChamadosRoute
+  '/configuracoes/empresa': typeof AutenticadoConfiguracoesEmpresaRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
@@ -559,6 +567,7 @@ export interface FileRoutesByTo {
   '/chamados/metricas': typeof AutenticadoChamadosMetricasRoute
   '/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/configuracoes/chamados': typeof AutenticadoConfiguracoesChamadosRoute
+  '/configuracoes/empresa': typeof AutenticadoConfiguracoesEmpresaRoute
   '/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
@@ -632,6 +641,7 @@ export interface FileRoutesById {
   '/_autenticado/chamados/metricas': typeof AutenticadoChamadosMetricasRoute
   '/_autenticado/configuracoes/carteira': typeof AutenticadoConfiguracoesCarteiraRoute
   '/_autenticado/configuracoes/chamados': typeof AutenticadoConfiguracoesChamadosRoute
+  '/_autenticado/configuracoes/empresa': typeof AutenticadoConfiguracoesEmpresaRoute
   '/_autenticado/configuracoes/funis': typeof AutenticadoConfiguracoesFunisRoute
   '/_autenticado/configuracoes/geolocalizacao': typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   '/_autenticado/configuracoes/importacao': typeof AutenticadoConfiguracoesImportacaoRoute
@@ -704,6 +714,7 @@ export interface FileRouteTypes {
     | '/chamados/metricas'
     | '/configuracoes/carteira'
     | '/configuracoes/chamados'
+    | '/configuracoes/empresa'
     | '/configuracoes/funis'
     | '/configuracoes/geolocalizacao'
     | '/configuracoes/importacao'
@@ -764,6 +775,7 @@ export interface FileRouteTypes {
     | '/chamados/metricas'
     | '/configuracoes/carteira'
     | '/configuracoes/chamados'
+    | '/configuracoes/empresa'
     | '/configuracoes/funis'
     | '/configuracoes/geolocalizacao'
     | '/configuracoes/importacao'
@@ -836,6 +848,7 @@ export interface FileRouteTypes {
     | '/_autenticado/chamados/metricas'
     | '/_autenticado/configuracoes/carteira'
     | '/_autenticado/configuracoes/chamados'
+    | '/_autenticado/configuracoes/empresa'
     | '/_autenticado/configuracoes/funis'
     | '/_autenticado/configuracoes/geolocalizacao'
     | '/_autenticado/configuracoes/importacao'
@@ -1133,6 +1146,13 @@ declare module '@tanstack/react-router' {
       path: '/chamados'
       fullPath: '/configuracoes/chamados'
       preLoaderRoute: typeof AutenticadoConfiguracoesChamadosRouteImport
+      parentRoute: typeof AutenticadoConfiguracoesRoute
+    }
+    '/_autenticado/configuracoes/empresa': {
+      id: '/_autenticado/configuracoes/empresa'
+      path: '/empresa'
+      fullPath: '/configuracoes/empresa'
+      preLoaderRoute: typeof AutenticadoConfiguracoesEmpresaRouteImport
       parentRoute: typeof AutenticadoConfiguracoesRoute
     }
     '/_autenticado/configuracoes/funis': {
@@ -1434,6 +1454,7 @@ const AutenticadoChamadosRouteWithChildren =
 interface AutenticadoConfiguracoesRouteChildren {
   AutenticadoConfiguracoesCarteiraRoute: typeof AutenticadoConfiguracoesCarteiraRoute
   AutenticadoConfiguracoesChamadosRoute: typeof AutenticadoConfiguracoesChamadosRoute
+  AutenticadoConfiguracoesEmpresaRoute: typeof AutenticadoConfiguracoesEmpresaRoute
   AutenticadoConfiguracoesFunisRoute: typeof AutenticadoConfiguracoesFunisRoute
   AutenticadoConfiguracoesGeolocalizacaoRoute: typeof AutenticadoConfiguracoesGeolocalizacaoRoute
   AutenticadoConfiguracoesImportacaoRoute: typeof AutenticadoConfiguracoesImportacaoRoute
@@ -1458,6 +1479,7 @@ const AutenticadoConfiguracoesRouteChildren: AutenticadoConfiguracoesRouteChildr
       AutenticadoConfiguracoesCarteiraRoute,
     AutenticadoConfiguracoesChamadosRoute:
       AutenticadoConfiguracoesChamadosRoute,
+    AutenticadoConfiguracoesEmpresaRoute: AutenticadoConfiguracoesEmpresaRoute,
     AutenticadoConfiguracoesFunisRoute: AutenticadoConfiguracoesFunisRoute,
     AutenticadoConfiguracoesGeolocalizacaoRoute:
       AutenticadoConfiguracoesGeolocalizacaoRoute,

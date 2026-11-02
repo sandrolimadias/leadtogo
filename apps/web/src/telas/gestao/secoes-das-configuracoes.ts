@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   Globe,
   KeyRound,
+  Landmark,
   LifeBuoy,
   MapPin,
   Funnel,
@@ -31,6 +32,12 @@ export const SECOES = [
     titulo: 'Perfis de acesso',
     icone: KeyRound,
     permissoes: ['perfis.gerir'],
+  },
+  {
+    para: '/configuracoes/empresa',
+    titulo: 'Empresa',
+    icone: Landmark,
+    permissoes: ['empresa.configurar'],
   },
   { para: '/configuracoes/tags', titulo: 'Tags', icone: Tags, permissoes: ['cadastros.gerir'] },
   {

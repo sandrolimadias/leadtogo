@@ -54,6 +54,7 @@ export const ROTULO_DO_MODULO: Record<string, string> = {
   perfis: 'Perfis de acesso',
   seguranca: 'Segurança',
   carteira: 'Regras da carteira',
+  empresa: 'Dados da empresa',
   integracoes: 'Integrações',
 }
 
@@ -132,6 +133,7 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
   p('perfis', 'gerir', 'Gerir perfis de acesso e atribuí-los aos membros'),
   p('seguranca', 'gerir', 'Definir quem precisa de verificação em duas etapas'),
   p('carteira', 'configurar', 'Configurar as regras da carteira'),
+  p('empresa', 'configurar', 'Editar os dados e o endereço da empresa'),
   p(
     'integracoes',
     'gerir',
@@ -145,7 +147,7 @@ export const CATALOGO_DE_PERMISSOES: readonly DefinicaoDePermissao[] = [
  * os perfis de SISTEMA das empresas com versão menor recebem as chaves novas que o seu padrão tem (as
  * outras permissões não mudam). Perfis criados pela empresa nunca recebem permissão automaticamente.
  */
-export const VERSAO_DO_CATALOGO = 13
+export const VERSAO_DO_CATALOGO = 14
 
 /** As chaves que cada versão acrescentou (a versão 1 é o catálogo inicial). */
 export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
@@ -170,6 +172,7 @@ export const NOVAS_POR_VERSAO: Record<number, readonly string[]> = {
   11: ['oportunidades.data_fechamento', 'oportunidades.data_criacao'],
   12: ['portal.formularios'],
   13: ['portal.eventos_presenca', 'portal.eventos_relatorios'],
+  14: ['empresa.configurar'],
 }
 
 export const CHAVES_DE_PERMISSAO: readonly string[] = CATALOGO_DE_PERMISSOES.map((d) => d.chave)
@@ -246,6 +249,7 @@ export const PERMISSOES_PADRAO: Record<ChaveDeSistema, PermissoesDoPerfil> = {
           'perfis.gerir',
           'seguranca.gerir',
           'carteira.configurar',
+          'empresa.configurar',
           'integracoes.gerir',
           'oportunidades.data_criacao',
         ].includes(c) &&

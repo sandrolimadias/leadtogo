@@ -7539,6 +7539,176 @@
         "tags": ["Configurações"]
       }
     },
+    "/v1/configuracoes/empresa": {
+      "get": {
+        "description": "Razão social, nome fantasia, CNPJ (só leitura), contatos e endereço da empresa que usa o CRM. A cidade do endereço diz o estado dos mapas do Dashboard. Todo membro lê.",
+        "operationId": "DadosDaEmpresaController_obter",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DadosDaEmpresa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dados da empresa ativa",
+        "tags": ["Configurações"]
+      },
+      "patch": {
+        "description": "Exige `empresa.configurar`. Só os campos enviados mudam; texto vazio apaga. `endereco.municipioCodigo` é o código IBGE da cidade (400 `municipio_invalido` se não existir). O CNPJ não muda por aqui. Registra na auditoria o antes e o depois.",
+        "operationId": "DadosDaEmpresaController_alterar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarDadosDaEmpresaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DadosDaEmpresa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão (`acesso_negado`, `2fa_obrigatorio`, `empresa_ativa_invalida`...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito (`sem_empresa_ativa`, `ja_e_membro`, e-mail ou CNPJ já cadastrado...)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Alterar os dados da empresa ativa",
+        "tags": ["Configurações"]
+      }
+    },
+    "/v1/configuracoes/empresa/municipios": {
+      "get": {
+        "description": "Os municípios da UF (código IBGE e nome), em ordem alfabética, para escolher a cidade do endereço. Referência igual para toda empresa: pode ficar em cache.",
+        "operationId": "DadosDaEmpresaController_municipios",
+        "parameters": [
+          {
+            "name": "uf",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MunicipiosDaUf"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`validacao_invalida`, com os campos em `detalhes`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem login (`nao_autenticado`) ou sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Municípios de uma UF",
+        "tags": ["Configurações"]
+      }
+    },
     "/v1/configuracoes/funis": {
       "get": {
         "description": "Qualquer membro da empresa ativa. Funis e fases em ordem de exibição; sem `incluirInativos=true`, esconde os funis inativados. Excluídos nunca aparecem. Há sempre um funil com `padrao: true`.",
@@ -33087,6 +33257,87 @@
         },
         "additionalProperties": false
       },
+      "AlterarDadosDaEmpresaEntrada": {
+        "type": "object",
+        "properties": {
+          "razaoSocial": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "nomeFantasia": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "email": {
+            "nullable": true,
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [""]
+              },
+              {
+                "type": "string",
+                "format": "email"
+              }
+            ]
+          },
+          "telefone": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 30
+          },
+          "website": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "endereco": {
+            "type": "object",
+            "properties": {
+              "cep": {
+                "nullable": true,
+                "type": "string"
+              },
+              "tipoLogradouro": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 30
+              },
+              "logradouro": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 200
+              },
+              "numero": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 20
+              },
+              "complemento": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 100
+              },
+              "bairro": {
+                "nullable": true,
+                "type": "string",
+                "maxLength": 100
+              },
+              "municipioCodigo": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
       "AlterarEmpresaDaCarteiraEntrada": {
         "type": "object",
         "properties": {
@@ -37660,6 +37911,102 @@
           }
         },
         "required": ["descricao", "url", "eventos"],
+        "additionalProperties": false
+      },
+      "DadosDaEmpresa": {
+        "type": "object",
+        "properties": {
+          "razaoSocial": {
+            "type": "string"
+          },
+          "nomeFantasia": {
+            "nullable": true,
+            "type": "string"
+          },
+          "cnpj": {
+            "nullable": true,
+            "type": "string"
+          },
+          "email": {
+            "nullable": true,
+            "type": "string"
+          },
+          "telefone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "website": {
+            "nullable": true,
+            "type": "string"
+          },
+          "endereco": {
+            "type": "object",
+            "properties": {
+              "cep": {
+                "nullable": true,
+                "type": "string"
+              },
+              "tipoLogradouro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "logradouro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "numero": {
+                "nullable": true,
+                "type": "string"
+              },
+              "complemento": {
+                "nullable": true,
+                "type": "string"
+              },
+              "bairro": {
+                "nullable": true,
+                "type": "string"
+              },
+              "municipio": {
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "uf": {
+                    "type": "string"
+                  }
+                },
+                "required": ["codigo", "nome", "uf"],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "cep",
+              "tipoLogradouro",
+              "logradouro",
+              "numero",
+              "complemento",
+              "bairro",
+              "municipio"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "razaoSocial",
+          "nomeFantasia",
+          "cnpj",
+          "email",
+          "telefone",
+          "website",
+          "endereco"
+        ],
         "additionalProperties": false
       },
       "DadosDaReceita": {
@@ -44241,6 +44588,24 @@
         },
         "required": ["faseId"],
         "additionalProperties": false
+      },
+      "MunicipiosDaUf": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "codigo": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "nome": {
+              "type": "string"
+            }
+          },
+          "required": ["codigo", "nome"],
+          "additionalProperties": false
+        }
       },
       "NaoLidasDoPortal": {
         "type": "object",

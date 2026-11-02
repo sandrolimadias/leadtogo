@@ -246,6 +246,8 @@ function Carteira({
   membroId: string | undefined
 }) {
   const servicos = useServicos()
+  const { pode } = usePermissoes()
+  const podeConfigurar = pode('empresa.configurar')
   const consulta = consultaDoPeriodo(busca)
   const mapa = useQuery({
     queryKey: ['dashboard', 'mapa', consulta],
@@ -304,8 +306,15 @@ function Carteira({
       {mapa.isPending ? <Skeleton height={280} /> : null}
       {mapa.data && mapa.data.uf === null ? (
         <p className="m-0 rounded-md border border-dashed border-border-strong px-4 py-6 text-center text-[13px] text-ink-muted">
-          Cadastre o endereço da sua empresa em Configurações → Empresa para ver o mapa do seu
-          estado.
+          Cadastre a cidade da sua empresa em Configurações → Empresa para ver o mapa do seu estado.
+          {podeConfigurar ? (
+            <>
+              {' '}
+              <Link to="/configuracoes/empresa" className="font-semibold">
+                Cadastrar o endereço
+              </Link>
+            </>
+          ) : null}
         </p>
       ) : null}
       {mapa.data && mapa.data.uf && contornos.isPending ? <Skeleton height={280} /> : null}

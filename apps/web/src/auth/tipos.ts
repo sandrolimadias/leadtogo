@@ -99,6 +99,8 @@ import type {
   Expediente,
   Feriado,
   MetricasDeChamados,
+  DadosDaEmpresa,
+  MunicipiosDaUf,
   ResultadosDoDashboard,
   AssociadosDoDashboard,
   MapaDoDashboard,
@@ -146,6 +148,7 @@ import type {
   AtribuirChamadoEntrada,
   ConsultaDeChamados,
   ConsultaDeMetricas,
+  AlterarDadosDaEmpresaEntrada,
   ConsultaDeResultadosEntrada,
   ConsultaDeAssociadosEntrada,
   ConsultaDoMapaDoDashboardEntrada,
@@ -1009,6 +1012,14 @@ export interface ServicosDeAcesso {
   alterarConfiguracaoDaCarteira: (
     patch: ConfiguracaoDaCarteiraPatch,
   ) => Promise<Resultado<ConfiguracaoDaCarteira>>
+
+  // Dados da empresa (Configurações → Empresa): todo membro lê, `empresa.configurar` altera
+  dadosDaEmpresa: {
+    obter: () => Promise<Resultado<DadosDaEmpresa>>
+    alterar: (dados: AlterarDadosDaEmpresaEntrada) => Promise<Resultado<DadosDaEmpresa>>
+    /** Municípios da UF, para escolher a cidade */
+    municipios: (uf: string) => Promise<Resultado<MunicipiosDaUf>>
+  }
 
   // Cadastros auxiliares (Módulo 1)
   tags: ServicosDeTags
